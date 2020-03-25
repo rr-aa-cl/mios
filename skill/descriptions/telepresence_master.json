@@ -1,0 +1,1 @@
+{"name": "telepresence_master", "ip_dst": "none", "port_dst": 8888, "port_recv": 8888, "bilateral": true, "K_joystick_on": [1000, 1000, 1000, 100, 100, 100], "K_joystick_off": [1500, 1500, 1500, 10, 10, 10], "EE_T_J": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], "mode": "none"}

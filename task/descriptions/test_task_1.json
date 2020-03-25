@@ -1,0 +1,1 @@
+{"name": "test_task_1", "skills": {"t1_s1": {"type": "test_skill_1", "objects": ["test_object_1"]}, "t1_s2": {"type": "test_skill_1", "frames": {"O_R_TF": [1, 0, 0, 0, 0, -1, 0, 1, 0]}, "objects": ["test_object_1"]}}, "parameters": {"a": [1, 2, 3], "b": false, "success": false, "exception": "none", "skill_test": 0}}

@@ -1,0 +1,1 @@
+{"name": "follow_trajectory", "locations": [], "speed": [0.1, 0.5], "acc": [0.5, 1], "t_settle": 0.0, "flag_cart": true}

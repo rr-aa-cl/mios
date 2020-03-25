@@ -1,0 +1,9 @@
+cmake_minimum_required(VERSION 3.0)
+project(cntr_joint_imp)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(${PROJECT_NAME}_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}
+${PROJECT_SOURCE_DIR}/cntr_joint_imp_matlab
+CACHE INTERNAL "${PROJECT_NAME}: Include Directories" FORCE)
+set(${PROJECT_NAME}_LIBRARIES ${PROJECT_SOURCE_DIR}
+CACHE INTERNAL "${PROJECT_NAME}: Library Directories" FORCE)

@@ -1,0 +1,1 @@
+{"name": "move_to_pose_joint", "q_g": [0, 0, 0, 0, 0, 0, 0], "speed": [0.5], "acc": [0.5], "q_g_offset": [0, 0, 0, 0, 0, 0, 0], "objects": ["loc_goal"]}

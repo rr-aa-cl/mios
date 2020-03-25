@@ -1,0 +1,1 @@
+{"name": "move_trajectory", "skills": {"move": {"type": "follow_trajectory"}}, "parameters": {"locations": [], "speed": [0.2, 0.5], "acc": [0.5, 1], "flag_cart": true}}

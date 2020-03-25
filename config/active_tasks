@@ -1,0 +1,15 @@
+idle_task
+test_task_1
+test_task_2
+test_task_3
+learner_test
+external
+move_to_joint_pose
+move_to_cart_pose
+insert_object
+extract_object
+react_to_event
+feature_impedance
+feature_collision_detection
+feature_force_control
+telepresence
