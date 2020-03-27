@@ -15,6 +15,10 @@ bool external_input::read_skill_parameters(const nlohmann::json& p){
         cpp_utils::print_error("Missing parameter: ip_dst");
         return false;
     }
+    if(!cpp_utils::read_json_param(p,"input_frequency",c->input_frequency)){
+        cpp_utils::print_error("Missing parameter: input_frequency");
+        return false;
+    }
     if(!cpp_utils::read_json_param(p,"mode",c->mode)){
         cpp_utils::print_error("Missing parameter: mode");
         return false;
@@ -28,6 +32,9 @@ void external_input::build_primitives(const Percept& p){
     std::shared_ptr<ConfigSkill_external_input> c_skill = std::static_pointer_cast<ConfigSkill_external_input>(this->_config);
     std::shared_ptr<ConfigMP_mp_external> c_input = std::static_pointer_cast<ConfigMP_mp_external>(this->get_mp("input")->get_config());
     c_input->port_recv=c_skill->port_recv;
+    c_input->port_dst=c_skill->port_dst;
+    c_input->ip_dst=c_skill->ip_dst;
+    c_input->input_frequency=c_skill->input_frequency;
     if(c_skill->mode=="Torque"){
         c_input->mode=InputMode::Torque;
     }

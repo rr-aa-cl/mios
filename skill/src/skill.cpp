@@ -375,7 +375,7 @@ Skill::~Skill(){
 }
 
 void Skill::reset(){
-    for(std::pair<std::string,std::shared_ptr<ManipulationPrimitive> > mp : this->_mp){
+    for(auto& mp : this->_mp){
         mp.second->reset();
     }
     this->_active_mp=nullptr;
@@ -444,7 +444,7 @@ bool Skill::initialize(const Percept &p){
     this->_active_mp=nullptr;
     this->build_primitives(p);
 
-    for(std::pair<std::string,std::shared_ptr<ManipulationPrimitive> > mp : this->_mp){
+    for(auto& mp : this->_mp){
         if(!mp.second->check_attractor()){
             cpp_utils::print_error("Attractor is invalid in skill of type "+this->_type+".");
             return false;
@@ -620,7 +620,7 @@ void Skill::set_init_mp(const std::string &id){
 
 void Skill::terminate(){
 
-    for(std::pair<std::string,std::shared_ptr<ManipulationPrimitive> > mp : this->_mp){
+    for(auto& mp : this->_mp){
         if(!mp.second->get_flag_terminate()){
             mp.second->terminate();
         }
@@ -794,7 +794,7 @@ bool Skill::load_objects(const std::map<std::string, std::string>& objects){
         throw SkillException("Can not access knowledge base during task initialization in function load_objects.");
     }
     this->_objects.clear();
-    for(std::pair<std::string,std::string> o : objects){
+    for(auto& o : objects){
         Object obj;
         if(!this->_kb->load_object(o.second,obj)){
             cpp_utils::print_error("Could not load "+o.second+" as type " +o.first+".");

@@ -13,7 +13,8 @@ struct ConfigSkill_telepresence_slave : public ConfigSkill{
     unsigned port_recv;
     bool repeater;
 
-    Eigen::Matrix<double,4,4> EE_T_J;
+    Eigen::Matrix<double,3,3> EE_T_J_t;
+    Eigen::Matrix<double,3,3> EE_T_J_r;
 
     bool bilateral;
     TelepresenceMode mode;

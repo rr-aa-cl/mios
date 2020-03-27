@@ -40,7 +40,7 @@ nlohmann::json ParameterServer::set_parameter(const nlohmann::json &request){
     nlohmann::json response;
     nlohmann::json value=request["parameter_value"];
     request["parameter_key"].get_to(key);
-    cpp_utils::print_debug("Setting parameter "+key+".");
+    cpp_utils::print_debug("Setting parameter "+key+" to ");
     this->_mtx_parameters.lock();
     if(this->_parameters.find(key)==this->_parameters.end()){
         this->_parameters.insert(std::pair<std::string,nlohmann::json>(key,value));

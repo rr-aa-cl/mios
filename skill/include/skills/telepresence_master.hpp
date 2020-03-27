@@ -17,7 +17,8 @@ struct ConfigSkill_telepresence_master : public ConfigSkill{
 
     Eigen::Matrix<double,6,1> K_joystick_on;
     Eigen::Matrix<double,6,1> K_joystick_off;
-    Eigen::Matrix<double,4,4> EE_T_J;
+    Eigen::Matrix<double,6,1> joystick_deadband;
+    Eigen::Matrix<double,6,1> joystick_amp;
 
     TelepresenceMode mode;
 };

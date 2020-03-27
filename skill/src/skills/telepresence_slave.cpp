@@ -28,8 +28,19 @@ bool telepresence_slave::read_skill_parameters(const nlohmann::json &p){
     if(!cpp_utils::read_json_param(p,"bilateral",c->bilateral)){
         c->bilateral=true;
     }
-    if(!cpp_utils::read_json_param<double,4,4>(p,"EE_T_J",c->EE_T_J)){
-        c->EE_T_J=Eigen::Matrix<double,4,4>::Identity();
+    if(!cpp_utils::read_json_param<double,3,3>(p,"EE_T_J_t",c->EE_T_J_t)){
+        c->EE_T_J_t=Eigen::Matrix<double,3,3>::Identity();
+    }
+    if(!cpp_utils::is_orthonormal(c->EE_T_J_t)){
+        cpp_utils::print_error("Matrix EE_T_J_t is not orthonormal.");
+        return false;
+    }
+    if(!cpp_utils::read_json_param<double,3,3>(p,"EE_T_J_r",c->EE_T_J_r)){
+        c->EE_T_J_r=Eigen::Matrix<double,3,3>::Identity();
+    }
+    if(!cpp_utils::is_orthonormal(c->EE_T_J_r)){
+        cpp_utils::print_error("Matrix EE_T_J_r is not orthonormal.");
+        return false;
     }
     std::string mode;
     if(!cpp_utils::read_json_param(p,"mode",mode)){
@@ -59,7 +70,8 @@ void telepresence_slave::build_primitives(const Percept &p){
     c_network->repeater=c->repeater;
     c_network->master=false;
     c_network->bilateral=c->bilateral;
-    c_network->EE_T_J=c->EE_T_J;
+    c_network->EE_T_J_t=c->EE_T_J_t;
+    c_network->EE_T_J_r=c->EE_T_J_r;
     c_network->mode=c->mode;
 }
 

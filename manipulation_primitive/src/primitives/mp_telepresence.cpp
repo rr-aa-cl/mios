@@ -152,6 +152,12 @@ bool mp_telepresence::initialize_connections(){
         tv.tv_usec = 10000;
         setsockopt(this->_s_in, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
     }
+    if(config->mode==TelepresenceMode::Joystick){
+        struct timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = 10000;
+        setsockopt(this->_s_in, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+    }
 
     memset((char *) &this->_si_me_in, 0, sizeof(this->_si_me_in));
     this->_si_me_in.sin_family = AF_INET;
@@ -187,18 +193,18 @@ bool mp_telepresence::initialize_connections(){
 void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &payload){
     std::shared_ptr<ConfigMP_mp_telepresence> c = std::static_pointer_cast<ConfigMP_mp_telepresence>(this->_config);
 
-    // Parameter that determines control mode (translation or rotation) is read from live parameter server.
-    nlohmann::json param=this->_kb->get_live_parameter("joystick_translation_on");
-    if(!param.is_null()){
-        param.get_to(this->_flag_joystick_translation);
-    }
-    param=this->_kb->get_live_parameter("joystick_rotation_on");
-    if(!param.is_null()){
-        param.get_to(this->_flag_joystick_rotation);
-    }
 
     if(c->master){ // if this prototype is the master...
 
+        // Parameter that determines control mode (translation or rotation) is read from live parameter server.
+        nlohmann::json param=this->_kb->get_live_parameter("joystick_translation_on");
+        if(!param.is_null()){
+            param.get_to(this->_flag_joystick_translation);
+        }
+        param=this->_kb->get_live_parameter("joystick_rotation_on");
+        if(!param.is_null()){
+            param.get_to(this->_flag_joystick_rotation);
+        }
         Eigen::Matrix<double,6,1> EE_F_ext=Eigen::Matrix<double,6,1>(this->_EE_F_ext_in[0].data());
 
         if(this->_flag_joystick_translation){ // if control mode is rotation mode...
@@ -221,9 +227,12 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         }
 
         // Bring external forces from slave to torques at master
-        Eigen::Matrix<double,6,1> J_F_ext=cpp_utils::rotate_vector(EE_F_ext,cpp_utils::invert_transformation_matrix(c->EE_T_J)); // Transform external forces from EE to J frame
-        J_F_ext(3)=J_F_ext(4)=J_F_ext(5)=0; // Set moments to zero (hard to handle in Cartesian telepresence settings)
-        Eigen::Matrix<double,7,1> tau_ext=p.B_J_EE.transpose()*J_F_ext; // Transform from wrench at J frame to torques
+        EE_F_ext(3)=EE_F_ext(4)=EE_F_ext(5)=0; // Set moments to zero (hard to handle in Cartesian telepresence settings)
+        Eigen::Matrix<double,3,1> moments = EE_F_ext.block<3,1>(0,0).cross(c->joystick_lever);
+        EE_F_ext(3)=moments(0);
+        EE_F_ext(4)=moments(1);
+        EE_F_ext(5)=moments(2);
+        Eigen::Matrix<double,7,1> tau_ext=p.B_J_EE.transpose()*2*EE_F_ext; // Transform from wrench at J frame to torques
 
         // Write external torques coming from slave to command struct
         for(unsigned i=0;i<7;i++){
@@ -235,42 +244,70 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         this->_motion_error_u.O_T_EE_d=Eigen::Matrix<double,4,4>(p.TF_T_EE_d);
         this->_motion_error.step(this->_motion_error_u,this->_motion_error_y);
 
-        Eigen::Matrix<double,6,1> O_dX_d = -this->_motion_error_y.e*10; // Calculate velocity commands in O frame from difference of current pose and initial pose.
-        Eigen::Matrix<double,6,1> EE_dX_d=cpp_utils::rotate_vector(O_dX_d,cpp_utils::invert_transformation_matrix(p.TF_T_EE)); // Transform into EE frame
-        Eigen::Matrix<double,6,1> J_dX_d=cpp_utils::rotate_vector(EE_dX_d,cpp_utils::invert_transformation_matrix(c->EE_T_J)); // Transform into J frame
-        for(unsigned i=0;i<6;i++){
-            payload.push_back(J_dX_d(i)); // Push commands into payload.
-        }
-    }else{ // if this prototype is the slave
-        Eigen::Matrix<double,6,1> EE_dX_d=Eigen::Matrix<double,6,1>(this->_O_dX_d_in[0].data());
+        Eigen::Matrix<double,6,1> O_diff = -this->_motion_error_y.e;
+        Eigen::Matrix<double,6,1> EE_dX_d;
 
-        Eigen::Matrix<double,4,4> O_T_EE=Eigen::Matrix<double,4,4>(p.O_T_EE);
-        Eigen::Matrix<double,6,1> O_dX_d=cpp_utils::rotate_vector(EE_dX_d,O_T_EE); // Transform incoming velocity form master into O frame
-        Eigen::Matrix<double,6,1> EE_F_ext=-Eigen::Matrix<double,6,1>(p.K_F_ext); // Transform into EE frame
-        Eigen::Matrix<double,6,1> deadzone;
-                deadzone<<0.008,0.008,0.008,0.1,0.08,0.05; // Define deadzone for joystick control. If the Cartesian error of the master is within this margin, the command is set to zero.
-//        deadzone<<0.005,0.005,0.005,0.005,0.005,0.005; // Define deadzone for joystick control. If the Cartesian error of the master is within this margin, the command is set to zero.
+        Eigen::Matrix<double,6,1> EE_diff=cpp_utils::rotate_vector(O_diff,cpp_utils::invert_transformation_matrix(p.TF_T_EE)); // Transform into EE frame
         for(unsigned i=0;i<6;i++){
-            double diff=O_dX_d(i)/10; // Calculate back from velocity to difference for deadzone application
-            if(fabs(diff)<deadzone(i)){ // If the difference is smaller than the deadzone...
-                O_dX_d(i)=0; // Set velocity to zero in direction i
+            if(fabs(EE_diff(i))<c->joystick_deadband(i)){ // If the difference is smaller than the deadzone...
+                EE_dX_d(i)=0; // Set velocity to zero in direction i
             }else{ // If the difference is larger than the deadzone...
-                O_dX_d(i)=(fabs(diff)-deadzone(i))*10; // Subtract deadzone from difference
-                O_dX_d(i)*=cpp_utils::sgn(diff); // Apply sign
+                EE_dX_d(i)=(fabs(EE_diff(i))-c->joystick_deadband(i))*c->joystick_amp(i); // Subtract deadzone from difference
+                EE_dX_d(i)*=cpp_utils::sgn(EE_diff(i)); // Apply sign
             }
-            if(O_dX_d(i)>this->_joystick_dX_max(i))O_dX_d(i)=this->_joystick_dX_max(i); // If velocity command is larger than maximum allowed velocity, cap it.
-            if(O_dX_d(i)<-this->_joystick_dX_max(i))O_dX_d(i)=-this->_joystick_dX_max(i); // If velocity command is smaller than maximum allowed negative velocity, cap it.
+            if(EE_dX_d(i)>this->_joystick_dX_max(i))EE_dX_d(i)=this->_joystick_dX_max(i); // If velocity command is larger than maximum allowed velocity, cap it.
+            if(EE_dX_d(i)<-this->_joystick_dX_max(i))EE_dX_d(i)=-this->_joystick_dX_max(i); // If velocity command is smaller than maximum allowed negative velocity, cap it.
             if(!this->_flag_joystick_translation && i<3){
-                O_dX_d(i)=0;
+                EE_dX_d(i)=0;
             }
             if(!this->_flag_joystick_rotation && i>2){
-                O_dX_d(i)=0;
+                EE_dX_d(i)=0;
             }
         }
+        for(unsigned i=0;i<6;i++){
+            payload.push_back(EE_dX_d(i)); // Push commands into payload.
+        }
+    }else{ // if this prototype is the slave
+        Eigen::Matrix<double,3,3> EE_T_J_t,EE_T_J_r;
+        nlohmann::json param;
+        param=this->_kb->get_live_parameter("EE_T_J_t");
+        if(!param.is_null()){
+            cpp_utils::read_json_param<double,3,3>(param,EE_T_J_t);
+            if(!cpp_utils::is_orthonormal(EE_T_J_t)){
+                EE_T_J_t=c->EE_T_J_t;
+            }
+        }else{
+            EE_T_J_t=c->EE_T_J_t;
+        }
+        param=this->_kb->get_live_parameter("EE_T_J_r");
+        if(!param.is_null()){
+            cpp_utils::read_json_param<double,3,3>(param,EE_T_J_r);
+            if(!cpp_utils::is_orthonormal(EE_T_J_r)){
+                EE_T_J_r=c->EE_T_J_r;
+            }
+        }else{
+            EE_T_J_r=c->EE_T_J_r;
+        }
+
+        Eigen::Matrix<double,4,4> O_T_EE=Eigen::Matrix<double,4,4>(p.O_T_EE);
+        Eigen::Matrix<double,6,1> J_dX_d=Eigen::Matrix<double,6,1>(this->_O_dX_d_in[0].data());
+
+        Eigen::Matrix<double,3,1> EE_dX_t_d, EE_dX_r_d;
+        Eigen::Matrix<double,6,1> EE_dX_d;
+        EE_dX_t_d=EE_T_J_t*J_dX_d.block<3,1>(0,0);
+        EE_dX_r_d=EE_T_J_r*J_dX_d.block<3,1>(3,0);
+        EE_dX_d<<EE_dX_t_d,EE_dX_r_d;
+        Eigen::Matrix<double,6,1> O_dX_d=cpp_utils::rotate_vector(EE_dX_d,O_T_EE); // Transform incoming velocity form master into O frame
+
+        Eigen::Matrix<double,3,1> J_F_ext_t=EE_T_J_t.transpose()*p.K_F_ext.block<3,1>(0,0);
+        Eigen::Matrix<double,3,1> J_F_ext_r=EE_T_J_r.transpose()*p.K_F_ext.block<3,1>(3,0);
+        Eigen::Matrix<double,6,1> J_F_ext;
+        J_F_ext<<-J_F_ext_t,-J_F_ext_r;
+
         this->_cmd.TF_dX_d=O_dX_d;
         // Push external wrench into payload
         for(unsigned i=0;i<6;i++){
-            payload.push_back(EE_F_ext(i));
+            payload.push_back(J_F_ext(i));
         }
     }
 }
@@ -353,6 +390,14 @@ void mp_telepresence::msg_in() {
 
     // Loop for incoming messages is started
     while(true) { // Runs forever if no errors occur...
+        if(!this->_thread_should_run){ // If an interrupt exception occurs...
+            cpp_utils::print_info("Incoming communication terminated.");
+            int r=close(this->_s_in); // Socket is closed
+            if(r<0){ // If an error occured during socket termination...
+                cpp_utils::print_error("Could not close socket.");
+            }
+            return;
+        }
         if(!msg_connection_wait){
             cpp_utils::print_info("Waiting for incoming messages...");
             msg_connection_wait=true;
@@ -440,14 +485,6 @@ void mp_telepresence::msg_in() {
         }
         // Unload the payload. This function has to be defined by the respective telepresence prototype.
         this->unload_msg(payload);
-        if(!this->_thread_should_run){ // If an interrupt exception occurs...
-            cpp_utils::print_info("Incoming communication terminated.");
-            int r=close(this->_s_in); // Socket is closed
-            if(r<0){ // If an error occured during socket termination...
-                cpp_utils::print_error("Could not close socket.");
-            }
-            return;
-        }
     }
 }
 

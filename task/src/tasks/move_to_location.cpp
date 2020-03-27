@@ -8,6 +8,8 @@ void move_to_location::initialize_task(){
 }
 void move_to_location::execute_task(){
 
+    this->get_skill("move_cart")->get_config()->general.control_mode=0;
+    this->get_skill("move_joint")->get_config()->general.control_mode=0;
     for(unsigned i=0;i<this->loc_intermediate.size();i++){
         if(this->loc_cart[i]==1){
             this->get_skill("move_cart")->set_object("loc_goal",this->loc_intermediate[i]);

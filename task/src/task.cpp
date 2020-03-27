@@ -11,12 +11,7 @@ Task::Task(const std::string& id):_id(id){
 }
 
 Task::~Task(){
-    //    for(std::pair<std::string,Skill*> s : this->_skill){
-    //        delete s.second;
-    //    }
-    //    for(std::pair<std::string,EvalSkill*> e : this->_eval){
-    //        delete e.second;
-    //    }
+
 }
 
 void Task::recover_task(){
@@ -38,14 +33,14 @@ void Task::stop_task(bool nominal,bool success,bool recover, bool empty_queue, d
     this->_eval_task.nominal_termination=nominal;
     this->_eval_task.empty_queue=empty_queue;
     this->_flag_recover=recover && nominal;
-    for(std::pair<std::string,std::shared_ptr<Skill> > s : this->_skill){
+    for(auto& s : this->_skill){
         if(success && nominal){
             s.second->invoke_success();
         }else{
             s.second->invoke_failure();
         }
     }
-    for(std::pair<std::string,std::shared_ptr<Task> > t : this->_subtask){
+    for(auto& t : this->_subtask){
         t.second->stop_task(nominal,success,recover,empty_queue,cost_suc,cost_err);
     }
     this->_flag_stop=true;
@@ -53,10 +48,10 @@ void Task::stop_task(bool nominal,bool success,bool recover, bool empty_queue, d
 
 void Task::abort_task(){
     this->_eval_task.nominal_termination=false;
-    for(std::pair<std::string,std::shared_ptr<Skill> > s : this->_skill){
+    for(auto& s : this->_skill){
         s.second->stop_skill();
     }
-    for(std::pair<std::string,std::shared_ptr<Task> > t : this->_subtask){
+    for(auto& t : this->_subtask){
         t.second->abort_task();
     }
     this->_flag_stop=true;
@@ -85,10 +80,10 @@ void Task::reset_soft(){
     this->_flag_stop=false;
     this->_flag_in_recovery=false;
     this->_flag_recover=false;
-    for(std::pair<std::string, std::shared_ptr<Skill> > s : this->_skill){
+    for(auto& s : this->_skill){
         s.second->reset();
     }
-    for(std::pair<std::string, std::shared_ptr<Task> > t : this->_subtask){
+    for(auto& t : this->_subtask){
         t.second->reset_soft();
     }
 }
@@ -137,13 +132,13 @@ bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
         }
         cpp_utils::print_info("done.");
 
-        for(std::pair<std::string,std::shared_ptr<Skill> > s : this->_skill){
+        for(auto& s : this->_skill){
             s.second->create_config();
             s.second->set_kb(this->_kb);
             s.second->get_config()->w_cost_function=this->_w_cost_function;
         }
 
-        for(std::pair<std::string, std::shared_ptr<Task> > t : this->_subtask){
+        for(auto& t : this->_subtask){
             nlohmann::json parameters_sub=nlohmann::json();
             if(cpp_utils::find_json_value(parameters,"subtasks")){
                 if(cpp_utils::find_json_value(parameters["subtasks"],t.first)){
@@ -155,7 +150,7 @@ bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
                 return false;
             }
         }
-        for(std::pair<std::string,std::shared_ptr<Skill> > s : this->_skill){
+        for(auto& s : this->_skill){
             if(!this->_core->get_kb()->load_parameters()){
                 cpp_utils::print_error("Could not load parameters from knowledge base");
                 return false;

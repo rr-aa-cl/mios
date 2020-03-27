@@ -31,8 +31,11 @@ bool telepresence_master::read_skill_parameters(const nlohmann::json &p){
     if(!cpp_utils::read_json_param<double,6,1>(p,"K_joystick_off",c->K_joystick_off)){
         c->K_joystick_off.setZero();
     }
-    if(!cpp_utils::read_json_param<double,4,4>(p,"EE_T_J",c->EE_T_J)){
-        c->EE_T_J=Eigen::Matrix<double,4,4>::Identity();
+    if(!cpp_utils::read_json_param<double,6,1>(p,"joystick_deadband",c->joystick_deadband)){
+        c->joystick_deadband.setZero();
+    }
+    if(!cpp_utils::read_json_param<double,6,1>(p,"joystick_amp",c->joystick_amp)){
+        c->joystick_amp.setZero();
     }
     std::string mode;
     if(!cpp_utils::read_json_param(p,"mode",mode)){
@@ -62,10 +65,12 @@ void telepresence_master::build_primitives(const Percept &p){
     c_network->port_recv=c->port_recv;
     c_network->master=true;
     c_network->bilateral=c->bilateral;
-    c_network->EE_T_J=c->EE_T_J;
     c_network->K_joystick_off=c->K_joystick_off;
     c_network->K_joystick_on=c->K_joystick_on;
     c_network->mode=c->mode;
+    c_network->joystick_deadband=c->joystick_deadband;
+    c_network->joystick_amp=c->joystick_amp;
+    c_network->joystick_lever=c->frames.F_T_EE.block<3,1>(0,3);
 
 }
 

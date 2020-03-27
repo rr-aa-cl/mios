@@ -55,13 +55,13 @@ struct LEDCmd{
     }
 
     void set_all_led(int r, int g, int b){
-        for(std::pair<std::string,LED> l : this->led){
+        for(const auto& l : this->led){
             this->set_led(l.first,r,g,b);
         }
     }
 
     void limit_colors(){
-        for(std::pair<std::string,LED> l : this->led){
+        for(auto& l : this->led){
             if(std::get<0>(l.second.colors)>255){
                 std::get<0>(l.second.colors)=255;
             }

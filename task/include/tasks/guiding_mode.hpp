@@ -5,7 +5,6 @@ namespace mios{
 class guiding_mode : public Task{
 public:
 guiding_mode();
-~guiding_mode();
 void initialize_task();
 void execute_task();
 const EvalTask& evaluate_task();

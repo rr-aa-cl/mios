@@ -380,7 +380,7 @@ std::pair<bool,std::string> TaskHandler::terminate_all_tasks(){
         this->_active_task->abort_task();
     }
     std::list<std::tuple<std::string,std::string,nlohmann::json> > tmp_task_queue=this->_task_queue;
-    for(std::tuple<std::string,std::string,nlohmann::json> t : tmp_task_queue){
+    for(const auto& t : tmp_task_queue){
         if(std::get<0>(t)=="idle_task"){
             continue;
         }
@@ -412,13 +412,10 @@ bool TaskHandler::terminate_task(const std::string &id, const EvalTask &e){
     cpp_utils::print_info("Finished task with uuid "+id+", informing subscribers.");
     this->_eval_storage.insert(std::pair<std::string,EvalTask>(id,e));
 
-    for(std::shared_ptr<TaskSubscriber> t : this->_sub[id]){
+    for(auto& t : this->_sub[id]){
 
         t->finish(e);
     }
-    //    if(id!="idle_task"){
-    //        this->_sub.erase(it);
-    //    }
     return true;
 }
 

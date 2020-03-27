@@ -1559,7 +1559,7 @@ void Core::cycle_led(std::function<LEDCmd(const Percept& p)> callback_led){
             T=std::numeric_limits<unsigned>::max();
         }
         nlohmann::json request;
-        for(std::pair<std::string,LED> led : led_output.led){
+        for(const auto& led : led_output.led){
             nlohmann::json l;
             l["colors"].emplace_back(std::get<0>(led.second.colors));
             l["colors"].emplace_back(std::get<1>(led.second.colors));
@@ -2231,7 +2231,7 @@ std::string Core::find_robot() const{
     std::string robot_iface="none";
 
     std::map<std::string,std::string> ifaces = cpp_utils::get_subnets();
-    for(std::pair<std::string,std::string> i : ifaces){
+    for(const auto& i : ifaces){
         if(i.first=="lo" || i.first=="docker0" || i.first=="tap0"){
             continue;
         }

@@ -2,14 +2,12 @@
 namespace mios{
 guiding_mode::guiding_mode():Task("guiding_mode"){
 }
-guiding_mode::~guiding_mode(){
-}
 void guiding_mode::initialize_task(){
-    this->create_skill(new hand_guiding(),"guiding");
+    this->create_skill<hand_guiding>("guiding");
 }
 void guiding_mode::execute_task(){
 
-    ConfigSkill_hand_guiding* c = static_cast<ConfigSkill_hand_guiding*>(this->get_skill("guiding")->get_config());
+    std::shared_ptr<ConfigSkill_hand_guiding> c = std::static_pointer_cast<ConfigSkill_hand_guiding>(this->get_skill("guiding")->get_config());
     c->dist_walls=this->walls;
     c->fix_dim=this->mode;
     c->use_walls<<1,1,1,1,1,1;

@@ -16,6 +16,11 @@
 #include "tasks/feature_collision_detection.hpp"
 #include "tasks/feature_force_control.hpp"
 #include "tasks/telepresence.hpp"
+#include "tasks/place_object.hpp"
+#include "tasks/move_trajectory.hpp"
+#include "tasks/move_to_location.hpp"
+#include "tasks/fetch_object.hpp"
+#include "tasks/guiding_mode.hpp"
 namespace mios{
 struct TaskList{
 TaskList();

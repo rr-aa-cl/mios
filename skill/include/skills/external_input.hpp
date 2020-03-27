@@ -9,6 +9,7 @@ struct ConfigSkill_external_input: public ConfigSkill{
     std::string mode;
     unsigned port_recv;
     unsigned port_dst;
+    double input_frequency;
     std::string ip_dst;
 };class external_input : public Skill{
 public:

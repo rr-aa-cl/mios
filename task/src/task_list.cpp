@@ -16,5 +16,10 @@ this->tasks.insert(std::pair<std::string,std::shared_ptr<Task> >("feature_impeda
 this->tasks.insert(std::pair<std::string,std::shared_ptr<Task> >("feature_collision_detection",std::make_shared<feature_collision_detection>()));
 this->tasks.insert(std::pair<std::string,std::shared_ptr<Task> >("feature_force_control",std::make_shared<feature_force_control>()));
 this->tasks.insert(std::pair<std::string,std::shared_ptr<Task> >("telepresence",std::make_shared<telepresence>()));
+this->tasks.insert(std::pair<std::string,std::shared_ptr<Task> >("place_object",std::make_shared<place_object>()));
+this->tasks.insert(std::pair<std::string,std::shared_ptr<Task> >("move_trajectory",std::make_shared<move_trajectory>()));
+this->tasks.insert(std::pair<std::string,std::shared_ptr<Task> >("move_to_location",std::make_shared<move_to_location>()));
+this->tasks.insert(std::pair<std::string,std::shared_ptr<Task> >("fetch_object",std::make_shared<fetch_object>()));
+this->tasks.insert(std::pair<std::string,std::shared_ptr<Task> >("guiding_mode",std::make_shared<guiding_mode>()));
 }
 }
