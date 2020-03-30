@@ -71,6 +71,7 @@ void telepresence_master::build_primitives(const Percept &p){
     c_network->joystick_deadband=c->joystick_deadband;
     c_network->joystick_amp=c->joystick_amp;
     c_network->joystick_lever=c->frames.F_T_EE.block<3,1>(0,3);
+    c_network->joystick_f_ext_amp=c->joystick_f_ext_amp;
 
 }
 

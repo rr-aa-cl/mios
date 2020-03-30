@@ -16,12 +16,17 @@ mp_telepresence::mp_telepresence():ManipulationPrimitive("mp_telepresence"){
 }
 
 void mp_telepresence::initialize(const Percept &p_0, const std::shared_ptr<ConfigUser> config){
+    std::shared_ptr<ConfigMP_mp_telepresence> c = std::static_pointer_cast<ConfigMP_mp_telepresence>(this->_config);
     this->_flag_init=false;
     this->_flag_joystick_translation=true;
     this->_flag_joystick_rotation=false;
     this->_n_package=0;
     this->_n_package_last=0;
     this->_cnt_send=0;
+
+    this->_TF_T_EE_0=p_0.TF_T_EE;
+
+    this->_rot_limits=config->x_limits.block<6,1>(6,0);
 
     this->initialize_connections();
 
@@ -37,10 +42,26 @@ void mp_telepresence::initialize(const Percept &p_0, const std::shared_ptr<Confi
     this->_motion_error_u.O_T_EE=p_0.TF_T_EE;
     this->_motion_error_u.O_T_EE_d=p_0.TF_T_EE;
 
+    this->_motion_error_0_u.O_T_EE=p_0.TF_T_EE;
+    this->_motion_error_0_u.O_T_EE_d=p_0.TF_T_EE;
+
     this->_joystick_dX_max<<config->dX_max(0),config->dX_max(0),config->dX_max(0),config->dX_max(1),config->dX_max(1),config->dX_max(1);
 
     motion_error_cart::In_P_motion_error_cart motion_error_p;
     this->_motion_error.initialize(this->_motion_error_u,motion_error_p);
+
+    motion_error_cart::In_P_motion_error_cart motion_error_0_p;
+    this->_motion_error_0.initialize(this->_motion_error_0_u,motion_error_0_p);
+
+//    this->_wave_variables.p.master<<c->master;
+//    this->_wave_variables.p.b<<0,0,0,0,0,0;
+//    this->_wave_variables.p.lambda_u_l<<0,0,0,0,0,0;
+//    this->_wave_variables.p.lambda_u_r<<0,0,0,0,0,0;
+//    this->_wave_variables.u.dX_l<<0,0,0,0,0,0;
+//    this->_wave_variables.u.F_r<<0,0,0,0,0,0;
+//    this->_wave_variables.u.v_l<<0,0,0,0,0,0;
+//    this->_wave_variables.u.v_r<<0,0,0,0,0,0;
+//    this->_wave_variables.initialize();
 }
 
 CmdMP& mp_telepresence::step(const Percept &p){
@@ -55,6 +76,8 @@ CmdMP& mp_telepresence::step(const Percept &p){
 
 void mp_telepresence::terminate(){
     std::shared_ptr<ConfigMP_mp_telepresence> c = std::static_pointer_cast<ConfigMP_mp_telepresence>(this->_config);
+    this->_motion_error.terminate();
+    this->_motion_error_0.terminate();
     int r=close(this->_s_out);
     if(r<0){
         cpp_utils::print_error("Socket could not be closed successfully.");
@@ -248,6 +271,9 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         Eigen::Matrix<double,6,1> EE_dX_d;
 
         Eigen::Matrix<double,6,1> EE_diff=cpp_utils::rotate_vector(O_diff,cpp_utils::invert_transformation_matrix(p.TF_T_EE)); // Transform into EE frame
+        EE_diff(3)=EE_diff(0);
+        EE_diff(4)=EE_diff(1);
+        EE_diff(5)=EE_diff(2);
         for(unsigned i=0;i<6;i++){
             if(fabs(EE_diff(i))<c->joystick_deadband(i)){ // If the difference is smaller than the deadzone...
                 EE_dX_d(i)=0; // Set velocity to zero in direction i
@@ -268,6 +294,11 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
             payload.push_back(EE_dX_d(i)); // Push commands into payload.
         }
     }else{ // if this prototype is the slave
+
+        this->_motion_error_0_u.O_T_EE=Eigen::Matrix<double,4,4>(p.TF_T_EE);
+        this->_motion_error_0_u.O_T_EE_d=Eigen::Matrix<double,4,4>(this->_TF_T_EE_0);
+        this->_motion_error_0.step(this->_motion_error_0_u,this->_motion_error_0_y);
+
         Eigen::Matrix<double,3,3> EE_T_J_t,EE_T_J_r;
         nlohmann::json param;
         param=this->_kb->get_live_parameter("EE_T_J_t");
@@ -291,18 +322,50 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
 
         Eigen::Matrix<double,4,4> O_T_EE=Eigen::Matrix<double,4,4>(p.O_T_EE);
         Eigen::Matrix<double,6,1> J_dX_d=Eigen::Matrix<double,6,1>(this->_O_dX_d_in[0].data());
+        Eigen::Matrix<double,6,1> EE_e=cpp_utils::rotate_vector(this->_motion_error_0_y.e,cpp_utils::invert_transformation_matrix(O_T_EE));
+        Eigen::Matrix<double,3,1> J_e=EE_T_J_r.transpose()*EE_e.block<3,1>(3,0);
+
+        std::cout<<"O_e: "<<this->_motion_error_0_y.e<<std::endl;
+        std::cout<<"EE_e: "<<EE_e<<std::endl;
+        for(unsigned i=0;i<3;i++){
+            if(J_e(i)<=this->_rot_limits(2*i) && J_dX_d(i+3)>0){
+                J_dX_d(i+3)=0;
+            }
+            if(J_e(i)>=this->_rot_limits(2*i+1) && J_dX_d(i+3)<0){
+                J_dX_d(i+3)=0;
+            }
+        }
 
         Eigen::Matrix<double,3,1> EE_dX_t_d, EE_dX_r_d;
         Eigen::Matrix<double,6,1> EE_dX_d;
         EE_dX_t_d=EE_T_J_t*J_dX_d.block<3,1>(0,0);
         EE_dX_r_d=EE_T_J_r*J_dX_d.block<3,1>(3,0);
         EE_dX_d<<EE_dX_t_d,EE_dX_r_d;
+
+        double F_thr=10;
+        double sigma;
+        Eigen::Matrix<double,6,1> F_e=p.K_F_ext;
+        for(unsigned i=0;i<6;i++){
+            if(F_e(i)>F_thr && F_e(i)*EE_dX_d(i) < 0){
+                sigma = exp(F_thr-F_e(i));
+            }else{
+                sigma=1;
+            }
+            if(sigma>1)sigma=1;
+            if(sigma<0)sigma=0;
+            EE_dX_d(i)*=sigma;
+        }
+
         Eigen::Matrix<double,6,1> O_dX_d=cpp_utils::rotate_vector(EE_dX_d,O_T_EE); // Transform incoming velocity form master into O frame
+
+
 
         Eigen::Matrix<double,3,1> J_F_ext_t=EE_T_J_t.transpose()*p.K_F_ext.block<3,1>(0,0);
         Eigen::Matrix<double,3,1> J_F_ext_r=EE_T_J_r.transpose()*p.K_F_ext.block<3,1>(3,0);
         Eigen::Matrix<double,6,1> J_F_ext;
         J_F_ext<<-J_F_ext_t,-J_F_ext_r;
+
+
 
         this->_cmd.TF_dX_d=O_dX_d;
         // Push external wrench into payload

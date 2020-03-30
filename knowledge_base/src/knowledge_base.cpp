@@ -55,8 +55,11 @@ bool KnowledgeBase::initialize(const ConfigInternal &config, unsigned port){
     try{
         this->_mtx_mongodb.lock();
         mongocxx::uri uri("mongodb://localhost:"+std::to_string(port));
+        std::cout<<"TEST1"<<std::endl;
+        std::cout<<"TEST2"<<std::endl;
         this->_client = std::make_unique<mongocxx::client>(uri);
 
+        std::cout<<"TEST2"<<std::endl;
         this->_db=this->_client->database("mios");
         if(!this->_db.has_collection("environment")){
             cpp_utils::print_error("Knowledge base does not have an environment collection");
@@ -83,12 +86,14 @@ bool KnowledgeBase::initialize(const ConfigInternal &config, unsigned port){
             this->_mtx_mongodb.unlock();
             return false;
         }
+        std::cout<<"TEST3"<<std::endl;
         this->_collections.clear();
         this->_collections.insert(std::pair<std::string,mongocxx::collection>("environment",this->_db["environment"]));
         this->_collections.insert(std::pair<std::string,mongocxx::collection>("reference_frames",this->_db["reference_frames"]));
         this->_collections.insert(std::pair<std::string,mongocxx::collection>("parameters",this->_db["parameters"]));
         this->_collections.insert(std::pair<std::string,mongocxx::collection>("skills",this->_db["skills"]));
         this->_collections.insert(std::pair<std::string,mongocxx::collection>("tasks",this->_db["tasks"]));
+        std::cout<<"TEST4"<<std::endl;
     }catch(const mongocxx::operation_exception& e){
         std::cout<<e.what()<<std::endl;
         this->_mtx_mongodb.unlock();

@@ -94,7 +94,7 @@ ConfigUser::ConfigUser(){
     neighborhood_q.setOnes()*std::numeric_limits<double>::max();
     neighborhood_dq.setOnes()*std::numeric_limits<double>::max();
 
-    x_limits<<-2,2,-2,2,-2,2;
+    x_limits<<-2,2,-2,2,-2,2,-2,2,-2,2,-2,2;
 
     dX_max.setZero();
     ddX_max.setZero();
@@ -125,7 +125,7 @@ void ConfigUser::read_parameters(const nlohmann::json &p){
     cpp_utils::read_json_param<double,1,1>(p,"neighborhood_q",neighborhood_q);
     cpp_utils::read_json_param<double,1,1>(p,"neighborhood_dq",neighborhood_dq);
 
-    cpp_utils::read_json_param<double,6,1>(p,"x_limits",x_limits);
+    cpp_utils::read_json_param<double,12,1>(p,"x_limits",x_limits);
 
     cpp_utils::read_json_param<double,2,1>(p,"dX_max",dX_max);
     cpp_utils::read_json_param<double,2,1>(p,"ddX_max",ddX_max);

@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_LINK_DEPENDS_NO_SHARED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wreturn-type")
-set(CMAKE_UNITY_BUILD ON)
+#set(CMAKE_UNITY_BUILD ON)
 
 find_package(Eigen3 REQUIRED)
 find_package(libmongocxx REQUIRED)
@@ -88,6 +88,10 @@ link_directories(${virtual_walls_joint_LIBRARIES})
 add_subdirectory(plugins/cntr_nullsp_proj)
 include_directories(${cntr_nullsp_proj_INCLUDE_DIRS})
 link_directories(${cntr_nullsp_proj_LIBRARIES})
+
+#add_subdirectory(plugins/wave_variables)
+#include_directories(${wave_variables_INCLUDE_DIRS})
+#link_directories(${wave_variables_LIBRARIES})
 
 add_subdirectory(
     led_pattern

@@ -9,6 +9,7 @@
 #include <mongocxx/instance.hpp>
 #include <mongocxx/options/find.hpp>
 #include <mongocxx/uri.hpp>
+#include <mongocxx/collection.hpp>
 
 #include <bsoncxx/exception/exception.hpp>
 

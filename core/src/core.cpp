@@ -876,7 +876,20 @@ void Core::initialize_control_nullspace(const Percept &p){
     in_p_cntr_nullsp_proj.singlr_comp_mode.setZero();
     in_p_cntr_nullsp_proj.singlr_threshold.setZero();
     this->_cntr_nullsp_proj.initialize(this->_in_u_cntr_nullsp_proj,in_p_cntr_nullsp_proj);
+}
 
+void Core::initialize_motion_error(const Percept &p){
+    this->_in_u_motion_error_cart.O_T_EE=p.TF_T_EE;
+    this->_in_u_motion_error_cart.O_T_EE_d=p.TF_T_EE_d;
+
+    motion_error_cart::In_P_motion_error_cart in_p;
+    this->_motion_error_cart.initialize(this->_in_u_motion_error_cart,in_p);
+    this->input_motion_error(p);
+}
+
+void Core::input_motion_error(const Percept &p){
+    this->_in_u_motion_error_cart.O_T_EE=p.TF_T_EE;
+    this->_in_u_motion_error_cart.O_T_EE_d=p.TF_T_EE_d;
 }
 
 void Core::input_control_aic(const Percept &p){
@@ -1185,6 +1198,8 @@ bool Core::control_base_cycle(const franka::RobotState state,CmdSkill& cmd){
         return false;
     }
 
+    this->input_motion_error(this->_percept);
+    this->_motion_error_cart.step(this->_in_u_motion_error_cart,this->_out_y_motion_error_cart);
     cmd=this->_active_skill->cycle(this->_percept);
     if(!cmd.validity_check()){
         spdlog::error("Validity check of robot command has failed.");
@@ -1504,6 +1519,8 @@ void Core::process_percept(const franka::RobotState &state, const franka::Grippe
     this->_percept.tau_j=Eigen::Map<Eigen::Matrix<double,7,1> >(std::array<double,7>(state.tau_J).data());
 
     this->_percept.robot_mode=state.robot_mode;
+
+    this->_percept.e=this->_out_y_motion_error_cart.e;
 
     this->_percept.time=state.time.toSec();
 

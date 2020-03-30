@@ -12,6 +12,7 @@
 
 #include "manipulation_primitive/manipulation_primitive.hpp"
 #include "motion_error_cart/motion_error_cart_wrapper.hpp"
+//#include "wave_variables/wave_variables_wrapper.hpp"
 
 
 namespace mios {
@@ -33,6 +34,7 @@ struct ConfigMP_mp_telepresence : public ConfigMP{
         joystick_deadband.setZero();
         joystick_amp<<1,1,1,1,1,1;
         joystick_lever.setZero();
+        joystick_f_ext_amp.setZero();
     }
 
     Eigen::Matrix<double,3,3> EE_T_J_t;
@@ -43,6 +45,7 @@ struct ConfigMP_mp_telepresence : public ConfigMP{
     Eigen::Matrix<double,6,1> joystick_deadband;
     Eigen::Matrix<double,6,1> joystick_amp;
     Eigen::Matrix<double,3,1> joystick_lever;
+    Eigen::Matrix<double,6,1> joystick_f_ext_amp;
 
     std::string ip_dst;
     unsigned port_dst;
@@ -128,9 +131,19 @@ private:
     unsigned _cnt_send;
     Eigen::Matrix<double,6,1> _joystick_dX_max;
 
+    Eigen::Matrix<double,6,1> _rot_limits;
+
+    Eigen::Matrix<double,4,4> _TF_T_EE_0;
+
     motion_error_cart::motion_error_cart _motion_error;
     motion_error_cart::In_U_motion_error_cart _motion_error_u;
     motion_error_cart::Out_Y_motion_error_cart _motion_error_y;
+
+    motion_error_cart::motion_error_cart _motion_error_0;
+    motion_error_cart::In_U_motion_error_cart _motion_error_0_u;
+    motion_error_cart::Out_Y_motion_error_cart _motion_error_0_y;
+
+//    wave_variables::wave_variables _wave_variables;
 
 };
 

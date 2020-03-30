@@ -26,6 +26,7 @@
 #include "virtual_cube/virtual_cube_wrapper.hpp"
 #include "virtual_walls_joint/virtual_walls_joint_wrapper.hpp"
 #include "cntr_nullsp_proj/cntr_nullsp_proj_wrapper.hpp"
+#include "motion_error_cart/motion_error_cart_wrapper.hpp"
 
 
 namespace mios {
@@ -115,12 +116,14 @@ private:
 
     // controller
     void initialize_control_aic(const Percept &p);
+    void wall_hack(const Percept &p, Eigen::Matrix<double,7,1>& tau);
     void initialize_control_joint_imp(const Percept &p);
     void initialize_control_force(const Percept &p);
     void initialize_control_mux(const Percept &p);
     void initialize_virtual_cube(const Percept &p);
     void initialize_virtual_walls_joint(const Percept &p);
     void initialize_control_nullspace(const Percept &p);
+    void initialize_motion_error(const Percept &p);
     void input_control_aic(const Percept &p);
     void input_control_joint_imp(const Percept &p);
     void input_control_force(const Percept &p);
@@ -128,6 +131,7 @@ private:
     void input_virtual_cube(const Percept &p);
     void input_virtual_walls_joint(const Percept &p);
     void input_control_nullspace(const Percept &p);
+    void input_motion_error(const Percept &p);
     void terminate_control();
 
     void check_cartesian_velocity_workspace(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
@@ -243,6 +247,7 @@ private:
     virtual_walls_joint::virtual_walls_joint _virt_walls_joint;
     cntr_joint_var_imp::cntr_joint_var_imp _cntr_nullsp_q;
     cntr_nullsp_proj::cntr_nullsp_proj _cntr_nullsp_proj;
+    motion_error_cart::motion_error_cart _motion_error_cart;
 
     cntr_aic::In_U_cntr_aic _in_u_aic;
     cntr_joint_var_imp::In_U_cntr_joint_var_imp _in_u_joint_imp;
@@ -253,6 +258,7 @@ private:
     virtual_walls_joint::In_U_virtual_walls_joint _in_u_virt_walls_joint;
     cntr_joint_var_imp::In_U_cntr_joint_var_imp _in_u_cntr_nullsp_q;
     cntr_nullsp_proj::In_U_cntr_nullsp_proj _in_u_cntr_nullsp_proj;
+    motion_error_cart::In_U_motion_error_cart _in_u_motion_error_cart;
 
     cntr_aic::Out_Y_cntr_aic _out_y_aic;
     cntr_joint_var_imp::Out_Y_cntr_joint_var_imp _out_y_joint_imp;
@@ -263,6 +269,7 @@ private:
     virtual_walls_joint::Out_Y_virtual_walls_joint _out_y_virt_walls_joint;
     cntr_joint_var_imp::Out_Y_cntr_joint_var_imp _out_y_cntr_nullsp_q;
     cntr_nullsp_proj::Out_Y_cntr_nullsp_proj _out_y_cntr_nullsp_proj;
+    motion_error_cart::Out_Y_motion_error_cart _out_y_motion_error_cart;
 
     std::shared_ptr<KnowledgeBase> _kb;
     std::shared_ptr<Skill> _active_skill;
