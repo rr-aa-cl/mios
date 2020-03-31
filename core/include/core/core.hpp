@@ -116,7 +116,6 @@ private:
 
     // controller
     void initialize_control_aic(const Percept &p);
-    void wall_hack(const Percept &p, Eigen::Matrix<double,7,1>& tau);
     void initialize_control_joint_imp(const Percept &p);
     void initialize_control_force(const Percept &p);
     void initialize_control_mux(const Percept &p);

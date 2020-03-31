@@ -26,7 +26,7 @@ void mp_telepresence::initialize(const Percept &p_0, const std::shared_ptr<Confi
 
     this->_TF_T_EE_0=p_0.TF_T_EE;
 
-    this->_rot_limits=config->x_limits.block<6,1>(6,0);
+    this->_rot_limits=config->phi_limits;;
 
     this->initialize_connections();
 

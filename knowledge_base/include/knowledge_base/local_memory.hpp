@@ -214,7 +214,8 @@ struct ConfigUser{
     Eigen::Matrix<double,1,1> neighborhood_q;
     Eigen::Matrix<double,1,1> neighborhood_dq;
 
-    Eigen::Matrix<double,12,1> x_limits;
+    Eigen::Matrix<double,6,1> x_limits;
+    Eigen::Matrix<double,6,1> phi_limits;
 
     Eigen::Matrix<double,2,1> dX_max;
     Eigen::Matrix<double,2,1> ddX_max;
