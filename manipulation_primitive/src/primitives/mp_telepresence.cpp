@@ -53,15 +53,15 @@ void mp_telepresence::initialize(const Percept &p_0, const std::shared_ptr<Confi
     motion_error_cart::In_P_motion_error_cart motion_error_0_p;
     this->_motion_error_0.initialize(this->_motion_error_0_u,motion_error_0_p);
 
-//    this->_wave_variables.p.master<<c->master;
-//    this->_wave_variables.p.b<<0,0,0,0,0,0;
-//    this->_wave_variables.p.lambda_u_l<<0,0,0,0,0,0;
-//    this->_wave_variables.p.lambda_u_r<<0,0,0,0,0,0;
-//    this->_wave_variables.u.dX_l<<0,0,0,0,0,0;
-//    this->_wave_variables.u.F_r<<0,0,0,0,0,0;
-//    this->_wave_variables.u.v_l<<0,0,0,0,0,0;
-//    this->_wave_variables.u.v_r<<0,0,0,0,0,0;
-//    this->_wave_variables.initialize();
+    this->_wave_variables.p.master<<c->master;
+    this->_wave_variables.p.b<<0,0,0,0,0,0;
+    this->_wave_variables.p.lambda_u_l<<0,0,0,0,0,0;
+    this->_wave_variables.p.lambda_u_r<<0,0,0,0,0,0;
+    this->_wave_variables.u.dX_l<<0,0,0,0,0,0;
+    this->_wave_variables.u.F_r<<0,0,0,0,0,0;
+    this->_wave_variables.u.v_l<<0,0,0,0,0,0;
+    this->_wave_variables.u.v_r<<0,0,0,0,0,0;
+    this->_wave_variables.initialize();
 }
 
 CmdMP& mp_telepresence::step(const Percept &p){

@@ -64,7 +64,7 @@ private:
     bool terminate_connections();
     void msg_in();
     bool msg_out(const std::vector<double> &payload);
-    void unload_msg(const std::vector<double>& payload);
+    bool unload_msg(const std::vector<double>& payload);
 
     std::thread _thr_msg_in;
 
@@ -93,10 +93,10 @@ private:
     std::atomic<bool> _flag_connected;
     std::atomic<bool> _flag_sync;
     std::atomic<bool> _flag_run;
+    std::atomic<bool> _flag_return_state;
 
     unsigned _cnt_send;
     unsigned _send_msg_at_n;
-
 };
 
 }

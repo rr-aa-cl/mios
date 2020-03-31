@@ -13,6 +13,7 @@ mp_external::mp_external():ManipulationPrimitive("mp_external"){
     this->_bufferlength=512;
     this->_flag_connected=false;
     this->_flag_run=false;
+    this->_flag_return_state=true;
 }
 
 void mp_external::initialize(const Percept &p_0, const std::shared_ptr<ConfigUser> config){
@@ -53,7 +54,7 @@ CmdMP& mp_external::step(const Percept &p){
     if(c_mp->mode==InputMode::JointPosition){
         this->_cmd.q_d=Eigen::Matrix<double,7,1>(this->_q_d_in[0].data());
     }
-    if(this->_cnt_send>=this->_send_msg_at_n){
+    if(this->_flag_return_state){
         std::vector<double> payload;
         payload.reserve(21);
         for(unsigned i=0;i<7;i++){
@@ -66,9 +67,7 @@ CmdMP& mp_external::step(const Percept &p){
             payload.push_back(p.tau_ext(i));
         }
         this->msg_out(payload);
-        this->_cnt_send=0;
-    }else{
-        this->_cnt_send++;
+        this->_flag_return_state=false;
     }
     return this->_cmd;
 }
@@ -185,6 +184,14 @@ void mp_external::msg_in() {
 
     // Loop for incoming messages is started
     while(true) { // Runs forever if no errors occur...
+        if(!this->_flag_run){ // If an interrupt exception occurs...
+            cpp_utils::print_info("Incoming communication terminated.");
+            int r=close(this->_s_in); // Socket is closed
+            if(r<0){ // If an error occured during socket termination...
+                cpp_utils::print_error("Could not close socket.");
+            }
+            return;
+        }
         if(!msg_connection_wait){
             cpp_utils::print_info("Waiting for incoming messages...");
             msg_connection_wait=true;
@@ -254,7 +261,6 @@ void mp_external::msg_in() {
                 msg_connection_valid=true;
             }
         }
-
         std::vector<double> payload;
         // Use a union to convert the bytes in the message into doubles.
         union {
@@ -271,15 +277,10 @@ void mp_external::msg_in() {
             payload[j/4]=(q_union.f); // Converted data element is pushed into the payload vector
         }
         // Unload the payload. This function has to be defined by the respective telepresence prototype.
-        this->unload_msg(payload);
-        if(!this->_flag_run){ // If an interrupt exception occurs...
-            cpp_utils::print_info("Incoming communication terminated.");
-            int r=close(this->_s_in); // Socket is closed
-            if(r<0){ // If an error occured during socket termination...
-                cpp_utils::print_error("Could not close socket.");
-            }
-            return;
+        if(this->unload_msg(payload)){
+            this->_flag_return_state=true;
         }
+
     }
 }
 
@@ -340,12 +341,12 @@ bool mp_external::msg_out(const std::vector<double> &payload){
     return true;
 }
 
-void mp_external::unload_msg(const std::vector<double> &payload){
+bool mp_external::unload_msg(const std::vector<double> &payload){
     std::shared_ptr<ConfigMP_mp_external> c_mp = std::static_pointer_cast<ConfigMP_mp_external>(this->_config);
     if(c_mp->mode==InputMode::Torque){
         if(payload.size()!=7){
             cpp_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 7.");
-            return;
+            return false;
         }
         for(unsigned i=0;i<7;i++){
             this->_tau_in[0][i]=payload[i];
@@ -354,7 +355,7 @@ void mp_external::unload_msg(const std::vector<double> &payload){
     if(c_mp->mode==InputMode::CartesianVelocity){
         if(payload.size()!=6){
             cpp_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 6.");
-            return;
+            return false;
         }
         for(unsigned i=0;i<6;i++){
             this->_dX_d_in[0][i]=payload[i];
@@ -363,7 +364,7 @@ void mp_external::unload_msg(const std::vector<double> &payload){
     if(c_mp->mode==InputMode::JointVelocity){
         if(payload.size()!=7){
             cpp_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 7.");
-            return;
+            return false;
         }
         for(unsigned i=0;i<7;i++){
             this->_dq_d_in[0][i]=payload[i];
@@ -372,7 +373,7 @@ void mp_external::unload_msg(const std::vector<double> &payload){
     if(c_mp->mode==InputMode::CartesianPosition){
         if(payload.size()!=16){
             cpp_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 16.");
-            return;
+            return false;
         }
         for(unsigned i=0;i<7;i++){
             this->_O_T_EE_d_in[0][i]=payload[i];
@@ -381,12 +382,13 @@ void mp_external::unload_msg(const std::vector<double> &payload){
     if(c_mp->mode==InputMode::JointPosition){
         if(payload.size()!=7){
             cpp_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 7.");
-            return;
+            return false;
         }
         for(unsigned i=0;i<7;i++){
             this->_q_d_in[0][i]=payload[i];
         }
     }
+    return true;
 }
 
 }
