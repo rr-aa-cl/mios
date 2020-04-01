@@ -12,7 +12,7 @@
 
 #include "manipulation_primitive/manipulation_primitive.hpp"
 #include "motion_error_cart/motion_error_cart_wrapper.hpp"
-#include "wave_variables/wave_variables_wrapper.hpp"
+//#include "wave_variables/wave_variables_wrapper.hpp"
 
 
 namespace mios {
@@ -143,7 +143,7 @@ private:
     motion_error_cart::In_U_motion_error_cart _motion_error_0_u;
     motion_error_cart::Out_Y_motion_error_cart _motion_error_0_y;
 
-    wave_variables::wave_variables _wave_variables;
+//    wave_variables::wave_variables _wave_variables;
 
 };
 
