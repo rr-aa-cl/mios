@@ -20,6 +20,7 @@ struct ConfigSkill_telepresence_master : public ConfigSkill{
     Eigen::Matrix<double,6,1> joystick_deadband;
     Eigen::Matrix<double,6,1> joystick_amp;
     Eigen::Matrix<double,6,1> joystick_f_ext_amp;
+    bool joystick_force_input;
 
     TelepresenceMode mode;
 };

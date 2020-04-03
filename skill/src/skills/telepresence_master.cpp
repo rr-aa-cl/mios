@@ -37,6 +37,9 @@ bool telepresence_master::read_skill_parameters(const nlohmann::json &p){
     if(!cpp_utils::read_json_param<double,6,1>(p,"joystick_amp",c->joystick_amp)){
         c->joystick_amp.setZero();
     }
+    if(!cpp_utils::read_json_param(p,"joystick_force_input",c->joystick_force_input)){
+        c->joystick_force_input=false;
+    }
     std::string mode;
     if(!cpp_utils::read_json_param(p,"mode",mode)){
         cpp_utils::print_error("Missing parameter: mode");
@@ -72,6 +75,7 @@ void telepresence_master::build_primitives(const Percept &p){
     c_network->joystick_amp=c->joystick_amp;
     c_network->joystick_lever=c->frames.F_T_EE.block<3,1>(0,3);
     c_network->joystick_f_ext_amp=c->joystick_f_ext_amp;
+    c_network->joystick_force_input=c->joystick_force_input;
 
 }
 

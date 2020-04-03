@@ -29,6 +29,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/knowledge_base/include
     ${CMAKE_SOURCE_DIR}/telemetry/include
     ${CMAKE_SOURCE_DIR}/utils/include
+    ${CMAKE_SOURCE_DIR}/event_publisher/include
     ${CMAKE_SOURCE_DIR}/cpp/include)
 
 file(STRINGS ${CMAKE_SOURCE_DIR}/config/active_mp ACTIVE_MP)
@@ -118,6 +119,9 @@ add_subdirectory(
     )
 add_subdirectory(
     interface
+    )
+add_subdirectory(
+    event_publisher
     )
 add_subdirectory(
     main

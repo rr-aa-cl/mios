@@ -53,15 +53,15 @@ void mp_telepresence::initialize(const Percept &p_0, const std::shared_ptr<Confi
     motion_error_cart::In_P_motion_error_cart motion_error_0_p;
     this->_motion_error_0.initialize(this->_motion_error_0_u,motion_error_0_p);
 
-//    this->_wave_variables.p.master<<c->master;
-//    this->_wave_variables.p.b<<0,0,0,0,0,0;
-//    this->_wave_variables.p.lambda_u_l<<0,0,0,0,0,0;
-//    this->_wave_variables.p.lambda_u_r<<0,0,0,0,0,0;
-//    this->_wave_variables.u.dX_l<<0,0,0,0,0,0;
-//    this->_wave_variables.u.F_r<<0,0,0,0,0,0;
-//    this->_wave_variables.u.v_l<<0,0,0,0,0,0;
-//    this->_wave_variables.u.v_r<<0,0,0,0,0,0;
-//    this->_wave_variables.initialize();
+    //    this->_wave_variables.p.master<<c->master;
+    //    this->_wave_variables.p.b<<0,0,0,0,0,0;
+    //    this->_wave_variables.p.lambda_u_l<<0,0,0,0,0,0;
+    //    this->_wave_variables.p.lambda_u_r<<0,0,0,0,0,0;
+    //    this->_wave_variables.u.dX_l<<0,0,0,0,0,0;
+    //    this->_wave_variables.u.F_r<<0,0,0,0,0,0;
+    //    this->_wave_variables.u.v_l<<0,0,0,0,0,0;
+    //    this->_wave_variables.u.v_r<<0,0,0,0,0,0;
+    //    this->_wave_variables.initialize();
 }
 
 CmdMP& mp_telepresence::step(const Percept &p){
@@ -216,7 +216,6 @@ bool mp_telepresence::initialize_connections(){
 void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &payload){
     std::shared_ptr<ConfigMP_mp_telepresence> c = std::static_pointer_cast<ConfigMP_mp_telepresence>(this->_config);
 
-
     if(c->master){ // if this prototype is the master...
 
         // Parameter that determines control mode (translation or rotation) is read from live parameter server.
@@ -267,7 +266,12 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         this->_motion_error_u.O_T_EE_d=Eigen::Matrix<double,4,4>(p.TF_T_EE_d);
         this->_motion_error.step(this->_motion_error_u,this->_motion_error_y);
 
-        Eigen::Matrix<double,6,1> O_diff = -this->_motion_error_y.e;
+        Eigen::Matrix<double,6,1> O_diff;
+        if(!c->joystick_force_input){
+            O_diff = -this->_motion_error_y.e;
+        }else{
+            O_diff = -p.O_F_ext;
+        }
         Eigen::Matrix<double,6,1> EE_dX_d;
 
         Eigen::Matrix<double,6,1> EE_diff=cpp_utils::rotate_vector(O_diff,cpp_utils::invert_transformation_matrix(p.TF_T_EE)); // Transform into EE frame
@@ -313,9 +317,9 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         param=this->_kb->get_live_parameter("EE_T_J_r");
         if(!param.is_null()){
             cpp_utils::read_json_param<double,3,3>(param,EE_T_J_r);
-            if(!cpp_utils::is_orthonormal(EE_T_J_r)){
-                EE_T_J_r=c->EE_T_J_r;
-            }
+//            if(!cpp_utils::is_orthonormal(EE_T_J_r)){
+//                EE_T_J_r=c->EE_T_J_r;
+//            }
         }else{
             EE_T_J_r=c->EE_T_J_r;
         }
@@ -325,8 +329,6 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         Eigen::Matrix<double,6,1> EE_e=cpp_utils::rotate_vector(this->_motion_error_0_y.e,cpp_utils::invert_transformation_matrix(O_T_EE));
         Eigen::Matrix<double,3,1> J_e=EE_T_J_r.transpose()*EE_e.block<3,1>(3,0);
 
-        std::cout<<"O_e: "<<this->_motion_error_0_y.e<<std::endl;
-        std::cout<<"EE_e: "<<EE_e<<std::endl;
         for(unsigned i=0;i<3;i++){
             if(J_e(i)<=this->_rot_limits(2*i) && J_dX_d(i+3)>0){
                 J_dX_d(i+3)=0;
@@ -342,12 +344,12 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         EE_dX_r_d=EE_T_J_r*J_dX_d.block<3,1>(3,0);
         EE_dX_d<<EE_dX_t_d,EE_dX_r_d;
 
-        double F_thr=10;
+        double F_thr=5;
         double sigma;
-        Eigen::Matrix<double,6,1> F_e=p.K_F_ext;
+        Eigen::Matrix<double,6,1> F_e=-p.K_F_ext;
         for(unsigned i=0;i<6;i++){
-            if(F_e(i)>F_thr && F_e(i)*EE_dX_d(i) < 0){
-                sigma = exp(F_thr-F_e(i));
+            if(abs(F_e(i))>F_thr && F_e(i)*EE_dX_d(i) < 0){
+                sigma = exp(F_thr-abs(F_e(i)));
             }else{
                 sigma=1;
             }
@@ -357,21 +359,44 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         }
 
         Eigen::Matrix<double,6,1> O_dX_d=cpp_utils::rotate_vector(EE_dX_d,O_T_EE); // Transform incoming velocity form master into O frame
-
-
-
         Eigen::Matrix<double,3,1> J_F_ext_t=EE_T_J_t.transpose()*p.K_F_ext.block<3,1>(0,0);
         Eigen::Matrix<double,3,1> J_F_ext_r=EE_T_J_r.transpose()*p.K_F_ext.block<3,1>(3,0);
         Eigen::Matrix<double,6,1> J_F_ext;
         J_F_ext<<-J_F_ext_t,-J_F_ext_r;
-
-
 
         this->_cmd.TF_dX_d=O_dX_d;
         // Push external wrench into payload
         for(unsigned i=0;i<6;i++){
             payload.push_back(J_F_ext(i));
         }
+    }
+}
+
+void mp_telepresence::joint_direct_mode(const Percept &p, std::vector<double> &payload){
+    std::shared_ptr<ConfigMP_mp_telepresence> c = std::static_pointer_cast<ConfigMP_mp_telepresence>(this->_config);
+    Eigen::Matrix<double,7,1> q = Eigen::Matrix<double,7,1>(this->_q_d_in[0].data());
+    Eigen::Matrix<double,7,1> dq = Eigen::Matrix<double,7,1>(this->_dq_d_in[0].data());
+    Eigen::Matrix<double,7,1> tau_ext = Eigen::Matrix<double,7,1>(this->_tau_ext_in[0].data());
+    if(c->master){
+        for(unsigned i=0;i<7;i++){
+            this->_cmd.tau_d(i)-=tau_ext[i];
+            double dq=p.dq[i];
+            double P_s=dq*tau_ext[i];
+            double p_thr=3;
+            double power_scale;
+            power_scale=1-0.5*(1-cos(M_PI*(1-P_s/p_thr)));
+            if(P_s>p_thr)power_scale=0;
+            if(P_s<=0)power_scale=1;
+
+            this->_cmd.tau_ff(i)-=power_scale*c->joint_direct_alpha(i)*cpp_utils::sgn(dq)*fabs(P_s);
+        }
+    }else{
+        for(unsigned i=0;i<7;i++){
+//            if(c->enable_ffwd_tau){
+//                this->_cmd.tau_ff(i)-=tau_ext[i];
+//            }
+        }
+        this->_cmd.q_d=q;
     }
 }
 
@@ -511,7 +536,7 @@ void mp_telepresence::msg_in() {
         }
         this->_n_package_last=(int)msg[i+4]; // Read the package counter
 
-        if(cnt_no_connection>20){ // If 20 packages were invalid after a connection has already been established...
+        if(cnt_no_connection>200){ // If 20 packages were invalid after a connection has already been established...
             if(!msg_connection_lost){
                 cpp_utils::print_critical_error("Lost 20 packets in a row. I assume the network connection is faulty and will terminate.");
                 msg_connection_lost=true;
