@@ -2027,14 +2027,21 @@ const Percept& Core::request_percept(Eigen::Matrix<double,3,3> O_R_TF, bool wait
 }
 
 void Core::check_cartesian_velocity_workspace(Eigen::Matrix<double, 6, 1> &TF_dX_d, const Percept& p){
+    Eigen::Matrix<double,6,1> VC_dX_d = cpp_utils::rotate_vector(TF_dX_d,cpp_utils::invert_transformation_matrix(this->get_kb()->get_local_memory()->access_config_frames().O_T_VC));
+    Eigen::Matrix<double,3,1> VC_x = cpp_utils::invert_transformation_matrix(this->get_kb()->get_local_memory()->access_config_frames().O_T_VC).block<3,3>(0,0)*p.TF_T_EE.block<3,1>(0,3);
+    bool stop=false;
     for(unsigned i=0;i<3;i++){
-        if(p.TF_T_EE(i,3)<=this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i) && TF_dX_d(i)<0){
-            TF_dX_d(i)=0;
+        if(VC_x(i)<=this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i) && VC_dX_d(i)<0){
+            stop=true;
         }
-        if(p.TF_T_EE(i,3)>=this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i+1) && TF_dX_d(i)>0){
-            TF_dX_d(i)=0;
+        if(VC_x(i)>=this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i+1) && VC_dX_d(i)>0){
+            stop=true;
         }
     }
+    if(stop){
+        VC_dX_d.setZero();
+    }
+    TF_dX_d=cpp_utils::rotate_vector(VC_dX_d,this->get_kb()->get_local_memory()->access_config_frames().O_T_VC);
 }
 
 void Core::dummy_control(std::function<franka::Torques (const franka::RobotState &)> control_cycle){

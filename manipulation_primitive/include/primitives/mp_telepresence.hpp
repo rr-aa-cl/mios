@@ -36,6 +36,7 @@ struct ConfigMP_mp_telepresence : public ConfigMP{
         joystick_lever.setZero();
         joystick_f_ext_amp.setZero();
         joystick_force_input=false;
+        joystick_funnel_pose.setIdentity();
 
         joint_direct_alpha.setZero();
     }
@@ -50,8 +51,10 @@ struct ConfigMP_mp_telepresence : public ConfigMP{
     Eigen::Matrix<double,6,1> joystick_amp;
     Eigen::Matrix<double,3,1> joystick_lever;
     Eigen::Matrix<double,6,1> joystick_f_ext_amp;
+    Eigen::Matrix<double,4,4> joystick_funnel_pose;
 
     Eigen::Matrix<double,7,1> joint_direct_alpha;
+
 
     std::string ip_dst;
     unsigned port_dst;
@@ -133,6 +136,7 @@ private:
 
     bool _flag_joystick_translation;
     bool _flag_joystick_rotation;
+    Eigen::Matrix<bool,6,1> _joystick_selector;
 
     unsigned _cnt_send;
     Eigen::Matrix<double,6,1> _joystick_dX_max;

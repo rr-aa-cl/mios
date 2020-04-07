@@ -249,6 +249,7 @@ struct ConfigFrames{
     Eigen::Matrix<double,4,4> EE_T_K;
     Eigen::Matrix<double,4,4> EE_T_C;
     Eigen::Matrix<double,4,4> D_T_O;
+    Eigen::Matrix<double,4,4> O_T_VC;
 };
 
 struct ConfigGeneral{

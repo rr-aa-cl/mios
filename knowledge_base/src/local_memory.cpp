@@ -157,6 +157,7 @@ ConfigFrames::ConfigFrames(){
     EE_T_TCP.setIdentity();
     EE_T_K.setIdentity();
     EE_T_C.setIdentity();
+    O_T_VC.setIdentity();
 }
 
 void ConfigFrames::read_parameters(const nlohmann::json &p){
@@ -165,6 +166,7 @@ void ConfigFrames::read_parameters(const nlohmann::json &p){
     cpp_utils::read_json_param<double,4,4>(p,"EE_T_TCP",EE_T_TCP);
     cpp_utils::read_json_param<double,4,4>(p,"EE_T_K",EE_T_K);
     cpp_utils::read_json_param<double,4,4>(p,"EE_T_C",EE_T_C);
+    cpp_utils::read_json_param<double,4,4>(p,"O_T_VC",O_T_VC);
 }
 
 ConfigGeneral::ConfigGeneral(){

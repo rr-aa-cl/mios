@@ -28,6 +28,9 @@ bool telepresence_slave::read_skill_parameters(const nlohmann::json &p){
     if(!cpp_utils::read_json_param(p,"bilateral",c->bilateral)){
         c->bilateral=true;
     }
+    if(!cpp_utils::read_json_param(p,"joystick_funnel_pose",c->joystick_funnel_pose)){
+        c->joystick_funnel_pose="none";
+    }
     if(!cpp_utils::read_json_param<double,3,3>(p,"EE_T_J_t",c->EE_T_J_t)){
         c->EE_T_J_t=Eigen::Matrix<double,3,3>::Identity();
     }
@@ -73,6 +76,9 @@ void telepresence_slave::build_primitives(const Percept &p){
     c_network->EE_T_J_t=c->EE_T_J_t;
     c_network->EE_T_J_r=c->EE_T_J_r;
     c_network->mode=c->mode;
+    Object o;
+    this->_kb->load_object(c->joystick_funnel_pose,o);
+    c_network->joystick_funnel_pose=o.TF_T_o(Eigen::Matrix<double,3,3>::Identity());
 }
 
 std::tuple<bool,std::string> telepresence_slave::check_edges(const Percept &p){

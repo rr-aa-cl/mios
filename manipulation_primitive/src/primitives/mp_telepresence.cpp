@@ -20,6 +20,7 @@ void mp_telepresence::initialize(const Percept &p_0, const std::shared_ptr<Confi
     this->_flag_init=false;
     this->_flag_joystick_translation=true;
     this->_flag_joystick_rotation=false;
+    this->_joystick_selector<<true,true,true,true,true,true;
     this->_n_package=0;
     this->_n_package_last=0;
     this->_cnt_send=0;
@@ -299,12 +300,16 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         }
     }else{ // if this prototype is the slave
 
+        nlohmann::json param=this->_kb->get_live_parameter("joystick_selector");
+        if(!param.is_null()){
+            cpp_utils::read_json_param<bool,6,1>(param,this->_joystick_selector);
+        }
+
         this->_motion_error_0_u.O_T_EE=Eigen::Matrix<double,4,4>(p.TF_T_EE);
-        this->_motion_error_0_u.O_T_EE_d=Eigen::Matrix<double,4,4>(this->_TF_T_EE_0);
+        this->_motion_error_0_u.O_T_EE_d=Eigen::Matrix<double,4,4>(c->joystick_funnel_pose);
         this->_motion_error_0.step(this->_motion_error_0_u,this->_motion_error_0_y);
 
         Eigen::Matrix<double,3,3> EE_T_J_t,EE_T_J_r;
-        nlohmann::json param;
         param=this->_kb->get_live_parameter("EE_T_J_t");
         if(!param.is_null()){
             cpp_utils::read_json_param<double,3,3>(param,EE_T_J_t);
@@ -335,6 +340,11 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
             }
             if(J_e(i)>=this->_rot_limits(2*i+1) && J_dX_d(i+3)<0){
                 J_dX_d(i+3)=0;
+            }
+        }
+        for(unsigned i=0;i<6;i++){
+            if(!this->_joystick_selector(i)){
+                J_dX_d(i)=0;
             }
         }
 
