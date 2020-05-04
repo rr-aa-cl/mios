@@ -1,6 +1,6 @@
 #include "event_publisher/event_publisher.hpp"
 
-#include "cpp_utils/network.hpp"
+#include <msrm_utils/network.hpp>
 
 namespace mios
 {
@@ -18,17 +18,28 @@ void EventPublisher::subscribe(const std::pair<std::string,unsigned>& subscriber
     get().i_subscribe(subscriber);
 }
 
+void EventPublisher::unsubscribe(const std::pair<std::string,unsigned>& subscriber){
+    get().i_unsubscribe(subscriber);
+}
+
 void EventPublisher::i_publish_event(const nlohmann::json &event){
     for(const std::pair<std::string,unsigned>& url : m_subscribers){
         nlohmann::json response;
-        if(!cpp_utils::rpc_call(url.first,url.second,"event",{event},response)){
-
-        }
+        msrm_utils::JsonRPCClient::call_method(url.first,url.second,"event",event,response);
     }
 }
 
 void EventPublisher::i_subscribe(const std::pair<std::string, unsigned> &subscriber){
+    if(m_subscribers.find(subscriber)!=m_subscribers.end()){
+        m_subscribers.erase(m_subscribers.find(subscriber));
+    }
     m_subscribers.insert(subscriber);
+}
+
+void EventPublisher::i_unsubscribe(const std::pair<std::string, unsigned> &subscriber){
+    if(m_subscribers.find(subscriber)!=m_subscribers.end()){
+        m_subscribers.erase(m_subscribers.find(subscriber));
+    }
 }
 
 }

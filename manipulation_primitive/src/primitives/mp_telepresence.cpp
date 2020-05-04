@@ -1,8 +1,8 @@
 #include "primitives/mp_telepresence.hpp"
 
-#include "cpp_utils/math.hpp"
-#include "cpp_utils/conversion.hpp"
-#include "cpp_utils/network.hpp"
+#include <msrm_utils/math.hpp>
+#include <msrm_utils/conversion.hpp>
+#include <msrm_utils/network.hpp>
 
 namespace mios {
 
@@ -24,6 +24,7 @@ void mp_telepresence::initialize(const Percept &p_0, const std::shared_ptr<Confi
     this->_n_package=0;
     this->_n_package_last=0;
     this->_cnt_send=0;
+    _J_phi.setZero();
 
     this->_TF_T_EE_0=p_0.TF_T_EE;
 
@@ -32,11 +33,11 @@ void mp_telepresence::initialize(const Percept &p_0, const std::shared_ptr<Confi
     this->initialize_connections();
 
     this->_cmd.q_d=p_0.q;
-    this->_q_d_in[0]=cpp_utils::convert_to_array<double,7,1>(p_0.q);
+    this->_q_d_in[0]=msrm_utils::convert_to_array<double,7,1>(p_0.q);
     this->_dq_d_in[0]={0,0,0,0,0,0,0};
     this->_tau_ext_in[0]={0,0,0,0,0,0,0};
 
-    this->_O_T_EE_in[0]=cpp_utils::convert_to_array<double,4,4>(p_0.O_T_EE);
+    this->_O_T_EE_in[0]=msrm_utils::convert_to_array<double,4,4>(p_0.O_T_EE);
     this->_O_dX_d_in[0]={0,0,0,0,0,0};
     this->_EE_F_ext_in[0]={0,0,0,0,0,0};
 
@@ -81,12 +82,12 @@ void mp_telepresence::terminate(){
     this->_motion_error_0.terminate();
     int r=close(this->_s_out);
     if(r<0){
-        cpp_utils::print_error("Socket could not be closed successfully.");
+        msrm_utils::print_error("Socket could not be closed successfully.");
     }
     if(c->repeater){
         r=close(this->_s_rep);
         if(r<0){
-            cpp_utils::print_error("Socket could not be closed successfully.");
+            msrm_utils::print_error("Socket could not be closed successfully.");
         }
     }
     this->_thread_should_run=false;
@@ -123,14 +124,14 @@ bool mp_telepresence::initialize_connections(){
     std::string ip_dst;
 
     // If a hostname instead of IP is provided, it is converted to an IP
-    if(!cpp_utils::check_if_valid_ip(config->ip_dst)){
-        ip_dst=cpp_utils::get_ip_by_hostname(config->ip_dst);
+    if(!msrm_utils::is_valid_ip_address(config->ip_dst.c_str())){
+        ip_dst=msrm_utils::get_ip_by_hostname(config->ip_dst.c_str()).value_or("none");
     }else{
         ip_dst=config->ip_dst;
     }
 
-    if(!cpp_utils::check_if_valid_ip(ip_dst)){ // If IP is not valid...
-        cpp_utils::print_error("Invalid ip: "+ip_dst);
+    if(!msrm_utils::is_valid_ip_address(ip_dst.c_str())){ // If IP is not valid...
+        msrm_utils::print_error("Invalid ip: "+ip_dst);
         return false;
     }
 
@@ -138,7 +139,7 @@ bool mp_telepresence::initialize_connections(){
     this->_slen_out=sizeof(this->_si_other_out);
     if ((this->_s_out=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) // If socket for outgoing connection could not be created...
     {
-        cpp_utils::print_error("Initialization of outgoing connection failed.");
+        msrm_utils::print_error("Initialization of outgoing connection failed.");
         return false;
     }
     memset((char *) &this->_si_other_out, 0, sizeof(this->_si_other_out));
@@ -147,13 +148,13 @@ bool mp_telepresence::initialize_connections(){
     inet_aton(ip_dst.c_str(), &this->_si_other_out.sin_addr);
     // Outgoing connection was properly created.
 
-    cpp_utils::print_info("Outgoing connection configured with url "+ip_dst+":"+std::to_string(config->port_dst));
+    msrm_utils::print_info("Outgoing connection configured with url "+ip_dst+":"+std::to_string(config->port_dst));
 
     if(config->repeater){
         this->_slen_rep=sizeof(this->_si_other_rep);
         if ((this->_s_rep=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
         {
-            cpp_utils::print_error("Initialization of repeater connection failed.");
+            msrm_utils::print_error("Initialization of repeater connection failed.");
             return false;
         }
         memset((char *) &this->_si_other_rep, 0, sizeof(this->_si_other_rep));
@@ -165,7 +166,7 @@ bool mp_telepresence::initialize_connections(){
     // Incoming connection
     this->_slen_in = sizeof(this->_si_other_in);
     if((this->_s_in=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1){ // If socket for incoming connection could not be created...
-        cpp_utils::print_error("Initialization of incoming connection failed.");
+        msrm_utils::print_error("Initialization of incoming connection failed.");
         return false;
     }
 
@@ -196,7 +197,7 @@ bool mp_telepresence::initialize_connections(){
         mreq.imr_interface.s_addr = htonl(INADDR_ANY);
         int err=setsockopt(this->_s_in,IPPROTO_IP,IP_ADD_MEMBERSHIP,&mreq,sizeof(mreq));
         if(err<0){
-            cpp_utils::print_critical_error("Can not set socket options for multicast.");
+            msrm_utils::print_critical_error("Can not set socket options for multicast.");
             this->set_flag_error();
         }
     }
@@ -209,7 +210,7 @@ bool mp_telepresence::initialize_connections(){
 
     // Incoming connection was properly created.
 
-    cpp_utils::print_info("Incoming connection configured with port: "+std::to_string(config->port_recv));
+    msrm_utils::print_info("Incoming connection configured with port: "+std::to_string(config->port_recv));
 
     return true;
 }
@@ -275,7 +276,7 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         }
         Eigen::Matrix<double,6,1> EE_dX_d;
 
-        Eigen::Matrix<double,6,1> EE_diff=cpp_utils::rotate_vector(O_diff,cpp_utils::invert_transformation_matrix(p.TF_T_EE)); // Transform into EE frame
+        Eigen::Matrix<double,6,1> EE_diff=msrm_utils::rotate_vector(O_diff,msrm_utils::invert_transformation_matrix(p.TF_T_EE)); // Transform into EE frame
         EE_diff(3)=EE_diff(0);
         EE_diff(4)=EE_diff(1);
         EE_diff(5)=EE_diff(2);
@@ -284,10 +285,8 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
                 EE_dX_d(i)=0; // Set velocity to zero in direction i
             }else{ // If the difference is larger than the deadzone...
                 EE_dX_d(i)=(fabs(EE_diff(i))-c->joystick_deadband(i))*c->joystick_amp(i); // Subtract deadzone from difference
-                EE_dX_d(i)*=cpp_utils::sgn(EE_diff(i)); // Apply sign
+                EE_dX_d(i)*=msrm_utils::sgn(EE_diff(i)); // Apply sign
             }
-            if(EE_dX_d(i)>this->_joystick_dX_max(i))EE_dX_d(i)=this->_joystick_dX_max(i); // If velocity command is larger than maximum allowed velocity, cap it.
-            if(EE_dX_d(i)<-this->_joystick_dX_max(i))EE_dX_d(i)=-this->_joystick_dX_max(i); // If velocity command is smaller than maximum allowed negative velocity, cap it.
             if(!this->_flag_joystick_translation && i<3){
                 EE_dX_d(i)=0;
             }
@@ -295,6 +294,7 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
                 EE_dX_d(i)=0;
             }
         }
+
         for(unsigned i=0;i<6;i++){
             payload.push_back(EE_dX_d(i)); // Push commands into payload.
         }
@@ -302,7 +302,7 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
 
         nlohmann::json param=this->_kb->get_live_parameter("joystick_selector");
         if(!param.is_null()){
-            cpp_utils::read_json_param<bool,6,1>(param,this->_joystick_selector);
+            msrm_utils::read_json_param<bool,6,1>(param,this->_joystick_selector);
         }
 
         this->_motion_error_0_u.O_T_EE=Eigen::Matrix<double,4,4>(p.TF_T_EE);
@@ -312,8 +312,8 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         Eigen::Matrix<double,3,3> EE_T_J_t,EE_T_J_r;
         param=this->_kb->get_live_parameter("EE_T_J_t");
         if(!param.is_null()){
-            cpp_utils::read_json_param<double,3,3>(param,EE_T_J_t);
-            if(!cpp_utils::is_orthonormal(EE_T_J_t)){
+            msrm_utils::read_json_param<double,3,3>(param,EE_T_J_t);
+            if(!msrm_utils::is_orthonormal(EE_T_J_t)){
                 EE_T_J_t=c->EE_T_J_t;
             }
         }else{
@@ -321,17 +321,24 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
         }
         param=this->_kb->get_live_parameter("EE_T_J_r");
         if(!param.is_null()){
-            cpp_utils::read_json_param<double,3,3>(param,EE_T_J_r);
-//            if(!cpp_utils::is_orthonormal(EE_T_J_r)){
-//                EE_T_J_r=c->EE_T_J_r;
-//            }
+            msrm_utils::read_json_param<double,3,3>(param,EE_T_J_r);
+            //            if(!msrm_utils::is_orthonormal(EE_T_J_r)){
+            //                EE_T_J_r=c->EE_T_J_r;
+            //            }
         }else{
             EE_T_J_r=c->EE_T_J_r;
         }
 
+        param=this->_kb->get_live_parameter("dX_max");
+        Eigen::Matrix<double,2,1> dX_max;
+        if(!param.is_null()){
+            msrm_utils::read_json_param<double,2,1>(param,dX_max);
+            this->_joystick_dX_max<<dX_max(0),dX_max(0),dX_max(0),dX_max(1),dX_max(1),dX_max(1);
+        }
+
         Eigen::Matrix<double,4,4> O_T_EE=Eigen::Matrix<double,4,4>(p.O_T_EE);
         Eigen::Matrix<double,6,1> J_dX_d=Eigen::Matrix<double,6,1>(this->_O_dX_d_in[0].data());
-        Eigen::Matrix<double,6,1> EE_e=cpp_utils::rotate_vector(this->_motion_error_0_y.e,cpp_utils::invert_transformation_matrix(O_T_EE));
+        Eigen::Matrix<double,6,1> EE_e=msrm_utils::rotate_vector(this->_motion_error_0_y.e,msrm_utils::invert_transformation_matrix(O_T_EE));
         Eigen::Matrix<double,3,1> J_e=EE_T_J_r.transpose()*EE_e.block<3,1>(3,0);
         for(unsigned i=0;i<3;i++){
             if(J_e(i)<=this->_rot_limits(2*i) && J_dX_d(i+3)>0){
@@ -340,6 +347,32 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
             if(J_e(i)>=this->_rot_limits(2*i+1) && J_dX_d(i+3)<0){
                 J_dX_d(i+3)=0;
             }
+        }
+
+        // STEPWISE CONSTRAINT
+        if(c->joystick_stepwise){
+            for(unsigned i=0;i<3;i++){
+                if(fabs(J_dX_d(i))==0){
+                    this->_J_dX_step(i)=0;
+                }else{
+                    this->_J_dX_step(i)+=J_dX_d(i)*0.001;
+                }
+                if(fabs(this->_J_dX_step(i))>c->joystick_step_size(0)){
+                    J_dX_d.setZero();
+                }
+                if(fabs(J_dX_d(i+3))==0){
+                    this->_J_dX_step(i+3)=0;
+                }else{
+                    this->_J_dX_step(i+3)+=J_dX_d(i+3)*0.001;
+                }
+                if(fabs(this->_J_dX_step(i+3))>c->joystick_step_size(1)){
+                    J_dX_d.setZero();
+                }
+            }
+        }
+        for(unsigned i=0;i<6;i++){
+            if(J_dX_d(i)>this->_joystick_dX_max(i))J_dX_d(i)=this->_joystick_dX_max(i); // If velocity command is larger than maximum allowed velocity, cap it.
+            if(J_dX_d(i)<-this->_joystick_dX_max(i))J_dX_d(i)=-this->_joystick_dX_max(i); // If velocity command is smaller than maximum allowed negative velocity, cap it.
         }
 
         Eigen::Matrix<double,3,1> EE_dX_t_d, EE_dX_r_d;
@@ -367,7 +400,7 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
             EE_dX_d(i)*=sigma;
         }
 
-        Eigen::Matrix<double,6,1> O_dX_d=cpp_utils::rotate_vector(EE_dX_d,O_T_EE); // Transform incoming velocity form master into O frame
+        Eigen::Matrix<double,6,1> O_dX_d=msrm_utils::rotate_vector(EE_dX_d,O_T_EE); // Transform incoming velocity form master into O frame
         Eigen::Matrix<double,3,1> J_F_ext_t=EE_T_J_t.transpose()*p.K_F_ext.block<3,1>(0,0);
         Eigen::Matrix<double,3,1> J_F_ext_r=EE_T_J_r.transpose()*p.K_F_ext.block<3,1>(3,0);
         Eigen::Matrix<double,6,1> J_F_ext;
@@ -397,13 +430,13 @@ void mp_telepresence::joint_direct_mode(const Percept &p, std::vector<double> &p
             if(P_s>p_thr)power_scale=0;
             if(P_s<=0)power_scale=1;
 
-            this->_cmd.tau_ff(i)-=power_scale*c->joint_direct_alpha(i)*cpp_utils::sgn(dq)*fabs(P_s);
+            this->_cmd.tau_ff(i)-=power_scale*c->joint_direct_alpha(i)*msrm_utils::sgn(dq)*fabs(P_s);
         }
     }else{
         for(unsigned i=0;i<7;i++){
-//            if(c->enable_ffwd_tau){
-//                this->_cmd.tau_ff(i)-=tau_ext[i];
-//            }
+            //            if(c->enable_ffwd_tau){
+            //                this->_cmd.tau_ff(i)-=tau_ext[i];
+            //            }
         }
         this->_cmd.q_d=q;
     }
@@ -460,7 +493,7 @@ bool mp_telepresence::msg_out(const std::vector<double> &payload){
     // The message is sent out to the peer robot.
     int err=sendto(this->_s_out, msg, sizeof(msg) , 0 , (struct sockaddr *) &this->_si_other_out, this->_slen_out)<0;
     if(err<0){ // If an error occured during sending...
-        cpp_utils::print_error("Could not send package.");
+        msrm_utils::print_error("Could not send package.");
         return false; // The prototype is terminated.
     }
     return true;
@@ -488,15 +521,15 @@ void mp_telepresence::msg_in() {
     // Loop for incoming messages is started
     while(true) { // Runs forever if no errors occur...
         if(!this->_thread_should_run){ // If an interrupt exception occurs...
-            cpp_utils::print_info("Incoming communication terminated.");
+            msrm_utils::print_info("Incoming communication terminated.");
             int r=close(this->_s_in); // Socket is closed
             if(r<0){ // If an error occured during socket termination...
-                cpp_utils::print_error("Could not close socket.");
+                msrm_utils::print_error("Could not close socket.");
             }
             return;
         }
         if(!msg_connection_wait){
-            cpp_utils::print_info("Waiting for incoming messages...");
+            msrm_utils::print_info("Waiting for incoming messages...");
             msg_connection_wait=true;
         }
         // Current content from the UDP connection is read into the buffer
@@ -519,11 +552,11 @@ void mp_telepresence::msg_in() {
             }
         }
         if(!((int)msg[i+4]==this->_n_package_last+1 || ((int)msg[i+4]==0 && this->_n_package_last==99))){ // If the last package counter is not one less than the current package counter...
-            //                cpp_utils::print_warning("I am losing packets.");
+            //                msrm_utils::print_warning("I am losing packets.");
         }
         if(i>=this->_bufferlength-payload_size+header_size && reclen==payload_size+header_size && this->_flag_connected){ // If the message cannot fit into the buffer but start bytes have been found...
             if(!msg_buffer){
-                cpp_utils::print_warning("Message reaches over end of buffer. Start of message is "+std::to_string(i)+".");
+                msrm_utils::print_warning("Message reaches over end of buffer. Start of message is "+std::to_string(i)+".");
                 msg_buffer=true;
             }
             cnt_no_connection++;
@@ -531,26 +564,27 @@ void mp_telepresence::msg_in() {
         }
         if(reclen!=payload_size+header_size && this->_flag_connected){ // If the length of the received message is not equal to required message size and connection has already been established...
             if(!msg_corrupt){
-                cpp_utils::print_warning("Corrupted message. Received length is "+std::to_string(reclen) + ". Expected length is "+std::to_string(payload_size+header_size)+".");
+                msrm_utils::print_warning("Corrupted message. Received length is "+std::to_string(reclen) + ". Expected length is "+std::to_string(payload_size+header_size)+".");
                 msg_corrupt=true;
             }
             cnt_no_connection++;
             lost_package=true;
         }
         if(cnt_no_connection>0 && !lost_package){ // If packages have been lost and the current one is valid...
-            cpp_utils::print_warning("Number of lost packages: "+std::to_string(this->_cnt_lost_packages));
+            msrm_utils::print_warning("Number of lost packages: "+std::to_string(this->_cnt_lost_packages));
             cnt_no_connection=0;
             msg_buffer=false;
             msg_corrupt=false;
         }
         this->_n_package_last=(int)msg[i+4]; // Read the package counter
 
-        if(cnt_no_connection>200){ // If 20 packages were invalid after a connection has already been established...
+        if(cnt_no_connection>20){ // If 20 packages were invalid after a connection has already been established...
             if(!msg_connection_lost){
-                cpp_utils::print_critical_error("Lost 20 packets in a row. I assume the network connection is faulty and will terminate.");
+                msrm_utils::print_critical_error("Lost 200 packets in a row. I assume the network connection is faulty and will terminate.");
                 msg_connection_lost=true;
             }
-            this->set_flag_error(); // Terminate prototype
+            this->write_safe_message();
+//            this->set_flag_error(); // Terminate prototype
         }
         if(lost_package){ // If a package was lost...
             usleep(1000); // Sleep for 1 ms
@@ -560,7 +594,7 @@ void mp_telepresence::msg_in() {
             this->_flag_connected=true; // The first time this line is reached, a connection is considered as established.
             this->_flag_valid_package=true; // Indicate a valid package
             if(!msg_connection_valid){
-                cpp_utils::print_info("Communication has been established.");
+                msrm_utils::print_info("Communication has been established.");
                 msg_connection_valid=true;
             }
         }
@@ -590,7 +624,7 @@ bool mp_telepresence::unload_msg(const std::vector<double> &payload){
     if(c->mode==TelepresenceMode::Joystick){
         if(c->master){ // If this prototype is master...
             if(payload.size()!=6){ // If payload does not have 6 elements...
-                cpp_utils::print_error("Size of payload is "+std::to_string(payload.size())+" but expected is 6.");
+                msrm_utils::print_error("Size of payload is "+std::to_string(payload.size())+" but expected is 6.");
                 return false;
             }
             // Read payload into thread-safe container
@@ -599,7 +633,7 @@ bool mp_telepresence::unload_msg(const std::vector<double> &payload){
             }
         }else{ // If this prototype is slave...
             if(payload.size()!=6){ // If payload does not have 6 elements...
-                cpp_utils::print_error("Size of payload is "+std::to_string(payload.size())+" but expected is 6.");
+                msrm_utils::print_error("Size of payload is "+std::to_string(payload.size())+" but expected is 6.");
                 return false;
             }
             // Read payload into thread-safe container
@@ -609,6 +643,23 @@ bool mp_telepresence::unload_msg(const std::vector<double> &payload){
         }
     }
     return false;
+}
+
+void mp_telepresence::write_safe_message(){
+    std::shared_ptr<ConfigMP_mp_telepresence> c = std::static_pointer_cast<ConfigMP_mp_telepresence>(this->_config);
+    if(c->mode==TelepresenceMode::Joystick){
+        if(c->master){ // If this prototype is master...
+            // Read payload into thread-safe container
+            for(unsigned i=0;i<6;i++){
+                this->_EE_F_ext_in[0][i]=0;
+            }
+        }else{ // If this prototype is slave...
+            // Read payload into thread-safe container
+            for(unsigned i=0;i<6;i++){
+                this->_O_dX_d_in[0][i]=0;
+            }
+        }
+    }
 }
 
 }

@@ -17,6 +17,8 @@ struct ConfigSkill_telepresence_slave : public ConfigSkill{
     Eigen::Matrix<double,3,3> EE_T_J_r;
 
     std::string joystick_funnel_pose;
+    bool joystick_stepwise;
+    Eigen::Matrix<double,2,1> joystick_step_size;
 
     bool bilateral;
     TelepresenceMode mode;

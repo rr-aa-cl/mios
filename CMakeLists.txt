@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_LINK_DEPENDS_NO_SHARED)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wreturn-type")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wreturn-type -Wno-error=deprecated-declarations")
 #set(CMAKE_UNITY_BUILD ON)
 
 find_package(Eigen3 REQUIRED)
@@ -36,15 +36,6 @@ file(STRINGS ${CMAKE_SOURCE_DIR}/config/active_mp ACTIVE_MP)
 file(STRINGS ${CMAKE_SOURCE_DIR}/config/active_skills ACTIVE_SKILLS)
 file(STRINGS ${CMAKE_SOURCE_DIR}/config/active_tasks ACTIVE_TASKS)
 file(STRINGS ${CMAKE_SOURCE_DIR}/config/active_patterns ACTIVE_LED_PATTERNS)
-
-add_subdirectory(
-    cpp
-)
-add_library(cpp_utils SHARED cpp/src/network.cpp cpp/src/files.cpp cpp/src/math.cpp cpp/src/json.cpp cpp/src/output.cpp cpp/src/conversion.cpp cpp/src/system.cpp)
-install(TARGETS cpp_utils DESTINATION ${CMAKE_SOURCE_DIR}/lib)
-add_subdirectory(
-    utils
-    )
 
 add_subdirectory(plugins/mogen_p2p)
 include_directories(${mogen_p2p_INCLUDE_DIRS})

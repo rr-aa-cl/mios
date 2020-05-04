@@ -2,8 +2,8 @@
 
 #include <eigen3/Eigen/Core>
 
-#include "cpp_utils/json.hpp"
-#include "cpp_utils/math.hpp"
+#include <msrm_utils/json.hpp>
+#include <msrm_utils/math.hpp>
 
 namespace mios {
 

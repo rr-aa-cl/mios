@@ -19,7 +19,7 @@
 #include "utils/exceptions.hpp"
 #include "bsoncxx/builder/stream/document.hpp"
 
-#include "cpp_utils/network.hpp"
+#include <msrm_utils/network.hpp>
 
 
 namespace mios {
@@ -223,11 +223,11 @@ private:
 
     template<std::size_t S1,std::size_t S2>bool load_parameter(Eigen::Matrix<double,S1,S2>& m, const std::string& id, const bsoncxx::document::view &doc) const{
         if(doc.find(id)==doc.end()){
-            cpp_utils::print_error("Could not load parameter "+id+".");
+            msrm_utils::print_error("Could not load parameter "+id+".");
             throw ParameterLoadException();
         }else{
             if(!this->db_convert_matrix<S1,S2>(m,id,doc)){
-                cpp_utils::print_error("Could not load parameter "+id+".");
+                msrm_utils::print_error("Could not load parameter "+id+".");
                 throw ParameterLoadException();
             }
         }
@@ -235,11 +235,11 @@ private:
 
     template<std::size_t S1,std::size_t S2>void load_parameter(Eigen::Matrix<int,S1,S2>& m, const std::string& id, const bsoncxx::document::view &doc) const{
         if(doc.find(id)==doc.end()){
-            cpp_utils::print_error("Could not load parameter "+id+".");
+            msrm_utils::print_error("Could not load parameter "+id+".");
             throw ParameterLoadException();
         }else{
             if(!this->db_convert_matrix<S1,S2>(m,id,doc)){
-                cpp_utils::print_error("Could not load parameter "+id+".");
+                msrm_utils::print_error("Could not load parameter "+id+".");
                 throw ParameterLoadException();
             }
         }
@@ -247,11 +247,11 @@ private:
 
     template<typename T>void load_parameter(T& v, const std::string& id, const bsoncxx::document::view &doc) const{
         if(doc.find(id)==doc.end()){
-                cpp_utils::print_error("Could not load parameter "+id+".");
+                msrm_utils::print_error("Could not load parameter "+id+".");
                 throw ParameterLoadException();
         }else{
             if(!this->db_convert_value(v,id,doc)){
-                cpp_utils::print_error("Could not load parameter "+id+".");
+                msrm_utils::print_error("Could not load parameter "+id+".");
                 throw ParameterLoadException();
             }
         }

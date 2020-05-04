@@ -22,17 +22,17 @@ const EvalTask& move_to_cart_pose::evaluate_task(){
     return this->_eval_task;
 }
 bool move_to_cart_pose::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"pose",this->pose)){
+    if(!msrm_utils::read_json_param(params,"pose",this->pose)){
         this->pose="none";
     }
-    if(!cpp_utils::read_json_param<double,4,4>(params,"TF_T_EE_g",this->TF_T_EE_g) && this->pose=="none"){
-        cpp_utils::print_error("Missing parameters: pose or TF_T_EE_g");
+    if(!msrm_utils::read_json_param<double,4,4>(params,"TF_T_EE_g",this->TF_T_EE_g) && this->pose=="none"){
+        msrm_utils::print_error("Missing parameters: pose or TF_T_EE_g");
         return false;
     }
-    if(!cpp_utils::read_json_param(params,"speed",this->speed)){
+    if(!msrm_utils::read_json_param(params,"speed",this->speed)){
         this->speed=0.5;
     }
-    if(!cpp_utils::read_json_param(params,"acc",this->acc)){
+    if(!msrm_utils::read_json_param(params,"acc",this->acc)){
         this->acc=0.5;
     }
     return true;

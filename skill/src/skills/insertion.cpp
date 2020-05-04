@@ -8,16 +8,16 @@ insertion::insertion():Skill("insertion"){
 
 bool insertion::read_skill_parameters(const nlohmann::json &p){
     std::shared_ptr<ConfigSkill_insertion> c = std::static_pointer_cast<ConfigSkill_insertion>(this->_config);
-    cpp_utils::read_json_param<double,2,1>(p,"speed",c->speed);
-    cpp_utils::read_json_param<double,1,1>(p,"F_contact",c->F_contact);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_a_r",c->wiggle_a_r);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_a_t",c->wiggle_a_t);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_a_z",c->wiggle_a_z);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_f_r",c->wiggle_f_r);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_f_t",c->wiggle_f_t);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_f_z",c->wiggle_f_z);
-    cpp_utils::read_json_param<double,3,1>(p,"phi_init",c->phi_init);
-    cpp_utils::read_json_param<double,3,1>(p,"offset_init",c->offset_init);
+    msrm_utils::read_json_param<double,2,1>(p,"speed",c->speed);
+    msrm_utils::read_json_param<double,1,1>(p,"F_contact",c->F_contact);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_a_r",c->wiggle_a_r);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_a_t",c->wiggle_a_t);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_a_z",c->wiggle_a_z);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_f_r",c->wiggle_f_r);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_f_t",c->wiggle_f_t);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_f_z",c->wiggle_f_z);
+    msrm_utils::read_json_param<double,3,1>(p,"phi_init",c->phi_init);
+    msrm_utils::read_json_param<double,3,1>(p,"offset_init",c->offset_init);
     return true;
 }
 
@@ -39,10 +39,10 @@ void insertion::build_primitives(const Percept &p){
 
     Eigen::Matrix<double,4,4> O_T_hole_est=this->get_object_pose("hole");
     this->TF_T_hole_est=O_T_hole_est;
-    Eigen::Matrix<double,3,1> x_current=cpp_utils::invert_matrix(this->_config->frames.O_R_TF)*p.TF_T_EE.block<3,1>(0,3);
+    Eigen::Matrix<double,3,1> x_current=msrm_utils::invert_matrix(this->_config->frames.O_R_TF)*p.TF_T_EE.block<3,1>(0,3);
     Eigen::Matrix<double,3,1> dir = this->TF_T_hole_est.block<3,1>(0,3)-x_current;
     dir(2)=0;
-    Eigen::Matrix<double,3,1> dir_n = dir/cpp_utils::norm_2<3>(dir);
+    Eigen::Matrix<double,3,1> dir_n = dir/msrm_utils::norm_2<3>(dir);
 
     this->dir_hole=dir_n;
 
@@ -90,12 +90,12 @@ bool insertion::check_local_err_conditions(const Percept &p){
     double dist_xy=sqrt(pow(p.TF_T_EE(0,3)-TF_T_hole_est(0,3),2)+pow(p.TF_T_EE(1,3)-TF_T_hole_est(1,3),2));
     double dist_z=fabs(p.TF_T_EE(2,3)-TF_T_hole_est(2,3));
     double radius,depth;
-    if(!cpp_utils::read_json_param(this->get_object("hole").geometry,"radius",radius)){
-        cpp_utils::print_error("Object "+this->get_object("hole").name+" has no geometry property <depth>.");
+    if(!msrm_utils::read_json_param(this->get_object("hole").geometry,"radius",radius)){
+        msrm_utils::print_error("Object "+this->get_object("hole").name+" has no geometry property <depth>.");
         return false;
     }
-    if(!cpp_utils::read_json_param(this->get_object("hole").geometry,"depth",depth)){
-        cpp_utils::print_error("Object "+this->get_object("hole").name+" has no geometry property <radius>.");
+    if(!msrm_utils::read_json_param(this->get_object("hole").geometry,"depth",depth)){
+        msrm_utils::print_error("Object "+this->get_object("hole").name+" has no geometry property <radius>.");
         return false;
     }
     if(dist_xy>radius || dist_z>depth*2 || error_angle>30.0/180.0*M_PI || p.TF_T_EE(2,3)<this->TF_T_hole_est(2,3)-depth-0.01){
@@ -107,24 +107,24 @@ bool insertion::check_local_err_conditions(const Percept &p){
 
 void insertion::evaluate(){
 
-        double c_err_1=this->_config->time_max+exp(cpp_utils::norm_2<3>(this->_eval.p_1.TF_T_EE.block<3,1>(0,3)-this->TF_T_hole_est.block<3,1>(0,3))*100)-1;
+        double c_err_1=this->_config->time_max+exp(msrm_utils::norm_2<3>(this->_eval.p_1.TF_T_EE.block<3,1>(0,3)-this->TF_T_hole_est.block<3,1>(0,3))*100)-1;
         double c_suc_1=this->_eval.p_1.time-this->_eval.p_0.time;
 
-        double c_err_2=cpp_utils::norm_2<3>(this->_config->user.F_max.block<3,1>(0,0))+exp(cpp_utils::norm_2<3>(this->_eval.p_1.TF_T_EE.block<3,1>(0,3)-this->TF_T_hole_est.block<3,1>(0,3))*100)-1;
+        double c_err_2=msrm_utils::norm_2<3>(this->_config->user.F_max.block<3,1>(0,0))+exp(msrm_utils::norm_2<3>(this->_eval.p_1.TF_T_EE.block<3,1>(0,3)-this->TF_T_hole_est.block<3,1>(0,3))*100)-1;
         double c_suc_2=0;
         if(this->_cf1_cnt==0){
             c_suc_2=this->_eval.cost_err;
         }else{
             c_suc_2=this->_cf1_sum_force/this->_cf1_cnt;
         }
-        cpp_utils::print_critical_error("COST_ERR: " + std::to_string(c_err_1));
-        cpp_utils::print_critical_error("COST_SUC: " + std::to_string(c_suc_1));
+        msrm_utils::print_critical_error("COST_ERR: " + std::to_string(c_err_1));
+        msrm_utils::print_critical_error("COST_SUC: " + std::to_string(c_suc_1));
         this->_eval.cost_err=this->_config->w_cost_function[0]*c_err_1+this->_config->w_cost_function[1]*c_err_2;
         this->_eval.cost_suc=this->_config->w_cost_function[0]*c_suc_1+this->_config->w_cost_function[1]*c_suc_2;
 }
 
 void insertion::auxiliaries(const Percept &p){
-    this->_cf1_sum_force+=cpp_utils::norm_2<3>(p.K_F_ext.block<3,1>(0,0));
+    this->_cf1_sum_force+=msrm_utils::norm_2<3>(p.K_F_ext.block<3,1>(0,0));
     this->_cf1_cnt++;
 }
 

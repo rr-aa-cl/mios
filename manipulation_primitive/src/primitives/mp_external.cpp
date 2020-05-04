@@ -1,8 +1,8 @@
 #include "primitives/mp_external.hpp"
 
-#include "cpp_utils/math.hpp"
-#include "cpp_utils/conversion.hpp"
-#include "cpp_utils/network.hpp"
+#include <msrm_utils/math.hpp>
+#include <msrm_utils/conversion.hpp>
+#include <msrm_utils/network.hpp>
 
 namespace mios {
 
@@ -27,8 +27,8 @@ void mp_external::initialize(const Percept &p_0, const std::shared_ptr<ConfigUse
     this->initialize_connections();
 
     this->_cmd.q_d=p_0.q;
-    this->_q_d_in[0]=cpp_utils::convert_to_array<double,7,1>(p_0.q);
-    this->_O_T_EE_d_in[0]=cpp_utils::convert_to_array<double,4,4>(p_0.O_T_EE);
+    this->_q_d_in[0]=msrm_utils::convert_to_array<double,7,1>(p_0.q);
+    this->_O_T_EE_d_in[0]=msrm_utils::convert_to_array<double,4,4>(p_0.O_T_EE);
     this->_dq_d_in[0]={0,0,0,0,0,0,0};
     this->_dX_d_in[0]={0,0,0,0,0,0};
     this->_tau_in[0]={0,0,0,0,0,0,0};
@@ -109,14 +109,14 @@ bool mp_external::initialize_connections(){
     std::string ip_dst;
 
     // If a hostname instead of IP is provided, it is converted to an IP
-    if(!cpp_utils::check_if_valid_ip(config->ip_dst)){
-        ip_dst=cpp_utils::get_ip_by_hostname(config->ip_dst);
+    if(!msrm_utils::is_valid_ip_address(config->ip_dst.c_str())){
+        ip_dst=msrm_utils::get_ip_by_hostname(config->ip_dst.c_str()).value_or("none");
     }else{
         ip_dst=config->ip_dst;
     }
 
-    if(!cpp_utils::check_if_valid_ip(ip_dst)){ // If IP is not valid...
-        cpp_utils::print_error("Invalid ip: "+ip_dst);
+    if(!msrm_utils::is_valid_ip_address(ip_dst.c_str())){ // If IP is not valid...
+        msrm_utils::print_error("Invalid ip: "+ip_dst);
         return false;
     }
 
@@ -124,7 +124,7 @@ bool mp_external::initialize_connections(){
     this->_slen_out=sizeof(this->_si_other_out);
     if ((this->_s_out=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) // If socket for outgoing connection could not be created...
     {
-        cpp_utils::print_error("Initialization of outgoing connection failed.");
+        msrm_utils::print_error("Initialization of outgoing connection failed.");
         return false;
     }
     memset((char *) &this->_si_other_out, 0, sizeof(this->_si_other_out));
@@ -136,7 +136,7 @@ bool mp_external::initialize_connections(){
     // Incoming connection
     this->_slen_in = sizeof(this->_si_other_in);
     if((this->_s_in=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1){ // If socket for incoming connection could not be created...
-        cpp_utils::print_error("Initialization of incoming connection failed.");
+        msrm_utils::print_error("Initialization of incoming connection failed.");
         return false;
     }
 
@@ -158,7 +158,7 @@ bool mp_external::initialize_connections(){
 
     // Incoming connection was properly created.
 
-    cpp_utils::print_info("Incoming connection configured with port: "+std::to_string(config->port_recv));
+    msrm_utils::print_info("Incoming connection configured with port: "+std::to_string(config->port_recv));
 
     return true;
 }
@@ -185,15 +185,15 @@ void mp_external::msg_in() {
     // Loop for incoming messages is started
     while(true) { // Runs forever if no errors occur...
         if(!this->_flag_run){ // If an interrupt exception occurs...
-            cpp_utils::print_info("Incoming communication terminated.");
+            msrm_utils::print_info("Incoming communication terminated.");
             int r=close(this->_s_in); // Socket is closed
             if(r<0){ // If an error occured during socket termination...
-                cpp_utils::print_error("Could not close socket.");
+                msrm_utils::print_error("Could not close socket.");
             }
             return;
         }
         if(!msg_connection_wait){
-            cpp_utils::print_info("Waiting for incoming messages...");
+            msrm_utils::print_info("Waiting for incoming messages...");
             msg_connection_wait=true;
         }
         // Current content from the UDP connection is read into the buffer
@@ -216,11 +216,11 @@ void mp_external::msg_in() {
             }
         }
         if(!((int)msg[i+4]==this->_n_package_last+1 || ((int)msg[i+4]==0 && this->_n_package_last==99))){ // If the last package counter is not one less than the current package counter...
-            //                cpp_utils::print_warning("I am losing packets.");
+            //                msrm_utils::print_warning("I am losing packets.");
         }
         if(i>=this->_bufferlength-payload_size+header_size && reclen==payload_size+header_size && this->_flag_connected){ // If the message cannot fit into the buffer but start bytes have been found...
             if(!msg_buffer){
-                cpp_utils::print_warning("Message reaches over end of buffer. Start of message is "+std::to_string(i)+".");
+                msrm_utils::print_warning("Message reaches over end of buffer. Start of message is "+std::to_string(i)+".");
                 msg_buffer=true;
             }
             cnt_no_connection++;
@@ -228,14 +228,14 @@ void mp_external::msg_in() {
         }
         if(reclen!=payload_size+header_size && this->_flag_connected){ // If the length of the received message is not equal to required message size and connection has already been established...
             if(!msg_corrupt){
-                cpp_utils::print_warning("Corrupted message. Received length is "+std::to_string(reclen) + ". Expected length is "+std::to_string(payload_size+header_size)+".");
+                msrm_utils::print_warning("Corrupted message. Received length is "+std::to_string(reclen) + ". Expected length is "+std::to_string(payload_size+header_size)+".");
                 msg_corrupt=true;
             }
             cnt_no_connection++;
             lost_package=true;
         }
         if(cnt_no_connection>0 && !lost_package){ // If packages have been lost and the current one is valid...
-            cpp_utils::print_warning("Number of lost packages: "+std::to_string(this->_cnt_lost_packages));
+            msrm_utils::print_warning("Number of lost packages: "+std::to_string(this->_cnt_lost_packages));
             cnt_no_connection=0;
             msg_buffer=false;
             msg_corrupt=false;
@@ -244,7 +244,7 @@ void mp_external::msg_in() {
 
         if(cnt_no_connection>20){ // If 20 packages were invalid after a connection has already been established...
             if(!msg_connection_lost){
-                cpp_utils::print_critical_error("Lost 20 packets in a row. I assume the network connection is faulty and will terminate.");
+                msrm_utils::print_critical_error("Lost 20 packets in a row. I assume the network connection is faulty and will terminate.");
                 msg_connection_lost=true;
             }
             this->set_flag_error(); // Terminate prototype
@@ -257,7 +257,7 @@ void mp_external::msg_in() {
             this->_flag_connected=true; // The first time this line is reached, a connection is considered as established.
             this->_flag_valid_package=true; // Indicate a valid package
             if(!msg_connection_valid){
-                cpp_utils::print_info("Communication has been established.");
+                msrm_utils::print_info("Communication has been established.");
                 msg_connection_valid=true;
             }
         }
@@ -335,7 +335,7 @@ bool mp_external::msg_out(const std::vector<double> &payload){
     // The message is sent out to the peer robot.
     int err=sendto(this->_s_out, msg, sizeof(msg) , 0 , (struct sockaddr *) &this->_si_other_out, this->_slen_out)<0;
     if(err<0){ // If an error occured during sending...
-        cpp_utils::print_error("Could not send package.");
+        msrm_utils::print_error("Could not send package.");
         return false; // The prototype is terminated.
     }
     return true;
@@ -345,7 +345,7 @@ bool mp_external::unload_msg(const std::vector<double> &payload){
     std::shared_ptr<ConfigMP_mp_external> c_mp = std::static_pointer_cast<ConfigMP_mp_external>(this->_config);
     if(c_mp->mode==InputMode::Torque){
         if(payload.size()!=7){
-            cpp_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 7.");
+            msrm_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 7.");
             return false;
         }
         for(unsigned i=0;i<7;i++){
@@ -354,7 +354,7 @@ bool mp_external::unload_msg(const std::vector<double> &payload){
     }
     if(c_mp->mode==InputMode::CartesianVelocity){
         if(payload.size()!=6){
-            cpp_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 6.");
+            msrm_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 6.");
             return false;
         }
         for(unsigned i=0;i<6;i++){
@@ -363,7 +363,7 @@ bool mp_external::unload_msg(const std::vector<double> &payload){
     }
     if(c_mp->mode==InputMode::JointVelocity){
         if(payload.size()!=7){
-            cpp_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 7.");
+            msrm_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 7.");
             return false;
         }
         for(unsigned i=0;i<7;i++){
@@ -372,7 +372,7 @@ bool mp_external::unload_msg(const std::vector<double> &payload){
     }
     if(c_mp->mode==InputMode::CartesianPosition){
         if(payload.size()!=16){
-            cpp_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 16.");
+            msrm_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 16.");
             return false;
         }
         for(unsigned i=0;i<7;i++){
@@ -381,7 +381,7 @@ bool mp_external::unload_msg(const std::vector<double> &payload){
     }
     if(c_mp->mode==InputMode::JointPosition){
         if(payload.size()!=7){
-            cpp_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 7.");
+            msrm_utils::print_error("Payload size is " + std::to_string(payload.size()) + " but expected is 7.");
             return false;
         }
         for(unsigned i=0;i<7;i++){

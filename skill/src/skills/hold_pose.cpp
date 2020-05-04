@@ -13,8 +13,8 @@ hold_pose::~hold_pose(){
 bool hold_pose::read_skill_parameters(const nlohmann::json &p){
 
     std::shared_ptr<ConfigSkill_hold_pose> c = this->get_config<ConfigSkill_hold_pose>();
-    if(!cpp_utils::read_json_param(p,"t_max",c->t_max)){
-        cpp_utils::print_error("Missing parameter: t_max");
+    if(!msrm_utils::read_json_param(p,"t_max",c->t_max)){
+        msrm_utils::print_error("Missing parameter: t_max");
     }
     return true;
 }

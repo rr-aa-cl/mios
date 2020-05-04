@@ -15,20 +15,20 @@ Task::~Task(){
 }
 
 void Task::recover_task(){
-    cpp_utils::print_warning("Recovery routine of task "+this->_id+" is empty.");
+    msrm_utils::print_warning("Recovery routine of task "+this->_id+" is empty.");
 }
 
 void Task::stop_task(bool nominal,bool success,bool recover, bool empty_queue, double cost_suc, double cost_err){
     if(this->_flag_stop){
-        cpp_utils::print_warning("Task "+this->_id+ " has already been stopped.");
+        msrm_utils::print_warning("Task "+this->_id+ " has already been stopped.");
         return;
     }
     if(this->_flag_in_recovery && nominal){
-        cpp_utils::print_warning("Can not invoke nominal stop while in recovery mode.");
+        msrm_utils::print_warning("Can not invoke nominal stop while in recovery mode.");
         return;
     }
     if(!nominal){
-        cpp_utils::print_warning("Non-nominal stop invoked. I will not attempt to recover task " + this->_id + ".");
+        msrm_utils::print_warning("Non-nominal stop invoked. I will not attempt to recover task " + this->_id + ".");
     }
     this->_eval_task.nominal_termination=nominal;
     this->_eval_task.empty_queue=empty_queue;
@@ -91,46 +91,46 @@ void Task::reset_soft(){
 bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
     try{
         nlohmann::json task_descr;
-        cpp_utils::print_info("Loading description for task " + this->_id + "...",false);
+        msrm_utils::print_info("Loading description for task " + this->_id + "...",false);
         if(!core->get_kb()->load_task(this->_id,task_descr)){
-            cpp_utils::print_info("failed.");
-            cpp_utils::print_error("Could not load a valid task description for "+this->_id+".");
+            msrm_utils::print_info("failed.");
+            msrm_utils::print_error("Could not load a valid task description for "+this->_id+".");
             return false;
         }
-        cpp_utils::print_info("done.");
+        msrm_utils::print_info("done.");
         this->reset();
         this->_core=core;
         this->_kb=this->_core->get_kb();
 
         // merge default task parameters with instance task parameters
-        if(cpp_utils::find_json_value(task_descr,"parameters") && cpp_utils::find_json_value(parameters,"parameters")){
+        if(msrm_utils::find_json_value(task_descr,"parameters") && msrm_utils::find_json_value(parameters,"parameters")){
             for(nlohmann::json::const_iterator itr = parameters["parameters"].begin();itr != parameters["parameters"].end();itr++){
-                if(!cpp_utils::find_json_value(task_descr["parameters"],itr.key())){
-                    cpp_utils::print_error("Task parameter "+itr.key()+" given by user does not exist in task description.");
+                if(!msrm_utils::find_json_value(task_descr["parameters"],itr.key().c_str())){
+                    msrm_utils::print_error("Task parameter "+itr.key()+" given by user does not exist in task description.");
                     return false;
                 }
-                cpp_utils::overwrite_valid_json(parameters["parameters"][itr.key()],task_descr["parameters"][itr.key()]);
+                msrm_utils::overwrite_valid_json(parameters["parameters"][itr.key()],task_descr["parameters"][itr.key()]);
             }
         }
         // read task parameters from description
-        if(cpp_utils::find_json_value(task_descr,"parameters")){
+        if(msrm_utils::find_json_value(task_descr,"parameters")){
             if(!this->read_parameters(task_descr["parameters"])){
-                cpp_utils::print_error("Could not load task parameters for task "+this->_id+".");
+                msrm_utils::print_error("Could not load task parameters for task "+this->_id+".");
                 return false;
             }
         }
-        if(!cpp_utils::read_json_param<double>(parameters,"w_cost_function",this->_w_cost_function)){
+        if(!msrm_utils::read_json_param<double>(parameters,"w_cost_function",this->_w_cost_function)){
             this->_w_cost_function.resize(10);
             this->_w_cost_function[0]=1;
         }
         this->initialize_task();
-        cpp_utils::print_info("Checking user input for task " + this->_id + "...",false);
+        msrm_utils::print_info("Checking user input for task " + this->_id + "...",false);
         if(!this->check_user_input(parameters, task_descr)){
-            cpp_utils::print_info("failed.");
-            cpp_utils::print_error("User input contains errors for task " + this->_id + ".");
+            msrm_utils::print_info("failed.");
+            msrm_utils::print_error("User input contains errors for task " + this->_id + ".");
             return false;
         }
-        cpp_utils::print_info("done.");
+        msrm_utils::print_info("done.");
 
         for(auto& s : this->_skill){
             s.second->create_config();
@@ -140,23 +140,23 @@ bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
 
         for(auto& t : this->_subtask){
             nlohmann::json parameters_sub=nlohmann::json();
-            if(cpp_utils::find_json_value(parameters,"subtasks")){
-                if(cpp_utils::find_json_value(parameters["subtasks"],t.first)){
+            if(msrm_utils::find_json_value(parameters,"subtasks")){
+                if(msrm_utils::find_json_value(parameters["subtasks"],t.first.c_str())){
                     parameters_sub=parameters["subtasks"][t.first];
                 }
             }
             if(!t.second->load(parameters_sub,this->_core)){
-                cpp_utils::print_error("Loading of subtask "+t.first+" has failed.");
+                msrm_utils::print_error("Loading of subtask "+t.first+" has failed.");
                 return false;
             }
         }
         for(auto& s : this->_skill){
             if(!this->_core->get_kb()->load_parameters()){
-                cpp_utils::print_error("Could not load parameters from knowledge base");
+                msrm_utils::print_error("Could not load parameters from knowledge base");
                 return false;
             }
             if(s.second->get_config()==nullptr){
-                cpp_utils::print_error("Skill of type "+s.second->get_type()+" has invalid config object. Please implement the function 'get_config' properly.");
+                msrm_utils::print_error("Skill of type "+s.second->get_type()+" has invalid config object. Please implement the function 'get_config' properly.");
                 return false;
             }
             std::string id_skill=s.second->get_id();
@@ -169,7 +169,7 @@ bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
 
             nlohmann::json skill_descr;
             if(!this->_core->get_kb()->load_skill(s.second->get_type(),skill_descr)){
-                cpp_utils::print_error("Could not load a valid skill description for "+id_skill+".");
+                msrm_utils::print_error("Could not load a valid skill description for "+id_skill+".");
                 return false;
             }
 
@@ -180,74 +180,74 @@ bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
             this->load_description_category(parameters,"general",id_skill,task_descr);
             this->load_description_category(parameters,"user",id_skill,task_descr);
             this->load_description_category(parameters,"system",id_skill,task_descr);
-            if(cpp_utils::find_json_value(parameters,"skills") && cpp_utils::find_json_value(task_descr,"skills")){
-                if(cpp_utils::find_json_value(parameters["skills"],id_skill) && cpp_utils::find_json_value(task_descr["skills"],id_skill)){
+            if(msrm_utils::find_json_value(parameters,"skills") && msrm_utils::find_json_value(task_descr,"skills")){
+                if(msrm_utils::find_json_value(parameters["skills"],id_skill.c_str()) && msrm_utils::find_json_value(task_descr["skills"],id_skill.c_str())){
                     // Read objects
-                    if(cpp_utils::find_json_value(parameters["skills"][id_skill],"objects") && cpp_utils::find_json_value(task_descr["skills"][id_skill],"objects")){
+                    if(msrm_utils::find_json_value(parameters["skills"][id_skill],"objects") && msrm_utils::find_json_value(task_descr["skills"][id_skill],"objects")){
                         if(parameters["skills"][id_skill]["objects"].size()!=task_descr["skills"][id_skill]["objects"].size()){
-                            cpp_utils::print_error("Number of given objects for skill "+id_skill+" and number of objects defined by the task description are different.");
+                            msrm_utils::print_error("Number of given objects for skill "+id_skill+" and number of objects defined by the task description are different.");
                             return false;
                         }
                         for(unsigned i=0;i<parameters["skills"][id_skill]["objects"].size();i++){
-                            cpp_utils::overwrite_valid_json(parameters["skills"][id_skill]["objects"][i],task_descr["skills"][id_skill]["objects"][i]);
+                            msrm_utils::overwrite_valid_json(parameters["skills"][id_skill]["objects"][i],task_descr["skills"][id_skill]["objects"][i]);
                         }
-                    }else if(cpp_utils::find_json_value(parameters["skills"][id_skill],"objects")){
+                    }else if(msrm_utils::find_json_value(parameters["skills"][id_skill],"objects")){
                         task_descr["skills"][id_skill]["objects"]=parameters["skills"][id_skill]["objects"];
                     }
-                }else if(cpp_utils::find_json_value(parameters["skills"],id_skill)){
+                }else if(msrm_utils::find_json_value(parameters["skills"],id_skill.c_str())){
                     task_descr["skills"][id_skill]=parameters["skills"][id_skill];
                 }
             }
 
-            if(cpp_utils::find_json_value(task_descr,"skills")){
-                if(cpp_utils::find_json_value(task_descr["skills"],id_skill)){
-                    if(cpp_utils::find_json_value(task_descr["skills"][id_skill],"control")){
+            if(msrm_utils::find_json_value(task_descr,"skills")){
+                if(msrm_utils::find_json_value(task_descr["skills"],id_skill.c_str())){
+                    if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"control")){
                         s.second->get_config()->controller.read_parameters(task_descr["skills"][id_skill]["control"]);
                     }
-                    if(cpp_utils::find_json_value(task_descr["skills"][id_skill],"frames")){
+                    if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"frames")){
                         s.second->get_config()->frames.read_parameters(task_descr["skills"][id_skill]["frames"]);
                     }
-                    if(cpp_utils::find_json_value(task_descr["skills"][id_skill],"genral")){
+                    if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"genral")){
                         s.second->get_config()->general.read_parameters(task_descr["skills"][id_skill]["general"]);
                     }
-                    if(cpp_utils::find_json_value(task_descr["skills"][id_skill],"user")){
+                    if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"user")){
                         s.second->get_config()->user.read_parameters(task_descr["skills"][id_skill]["user"]);
                     }
                 }
             }
 
             // Read skill parameters
-            if(!cpp_utils::find_json_value(task_descr,"skills")){
+            if(!msrm_utils::find_json_value(task_descr,"skills")){
                 task_descr["skills"]=nlohmann::json();
             }
-            if(!cpp_utils::find_json_value(task_descr["skills"],id_skill)){
+            if(!msrm_utils::find_json_value(task_descr["skills"],id_skill.c_str())){
                 task_descr["skills"][id_skill]=nlohmann::json();
             }
             nlohmann::json skill_params_tmp;
-            if(cpp_utils::find_json_value(task_descr["skills"][id_skill],"skill")){
+            if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"skill")){
                 skill_params_tmp=task_descr["skills"][id_skill]["skill"];
             }
             task_descr["skills"][id_skill]["skill"]=skill_descr;
             std::set<std::string> global_skill={"time_max","w_cost_function","parallels_frequency"};
             for(nlohmann::json::const_iterator itr=skill_params_tmp.begin();itr!=skill_params_tmp.end();++itr){
-                if(cpp_utils::find_json_value(task_descr["skills"][id_skill]["skill"],itr.key()) || global_skill.find(itr.key())!=global_skill.end()){
+                if(msrm_utils::find_json_value(task_descr["skills"][id_skill]["skill"],itr.key().c_str()) || global_skill.find(itr.key())!=global_skill.end()){
                     task_descr["skills"][id_skill]["skill"][itr.key()]=skill_params_tmp[itr.key()];
                 }else{
-                    cpp_utils::print_error("Skill "+id_skill+" does not have parameter "+itr.key());
+                    msrm_utils::print_error("Skill "+id_skill+" does not have parameter "+itr.key());
                     return false;
                 }
             }
 
             if(!s.second->read_skill_parameters(task_descr["skills"][id_skill]["skill"])){
-                cpp_utils::print_error("Could not load skill parameters from task description for skill "+id_skill+".");
+                msrm_utils::print_error("Could not load skill parameters from task description for skill "+id_skill+".");
                 return false;
             }
             s.second->read_global_skill_parameters(task_descr["skills"][id_skill]["skill"]);
             s.second->read_configuration(task_descr["skills"][id_skill]);
-            if(cpp_utils::find_json_value(skill_descr,"objects")){
-                if(cpp_utils::find_json_value(task_descr["skills"][id_skill],"objects") || skill_descr["objects"].size()>0){
+            if(msrm_utils::find_json_value(skill_descr,"objects")){
+                if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"objects") || skill_descr["objects"].size()>0){
                     if(skill_descr["objects"].size()!=task_descr["skills"][id_skill]["objects"].size()){
-                        cpp_utils::print_error(std::to_string(task_descr["skills"][id_skill]["objects"].size())+" objects have been specified for skill "+ id_skill +" although "+ std::to_string(skill_descr["objects"].size()) +" are expected.");
+                        msrm_utils::print_error(std::to_string(task_descr["skills"][id_skill]["objects"].size())+" objects have been specified for skill "+ id_skill +" although "+ std::to_string(skill_descr["objects"].size()) +" are expected.");
                         return false;
                     }
                     std::map<std::string,std::string> objects;
@@ -255,24 +255,24 @@ bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
                         objects.insert(std::pair<std::string,std::string>(skill_descr["objects"][i],task_descr["skills"][id_skill]["objects"][i]));
                     }
                     if(!s.second->load_objects(objects)){
-                        cpp_utils::print_error("Could not load objects for skill "+id_skill);
+                        msrm_utils::print_error("Could not load objects for skill "+id_skill);
                         return false;
                     }
                 }
             }
         }
-        cpp_utils::print_info("Checking task description for consistency...",false);
+        msrm_utils::print_info("Checking task description for consistency...",false);
         if(!this->check_task_description(task_descr)){
-            cpp_utils::print_info("failed.");
-            cpp_utils::print_error("Detected errors in task description, aborting execution of task "+this->get_id()+".");
+            msrm_utils::print_info("failed.");
+            msrm_utils::print_error("Detected errors in task description, aborting execution of task "+this->get_id()+".");
             return false;
         }
-        cpp_utils::print_info("done.");
+        msrm_utils::print_info("done.");
     }catch(const nlohmann::detail::type_error& e){
         std::cout<<e.what()<<std::endl;
         return false;
     }
-    cpp_utils::print_info("Task configuration loaded.");
+    msrm_utils::print_info("Task configuration loaded.");
 
     this->_core->get_mios_state()->active_task=this->get_id();
 
@@ -334,16 +334,16 @@ void Task::execute_skill(const std::string& s,bool log){
         throw TaskException("Task "+ this->get_id() +" is not yet connected to the core.");
     }
     if(this->_kb==nullptr){
-        cpp_utils::print_critical_error("Task is not connected with knowledge base.");
+        msrm_utils::print_critical_error("Task is not connected with knowledge base.");
         throw TaskException("Task is not connected with knowledge base.");
     }
     if(this->_skill.find(s)==this->_skill.end()){
-        cpp_utils::print_error("Skill with id "+s+" not in this task. Check your task description for consistency. Stopping task.");
+        msrm_utils::print_error("Skill with id "+s+" not in this task. Check your task description for consistency. Stopping task.");
         this->abort_task();
         throw TaskException("Skill with id "+s+" not in this task. Check your task description for consistency. Stopping task.");
     }
     if(this->_flag_stop){
-        //        cpp_utils::print_info("Task has been stopped recently, aborting skill execution.");
+        //        msrm_utils::print_info("Task has been stopped recently, aborting skill execution.");
         return;
     }
     if(!this->_core->load_skill(this->_skill[s],log)){
@@ -352,7 +352,7 @@ void Task::execute_skill(const std::string& s,bool log){
     if(!this->_core->wait_for_idle_state(2)){
         throw TaskException("Robot did not reach idle state in time.");
     }
-    cpp_utils::print_info("Executing skill "+s+".");
+    msrm_utils::print_info("Executing skill "+s+".");
     bool valid=this->_core->start_control_cycle();
     this->_skill[s]->terminate();
     this->_core->unload_skill();
@@ -374,28 +374,28 @@ void Task::execute_subtask(const std::string& t){
     }
     if(this->_flag_stop){
         //        if(this->_kb->get_local_memory()->access_config_global()->verbosity>1){
-        //            cpp_utils::print_info("Task has been stopped recently, aborting subtask execution.");
+        //            msrm_utils::print_info("Task has been stopped recently, aborting subtask execution.");
         //        }
         return;
     }
-    cpp_utils::print_info("Executing subtask "+t+".");
+    msrm_utils::print_info("Executing subtask "+t+".");
     this->get_subtask(t)->reset_soft();
     this->get_subtask(t)->execute_task();
-    cpp_utils::print_info("Subtask "+t+" has terminated.");
+    msrm_utils::print_info("Subtask "+t+" has terminated.");
     this->get_subtask(t)->evaluate_task();
     if(this->get_subtask(t)->do_recovery()){
         this->get_subtask(t)->start_recovery();
-        cpp_utils::print_info("Subtask "+t+" is attempting recovery.");
+        msrm_utils::print_info("Subtask "+t+" is attempting recovery.");
         this->get_subtask(t)->recover_task();
     }
-    cpp_utils::print_info("End of lifecycle of subtask "+t+".");
+    msrm_utils::print_info("End of lifecycle of subtask "+t+".");
 }
 
 bool Task::read_parameters(const nlohmann::json &params){
     if(params.is_null()){
         return true;
     }
-    cpp_utils::print_error("This task has not overwritten the read_parameters method, yet the task description contains user-defined parameters. Undefined behavior is possible, aborting...");
+    msrm_utils::print_error("This task has not overwritten the read_parameters method, yet the task description contains user-defined parameters. Undefined behavior is possible, aborting...");
     return false;
 }
 
@@ -493,43 +493,43 @@ bool Task::check_task_description(const nlohmann::json &description) const{
     try{
         for(nlohmann::json::const_iterator itr=description.begin();itr!=description.end();++itr){
             if(valid_syntax_top.find(itr.key())==valid_syntax_top.end()){
-                cpp_utils::print_error("Syntax error in task description. Symbol with value "+itr.key()+" is not valid on top level.");
+                msrm_utils::print_error("Syntax error in task description. Symbol with value "+itr.key()+" is not valid on top level.");
                 return false;
             }
         }
-        if(cpp_utils::find_json_value(description,"skills")){
+        if(msrm_utils::find_json_value(description,"skills")){
             for(nlohmann::json::const_iterator itr_skill=description["skills"].begin();itr_skill!=description["skills"].end();++itr_skill){
                 std::string skill=itr_skill.key();
-                if(!cpp_utils::find_json_value(description["skills"][skill],"type")){
-                    cpp_utils::print_error("Syntax error in task description for task "+this->get_id()+". Skill " + skill + " is missing a type definition.");
+                if(!msrm_utils::find_json_value(description["skills"][skill],"type")){
+                    msrm_utils::print_error("Syntax error in task description for task "+this->get_id()+". Skill " + skill + " is missing a type definition.");
                     return false;
                 }else{
                     std::string type;
-                    cpp_utils::read_json_param(description["skills"][skill],"type",type);
+                    msrm_utils::read_json_param(description["skills"][skill],"type",type);
                     if(type!=this->get_skill(skill)->get_type()){
-                        cpp_utils::print_error("Syntax error in task description for task "+this->get_id()+". Type of skill " + skill + " ("+this->get_skill(skill)->get_type()+") is different from type definition in skill description ("+type+").");
+                        msrm_utils::print_error("Syntax error in task description for task "+this->get_id()+". Type of skill " + skill + " ("+this->get_skill(skill)->get_type()+") is different from type definition in skill description ("+type+").");
                         return false;
                     }
                 }
                 for(nlohmann::json::const_iterator itr=description["skills"][skill].begin();itr!=description["skills"][skill].end();++itr){
                     if(valid_syntax_skill.find(itr.key())==valid_syntax_skill.end()){
-                        cpp_utils::print_error("Syntax error in task description for task "+this->get_id()+". Symbol with value "+itr.key()+" is not valid on skill level for skill " +skill+" of type "+this->get_skill(skill)->get_type() +".");
+                        msrm_utils::print_error("Syntax error in task description for task "+this->get_id()+". Symbol with value "+itr.key()+" is not valid on skill level for skill " +skill+" of type "+this->get_skill(skill)->get_type() +".");
                         return false;
                     }
                 }
                 if(this->_skill.find(skill)==this->_skill.end()){
-                    cpp_utils::print_error("Task description for task "+ this->get_id() +" contains skill "+skill+" of type "+this->get_skill(skill)->get_id()+" which is not contained in the task implementation.");
+                    msrm_utils::print_error("Task description for task "+ this->get_id() +" contains skill "+skill+" of type "+this->get_skill(skill)->get_id()+" which is not contained in the task implementation.");
                     return false;
                 }
                 nlohmann::json skill_descr;
                 if(!this->_core->get_kb()->load_skill(this->get_skill(skill)->get_type(),skill_descr)){
-                    cpp_utils::print_error("Could not load a valid skill description for "+this->get_skill(skill)->get_id()+".");
+                    msrm_utils::print_error("Could not load a valid skill description for "+this->get_skill(skill)->get_id()+".");
                     return false;
                 }
-                if(cpp_utils::find_json_value(description["skills"][skill],"skill")){
+                if(msrm_utils::find_json_value(description["skills"][skill],"skill")){
                     for(nlohmann::json::const_iterator itr_p=description["skills"][skill]["skill"].begin();itr_p!=description["skills"][skill]["skill"].end();++itr_p){
-                        if(!cpp_utils::find_json_value(skill_descr,itr_p.key()) && valid_syntax_skill_parameters.find(itr_p.key())==valid_syntax_skill_parameters.end()){
-                            cpp_utils::print_error("Syntax error in task description for task "+this->get_id()+". Symbol with value "+itr_p.key()+" is not valid in skill description for skill "+this->get_skill(skill)->get_id()+" of type "+this->get_skill(skill)->get_type()+".");
+                        if(!msrm_utils::find_json_value(skill_descr,itr_p.key().c_str()) && valid_syntax_skill_parameters.find(itr_p.key())==valid_syntax_skill_parameters.end()){
+                            msrm_utils::print_error("Syntax error in task description for task "+this->get_id()+". Symbol with value "+itr_p.key()+" is not valid in skill description for skill "+this->get_skill(skill)->get_id()+" of type "+this->get_skill(skill)->get_type()+".");
                             return false;
                         }
                     }
@@ -554,50 +554,50 @@ bool Task::check_user_input(const nlohmann::json &parameters, const nlohmann::js
         }
         for(nlohmann::json::const_iterator itr=parameters.begin();itr!=parameters.end();++itr){
             if(valid_syntax_top.find(itr.key())==valid_syntax_top.end()){
-                cpp_utils::print_error("Syntax error in user input. Symbol with value "+itr.key()+" is not valid on top level.");
+                msrm_utils::print_error("Syntax error in user input. Symbol with value "+itr.key()+" is not valid on top level.");
                 return false;
             }
         }
-        if(cpp_utils::find_json_value(parameters, "parameters")){
-            if(!cpp_utils::find_json_value(description, "parameters")){
-                cpp_utils::print_error("Task " + this->_id + " has no parameters but some where given by user input.");
+        if(msrm_utils::find_json_value(parameters, "parameters")){
+            if(!msrm_utils::find_json_value(description, "parameters")){
+                msrm_utils::print_error("Task " + this->_id + " has no parameters but some where given by user input.");
                 return false;
             }else{
                 for(nlohmann::json::const_iterator itr=parameters["parameters"].begin();itr!=parameters["parameters"].end();++itr){
-                    if(!cpp_utils::find_json_value(description["parameters"], itr.key())){
-                        cpp_utils::print_error("Task " + this->_id + " does not have a parameter " + itr.key() + " as provided by user input.");
+                    if(!msrm_utils::find_json_value(description["parameters"], itr.key().c_str())){
+                        msrm_utils::print_error("Task " + this->_id + " does not have a parameter " + itr.key() + " as provided by user input.");
                         return false;
                     }
                 }
             }
         }
-        if(cpp_utils::find_json_value(parameters,"skills")){
+        if(msrm_utils::find_json_value(parameters,"skills")){
             for(nlohmann::json::const_iterator itr_skill=parameters["skills"].begin();itr_skill!=parameters["skills"].end();++itr_skill){
                 std::string skill=itr_skill.key();
                 std::cout<<description<<std::endl;
-                if(!cpp_utils::find_json_value(description["skills"],skill)){
-                    cpp_utils::print_error("Syntax error in user input for task "+this->get_id()+". Skill " + skill + " does not exist in task description.");
+                if(!msrm_utils::find_json_value(description["skills"],skill.c_str())){
+                    msrm_utils::print_error("Syntax error in user input for task "+this->get_id()+". Skill " + skill + " does not exist in task description.");
                     return false;
                 }
                 for(nlohmann::json::const_iterator itr=parameters["skills"][skill].begin();itr!=parameters["skills"][skill].end();++itr){
                     if(valid_syntax_skill.find(itr.key())==valid_syntax_skill.end()){
-                        cpp_utils::print_error("Syntax error in user input for task "+this->get_id()+". Symbol with value "+itr.key()+" is not valid on skill level for skill " +skill+" of type "+this->get_skill(skill)->get_type() +".");
+                        msrm_utils::print_error("Syntax error in user input for task "+this->get_id()+". Symbol with value "+itr.key()+" is not valid on skill level for skill " +skill+" of type "+this->get_skill(skill)->get_type() +".");
                         return false;
                     }
                 }
                 if(this->_skill.find(skill)==this->_skill.end()){
-                    cpp_utils::print_error("User input for task "+ this->get_id() +" contains skill "+skill+" of type "+this->get_skill(skill)->get_id()+" which is not contained in the task implementation.");
+                    msrm_utils::print_error("User input for task "+ this->get_id() +" contains skill "+skill+" of type "+this->get_skill(skill)->get_id()+" which is not contained in the task implementation.");
                     return false;
                 }
                 nlohmann::json skill_descr;
                 if(!this->_core->get_kb()->load_skill(this->get_skill(skill)->get_type(),skill_descr)){
-                    cpp_utils::print_error("Could not load a valid skill description for "+this->get_skill(skill)->get_id()+".");
+                    msrm_utils::print_error("Could not load a valid skill description for "+this->get_skill(skill)->get_id()+".");
                     return false;
                 }
-                if(cpp_utils::find_json_value(description["skills"][skill],"skill")){
+                if(msrm_utils::find_json_value(description["skills"][skill],"skill")){
                     for(nlohmann::json::const_iterator itr_p=description["skills"][skill]["skill"].begin();itr_p!=description["skills"][skill]["skill"].end();++itr_p){
-                        if(!cpp_utils::find_json_value(skill_descr,itr_p.key()) && valid_syntax_skill_parameters.find(itr_p.key())==valid_syntax_skill_parameters.end()){
-                            cpp_utils::print_error("Syntax error in user input for task "+this->get_id()+". Symbol with value "+itr_p.key()+" is not valid in skill description for skill "+this->get_skill(skill)->get_id()+" of type "+this->get_skill(skill)->get_type()+".");
+                        if(!msrm_utils::find_json_value(skill_descr,itr_p.key().c_str()) && valid_syntax_skill_parameters.find(itr_p.key())==valid_syntax_skill_parameters.end()){
+                            msrm_utils::print_error("Syntax error in user input for task "+this->get_id()+". Symbol with value "+itr_p.key()+" is not valid in skill description for skill "+this->get_skill(skill)->get_id()+" of type "+this->get_skill(skill)->get_type()+".");
                             return false;
                         }
                     }
@@ -612,26 +612,26 @@ bool Task::check_user_input(const nlohmann::json &parameters, const nlohmann::js
 }
 
 void Task::load_description_category(const nlohmann::json &parameters, const std::string &category, const std::string &id_skill, nlohmann::json &task_descr) const{
-    if(!cpp_utils::find_json_value(parameters,"skills")){
+    if(!msrm_utils::find_json_value(parameters,"skills")){
         return;
     }
-    if(!cpp_utils::find_json_value(task_descr,"skills")){
+    if(!msrm_utils::find_json_value(task_descr,"skills")){
         task_descr["skills"]=parameters["skills"];
         return;
     }
-    if(!cpp_utils::find_json_value(parameters["skills"],id_skill)){
+    if(!msrm_utils::find_json_value(parameters["skills"],id_skill.c_str())){
         return;
     }
-    if(!cpp_utils::find_json_value(task_descr["skills"],id_skill)){
+    if(!msrm_utils::find_json_value(task_descr["skills"],id_skill.c_str())){
         task_descr["skills"][id_skill]=parameters["skills"][id_skill];
         return;
     }
-    if(cpp_utils::find_json_value(parameters["skills"][id_skill],category) && cpp_utils::find_json_value(task_descr["skills"][id_skill],category)){
+    if(msrm_utils::find_json_value(parameters["skills"][id_skill],category.c_str()) && msrm_utils::find_json_value(task_descr["skills"][id_skill],category.c_str())){
 
         for(nlohmann::json::const_iterator itr = parameters["skills"][id_skill][category].begin();itr != parameters["skills"][id_skill][category].end();itr++){
-            cpp_utils::overwrite_valid_json(parameters["skills"][id_skill][category][itr.key()],task_descr["skills"][id_skill][category][itr.key()]);
+            msrm_utils::overwrite_valid_json(parameters["skills"][id_skill][category][itr.key()],task_descr["skills"][id_skill][category][itr.key()]);
         }
-    }else if(cpp_utils::find_json_value(parameters["skills"][id_skill],category)){
+    }else if(msrm_utils::find_json_value(parameters["skills"][id_skill],category.c_str())){
         task_descr["skills"][id_skill][category]=parameters["skills"][id_skill][category];
     }
 }

@@ -9,16 +9,16 @@ gesture_haptic::gesture_haptic():Skill("gesture_haptic"){
 bool gesture_haptic::read_skill_parameters(const nlohmann::json &p){
 
     std::shared_ptr<ConfigSkill_gesture_haptic> c = this->get_config<ConfigSkill_gesture_haptic>();
-    cpp_utils::read_json_param<double,6,1>(p,"F_trigger",c->F_trigger);
-    cpp_utils::read_json_param<int,6,1>(p,"dir_trigger",c->dir_trigger);
-    cpp_utils::read_json_param(p,"wait_for_relax",c->wait_for_relax);
+    msrm_utils::read_json_param<double,6,1>(p,"F_trigger",c->F_trigger);
+    msrm_utils::read_json_param<int,6,1>(p,"dir_trigger",c->dir_trigger);
+    msrm_utils::read_json_param(p,"wait_for_relax",c->wait_for_relax);
     for(unsigned i=0;i<6;i++){
         if(c->F_trigger(i)<0){
-            cpp_utils::print_warning("Only absolute values of forces are used. Signs can be determined with the dir_trigger parameter.");
+            msrm_utils::print_warning("Only absolute values of forces are used. Signs can be determined with the dir_trigger parameter.");
             c->F_trigger(i)=fabs(c->F_trigger(i));
         }
         if(c->dir_trigger(i)<-1 || c->dir_trigger(i)>1){
-            cpp_utils::print_error("Force directions for gestures can only be (1,0,-1).");
+            msrm_utils::print_error("Force directions for gestures can only be (1,0,-1).");
             return false;
         }
     }
@@ -61,7 +61,7 @@ void gesture_haptic::evaluate(){
     this->_eval.cost_err=0;
     this->_eval.cost_suc=0;
     std::shared_ptr<ConfigSkill_gesture_haptic> c = this->get_config<ConfigSkill_gesture_haptic>();
-    cpp_utils::write_json_array<int,6,1>(this->_eval.results["directions"],c->dir_trigger);
+    msrm_utils::write_json_array<int,6,1>(this->_eval.results["directions"],c->dir_trigger);
 }
 
 void gesture_haptic::auxiliaries(const Percept &p){

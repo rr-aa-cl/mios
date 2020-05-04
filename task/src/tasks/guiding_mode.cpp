@@ -18,10 +18,10 @@ const EvalTask& guiding_mode::evaluate_task(){
 return this->_eval_task;
 }
 bool guiding_mode::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param<double,6,1>(params,"walls",this->walls)){
+    if(!msrm_utils::read_json_param<double,6,1>(params,"walls",this->walls)){
         this->walls<<10,-10,10,-10,10,-10;
     }
-    if(!cpp_utils::read_json_param<double,6,1>(params,"mode",this->mode)){
+    if(!msrm_utils::read_json_param<double,6,1>(params,"mode",this->mode)){
         this->mode.setZero();
     }
 return true;

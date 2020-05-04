@@ -32,18 +32,18 @@ const EvalTask& move_to_location::evaluate_task(){
     return this->_eval_task;
 }
 bool move_to_location::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"loc_goal",this->loc_goal)){
-        cpp_utils::print_error("Missing parameters: loc_goal");
+    if(!msrm_utils::read_json_param(params,"loc_goal",this->loc_goal)){
+        msrm_utils::print_error("Missing parameters: loc_goal");
         return false;
     }
-    if(!cpp_utils::read_json_param<std::string>(params,"loc_intermediate",this->loc_intermediate)){
+    if(!msrm_utils::read_json_param<std::string>(params,"loc_intermediate",this->loc_intermediate)){
         this->loc_intermediate.resize(0);
     }
-    if(!cpp_utils::read_json_param<int>(params,"loc_cart",this->loc_cart)){
+    if(!msrm_utils::read_json_param<int>(params,"loc_cart",this->loc_cart)){
         this->loc_cart.resize(0);
     }
     if(this->loc_cart.size()!=this->loc_intermediate.size()+1){
-        cpp_utils::print_error("Size of loc_cart must be the size of loc_intermediate plus one.");
+        msrm_utils::print_error("Size of loc_cart must be the size of loc_intermediate plus one.");
         return false;
     }
 

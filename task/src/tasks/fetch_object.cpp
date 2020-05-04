@@ -9,7 +9,7 @@ void fetch_object::initialize_task(){
 void fetch_object::execute_task(){
 
     if(this->is_grasping()){
-        cpp_utils::print_error("I am already holding something.");
+        msrm_utils::print_error("I am already holding something.");
         return;
     }
     this->move_gripper(0.05,0.02);
@@ -46,8 +46,8 @@ void fetch_object::execute_task(){
     this->loc_cart.push_back(true);
 
     nlohmann::json parameters;
-    cpp_utils::write_json_array(parameters["loc_intermediate"],this->loc_intermediate);
-    cpp_utils::write_json_array(parameters["loc_cart"],this->loc_cart);
+    msrm_utils::write_json_array(parameters["loc_intermediate"],this->loc_intermediate);
+    msrm_utils::write_json_array(parameters["loc_cart"],this->loc_cart);
     parameters["loc_goal"]=this->object;
 
     if(!this->get_subtask("move")->read_parameters(parameters)){
@@ -57,7 +57,7 @@ void fetch_object::execute_task(){
     this->execute_subtask("move");
 
     if(!this->grasp_object(this->object)){
-        cpp_utils::print_error("Could not grasp");
+        msrm_utils::print_error("Could not grasp");
     }
 
     nlohmann::json params_retreat;
@@ -72,33 +72,33 @@ const EvalTask& fetch_object::evaluate_task(){
     return this->_eval_task;
 }
 bool fetch_object::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"object",this->object)){
-        cpp_utils::print_error("Missing parameters: object");
+    if(!msrm_utils::read_json_param(params,"object",this->object)){
+        msrm_utils::print_error("Missing parameters: object");
         return false;
     }
-    if(!cpp_utils::read_json_param<std::string>(params,"loc_intermediate",this->loc_intermediate)){
+    if(!msrm_utils::read_json_param<std::string>(params,"loc_intermediate",this->loc_intermediate)){
         this->loc_intermediate.resize(0);
     }
-    if(!cpp_utils::read_json_param<int>(params,"loc_cart",this->loc_cart)){
+    if(!msrm_utils::read_json_param<int>(params,"loc_cart",this->loc_cart)){
         this->loc_cart.resize(0);
     }
     if(this->loc_cart.size()!=(this->loc_intermediate.size()+1)){
-        cpp_utils::print_error("Size of loc_cart must be the size of loc_intermediate plus one.");
+        msrm_utils::print_error("Size of loc_cart must be the size of loc_intermediate plus one.");
         return false;
     }
 
     if(this->loc_cart.size()==0){
-        cpp_utils::print_error("Size of loc_cart must be at least 1.");
+        msrm_utils::print_error("Size of loc_cart must be at least 1.");
         return false;
     }
 
-    if(!cpp_utils::read_json_param<double,3,1>(params,"Delta_approach",this->Delta_approach)){
+    if(!msrm_utils::read_json_param<double,3,1>(params,"Delta_approach",this->Delta_approach)){
         this->Delta_approach.setZero();
-        cpp_utils::print_warning("No approach vector was given.");
+        msrm_utils::print_warning("No approach vector was given.");
     }
-    if(!cpp_utils::read_json_param<double,3,1>(params,"Delta_retreat",this->Delta_retreat)){
+    if(!msrm_utils::read_json_param<double,3,1>(params,"Delta_retreat",this->Delta_retreat)){
         this->Delta_retreat.setZero();
-        cpp_utils::print_warning("No retreat vector was given.");
+        msrm_utils::print_warning("No retreat vector was given.");
     }
     return true;
 }

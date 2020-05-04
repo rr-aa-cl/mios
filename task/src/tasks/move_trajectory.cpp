@@ -19,20 +19,20 @@ const EvalTask& move_trajectory::evaluate_task(){
 return this->_eval_task;
 }
 bool move_trajectory::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param<std::string>(params,"locations",this->locations)){
+    if(!msrm_utils::read_json_param<std::string>(params,"locations",this->locations)){
         this->locations.resize(0);
     }
-    if(!cpp_utils::read_json_param<double,2,1>(params,"speed",this->speed)){
+    if(!msrm_utils::read_json_param<double,2,1>(params,"speed",this->speed)){
         this->speed<<0.1,0.5;
     }
-    if(!cpp_utils::read_json_param<double,2,1>(params,"acc",this->acc)){
+    if(!msrm_utils::read_json_param<double,2,1>(params,"acc",this->acc)){
         this->acc<<0.5,1;
     }
-    if(!cpp_utils::read_json_param(params,"flag_cart",this->flag_cart)){
+    if(!msrm_utils::read_json_param(params,"flag_cart",this->flag_cart)){
         this->flag_cart=true;
     }
     if(this->locations.size()==0){
-        cpp_utils::print_error("No locations given.");
+        msrm_utils::print_error("No locations given.");
         return false;
     }
 return true;

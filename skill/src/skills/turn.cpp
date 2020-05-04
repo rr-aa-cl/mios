@@ -4,17 +4,17 @@ turn::turn():Skill("turn"){}
 bool turn::read_skill_parameters(const nlohmann::json& p){
     std::shared_ptr<ConfigSkill_turn> c = std::static_pointer_cast<ConfigSkill_turn>(this->_config);
 
-    if(!cpp_utils::read_json_param<double,1,1>(p,"F_d",c->F_z)){
+    if(!msrm_utils::read_json_param<double,1,1>(p,"F_d",c->F_z)){
         c->F_z.setZero();
     };
-    if(!cpp_utils::read_json_param<double,1,1>(p,"speed",c->speed)){
+    if(!msrm_utils::read_json_param<double,1,1>(p,"speed",c->speed)){
         c->speed.setZero();
     };
-    if(!cpp_utils::read_json_param<double,1,1>(p,"angle",c->angle)){
+    if(!msrm_utils::read_json_param<double,1,1>(p,"angle",c->angle)){
         c->angle.setZero();
     };
-    if(!cpp_utils::read_json_param(p,"clockwise",c->clockwise)){
-        cpp_utils::print_error("Missing parameter: clockwise");
+    if(!msrm_utils::read_json_param(p,"clockwise",c->clockwise)){
+        msrm_utils::print_error("Missing parameter: clockwise");
         return false;
     }
     return true;
@@ -33,8 +33,8 @@ void turn::build_primitives(const Percept& p){
         c->angle(0)*=-1;
     }
 
-    Eigen::Matrix<double,3,3> R_lock = cpp_utils::eulerRPY_to_mat(0,0,c->angle(0))*p.TF_T_EE.block<3,3>(0,0);
-    attr_turn->attr_pose=cpp_utils::concatenate_matrix(R_lock,p.TF_T_EE.block<3,1>(0,3));
+    Eigen::Matrix<double,3,3> R_lock = msrm_utils::eulerRPY_to_mat(0,0,c->angle(0))*p.TF_T_EE.block<3,3>(0,0);
+    attr_turn->attr_pose=msrm_utils::concatenate_matrix(R_lock,p.TF_T_EE.block<3,1>(0,3));
     attr_turn->attr_ff<<0,0,c->F_z,0,0,0;
 
     c_turn->dX_d<<c->user.dX_max(0)*c->speed(0),c->user.dX_max(1)*c->speed(0);

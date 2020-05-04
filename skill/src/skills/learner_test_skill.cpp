@@ -4,9 +4,9 @@ learner_test_skill::learner_test_skill():Skill("learner_test_skill"){}
 learner_test_skill::~learner_test_skill(){}
 bool learner_test_skill::read_skill_parameters(const nlohmann::json& p){
     std::shared_ptr<ConfigSkill_learner_test_skill> c = this->get_config<ConfigSkill_learner_test_skill>();
-    cpp_utils::read_json_param<double,6,1>(p,"x",c->x);
-    cpp_utils::read_json_param(p,"A",c->A);
-    cpp_utils::read_json_param(p,"selector",c->selector);
+    msrm_utils::read_json_param<double,6,1>(p,"x",c->x);
+    msrm_utils::read_json_param(p,"A",c->A);
+    msrm_utils::read_json_param(p,"selector",c->selector);
     return true;
 }
 void learner_test_skill::build_primitives(const Percept& p){

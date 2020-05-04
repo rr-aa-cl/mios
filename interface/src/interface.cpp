@@ -1,7 +1,7 @@
 #include "interface/interface.hpp"
 
 #include "event_publisher/event_publisher.hpp"
-#include "cpp_utils/network.hpp"
+#include <msrm_utils/network.hpp>
 #include "core/core.hpp"
 #include "task/task_handler.hpp"
 namespace mios {
@@ -20,21 +20,21 @@ void Interface::initialize(std::shared_ptr<Core> core, std::shared_ptr<TaskHandl
     this->_core=core;
     this->_task_handler=task_handler;
 
-    this->_ws_server = std::make_shared<cpp_utils::JsonWebsocketServer>("0.0.0.0",port,10,"mios/core");
+    this->_ws_server = std::make_shared<msrm_utils::JsonWebsocketServer>("0.0.0.0",port,"mios/core");
 
     this->bind_methods();
 }
 
 void Interface::start(){
-    cpp_utils::print_info("Starting core interface at endpoint mios/core...",false);
+    msrm_utils::print_info("Starting core interface at endpoint mios/core...",false);
     this->_ws_server->start_listening();
-    cpp_utils::print_info("done.");
+    msrm_utils::print_info("done.");
 }
 
 void Interface::stop(){
-    cpp_utils::print_info("Stopping core interface...",false);
+    msrm_utils::print_info("Stopping core interface...",false);
     this->_ws_server->stop_listening();
-    cpp_utils::print_info("done.");
+    msrm_utils::print_info("done.");
 }
 
 void Interface::bind_methods(){
@@ -45,6 +45,7 @@ void Interface::bind_methods(){
     this->_ws_server->bind_method("check_if_task_finished",std::bind(&Interface::check_if_task_finished,this,std::placeholders::_1),{"task_uuid"});
     this->_ws_server->bind_method("is_busy",std::bind(&Interface::is_busy,this,std::placeholders::_1),{});
     this->_ws_server->bind_method("subscribe_to_event_stream",std::bind(&Interface::subscribe_to_event_stream,this,std::placeholders::_1),{"address","port"});
+    this->_ws_server->bind_method("unsubscribe_from_event_stream",std::bind(&Interface::unsubscribe_from_event_stream,this,std::placeholders::_1),{"address","port"});
 
     this->_ws_server->bind_method("set_grasped_object",std::bind(&Interface::set_grasped_object,this,std::placeholders::_1),{"object"});
     this->_ws_server->bind_method("grasp_object",std::bind(&Interface::grasp_object,this,std::placeholders::_1),{"object","width","speed","force","check_width"});
@@ -97,7 +98,7 @@ nlohmann::json Interface::stop_task(const nlohmann::json &request){
     if(result.first){
         response["result"]=true;
     }else{
-        cpp_utils::print_error(result.second);
+        msrm_utils::print_error(result.second);
         response["error"]=result.second;
         response["result"]=false;
     }
@@ -114,7 +115,7 @@ nlohmann::json Interface::remove_task(const nlohmann::json &request){
         response["result"]=false;
     }else if(this->_task_handler->has_id(task_uuid)){
         std::pair<bool,std::string> result;
-        cpp_utils::print_info("Removing task with uuid " + task_uuid + ".");
+        msrm_utils::print_info("Removing task with uuid " + task_uuid + ".");
         result=this->_task_handler->remove_task(task_uuid);
         if(result.first){
             response["result"]=true;
@@ -135,7 +136,7 @@ nlohmann::json Interface::wait_for_task(const nlohmann::json &request){
     request["task_uuid"].get_to(task_uuid);
     std::pair<EvalTask,bool> e =this->_task_handler->wait_for_task(task_uuid);
     if(e.second==false){
-        cpp_utils::print_error("Could not subscribe to task with uuid "+task_uuid+" or find its evaluation in memory.");
+        msrm_utils::print_error("Could not subscribe to task with uuid "+task_uuid+" or find its evaluation in memory.");
         response["error"]="Could not subscribe to task with uuid "+task_uuid+" or find its evaluation in memory.";
         response["result"]=false;
         response["eval"]=nlohmann::json();
@@ -160,7 +161,7 @@ nlohmann::json Interface::check_if_task_finished(const nlohmann::json &request){
     request["task_uuid"].get_to(task_uuid);
     std::pair<EvalTask,bool> e = this->_task_handler->check_if_finished(task_uuid);
     if(e.second==false){
-        cpp_utils::print_error("Could not subscribe to task with uuid "+task_uuid+" or find its evaluation in memory.");
+        msrm_utils::print_error("Could not subscribe to task with uuid "+task_uuid+" or find its evaluation in memory.");
         response["error"]="Could not subscribe to task with uuid "+task_uuid+" or find its evaluation in memory.";
         response["finished"]=false;
         response["eval"]=nlohmann::json();
@@ -210,7 +211,7 @@ nlohmann::json Interface::grasp_object(const nlohmann::json &request){
 
 nlohmann::json Interface::grasp(const nlohmann::json &request){
     nlohmann::json response;
-    cpp_utils::print_info("Moving gripper");
+    msrm_utils::print_info("Moving gripper");
     if(!this->_core->grasp(request["width"],request["speed"],request["force"])){
         response["result"]=false;
         response["error"]="Could not move gripper.";
@@ -221,7 +222,7 @@ nlohmann::json Interface::grasp(const nlohmann::json &request){
 }
 
 nlohmann::json Interface::release_object(const nlohmann::json &request){
-    cpp_utils::print_info("Releasing object");
+    msrm_utils::print_info("Releasing object");
     nlohmann::json response;
     if(!this->_core->release_object(request["width"],request["speed"])){
         response["result"]=false;
@@ -234,7 +235,7 @@ nlohmann::json Interface::release_object(const nlohmann::json &request){
 
 nlohmann::json Interface::move_gripper(const nlohmann::json &request){
     nlohmann::json response;
-    cpp_utils::print_info("Moving gripper");
+    msrm_utils::print_info("Moving gripper");
     if(!this->_core->move_gripper(request["width"],request["speed"])){
         response["result"]=false;
         response["error"]="Could not move gripper.";
@@ -256,13 +257,13 @@ nlohmann::json Interface::home_gripper(const nlohmann::json &request){
 }
 
 nlohmann::json Interface::lockdown_core(const nlohmann::json &request){
-    cpp_utils::print_info("Locking core.");
+    msrm_utils::print_info("Locking core.");
     this->_core->lockdown();
     return nlohmann::json();
 }
 
 nlohmann::json Interface::lift_core_lockdown(const nlohmann::json &request){
-    cpp_utils::print_info("Lifting core lockdown.");
+    msrm_utils::print_info("Lifting core lockdown.");
     this->_core->lift_lockdown();
     return nlohmann::json();
 }
@@ -347,8 +348,8 @@ nlohmann::json Interface::get_state(const nlohmann::json &request){
     nlohmann::json response;
     try{
         const Percept p = this->_core->request_percept(this->_core->get_kb()->get_local_memory()->access_config_frames().O_R_TF);
-        cpp_utils::write_json_array<double,7,1>(response["q"],p.q);
-        cpp_utils::write_json_array<double,4,4>(response["O_T_EE"],p.O_T_EE);
+        msrm_utils::write_json_array<double,7,1>(response["q"],p.q);
+        msrm_utils::write_json_array<double,4,4>(response["O_T_EE"],p.O_T_EE);
         response["grasped_object"]=this->_core->get_mios_state()->grasped_object;
         response["active_task"]=p.mios_state.active_task;
         response["result"]=true;
@@ -365,19 +366,28 @@ nlohmann::json Interface::subscribe_to_event_stream(const nlohmann::json &reques
     unsigned port;
     request["address"].get_to(address);
     request["port"].get_to(port);
-    std::cout<<"SUBSCRIBING AS "<<request<<std::endl;
     EventPublisher::subscribe(std::pair<std::string,unsigned>(address,port));
     return response;
 }
 
+nlohmann::json Interface::unsubscribe_from_event_stream(const nlohmann::json &request){
+    nlohmann::json response;
+    std::string address;
+    unsigned port;
+    request["address"].get_to(address);
+    request["port"].get_to(port);
+    EventPublisher::unsubscribe(std::pair<std::string,unsigned>(address,port));
+    return response;
+}
+
 nlohmann::json Interface::login_digital_twin(const nlohmann::json &request){
-    cpp_utils::print_info("Logging into digital twin.");
+    msrm_utils::print_info("Logging into digital twin.");
     this->_core->login_digital_twin();
     return nlohmann::json();
 }
 
 nlohmann::json Interface::logout_digital_twin(const nlohmann::json &request){
-    cpp_utils::print_info("Logging out of digital twin.");
+    msrm_utils::print_info("Logging out of digital twin.");
     this->_core->logout_digital_twin();
     return nlohmann::json();
 }
@@ -385,12 +395,12 @@ nlohmann::json Interface::logout_digital_twin(const nlohmann::json &request){
 nlohmann::json Interface::reset(const nlohmann::json &request){
     nlohmann::json response;
     this->_task_handler->set_interrupt(true);
-    cpp_utils::print_info("Resetting task handler");
+    msrm_utils::print_info("Resetting task handler");
     this->_task_handler->reset();
-    cpp_utils::print_info("Resetting core");
+    msrm_utils::print_info("Resetting core");
     response["result"]=true;
     if(!this->_core->reset()){
-        cpp_utils::print_error("Reset failed, could not reinitialize core.");
+        msrm_utils::print_error("Reset failed, could not reinitialize core.");
         response["error"]="Reset failed, could not reinitialize core.";
         response["result"]=false;
     }
@@ -399,29 +409,29 @@ nlohmann::json Interface::reset(const nlohmann::json &request){
 }
 
 nlohmann::json Interface::unlock_brakes(const nlohmann::json &request){
-    cpp_utils::print_info("Attempting to unlock brakes.");
+    msrm_utils::print_info("Attempting to unlock brakes.");
     this->_core->unlock_brakes();
     return nlohmann::json();
 }
 
 nlohmann::json Interface::lock_brakes(const nlohmann::json &request){
-    cpp_utils::print_info("Attempting to lock brakes.");
+    msrm_utils::print_info("Attempting to lock brakes.");
     this->_core->lock_brakes();
     return nlohmann::json();
 }
 
 nlohmann::json Interface::shutdown(const nlohmann::json &request){
-    cpp_utils::print_info("Attempting to shutdown.");
+    msrm_utils::print_info("Attempting to shutdown.");
     this->_core->shutdown_robot();
     return nlohmann::json();
 }
 
 nlohmann::json Interface::pack_pose(const nlohmann::json &request){
     nlohmann::json response;
-    cpp_utils::print_info("Attempting to move to pack pose.");
+    msrm_utils::print_info("Attempting to move to pack pose.");
     response["error"]="";
     if(this->_core->is_grasping()){
-        cpp_utils::print_error("The robot might be holding an object. Moving to pack pose is not safe.");
+        msrm_utils::print_error("The robot might be holding an object. Moving to pack pose is not safe.");
         response["error"]="The robot might be holding an object. Moving to pack pose is not safe.";
         response["result"]=false;
         return response;

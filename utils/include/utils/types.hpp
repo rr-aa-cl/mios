@@ -4,7 +4,7 @@
 #include <map>
 #include <deque>
 
-#include "cpp_utils/output.hpp"
+#include <msrm_utils/output.hpp>
 
 namespace mios {
 
@@ -47,7 +47,7 @@ struct LEDCmd{
         if(g<1) g=1;
         if(b<1) b=1;
         if(this->led.find(id)==this->led.end()){
-            cpp_utils::print_error("No LED with id "+id+".");
+            msrm_utils::print_error("No LED with id "+id+".");
             return false;
         }
         this->led[id].colors=std::make_tuple(r,g,b);

@@ -64,16 +64,16 @@ void mp_basic_joint::terminate(){
 bool mp_basic_joint::check_attractor(){
     std::shared_ptr<AttractorBasicJoint> attr = std::static_pointer_cast<AttractorBasicJoint>(this->_attractor);
     if(!attr->attr_pose.isZero(0) && !attr->attr_vel.isZero(0)){
-        cpp_utils::print_error("MP can not have a pose attractor and a direction attractor at the same time.");
+        msrm_utils::print_error("MP can not have a pose attractor and a direction attractor at the same time.");
         return false;
     }
 
     if(!attr->attr_tauc.isZero(0) && !attr->attr_ff.isZero(0)){
-        cpp_utils::print_error("MP can not have a contact attractor and a momvement attractor at the same time.");
+        msrm_utils::print_error("MP can not have a contact attractor and a momvement attractor at the same time.");
         return false;
     }
     if(!attr->attr_pose.isZero(0) && !attr->attr_tauc.isZero(0)){
-        cpp_utils::print_error("MP can not have a pose attractor and a contact attractor at the same time.");
+        msrm_utils::print_error("MP can not have a pose attractor and a contact attractor at the same time.");
         return false;
     }
     return true;

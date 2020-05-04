@@ -7,13 +7,13 @@ hand_guiding::hand_guiding():Skill("hand_guiding"){}
 
 bool hand_guiding::read_skill_parameters(const nlohmann::json& p){
     std::shared_ptr<ConfigSkill_hand_guiding> c = std::static_pointer_cast<ConfigSkill_hand_guiding>(this->_config);
-    if(!cpp_utils::read_json_param<double,6,1>(p,"fix_dim",c->fix_dim)){
+    if(!msrm_utils::read_json_param<double,6,1>(p,"fix_dim",c->fix_dim)){
         c->fix_dim.setZero();
     }
-    if(!cpp_utils::read_json_param<double,6,1>(p,"use_walls",c->use_walls)){
+    if(!msrm_utils::read_json_param<double,6,1>(p,"use_walls",c->use_walls)){
         c->use_walls.setZero();
     }
-    if(!cpp_utils::read_json_param<double,6,1>(p,"dist_walls",c->dist_walls)){
+    if(!msrm_utils::read_json_param<double,6,1>(p,"dist_walls",c->dist_walls)){
         c->dist_walls<<-1000,1000,-1000,1000,-1000,1000;
     }
     return true;

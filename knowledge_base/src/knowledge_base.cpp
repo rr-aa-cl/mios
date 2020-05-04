@@ -8,8 +8,8 @@
 #include <bsoncxx/stdx/string_view.hpp>
 #include <bsoncxx/types.hpp>
 
-#include "cpp_utils/math.hpp"
-#include "cpp_utils/system.hpp"
+#include <msrm_utils/math.hpp>
+#include <msrm_utils/system.hpp>
 
 
 #include "interface/parameter_server.hpp"
@@ -62,27 +62,27 @@ bool KnowledgeBase::initialize(const ConfigInternal &config, unsigned port){
         std::cout<<"TEST2"<<std::endl;
         this->_db=this->_client->database("mios");
         if(!this->_db.has_collection("environment")){
-            cpp_utils::print_error("Knowledge base does not have an environment collection");
+            msrm_utils::print_error("Knowledge base does not have an environment collection");
             this->_mtx_mongodb.unlock();
             return false;
         }
         if(!this->_db.has_collection("reference_frames")){
-            cpp_utils::print_error("Knowledge base does not have a reference_frames collection");
+            msrm_utils::print_error("Knowledge base does not have a reference_frames collection");
             this->_mtx_mongodb.unlock();
             return false;
         }
         if(!this->_db.has_collection("parameters")){
-            cpp_utils::print_error("Knowledge base does not have a parameters collection");
+            msrm_utils::print_error("Knowledge base does not have a parameters collection");
             this->_mtx_mongodb.unlock();
             return false;
         }
         if(!this->_db.has_collection("skills")){
-            cpp_utils::print_error("Knowledge base does not have a skills collection");
+            msrm_utils::print_error("Knowledge base does not have a skills collection");
             this->_mtx_mongodb.unlock();
             return false;
         }
         if(!this->_db.has_collection("tasks")){
-            cpp_utils::print_error("Knowledge base does not have a tasks collection");
+            msrm_utils::print_error("Knowledge base does not have a tasks collection");
             this->_mtx_mongodb.unlock();
             return false;
         }
@@ -118,12 +118,12 @@ bool KnowledgeBase::load_parameters(){
     for(unsigned i=0;i<max_tries;i++){
         try{
             if(!this->_db.has_collection("parameters")){
-                cpp_utils::print_warning("Knowledge base has no parameters collection");
+                msrm_utils::print_warning("Knowledge base has no parameters collection");
                 return false;
             }
             this->_mtx_mongodb.lock();
             if(this->_collections["parameters"].count_documents({bsoncxx::builder::stream::document{}<<"type"<<"control"<<bsoncxx::builder::stream::finalize})!=1){
-                cpp_utils::print_error("No or multiple controller configuration files in knowledge base.");
+                msrm_utils::print_error("No or multiple controller configuration files in knowledge base.");
                 this->_mtx_mongodb.unlock();
                 return false;
             }else{
@@ -134,7 +134,7 @@ bool KnowledgeBase::load_parameters(){
                 this->_local_memory.modify_config_cntr(config);
             }
             if(this->_collections["parameters"].count_documents({bsoncxx::builder::stream::document{}<<"type"<<"frames"<<bsoncxx::builder::stream::finalize})!=1){
-                cpp_utils::print_error("No or multiple frames configuration files in knowledge base.");
+                msrm_utils::print_error("No or multiple frames configuration files in knowledge base.");
                 this->_mtx_mongodb.unlock();
                 return false;
             }else{
@@ -145,7 +145,7 @@ bool KnowledgeBase::load_parameters(){
                 this->_local_memory.modify_config_frames(config);
             }
             if(this->_collections["parameters"].count_documents({bsoncxx::builder::stream::document{}<<"type"<<"general"<<bsoncxx::builder::stream::finalize})!=1){
-                cpp_utils::print_error("No or multiple general configuration files in knowledge base.");
+                msrm_utils::print_error("No or multiple general configuration files in knowledge base.");
                 this->_mtx_mongodb.unlock();
                 return false;
             }else{
@@ -156,7 +156,7 @@ bool KnowledgeBase::load_parameters(){
                 this->_local_memory.modify_config_general(config);
             }
             if(this->_collections["parameters"].count_documents({bsoncxx::builder::stream::document{}<<"type"<<"user"<<bsoncxx::builder::stream::finalize})!=1){
-                cpp_utils::print_error("No or user configuration files in knowledge base.");
+                msrm_utils::print_error("No or user configuration files in knowledge base.");
                 this->_mtx_mongodb.unlock();
                 return false;
             }else{
@@ -167,7 +167,7 @@ bool KnowledgeBase::load_parameters(){
                 this->_local_memory.modify_config_user(config);
             }
             if(this->_collections["parameters"].count_documents({bsoncxx::builder::stream::document{}<<"type"<<"system"<<bsoncxx::builder::stream::finalize})!=1){
-                cpp_utils::print_error("No or multiple system configuration files in knowledge base.");
+                msrm_utils::print_error("No or multiple system configuration files in knowledge base.");
                 this->_mtx_mongodb.unlock();
                 return false;
             }else{
@@ -229,19 +229,19 @@ bool KnowledgeBase::load_document(const std::string &id, const std::string &type
                     this->initialize(this->_config_internal);
                     continue;
                 }
-                cpp_utils::print_error("Knowledge base has no "+type+" collection");
+                msrm_utils::print_error("Knowledge base has no "+type+" collection");
                 this->_mtx_mongodb.unlock();
                 return false;
             }
             unsigned n_doc = this->_collections[type].count_documents({bsoncxx::builder::stream::document{}<<"name"<<id<<bsoncxx::builder::stream::finalize});
             if(n_doc==0){
-//                                            cpp_utils::print_error("No document with id "+id+" of type "+type+" present in knowledge base");
+//                                            msrm_utils::print_error("No document with id "+id+" of type "+type+" present in knowledge base");
                 descr="";
                 this->_mtx_mongodb.unlock();
                 return false;
             }
             if(n_doc>1){
-                cpp_utils::print_error("Multiple documents with id "+id+" of type "+type+" present in knowledge base.");
+                msrm_utils::print_error("Multiple documents with id "+id+" of type "+type+" present in knowledge base.");
                 descr="";
                 this->_mtx_mongodb.unlock();
                 return false;
@@ -252,7 +252,7 @@ bool KnowledgeBase::load_document(const std::string &id, const std::string &type
             this->_mtx_mongodb.unlock();
             return true;
         }catch(const mongocxx::logic_error& e){
-            cpp_utils::print_error("Loading of document with name "+id+" of type "+type+ " has failed.");
+            msrm_utils::print_error("Loading of document with name "+id+" of type "+type+ " has failed.");
             std::cout<<e.what()<<std::endl;
             if(i<max_tries-1){
                 if(this->_client!=nullptr){
@@ -265,7 +265,7 @@ bool KnowledgeBase::load_document(const std::string &id, const std::string &type
                 return false;
             }
         }catch(const mongocxx::operation_exception& e){
-            cpp_utils::print_error("Loading of document with name "+id+" of type "+type+ " has failed.");
+            msrm_utils::print_error("Loading of document with name "+id+" of type "+type+ " has failed.");
             std::cout<<e.what()<<std::endl;
             if(i<max_tries-1){
                 if(this->_client!=nullptr){
@@ -278,7 +278,7 @@ bool KnowledgeBase::load_document(const std::string &id, const std::string &type
                 return false;
             }
         }catch(const mongocxx::exception& e){
-            cpp_utils::print_error("Loading of document with name "+id+" of type "+type+ " has failed.");
+            msrm_utils::print_error("Loading of document with name "+id+" of type "+type+ " has failed.");
             std::cout<<e.what()<<std::endl;
             if(i<max_tries-1){
                 if(this->_client!=nullptr){
@@ -291,7 +291,7 @@ bool KnowledgeBase::load_document(const std::string &id, const std::string &type
                 return false;
             }
         }catch(const bsoncxx::exception& e){
-            cpp_utils::print_error("Loading of document with name "+id+" of type "+type+ " has failed.");
+            msrm_utils::print_error("Loading of document with name "+id+" of type "+type+ " has failed.");
             std::cout<<e.what()<<std::endl;
             if(i<max_tries-1){
                 if(this->_client!=nullptr){
@@ -304,7 +304,7 @@ bool KnowledgeBase::load_document(const std::string &id, const std::string &type
                 return false;
             }
         }catch(const nlohmann::detail::parse_error& e){
-            cpp_utils::print_error("Loading of document with name "+id+" of type "+type+ " has failed.");
+            msrm_utils::print_error("Loading of document with name "+id+" of type "+type+ " has failed.");
             std::cout<<e.what()<<std::endl;
             if(i<max_tries-1){
                 continue;
@@ -356,22 +356,22 @@ bool KnowledgeBase::update_object(const std::string& id, const nlohmann::json &o
 
     nlohmann::json obj_kb;
     if(!this->load_object(id,obj_kb)){
-        cpp_utils::print_error("Object with name "+id+" does not exist in knowledge base.");
+        msrm_utils::print_error("Object with name "+id+" does not exist in knowledge base.");
         return false;
     }
-    if(cpp_utils::find_json_value(obj,"q_o"))   obj_kb["q_o"]=obj["q_o"];
-    if(cpp_utils::find_json_value(obj,"O_T_o"))   obj_kb["O_T_o"]=obj["O_T_o"];
-    if(cpp_utils::find_json_value(obj,"EE_ob_com"))   obj_kb["EE_ob_com"]=obj["EE_ob_com"];
-    if(cpp_utils::find_json_value(obj,"ob_I"))   obj_kb["ob_I"]=obj["ob_I"];
-    if(cpp_utils::find_json_value(obj,"mass"))   obj_kb["mass"]=obj["mass"];
-    if(cpp_utils::find_json_value(obj,"grasp_width"))   obj_kb["grasp_width"]=obj["grasp_width"];
-    if(cpp_utils::find_json_value(obj,"geometry")){
+    if(msrm_utils::find_json_value(obj,"q_o"))   obj_kb["q_o"]=obj["q_o"];
+    if(msrm_utils::find_json_value(obj,"O_T_o"))   obj_kb["O_T_o"]=obj["O_T_o"];
+    if(msrm_utils::find_json_value(obj,"EE_ob_com"))   obj_kb["EE_ob_com"]=obj["EE_ob_com"];
+    if(msrm_utils::find_json_value(obj,"ob_I"))   obj_kb["ob_I"]=obj["ob_I"];
+    if(msrm_utils::find_json_value(obj,"mass"))   obj_kb["mass"]=obj["mass"];
+    if(msrm_utils::find_json_value(obj,"grasp_width"))   obj_kb["grasp_width"]=obj["grasp_width"];
+    if(msrm_utils::find_json_value(obj,"geometry")){
         for(nlohmann::json::const_iterator itr = obj["geometry"].begin();itr != obj["geometry"].end();itr++){
-            if(!cpp_utils::find_json_value(obj_kb,"geometry")){
-                cpp_utils::print_error("Knowledge base inconsistency. Object "+itr.key()+" has no geometry property.");
+            if(!msrm_utils::find_json_value(obj_kb,"geometry")){
+                msrm_utils::print_error("Knowledge base inconsistency. Object "+itr.key()+" has no geometry property.");
                 return false;
             }
-            if(!cpp_utils::overwrite_valid_json(obj["geometry"][itr.key()],obj_kb["geometry"][itr.key()])){
+            if(!msrm_utils::overwrite_valid_json(obj["geometry"][itr.key()],obj_kb["geometry"][itr.key()])){
                 std::cout<<"BLA"<<std::endl;
                 return false;
             }
@@ -382,7 +382,7 @@ bool KnowledgeBase::update_object(const std::string& id, const nlohmann::json &o
         std::string obj_str=obj_kb.dump();
         bsoncxx::document::view_or_value doc=bsoncxx::from_json(obj_str);
         std::string id_str;
-        cpp_utils::read_json_param(obj_kb,"name",id_str);
+        msrm_utils::read_json_param(obj_kb,"name",id_str);
         this->_mtx_mongodb.lock();
         this->_db["environment"].replace_one(bsoncxx::builder::stream::document{} << "name" << id_str << bsoncxx::builder::stream::finalize,doc);
         this->_mtx_mongodb.unlock();
@@ -406,16 +406,16 @@ bool KnowledgeBase::update_reference_frame(const std::string& id, const nlohmann
 
     nlohmann::json frame_kb;
     if(!this->load_reference_frame(id,frame_kb)){
-        cpp_utils::print_error("Reference frame with id "+id+" does not exist in knowledge base.");
+        msrm_utils::print_error("Reference frame with id "+id+" does not exist in knowledge base.");
         return false;
     }
-    if(cpp_utils::find_json_value(frame,"O_T_f"))   frame_kb["O_T_f"]=frame["O_T_f"];
-    //    if(cpp_utils::find_json_value(frame,"objects")){
+    if(msrm_utils::find_json_value(frame,"O_T_f"))   frame_kb["O_T_f"]=frame["O_T_f"];
+    //    if(msrm_utils::find_json_value(frame,"objects")){
     //        for(nlohmann::json::const_iterator itr = frame["objects"].begin();itr != frame["objects"].end();itr++){
-    ////            if(!cpp_utils::find_json_value(frame["objects"],itr.key()) || cpp_utils::find_json_value(frame["objects"],itr.key())){
+    ////            if(!msrm_utils::find_json_value(frame["objects"],itr.key()) || msrm_utils::find_json_value(frame["objects"],itr.key())){
     ////                return false;
     ////            }
-    //            if(!cpp_utils::overwrite_valid_json(frame["objects"][itr.key()],frame_kb["objects"][itr.key()])){
+    //            if(!msrm_utils::overwrite_valid_json(frame["objects"][itr.key()],frame_kb["objects"][itr.key()])){
     //                return false;
     //            }
     //        }
@@ -425,7 +425,7 @@ bool KnowledgeBase::update_reference_frame(const std::string& id, const nlohmann
         std::string frame_str=frame_kb.dump();
         bsoncxx::document::view_or_value doc=bsoncxx::from_json(frame_str);
         std::string id_str;
-        cpp_utils::read_json_param(frame_kb,"name",id_str);
+        msrm_utils::read_json_param(frame_kb,"name",id_str);
         this->_mtx_mongodb.lock();
         this->_db["reference_frames"].replace_one(bsoncxx::builder::stream::document{} << "name" << id_str << bsoncxx::builder::stream::finalize,doc);
         this->_mtx_mongodb.unlock();
@@ -449,7 +449,7 @@ bool KnowledgeBase::insert_object(const std::string& id, const nlohmann::json& o
     try{
         nlohmann::json obj_test;
         if(this->load_object(id,obj_test)){
-            cpp_utils::print_error("Object with id "+id+" already exists in knowledge base. Can not insert second object with same id.");
+            msrm_utils::print_error("Object with id "+id+" already exists in knowledge base. Can not insert second object with same id.");
             return false;
         }
         std::string obj_str=obj.dump();
@@ -477,7 +477,7 @@ bool KnowledgeBase::insert_reference_frame(const std::string& id, const nlohmann
     try{
         nlohmann::json frame_test;
         if(this->load_reference_frame(id,frame_test)){
-            cpp_utils::print_error("Reference frame with id "+id+" already exists in knowledge base. Can not insert second reference frame with same id.");
+            msrm_utils::print_error("Reference frame with id "+id+" already exists in knowledge base. Can not insert second reference frame with same id.");
             return false;
         }
         std::string frame_str=frame.dump();
@@ -503,7 +503,7 @@ bool KnowledgeBase::insert_reference_frame(const std::string& id, const nlohmann
 
 bool KnowledgeBase::teach_object(const std::string &object, const Percept& p, bool is_reference, const std::string &reference_frame, bool teach_width){
     if(is_reference && reference_frame!="none"){
-        cpp_utils::print_error("Object cannot be reference frame and be referenced to a reference frame at the same time.");
+        msrm_utils::print_error("Object cannot be reference frame and be referenced to a reference frame at the same time.");
         return false;
     }
     nlohmann::json obj_json;
@@ -519,10 +519,10 @@ bool KnowledgeBase::teach_object(const std::string &object, const Percept& p, bo
         o.grasp_width=grasp_width;
         o.O_T_o=this->transform_to_F(O_T_o_EE);
         if(!this->insert_object(object,o.to_json())){
-            cpp_utils::print_error("Could not insert new object with name "+object+" into knowledge base.");
+            msrm_utils::print_error("Could not insert new object with name "+object+" into knowledge base.");
             return false;
         }
-        cpp_utils::print_success("Inserted new object with name "+object+" into knowledge base.");
+        msrm_utils::print_success("Inserted new object with name "+object+" into knowledge base.");
     }else{
         o.from_json(obj_json);
         o.q_o=p.q;
@@ -532,7 +532,7 @@ bool KnowledgeBase::teach_object(const std::string &object, const Percept& p, bo
         o.grasp_width=grasp_width;
         o.O_T_o=this->transform_to_F(O_T_o_EE);
         this->update_object(object,o.to_json());
-        cpp_utils::print_success("Assigned new pose to object with id "+object+".");
+        msrm_utils::print_success("Assigned new pose to object with id "+object+".");
     }
 
     ReferenceFrame frame;
@@ -545,27 +545,27 @@ bool KnowledgeBase::teach_object(const std::string &object, const Percept& p, bo
         }
         if(!this->load_reference_frame(id_ref,frame)){
             if(reference_frame!="none"){
-                cpp_utils::print_error("No reference frame with id "+id_ref+" exists in knowledge base.");
+                msrm_utils::print_error("No reference frame with id "+id_ref+" exists in knowledge base.");
                 return false;
             }
             frame.name=id_ref;
             frame.O_T_f=this->transform_to_F(O_T_o_EE);
             if(!this->insert_reference_frame(id_ref,frame.to_json())){
-                cpp_utils::print_error("Could not insert new reference frame with id "+id_ref+" into knowledge base.");
+                msrm_utils::print_error("Could not insert new reference frame with id "+id_ref+" into knowledge base.");
                 return false;
             }
-            cpp_utils::print_success("Inserted new reference frame with id "+id_ref+" into knowledge base.");
+            msrm_utils::print_success("Inserted new reference frame with id "+id_ref+" into knowledge base.");
         }else if(reference_frame!="none"){
             nlohmann::json R_T_o_json;
-            Eigen::Matrix<double,4,4> R_T_o=cpp_utils::invert_transformation_matrix(frame.O_T_f)*o.O_T_o;
-            cpp_utils::write_json_array<double,4,4>(R_T_o_json,R_T_o);
+            Eigen::Matrix<double,4,4> R_T_o=msrm_utils::invert_transformation_matrix(frame.O_T_f)*o.O_T_o;
+            msrm_utils::write_json_array<double,4,4>(R_T_o_json,R_T_o);
             frame.objects[object]=R_T_o_json;
             this->update_reference_frame(id_ref,frame.to_json());
-            cpp_utils::print_success("Connected object with id "+ object +" to reference frame with id "+id_ref+".");
+            msrm_utils::print_success("Connected object with id "+ object +" to reference frame with id "+id_ref+".");
         }else if(is_reference){
             frame.O_T_f=this->transform_to_F(O_T_o_EE);
             this->update_reference_frame(id_ref,frame.to_json());
-            cpp_utils::print_success("Modified reference frame with id "+id_ref+".");
+            msrm_utils::print_success("Modified reference frame with id "+id_ref+".");
         }
     }
     return true;
@@ -580,37 +580,37 @@ bool KnowledgeBase::teach_object(const std::string& object, const Eigen::Matrix<
         o.q_o=q;
         o.O_T_o=this->transform_to_F(O_T_o_EE);
         if(!this->insert_object(object,o.to_json())){
-            cpp_utils::print_error("Could not insert new object with name "+object+" into knowledge base.");
+            msrm_utils::print_error("Could not insert new object with name "+object+" into knowledge base.");
             return false;
         }
-        cpp_utils::print_success("Inserted new object with name "+object+" into knowledge base.");
+        msrm_utils::print_success("Inserted new object with name "+object+" into knowledge base.");
         return true;
     }
     o.from_json(obj_json);
     o.q_o=q;
     o.O_T_o=this->transform_to_F(O_T_o_EE);
-    Eigen::Matrix<double,4,4> F_T_TCP = cpp_utils::rotate_matrix(this->get_local_memory()->access_config_frames().EE_T_TCP,this->get_local_memory()->access_config_frames().F_T_EE);
+    Eigen::Matrix<double,4,4> F_T_TCP = msrm_utils::rotate_matrix(this->get_local_memory()->access_config_frames().EE_T_TCP,this->get_local_memory()->access_config_frames().F_T_EE);
     this->update_object(object,o.to_json());
-    cpp_utils::print_success("Assigned new pose to object with name "+object+".");
+    msrm_utils::print_success("Assigned new pose to object with name "+object+".");
     return true;
 }
 
 bool KnowledgeBase::apply_reference_frame(const std::string& id){
     ReferenceFrame frame;
     if(!this->load_reference_frame(id,frame)){
-        cpp_utils::print_error("No reference frame with id "+id+" exists in knowledge base.");
+        msrm_utils::print_error("No reference frame with id "+id+" exists in knowledge base.");
         return false;
     }
-    for(nlohmann::json::const_iterator itr = frame.objects.begin();itr != frame.objects.end();itr++){
+    for(auto& el: frame.objects.items()){
         Eigen::Matrix<double,4,4> R_T_o;
-        cpp_utils::read_json_param<double,4,4>(frame.objects,itr.key(),R_T_o);
+        msrm_utils::read_json_param<double,4,4>(frame.objects,el.key().c_str(),R_T_o);
         Object obj;
-        if(!this->load_object(itr.key(),obj)){
-            cpp_utils::print_error("No object with id "+id+" exists in knowledge base.");
+        if(!this->load_object(el.key(),obj)){
+            msrm_utils::print_error("No object with id "+id+" exists in knowledge base.");
             return false;
         }else{
             obj.O_T_o=frame.O_T_f*R_T_o;
-            if(!this->update_object(itr.key(),obj.to_json())){
+            if(!this->update_object(el.key(),obj.to_json())){
                 return false;
             }
         }
@@ -687,23 +687,23 @@ bool KnowledgeBase::db_convert_value(std::string& v, const std::string &id, cons
 }
 
 Eigen::Matrix<double,4,4> KnowledgeBase::transform_to_F(const Eigen::Matrix<double, 4, 4>& O_T_EE){
-    Eigen::Matrix<double,4,4> EE_T_O = cpp_utils::invert_transformation_matrix(O_T_EE);
-    Eigen::Matrix<double,4,4> F_T_TCP = cpp_utils::rotate_matrix(this->get_local_memory()->get_persistent_data()->EE_T_TCP,this->get_local_memory()->access_config_frames().F_T_EE);
-    Eigen::Matrix<double,4,4> F_T_O = cpp_utils::rotate_matrix(EE_T_O,F_T_TCP);
-    return cpp_utils::invert_transformation_matrix(F_T_O);
+    Eigen::Matrix<double,4,4> EE_T_O = msrm_utils::invert_transformation_matrix(O_T_EE);
+    Eigen::Matrix<double,4,4> F_T_TCP = msrm_utils::rotate_matrix(this->get_local_memory()->get_persistent_data()->EE_T_TCP,this->get_local_memory()->access_config_frames().F_T_EE);
+    Eigen::Matrix<double,4,4> F_T_O = msrm_utils::rotate_matrix(EE_T_O,F_T_TCP);
+    return msrm_utils::invert_transformation_matrix(F_T_O);
 }
 
 Eigen::Matrix<double,4,4> KnowledgeBase::transform_to_EE(const Eigen::Matrix<double, 4, 4>& O_T_F){
-    Eigen::Matrix<double,4,4> F_T_TCP = cpp_utils::rotate_matrix(this->get_local_memory()->get_persistent_data()->EE_T_TCP,this->get_local_memory()->access_config_frames().F_T_EE);
-    return cpp_utils::rotate_matrix(F_T_TCP,O_T_F);
+    Eigen::Matrix<double,4,4> F_T_TCP = msrm_utils::rotate_matrix(this->get_local_memory()->get_persistent_data()->EE_T_TCP,this->get_local_memory()->access_config_frames().F_T_EE);
+    return msrm_utils::rotate_matrix(F_T_TCP,O_T_F);
 }
 
 bool KnowledgeBase::sync_task_with_primary(std::string t){
     nlohmann::json request;
     request["task"]=t;
     nlohmann::json response;
-    //    if(!cpp_utils::rpc_call("http://"+this->get_local_memory()->access_config_system().ip_primary+":8390","download_task",request,response)){
-    //        cpp_utils::print_error("Could not sync task "+t+" with primary.");
+    //    if(!msrm_utils::rpc_call("http://"+this->get_local_memory()->access_config_system().ip_primary+":8390","download_task",request,response)){
+    //        msrm_utils::print_error("Could not sync task "+t+" with primary.");
     //        return false;
     //    }
     return this->upload_task(response["task"]);

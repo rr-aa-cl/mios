@@ -9,16 +9,16 @@ move_to_pose_cart::move_to_pose_cart():Skill("move_to_pose_cart"){
 bool move_to_pose_cart::read_skill_parameters(const nlohmann::json &p){
 
     std::shared_ptr<ConfigSkill_move_to_pose_cart> c = std::static_pointer_cast<ConfigSkill_move_to_pose_cart>(this->_config);
-    cpp_utils::read_json_param<double,1,1>(p,"speed",c->speed);
-    cpp_utils::read_json_param<double,1,1>(p,"acc",c->acc);
-    cpp_utils::read_json_param<double,4,4>(p,"TF_g_offset",c->TF_g_offset);
+    msrm_utils::read_json_param<double,1,1>(p,"speed",c->speed);
+    msrm_utils::read_json_param<double,1,1>(p,"acc",c->acc);
+    msrm_utils::read_json_param<double,4,4>(p,"TF_g_offset",c->TF_g_offset);
 
-    if(!cpp_utils::read_json_param<double,4,4>(p,"TF_T_EE_g",c->TF_T_EE_g)){
-        cpp_utils::print_error("Parameter TF_T_EE_g could not be loaded but is mandatory.");
+    if(!msrm_utils::read_json_param<double,4,4>(p,"TF_T_EE_g",c->TF_T_EE_g)){
+        msrm_utils::print_error("Parameter TF_T_EE_g could not be loaded but is mandatory.");
         return false;
     }
 
-    cpp_utils::read_json_param(p,"t_settle",c->t_settle);
+    msrm_utils::read_json_param(p,"t_settle",c->t_settle);
     return true;
 }
 
@@ -46,7 +46,7 @@ void move_to_pose_cart::build_primitives(const Percept &p){
     }
     Eigen::Matrix<double,3,3> R_tmp=c->TF_g_offset.block<3,3>(0,0)*attr_move_to_pose->attr_pose.block<3,3>(0,0);
     Eigen::Matrix<double,3,1> x_tmp=attr_move_to_pose->attr_pose.block<3,1>(0,3)+c->TF_g_offset.block<3,1>(0,3);
-    attr_move_to_pose->attr_pose=cpp_utils::concatenate_matrix(R_tmp,x_tmp);
+    attr_move_to_pose->attr_pose=msrm_utils::concatenate_matrix(R_tmp,x_tmp);
 }
 
 std::tuple<bool,std::string> move_to_pose_cart::check_edges(const Percept &p){

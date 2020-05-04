@@ -14,9 +14,11 @@ public:
 
     static void publish_event(const nlohmann::json& event);
     static void subscribe(const std::pair<std::string, unsigned> &subscriber);
+    static void unsubscribe(const std::pair<std::string, unsigned> &subscriber);
 private:
     void i_publish_event(const nlohmann::json& event);
     void i_subscribe(const std::pair<std::string,unsigned>&  subscriber);
+    void i_unsubscribe(const std::pair<std::string, unsigned> &subscriber);
     EventPublisher(){}
 
     nlohmann::json events;

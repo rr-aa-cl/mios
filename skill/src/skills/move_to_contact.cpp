@@ -9,7 +9,7 @@ move_to_contact::move_to_contact():Skill("move_to_contact"){
 bool move_to_contact::read_skill_parameters(const nlohmann::json &p){
 
     std::shared_ptr<ConfigSkill_move_to_contact> c = std::static_pointer_cast<ConfigSkill_move_to_contact>(this->_config);
-    cpp_utils::read_json_param<double,1,1>(p,"speed",c->speed);
+    msrm_utils::read_json_param<double,1,1>(p,"speed",c->speed);
     return true;
 }
 

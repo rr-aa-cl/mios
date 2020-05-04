@@ -1,6 +1,7 @@
 #include "telemetry/telemetry_udp.hpp"
 
-#include "cpp_utils/network.hpp"
+#include <msrm_utils/network.hpp>
+#include <msrm_utils/output.hpp>
 
 namespace mios {
 
@@ -18,20 +19,20 @@ bool Telemetry_UDP::initialize(ConfigTelemetryUDP config){
     this->_cnt_frequency=0;
 
     std::string ip=this->_config.ip_dst;
-    if(!cpp_utils::is_valid_ip_address(this->_config.ip_dst.c_str())){
-        ip=cpp_utils::get_ip_by_hostname(this->_config.ip_dst);
+    if(!msrm_utils::is_valid_ip_address(this->_config.ip_dst.c_str())){
+        ip=msrm_utils::get_ip_by_hostname(this->_config.ip_dst.c_str()).value_or("none");
     }
 
     this->_slen_out=sizeof(this->_si_other_out);
 
     if ((this->_s_out=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
-        cpp_utils::print_error("Initialization of outgoing connection failed.");
+        msrm_utils::print_error("Initialization of outgoing connection failed.");
         return false;
     }
 
-    if(!cpp_utils::is_valid_ip_address(ip.c_str())){
-        cpp_utils::print_error("Invalid IP address " + this->_config.ip_dst + " set for telemetry.");
+    if(!msrm_utils::is_valid_ip_address(ip.c_str())){
+        msrm_utils::print_error("Invalid IP address " + this->_config.ip_dst + " set for telemetry.");
         return false;
     }
 
@@ -138,7 +139,7 @@ bool Telemetry_UDP::send_telemetry(const Percept &p){
     assert(cnt_byte==this->_config.packagesize);
     int err=sendto(this->_s_out, msg, sizeof(msg) , 0 , (struct sockaddr *) &this->_si_other_out, this->_slen_out)<0;
     if(err<0){
-        cpp_utils::print_error("Could not send package.");
+        msrm_utils::print_error("Could not send package.");
         return false;
     }
     return true;

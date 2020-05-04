@@ -1,6 +1,6 @@
 #include "primitives/mp_basic.hpp"
 
-#include "cpp_utils/math.hpp"
+#include <msrm_utils/math.hpp>
 
 namespace mios {
 
@@ -22,7 +22,7 @@ void mp_basic::initialize(const Percept &p_0, const std::shared_ptr<ConfigUser> 
     }
 
 //    if(!attr->attr_pose.isZero(0) && (c_mp->dX_d(0)==0 || c_mp->dX_d(1)==0)){
-//        cpp_utils::print_warning("Cartesian velocities have been set to zero but a pose has been given.");
+//        msrm_utils::print_warning("Cartesian velocities have been set to zero but a pose has been given.");
 //    }
 
     this->_mogen_p2p_in_p.dX_max<<c_mp->dX_d(0),c_mp->dX_d(1);
@@ -110,7 +110,7 @@ CmdMP& mp_basic::step(const Percept &p){
     F_ff_damp<<0,0,0,0,0,0;
     for(unsigned i=0;i<6;i++){
         if(fabs(p.TF_dX(i))>c_mp->dX_limit(i)){
-//            F_ff_damp(i)=(fabs(p.TF_dX[i])-c_mp->dX_limit(i))*cpp_utils::sgn(p.TF_dX(i))*c_mp->D_x(i);
+//            F_ff_damp(i)=(fabs(p.TF_dX[i])-c_mp->dX_limit(i))*msrm_utils::sgn(p.TF_dX(i))*c_mp->D_x(i);
         }
     }
 
@@ -149,16 +149,16 @@ void mp_basic::terminate(){
 bool mp_basic::check_attractor(){
     std::shared_ptr<AttractorBasic> attr = std::static_pointer_cast<AttractorBasic>(this->_attractor);
     if(!attr->attr_pose.isZero(0) && !attr->attr_vel.isZero(0)){
-        cpp_utils::print_error("MP can not have a pose attractor and a direction attractor at the same time.");
+        msrm_utils::print_error("MP can not have a pose attractor and a direction attractor at the same time.");
         return false;
     }
 
     if(!attr->attr_fc.isZero(0) && !attr->attr_ff.isZero(0)){
-        cpp_utils::print_error("MP can not have a contact attractor and a momvement attractor at the same time.");
+        msrm_utils::print_error("MP can not have a contact attractor and a momvement attractor at the same time.");
         return false;
     }
 //    if(!attr->attr_pose.isZero(0) && !attr->attr_fc.isZero(0)){
-//        cpp_utils::print_error("MP can not have a pose attractor and a contact attractor at the same time.");
+//        msrm_utils::print_error("MP can not have a pose attractor and a contact attractor at the same time.");
 //        return false;
 //    }
     return true;

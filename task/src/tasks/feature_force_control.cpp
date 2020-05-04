@@ -20,7 +20,7 @@ void feature_force_control::execute_task(){
     this->execute_skill("move");
     this->execute_skill("contact");
     if(!this->get_skill("contact")->get_eval().success){
-        cpp_utils::print_error("Contact skill failed, can not risk force control without established contact.");
+        msrm_utils::print_error("Contact skill failed, can not risk force control without established contact.");
     }else{
         this->execute_skill("push");
     }
@@ -45,8 +45,8 @@ return this->_eval_task;
 }
 
 bool feature_force_control::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"pose_init",this->pose_init)){
-        cpp_utils::print_error("Missing parameter: pose_init");
+    if(!msrm_utils::read_json_param(params,"pose_init",this->pose_init)){
+        msrm_utils::print_error("Missing parameter: pose_init");
         return false;
     }
     return true;

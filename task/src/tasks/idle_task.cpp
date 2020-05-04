@@ -19,11 +19,11 @@ void idle_task::execute_task(){
     colors["right"]={0,0,100};
     colors["far-right"]={0,0,100};
     this->load_led_pattern(std::make_shared<pattern_status>());
-    switch(cpp_utils::str_to_int(this->idle_mode.c_str())){
-    case cpp_utils::str_to_int("none"):
+    switch(msrm_utils::str_to_int(this->idle_mode.c_str())){
+    case msrm_utils::str_to_int("none"):
         this->sleep_1ms();
         break;
-    case cpp_utils::str_to_int("sleep"):
+    case msrm_utils::str_to_int("sleep"):
 //        this->get_skill("move")->set_object("loc_goal","pose_sleep");
 //        this->execute_skill("move");
         this->execute_skill("sleep");
@@ -31,11 +31,11 @@ void idle_task::execute_task(){
 //        this->execute_skill("move");
         this->sleep_1ms();
         break;
-    case cpp_utils::str_to_int("hold"):
+    case msrm_utils::str_to_int("hold"):
         this->execute_skill("hold");
         break;
     default:
-        cpp_utils::print_warning("Idle mode with id "+this->idle_mode+" does not exist, reverting to default mode.");
+        msrm_utils::print_warning("Idle mode with id "+this->idle_mode+" does not exist, reverting to default mode.");
         this->sleep_1ms();
         break;
     }
@@ -45,7 +45,7 @@ void idle_task::recover_task(){
 }
 
 bool idle_task::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"idle_mode",this->idle_mode)){
+    if(!msrm_utils::read_json_param(params,"idle_mode",this->idle_mode)){
         this->idle_mode="none";
     }
 return true;

@@ -20,8 +20,8 @@ const EvalTask& learner_test::evaluate_task(){
     return this->_eval_task;
 }
 bool learner_test::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param<double,6,1>(params,"x",this->x)){
-        cpp_utils::print_error("Missing parameter: x [6x1]");
+    if(!msrm_utils::read_json_param<double,6,1>(params,"x",this->x)){
+        msrm_utils::print_error("Missing parameter: x [6x1]");
         return false;
     }
     return true;

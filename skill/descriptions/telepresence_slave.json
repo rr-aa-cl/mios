@@ -1,1 +1,1 @@
-{"name": "telepresence_slave", "ip_dst": "none", "port_dst": 8888, "port_recv": 8888, "repeater": false, "bilateral": true, "EE_T_J_t": [1, 0, 0, 0, 1, 0, 0, 0, 1], "EE_T_J_r": [1, 0, 0, 0, 1, 0, 0, 0, 1], "mode": "none", "joystick_funnel_pose": "none"}
+{"name": "telepresence_slave", "ip_dst": "none", "port_dst": 8888, "port_recv": 8888, "repeater": false, "bilateral": true, "EE_T_J_t": [1, 0, 0, 0, 1, 0, 0, 0, 1], "EE_T_J_r": [1, 0, 0, 0, 1, 0, 0, 0, 1], "joystick_stepwise": false, "joystick_step_size": 0, "joystick_funnel_pose": "none", "mode": "none"}

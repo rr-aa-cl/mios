@@ -39,6 +39,8 @@ struct ConfigMP_mp_telepresence : public ConfigMP{
         joystick_funnel_pose.setIdentity();
 
         joint_direct_alpha.setZero();
+        joystick_stepwise=false;
+        joystick_step_size.setZero();
     }
 
     Eigen::Matrix<double,3,3> EE_T_J_t;
@@ -52,6 +54,9 @@ struct ConfigMP_mp_telepresence : public ConfigMP{
     Eigen::Matrix<double,3,1> joystick_lever;
     Eigen::Matrix<double,6,1> joystick_f_ext_amp;
     Eigen::Matrix<double,4,4> joystick_funnel_pose;
+
+    bool joystick_stepwise;
+    Eigen::Matrix<double,2,1> joystick_step_size;
 
     Eigen::Matrix<double,7,1> joint_direct_alpha;
 
@@ -96,6 +101,7 @@ private:
     void msg_in();
     bool msg_out(const std::vector<double>& payload);
     bool unload_msg(const std::vector<double>& payload);
+    void write_safe_message();
     void joint_direct_mode(const Percept& p, std::vector<double>& payload);
     void cartesian_direct_mode(const Percept& p, std::vector<double>& payload);
     void joystick_mode(const Percept& p, std::vector<double>& payload);
@@ -144,6 +150,8 @@ private:
     Eigen::Matrix<double,6,1> _rot_limits;
 
     Eigen::Matrix<double,4,4> _TF_T_EE_0;
+    Eigen::Matrix<double,3,1> _J_phi;
+    Eigen::Matrix<double,6,1> _J_dX_step;
 
     motion_error_cart::motion_error_cart _motion_error;
     motion_error_cart::In_U_motion_error_cart _motion_error_u;

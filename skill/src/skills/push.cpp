@@ -8,11 +8,11 @@ push::push():Skill("push"){
 
 bool push::read_skill_parameters(const nlohmann::json &p){
     std::shared_ptr<ConfigSkill_push> c = std::static_pointer_cast<ConfigSkill_push>(this->_config);
-    if(!cpp_utils::read_json_param(p,"F_d",c->F_d)){
-        cpp_utils::print_error("Missing parameter: F_d");
+    if(!msrm_utils::read_json_param(p,"F_d",c->F_d)){
+        msrm_utils::print_error("Missing parameter: F_d");
     }
-    if(!cpp_utils::read_json_param(p,"t_max",c->t_max)){
-        cpp_utils::print_error("Missing parameter: t_max");
+    if(!msrm_utils::read_json_param(p,"t_max",c->t_max)){
+        msrm_utils::print_error("Missing parameter: t_max");
     }
     return true;
 }

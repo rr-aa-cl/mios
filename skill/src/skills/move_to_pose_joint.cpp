@@ -11,12 +11,12 @@ move_to_pose_joint::~move_to_pose_joint(){
 
 bool move_to_pose_joint::read_skill_parameters(const nlohmann::json &p){
     std::shared_ptr<ConfigSkill_move_to_pose_joint> c = this->get_config<ConfigSkill_move_to_pose_joint>();
-    cpp_utils::read_json_param<double,1,1>(p,"speed",c->speed);
-    cpp_utils::read_json_param<double,1,1>(p,"acc",c->acc);
-    cpp_utils::read_json_param<double,7,1>(p,"q_g_offset",c->q_g_offset);
+    msrm_utils::read_json_param<double,1,1>(p,"speed",c->speed);
+    msrm_utils::read_json_param<double,1,1>(p,"acc",c->acc);
+    msrm_utils::read_json_param<double,7,1>(p,"q_g_offset",c->q_g_offset);
 
-    if(!cpp_utils::read_json_param<double,7,1>(p,"q_g",c->q_g)){
-        cpp_utils::print_error("Parameter q_g could not be loaded but is mandatory.");
+    if(!msrm_utils::read_json_param<double,7,1>(p,"q_g",c->q_g)){
+        msrm_utils::print_error("Parameter q_g could not be loaded but is mandatory.");
         return false;
     }
     return true;

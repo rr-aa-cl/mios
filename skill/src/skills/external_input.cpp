@@ -3,24 +3,24 @@ namespace mios{
 external_input::external_input():Skill("external_input"){}
 bool external_input::read_skill_parameters(const nlohmann::json& p){
     std::shared_ptr<ConfigSkill_external_input> c = this->get_config<ConfigSkill_external_input>();
-    if(!cpp_utils::read_json_param(p,"port_recv",c->port_recv)){
-        cpp_utils::print_error("Missing parameter: port_recv");
+    if(!msrm_utils::read_json_param(p,"port_recv",c->port_recv)){
+        msrm_utils::print_error("Missing parameter: port_recv");
         return false;
     }
-    if(!cpp_utils::read_json_param(p,"port_dst",c->port_dst)){
-        cpp_utils::print_error("Missing parameter: port_dst");
+    if(!msrm_utils::read_json_param(p,"port_dst",c->port_dst)){
+        msrm_utils::print_error("Missing parameter: port_dst");
         return false;
     }
-    if(!cpp_utils::read_json_param(p,"ip_dst",c->ip_dst)){
-        cpp_utils::print_error("Missing parameter: ip_dst");
+    if(!msrm_utils::read_json_param(p,"ip_dst",c->ip_dst)){
+        msrm_utils::print_error("Missing parameter: ip_dst");
         return false;
     }
-    if(!cpp_utils::read_json_param(p,"input_frequency",c->input_frequency)){
-        cpp_utils::print_error("Missing parameter: input_frequency");
+    if(!msrm_utils::read_json_param(p,"input_frequency",c->input_frequency)){
+        msrm_utils::print_error("Missing parameter: input_frequency");
         return false;
     }
-    if(!cpp_utils::read_json_param(p,"mode",c->mode)){
-        cpp_utils::print_error("Missing parameter: mode");
+    if(!msrm_utils::read_json_param(p,"mode",c->mode)){
+        msrm_utils::print_error("Missing parameter: mode");
         return false;
     }
     return true;

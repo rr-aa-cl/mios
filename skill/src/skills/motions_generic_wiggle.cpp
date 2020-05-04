@@ -12,14 +12,14 @@ motions_generic_wiggle::~motions_generic_wiggle(){
 
 bool motions_generic_wiggle::read_skill_parameters(const nlohmann::json &p){
     std::shared_ptr<ConfigSkill_motions_generic_wiggle> c = std::static_pointer_cast<ConfigSkill_motions_generic_wiggle>(this->_config);
-    cpp_utils::read_json_param<double,6,1>(p,"dX_fourier_a_a",c->dX_fourier_a_a);
-    cpp_utils::read_json_param<double,6,1>(p,"dX_fourier_b_a",c->dX_fourier_b_a);
-    cpp_utils::read_json_param<double,6,1>(p,"dX_fourier_a_f",c->dX_fourier_a_f);
-    cpp_utils::read_json_param<double,6,1>(p,"dX_fourier_b_f",c->dX_fourier_b_f);
-    cpp_utils::read_json_param<double,6,1>(p,"dX_fourier_a_phi",c->dX_fourier_a_phi);
-    cpp_utils::read_json_param<double,6,1>(p,"dX_fourier_b_phi",c->dX_fourier_b_phi);
-    cpp_utils::read_json_param(p,"use_EE",c->use_EE);
-    cpp_utils::read_json_param(p,"tap_to_finish",c->tap_to_finish);
+    msrm_utils::read_json_param<double,6,1>(p,"dX_fourier_a_a",c->dX_fourier_a_a);
+    msrm_utils::read_json_param<double,6,1>(p,"dX_fourier_b_a",c->dX_fourier_b_a);
+    msrm_utils::read_json_param<double,6,1>(p,"dX_fourier_a_f",c->dX_fourier_a_f);
+    msrm_utils::read_json_param<double,6,1>(p,"dX_fourier_b_f",c->dX_fourier_b_f);
+    msrm_utils::read_json_param<double,6,1>(p,"dX_fourier_a_phi",c->dX_fourier_a_phi);
+    msrm_utils::read_json_param<double,6,1>(p,"dX_fourier_b_phi",c->dX_fourier_b_phi);
+    msrm_utils::read_json_param(p,"use_EE",c->use_EE);
+    msrm_utils::read_json_param(p,"tap_to_finish",c->tap_to_finish);
     return true;
 }
 

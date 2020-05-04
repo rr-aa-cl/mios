@@ -2,7 +2,7 @@
 #include <franka/exception.h>
 #include <chrono>
 
-#include "cpp_utils/math.hpp"
+#include <msrm_utils/math.hpp>
 
 namespace mios {
 
@@ -159,22 +159,22 @@ void CmdSkill::limit_output_rate(const ConfigLimits& config){
         double diff_dF_ff_t = this->TF_F_ff(i)-this->TF_F_ff_limiter(i);
         double diff_dF_ff_r = this->TF_F_ff(i+3)-this->TF_F_ff_limiter(i+3);
         if(fabs(diff_dX_t)/0.001>config.ddX_max[0]){
-            this->TF_dX_d(i)=this->TF_dX_d_limiter(i)+cpp_utils::sgn(diff_dX_t)*config.ddX_max(0)*0.001;
+            this->TF_dX_d(i)=this->TF_dX_d_limiter(i)+msrm_utils::sgn(diff_dX_t)*config.ddX_max(0)*0.001;
         }
         if(fabs(diff_dX_r)/0.001>config.ddX_max[1]){
-            this->TF_dX_d(i+3)=this->TF_dX_d_limiter(i+3)+cpp_utils::sgn(diff_dX_r)*config.ddX_max(1)*0.001;
+            this->TF_dX_d(i+3)=this->TF_dX_d_limiter(i+3)+msrm_utils::sgn(diff_dX_r)*config.ddX_max(1)*0.001;
         }
         if(fabs(diff_dF_t)/0.001>config.dF_J_max[0]){
-            this->TF_F_d(i)=this->TF_F_d_limiter(i)+cpp_utils::sgn(diff_dF_t)*config.dF_J_max(0)*0.001;
+            this->TF_F_d(i)=this->TF_F_d_limiter(i)+msrm_utils::sgn(diff_dF_t)*config.dF_J_max(0)*0.001;
         }
         if(fabs(diff_dF_r)/0.001>config.dF_J_max[1]){
-            this->TF_F_d(i+3)=this->TF_F_d_limiter(i+3)+cpp_utils::sgn(diff_dF_r)*config.dF_J_max(1)*0.001;
+            this->TF_F_d(i+3)=this->TF_F_d_limiter(i+3)+msrm_utils::sgn(diff_dF_r)*config.dF_J_max(1)*0.001;
         }
         if(fabs(diff_dF_ff_t)/0.001>config.dF_J_max[0]){
-            this->TF_F_ff(i)=this->TF_F_ff_limiter(i)+cpp_utils::sgn(diff_dF_ff_t)*config.dF_J_max(0)*0.001;
+            this->TF_F_ff(i)=this->TF_F_ff_limiter(i)+msrm_utils::sgn(diff_dF_ff_t)*config.dF_J_max(0)*0.001;
         }
         if(fabs(diff_dF_ff_r)/0.001>config.dF_J_max[1]){
-            this->TF_F_ff(i+3)=this->TF_F_ff_limiter(i+3)+cpp_utils::sgn(diff_dF_ff_r)*config.dF_J_max(1)*0.001;
+            this->TF_F_ff(i+3)=this->TF_F_ff_limiter(i+3)+msrm_utils::sgn(diff_dF_ff_r)*config.dF_J_max(1)*0.001;
         }
     }
 
@@ -182,10 +182,10 @@ void CmdSkill::limit_output_rate(const ConfigLimits& config){
         double diff_K_x = this->K_x(i)-this->K_x_limiter[i];
         double diff_xi_x = this->xi_x(i)-this->xi_x_limiter[i];
         if(fabs(diff_K_x)/0.001>config.dK_x_max[i]){
-            this->K_x(i)=this->K_x_limiter(i)+cpp_utils::sgn(diff_K_x)*config.dK_x_max(i)*0.001;
+            this->K_x(i)=this->K_x_limiter(i)+msrm_utils::sgn(diff_K_x)*config.dK_x_max(i)*0.001;
         }
         if(fabs(diff_xi_x)/0.001>config.dxi_x_max[i]){
-            this->xi_x(i)=this->xi_x_limiter(i)+cpp_utils::sgn(diff_xi_x)*config.dxi_x_max(i)*0.001;
+            this->xi_x(i)=this->xi_x_limiter(i)+msrm_utils::sgn(diff_xi_x)*config.dxi_x_max(i)*0.001;
         }
     }
 
@@ -198,22 +198,22 @@ void CmdSkill::limit_output_rate(const ConfigLimits& config){
         double diff_K_theta = this->K_theta(i)-this->K_theta_limiter(i);
         double diff_xi_theta = this->xi_theta(i)-this->xi_theta_limiter(i);
         if(fabs(diff_q)/0.001>config.dq_max(i)){
-            this->q_d(i)=this->q_d_limiter(i)+cpp_utils::sgn(diff_q)*config.dq_max(i)*0.001;
+            this->q_d(i)=this->q_d_limiter(i)+msrm_utils::sgn(diff_q)*config.dq_max(i)*0.001;
         }
         if(fabs(diff_dq)/0.001>config.ddq_max(i)){
-            this->dq_d(i)=this->dq_d_limiter(i)+cpp_utils::sgn(diff_dq)*config.ddq_max(i)*0.001;
+            this->dq_d(i)=this->dq_d_limiter(i)+msrm_utils::sgn(diff_dq)*config.ddq_max(i)*0.001;
         }
         if(fabs(diff_tau)/0.001>config.tau_J_max(i)){
-            this->tau_d(i)=this->tau_d_limiter(i)+cpp_utils::sgn(diff_tau)*config.tau_J_max(i)*0.001;
+            this->tau_d(i)=this->tau_d_limiter(i)+msrm_utils::sgn(diff_tau)*config.tau_J_max(i)*0.001;
         }
         if(fabs(diff_tau_ff)/0.001>config.tau_J_max(i)){
-            this->tau_ff(i)=this->tau_ff_limiter(i)+cpp_utils::sgn(diff_tau_ff)*config.tau_J_max(i)*0.001;
+            this->tau_ff(i)=this->tau_ff_limiter(i)+msrm_utils::sgn(diff_tau_ff)*config.tau_J_max(i)*0.001;
         }
         if(fabs(diff_K_theta)/0.001>config.dK_theta_max(i)){
-            this->K_theta(i)=this->K_theta_limiter(i)+cpp_utils::sgn(diff_K_theta)*config.dK_theta_max(i)*0.001;
+            this->K_theta(i)=this->K_theta_limiter(i)+msrm_utils::sgn(diff_K_theta)*config.dK_theta_max(i)*0.001;
         }
         if(fabs(diff_xi_theta)/0.001>config.dxi_theta_max(i)){
-            this->xi_theta(i)=this->xi_theta_limiter(i)+cpp_utils::sgn(diff_xi_theta)*config.dxi_theta_max(i)*0.001;
+            this->xi_theta(i)=this->xi_theta_limiter(i)+msrm_utils::sgn(diff_xi_theta)*config.dxi_theta_max(i)*0.001;
         }
     }
     this->TF_dX_d_limiter=this->TF_dX_d;
@@ -302,62 +302,62 @@ void CmdSkill::reset(){
 bool CmdSkill::validity_check(){
     for(unsigned i=0;i<7;i++){
         if(this->q_d(i)!=this->q_d(i)){
-            cpp_utils::print_error("Detected NaN in skill command at q_d["+std::to_string(i)+"].");
+            msrm_utils::print_error("Detected NaN in skill command at q_d["+std::to_string(i)+"].");
             return false;
         }
         if(this->dq_d(i)!=this->dq_d(i)){
-            cpp_utils::print_error("Detected NaN in skill command at dq_d["+std::to_string(i)+"].");
+            msrm_utils::print_error("Detected NaN in skill command at dq_d["+std::to_string(i)+"].");
             return false;
         }
         if(this->tau_d(i)!=this->tau_d(i)){
-            cpp_utils::print_error("Detected NaN in skill command at tau_d["+std::to_string(i)+"].");
+            msrm_utils::print_error("Detected NaN in skill command at tau_d["+std::to_string(i)+"].");
             return false;
         }
         if(this->tau_ff(i)!=this->tau_ff(i)){
-            cpp_utils::print_error("Detected NaN in skill command at tau_ff["+std::to_string(i)+"].");
+            msrm_utils::print_error("Detected NaN in skill command at tau_ff["+std::to_string(i)+"].");
             return false;
         }
         if(this->K_theta(i)!=this->K_theta(i)){
-            cpp_utils::print_error("Detected NaN in skill command at K_theta["+std::to_string(i)+"].");
+            msrm_utils::print_error("Detected NaN in skill command at K_theta["+std::to_string(i)+"].");
             return false;
         }
         if(this->xi_theta(i)!=this->xi_theta(i)){
-            cpp_utils::print_error("Detected NaN in skill command at xi_theta["+std::to_string(i)+"].");
+            msrm_utils::print_error("Detected NaN in skill command at xi_theta["+std::to_string(i)+"].");
             return false;
         }
     }
     for(unsigned i=0;i<6;i++){
         if(this->TF_dX_d(i)!=this->TF_dX_d(i)){
-            cpp_utils::print_error("Detected NaN in skill command at TF_dX_d["+std::to_string(i)+"].");
+            msrm_utils::print_error("Detected NaN in skill command at TF_dX_d["+std::to_string(i)+"].");
             return false;
         }
         if(this->TF_F_d(i)!=this->TF_F_d(i)){
-            cpp_utils::print_error("Detected NaN in skill command at TF_F_d["+std::to_string(i)+"].");
+            msrm_utils::print_error("Detected NaN in skill command at TF_F_d["+std::to_string(i)+"].");
             return false;
         }
         if(this->TF_F_ff(i)!=this->TF_F_ff(i)){
-            cpp_utils::print_error("Detected NaN in skill command at TF_F_ff["+std::to_string(i)+"].");
+            msrm_utils::print_error("Detected NaN in skill command at TF_F_ff["+std::to_string(i)+"].");
             return false;
         }
         if(this->K_x(i)!=this->K_x(i)){
-            cpp_utils::print_error("Detected NaN in skill command at K_x["+std::to_string(i)+"].");
+            msrm_utils::print_error("Detected NaN in skill command at K_x["+std::to_string(i)+"].");
             return false;
         }
         if(this->xi_x(i)!=this->xi_x(i)){
-            cpp_utils::print_error("Detected NaN in skill command at xi_x["+std::to_string(i)+"].");
+            msrm_utils::print_error("Detected NaN in skill command at xi_x["+std::to_string(i)+"].");
             return false;
         }
     }
     for(unsigned i=0;i<4;i++){
         for(unsigned j=0;j<4;j++){
             if(this->TF_T_EE_d(i)!=this->TF_T_EE_d(i)){
-                cpp_utils::print_error("Detected NaN in skill command at TF_T_EE_d["+std::to_string(i)+","+std::to_string(j)+"].");
+                msrm_utils::print_error("Detected NaN in skill command at TF_T_EE_d["+std::to_string(i)+","+std::to_string(j)+"].");
                 return false;
             }
         }
     }
-    if(!cpp_utils::is_orthonormal(this->TF_T_EE_d.block<3,3>(0,0))){
-        cpp_utils::print_error("Rotation part of TF_T_EE_d is not orthonormal.");
+    if(!msrm_utils::is_orthonormal(this->TF_T_EE_d.block<3,3>(0,0))){
+        msrm_utils::print_error("Rotation part of TF_T_EE_d is not orthonormal.");
         return false;
     }
     return true;
@@ -407,7 +407,7 @@ Eigen::Matrix<double,4,4> Skill::get_object_pose(const std::string &o, bool TF){
         throw SkillException("Can not access knowledge base during task initialization in function get_object_pose.");
     }
     if(TF){
-        return this->_kb->transform_to_EE(cpp_utils::rotate_matrix(this->get_object(o).O_T_o,cpp_utils::invert_matrix(this->_config->frames.O_R_TF)));
+        return this->_kb->transform_to_EE(msrm_utils::rotate_matrix(this->get_object(o).O_T_o,msrm_utils::invert_matrix(this->_config->frames.O_R_TF)));
     }else{
         return this->_kb->transform_to_EE(this->get_object(o).O_T_o);
     }
@@ -429,14 +429,14 @@ void Skill::write_O_R_TF(const Percept &p){
 
 bool Skill::initialize(const Percept &p){
     if(this->_config==nullptr){
-        cpp_utils::print_error("Skill with id "+this->_id+" has invalid configuration (nullptr). Stopping task.");
+        msrm_utils::print_error("Skill with id "+this->_id+" has invalid configuration (nullptr). Stopping task.");
         return false;
     }
     //    if(!this->get_O_R_TF(p).isZero(0)){
     //        this->_config->frames.O_R_TF=this->get_O_R_TF(p);
     //    }
-    if(!cpp_utils::is_orthonormal(this->_config->frames.O_R_TF)){
-        cpp_utils::print_error("O_R_TF of skill "+this->_id+" is invalid. Aborting execution.");
+    if(!msrm_utils::is_orthonormal(this->_config->frames.O_R_TF)){
+        msrm_utils::print_error("O_R_TF of skill "+this->_id+" is invalid. Aborting execution.");
         std::cout<<"O_R_TF: "<<this->_config->frames.O_R_TF<<std::endl;
         return false;
     }
@@ -446,7 +446,7 @@ bool Skill::initialize(const Percept &p){
 
     for(auto& mp : this->_mp){
         if(!mp.second->check_attractor()){
-            cpp_utils::print_error("Attractor is invalid in skill of type "+this->_type+".");
+            msrm_utils::print_error("Attractor is invalid in skill of type "+this->_type+".");
             return false;
         }
     }
@@ -455,7 +455,7 @@ bool Skill::initialize(const Percept &p){
     this->_cmd.set_0(p);
 
     if(this->_init_mp.empty()){
-        cpp_utils::print_error("No initial manipulation primitive was selected in skill of type "+this->_type+".");
+        msrm_utils::print_error("No initial manipulation primitive was selected in skill of type "+this->_type+".");
         return false;
     }
     this->_active_mp=this->get_mp(this->_init_mp);
@@ -466,7 +466,7 @@ bool Skill::initialize(const Percept &p){
 const CmdSkill& Skill::cycle(const Percept &p){
     // check: if mp not set return and stop
     if(this->_active_mp==nullptr){
-        cpp_utils::print_error("No active manipulation primitive selected.");
+        msrm_utils::print_error("No active manipulation primitive selected.");
         this->_cmd.flag_stop=true;
         return this->_cmd;
     }
@@ -510,7 +510,7 @@ const CmdSkill& Skill::cycle(const Percept &p){
         this->_cmd.read_from_buffer();
         this->_eval.percepts.insert(std::pair<std::string,Percept>(this->_active_mp->get_id(),p));
         if(this->_mp.find(std::get<1>(edges_res))==this->_mp.end()){
-            cpp_utils::print_warning("MP "+std::get<1>(edges_res)+" does not exist, terminating skill.");
+            msrm_utils::print_warning("MP "+std::get<1>(edges_res)+" does not exist, terminating skill.");
             this->_flag_fade_out=true;
             this->_eval.success=false;
             this->_active_mp->terminate();
@@ -531,7 +531,7 @@ const CmdSkill& Skill::cycle(const Percept &p){
         }
     }
     if(!this->_flag_fade_out && (this->check_global_err_conditions(p) || this->check_local_err_conditions(p))){
-        cpp_utils::print_warning("Error conditions of skill "+this->_id+" have been triggered.");
+        msrm_utils::print_warning("Error conditions of skill "+this->_id+" have been triggered.");
         this->_flag_fade_out=true;
         this->_eval.success=false;
         this->_active_mp->terminate();
@@ -543,7 +543,7 @@ const CmdSkill& Skill::cycle(const Percept &p){
         this->_flag_success=true;
     }
     if(this->check_local_ex_conditions(p) && this->_flag_success && !this->_flag_fade_out){
-        cpp_utils::print_success("Exit condition of skill "+this->_id+" has been triggered after success.");
+        msrm_utils::print_success("Exit condition of skill "+this->_id+" has been triggered after success.");
         this->_active_mp->terminate();
         this->_active_mp->set_flag_terminate();
         this->_flag_fade_out=true;
@@ -570,7 +570,7 @@ const CmdSkill& Skill::cycle(const Percept &p){
             }
         }
         if(all_zero){
-            cpp_utils::print_info("Skill "+this->_id+" has terminated.");
+            msrm_utils::print_info("Skill "+this->_id+" has terminated.");
             this->terminate_parallels();
             this->_flag_terminate=true;
         }
@@ -628,12 +628,12 @@ void Skill::terminate(){
     }
     this->evaluate();
     if(this->_flag_aborted){
-        cpp_utils::print_info("Skill "+this->_id+" has been aborted.");
+        msrm_utils::print_info("Skill "+this->_id+" has been aborted.");
     }else{
         if(this->_eval.success){
-            cpp_utils::print_success("Skill "+this->_id+" was successful.");
+            msrm_utils::print_success("Skill "+this->_id+" was successful.");
         }else{
-            cpp_utils::print_error("Skill "+this->_id+" has failed.");
+            msrm_utils::print_error("Skill "+this->_id+" has failed.");
         }
     }
 }
@@ -652,30 +652,30 @@ bool Skill::check_global_err_conditions(const Percept& p){
     }
     for(unsigned i=0;i<6;i++){
         if(fabs(p.TF_F_ext(i))>=this->_config->user.F_max[i]){
-            cpp_utils::print_error("Skill "+this->_id+" has violated the maximum allowed external cartesian forces.");
+            msrm_utils::print_error("Skill "+this->_id+" has violated the maximum allowed external cartesian forces.");
             std::cout<<"F_ext: "<<p.TF_F_ext<<std::endl;
             return true;
         }
     }
     for(unsigned i=0;i<7;i++){
         if(fabs(p.tau_ext(i))>=this->_config->user.tau_max[i]){
-            cpp_utils::print_error("Skill "+this->_id+" has violated the maximum allowed external joint torques at joint "+std::to_string(i)+".");
+            msrm_utils::print_error("Skill "+this->_id+" has violated the maximum allowed external joint torques at joint "+std::to_string(i)+".");
             std::cout<<"tau_ext: "<<p.tau_ext<<std::endl;
             return true;
         }
     }
     for(unsigned i=0;i<7;i++){
         if(fabs(p.tau_ext[i])>=this->_config->limits.tau_ext_max[i]){
-            cpp_utils::print_error("Skill "+this->_id+" has violated the maximum external joint torques at joint "+std::to_string(i)+".");
+            msrm_utils::print_error("Skill "+this->_id+" has violated the maximum external joint torques at joint "+std::to_string(i)+".");
             return true;
         }
     }
     if(p.time-this->_time_start>this->_config->time_max && this->_config->time_max>0){
-        cpp_utils::print_error("Skill "+this->_id+" has violated the maximum time limit of "+std::to_string(this->_config->time_max)+" s.");
+        msrm_utils::print_error("Skill "+this->_id+" has violated the maximum time limit of "+std::to_string(this->_config->time_max)+" s.");
         return true;
     }
     if(this->_flag_invoke_failure){
-        cpp_utils::print_error("Failure has been invoked externally");
+        msrm_utils::print_error("Failure has been invoked externally");
         return true;
     }
     return false;
@@ -683,7 +683,7 @@ bool Skill::check_global_err_conditions(const Percept& p){
 
 bool Skill::check_global_suc_conditions(const Percept &p) const{
     if(this->_flag_invoke_success){
-        cpp_utils::print_success("Success has been invoked externally");
+        msrm_utils::print_success("Success has been invoked externally");
         return true;
     }
     return false;
@@ -737,32 +737,32 @@ void Skill::set_kb(std::shared_ptr<KnowledgeBase> kb){
 }
 
 void Skill::read_configuration(const nlohmann::json &p){
-    if(cpp_utils::find_json_value(p,"controller")){
+    if(msrm_utils::find_json_value(p,"controller")){
         this->_config->controller.read_parameters(p["controller"]);
     }
-    if(cpp_utils::find_json_value(p,"frames")){
+    if(msrm_utils::find_json_value(p,"frames")){
         this->_config->frames.read_parameters(p["frames"]);
     }
-    if(cpp_utils::find_json_value(p,"general")){
+    if(msrm_utils::find_json_value(p,"general")){
         this->_config->general.read_parameters(p["general"]);
     }
-    if(cpp_utils::find_json_value(p,"system")){
+    if(msrm_utils::find_json_value(p,"system")){
         this->_config->system.read_parameters(p["system"]);
     }
-    if(cpp_utils::find_json_value(p,"user")){
+    if(msrm_utils::find_json_value(p,"user")){
         this->_config->user.read_parameters(p["user"]);
     }
-    if(cpp_utils::find_json_value(p,"skill")){
+    if(msrm_utils::find_json_value(p,"skill")){
         this->read_global_skill_parameters(p["skill"]);
     }
 }
 
 void Skill::read_global_skill_parameters(const nlohmann::json &p){
-    cpp_utils::read_json_param(p,"time_max",this->_config->time_max);
-    cpp_utils::read_json_param(p,"w_cost_function",this->_config->w_cost_function);
-    cpp_utils::read_json_param(p,"parallels_frequency",this->_config->parallels_frequency);
-    cpp_utils::read_json_param<double,6,1>(p,"k_h_p",this->_config->k_h_p);
-    cpp_utils::read_json_param<double,6,1>(p,"k_h_d",this->_config->k_h_d);
+    msrm_utils::read_json_param(p,"time_max",this->_config->time_max);
+    msrm_utils::read_json_param(p,"w_cost_function",this->_config->w_cost_function);
+    msrm_utils::read_json_param(p,"parallels_frequency",this->_config->parallels_frequency);
+    msrm_utils::read_json_param<double,6,1>(p,"k_h_p",this->_config->k_h_p);
+    msrm_utils::read_json_param<double,6,1>(p,"k_h_d",this->_config->k_h_d);
 }
 
 void Skill::set_object(const std::string& o_type, const std::string& o){
@@ -797,7 +797,7 @@ bool Skill::load_objects(const std::map<std::string, std::string>& objects){
     for(auto& o : objects){
         Object obj;
         if(!this->_kb->load_object(o.second,obj)){
-            cpp_utils::print_error("Could not load "+o.second+" as type " +o.first+".");
+            msrm_utils::print_error("Could not load "+o.second+" as type " +o.first+".");
             return false;
         }
         this->_objects.insert(std::pair<std::string,Object>(o.first,obj));
@@ -823,7 +823,7 @@ void Skill::run_parallels(){
 
         std::this_thread::sleep_for(std::chrono::microseconds(long(t_sleep_max*1000000-elapsed.count())));
         if(!this->_flag_parallels_running){
-            cpp_utils::print_info("Parallel thread has stopped.");
+            msrm_utils::print_info("Parallel thread has stopped.");
             return;
         }
     }

@@ -25,17 +25,17 @@ return this->_eval_task;
 }
 
 bool move_to_joint_pose::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"pose",this->pose)){
+    if(!msrm_utils::read_json_param(params,"pose",this->pose)){
         this->pose="none";
     }
-    if(!cpp_utils::read_json_param<double,7,1>(params,"q_g",this->q_g) && this->pose=="none"){
-        cpp_utils::print_error("Missing parameters: pose or q_g");
+    if(!msrm_utils::read_json_param<double,7,1>(params,"q_g",this->q_g) && this->pose=="none"){
+        msrm_utils::print_error("Missing parameters: pose or q_g");
         return false;
     }
-    if(!cpp_utils::read_json_param(params,"speed",this->speed)){
+    if(!msrm_utils::read_json_param(params,"speed",this->speed)){
         this->speed=0.5;
     }
-    if(!cpp_utils::read_json_param(params,"acc",this->acc)){
+    if(!msrm_utils::read_json_param(params,"acc",this->acc)){
         this->acc=0.5;
     }
     return true;

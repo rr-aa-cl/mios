@@ -31,7 +31,7 @@ const EvalTask& react_to_event::evaluate_task(){
 return this->_eval_task;
 }
 bool react_to_event::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"event",this->event)){
+    if(!msrm_utils::read_json_param(params,"event",this->event)){
         this->event="none";
     }
 return true;

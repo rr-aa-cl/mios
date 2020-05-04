@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <nlohmann/json.hpp>
-namespace cpp_utils{
+namespace msrm_utils{
 class JsonWebsocketServer;
 }
 namespace mios {
@@ -29,6 +29,7 @@ private:
     nlohmann::json is_busy(const nlohmann::json& request);
 
     nlohmann::json subscribe_to_event_stream(const nlohmann::json& request);
+    nlohmann::json unsubscribe_from_event_stream(const nlohmann::json& request);
 
     nlohmann::json set_grasped_object(const nlohmann::json& request);
     nlohmann::json grasp_object(const nlohmann::json& request);
@@ -66,7 +67,7 @@ private:
     nlohmann::json pack_pose(const nlohmann::json& request);
 
 
-    std::shared_ptr<cpp_utils::JsonWebsocketServer> _ws_server;
+    std::shared_ptr<msrm_utils::JsonWebsocketServer> _ws_server;
 
     std::shared_ptr<Core> _core;
     std::shared_ptr<TaskHandler> _task_handler;

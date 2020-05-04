@@ -8,8 +8,8 @@
 #include <thread>
 #include <functional>
 
-#include "cpp_utils/network.hpp"
-#include "cpp_utils/output.hpp"
+#include <msrm_utils/network.hpp>
+#include <msrm_utils/output.hpp>
 
 namespace mios {
 
@@ -29,7 +29,7 @@ private:
 
     nlohmann::json set_parameter(const nlohmann::json &parameter);
 
-    std::unique_ptr<cpp_utils::JsonWebsocketServer> _ws_server;
+    std::unique_ptr<msrm_utils::JsonWebsocketServer> _ws_server;
     std::map<std::string,nlohmann::json> _parameters;
     std::mutex _mtx_parameters;
 };

@@ -96,7 +96,7 @@ void TaskHandler::activity(){
             mode=franka::RobotMode::kOther;
         }
         if(mode==franka::RobotMode::kAutomaticErrorRecovery){
-            cpp_utils::print_warning("Attempting to recover...");
+            msrm_utils::print_warning("Attempting to recover...");
             sleep(1);
             continue;
         }
@@ -116,43 +116,43 @@ void TaskHandler::activity(){
             continue;
         }
         if(mode==franka::RobotMode::kGuiding){
-            cpp_utils::print_warning("Waiting for guiding mode to terminate...");
+            msrm_utils::print_warning("Waiting for guiding mode to terminate...");
             sleep(1);
             continue;
         }
         if(mode==franka::RobotMode::kMove){
-            cpp_utils::print_critical_error("Robot is moving, assuming second libfranka instance, attempting to recover.");
+            msrm_utils::print_critical_error("Robot is moving, assuming second libfranka instance, attempting to recover.");
             if(!this->_core->recover()){
-                cpp_utils::print_error("Recovery has failed, attempting to reset core...");
+                msrm_utils::print_error("Recovery has failed, attempting to reset core...");
                 if(!this->_core->reset()){
-                    cpp_utils::print_critical_error("Core reset has failed, trying again in 5 seconds.");
+                    msrm_utils::print_critical_error("Core reset has failed, trying again in 5 seconds.");
                     sleep(5);
                     continue;
                 }
             }
         }
         if(mode==franka::RobotMode::kOther){
-            cpp_utils::print_error("Undefined mode, attempting to recover.");
+            msrm_utils::print_error("Undefined mode, attempting to recover.");
             if(!this->_core->recover()){
-                cpp_utils::print_error("Recovery has failed, attempting to reset core...");
+                msrm_utils::print_error("Recovery has failed, attempting to reset core...");
                 if(!this->_core->reset()){
-                    cpp_utils::print_critical_error("Core reset has failed, trying again in 5 seconds.");
+                    msrm_utils::print_critical_error("Core reset has failed, trying again in 5 seconds.");
                     sleep(5);
                     continue;
                 }else{
-                    cpp_utils::print_success("Core reset successful.");
+                    msrm_utils::print_success("Core reset successful.");
                 }
             }else{
-                cpp_utils::print_success("Recovery successful, resuming normal activity.");
+                msrm_utils::print_success("Recovery successful, resuming normal activity.");
                 continue;
             }
         }
         if(mode==franka::RobotMode::kReflex){
-            cpp_utils::print_error("Unhandled reflex, attempting to recover.");
+            msrm_utils::print_error("Unhandled reflex, attempting to recover.");
             if(!this->_core->recover()){
-                cpp_utils::print_error("Recovery has failed, attempting to reset core...");
+                msrm_utils::print_error("Recovery has failed, attempting to reset core...");
                 if(!this->_core->reset()){
-                    cpp_utils::print_critical_error("Core reset has failed, trying again in 5 seconds.");
+                    msrm_utils::print_critical_error("Core reset has failed, trying again in 5 seconds.");
                     sleep(5);
                     continue;
                 }
@@ -166,7 +166,7 @@ void TaskHandler::activity(){
             colors["right"]={255,255,0};
             colors["far-right"]={255,255,0};
             this->_core->load_led_pattern(std::make_shared<pattern_custom>(colors));
-            cpp_utils::print_warning("User stop has been pressed, waiting for release...");
+            msrm_utils::print_warning("User stop has been pressed, waiting for release...");
             this->_mtx_termination_phase.lock();
             this->terminate_all_tasks();
             this->_mtx_termination_phase.unlock();
@@ -182,12 +182,12 @@ void TaskHandler::activity(){
         }
         std::tuple<std::string,std::string,nlohmann::json> t=this->_task_queue.front();
         std::string task_id=std::get<1>(t);
-        cpp_utils::print_info("############################################################");
-        cpp_utils::print_info("Loading task "+task_id+"...");
+        msrm_utils::print_info("############################################################");
+        msrm_utils::print_info("Loading task "+task_id+"...");
         this->_active_task=this->_task_list->tasks[task_id];
         try{
             if(!this->_active_task->load(std::get<2>(t),this->_core)){
-                cpp_utils::print_error("Could not load task "+task_id+".");
+                msrm_utils::print_error("Could not load task "+task_id+".");
                 abort=true;
             }
         }catch(const TaskException& e){
@@ -201,7 +201,7 @@ void TaskHandler::activity(){
             abort=true;
         }
         this->_mtx_task_queue.unlock();
-        cpp_utils::print_info("############################################################");
+        msrm_utils::print_info("############################################################");
         try{
             mode = this->_core->request_percept().robot_mode;
         }catch(const CoreException& e){
@@ -210,7 +210,7 @@ void TaskHandler::activity(){
         }
 
         if(mode==franka::RobotMode::kOther){
-            cpp_utils::print_warning("Robot is in invalid mode, aborting all tasks.");
+            msrm_utils::print_warning("Robot is in invalid mode, aborting all tasks.");
             this->_mtx_termination_phase.lock();
             this->terminate_all_tasks();
             this->_mtx_termination_phase.unlock();
@@ -218,15 +218,15 @@ void TaskHandler::activity(){
             continue;
         }
         if(!abort){
-            cpp_utils::print_info("############################################################");
-            cpp_utils::print_info("Executing "+task_id+" with uuid "+std::get<0>(t)+".");
+            msrm_utils::print_info("############################################################");
+            msrm_utils::print_info("Executing "+task_id+" with uuid "+std::get<0>(t)+".");
             try{
                 if(this->_active_task->get_id()=="idle_task"){
                     this->_flag_busy=false;
                 }
                 this->_active_task->execute_task();
                 this->_flag_busy=true;
-                cpp_utils::print_info("Task "+task_id+" has terminated.");
+                msrm_utils::print_info("Task "+task_id+" has terminated.");
             }catch(const TaskException& e){
                 std::cout<<e.what()<<std::endl;
                 abort=true;
@@ -239,7 +239,7 @@ void TaskHandler::activity(){
             }
             try{
                 if(this->_active_task->do_recovery()){
-                    cpp_utils::print_info("Attempting recovery for task "+task_id+".");
+                    msrm_utils::print_info("Attempting recovery for task "+task_id+".");
                     this->_active_task->start_recovery();
                     this->_active_task->recover_task();
                     this->_active_task->complete_recovery();
@@ -258,11 +258,11 @@ void TaskHandler::activity(){
         assert(this->_active_task!=nullptr);
         this->_mtx_termination_phase.lock();
         if(!this->_active_task->get_eval().nominal_termination || abort){
-            cpp_utils::print_error("Could not execute task "+task_id+" nominally. Emptying remaining task queue...");
+            msrm_utils::print_error("Could not execute task "+task_id+" nominally. Emptying remaining task queue...");
             this->_active_task->get_eval().last_error=this->_core->get_last_error();
             this->terminate_all_tasks();
         }else if(this->_active_task->get_eval().empty_queue){
-            cpp_utils::print_info("Emptying remaining task queue as requested.");
+            msrm_utils::print_info("Emptying remaining task queue as requested.");
             this->terminate_all_tasks();
         }else{
             try{
@@ -280,8 +280,8 @@ void TaskHandler::activity(){
             this->_mtx_task_queue.unlock();
         }
         this->_active_task=nullptr;
-        cpp_utils::print_info("End of lifecycle of task "+task_id+".");
-        cpp_utils::print_info("############################################################");
+        msrm_utils::print_info("End of lifecycle of task "+task_id+".");
+        msrm_utils::print_info("############################################################");
         this->_mtx_termination_phase.unlock();
     }
 }
@@ -296,41 +296,41 @@ std::pair<bool,std::string> TaskHandler::start_task(const std::string &task, con
     std::string err="";
     if(this->_active_task!=nullptr){
         if(!queue_task && this->_active_task->get_recovery_flag()){
-            cpp_utils::print_warning("A task with id "+this->_active_task->get_id()+" is currently running its recovery procedure. To queue a task set the parameter 'queue_task' to true.");
+            msrm_utils::print_warning("A task with id "+this->_active_task->get_id()+" is currently running its recovery procedure. To queue a task set the parameter 'queue_task' to true.");
             err="A task with id "+this->_active_task->get_id()+" is currently running its recovery procedure. To queue a task set the parameter 'queue_task' to true.";
             return std::pair<bool,std::string>(false,err);
         }
         if(!queue_task && this->_active_task->get_id()!="idle_task"){
-            cpp_utils::print_warning("Another task with id "+this->_active_task->get_id()+" is currently running. To queue a task set the parameter 'queue_task' to true.");
+            msrm_utils::print_warning("Another task with id "+this->_active_task->get_id()+" is currently running. To queue a task set the parameter 'queue_task' to true.");
             err="Another task with id "+this->_active_task->get_id()+" is currenlty running. To queue a task set the parameter 'queue_task' to true.";
             return std::pair<bool,std::string>(false,err);
         }
     }
     if(this->_task_list->tasks.find(task)==this->_task_list->tasks.end()){
-        cpp_utils::print_error("No implementation of task "+task+" found.");
+        msrm_utils::print_error("No implementation of task "+task+" found.");
         err="No implementation of task "+task+" found.";
         return std::pair<bool,std::string>(false,err);
     }
     if(this->_flag_invalid){
-        cpp_utils::print_error("Cannot start task while in invalid mode.");
+        msrm_utils::print_error("Cannot start task while in invalid mode.");
         err="Cannot start task while in invalid mode.";
         return std::pair<bool,std::string>(false,err);
     }
     if(this->_flag_user_stop){
-        cpp_utils::print_error("Cannot start task while user-stop is pressed.");
+        msrm_utils::print_error("Cannot start task while user-stop is pressed.");
         err="Cannot start task while user-stop is pressed.";
         return std::pair<bool,std::string>(false,err);
     }
     this->_mtx_task_queue.lock();
     std::string unique_id=this->get_unique_task_id();
     if(!this->add_id(unique_id)){
-        cpp_utils::print_error("Task handler could not queue task "+task+" with uuid "+unique_id+".");
+        msrm_utils::print_error("Task handler could not queue task "+task+" with uuid "+unique_id+".");
         err="Task handler could not queue task "+task+" with uuid "+unique_id+".";
         this->_mtx_task_queue.unlock();
         return std::pair<bool,std::string>(false,err);
     }
     this->_task_queue.emplace_back(std::tuple<std::string,std::string,nlohmann::json>(unique_id,task,parameters));
-    cpp_utils::print_info("Queued task "+task+" with uuid "+unique_id+".");
+    msrm_utils::print_info("Queued task "+task+" with uuid "+unique_id+".");
     this->_mtx_task_queue.unlock();
     if(this->_active_task!=nullptr){
         if(this->_active_task->get_id()=="idle_task"){
@@ -345,7 +345,7 @@ std::pair<bool,std::string> TaskHandler::stop_task(bool nominal, bool success, b
         if(this->_active_task->get_id()=="idle_task"){
             return std::pair<bool,std::string>(true,"");
         }
-        cpp_utils::print_info("Stopping active task.");
+        msrm_utils::print_info("Stopping active task.");
         this->_active_task->stop_task(nominal,success,recover,empty_queue,cost_suc,cost_err);
         return std::pair<bool,std::string>(true,"");
     }else{
@@ -385,7 +385,7 @@ std::pair<bool,std::string> TaskHandler::terminate_all_tasks(){
             continue;
         }
         std::pair<bool,std::string> rtn = this->remove_task(std::get<0>(t));
-        cpp_utils::print_info(rtn.second);
+        msrm_utils::print_info(rtn.second);
     }
     this->_mtx_task_queue.lock();
     this->_task_queue.clear();
@@ -395,7 +395,7 @@ std::pair<bool,std::string> TaskHandler::terminate_all_tasks(){
 
 bool TaskHandler::add_id(const std::string &id){
     if(this->_sub.find(id)!=this->_sub.end()){
-        cpp_utils::print_critical_error("uuid "+id+" has already been given to a task. The routine to create a uuid seems to be faulty.");
+        msrm_utils::print_critical_error("uuid "+id+" has already been given to a task. The routine to create a uuid seems to be faulty.");
         return false;
     }
     this->_sub.insert(std::pair<std::string,std::set<std::shared_ptr<TaskSubscriber> > >(id,std::set<std::shared_ptr<TaskSubscriber> >()));
@@ -405,11 +405,11 @@ bool TaskHandler::add_id(const std::string &id){
 bool TaskHandler::terminate_task(const std::string &id, const EvalTask &e){
     std::map<std::string,std::set<std::shared_ptr<TaskSubscriber> > >::iterator it=this->_sub.find(id);
     if(it==this->_sub.end() && id!="idle_task"){
-        cpp_utils::print_critical_error("In terminate_task: uuid "+id+" is not known to the task handler. There is a critical error in the task handling routine.");
+        msrm_utils::print_critical_error("In terminate_task: uuid "+id+" is not known to the task handler. There is a critical error in the task handling routine.");
         return false;
     }
 
-    cpp_utils::print_info("Finished task with uuid "+id+", informing subscribers.");
+    msrm_utils::print_info("Finished task with uuid "+id+", informing subscribers.");
     this->_eval_storage.insert(std::pair<std::string,EvalTask>(id,e));
 
     for(auto& t : this->_sub[id]){
@@ -421,12 +421,12 @@ bool TaskHandler::terminate_task(const std::string &id, const EvalTask &e){
 
 bool TaskHandler::subscribe(std::shared_ptr<TaskSubscriber> sub){
     if(this->_sub.find(sub->get_id())==this->_sub.end()){
-        cpp_utils::print_warning("Cannot subscribe to task with uuid "+sub->get_id()+" because it is not known to the task handler. "
+        msrm_utils::print_warning("Cannot subscribe to task with uuid "+sub->get_id()+" because it is not known to the task handler. "
                                                                                      "The task may have terminated already or was discarded due to an error. "
                                                                                      "I will attempt to look up the task evaluation for this uuid from memory.");
         return false;
     }else{
-        cpp_utils::print_info("Subscribing to task with uuid "+sub->get_id()+".");
+        msrm_utils::print_info("Subscribing to task with uuid "+sub->get_id()+".");
         this->_sub[sub->get_id()].insert(sub);
         return true;
     }
@@ -434,11 +434,11 @@ bool TaskHandler::subscribe(std::shared_ptr<TaskSubscriber> sub){
 
 void TaskHandler::unsubcribe(const std::string &task_uuid, const std::set<std::shared_ptr<TaskSubscriber> >::iterator &it){
     if(this->_sub.find(task_uuid)==this->_sub.end()){
-        cpp_utils::print_warning("No task with uuid "+task_uuid+" is active or has been active in the past.");
+        msrm_utils::print_warning("No task with uuid "+task_uuid+" is active or has been active in the past.");
         return;
     }
     if(it==this->_sub[task_uuid].end()){
-        cpp_utils::print_warning("Cannot unsubscribe, invalid task subscriber.");
+        msrm_utils::print_warning("Cannot unsubscribe, invalid task subscriber.");
         return;
     }
     this->_sub[task_uuid].erase(it);
@@ -461,7 +461,7 @@ std::pair<EvalTask,bool> TaskHandler::wait_for_task(const std::string &task_uuid
         e = sub->wait();
         result=true;
     }else if(this->request_eval(task_uuid,e)){
-        cpp_utils::print_info("Loaded task evaluation for task with uuid "+task_uuid+" from memory.");
+        msrm_utils::print_info("Loaded task evaluation for task with uuid "+task_uuid+" from memory.");
         result=true;
     }else{
         result=false;
@@ -481,7 +481,7 @@ std::pair<EvalTask, bool> TaskHandler::check_if_finished(const std::string &task
 
 bool TaskHandler::request_eval(const std::string &id, EvalTask &e){
     if(this->_eval_storage.find(id)==this->_eval_storage.end()){
-        //        cpp_utils::print_error("Task with uuid "+id+" has not been executed in the past.");
+        //        msrm_utils::print_error("Task with uuid "+id+" has not been executed in the past.");
         return false;
     }
     e=this->_eval_storage[id];

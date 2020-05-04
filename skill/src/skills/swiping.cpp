@@ -4,12 +4,12 @@ swiping::swiping():Skill("swiping"){}
 bool swiping::read_skill_parameters(const nlohmann::json& p){
 
     std::shared_ptr<ConfigSkill_swiping> c = std::static_pointer_cast<ConfigSkill_swiping>(this->_config);
-    if(!cpp_utils::read_json_param<std::string>(p,"locations",c->locations)){
+    if(!msrm_utils::read_json_param<std::string>(p,"locations",c->locations)){
         c->locations.resize(0);
     }
-    cpp_utils::read_json_param(p,"F_c",c->F_c);
-    cpp_utils::read_json_param<double,2,1>(p,"speed",c->speed);
-    cpp_utils::read_json_param<double,2,1>(p,"acc",c->acc);
+    msrm_utils::read_json_param(p,"F_c",c->F_c);
+    msrm_utils::read_json_param<double,2,1>(p,"speed",c->speed);
+    msrm_utils::read_json_param<double,2,1>(p,"acc",c->acc);
 
     this->_n_p=c->locations.size();
 
@@ -23,7 +23,7 @@ void swiping::build_primitives(const Percept& p){
         std::shared_ptr<ConfigMP_mp_basic> c_move = std::static_pointer_cast<ConfigMP_mp_basic>(this->get_mp("move_"+std::to_string(i))->get_config());
         Object o;
         if(!this->_kb->load_object(c_skill->locations[i],o)){
-            cpp_utils::print_warning("Could not load object" + o.name);
+            msrm_utils::print_warning("Could not load object" + o.name);
         }
         attr_move->attr_pose=this->_kb->transform_to_EE(o.TF_T_o(this->_config->frames.O_R_TF));
         attr_move->attr_fc(2)=c_skill->F_c;
@@ -42,7 +42,7 @@ void swiping::build_primitives(const Percept& p){
     c_skill->controller.TF_control=false;
 }
 std::tuple<bool,std::string> swiping::check_edges(const Percept& p){
-    std::vector<std::string> mp_id = cpp_utils::split_string(this->_active_mp->get_id(),"_");
+    std::vector<std::string> mp_id = msrm_utils::split_string(this->_active_mp->get_id(),"_");
     if(std::stoi(mp_id[1])==this->_n_p){
         return std::tuple<bool,std::string>(false,"");
     }else{
@@ -54,7 +54,7 @@ std::tuple<bool,std::string> swiping::check_edges(const Percept& p){
     return std::tuple<bool,std::string>(false,"");
 }
 bool swiping::check_local_suc_conditions(const Percept& p){
-    std::vector<std::string> mp_id = cpp_utils::split_string(this->_active_mp->get_id(),"_");
+    std::vector<std::string> mp_id = msrm_utils::split_string(this->_active_mp->get_id(),"_");
     if(std::stoi(mp_id[1])==this->_n_p){
         if(this->_active_mp->in_attractor(p)){
             return true;
@@ -67,13 +67,13 @@ bool swiping::check_local_err_conditions(const Percept &p){
 
     Eigen::Matrix<double,2,1> e;
     e<<p.TF_T_EE_d(0,3)-p.TF_T_EE(0,3),p.TF_T_EE_d(1,3)-p.TF_T_EE(1,3);
-    double e_abs=cpp_utils::norm_2<2>(e);
+    double e_abs=msrm_utils::norm_2<2>(e);
     if(e_abs>this->_config->user.e_x_max(0)){
-        cpp_utils::print_error("Deviation from desired trajectory during swiping was too large.");
+        msrm_utils::print_error("Deviation from desired trajectory during swiping was too large.");
         return true;
     }
     if(fabs(p.TF_F_ext(2))<this->_config->user.F_contact(2)){
-        cpp_utils::print_error("I have lost contact while swiping.");
+        msrm_utils::print_error("I have lost contact while swiping.");
         return true;
     }
     return false;

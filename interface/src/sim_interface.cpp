@@ -1,6 +1,6 @@
 #include "interface/sim_interface.hpp"
 
-#include "cpp_utils/output.hpp"
+#include <msrm_utils/output.hpp>
 
 namespace mios {
 
@@ -28,7 +28,7 @@ bool SimInterface::connect_to_sim(std::string ip, unsigned port){
 
     if ((this->_s_out=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
     {
-        cpp_utils::print_error("Initialization of outgoing simulation connection failed.");
+        msrm_utils::print_error("Initialization of outgoing simulation connection failed.");
         return false;
     }
     memset((char *) &this->_si_other_out, 0, sizeof(this->_si_other_out));
@@ -40,7 +40,7 @@ bool SimInterface::connect_to_sim(std::string ip, unsigned port){
     this->_slen_in = sizeof(this->_si_other_in);
 
     if(this->_s_in=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)<0){
-        cpp_utils::print_error("Initialization of incoming simulation connection failed.");
+        msrm_utils::print_error("Initialization of incoming simulation connection failed.");
         return false;
     }
 
@@ -48,7 +48,7 @@ bool SimInterface::connect_to_sim(std::string ip, unsigned port){
     tv.tv_sec = 0;
     tv.tv_usec = 10000;
     if(setsockopt(this->_s_in, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv)<0){
-        cpp_utils::print_error("Setting options for incoming simulation connection has failed.");
+        msrm_utils::print_error("Setting options for incoming simulation connection has failed.");
         return false;
     }
 
@@ -103,7 +103,7 @@ bool SimInterface::send_cmd_torques(std::array<double, 7> tau_J_d){
     assert(cnt_byte==this->_packagesize_out);
     int err=sendto(this->_s_out, msg, sizeof(msg) , 0 , (struct sockaddr *) &this->_si_other_out, this->_slen_out)<0;
     if(err<0){
-        cpp_utils::print_error("Could not send package to simulation.");
+        msrm_utils::print_error("Could not send package to simulation.");
         return false;
     }
     return true;
@@ -117,7 +117,7 @@ bool SimInterface::recv_state(std::array<double, 200> &state){
         this->_cnt_no_connection=0;
     }
     if(this->_cnt_no_connection>10){
-        cpp_utils::print_critical_error("Lost connection to peer");
+        msrm_utils::print_critical_error("Lost connection to peer");
         return false;
     }
     //            std::cout<<"len: "<<reclen<<std::endl;
@@ -131,13 +131,13 @@ bool SimInterface::recv_state(std::array<double, 200> &state){
         }
     }
     if(i>=this->_bufferlength-this->_packagesize_in || !((int)msg[i+4]==this->_n_package_last+1 || ((int)msg[i+4]==0 && this->_n_package_last==99)) || reclen!=this->_packagesize_in){
-        //                cpp_utils::print_warning("Lost a message.");
+        //                msrm_utils::print_warning("Lost a message.");
         this->_cnt_lost_packages++;
-        //                cpp_utils::print_warning("Lost one package. This package has number "+std::to_string((int)msg[i+4])
+        //                msrm_utils::print_warning("Lost one package. This package has number "+std::to_string((int)msg[i+4])
         //                        +", the last one has number "+std::to_string(this->_n_package_last)+".");
         this->_lost_package=true;
     }else if(this->_cnt_lost_packages>0){
-        //                cpp_utils::print_warning("Number of lost packages: "+std::to_string(this->_cnt_lost_packages));
+        //                msrm_utils::print_warning("Number of lost packages: "+std::to_string(this->_cnt_lost_packages));
         this->_cnt_lost_packages=0;
     }
     this->_n_package_last=(int)msg[i+4];

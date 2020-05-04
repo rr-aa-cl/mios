@@ -25,12 +25,12 @@ const EvalTask &feature_impedance::evaluate_task(){
 }
 
 bool feature_impedance::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"pose_init",this->pose_init)){
-        cpp_utils::print_error("Missing parameter: pose_init");
+    if(!msrm_utils::read_json_param(params,"pose_init",this->pose_init)){
+        msrm_utils::print_error("Missing parameter: pose_init");
         return false;
     }
-    if(!cpp_utils::read_json_param<double,6,1>(params,"K",this->K)){
-        cpp_utils::print_error("Missing parameter: K [6x1]");
+    if(!msrm_utils::read_json_param<double,6,1>(params,"K",this->K)){
+        msrm_utils::print_error("Missing parameter: K [6x1]");
         return false;
     }
     return true;

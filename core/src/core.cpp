@@ -1,11 +1,11 @@
 #include "core/core.hpp"
 
-#include "cpp_utils/math.hpp"
-#include "cpp_utils/files.hpp"
-#include "cpp_utils/network.hpp"
-#include "cpp_utils/conversion.hpp"
-#include "cpp_utils/json.hpp"
-#include "cpp_utils/system.hpp"
+#include <msrm_utils/math.hpp>
+#include <msrm_utils/files.hpp>
+#include <msrm_utils/network.hpp>
+#include <msrm_utils/conversion.hpp>
+#include <msrm_utils/json.hpp>
+#include <msrm_utils/system.hpp>
 #include "utils/exceptions.hpp"
 #include "skill/skill.hpp"
 #include "event_publisher/event_publisher.hpp"
@@ -54,7 +54,7 @@ Core::Core(int argc, char **argv){
     this->_flag_run_sound=false;
     this->_flag_run_beacon=false;
 
-    this->_config_internal.path_executable=cpp_utils::get_path_executable(argv);
+    this->_config_internal.path_executable=msrm_utils::get_path_executable(argv);
     this->_config_internal.grasped_object="none";
 
     this->_active_skill=nullptr;
@@ -282,18 +282,18 @@ bool Core::write_config_to_robot(){
     Object o;
     try{
         if(this->_kb->load_object(this->_kb->get_local_memory()->access_config_user().grasped_object,o) || this->_kb->get_local_memory()->access_config_user().grasped_object=="none"){
-            this->_robot->setLoad(o.mass,cpp_utils::convert_to_array<double,3,1>(o.EE_ob_com),cpp_utils::convert_to_array<double,3,3>(o.ob_I));
+            this->_robot->setLoad(o.mass,msrm_utils::convert_to_array<double,3,1>(o.EE_ob_com),msrm_utils::convert_to_array<double,3,3>(o.ob_I));
         }else{
-            this->_robot->setLoad(c_user.load_m,cpp_utils::convert_to_array<double,3,1>(c_user.load_com),cpp_utils::convert_to_array<double,3,3>(c_user.load_I));
+            this->_robot->setLoad(c_user.load_m,msrm_utils::convert_to_array<double,3,1>(c_user.load_com),msrm_utils::convert_to_array<double,3,3>(c_user.load_I));
         }
         if(!this->set_ee()){
             return false;
         }
-        this->_robot->setCollisionBehavior(cpp_utils::convert_to_array<double,7,1>(c_user.tau_contact),
-                                           cpp_utils::convert_to_array<double,7,1>(c_limits.tau_ext_max),
-                                           cpp_utils::convert_to_array<double,6,1>(c_user.F_contact),
+        this->_robot->setCollisionBehavior(msrm_utils::convert_to_array<double,7,1>(c_user.tau_contact),
+                                           msrm_utils::convert_to_array<double,7,1>(c_limits.tau_ext_max),
+                                           msrm_utils::convert_to_array<double,6,1>(c_user.F_contact),
         {c_limits.F_ext_max(0),c_limits.F_ext_max(0),c_limits.F_ext_max(0),c_limits.F_ext_max(1),c_limits.F_ext_max(1),c_limits.F_ext_max(1)});
-        this->_robot->setK(cpp_utils::convert_to_array<double,4,4>(c_frames.EE_T_K));
+        this->_robot->setK(msrm_utils::convert_to_array<double,4,4>(c_frames.EE_T_K));
 
         this->_robot->setJointImpedance({9000,9000,9000,7500,7500,6000,6000});
     }catch(franka::CommandException& e){
@@ -323,12 +323,12 @@ bool Core::set_ee(){
         return false;
     }
     nlohmann::json p_frame;
-    cpp_utils::write_json_array<double,4,4>(p_frame["EE_T_TCP"],obj.EE_T_O);
+    msrm_utils::write_json_array<double,4,4>(p_frame["EE_T_TCP"],obj.EE_T_O);
     //    this->_kb->get_local_memory()->modify_config_frames(p_frame);
     this->get_kb()->get_local_memory()->get_persistent_data()->EE_T_TCP=obj.EE_T_O;
-    Eigen::Matrix<double,4,4> F_T_TCP=cpp_utils::rotate_matrix(this->get_kb()->get_local_memory()->get_persistent_data()->EE_T_TCP,this->_kb->get_local_memory()->access_config_frames().F_T_EE);
+    Eigen::Matrix<double,4,4> F_T_TCP=msrm_utils::rotate_matrix(this->get_kb()->get_local_memory()->get_persistent_data()->EE_T_TCP,this->_kb->get_local_memory()->access_config_frames().F_T_EE);
     try{
-        this->_robot->setEE(cpp_utils::convert_to_array<double,4,4>(F_T_TCP));
+        this->_robot->setEE(msrm_utils::convert_to_array<double,4,4>(F_T_TCP));
     }catch(franka::CommandException& e){
         std::cout<<e.what()<<std::endl;
         return false;
@@ -358,7 +358,7 @@ bool Core::validity_check_torque(std::array<double,7>& tau_J){
 
     // check O_R_TF
     Eigen::Matrix<double,3,3> O_R_TF_check;
-    O_R_TF_check=cpp_utils::rotate_matrix(c_frames.O_R_TF,c_frames.O_R_TF);
+    O_R_TF_check=msrm_utils::rotate_matrix(c_frames.O_R_TF,c_frames.O_R_TF);
     Eigen::Matrix<double,3,1> O_R_TF_x;
     O_R_TF_x<<c_frames.O_R_TF(0,0),c_frames.O_R_TF(1,0),c_frames.O_R_TF(2,0);
     Eigen::Matrix<double,3,1> O_R_TF_z;
@@ -452,7 +452,7 @@ bool Core::validity_check_velocity_cart(std::array<double, 6> &O_dP_EE_d){
 
     // check O_R_TF
     Eigen::Matrix<double,3,3> O_R_TF_check;
-    O_R_TF_check=cpp_utils::rotate_matrix(c_frames.O_R_TF,c_frames.O_R_TF);
+    O_R_TF_check=msrm_utils::rotate_matrix(c_frames.O_R_TF,c_frames.O_R_TF);
     Eigen::Matrix<double,3,1> O_R_TF_x;
     O_R_TF_x<<c_frames.O_R_TF(0,0),c_frames.O_R_TF(1,0),c_frames.O_R_TF(2,0);
     Eigen::Matrix<double,3,1> O_R_TF_z;
@@ -514,7 +514,7 @@ bool Core::validity_check_velocity_joint(std::array<double, 7> &dq_d){
 std::string Core::get_ip_robot(){
     const ConfigSystem& c=this->_kb->get_local_memory()->access_config_system();
     if(c.ip_robot!="none"){
-        if(cpp_utils::ping(c.ip_robot.c_str())==1){
+        if(msrm_utils::ping(c.ip_robot.c_str())==false){
             spdlog::warn("IP was set to "+c.ip_robot+" but no device has been found. Searching for new connection...");
             nlohmann::json p;
             p["ip_robot"]="none";
@@ -548,7 +548,7 @@ std::string Core::get_ip_robot(){
 std::string Core::get_ip_primary(){
     //    ConfigGlobal* c=this->_kb->get_local_memory()->get_config_global();
     //    if(c->ip_primary!="none"){
-    //        if(cpp_utils::ping(c->ip_primary.c_str())==1){
+    //        if(msrm_utils::ping(c->ip_primary.c_str())==1){
     //            spdlog::warn("Last known IP of primary was "+c->ip_primary+" but I can not ping it. Searching for new connection...");
     //            c->ip_primary="none";
     //            this->_kb->set_parameter("ip_primary",c->ip_primary);
@@ -591,7 +591,7 @@ bool Core::connect_to_robot(){
         spdlog::error("Model could not be loaded.");
         return false;
     }
-    //    cpp_utils::print_success("done");
+    //    msrm_utils::print_success("done");
     return true;
 }
 
@@ -608,7 +608,7 @@ bool Core::connect_to_gripper(){
         spdlog::error("Can not connect to gripper");
         return false;
     }
-    //    cpp_utils::print_success("done");
+    //    msrm_utils::print_success("done");
     return true;
 }
 
@@ -1008,7 +1008,7 @@ bool Core::start_control_cycle(){
         try{
             this->_robot->automaticErrorRecovery();
             this->_flag_invalid_mode=false;
-            //            cpp_utils::print_success("Recovery successful.");
+            //            msrm_utils::print_success("Recovery successful.");
         }catch(const franka::CommandException& e){
             spdlog::error("Automatic error recovery failed, check the user-stop.");
             return false;
@@ -1240,6 +1240,7 @@ franka::Torques Core::control_cycle_torque_cart(const franka::RobotState state){
     this->input_control_nullspace(this->_percept);
 
     this->check_cartesian_velocity_workspace(cmd_skill.TF_dX_d,this->_percept);
+    this->base_avoidance(cmd_skill.TF_dX_d,this->_percept);
 
     this->_in_u_vel2pose.TF_dX_d=cmd_skill.TF_dX_d;
     this->_conv_vel2pose.step(this->_in_u_vel2pose,this->_out_y_vel2pose);
@@ -1300,6 +1301,9 @@ franka::Torques Core::control_cycle_torque_cart(const franka::RobotState state){
         }
         if(this->get_kb()->get_local_memory()->access_config_cntr().nullspace_cntr_on){
             this->_in_u_mux.tau_J_d(i)+=this->_out_y_cntr_nullsp_proj.tau_n(i);
+        }
+        for(unsigned i=0;i<7;i++){
+            this->_in_u_mux.tau_J_d(i)-=this->get_kb()->get_local_memory()->access_config_cntr().D_additional(i)*this->_percept.dq(i);
         }
     }
 
@@ -1413,8 +1417,10 @@ franka::CartesianVelocities Core::control_cycle_velocity_cart(const franka::Robo
         franka::CartesianVelocities O_dP_EE_d={0,0,0,0,0,0};
         return franka::MotionFinished(O_dP_EE_d);
     }
+    this->check_cartesian_velocity_workspace(cmd_skill.TF_dX_d,this->_percept);
+    this->base_avoidance(cmd_skill.TF_dX_d,this->_percept);
 
-    franka::CartesianVelocities O_dP_EE_d = cpp_utils::convert_to_array<double,6,1>(cpp_utils::rotate_vector(cmd_skill.TF_dX_d,this->_active_skill->get_config<>()->frames.O_R_TF));
+    franka::CartesianVelocities O_dP_EE_d = msrm_utils::convert_to_array<double,6,1>(msrm_utils::rotate_vector(cmd_skill.TF_dX_d,this->_active_skill->get_config<>()->frames.O_R_TF));
     if(!this->validity_check_velocity_cart(O_dP_EE_d.O_dP_EE)){
         this->terminate_control_cycle();
     }
@@ -1443,7 +1449,7 @@ franka::JointVelocities Core::control_cycle_velocity_joint(const franka::RobotSt
         franka::JointVelocities dq_d={0,0,0,0,0,0,0};
         return franka::MotionFinished(dq_d);
     }
-    franka::JointVelocities dq_d = cpp_utils::convert_to_array<double,7,1>(cmd_skill.dq_d);
+    franka::JointVelocities dq_d = msrm_utils::convert_to_array<double,7,1>(cmd_skill.dq_d);
 
     if(!this->validity_check_velocity_joint(dq_d.dq)){
         this->terminate_control_cycle();
@@ -1489,32 +1495,34 @@ void Core::process_percept(const franka::RobotState &state, const franka::Grippe
     this->_percept.K_F_ext=Eigen::Map<Eigen::Matrix<double,6,1> >(std::array<double,6>(state.K_F_ext_hat_K).data());
     this->_percept.O_F_ext=Eigen::Map<Eigen::Matrix<double,6,1> >(std::array<double,6>(state.O_F_ext_hat_K).data());
 
+    msrm_utils::write_json_array<double,6,1>(this->event["K_F_ext"],this->_percept.K_F_ext);
+
     if(this->_active_skill==nullptr && O_R_TF.isZero(0)){
-        this->_percept.TF_dX=cpp_utils::rotate_vector(this->_percept.O_dX,cpp_utils::invert_matrix(this->_kb->get_local_memory()->access_config_frames().O_R_TF));
+        this->_percept.TF_dX=msrm_utils::rotate_vector(this->_percept.O_dX,msrm_utils::invert_matrix(this->_kb->get_local_memory()->access_config_frames().O_R_TF));
         if(this->_kb->get_local_memory()->access_config_cntr().TF_control){
-            this->_percept.TF_F_ext=cpp_utils::rotate_vector(this->_percept.K_F_ext,cpp_utils::invert_matrix(this->_kb->get_local_memory()->access_config_frames().O_R_TF));
+            this->_percept.TF_F_ext=msrm_utils::rotate_vector(this->_percept.K_F_ext,msrm_utils::invert_matrix(this->_kb->get_local_memory()->access_config_frames().O_R_TF));
         }else{
             this->_percept.TF_F_ext=this->_percept.K_F_ext;
         }
-        this->_percept.TF_T_EE=cpp_utils::rotate_matrix(Eigen::Matrix<double,4,4>(Eigen::Map<Eigen::Matrix<double,4,4> >(std::array<double,16>(state.O_T_EE).data())),cpp_utils::invert_matrix(this->_kb->get_local_memory()->access_config_frames().O_R_TF));
+        this->_percept.TF_T_EE=msrm_utils::rotate_matrix(Eigen::Matrix<double,4,4>(Eigen::Map<Eigen::Matrix<double,4,4> >(std::array<double,16>(state.O_T_EE).data())),msrm_utils::invert_matrix(this->_kb->get_local_memory()->access_config_frames().O_R_TF));
     }else if(this->_active_skill==nullptr && !O_R_TF.isZero(0)){
-        this->_percept.TF_dX=cpp_utils::rotate_vector(this->_percept.O_dX,cpp_utils::invert_matrix(O_R_TF));
+        this->_percept.TF_dX=msrm_utils::rotate_vector(this->_percept.O_dX,msrm_utils::invert_matrix(O_R_TF));
         if(this->_kb->get_local_memory()->access_config_cntr().TF_control){
-            this->_percept.TF_F_ext=cpp_utils::rotate_vector(this->_percept.K_F_ext,cpp_utils::invert_matrix(O_R_TF));
+            this->_percept.TF_F_ext=msrm_utils::rotate_vector(this->_percept.K_F_ext,msrm_utils::invert_matrix(O_R_TF));
         }else{
             this->_percept.TF_F_ext=this->_percept.K_F_ext;
         }
-        this->_percept.TF_T_EE=cpp_utils::rotate_matrix(Eigen::Matrix<double,4,4>(Eigen::Map<Eigen::Matrix<double,4,4> >(std::array<double,16>(state.O_T_EE).data())),cpp_utils::invert_matrix(O_R_TF));
+        this->_percept.TF_T_EE=msrm_utils::rotate_matrix(Eigen::Matrix<double,4,4>(Eigen::Map<Eigen::Matrix<double,4,4> >(std::array<double,16>(state.O_T_EE).data())),msrm_utils::invert_matrix(O_R_TF));
     }else if(this->_active_skill!=nullptr){
-        this->_percept.TF_dX=cpp_utils::rotate_vector(this->_percept.O_dX,cpp_utils::invert_matrix(this->_active_skill->get_config<>()->frames.O_R_TF));
+        this->_percept.TF_dX=msrm_utils::rotate_vector(this->_percept.O_dX,msrm_utils::invert_matrix(this->_active_skill->get_config<>()->frames.O_R_TF));
         if(this->_kb->get_local_memory()->access_config_cntr().TF_control){
             Eigen::Matrix<double,3,3> O_R_EE = this->_percept.O_T_EE.block<3,3>(0,0);
-            Eigen::Matrix<double,6,1> O_F_ext_hat_K_ = cpp_utils::rotate_vector(this->_percept.K_F_ext,O_R_EE);
-            this->_percept.TF_F_ext=cpp_utils::rotate_vector(O_F_ext_hat_K_,cpp_utils::invert_matrix(this->_active_skill->get_config<>()->frames.O_R_TF));
+            Eigen::Matrix<double,6,1> O_F_ext_hat_K_ = msrm_utils::rotate_vector(this->_percept.K_F_ext,O_R_EE);
+            this->_percept.TF_F_ext=msrm_utils::rotate_vector(O_F_ext_hat_K_,msrm_utils::invert_matrix(this->_active_skill->get_config<>()->frames.O_R_TF));
         }else{
             this->_percept.TF_F_ext=this->_percept.K_F_ext;
         }
-        this->_percept.TF_T_EE=cpp_utils::rotate_matrix(Eigen::Matrix<double,4,4>(Eigen::Map<Eigen::Matrix<double,4,4> >(std::array<double,16>(state.O_T_EE).data())),cpp_utils::invert_matrix(this->_active_skill->get_config<>()->frames.O_R_TF));
+        this->_percept.TF_T_EE=msrm_utils::rotate_matrix(Eigen::Matrix<double,4,4>(Eigen::Map<Eigen::Matrix<double,4,4> >(std::array<double,16>(state.O_T_EE).data())),msrm_utils::invert_matrix(this->_active_skill->get_config<>()->frames.O_R_TF));
     }
 
     this->_percept.tau_ext=Eigen::Map<Eigen::Matrix<double,7,1> >(std::array<double,7>(state.tau_ext_hat_filtered).data());
@@ -1587,7 +1595,7 @@ void Core::cycle_led(std::function<LEDCmd(const Percept& p)> callback_led){
             request.push_back(l);
         }
         nlohmann::json response;
-        cpp_utils::rpc_call("localhost",9000,"set_led",{request},response);
+        msrm_utils::JsonRPCClient::call_method("localhost",9000,"set_led",request,response);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(T));
         if(!this->_flag_run_led){
@@ -1671,9 +1679,9 @@ bool Core::set_grasped_object(const std::string &o){
         p["grasped_object"]=o;
         this->_kb->get_local_memory()->modify_hidden_config_user(p);
         this->_percept.mios_state.grasped_object=o;
-        this->_robot->setLoad(obj.mass,cpp_utils::convert_to_array<double,3,1>(obj.EE_ob_com),cpp_utils::convert_to_array<double,3,3>(obj.ob_I));
+        this->_robot->setLoad(obj.mass,msrm_utils::convert_to_array<double,3,1>(obj.EE_ob_com),msrm_utils::convert_to_array<double,3,3>(obj.ob_I));
         nlohmann::json p_frame;
-        cpp_utils::write_json_array<double,4,4>(p_frame["EE_T_TCP"],obj.EE_T_O);
+        msrm_utils::write_json_array<double,4,4>(p_frame["EE_T_TCP"],obj.EE_T_O);
         result=true;
     }catch(franka::CommandException& e){
         std::cout<<e.what()<<std::endl;
@@ -1750,9 +1758,9 @@ bool Core::grasp_object(const std::string &o, double width, double speed, double
         p["grasped_object"]=o;
         this->_kb->get_local_memory()->modify_hidden_config_user(p);
         this->_percept.mios_state.grasped_object=o;
-        this->_robot->setLoad(obj.mass,cpp_utils::convert_to_array<double,3,1>(obj.EE_ob_com),cpp_utils::convert_to_array<double,3,3>(obj.ob_I));
+        this->_robot->setLoad(obj.mass,msrm_utils::convert_to_array<double,3,1>(obj.EE_ob_com),msrm_utils::convert_to_array<double,3,3>(obj.ob_I));
         nlohmann::json p_frame;
-        cpp_utils::write_json_array<double,4,4>(p_frame["EE_T_TCP"],obj.EE_T_O);
+        msrm_utils::write_json_array<double,4,4>(p_frame["EE_T_TCP"],obj.EE_T_O);
     }catch(franka::CommandException& e){
         std::cout<<e.what()<<std::endl;
         result=false;
@@ -1907,7 +1915,7 @@ bool Core::release_object(double width, double speed){
     Eigen::Matrix<double,4,4> EE_T_TCP;
     EE_T_TCP<<1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1;
     nlohmann::json p;
-    cpp_utils::write_json_array<double,4,4>(p["EE_T_TCP"],EE_T_TCP);
+    msrm_utils::write_json_array<double,4,4>(p["EE_T_TCP"],EE_T_TCP);
     this->get_kb()->get_local_memory()->get_persistent_data()->EE_T_TCP=EE_T_TCP;
     if(!this->set_ee()){
         result=false;
@@ -2035,26 +2043,60 @@ const Percept& Core::request_percept(Eigen::Matrix<double,3,3> O_R_TF, bool wait
 }
 
 void Core::check_cartesian_velocity_workspace(Eigen::Matrix<double, 6, 1> &TF_dX_d, const Percept& p){
-    Eigen::Matrix<double,6,1> VC_dX_d = cpp_utils::rotate_vector(TF_dX_d,cpp_utils::invert_transformation_matrix(this->get_kb()->get_local_memory()->access_config_frames().O_T_VC));
-    Eigen::Matrix<double,3,1> VC_x = cpp_utils::invert_transformation_matrix(this->get_kb()->get_local_memory()->access_config_frames().O_T_VC).block<3,3>(0,0)*p.TF_T_EE.block<3,1>(0,3);
+    Eigen::Matrix<double,6,1> VC_dX_d = msrm_utils::rotate_vector(TF_dX_d,msrm_utils::invert_transformation_matrix(this->get_kb()->get_local_memory()->access_config_frames().O_T_VC));
+    Eigen::Matrix<double,3,1> VC_x = msrm_utils::invert_transformation_matrix(this->get_kb()->get_local_memory()->access_config_frames().O_T_VC).block<3,3>(0,0)*p.TF_T_EE.block<3,1>(0,3);
     bool stop=false;
-    this->event["wall_hit"]={false,false,false,false,false,false};
+    this->event["wall_hit_O"]={false,false,false,false,false,false};
+    double wall_distance=0.01;
+    Eigen::Matrix<double,3,1> wall_hit_O_lower, wall_hit_O_upper, wall_hit_EE_lower, wall_hit_EE_upper;
     for(unsigned i=0;i<3;i++){
+        double diff_lower = VC_x(i)-this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i);
+        double wall_level_lower=1-diff_lower/wall_distance;
+        if(wall_level_lower>1)wall_level_lower=1;
+        if(wall_level_lower<0)wall_level_lower=0;
+        this->event["wall_hit_O"][2*i]=wall_level_lower;
+        wall_hit_O_lower(i)=wall_level_lower;
         if(VC_x(i)<=this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i) && VC_dX_d(i)<0){
-            stop=true;
             VC_dX_d(i)=0;
-            this->event["wall_hit"][2*i]=true;
         }
+        double diff_upper = this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i+1)-VC_x(i);
+        double wall_level_upper=1-diff_upper/wall_distance;
+        if(wall_level_upper>1)wall_level_upper=1;
+        if(wall_level_upper<0)wall_level_upper=0;
+        this->event["wall_hit_O"][2*i+1]=wall_level_upper;
         if(VC_x(i)>=this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i+1) && VC_dX_d(i)>0){
-            stop=true;
             VC_dX_d(i)=0;
-            this->event["wall_hit"][2*i+1]=true;
         }
+        wall_hit_O_upper(i)=wall_level_upper;
     }
-    if(stop){
-//        VC_dX_d.setZero();
+    wall_hit_EE_lower=p.TF_T_EE.block<3,3>(0,0).transpose()*wall_hit_O_lower;
+    wall_hit_EE_upper=p.TF_T_EE.block<3,3>(0,0).transpose()*wall_hit_O_upper;
+    Eigen::Matrix<double,6,1> wall_hit_EE;
+    wall_hit_EE<<wall_hit_EE_lower(0),wall_hit_EE_upper(0),wall_hit_EE_lower(1),wall_hit_EE_upper(1),wall_hit_EE_lower(2),wall_hit_EE_upper(2);
+    for(unsigned i=0;i<6;i++){
+        if(wall_hit_EE(i)>1)wall_hit_EE(i)=1;
+        if(wall_hit_EE(i)<0)wall_hit_EE(i)=0;
     }
-    TF_dX_d=cpp_utils::rotate_vector(VC_dX_d,this->get_kb()->get_local_memory()->access_config_frames().O_T_VC);
+    msrm_utils::write_json_array<double,6,1>(this->event["wall_hit_EE"],wall_hit_EE);
+    TF_dX_d=msrm_utils::rotate_vector(VC_dX_d,this->get_kb()->get_local_memory()->access_config_frames().O_T_VC);
+}
+
+
+void Core::base_avoidance(Eigen::Matrix<double, 6, 1> &TF_dX_d, const Percept &p){
+    Eigen::Vector3d cp1,cp2,p_ee;
+    cp1<<0,0,0;
+    cp2<<0,0,0.5;
+    p_ee<<p.O_T_EE(0,3),p.O_T_EE(1,3),p.O_T_EE(2,3);
+    msrm_utils::Cylinder base_cylinder(cp1,cp2,0.4);
+    if(base_cylinder.contains(p_ee)){
+        Eigen::Matrix<double,3,3> O_R_Cyl = base_cylinder.get_frame(p_ee);
+        Eigen::Matrix<double,6,1> Cyl_dX_d = msrm_utils::rotate_vector(TF_dX_d,msrm_utils::invert_matrix(O_R_Cyl));
+        std::cout<<"Cyl_dX_d: "<<Cyl_dX_d<<std::endl;
+        if(Cyl_dX_d(0)<0){
+            Cyl_dX_d(0)=0.05;
+        }
+        TF_dX_d=msrm_utils::rotate_vector(Cyl_dX_d,O_R_Cyl);
+    }
 }
 
 void Core::dummy_control(std::function<franka::Torques (const franka::RobotState &)> control_cycle){
@@ -2138,7 +2180,13 @@ void Core::start_desk_task(const std::string &task){
     }
     auto desk_data=this->get_desk_data();
     nlohmann::json response;
-    cpp_utils::rpc_call("localhost",9001,"start_task",{std::get<0>(desk_data),std::get<1>(desk_data),std::get<2>(desk_data),task},response);
+    nlohmann::json request={
+        {"ip",std::get<0>(desk_data)},
+        {"name",std::get<1>(desk_data)},
+        {"password",std::get<2>(desk_data)},
+        {"task",task}
+    };
+    msrm_utils::JsonRPCClient::call_method("localhost",9001,"start_task",request,response);
     if(!this->wait_for_desk_task()){
         // stop signal
     }
@@ -2153,20 +2201,25 @@ void Core::start_desk_task(const std::string &task){
 void Core::stop_desk_task(){
     auto desk_data=this->get_desk_data();
     nlohmann::json response;
-    if(!cpp_utils::rpc_call("localhost",9001,"stop_task",{std::get<0>(desk_data),std::get<1>(desk_data),std::get<2>(desk_data)},response)){
+    nlohmann::json request={
+        {"ip",std::get<0>(desk_data)},
+        {"name",std::get<1>(desk_data)},
+        {"password",std::get<2>(desk_data)}
+    };
+    if(!msrm_utils::JsonRPCClient::call_method("localhost",9001,"stop_task",request,response)){
         // stop signal
     }
 }
 
 bool Core::wait_for_desk_task(){
-    nlohmann::json response;
+    nlohmann::json response,request;
     while(true){
-        if(!cpp_utils::rpc_call("localhost",9001,"check_task",{},response)){
+        if(!msrm_utils::JsonRPCClient::call_method("localhost",9001,"start_task",request,response)){
             spdlog::error("Connection to desk server faulty, undefined behavior possible.");
             return false;
         }
         bool finished;
-        cpp_utils::read_json_param(response,"finished",finished);
+        msrm_utils::read_json_param(response,"finished",finished);
         if(finished){
             break;
         }else{
@@ -2188,7 +2241,12 @@ bool Core::shutdown_robot(){
     this->terminate();
     auto desk_data=this->get_desk_data();
     nlohmann::json response;
-    if(!cpp_utils::rpc_call("localhost",9001,"shutdown",{std::get<0>(desk_data),std::get<1>(desk_data),std::get<2>(desk_data)},response)){
+    nlohmann::json request={
+        {"ip",std::get<0>(desk_data)},
+        {"name",std::get<1>(desk_data)},
+        {"password",std::get<2>(desk_data)}
+    };
+    if(!msrm_utils::JsonRPCClient::call_method("localhost",9001,"shutdown",request,response)){
         spdlog::error("Cannot reach local desk server.");
         return false;
     }
@@ -2208,7 +2266,13 @@ bool Core::unlock_brakes(){
     //    this->terminate();
     auto desk_data=this->get_desk_data();
     nlohmann::json response;
-    cpp_utils::rpc_call("localhost",9001,"unlock_brakes",{std::get<0>(desk_data),std::get<1>(desk_data),std::get<2>(desk_data)},response,10);
+
+    nlohmann::json request={
+        {"ip",std::get<0>(desk_data)},
+        {"name",std::get<1>(desk_data)},
+        {"password",std::get<2>(desk_data)}
+    };
+    msrm_utils::JsonRPCClient::call_method("localhost",9001,"unlock_brakes",request,response);
     //    if(!this->initialize()){
     //        return false;
     //    }
@@ -2228,7 +2292,12 @@ bool Core::lock_brakes(){
     //    this->terminate();
     auto desk_data=this->get_desk_data();
     nlohmann::json response;
-    cpp_utils::rpc_call("localhost",9001,"lock_brakes",{std::get<0>(desk_data),std::get<1>(desk_data),std::get<2>(desk_data)},response);
+    nlohmann::json request={
+        {"ip",std::get<0>(desk_data)},
+        {"name",std::get<1>(desk_data)},
+        {"password",std::get<2>(desk_data)}
+    };
+    msrm_utils::JsonRPCClient::call_method("localhost",9001,"lock_brakes",request,response);
     //    if(!this->initialize()){
     //        return false;
     //    }
@@ -2248,7 +2317,12 @@ bool Core::move_to_pack_pose(){
     this->terminate();
     auto desk_data=this->get_desk_data();
     nlohmann::json response;
-    cpp_utils::rpc_call("localhost",9001,"pack_pose",{std::get<0>(desk_data),std::get<1>(desk_data),std::get<2>(desk_data)},response);
+    nlohmann::json request={
+        {"ip",std::get<0>(desk_data)},
+        {"name",std::get<1>(desk_data)},
+        {"password",std::get<2>(desk_data)}
+    };
+    msrm_utils::JsonRPCClient::call_method("localhost",9001,"pack_pose",request,response);
     if(!this->initialize()){
         return false;
     }
@@ -2260,14 +2334,14 @@ std::string Core::find_robot() const{
     std::string robot_address="none";
     std::string robot_iface="none";
 
-    std::map<std::string,std::string> ifaces = cpp_utils::get_subnets();
+    std::map<std::string,std::string> ifaces = msrm_utils::get_subnets();
     for(const auto& i : ifaces){
         if(i.first=="lo" || i.first=="docker0" || i.first=="tap0"){
             continue;
         }
         for(unsigned j=1;j<255;j++){
             std::string address=i.second+std::to_string(j);
-            if(cpp_utils::ping(address.c_str())==1){
+            if(!msrm_utils::ping(address.c_str())){
                 continue;
             }else{
                 if(this->test_robot_connection(address)){
@@ -2307,35 +2381,36 @@ bool Core::test_robot_connection(const std::string &ip) const{
 
 std::string Core::find_primary(){
     std::string ip="none";
-    std::vector<std::string> ifaces = cpp_utils::get_ifaces();
-    for(unsigned i=0;i<ifaces.size();i++){
-        std::string ip_subnet = ifaces[i];
-        std::vector<std::string> ip_tmp = cpp_utils::split_string(ip_subnet,".");
-        ip_subnet=ip_tmp[0]+"."+ip_tmp[1]+"."+ip_tmp[2]+".";
-        for(unsigned i=1;i<254;i++){
-            std::string address = ip_subnet+std::to_string(i);
-            if(cpp_utils::ping(address.c_str())==1){
-                continue;
-            }else{
-                if(this->test_primary_connection(address)){
-                    ip=address;
-                }
-            }
-        }
+//    std::vector<std::string> ifaces = msrm_utils::get_ifaces();
+//    for(unsigned i=0;i<ifaces.size();i++){
+//        std::string ip_subnet = ifaces[i];
+//        std::vector<std::string> ip_tmp = msrm_utils::split_string(ip_subnet,".");
+//        ip_subnet=ip_tmp[0]+"."+ip_tmp[1]+"."+ip_tmp[2]+".";
+//        for(unsigned i=1;i<254;i++){
+//            std::string address = ip_subnet+std::to_string(i);
+//            if(msrm_utils::ping(address.c_str())==1){
+//                continue;
+//            }else{
+//                if(this->test_primary_connection(address)){
+//                    ip=address;
+//                }
+//            }
+//        }
 
-    }
-    if(ip=="none"){
-        spdlog::error("No primary has been found in this network.");
-    }else{
-        spdlog::info("Found primary, I am connected to a collective.");
-    }
+//    }
+//    if(ip=="none"){
+//        spdlog::error("No primary has been found in this network.");
+//    }else{
+//        spdlog::info("Found primary, I am connected to a collective.");
+//    }
     return ip;
 }
 
 bool Core::test_primary_connection(const std::string &ip){
     nlohmann::json request=nlohmann::json();
     nlohmann::json response;
-    return cpp_utils::rpc_call(ip,8390,"is_primary",request,response);
+    return false;
+//    return msrm_utils::rpc_call(ip,8390,"is_primary",request,response);
 }
 
 bool Core::init_sound(){
@@ -2360,15 +2435,15 @@ bool Core::init_led(){
     if(!this->_kb->get_local_memory()->access_config_system().has_led){
         return true;
     }
-    nlohmann::json response;
-    if(!cpp_utils::rpc_call("localhost",9000,"get_panel_id",{},response)){
+    nlohmann::json response, request;
+    if(!msrm_utils::JsonRPCClient::call_method("localhost",9000,"get_panel_id",request,response)){
         spdlog::warn("Could not connect to LED server.");
         return false;
     }
     std::array<std::string,5> panels={"far-right","right","middle","left","far-left"};
 
     bool valid;
-    if(!cpp_utils::read_json_param(response,"valid",valid)){
+    if(!msrm_utils::read_json_param(response,"valid",valid)){
         spdlog::error("No valid response from LED server.");
         return false;
     }
@@ -2376,7 +2451,7 @@ bool Core::init_led(){
         spdlog::error("Invalid LED configuration.");
         return false;
     }
-    if(cpp_utils::find_json_value(response,"id")){
+    if(response.find("id")!=response.end()){
         if(response["id"].is_array()){
             if(panels.size()!=response["id"].size()){
                 spdlog::error("Expected number of LED panels is 5 but found "+std::to_string(response["id"].size())+".");
@@ -2389,7 +2464,7 @@ bool Core::init_led(){
     }
     for(unsigned i=0;i<response["id"].size();i++){
         unsigned panel_id;
-        if(!cpp_utils::find_json_value(response,"id")){
+        if(response.find("id")==response.end()){
             spdlog::error("Response from LED server is faulty.");
             return false;
         }
@@ -2468,9 +2543,13 @@ void Core::login_digital_twin(){
     std::string name=this->get_kb()->get_local_memory()->access_config_system().id_robot;
     std::string location=this->get_kb()->get_local_memory()->access_config_system().location;
     std::string ip=this->get_kb()->get_local_memory()->access_config_system().telemetry_udp_ip;
-    cpp_utils::rpc_call(ip,4000,"login",{name,location},response);
+    nlohmann::json request={
+        {"name",name},
+        {"location",location}
+    };
+    msrm_utils::JsonRPCClient::call_method(ip,4000,"login",request,response);
     int port;
-    cpp_utils::read_json_param(response,"port",port);
+    msrm_utils::read_json_param(response,"port",port);
     spdlog::info("I am logging into the digital twin with IP "+ip+" and port "+std::to_string(port)+".");
     nlohmann::json params;
     params["telemetry_on"]=true;
@@ -2491,7 +2570,10 @@ void Core::logout_digital_twin(){
     nlohmann::json response;
     std::string name=this->get_kb()->get_local_memory()->access_config_system().id_robot;
     std::string ip=this->get_kb()->get_local_memory()->access_config_system().telemetry_udp_ip;
-    cpp_utils::rpc_call(ip,4000,"logout",{name},response);
+    nlohmann::json request={
+        {"name",name}
+    };
+    msrm_utils::JsonRPCClient::call_method(ip,4000,"logout",request,response);
     if(this->_flag_logged_in_digital_twin){
         this->terminate_telemetry();
         this->_flag_logged_in_digital_twin=false;
@@ -2551,7 +2633,7 @@ bool Core::listen_to_beacons(){
                     p["telemetry_udp_ip"]=msg["ip"];
                     this->get_kb()->get_local_memory()->modify_config_system(p);
                     std::string ip;
-                    cpp_utils::read_json_param(msg,"ip",ip);
+                    msrm_utils::read_json_param(msg,"ip",ip);
                     this->get_kb()->set_parameter("telemetry_udp_ip","system",ip);
                 }
             }

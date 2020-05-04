@@ -5,7 +5,7 @@
 
 #include <franka/robot.h>
 
-#include "cpp_utils/json.hpp"
+#include <msrm_utils/json.hpp>
 
 
 namespace mios {
@@ -216,6 +216,9 @@ struct ConfigUser{
 
     Eigen::Matrix<double,6,1> x_limits;
     Eigen::Matrix<double,6,1> phi_limits;
+    Eigen::Matrix<double,3,1> base_cylinder_p1;
+    Eigen::Matrix<double,3,1> base_cylinder_p2;
+    double base_cylinder_radius;
 
     Eigen::Matrix<double,2,1> dX_max;
     Eigen::Matrix<double,2,1> ddX_max;
@@ -315,6 +318,8 @@ struct ConfigController{
 
     Eigen::Matrix<double,7,1> K_theta;
     Eigen::Matrix<double,7,1> xi_theta;
+
+    Eigen::Matrix<double,7,1> D_additional;
 
     double kappa;
     bool TF_control;

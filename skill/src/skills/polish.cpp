@@ -8,12 +8,12 @@ polish::polish():Skill("polish"){
 
 bool polish::read_skill_parameters(const nlohmann::json &p){
     std::shared_ptr<ConfigSkill_polish> c = std::static_pointer_cast<ConfigSkill_polish>(this->_config);
-    cpp_utils::read_json_param(p,"a_x",c->a_x);
-    cpp_utils::read_json_param(p,"a_y",c->a_y);
-    cpp_utils::read_json_param(p,"f_x",c->f_x);
-    cpp_utils::read_json_param(p,"f_y",c->f_y);
-    cpp_utils::read_json_param(p,"F_d",c->F_d);
-    cpp_utils::read_json_param(p,"t_max",c->t_max);
+    msrm_utils::read_json_param(p,"a_x",c->a_x);
+    msrm_utils::read_json_param(p,"a_y",c->a_y);
+    msrm_utils::read_json_param(p,"f_x",c->f_x);
+    msrm_utils::read_json_param(p,"f_y",c->f_y);
+    msrm_utils::read_json_param(p,"F_d",c->F_d);
+    msrm_utils::read_json_param(p,"t_max",c->t_max);
     return true;
 }
 

@@ -7,7 +7,7 @@ add_library(sim_interface SHARED src/sim_interface.cpp)
 #add_library(ws_server SHARED src/ws_server.cpp)
 add_library(interface SHARED src/interface.cpp)
 
-target_link_libraries(interface core task_handler event_publisher cpp_utils)
+target_link_libraries(interface core task_handler event_publisher msrm_cpp_utils)
 #target_link_libraries(ws_server core task_handler cpp_utils knowledge_base ${ACTIVE_TASKS} boost_system pthread ${OPENSSL_LIBRARIES})
 #target_link_libraries(ws_server core task_handler cpp_utils knowledge_base ${ACTIVE_TASKS} boost_system pthread ${OPENSSL_LIBRARIES})
 

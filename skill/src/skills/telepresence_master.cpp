@@ -10,39 +10,39 @@ bool telepresence_master::read_skill_parameters(const nlohmann::json &p){
 
     std::shared_ptr<ConfigSkill_telepresence_master> c = std::static_pointer_cast<ConfigSkill_telepresence_master>(this->_config);
 
-    if(!cpp_utils::read_json_param<unsigned>(p,"port_dst",c->port_dst)){
-        cpp_utils::print_error("Missing parameter: port_dst");
+    if(!msrm_utils::read_json_param<unsigned>(p,"port_dst",c->port_dst)){
+        msrm_utils::print_error("Missing parameter: port_dst");
         return false;
     }
-    if(!cpp_utils::read_json_param<std::string>(p,"ip_dst",c->ip_dst)){
-        cpp_utils::print_error("Missing parameter: ip_dst");
+    if(!msrm_utils::read_json_param<std::string>(p,"ip_dst",c->ip_dst)){
+        msrm_utils::print_error("Missing parameter: ip_dst");
         return false;
     }
-    if(!cpp_utils::read_json_param(p,"port_recv",c->port_recv)){
-        cpp_utils::print_error("Missing parameter: port_recv");
+    if(!msrm_utils::read_json_param(p,"port_recv",c->port_recv)){
+        msrm_utils::print_error("Missing parameter: port_recv");
         return false;
     }
-    if(!cpp_utils::read_json_param(p,"bilateral",c->bilateral)){
+    if(!msrm_utils::read_json_param(p,"bilateral",c->bilateral)){
         c->bilateral=true;
     }
-    if(!cpp_utils::read_json_param<double,6,1>(p,"K_joystick_on",c->K_joystick_on)){
+    if(!msrm_utils::read_json_param<double,6,1>(p,"K_joystick_on",c->K_joystick_on)){
         c->K_joystick_on.setZero();
     }
-    if(!cpp_utils::read_json_param<double,6,1>(p,"K_joystick_off",c->K_joystick_off)){
+    if(!msrm_utils::read_json_param<double,6,1>(p,"K_joystick_off",c->K_joystick_off)){
         c->K_joystick_off.setZero();
     }
-    if(!cpp_utils::read_json_param<double,6,1>(p,"joystick_deadband",c->joystick_deadband)){
+    if(!msrm_utils::read_json_param<double,6,1>(p,"joystick_deadband",c->joystick_deadband)){
         c->joystick_deadband.setZero();
     }
-    if(!cpp_utils::read_json_param<double,6,1>(p,"joystick_amp",c->joystick_amp)){
+    if(!msrm_utils::read_json_param<double,6,1>(p,"joystick_amp",c->joystick_amp)){
         c->joystick_amp.setZero();
     }
-    if(!cpp_utils::read_json_param(p,"joystick_force_input",c->joystick_force_input)){
+    if(!msrm_utils::read_json_param(p,"joystick_force_input",c->joystick_force_input)){
         c->joystick_force_input=false;
     }
     std::string mode;
-    if(!cpp_utils::read_json_param(p,"mode",mode)){
-        cpp_utils::print_error("Missing parameter: mode");
+    if(!msrm_utils::read_json_param(p,"mode",mode)){
+        msrm_utils::print_error("Missing parameter: mode");
         return false;
     }
     if(mode=="joystick"){
@@ -76,7 +76,6 @@ void telepresence_master::build_primitives(const Percept &p){
     c_network->joystick_lever=c->frames.F_T_EE.block<3,1>(0,3);
     c_network->joystick_f_ext_amp=c->joystick_f_ext_amp;
     c_network->joystick_force_input=c->joystick_force_input;
-
 }
 
 std::tuple<bool,std::string> telepresence_master::check_edges(const Percept &p){

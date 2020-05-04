@@ -13,7 +13,7 @@ const EvalTask& external::evaluate_task(){
 return this->_eval_task;
 }
 bool external::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"mode",this->mode)){
+    if(!msrm_utils::read_json_param(params,"mode",this->mode)){
         this->mode="Torque";
     }
     return true;

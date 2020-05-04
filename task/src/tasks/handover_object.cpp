@@ -38,12 +38,12 @@ const EvalTask& handover_object::evaluate_task(){
 }
 
 bool handover_object::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"object",this->_object)){
-        cpp_utils::print_error("Missing parameter: object");
+    if(!msrm_utils::read_json_param(params,"object",this->_object)){
+        msrm_utils::print_error("Missing parameter: object");
         return false;
     }
-    if(!cpp_utils::read_json_param(params,"wait_for_relax",this->wait_for_relax)){
-        cpp_utils::print_error("Missing parameter: wait_for_relax");
+    if(!msrm_utils::read_json_param(params,"wait_for_relax",this->wait_for_relax)){
+        msrm_utils::print_error("Missing parameter: wait_for_relax");
         return false;
     }
     return true;

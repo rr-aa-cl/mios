@@ -29,36 +29,36 @@ const EvalTask& test_task_2::evaluate_task(){
     this->_eval_task.results["t2_s2"]=this->get_skill("t2_s2")->get_eval().results;
     this->_eval_task.results["t2_t1"]=this->get_subtask("t2_t1")->get_eval().results;
 
-    cpp_utils::write_json_array<double,2,1>(this->_eval_task.results["d"],d);
+    msrm_utils::write_json_array<double,2,1>(this->_eval_task.results["d"],d);
     this->_eval_task.results["e"]=e;
     this->_eval_task.results["f"]=f;
     return this->_eval_task;
 }
 bool test_task_2::read_parameters(const nlohmann::json& params){
 
-    cpp_utils::print_debug("Reading parameters for task "+this->get_id());
-    if(!cpp_utils::read_json_param<double,2,1>(params,"d",this->d)){
+    msrm_utils::print_debug("Reading parameters for task "+this->get_id());
+    if(!msrm_utils::read_json_param<double,2,1>(params,"d",this->d)){
         this->d.setZero();
     }
-    if(!cpp_utils::read_json_param(params,"e",this->e)){
+    if(!msrm_utils::read_json_param(params,"e",this->e)){
         this->e=false;
     }
-    if(!cpp_utils::read_json_param(params,"success",this->success)){
+    if(!msrm_utils::read_json_param(params,"success",this->success)){
         this->success=false;
     }
-    if(!cpp_utils::read_json_param(params,"stop_level",this->stop_level)){
+    if(!msrm_utils::read_json_param(params,"stop_level",this->stop_level)){
         this->stop_level=0;
     }
-    cpp_utils::print_debug("########## Task parameters ###########");
+    msrm_utils::print_debug("########## Task parameters ###########");
     std::cout<<"d: "<<this->d<<std::endl;
-    cpp_utils::print_debug("e: "+std::to_string(this->e));
-    cpp_utils::print_debug("success: "+std::to_string(this->success));
-    cpp_utils::print_debug("stop_level: "+std::to_string(this->stop_level));
-    cpp_utils::print_debug("########## End ###########");
+    msrm_utils::print_debug("e: "+std::to_string(this->e));
+    msrm_utils::print_debug("success: "+std::to_string(this->success));
+    msrm_utils::print_debug("stop_level: "+std::to_string(this->stop_level));
+    msrm_utils::print_debug("########## End ###########");
 
     return true;
 }
 void test_task_2::recover_task(){
-    cpp_utils::print_debug("RECOVERY OF TEST TASK 2");
+    msrm_utils::print_debug("RECOVERY OF TEST TASK 2");
 }
 }

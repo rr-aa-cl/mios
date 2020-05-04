@@ -11,14 +11,14 @@ void extraction::create_config(){
 
 bool extraction::read_skill_parameters(const nlohmann::json &p){
     std::shared_ptr<ConfigSkill_extraction> c = std::static_pointer_cast<ConfigSkill_extraction>(this->_config);
-    cpp_utils::read_json_param<double,2,1>(p,"speed",c->speed);
-    cpp_utils::read_json_param<double,1,1>(p,"F_contact",c->F_contact);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_a_r",c->wiggle_a_r);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_a_t",c->wiggle_a_t);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_a_z",c->wiggle_a_z);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_f_r",c->wiggle_f_r);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_f_t",c->wiggle_f_t);
-    cpp_utils::read_json_param<double,1,1>(p,"wiggle_f_z",c->wiggle_f_z);
+    msrm_utils::read_json_param<double,2,1>(p,"speed",c->speed);
+    msrm_utils::read_json_param<double,1,1>(p,"F_contact",c->F_contact);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_a_r",c->wiggle_a_r);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_a_t",c->wiggle_a_t);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_a_z",c->wiggle_a_z);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_f_r",c->wiggle_f_r);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_f_t",c->wiggle_f_t);
+    msrm_utils::read_json_param<double,1,1>(p,"wiggle_f_z",c->wiggle_f_z);
     return true;
 }
 
@@ -50,7 +50,7 @@ void extraction::build_primitives(const Percept &p){
 }
 
 Eigen::Matrix<double,3,3> extraction::get_O_R_TF(const Percept& p){
-    Eigen::Matrix<double,3,3> R = cpp_utils::eulerRPY_to_mat(0,180,0);
+    Eigen::Matrix<double,3,3> R = msrm_utils::eulerRPY_to_mat(0,180,0);
     Eigen::Matrix<double,3,3> R_o = this->get_object_pose("hole",false).block<3,3>(0,0);
 //    return rotate_matrix(R_o,R);
     return this->get_object_pose("hole",false).block<3,3>(0,0);
@@ -62,8 +62,8 @@ std::tuple<bool,std::string> extraction::check_edges(const Percept &p){
 
 bool extraction::check_local_suc_conditions(const Percept &p){
     double depth;
-    if(!cpp_utils::read_json_param(this->get_object("hole").geometry,"depth",depth)){
-        cpp_utils::print_error("Object "+this->get_object("hole").name+" has no geometry property <depth>.");
+    if(!msrm_utils::read_json_param(this->get_object("hole").geometry,"depth",depth)){
+        msrm_utils::print_error("Object "+this->get_object("hole").name+" has no geometry property <depth>.");
         return false;
     }
     return p.TF_T_EE(2,3)<this->TF_T_hole_est(2,3)-depth-0.01;

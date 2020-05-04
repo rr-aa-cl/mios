@@ -16,12 +16,12 @@ void extract_object::execute_task(){
     std::string obj_grasped = this->request_percept().mios_state.grasped_object;
     bool grasped=false;
     if(this->is_grasping() && obj_grasped!=this->_object){
-        cpp_utils::print_warning("I am already grasping an object that is not " + this->_object + ", aborting extraction task.");
+        msrm_utils::print_warning("I am already grasping an object that is not " + this->_object + ", aborting extraction task.");
         this->_eval_task.success=false;
         return;
     }
     if(this->is_grasping() && obj_grasped==this->_object){
-        cpp_utils::print_success("I am already grasping the object with id " + this->_object + ".");
+        msrm_utils::print_success("I am already grasping the object with id " + this->_object + ".");
         this->_eval_task.success=true;
         grasped=true;
     }
@@ -42,7 +42,7 @@ void extract_object::execute_task(){
             return;
         }
         if(!this->move_gripper(0.06,1)){
-            cpp_utils::print_error("Gripper error.");
+            msrm_utils::print_error("Gripper error.");
             this->_eval_task.success=false;
             return;
         }
@@ -97,15 +97,15 @@ const EvalTask& extract_object::evaluate_task(){
 }
 
 bool extract_object::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"joint",this->_joint)){
+    if(!msrm_utils::read_json_param(params,"joint",this->_joint)){
         this->_joint=false;
     }
-    if(!cpp_utils::read_json_param(params,"object",this->_object)){
-        cpp_utils::print_error("Specify object to extract.");
+    if(!msrm_utils::read_json_param(params,"object",this->_object)){
+        msrm_utils::print_error("Specify object to extract.");
         return false;
     }
-    if(!cpp_utils::read_json_param(params,"hole",this->_hole)){
-        cpp_utils::print_error("Specify hole from which to extract the object.");
+    if(!msrm_utils::read_json_param(params,"hole",this->_hole)){
+        msrm_utils::print_error("Specify hole from which to extract the object.");
         return false;
     }
     return true;

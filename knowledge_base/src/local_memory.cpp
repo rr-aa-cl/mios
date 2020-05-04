@@ -96,6 +96,9 @@ ConfigUser::ConfigUser(){
 
     x_limits<<-2,2,-2,2,-2,2;
     phi_limits<<-5,5,-5,5,-5,5;
+    base_cylinder_p1<<0,0,-1;
+    base_cylinder_p2<<0,0,1;
+    base_cylinder_radius=0.4;
 
     dX_max.setZero();
     ddX_max.setZero();
@@ -119,36 +122,39 @@ ConfigUser::ConfigUser(){
 }
 
 void ConfigUser::read_parameters(const nlohmann::json &p){
-    cpp_utils::read_json_param<double,2,1>(p,"neighborhood_X",neighborhood_X);
-    cpp_utils::read_json_param<double,2,1>(p,"neighborhood_dX",neighborhood_dX);
-    cpp_utils::read_json_param<double,2,1>(p,"neighborhood_F",neighborhood_F);
-    cpp_utils::read_json_param<double,2,1>(p,"neighborhood_dF",neighborhood_dF);
-    cpp_utils::read_json_param<double,1,1>(p,"neighborhood_q",neighborhood_q);
-    cpp_utils::read_json_param<double,1,1>(p,"neighborhood_dq",neighborhood_dq);
+    msrm_utils::read_json_param<double,2,1>(p,"neighborhood_X",neighborhood_X);
+    msrm_utils::read_json_param<double,2,1>(p,"neighborhood_dX",neighborhood_dX);
+    msrm_utils::read_json_param<double,2,1>(p,"neighborhood_F",neighborhood_F);
+    msrm_utils::read_json_param<double,2,1>(p,"neighborhood_dF",neighborhood_dF);
+    msrm_utils::read_json_param<double,1,1>(p,"neighborhood_q",neighborhood_q);
+    msrm_utils::read_json_param<double,1,1>(p,"neighborhood_dq",neighborhood_dq);
 
-    cpp_utils::read_json_param<double,6,1>(p,"x_limits",x_limits);
-    cpp_utils::read_json_param<double,6,1>(p,"phi_limits",phi_limits);
+    msrm_utils::read_json_param<double,6,1>(p,"x_limits",x_limits);
+    msrm_utils::read_json_param<double,6,1>(p,"phi_limits",phi_limits);
+    msrm_utils::read_json_param<double,3,1>(p,"base_cylinder_p1",base_cylinder_p1);
+    msrm_utils::read_json_param<double,3,1>(p,"base_cylinder_p2",base_cylinder_p2);
+    msrm_utils::read_json_param(p,"base_cylinder_radius",base_cylinder_radius);
 
-    cpp_utils::read_json_param<double,2,1>(p,"dX_max",dX_max);
-    cpp_utils::read_json_param<double,2,1>(p,"ddX_max",ddX_max);
-    cpp_utils::read_json_param<double,1,1>(p,"dq_max",dq_max);
-    cpp_utils::read_json_param<double,1,1>(p,"ddq_max",ddq_max);
+    msrm_utils::read_json_param<double,2,1>(p,"dX_max",dX_max);
+    msrm_utils::read_json_param<double,2,1>(p,"ddX_max",ddX_max);
+    msrm_utils::read_json_param<double,1,1>(p,"dq_max",dq_max);
+    msrm_utils::read_json_param<double,1,1>(p,"ddq_max",ddq_max);
 
-    cpp_utils::read_json_param<double,6,1>(p,"F_contact",F_contact);
-    cpp_utils::read_json_param<double,7,1>(p,"tau_contact",tau_contact);
-    cpp_utils::read_json_param<double,6,1>(p,"F_max",F_max);
-    cpp_utils::read_json_param<double,7,1>(p,"tau_max",tau_max);
+    msrm_utils::read_json_param<double,6,1>(p,"F_contact",F_contact);
+    msrm_utils::read_json_param<double,7,1>(p,"tau_contact",tau_contact);
+    msrm_utils::read_json_param<double,6,1>(p,"F_max",F_max);
+    msrm_utils::read_json_param<double,7,1>(p,"tau_max",tau_max);
 
-    cpp_utils::read_json_param<double,2,1>(p,"e_x_max",e_x_max);
-    cpp_utils::read_json_param<double,1,1>(p,"e_q_max",e_q_max);
+    msrm_utils::read_json_param<double,2,1>(p,"e_x_max",e_x_max);
+    msrm_utils::read_json_param<double,1,1>(p,"e_q_max",e_q_max);
 
-    cpp_utils::read_json_param(p,"load_m",load_m);
-    cpp_utils::read_json_param<double,3,1>(p,"load_com",load_com);
-    cpp_utils::read_json_param<double,3,3>(p,"load_I",load_I);
+    msrm_utils::read_json_param(p,"load_m",load_m);
+    msrm_utils::read_json_param<double,3,1>(p,"load_com",load_com);
+    msrm_utils::read_json_param<double,3,3>(p,"load_I",load_I);
 }
 
 void ConfigUser::read_hidden_parameters(const nlohmann::json &p){
-    cpp_utils::read_json_param(p,"grasped_object",grasped_object);
+    msrm_utils::read_json_param(p,"grasped_object",grasped_object);
 }
 
 ConfigFrames::ConfigFrames(){
@@ -161,12 +167,12 @@ ConfigFrames::ConfigFrames(){
 }
 
 void ConfigFrames::read_parameters(const nlohmann::json &p){
-    cpp_utils::read_json_param<double,3,3>(p,"O_R_TF",O_R_TF);
-    cpp_utils::read_json_param<double,4,4>(p,"F_T_EE",F_T_EE);
-    cpp_utils::read_json_param<double,4,4>(p,"EE_T_TCP",EE_T_TCP);
-    cpp_utils::read_json_param<double,4,4>(p,"EE_T_K",EE_T_K);
-    cpp_utils::read_json_param<double,4,4>(p,"EE_T_C",EE_T_C);
-    cpp_utils::read_json_param<double,4,4>(p,"O_T_VC",O_T_VC);
+    msrm_utils::read_json_param<double,3,3>(p,"O_R_TF",O_R_TF);
+    msrm_utils::read_json_param<double,4,4>(p,"F_T_EE",F_T_EE);
+    msrm_utils::read_json_param<double,4,4>(p,"EE_T_TCP",EE_T_TCP);
+    msrm_utils::read_json_param<double,4,4>(p,"EE_T_K",EE_T_K);
+    msrm_utils::read_json_param<double,4,4>(p,"EE_T_C",EE_T_C);
+    msrm_utils::read_json_param<double,4,4>(p,"O_T_VC",O_T_VC);
 }
 
 ConfigGeneral::ConfigGeneral(){
@@ -178,11 +184,11 @@ ConfigGeneral::ConfigGeneral(){
 }
 
 void ConfigGeneral::read_parameters(const nlohmann::json &p){
-    cpp_utils::read_json_param(p,"safe_mode",safe_mode);
-    cpp_utils::read_json_param(p,"instant_recovery",instant_recovery);
-    cpp_utils::read_json_param(p,"logging",logging);
-    cpp_utils::read_json_param(p,"control_mode",control_mode);
-    cpp_utils::read_json_param(p,"command_mode",command_mode);
+    msrm_utils::read_json_param(p,"safe_mode",safe_mode);
+    msrm_utils::read_json_param(p,"instant_recovery",instant_recovery);
+    msrm_utils::read_json_param(p,"logging",logging);
+    msrm_utils::read_json_param(p,"control_mode",control_mode);
+    msrm_utils::read_json_param(p,"command_mode",command_mode);
 }
 
 ConfigSystem::ConfigSystem(){
@@ -218,40 +224,40 @@ ConfigSystem::ConfigSystem(){
 }
 
 void ConfigSystem::read_parameters(const nlohmann::json &p){
-    cpp_utils::read_json_param(p,"ip_robot",ip_robot);
-    cpp_utils::read_json_param(p,"id_robot",id_robot);
-    cpp_utils::read_json_param(p,"desk_name",desk_name);
-    cpp_utils::read_json_param(p,"desk_pwd",desk_pwd);
-    cpp_utils::read_json_param(p,"ip_simulation",ip_simulation);
-    cpp_utils::read_json_param(p,"port_simulation",port_simulation);
+    msrm_utils::read_json_param(p,"ip_robot",ip_robot);
+    msrm_utils::read_json_param(p,"id_robot",id_robot);
+    msrm_utils::read_json_param(p,"desk_name",desk_name);
+    msrm_utils::read_json_param(p,"desk_pwd",desk_pwd);
+    msrm_utils::read_json_param(p,"ip_simulation",ip_simulation);
+    msrm_utils::read_json_param(p,"port_simulation",port_simulation);
 
-    cpp_utils::read_json_param(p,"location",location);
+    msrm_utils::read_json_param(p,"location",location);
 
-    cpp_utils::read_json_param(p,"verbosity",verbosity);
+    msrm_utils::read_json_param(p,"verbosity",verbosity);
 
-    cpp_utils::read_json_param(p,"has_robot",has_robot);
-    cpp_utils::read_json_param(p,"has_gripper",has_gripper);
-    cpp_utils::read_json_param(p,"has_simulation",has_simulation);
-    cpp_utils::read_json_param(p,"has_sound",has_sound);
-    cpp_utils::read_json_param(p,"has_led",has_led);
+    msrm_utils::read_json_param(p,"has_robot",has_robot);
+    msrm_utils::read_json_param(p,"has_gripper",has_gripper);
+    msrm_utils::read_json_param(p,"has_simulation",has_simulation);
+    msrm_utils::read_json_param(p,"has_sound",has_sound);
+    msrm_utils::read_json_param(p,"has_led",has_led);
 
     if(has_simulation){
         has_robot=false;
         has_gripper=false;
     }
 
-//    cpp_utils::read_json_param(p["telemetry_domain"],telemetry_domain);
-//    cpp_utils::read_json_param(p["telemetry_url"],telemetry_url);
-//    cpp_utils::read_json_param(p["telemetry_key"],telemetry_key);
-//    cpp_utils::read_json_param(p["telemetry_device_id"],telemetry_device_id);
-//    cpp_utils::read_json_param(p["telemetry_port"],telemetry_port);
-//    cpp_utils::read_json_param(p["telemetry_frequency"],telemetry_frequency);
-//    cpp_utils::read_json_param(p["telemetry_send"],telemetry_send);
+//    msrm_utils::read_json_param(p["telemetry_domain"],telemetry_domain);
+//    msrm_utils::read_json_param(p["telemetry_url"],telemetry_url);
+//    msrm_utils::read_json_param(p["telemetry_key"],telemetry_key);
+//    msrm_utils::read_json_param(p["telemetry_device_id"],telemetry_device_id);
+//    msrm_utils::read_json_param(p["telemetry_port"],telemetry_port);
+//    msrm_utils::read_json_param(p["telemetry_frequency"],telemetry_frequency);
+//    msrm_utils::read_json_param(p["telemetry_send"],telemetry_send);
 
-    cpp_utils::read_json_param(p,"telemetry_on",telemetry_on);
-    cpp_utils::read_json_param(p,"telemetry_udp_ip",telemetry_udp_ip);
-    cpp_utils::read_json_param(p,"telemetry_udp_port",telemetry_udp_port);
-    cpp_utils::read_json_param(p,"telemetry_udp_frequency",telemetry_udp_frequency);
+    msrm_utils::read_json_param(p,"telemetry_on",telemetry_on);
+    msrm_utils::read_json_param(p,"telemetry_udp_ip",telemetry_udp_ip);
+    msrm_utils::read_json_param(p,"telemetry_udp_port",telemetry_udp_port);
+    msrm_utils::read_json_param(p,"telemetry_udp_frequency",telemetry_udp_frequency);
 }
 
 ConfigController::ConfigController(){
@@ -274,6 +280,7 @@ ConfigController::ConfigController(){
     this->dtau_c_max.setZero();
     this->K_theta.setZero();
     this->xi_theta.setZero();
+    this->D_additional.setZero();
 
     this->f_cntr_k_p.setZero();
     this->f_cntr_k_i.setZero();
@@ -307,58 +314,59 @@ ConfigController::ConfigController(){
 }
 
 void ConfigController::read_parameters(const nlohmann::json &p){
-    cpp_utils::read_json_param<double,6,1>(p,"alpha",alpha);
-    cpp_utils::read_json_param<double,6,1>(p,"beta",beta);
-    cpp_utils::read_json_param<double,6,1>(p,"gamma_a",gamma_a);
-    cpp_utils::read_json_param<double,6,1>(p,"gamma_b",gamma_b);
-    cpp_utils::read_json_param<double,6,1>(p,"K_0",K_0);
-    cpp_utils::read_json_param<double,6,1>(p,"F_ff_0",F_ff_0);
-    cpp_utils::read_json_param<double,6,1>(p,"L",L);
-    cpp_utils::read_json_param<double,6,1>(p,"xi",xi);
-    cpp_utils::read_json_param<double,6,1>(p,"K_max",K_max);
-    cpp_utils::read_json_param<double,6,1>(p,"dK_max",dK_max);
-    cpp_utils::read_json_param<double,6,1>(p,"F_ff_max",F_ff_max);
-    cpp_utils::read_json_param<double,6,1>(p,"dF_ff_max",dF_ff_max);
+    msrm_utils::read_json_param<double,6,1>(p,"alpha",alpha);
+    msrm_utils::read_json_param<double,6,1>(p,"beta",beta);
+    msrm_utils::read_json_param<double,6,1>(p,"gamma_a",gamma_a);
+    msrm_utils::read_json_param<double,6,1>(p,"gamma_b",gamma_b);
+    msrm_utils::read_json_param<double,6,1>(p,"K_0",K_0);
+    msrm_utils::read_json_param<double,6,1>(p,"F_ff_0",F_ff_0);
+    msrm_utils::read_json_param<double,6,1>(p,"L",L);
+    msrm_utils::read_json_param<double,6,1>(p,"xi",xi);
+    msrm_utils::read_json_param<double,6,1>(p,"K_max",K_max);
+    msrm_utils::read_json_param<double,6,1>(p,"dK_max",dK_max);
+    msrm_utils::read_json_param<double,6,1>(p,"F_ff_max",F_ff_max);
+    msrm_utils::read_json_param<double,6,1>(p,"dF_ff_max",dF_ff_max);
 
-    cpp_utils::read_json_param<double,7,1>(p,"K_theta",K_theta);
-    cpp_utils::read_json_param<double,7,1>(p,"xi_theta",xi_theta);
+    msrm_utils::read_json_param<double,7,1>(p,"K_theta",K_theta);
+    msrm_utils::read_json_param<double,7,1>(p,"xi_theta",xi_theta);
+    msrm_utils::read_json_param<double,7,1>(p,"D_additional",D_additional);
 
-    cpp_utils::read_json_param(p,"kappa",kappa);
-    cpp_utils::read_json_param(p,"TF_control",TF_control);
+    msrm_utils::read_json_param(p,"kappa",kappa);
+    msrm_utils::read_json_param(p,"TF_control",TF_control);
 
-    cpp_utils::read_json_param<double,6,1>(p,"f_cntr_k_p",f_cntr_k_p);
-    cpp_utils::read_json_param<double,6,1>(p,"f_cntr_k_i",f_cntr_k_i);
-    cpp_utils::read_json_param<double,6,1>(p,"f_cntr_k_d",f_cntr_k_d);
-    cpp_utils::read_json_param<double,6,1>(p,"f_cntr_k_d_N",f_cntr_k_d_N);
-    cpp_utils::read_json_param<double,3,1>(p,"f_cntr_d_max",f_cntr_d_max);
-    cpp_utils::read_json_param<double,1,1>(p,"f_cntr_phi_max",f_cntr_phi_max);
-    cpp_utils::read_json_param<double,6,1>(p,"F_c_max",F_c_max);
-    cpp_utils::read_json_param<double,6,1>(p,"dF_c_max",dF_c_max);
-    cpp_utils::read_json_param<double,6,1>(p,"f_cntr_active",f_cntr_active);
-    cpp_utils::read_json_param(p,"f_cntr_sf_on",f_cntr_sf_on);
+    msrm_utils::read_json_param<double,6,1>(p,"f_cntr_k_p",f_cntr_k_p);
+    msrm_utils::read_json_param<double,6,1>(p,"f_cntr_k_i",f_cntr_k_i);
+    msrm_utils::read_json_param<double,6,1>(p,"f_cntr_k_d",f_cntr_k_d);
+    msrm_utils::read_json_param<double,6,1>(p,"f_cntr_k_d_N",f_cntr_k_d_N);
+    msrm_utils::read_json_param<double,3,1>(p,"f_cntr_d_max",f_cntr_d_max);
+    msrm_utils::read_json_param<double,1,1>(p,"f_cntr_phi_max",f_cntr_phi_max);
+    msrm_utils::read_json_param<double,6,1>(p,"F_c_max",F_c_max);
+    msrm_utils::read_json_param<double,6,1>(p,"dF_c_max",dF_c_max);
+    msrm_utils::read_json_param<double,6,1>(p,"f_cntr_active",f_cntr_active);
+    msrm_utils::read_json_param(p,"f_cntr_sf_on",f_cntr_sf_on);
 
-    cpp_utils::read_json_param<double,7,1>(p,"tau_c_max",tau_c_max);
-    cpp_utils::read_json_param<double,7,1>(p,"dtau_c_max",dtau_c_max);
+    msrm_utils::read_json_param<double,7,1>(p,"tau_c_max",tau_c_max);
+    msrm_utils::read_json_param<double,7,1>(p,"dtau_c_max",dtau_c_max);
 
-    cpp_utils::read_json_param<double,1,1>(p,"virt_cube_damp",virt_cube_damp);
-    cpp_utils::read_json_param<double,1,1>(p,"virt_cube_damp_dist",virt_cube_damp_dist);
-    cpp_utils::read_json_param<double,1,1>(p,"virt_cube_eta",virt_cube_eta);
-    cpp_utils::read_json_param<double,1,1>(p,"virt_cube_rho_min",virt_cube_rho_min);
-    cpp_utils::read_json_param<double,6,1>(p,"virt_cube_walls",virt_cube_walls);
-    cpp_utils::read_json_param<double,1,1>(p,"virt_cube_f_max",virt_cube_f_max);
-    cpp_utils::read_json_param(p,"virt_cube_on",virt_cube_on);
+    msrm_utils::read_json_param<double,1,1>(p,"virt_cube_damp",virt_cube_damp);
+    msrm_utils::read_json_param<double,1,1>(p,"virt_cube_damp_dist",virt_cube_damp_dist);
+    msrm_utils::read_json_param<double,1,1>(p,"virt_cube_eta",virt_cube_eta);
+    msrm_utils::read_json_param<double,1,1>(p,"virt_cube_rho_min",virt_cube_rho_min);
+    msrm_utils::read_json_param<double,6,1>(p,"virt_cube_walls",virt_cube_walls);
+    msrm_utils::read_json_param<double,1,1>(p,"virt_cube_f_max",virt_cube_f_max);
+    msrm_utils::read_json_param(p,"virt_cube_on",virt_cube_on);
 
-    cpp_utils::read_json_param<double,7,1>(p,"virt_walls_joint_damp",virt_walls_joint_damp);
-    cpp_utils::read_json_param<double,7,1>(p,"virt_walls_joint_damp_dist",virt_walls_joint_damp_dist);
-    cpp_utils::read_json_param<double,7,1>(p,"virt_walls_joint_eta",virt_walls_joint_eta);
-    cpp_utils::read_json_param<double,7,1>(p,"virt_walls_joint_rho_min",virt_walls_joint_rho_min);
-    cpp_utils::read_json_param<double,7,1>(p,"virt_walls_joint_tau_max",virt_walls_joint_tau_max);
-    cpp_utils::read_json_param<double,14,1>(p,"virt_walls_joint_walls",virt_walls_joint_walls);
-    cpp_utils::read_json_param(p,"virt_walls_joint_on",virt_walls_joint_on);
+    msrm_utils::read_json_param<double,7,1>(p,"virt_walls_joint_damp",virt_walls_joint_damp);
+    msrm_utils::read_json_param<double,7,1>(p,"virt_walls_joint_damp_dist",virt_walls_joint_damp_dist);
+    msrm_utils::read_json_param<double,7,1>(p,"virt_walls_joint_eta",virt_walls_joint_eta);
+    msrm_utils::read_json_param<double,7,1>(p,"virt_walls_joint_rho_min",virt_walls_joint_rho_min);
+    msrm_utils::read_json_param<double,7,1>(p,"virt_walls_joint_tau_max",virt_walls_joint_tau_max);
+    msrm_utils::read_json_param<double,14,1>(p,"virt_walls_joint_walls",virt_walls_joint_walls);
+    msrm_utils::read_json_param(p,"virt_walls_joint_on",virt_walls_joint_on);
 
-    cpp_utils::read_json_param(p,"nullspace_cntr_on",nullspace_cntr_on);
-    cpp_utils::read_json_param<double,7,1>(p,"nullspace_cntr_K",nullspace_cntr_K);
-    cpp_utils::read_json_param<double,7,1>(p,"nullspace_cntr_xi",nullspace_cntr_xi);
+    msrm_utils::read_json_param(p,"nullspace_cntr_on",nullspace_cntr_on);
+    msrm_utils::read_json_param<double,7,1>(p,"nullspace_cntr_K",nullspace_cntr_K);
+    msrm_utils::read_json_param<double,7,1>(p,"nullspace_cntr_xi",nullspace_cntr_xi);
 }
 
 PersistentData::PersistentData(){

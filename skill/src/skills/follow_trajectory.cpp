@@ -4,13 +4,13 @@ follow_trajectory::follow_trajectory():Skill("follow_trajectory"){}
 
 bool follow_trajectory::read_skill_parameters(const nlohmann::json& p){
     std::shared_ptr<ConfigSkill_follow_trajectory> c_skill = std::static_pointer_cast<ConfigSkill_follow_trajectory>(this->_config);
-    cpp_utils::read_json_param<double,2,1>(p,"speed",c_skill->speed);
-    cpp_utils::read_json_param<double,2,1>(p,"acc",c_skill->acc);
-    if(!cpp_utils::read_json_param<std::string>(p,"locations",c_skill->locations)){
+    msrm_utils::read_json_param<double,2,1>(p,"speed",c_skill->speed);
+    msrm_utils::read_json_param<double,2,1>(p,"acc",c_skill->acc);
+    if(!msrm_utils::read_json_param<std::string>(p,"locations",c_skill->locations)){
         c_skill->locations.resize(0);
     }
-    cpp_utils::read_json_param(p,"flag_cart",c_skill->flag_cart);
-    cpp_utils::read_json_param(p,"t_settle",c_skill->t_settle);
+    msrm_utils::read_json_param(p,"flag_cart",c_skill->flag_cart);
+    msrm_utils::read_json_param(p,"t_settle",c_skill->t_settle);
     return true;
 }
 
@@ -34,7 +34,7 @@ void follow_trajectory::build_primitives(const Percept& p){
             attr_move_to_pose->attr_vel<<0,0,0,0,0,0;
             Object o;
             if(!this->_kb->load_object(c_skill->locations[i],o)){
-                cpp_utils::print_warning("Could not load object" + o.name);
+                msrm_utils::print_warning("Could not load object" + o.name);
             }
             attr_move_to_pose->attr_pose=this->_kb->transform_to_EE(o.TF_T_o(this->_config->frames.O_R_TF));
         }
@@ -51,7 +51,7 @@ void follow_trajectory::build_primitives(const Percept& p){
             attr_move_to_pose->attr_vel<<0,0,0,0,0,0,0;
             Object o;
             if(!this->_kb->load_object(c_skill->locations[i],o)){
-                cpp_utils::print_warning("Could not load object" + o.name);
+                msrm_utils::print_warning("Could not load object" + o.name);
             }
             attr_move_to_pose->attr_pose=o.q_o;
             std::cout<<"QG: "<<attr_move_to_pose->attr_pose<<std::endl;
@@ -60,7 +60,7 @@ void follow_trajectory::build_primitives(const Percept& p){
     if(c_skill->locations.size()>0){
         this->set_init_mp("move_to_pose_0");
     }else{
-        cpp_utils::print_error("No location provided.");
+        msrm_utils::print_error("No location provided.");
     }
 }
 std::tuple<bool,std::string> follow_trajectory::check_edges(const Percept& p){

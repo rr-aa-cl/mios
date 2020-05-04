@@ -13,8 +13,8 @@
 #include "interface/interface.hpp"
 #include "interface/parameter_server.hpp"
 
-#include "cpp_utils/system.hpp"
-#include "cpp_utils/network.hpp"
+#include <msrm_utils/system.hpp>
+#include <msrm_utils/network.hpp>
 
 void exit_handler(int s);
 
@@ -29,15 +29,15 @@ int main(int argc, char** argv){
     sigaction(SIGINT, &sigIntHandler, NULL);
 
     unsigned port=8383;
-    if(!cpp_utils::is_port_open(port)){
-        cpp_utils::print_error("Port "+std::to_string(port)+" is blocked by another process. You can check which process is blocking the port"
+    if(!msrm_utils::is_port_available("localhost",port)){
+        msrm_utils::print_error("Port "+std::to_string(port)+" is blocked by another process. You can check which process is blocking the port"
                          "by typing 'netstat -ntlup | grep "+std::to_string(port)+"' in a terminal. Terminating...");
         return -1;
     }
 
-    cpp_utils::print_info("############################################################");
-    cpp_utils::print_info("MIOS");
-    cpp_utils::print_info("Version: 0.3.4.0");
+    msrm_utils::print_info("############################################################");
+    msrm_utils::print_info("MIOS");
+    msrm_utils::print_info("Version: 0.3.5.0");
 
     mios::Interface interface;
     std::shared_ptr<mios::ParameterServer> live_params = std::make_shared<mios::ParameterServer>();
@@ -49,8 +49,8 @@ int main(int argc, char** argv){
     live_params->start();
     core->set_live_parameter_server(live_params);
 
-    cpp_utils::print_info("############################################################");
-    cpp_utils::print_info("System is ready.");
+    msrm_utils::print_info("############################################################");
+    msrm_utils::print_info("System is ready.");
     task_handler->activity();
     interface.stop();
     live_params->stop();

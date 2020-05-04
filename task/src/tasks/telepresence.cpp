@@ -35,12 +35,12 @@ void telepresence::execute_task(){
             std::static_pointer_cast<ConfigSkill_telepresence_master>(this->get_skill("master")->get_config())->ip_dst=this->_alias_peer;
         }else{
             std::string ip_peer;
-            ip_peer=cpp_utils::get_ip_by_hostname(this->_alias_peer);
+            ip_peer=msrm_utils::get_ip_by_hostname(this->_alias_peer.c_str()).value_or("");
             if(ip_peer==""){
-                cpp_utils::print_error("Could not acquire peer IP from host " +this->_alias_peer+" .");
+                msrm_utils::print_error("Could not acquire peer IP from host " +this->_alias_peer+" .");
                 return;
             }else{
-                cpp_utils::print_info("Peer IP is "+ip_peer+".");
+                msrm_utils::print_info("Peer IP is "+ip_peer+".");
             }
             std::static_pointer_cast<ConfigSkill_telepresence_master>(this->get_skill("master")->get_config())->ip_dst=ip_peer;
         }
@@ -49,7 +49,7 @@ void telepresence::execute_task(){
         //                nlohmann::json response;
         //                nlohmann::json request;
         //                for(unsigned i=0;i<10;i++){
-        //                    if(!cpp_utils::rpc_call("http://"+ip_peer+":8383","get_state",request,response,1000)){
+        //                    if(!msrm_utils::rpc_call("http://"+ip_peer+":8383","get_state",request,response,1000)){
         //                        std::cout<<"FAIL"<<std::endl;
         //                        sleep(1);
         //                        continue;
@@ -57,14 +57,14 @@ void telepresence::execute_task(){
         //                    Eigen::Matrix<double,7,1> q_master,q_slave;
         //                    const Percept p = this->request_percept();
         //                    q_master=p.q;
-        //                    cpp_utils::read_json_param<double,7,1>(response["q"],q_slave);
+        //                    msrm_utils::read_json_param<double,7,1>(response["q"],q_slave);
         //                    bool synced=true;
         //                    for(unsigned j=0;j<7;j++){
         //                        if(fabs(q_master(j)-q_slave(j))>this->get_skill("master")->get_config()->user.e_q_max(0)){
         //                            synced=false;
         //                        }
         //                        if(fabs(p.tau_ext(j))>this->get_skill("master")->get_config()->user.tau_contact(j)){
-        //                            cpp_utils::print_error("Please do not push the master during syncing.");
+        //                            msrm_utils::print_error("Please do not push the master during syncing.");
         //                            return;
         //                        }
         //                    }
@@ -72,7 +72,7 @@ void telepresence::execute_task(){
         //                        break;
         //                    }
         //                    if(i==9){
-        //                        cpp_utils::print_error("Could not sync with slave. Angle discrepancies are too large.");
+        //                        msrm_utils::print_error("Could not sync with slave. Angle discrepancies are too large.");
         //                        return;
         //                    }
         //                    sleep(1);
@@ -85,25 +85,25 @@ void telepresence::execute_task(){
         nlohmann::json settings;
         nlohmann::json parameters;
         if(this->_mode==TelepresenceMode::JointDirect){
-            cpp_utils::write_json_array<double,7,1>(parameters["q_g"],this->_q_0);
+            msrm_utils::write_json_array<double,7,1>(parameters["q_g"],this->_q_0);
             settings["parameters"]=parameters;
             this->get_subtask("move_joint")->read_parameters(parameters);
             this->execute_subtask("move_joint");
             if(!this->get_subtask("move_joint")->get_eval().success){
-                cpp_utils::print_error("Could not move to synchronization pose, aborting telepresence.");
+                msrm_utils::print_error("Could not move to synchronization pose, aborting telepresence.");
                 return;
             }
         }
         if(this->_mode==TelepresenceMode::CartesianDirect){
-//            Eigen::Matrix<double,4,4> O_T_W=cpp_utils::invert_transformation_matrix(std::static_pointer_cast<ConfigSkill_telepresence_slave>(this->get_skill("slave")->get_config())->W_T_O);
-//            cpp_utils::write_json_array<double,4,4>(parameters["TF_T_EE_g"],cpp_utils::rotate_matrix(this->_TF_T_EE_0,O_T_W));
+//            Eigen::Matrix<double,4,4> O_T_W=msrm_utils::invert_transformation_matrix(std::static_pointer_cast<ConfigSkill_telepresence_slave>(this->get_skill("slave")->get_config())->W_T_O);
+//            msrm_utils::write_json_array<double,4,4>(parameters["TF_T_EE_g"],msrm_utils::rotate_matrix(this->_TF_T_EE_0,O_T_W));
             parameters["speed"]=1;
             parameters["acc"]=0.5;
             settings["parameters"]=parameters;
             this->get_subtask("move_cart")->read_parameters(parameters);
             this->execute_subtask("move_cart");
             if(!this->get_subtask("move_cart")->get_eval().success){
-                cpp_utils::print_error("Could not move to synchronization pose, aborting telepresence.");
+                msrm_utils::print_error("Could not move to synchronization pose, aborting telepresence.");
                 return;
             }
         }
@@ -129,12 +129,12 @@ void telepresence::execute_task(){
             if(this->_alias_peer=="225.0.0.1"){
                 std::static_pointer_cast<ConfigSkill_telepresence_slave>(this->get_skill("slave")->get_config())->ip_dst=this->_alias_peer;
             }else{
-                std::string ip_peer=cpp_utils::get_ip_by_hostname(this->_alias_peer);
+                std::string ip_peer=msrm_utils::get_ip_by_hostname(this->_alias_peer.c_str()).value_or("");
                 if(ip_peer==""){
-                    cpp_utils::print_error("Could not acquire peer IP from host " +this->_alias_peer+".");
+                    msrm_utils::print_error("Could not acquire peer IP from host " +this->_alias_peer+".");
                     return;
                 }else{
-                    cpp_utils::print_info("Peer IP is "+ip_peer+".");
+                    msrm_utils::print_info("Peer IP is "+ip_peer+".");
                 }
                 std::static_pointer_cast<ConfigSkill_telepresence_slave>(this->get_skill("slave")->get_config())->ip_dst=ip_peer;
             }
@@ -151,38 +151,38 @@ const EvalTask& telepresence::evaluate_task(){
 }
 
 bool telepresence::read_parameters(const nlohmann::json& params){
-    if(!cpp_utils::read_json_param(params,"master",this->_master)){
-        cpp_utils::print_error("Missing parameter: master");
+    if(!msrm_utils::read_json_param(params,"master",this->_master)){
+        msrm_utils::print_error("Missing parameter: master");
         return false;
     }
-    if(!cpp_utils::read_json_param(params,"repeater",this->_repeater)){
+    if(!msrm_utils::read_json_param(params,"repeater",this->_repeater)){
         this->_repeater=false;
     }
     if(this->_repeater && this->_master){
-        cpp_utils::print_error("Can not be master and repeater at the same time.");
+        msrm_utils::print_error("Can not be master and repeater at the same time.");
         return false;
     }
     std::string mode;
-    if(!cpp_utils::read_json_param(params,"mode",mode)){
+    if(!msrm_utils::read_json_param(params,"mode",mode)){
         mode="none";
     }
     this->_mode=TelepresenceMode::None;
     if(mode=="joystick"){
         this->_mode=TelepresenceMode::Joystick;
     }
-    if(!cpp_utils::read_json_param<double,7,1>(params,"q_0",this->_q_0) && !this->_master && this->_mode==TelepresenceMode::JointDirect){
-        cpp_utils::print_error("Missing parameter: q_0 [7x1] - Initial joint pose, should coincide with the master.");
+    if(!msrm_utils::read_json_param<double,7,1>(params,"q_0",this->_q_0) && !this->_master && this->_mode==TelepresenceMode::JointDirect){
+        msrm_utils::print_error("Missing parameter: q_0 [7x1] - Initial joint pose, should coincide with the master.");
         return false;
     }
-    if(!cpp_utils::read_json_param<double,4,4>(params,"TF_T_EE_0",this->_TF_T_EE_0) && !this->_master && this->_mode==TelepresenceMode::CartesianDirect){
-        cpp_utils::print_error("Missing parameter: TF_T_EE_0 [4x4] - Initial Cartesian pose, should coincide with the master.");
+    if(!msrm_utils::read_json_param<double,4,4>(params,"TF_T_EE_0",this->_TF_T_EE_0) && !this->_master && this->_mode==TelepresenceMode::CartesianDirect){
+        msrm_utils::print_error("Missing parameter: TF_T_EE_0 [4x4] - Initial Cartesian pose, should coincide with the master.");
         return false;
     }
-    if(!cpp_utils::read_json_param(params,"alias_peer",this->_alias_peer) && !this->_repeater){
-        cpp_utils::print_error("Missing parameter: alias_peer.");
+    if(!msrm_utils::read_json_param(params,"alias_peer",this->_alias_peer) && !this->_repeater){
+        msrm_utils::print_error("Missing parameter: alias_peer.");
         return false;
     }
-    if(!cpp_utils::read_json_param(params,"bilateral",this->_bilateral)){
+    if(!msrm_utils::read_json_param(params,"bilateral",this->_bilateral)){
         this->_bilateral=true;
     }
 

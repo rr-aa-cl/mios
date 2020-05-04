@@ -11,7 +11,7 @@
 #include "knowledge_base/knowledge_base.hpp"
 #include "skill/header_skills.hpp"
 #include "led_pattern/header_led_patterns.hpp"
-#include "cpp_utils/json.hpp"
+#include <msrm_utils/json.hpp>
 
 namespace mios {
 

@@ -29,6 +29,8 @@
 #include "cntr_nullsp_proj/cntr_nullsp_proj_wrapper.hpp"
 #include "motion_error_cart/motion_error_cart_wrapper.hpp"
 
+#include <msrm_utils/geometry.hpp>
+
 
 namespace mios {
 
@@ -135,6 +137,7 @@ private:
     void terminate_control();
 
     void check_cartesian_velocity_workspace(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
+    void base_avoidance(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
 
     void dummy_control(std::function<franka::Torques(const franka::RobotState& state)> control_cycle);
     void dummy_control(std::function<franka::CartesianVelocities(const franka::RobotState& state)> control_cycle);
