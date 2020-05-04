@@ -359,20 +359,19 @@ bool KnowledgeBase::update_object(const std::string& id, const nlohmann::json &o
         msrm_utils::print_error("Object with name "+id+" does not exist in knowledge base.");
         return false;
     }
-    if(msrm_utils::find_json_value(obj,"q_o"))   obj_kb["q_o"]=obj["q_o"];
-    if(msrm_utils::find_json_value(obj,"O_T_o"))   obj_kb["O_T_o"]=obj["O_T_o"];
-    if(msrm_utils::find_json_value(obj,"EE_ob_com"))   obj_kb["EE_ob_com"]=obj["EE_ob_com"];
-    if(msrm_utils::find_json_value(obj,"ob_I"))   obj_kb["ob_I"]=obj["ob_I"];
-    if(msrm_utils::find_json_value(obj,"mass"))   obj_kb["mass"]=obj["mass"];
-    if(msrm_utils::find_json_value(obj,"grasp_width"))   obj_kb["grasp_width"]=obj["grasp_width"];
-    if(msrm_utils::find_json_value(obj,"geometry")){
-        for(nlohmann::json::const_iterator itr = obj["geometry"].begin();itr != obj["geometry"].end();itr++){
-            if(!msrm_utils::find_json_value(obj_kb,"geometry")){
-                msrm_utils::print_error("Knowledge base inconsistency. Object "+itr.key()+" has no geometry property.");
+    if(obj.find("q_o")!=obj.end())   obj_kb["q_o"]=obj["q_o"];
+    if(obj.find("O_T_o")!=obj.end())   obj_kb["O_T_o"]=obj["O_T_o"];
+    if(obj.find("EE_ob_com")!=obj.end())   obj_kb["EE_ob_com"]=obj["EE_ob_com"];
+    if(obj.find("ob_I")!=obj.end())   obj_kb["ob_I"]=obj["ob_I"];
+    if(obj.find("mass")!=obj.end())   obj_kb["mass"]=obj["mass"];
+    if(obj.find("grasp_width")!=obj.end())   obj_kb["grasp_width"]=obj["grasp_width"];
+    if(obj.find("geometry")!=obj.end()){
+        for(const auto& el : obj["geometry"].items()){
+            if(obj_kb.find("geometry")==obj_kb.end()){
+                msrm_utils::print_error("Knowledge base inconsistency. Object "+el.key()+" has no geometry property.");
                 return false;
             }
-            if(!msrm_utils::overwrite_valid_json(obj["geometry"][itr.key()],obj_kb["geometry"][itr.key()])){
-                std::cout<<"BLA"<<std::endl;
+            if(!msrm_utils::overwrite_valid_json(obj["geometry"][el.key()],obj_kb["geometry"][el.key()])){
                 return false;
             }
         }
@@ -409,7 +408,7 @@ bool KnowledgeBase::update_reference_frame(const std::string& id, const nlohmann
         msrm_utils::print_error("Reference frame with id "+id+" does not exist in knowledge base.");
         return false;
     }
-    if(msrm_utils::find_json_value(frame,"O_T_f"))   frame_kb["O_T_f"]=frame["O_T_f"];
+    if(frame.find("O_T_f")!=frame.end())   frame_kb["O_T_f"]=frame["O_T_f"];
     //    if(msrm_utils::find_json_value(frame,"objects")){
     //        for(nlohmann::json::const_iterator itr = frame["objects"].begin();itr != frame["objects"].end();itr++){
     ////            if(!msrm_utils::find_json_value(frame["objects"],itr.key()) || msrm_utils::find_json_value(frame["objects"],itr.key())){

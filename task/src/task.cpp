@@ -103,17 +103,17 @@ bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
         this->_kb=this->_core->get_kb();
 
         // merge default task parameters with instance task parameters
-        if(msrm_utils::find_json_value(task_descr,"parameters") && msrm_utils::find_json_value(parameters,"parameters")){
-            for(nlohmann::json::const_iterator itr = parameters["parameters"].begin();itr != parameters["parameters"].end();itr++){
-                if(!msrm_utils::find_json_value(task_descr["parameters"],itr.key().c_str())){
-                    msrm_utils::print_error("Task parameter "+itr.key()+" given by user does not exist in task description.");
+        if(task_descr.find("parameters")!=task_descr.end() && parameters.find("parameters")!=parameters.end()){
+            for(const auto& el : parameters["parameters"].items()){
+                if((task_descr["parameters"].find(el.key())==task_descr["parameters"].end())){
+                    msrm_utils::print_error("Task parameter "+el.key()+" given by user does not exist in task description.");
                     return false;
                 }
-                msrm_utils::overwrite_valid_json(parameters["parameters"][itr.key()],task_descr["parameters"][itr.key()]);
+                msrm_utils::overwrite_valid_json(parameters["parameters"][el.key()],task_descr["parameters"][el.key()]);
             }
         }
         // read task parameters from description
-        if(msrm_utils::find_json_value(task_descr,"parameters")){
+        if(task_descr.find("parameters")!=task_descr.end()){
             if(!this->read_parameters(task_descr["parameters"])){
                 msrm_utils::print_error("Could not load task parameters for task "+this->_id+".");
                 return false;
@@ -140,8 +140,8 @@ bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
 
         for(auto& t : this->_subtask){
             nlohmann::json parameters_sub=nlohmann::json();
-            if(msrm_utils::find_json_value(parameters,"subtasks")){
-                if(msrm_utils::find_json_value(parameters["subtasks"],t.first.c_str())){
+            if(parameters.find("subtasks")!=parameters.end()){
+                if(parameters["subtasks"].find(t.first)!=parameters["subtasks"].end()){
                     parameters_sub=parameters["subtasks"][t.first];
                 }
             }
@@ -180,10 +180,10 @@ bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
             this->load_description_category(parameters,"general",id_skill,task_descr);
             this->load_description_category(parameters,"user",id_skill,task_descr);
             this->load_description_category(parameters,"system",id_skill,task_descr);
-            if(msrm_utils::find_json_value(parameters,"skills") && msrm_utils::find_json_value(task_descr,"skills")){
-                if(msrm_utils::find_json_value(parameters["skills"],id_skill.c_str()) && msrm_utils::find_json_value(task_descr["skills"],id_skill.c_str())){
+            if(parameters.find("skills")!=parameters.end() && task_descr.find("skills")!=task_descr.end()){
+                if((parameters["skills"].find(id_skill)!=parameters["skills"].end()) && task_descr["skills"].find(id_skill)!=task_descr["skills"].end()){
                     // Read objects
-                    if(msrm_utils::find_json_value(parameters["skills"][id_skill],"objects") && msrm_utils::find_json_value(task_descr["skills"][id_skill],"objects")){
+                    if(parameters["skills"][id_skill].find("objects")!=parameters["skills"][id_skill].end() && task_descr["skills"][id_skill].find("objects")!=task_descr["skills"][id_skill].end()){
                         if(parameters["skills"][id_skill]["objects"].size()!=task_descr["skills"][id_skill]["objects"].size()){
                             msrm_utils::print_error("Number of given objects for skill "+id_skill+" and number of objects defined by the task description are different.");
                             return false;
@@ -191,49 +191,49 @@ bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
                         for(unsigned i=0;i<parameters["skills"][id_skill]["objects"].size();i++){
                             msrm_utils::overwrite_valid_json(parameters["skills"][id_skill]["objects"][i],task_descr["skills"][id_skill]["objects"][i]);
                         }
-                    }else if(msrm_utils::find_json_value(parameters["skills"][id_skill],"objects")){
+                    }else if(parameters["skills"][id_skill].find("objects")!=parameters["skills"][id_skill].end()){
                         task_descr["skills"][id_skill]["objects"]=parameters["skills"][id_skill]["objects"];
                     }
-                }else if(msrm_utils::find_json_value(parameters["skills"],id_skill.c_str())){
+                }else if(parameters["skills"].find(id_skill)!=parameters["skills"].end()){
                     task_descr["skills"][id_skill]=parameters["skills"][id_skill];
                 }
             }
 
-            if(msrm_utils::find_json_value(task_descr,"skills")){
-                if(msrm_utils::find_json_value(task_descr["skills"],id_skill.c_str())){
-                    if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"control")){
+            if(task_descr.find("skills")!=task_descr.end()){
+                if(task_descr["skills"].find(id_skill)!=task_descr["skills"].end()){
+                    if(task_descr["skills"][id_skill].find("control")!=task_descr["skills"][id_skill].end()){
                         s.second->get_config()->controller.read_parameters(task_descr["skills"][id_skill]["control"]);
                     }
-                    if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"frames")){
+                    if(task_descr["skills"][id_skill].find("frames")!=task_descr["skills"][id_skill].end()){
                         s.second->get_config()->frames.read_parameters(task_descr["skills"][id_skill]["frames"]);
                     }
-                    if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"genral")){
+                    if(task_descr["skills"][id_skill].find("genral")!=task_descr["skills"][id_skill].end()){
                         s.second->get_config()->general.read_parameters(task_descr["skills"][id_skill]["general"]);
                     }
-                    if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"user")){
+                    if(task_descr["skills"][id_skill].find("user")!=task_descr["skills"][id_skill].end()){
                         s.second->get_config()->user.read_parameters(task_descr["skills"][id_skill]["user"]);
                     }
                 }
             }
 
             // Read skill parameters
-            if(!msrm_utils::find_json_value(task_descr,"skills")){
+            if(task_descr.find("skills")==task_descr.end()){
                 task_descr["skills"]=nlohmann::json();
             }
-            if(!msrm_utils::find_json_value(task_descr["skills"],id_skill.c_str())){
+            if(task_descr["skills"].find(id_skill)==task_descr["skills"].end()){
                 task_descr["skills"][id_skill]=nlohmann::json();
             }
             nlohmann::json skill_params_tmp;
-            if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"skill")){
+            if(task_descr["skills"][id_skill].find("skill")!=task_descr["skills"][id_skill].end()){
                 skill_params_tmp=task_descr["skills"][id_skill]["skill"];
             }
             task_descr["skills"][id_skill]["skill"]=skill_descr;
             std::set<std::string> global_skill={"time_max","w_cost_function","parallels_frequency"};
-            for(nlohmann::json::const_iterator itr=skill_params_tmp.begin();itr!=skill_params_tmp.end();++itr){
-                if(msrm_utils::find_json_value(task_descr["skills"][id_skill]["skill"],itr.key().c_str()) || global_skill.find(itr.key())!=global_skill.end()){
-                    task_descr["skills"][id_skill]["skill"][itr.key()]=skill_params_tmp[itr.key()];
+            for(const auto& el : skill_params_tmp.items()){
+                if(task_descr["skills"][id_skill]["skill"].find(el.key())!=task_descr["skills"][id_skill]["skill"].end() || global_skill.find(el.key())!=global_skill.end()){
+                    task_descr["skills"][id_skill]["skill"][el.key()]=skill_params_tmp[el.key()];
                 }else{
-                    msrm_utils::print_error("Skill "+id_skill+" does not have parameter "+itr.key());
+                    msrm_utils::print_error("Skill "+id_skill+" does not have parameter "+el.key());
                     return false;
                 }
             }
@@ -244,8 +244,8 @@ bool Task::load(const nlohmann::json &parameters, std::shared_ptr<Core> core){
             }
             s.second->read_global_skill_parameters(task_descr["skills"][id_skill]["skill"]);
             s.second->read_configuration(task_descr["skills"][id_skill]);
-            if(msrm_utils::find_json_value(skill_descr,"objects")){
-                if(msrm_utils::find_json_value(task_descr["skills"][id_skill],"objects") || skill_descr["objects"].size()>0){
+            if(skill_descr.find("objects")!=skill_descr.end()){
+                if(task_descr["skills"][id_skill].find("objects")!=task_descr["skills"][id_skill].end() || skill_descr["objects"].size()>0){
                     if(skill_descr["objects"].size()!=task_descr["skills"][id_skill]["objects"].size()){
                         msrm_utils::print_error(std::to_string(task_descr["skills"][id_skill]["objects"].size())+" objects have been specified for skill "+ id_skill +" although "+ std::to_string(skill_descr["objects"].size()) +" are expected.");
                         return false;

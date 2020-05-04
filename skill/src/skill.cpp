@@ -737,22 +737,22 @@ void Skill::set_kb(std::shared_ptr<KnowledgeBase> kb){
 }
 
 void Skill::read_configuration(const nlohmann::json &p){
-    if(msrm_utils::find_json_value(p,"controller")){
+    if(p.find("controller")!=p.end()){
         this->_config->controller.read_parameters(p["controller"]);
     }
-    if(msrm_utils::find_json_value(p,"frames")){
+    if(p.find("frames")!=p.end()){
         this->_config->frames.read_parameters(p["frames"]);
     }
-    if(msrm_utils::find_json_value(p,"general")){
+    if(p.find("general")!=p.end()){
         this->_config->general.read_parameters(p["general"]);
     }
-    if(msrm_utils::find_json_value(p,"system")){
+    if(p.find("system")!=p.end()){
         this->_config->system.read_parameters(p["system"]);
     }
-    if(msrm_utils::find_json_value(p,"user")){
+    if(p.find("user")!=p.end()){
         this->_config->user.read_parameters(p["user"]);
     }
-    if(msrm_utils::find_json_value(p,"skill")){
+    if(p.find("skill")!=p.end()){
         this->read_global_skill_parameters(p["skill"]);
     }
 }

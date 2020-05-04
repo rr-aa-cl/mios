@@ -10,7 +10,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_LINK_DEPENDS_NO_SHARED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wreturn-type -Wno-error=deprecated-declarations")
-#set(CMAKE_UNITY_BUILD ON)
+set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
+
+include(cotire)
 
 find_package(Eigen3 REQUIRED)
 find_package(libmongocxx REQUIRED)
@@ -29,8 +31,22 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/knowledge_base/include
     ${CMAKE_SOURCE_DIR}/telemetry/include
     ${CMAKE_SOURCE_DIR}/utils/include
-    ${CMAKE_SOURCE_DIR}/event_publisher/include
-    ${CMAKE_SOURCE_DIR}/cpp/include)
+    ${CMAKE_SOURCE_DIR}/event_publisher/include)
+
+
+set(SOURCES core/src/core.cpp event_publisher/src/event_publisher.cpp interface/src/interface.cpp interface/src/parameter_server.cpp knowledge_base/src/concepts.cpp knowledge_base/src/knowledge_base.cpp
+    knowledge_base/src/local_memory.cpp led_pattern/src/led_pattern.cpp manipulation_primitive/src/manipulation_primitive.cpp skill/src/skill.cpp task/src/task.cpp task/src/task_handler.cpp task/src/task_list.cpp
+    telemetry/src/telemetry_udp.cpp)
+
+set(SOURCES_PRIMITIVES manipulation_primitive/src/primitives/mp_basic.cpp manipulation_primitive/src/primitives/mp_basic_joint.cpp manipulation_primitive/src/primitives/mp_telepresence.cpp
+    manipulation_primitive/src/primitives/mp_external.cpp)
+
+file(GLOB SOURCES_SKILLS "skill/src/skills/*.cpp")
+file(GLOB SOURCES_TASKS "skill/src/tasks/*.cpp")
+file(GLOB SOURCES_PATTERN "skill/src/patterns/*.cpp")
+
+add_executable(mios main/src/mios.cpp ${SOURCES} ${SOURCES_PRIMITIVES} ${SOURCES_SKILLS} ${SOURCES_TASKS} ${SOURCES_PATTERN})
+cotire(mios)
 
 file(STRINGS ${CMAKE_SOURCE_DIR}/config/active_mp ACTIVE_MP)
 file(STRINGS ${CMAKE_SOURCE_DIR}/config/active_skills ACTIVE_SKILLS)
@@ -85,35 +101,9 @@ add_subdirectory(plugins/wave_variables)
 include_directories(${wave_variables_INCLUDE_DIRS})
 link_directories(${wave_variables_LIBRARIES})
 
-add_subdirectory(
-    led_pattern
-    )
-add_subdirectory(
-    manipulation_primitive
-    )
-add_subdirectory(
-    skill
-    )
-add_subdirectory(
-    core
-    )
+set(LIBS_PLUGINS conv_vel2pose cntr_force
+    cntr_aic cntr_joint_var_imp cntr_mux virtual_cube virtual_walls_joint cntr_nullsp_proj mogen_p2p motion_error_cart mogen_p2p_joint)
 
-add_subdirectory(
-    task
-    )
+message(${virtual_cube_LIBRARIES})
 
-add_subdirectory(
-    knowledge_base
-    )
-add_subdirectory(
-    telemetry
-    )
-add_subdirectory(
-    interface
-    )
-add_subdirectory(
-    event_publisher
-    )
-add_subdirectory(
-    main
-    )
+target_link_libraries(mios msrm_cpp_utils franka mongocxx bsoncxx boost_system SDL2 SDL2_mixer ssl crypto pthread)

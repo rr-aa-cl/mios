@@ -223,7 +223,7 @@ void Object::from_json(const nlohmann::json& p){
     msrm_utils::read_json_param(p,"mass",mass);
     msrm_utils::read_json_param<double,3,1>(p,"EE_ob_com",EE_ob_com);
     msrm_utils::read_json_param<double,3,3>(p,"ob_I",ob_I);
-    if(msrm_utils::find_json_value(p,"geometry")){
+    if(p.find("geometry")!=p.end()){
         geometry=p["geometry"];
     }
 }
@@ -263,7 +263,7 @@ nlohmann::json ReferenceFrame::to_json(){
 
 void ReferenceFrame::from_json(const nlohmann::json &p){
     msrm_utils::read_json_param<double,4,4>(p,"O_T_f",O_T_f);
-    if(msrm_utils::find_json_value(p,"objects")){
+    if(p.find("objects")!=p.end()){
         objects=p["objects"];
     }
 }

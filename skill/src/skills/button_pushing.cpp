@@ -4,9 +4,9 @@ button_pushing::button_pushing():Skill("button_pushing"){}
 button_pushing::~button_pushing(){}
 bool button_pushing::read_skill_parameters(const nlohmann::json& p){
     std::shared_ptr<ConfigSkill_button_pushing> c = std::static_pointer_cast<ConfigSkill_button_pushing>(this->_config);
-    cpp_utils::read_json_param<double,1,1>(p,"acc",c->acc);
-    cpp_utils::read_json_param<double,1,1>(p,"speed",c->speed);
-    cpp_utils::read_json_param(p,"t_hold",c->t_hold);
+    msrm_utils::read_json_param<double,1,1>(p,"acc",c->acc);
+    msrm_utils::read_json_param<double,1,1>(p,"speed",c->speed);
+    msrm_utils::read_json_param(p,"t_hold",c->t_hold);
     return true;
 }
 
@@ -16,34 +16,34 @@ Eigen::Matrix<double, 3, 3> button_pushing::get_O_R_TF(const Percept &p){
 
 void button_pushing::build_primitives(const Percept& p){
 
-    this->insert_mp("push",new mp_basic(),p);
-    this->insert_mp("hold",new mp_basic(),p);
-    this->insert_mp("retreat",new mp_basic(),p);
+    this->insert_mp<mp_basic>("push",p);
+    this->insert_mp<mp_basic>("hold",p);
+    this->insert_mp<mp_basic>("retreat",p);
     this->set_init_mp("push");
 
     std::shared_ptr<ConfigSkill_button_pushing> c = std::static_pointer_cast<ConfigSkill_button_pushing>(this->_config);
 
-    ConfigMP_mp_basic* c_push = static_cast<ConfigMP_mp_basic*>(this->get_mp("push")->get_config());
-    ConfigMP_mp_basic* c_hold = static_cast<ConfigMP_mp_basic*>(this->get_mp("hold")->get_config());
-    ConfigMP_mp_basic* c_retreat = static_cast<ConfigMP_mp_basic*>(this->get_mp("retreat")->get_config());
+    std::shared_ptr<ConfigMP_mp_basic> c_push = std::static_pointer_cast<ConfigMP_mp_basic>(this->get_mp("push")->get_config());
+    std::shared_ptr<ConfigMP_mp_basic> c_hold = std::static_pointer_cast<ConfigMP_mp_basic>(this->get_mp("hold")->get_config());
+    std::shared_ptr<ConfigMP_mp_basic> c_retreat = std::static_pointer_cast<ConfigMP_mp_basic>(this->get_mp("retreat")->get_config());
 
     this->_push_blind=false;
 
     this->_button_height=0;
     Object button = this->get_object("button");
-    if(!cpp_utils::find_json_value(button.geometry,"radius")){
-        cpp_utils::print_warning("I do not know the radius of the button. I will assume 0.005 m.");
+    if(button.geometry.find("radius")==button.geometry.end()){
+        msrm_utils::print_warning("I do not know the radius of the button. I will assume 0.005 m.");
         this->_button_radius=0.005;
     }else{
-        if(!cpp_utils::read_json_param(button.geometry,"radius",this->_button_radius)){
+        if(!msrm_utils::read_json_param(button.geometry,"radius",this->_button_radius)){
             throw SkillException("Cannot read radius from object "+button.name+".");
         }
     }
-    if(!cpp_utils::find_json_value(button.geometry,"height")){
-        cpp_utils::print_warning("I do not know the height of the button. I will push until sufficient resistance occurs.");
+    if(button.geometry.find("height")==button.geometry.end()){
+        msrm_utils::print_warning("I do not know the height of the button. I will push until sufficient resistance occurs.");
         this->_push_blind=true;
     }else{
-        if(!cpp_utils::read_json_param(button.geometry,"height",this->_button_height)){
+        if(!msrm_utils::read_json_param(button.geometry,"height",this->_button_height)){
             throw SkillException("Cannot read height from object "+button.name+".");
         }
     }
@@ -51,9 +51,9 @@ void button_pushing::build_primitives(const Percept& p){
     Eigen::Matrix<double,4,4> button_pose_pressed =  button_pose;
     button_pose_pressed(2,3)+=this->_button_height;
 
-    AttractorBasic* attr_push=static_cast<AttractorBasic*>(this->get_mp("push")->get_attractor());
-    AttractorBasic* attr_hold=static_cast<AttractorBasic*>(this->get_mp("hold")->get_attractor());
-    AttractorBasic* attr_retreat=static_cast<AttractorBasic*>(this->get_mp("retreat")->get_attractor());
+    std::shared_ptr<AttractorBasic> attr_push=std::static_pointer_cast<AttractorBasic>(this->get_mp("push")->get_attractor());
+    std::shared_ptr<AttractorBasic> attr_hold=std::static_pointer_cast<AttractorBasic>(this->get_mp("hold")->get_attractor());
+    std::shared_ptr<AttractorBasic> attr_retreat=std::static_pointer_cast<AttractorBasic>(this->get_mp("retreat")->get_attractor());
     if(!this->_push_blind){
         attr_push->attr_pose=button_pose_pressed;
         c_push->dX_d<<this->_config->user.dX_max(0)*c->speed(0),this->_config->user.dX_max(1);
@@ -107,7 +107,7 @@ bool button_pushing::check_local_ex_conditions(const Percept &p){
 bool button_pushing::check_local_err_conditions(const Percept &p){
     Eigen::Matrix<double,2,1> e;
     e<<p.TF_T_EE_d(0,3)-p.TF_T_EE(0,3),p.TF_T_EE_d(1,3)-p.TF_T_EE(1,3);
-    double e_abs=cpp_utils::norm_2<2>(e);
+    double e_abs=msrm_utils::norm_2<2>(e);
     if(e_abs>this->_button_radius){
         return true;
     }
