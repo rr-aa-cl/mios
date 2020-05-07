@@ -1044,7 +1044,7 @@ bool Core::start_control_cycle(){
             if(this->_kb.get_local_memory()->access_config_system().has_gripper){
                 this->_flag_run_gripper=true;
                 //                this->_thr_gripper=std::thread(&Core::gripper_cycle,this);
-//                this->_thr_gripper.detach();
+                //                this->_thr_gripper.detach();
             }
             if(this->_kb.get_local_memory()->access_config_general().control_mode==0){
                 this->input_control_aic(this->_percept);
@@ -1230,7 +1230,7 @@ franka::Torques Core::control_cycle_torque_cart(const franka::RobotState state){
     this->input_control_nullspace(this->_percept);
 
     this->check_cartesian_velocity_workspace(cmd_skill.TF_dX_d,this->_percept);
-    this->base_avoidance(cmd_skill.TF_dX_d,this->_percept);
+//    this->base_avoidance(cmd_skill.TF_dX_d,this->_percept);
 
     this->_in_u_vel2pose.TF_dX_d=cmd_skill.TF_dX_d;
     this->_conv_vel2pose.step(this->_in_u_vel2pose,this->_out_y_vel2pose);
@@ -1292,9 +1292,9 @@ franka::Torques Core::control_cycle_torque_cart(const franka::RobotState state){
         if(this->get_kb()->get_local_memory()->access_config_cntr().nullspace_cntr_on){
             this->_in_u_mux.tau_J_d(i)+=this->_out_y_cntr_nullsp_proj.tau_n(i);
         }
-        for(unsigned i=0;i<7;i++){
-            this->_in_u_mux.tau_J_d(i)-=this->get_kb()->get_local_memory()->access_config_cntr().D_additional(i)*this->_percept.dq(i);
-        }
+//        for(unsigned i=0;i<7;i++){
+//            this->_in_u_mux.tau_J_d(i)-=this->get_kb()->get_local_memory()->access_config_cntr().D_additional(i)*this->_percept.dq(i);
+//        }
     }
 
     this->_cntr_mux.step(this->_in_u_mux,this->_out_y_mux);
@@ -1408,7 +1408,7 @@ franka::CartesianVelocities Core::control_cycle_velocity_cart(const franka::Robo
         return franka::MotionFinished(O_dP_EE_d);
     }
     this->check_cartesian_velocity_workspace(cmd_skill.TF_dX_d,this->_percept);
-    this->base_avoidance(cmd_skill.TF_dX_d,this->_percept);
+//    this->base_avoidance(cmd_skill.TF_dX_d,this->_percept);
 
     franka::CartesianVelocities O_dP_EE_d = msrm_utils::convert_to_array<double,6,1>(msrm_utils::rotate_vector(cmd_skill.TF_dX_d,this->_active_skill->get_config<>()->frames.O_R_TF));
     if(!this->validity_check_velocity_cart(O_dP_EE_d.O_dP_EE)){
@@ -1541,9 +1541,8 @@ void Core::process_percept(const franka::RobotState &state, const franka::Grippe
     this->_telemetry.q[0]={state.q[0],state.q[1],state.q[2],state.q[3],state.q[4],state.q[5],state.q[6]};
     this->_telemetry.tau_ext[0]={state.tau_ext_hat_filtered[0],state.tau_ext_hat_filtered[1],state.tau_ext_hat_filtered[2],state.tau_ext_hat_filtered[3],state.tau_ext_hat_filtered[4],state.tau_ext_hat_filtered[5],state.tau_ext_hat_filtered[6]};
     auto t_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-t_event);
-    if(t_diff.count()>100){
-        std::thread event_thread(&EventPublisher::publish_event,this->event);
-        event_thread.detach();
+    if(t_diff.count()>50){
+        EventPublisher::publish_event(this->event);
         this->t_event = std::chrono::system_clock::now();
     }
 
@@ -1623,7 +1622,7 @@ void Core::cycle_sound(std::function<SoundCmd(const Percept& p)> callback_sound)
             if (Mix_PlayMusic(music, 1) == 0){
                 while (Mix_PlayingMusic()){
                     SDL_Delay(10);
-//                    boost::this_thread::interruption_point();
+                    //                    boost::this_thread::interruption_point();
                 }
             }
             else{
@@ -2350,28 +2349,28 @@ bool Core::test_robot_connection(const std::string &ip) const{
 
 std::string Core::find_primary(){
     std::string ip="none";
-//    std::vector<std::string> ifaces = msrm_utils::get_ifaces();
-//    for(unsigned i=0;i<ifaces.size();i++){
-//        std::string ip_subnet = ifaces[i];
-//        std::vector<std::string> ip_tmp = msrm_utils::split_string(ip_subnet,".");
-//        ip_subnet=ip_tmp[0]+"."+ip_tmp[1]+"."+ip_tmp[2]+".";
-//        for(unsigned i=1;i<254;i++){
-//            std::string address = ip_subnet+std::to_string(i);
-//            if(msrm_utils::ping(address.c_str())==1){
-//                continue;
-//            }else{
-//                if(this->test_primary_connection(address)){
-//                    ip=address;
-//                }
-//            }
-//        }
+    //    std::vector<std::string> ifaces = msrm_utils::get_ifaces();
+    //    for(unsigned i=0;i<ifaces.size();i++){
+    //        std::string ip_subnet = ifaces[i];
+    //        std::vector<std::string> ip_tmp = msrm_utils::split_string(ip_subnet,".");
+    //        ip_subnet=ip_tmp[0]+"."+ip_tmp[1]+"."+ip_tmp[2]+".";
+    //        for(unsigned i=1;i<254;i++){
+    //            std::string address = ip_subnet+std::to_string(i);
+    //            if(msrm_utils::ping(address.c_str())==1){
+    //                continue;
+    //            }else{
+    //                if(this->test_primary_connection(address)){
+    //                    ip=address;
+    //                }
+    //            }
+    //        }
 
-//    }
-//    if(ip=="none"){
-//        spdlog::error("No primary has been found in this network.");
-//    }else{
-//        spdlog::info("Found primary, I am connected to a collective.");
-//    }
+    //    }
+    //    if(ip=="none"){
+    //        spdlog::error("No primary has been found in this network.");
+    //    }else{
+    //        spdlog::info("Found primary, I am connected to a collective.");
+    //    }
     return ip;
 }
 
@@ -2379,7 +2378,7 @@ bool Core::test_primary_connection(const std::string &ip){
     nlohmann::json request=nlohmann::json();
     nlohmann::json response;
     return false;
-//    return msrm_utils::rpc_call(ip,8390,"is_primary",request,response);
+    //    return msrm_utils::rpc_call(ip,8390,"is_primary",request,response);
 }
 
 bool Core::init_sound(){

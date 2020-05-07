@@ -2,7 +2,7 @@
 
 #include "manipulation_primitive/manipulation_primitive.hpp"
 
-#include "mogen_p2p_joint/mogen_p2p_joint_wrapper.hpp"
+#include "plugins/mogen_p2p_joint_wrapper.hpp"
 
 namespace mios {
 

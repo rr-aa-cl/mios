@@ -47,6 +47,7 @@ void EventPublisher::publish(nlohmann::json event){
         nlohmann::json response;
         nlohmann::json request;
         request["event"]=event;
+//        std::cout<<"PUBLISH TO: address:"<<subscriber.address<<", port: "<<subscriber.port<<", method_name: "<<subscriber.method_name<<std::endl;
         if(!msrm_utils::JsonUDPClient::call_method(subscriber.address,subscriber.port,subscriber.method_name,request,response,2)){
             m_failed_calls[subscriber.uuid]++;
         }

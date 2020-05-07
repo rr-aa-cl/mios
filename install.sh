@@ -24,22 +24,20 @@ if [ ! -d "${ROOT}/lib/plugins" ]; then
 mkdir ${ROOT}/lib/plugins
 fi
 
-
 cd ${ROOT}
-cd plugins
-for d in */ ; do
-cd "$d"
-cp *.so ../../lib/plugins/
-cd ..
-done
+cp -r plugins/lib/* lib/plugins/
 
 ### make ###
 if [ ! -d "${ROOT}/build" ]; then
 mkdir ${ROOT}/build
 fi
 
-cd ${ROOT}/build
-cmake ..
+if [ ! -d "${ROOT}/build/release" ]; then
+mkdir ${ROOT}/build/release
+fi
+
+cd ${ROOT}/build/release
+cmake ../..
 make -j$n_cpu install
 
 ### push all libraries ###

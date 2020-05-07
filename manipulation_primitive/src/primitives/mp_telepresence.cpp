@@ -408,7 +408,6 @@ void mp_telepresence::joystick_mode(const Percept &p, std::vector<double> &paylo
                 EE_dX_d.setZero();
             }
         }
-
         Eigen::Matrix<double,6,1> O_dX_d=msrm_utils::rotate_vector(EE_dX_d,O_T_EE); // Transform incoming velocity form master into O frame
         Eigen::Matrix<double,3,1> J_F_ext_t=EE_T_J_t.transpose()*p.K_F_ext.block<3,1>(0,0);
         Eigen::Matrix<double,3,1> J_F_ext_r=EE_T_J_r.transpose()*p.K_F_ext.block<3,1>(3,0);

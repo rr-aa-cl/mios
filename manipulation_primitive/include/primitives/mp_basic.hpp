@@ -2,8 +2,8 @@
 
 #include "manipulation_primitive/manipulation_primitive.hpp"
 
-#include "mogen_p2p/mogen_p2p_wrapper.hpp"
-#include "motion_error_cart/motion_error_cart_wrapper.hpp"
+#include "plugins/mogen_p2p_wrapper.hpp"
+#include "plugins/motion_error_cart_wrapper.hpp"
 
 namespace mios {
 
