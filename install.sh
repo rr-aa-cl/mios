@@ -24,14 +24,8 @@ if [ ! -d "${ROOT}/lib/plugins" ]; then
 mkdir ${ROOT}/lib/plugins
 fi
 
-
 cd ${ROOT}
-cd plugins
-for d in */ ; do
-cd "$d"
-cp *.so ../../lib/plugins/
-cd ..
-done
+cp -r plugins/lib/* lib/plugins/
 
 ### make ###
 if [ ! -d "${ROOT}/build" ]; then

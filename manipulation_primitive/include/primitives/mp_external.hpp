@@ -11,7 +11,7 @@
 #include <thread>
 
 #include "manipulation_primitive/manipulation_primitive.hpp"
-#include "motion_error_cart/motion_error_cart_wrapper.hpp"
+#include "plugins/motion_error_cart_wrapper.hpp"
 
 
 namespace mios {

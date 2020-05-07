@@ -18,15 +18,15 @@
 
 #include "utils/types.hpp"
 
-#include "cntr_aic/cntr_aic_wrapper.hpp"
-#include "cntr_force/cntr_force_wrapper.hpp"
-#include "cntr_joint_var_imp/cntr_joint_var_imp_wrapper.hpp"
-#include "cntr_mux/cntr_mux_wrapper.hpp"
-#include "conv_vel2pose/conv_vel2pose_wrapper.hpp"
-#include "virtual_cube/virtual_cube_wrapper.hpp"
-#include "virtual_walls_joint/virtual_walls_joint_wrapper.hpp"
-#include "cntr_nullsp_proj/cntr_nullsp_proj_wrapper.hpp"
-#include "motion_error_cart/motion_error_cart_wrapper.hpp"
+#include "plugins/cntr_aic_wrapper.hpp"
+#include "plugins/cntr_force_wrapper.hpp"
+#include "plugins/cntr_joint_var_imp_wrapper.hpp"
+#include "plugins/cntr_mux_wrapper.hpp"
+#include "plugins/conv_vel2pose_wrapper.hpp"
+#include "plugins/virtual_cube_wrapper.hpp"
+#include "plugins/virtual_walls_joint_wrapper.hpp"
+#include "plugins/cntr_nullsp_proj_wrapper.hpp"
+#include "plugins/motion_error_cart_wrapper.hpp"
 
 #include <msrm_utils/geometry.hpp>
 

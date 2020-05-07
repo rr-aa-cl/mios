@@ -37,7 +37,7 @@ int main(int argc, char** argv){
 
     msrm_utils::print_info("############################################################");
     msrm_utils::print_info("MIOS");
-    msrm_utils::print_info("Version: 0.4.0.0");
+    msrm_utils::print_info("Version: 0.4.1.0");
 
     mios::Interface interface(port);
     mios::ParameterServer live_params(port+1);
