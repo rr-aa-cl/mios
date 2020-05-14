@@ -4,7 +4,7 @@
 #include "primitives/mp_external.hpp"
 
 namespace mios{
-struct ConfigSkill_external_input: public ConfigSkill{
+struct SkillParameters_external_input: public SkillParameters{
     std::string name;
     std::string mode;
     unsigned port_recv;

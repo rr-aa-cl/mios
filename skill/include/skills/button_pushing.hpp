@@ -4,7 +4,7 @@
 #include "primitives/mp_basic.hpp"
 
 namespace mios{
-struct ConfigSkill_button_pushing: public ConfigSkill{
+struct SkillParameters_button_pushing: public SkillParameters{
 std::string skill;
 Eigen::Matrix<double,1,1> speed;
 Eigen::Matrix<double,1,1> acc;

@@ -3,7 +3,7 @@
 
 #include "primitives/mp_basic.hpp"
 namespace mios{
-struct ConfigSkill_test_skill_1: public ConfigSkill{
+struct SkillParameters_test_skill_1: public SkillParameters{
     std::string skill;
     double run_time;
     bool success;
@@ -12,7 +12,7 @@ struct ConfigSkill_test_skill_1: public ConfigSkill{
 };
 class test_skill_1 : public Skill{
 public:
-    test_skill_1(KnowledgeBase *kb, std::shared_ptr<ConfigSkill> config);
+    test_skill_1(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config);
     void evaluate();
     bool read_skill_parameters(const nlohmann::json& p);
     Eigen::Matrix<double,3,3> get_O_R_TF(const Percept &p);

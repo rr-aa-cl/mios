@@ -43,7 +43,7 @@ set(PLUGINS mogen_p2p mogen_p2p_joint cntr_aic cntr_force cntr_joint_imp cntr_jo
 link_directories(${CMAKE_SOURCE_DIR}/plugins/lib)
 
 set(SOURCES core/src/core.cpp event_publisher/src/event_publisher.cpp interface/src/interface.cpp interface/src/parameter_server.cpp knowledge_base/src/concepts.cpp knowledge_base/src/knowledge_base.cpp
-    knowledge_base/src/local_memory.cpp led_pattern/src/led_pattern.cpp manipulation_primitive/src/manipulation_primitive.cpp skill/src/skill.cpp task/src/task.cpp task/src/task_handler.cpp
+    knowledge_base/src/local_memory.cpp manipulation_primitive/src/manipulation_primitive.cpp skill/src/skill.cpp task/src/task.cpp task/src/task_handler.cpp
     task/src/taskfactory.cpp task/src/taskobserver.cpp
     telemetry/src/telemetry_udp.cpp utils/src/actuator.cpp utils/src/percept.cpp panda/src/panda_body.cpp controller_pipeline/src/torque_pipeline.cpp)
 
@@ -52,7 +52,7 @@ set(SOURCES_PRIMITIVES manipulation_primitive/src/primitives/mp_basic.cpp manipu
 
 file(GLOB SOURCES_SKILLS "skill/src/skills/*.cpp")
 file(GLOB SOURCES_TASKS "task/src/tasks/*.cpp")
-file(GLOB SOURCES_PATTERN "led_pattern/src/patterns/*.cpp")
+#file(GLOB SOURCES_PATTERN "led_pattern/src/patterns/*.cpp")
 
 add_executable(mios main/src/mios.cpp ${SOURCES} ${SOURCES_PRIMITIVES} ${SOURCES_SKILLS} ${SOURCES_TASKS} ${SOURCES_PATTERN})
 cotire(mios)

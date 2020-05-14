@@ -4,15 +4,15 @@ namespace mios{
 TestTask1::TestTask1(Core* core):Task("TestTask1",core){
 }
 void TestTask1::initialize_task(){
-    this->create_skill<test_skill_1>("t1_s1",m_kb,std::make_shared<ConfigSkill_test_skill_1>());
-    this->create_skill<test_skill_1>("t1_s2",m_kb,std::make_shared<ConfigSkill_test_skill_1>());
+    this->create_skill<test_skill_1>("t1_s1",m_kb,std::make_shared<SkillParameters_test_skill_1>());
+    this->create_skill<test_skill_1>("t1_s2",m_kb,std::make_shared<SkillParameters_test_skill_1>());
 }
 void TestTask1::execute_task(){
 
     if(this->skill_test==0){
 
-        std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t1_s1")->get_config())->success=this->success;
-        std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t1_s1")->get_config())->exception=this->exception;
+        std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t1_s1")->get_config())->success=this->success;
+        std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t1_s1")->get_config())->exception=this->exception;
         if(this->exception=="task"){
             throw TaskException("This is a task exception that has been thrown for test purposes");
         }
@@ -20,20 +20,20 @@ void TestTask1::execute_task(){
     }
 
     if(this->skill_test==1){
-        std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t1_s2")->get_config())->run_time=0;
+        std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t1_s2")->get_config())->run_time=0;
         this->get_skill("t1_s2")->set_object("object","test_object_1");
         for(unsigned i=0;i<3;i++){
-            std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t1_s2")->get_config())->user.dX_max<<i*0.1,i*0.5;
+            std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t1_s2")->get_config())->user.dX_max<<i*0.1,i*0.5;
             this->execute_skill("t1_s2");
         }
     }
     if(this->skill_test==2){
-        std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t1_s2")->get_config())->run_time=3;
-        std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t1_s2")->get_config())->parallels_frequency=100;
+        std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t1_s2")->get_config())->run_time=3;
+        std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t1_s2")->get_config())->parallels_frequency=100;
         this->execute_skill("t1_s2");
     }
     if(this->skill_test==3){
-        std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t1_s2")->get_config())->run_time=0;
+        std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t1_s2")->get_config())->run_time=0;
         this->get_skill("t1_s2")->set_object("object","test_object_2");
         for(unsigned i=0;i<3;i++){
             this->execute_skill("t1_s2");

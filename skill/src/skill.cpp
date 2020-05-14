@@ -2,13 +2,24 @@
 #include <franka/exception.h>
 #include <chrono>
 
-#include <primitives/nullprimitive.hpp>
+#include "primitives/nullprimitive.hpp"
+#include "skills/nullskill.hpp"
 #include <msrm_utils/math.hpp>
 #include <spdlog/spdlog.h>
 
 namespace mios {
 
-Skill::Skill(const std::string &type, KnowledgeBase* kb, std::shared_ptr<ConfigSkill> config, const Percept &p):m_type(type),m_kb(kb),m_config(config),m_active_mp(std::make_shared<NullPrimitive>()),
+EvalSkill::EvalSkill(){
+    this->config=std::make_shared<SkillParametersNullSkill>();
+    this->cost_suc=0;
+    this->cost_err=0;
+    this->success=false;
+    this->last_errors.resize(0);
+    this->results=nlohmann::json();
+    exception=false;
+}
+
+Skill::Skill(const std::string &type, KnowledgeBase* kb, std::shared_ptr<SkillParameters> config, const Percept &p):m_type(type),m_kb(kb),m_config(config),m_active_mp(std::make_shared<NullPrimitive>()),
 m_life_cycle(SkillLifeCycle::slInit),m_active_mp(std::make_shared<NullPrimitive>(p,std::make_shared<ConfigMP_NullPrimitive>(),std::make_shared<NullAttractor>(),m_kb,"NullPrimitive")),
 m_flag_pause(false),m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_parallels_running(false){
 }

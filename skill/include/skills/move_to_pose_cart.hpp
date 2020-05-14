@@ -6,7 +6,7 @@
 
 namespace mios {
 
-struct ConfigSkill_move_to_pose_cart : public ConfigSkill{
+struct SkillParameters_move_to_pose_cart : public SkillParameters{
     Eigen::Matrix<double,1,1> speed;
     Eigen::Matrix<double,1,1> acc;
     Eigen::Matrix<double,4,4> TF_T_EE_g;

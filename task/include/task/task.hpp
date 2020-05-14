@@ -295,7 +295,7 @@ protected:
             throw TaskException("Skill could not be loaded into core.");
         }
         spdlog::info("Executing skill "+skill_id+".");
-        bool valid=m_core->start_control_cycle();
+        bool valid=m_core->execute_skill();
         m_skills[skill_id]->terminate();
         m_core->unload_skill();
         m_results.insert(std::make_pair(skill_id,skill->get_eval()));

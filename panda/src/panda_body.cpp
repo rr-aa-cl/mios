@@ -146,7 +146,7 @@ std::optional<std::string> PandaBody::find_robot(){
     return robot_address;
 }
 
-bool PandaBody::torque_control(std::functional<franka::Torques (const franka::RobotState &)> controller_callback){
+bool PandaBody::torque_control(std::function<franka::Torques (const franka::RobotState &)> controller_callback){
     if(m_arm_connected){
         try{
             m_panda_arm->control(controller_callback);
@@ -216,6 +216,143 @@ bool PandaBody::get_gripper_state(franka::GripperState &state) const{
 
 const std::unique_ptr<franka::Model>& PandaBody::get_panda_model() const{
     return m_panda_model;
+}
+
+bool PandaBody::start_desk_task(const std::string &task,const std::string& ip, const std::string user, const std::stirng& password){
+    disconnect_from_gripper();
+    disconnect_from_robot();
+
+    nlohmann::json response;
+    nlohmann::json request={
+        {"ip",ip},
+        {"user",user},
+        {"password",password},
+        {"task",task}
+    };
+    if(!msrm_utils::JsonUDPClient::call_method("localhost",9001,"start_task",request,response)){
+        return false;
+    }
+    if(!this->wait_for_desk_task()){
+        return false;
+    }
+    if(!this->connect_to_robot(get_robot_ip(ip))){
+        return false;
+    }
+    if(!this->connect_to_gripper(get_robot_ip(ip))){
+        return false;
+    }
+    return true;
+}
+
+void PandaBody::stop_desk_task(const std::string& ip, const std::string user, const std::stirng& password){
+    nlohmann::json response;
+    nlohmann::json request={
+        {"ip",ip},
+        {"user",user},
+        {"password",password}
+    };
+    if(!msrm_utils::JsonUDPClient::call_method("localhost",9001,"stop_task",request,response)){
+        return false;
+    }
+    return true;
+}
+
+bool PandaBody::wait_for_desk_task(){
+    nlohmann::json response,request;
+    while(true){
+        if(!msrm_utils::JsonUDPClient::call_method("localhost",9001,"start_task",request,response)){
+            return false;
+        }
+        bool finished;
+        if(response.is_null() || response.find("finished")==response.end()){
+            return false;
+        }
+        response["finished"].get_to(finished);
+        if(finished){
+            break;
+        }else{
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
+    return true;
+}
+
+bool PandaBody::shutdown_robot(const std::string& ip, const std::string user, const std::stirng& password){
+    disconnect_from_gripper();
+    disconnect_from_robot();
+    nlohmann::json response;
+    nlohmann::json request={
+        {"ip",ip},
+        {"user",user},
+        {"password",password}
+    };
+    if(!msrm_utils::JsonUDPClient::call_method("localhost",9001,"shutdown",request,response)){
+        return false;
+    }
+    return true;
+}
+
+bool PandaBody::unlock_brakes(const std::string& ip, const std::string user, const std::stirng& password){
+    disconnect_from_gripper();
+    disconnect_from_robot();
+    nlohmann::json response;
+    nlohmann::json request={
+        {"ip",ip},
+        {"user",user},
+        {"password",password}
+    };
+    if(!msrm_utils::JsonUDPClient::call_method("localhost",9001,"unlock_brakes",request,response)){
+        return false;
+    }
+    if(!this->connect_to_robot(get_robot_ip(ip))){
+        return false;
+    }
+    if(!this->connect_to_gripper(get_robot_ip(ip))){
+        return false;
+    }
+    return true;
+}
+
+bool PandaBody::lock_brakes(const std::string& ip, const std::string user, const std::stirng& password){
+    disconnect_from_gripper();
+    disconnect_from_robot();
+    nlohmann::json response;
+    nlohmann::json request={
+        {"ip",ip},
+        {"user",user},
+        {"password",password}
+    };
+    if(!msrm_utils::JsonUDPClient::call_method("localhost",9001,"lock_brakes",request,response)){
+        return false;
+    }
+    if(!this->connect_to_robot(get_robot_ip(ip))){
+        return false;
+    }
+    if(!this->connect_to_gripper(get_robot_ip(ip))){
+        return false;
+    }
+    return true;
+}
+
+bool PandaBody::move_to_pack_pose(const std::string& ip, const std::string user, const std::stirng& password){
+    disconnect_from_gripper();
+    disconnect_from_robot();
+    nlohmann::json response;
+    nlohmann::json request={
+        {"ip",ip},
+        {"user",user},
+        {"password",password}
+    };
+    if(!msrm_utils::JsonRPCClient::call_method("localhost",9001,"pack_pose",request,response)){
+        return false;
+    }
+    if(!this->connect_to_robot(get_robot_ip(ip))){
+        return false;
+    }
+    if(!this->connect_to_gripper(get_robot_ip(ip))){
+        return false;
+    }
+    return true;
 }
 
 }

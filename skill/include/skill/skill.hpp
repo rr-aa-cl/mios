@@ -78,21 +78,13 @@ struct SkillParameters{
 /**
  * The evaluation struct contains quality metrics for the skill execution and further meta information.
  */
-struct EvalSkill{
-    EvalSkill(){
-        this->config=std::make_shared<ConfigSkill>();
-        this->cost_suc=0;
-        this->cost_err=0;
-        this->success=false;
-        this->last_errors.resize(0);
-        this->results=nlohmann::json();
-        exception=false;
-    }
+class EvalSkill{
+    EvalSkill();
 
     /**
      * Pointer to the skill configuration.
      */
-    std::shared_ptr<ConfigSkill> config;
+    std::shared_ptr<SkillParameters> config;
 
     /**
      * Map that contains the percept struct at the beginning of execution of each manipulation primitive of the skill.
@@ -153,7 +145,7 @@ public:
      * The skill base constructor. It is called by the constructor of any derived skill class.
      * @param[in] type The type id of the skill.
      */
-    Skill(const std::string& type, KnowledgeBase *kb, std::shared_ptr<ConfigSkill> config, const Percept& p);
+    Skill(const std::string& type, KnowledgeBase *kb, std::shared_ptr<SkillParameters> config, const Percept& p);
 
     /**
      * The skill destructor.
@@ -216,7 +208,7 @@ public:
      * Returns a pointer to the configuration struct of this skill. It is explicitly allowed to modify the struct.
      * @return A pointer to the configuratin struct of this skill.
      */
-    template<typename T=ConfigSkill>std::shared_ptr<T> get_config() const{
+    template<typename T=SkillParameters>std::shared_ptr<T> get_config() const{
         return std::static_pointer_cast<T>(m_config);
     }
 
@@ -399,7 +391,7 @@ protected:
 
     double get_t_init() const;
 
-    std::shared_ptr<ConfigSkill> m_config;
+    std::shared_ptr<SkillParameters> m_config;
     EvalSkill m_eval;
 
     std::shared_ptr<ManipulationPrimitive> m_active_mp;

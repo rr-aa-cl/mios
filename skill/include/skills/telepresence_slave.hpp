@@ -7,7 +7,7 @@
 
 namespace mios {
 
-struct ConfigSkill_telepresence_slave : public ConfigSkill{
+struct SkillParameters_telepresence_slave : public SkillParameters{
     std::string ip_dst;
     unsigned port_dst;
     unsigned port_recv;

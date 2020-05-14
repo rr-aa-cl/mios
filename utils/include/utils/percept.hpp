@@ -104,7 +104,7 @@ public:
         double finger_temperature;
         bool is_grasping;
 
-    };
+    }proprioception;
 
     struct InternalModel{
 
@@ -136,7 +136,7 @@ public:
 
         double max_finger_width;
 
-    };
+    }internal_model;
 
     struct Controller{
 
@@ -161,7 +161,7 @@ public:
         Eigen::Matrix<double,7,1> q_d;
         Eigen::Matrix<double,7,1> dq_d;
         Eigen::Matrix<double,7,1> tau_ff;
-    };
+    }controller;
     franka::RobotMode robot_mode;
     std::chrono::high_resolution_clock::time_point time;
 };

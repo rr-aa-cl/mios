@@ -6,7 +6,7 @@
 
 namespace mios {
 
-struct ConfigSkill_gesture_haptic : public ConfigSkill{
+struct SkillParameters_gesture_haptic : public SkillParameters{
     Eigen::Matrix<double,6,1> F_trigger;
     Eigen::Matrix<int,6,1> dir_trigger;
     bool wait_for_relax;

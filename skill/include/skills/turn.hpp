@@ -2,7 +2,7 @@
 #include "skill/skill.hpp"
 #include "primitives/mp_basic.hpp"
 namespace mios{
-struct ConfigSkill_turn: public ConfigSkill{
+struct SkillParameters_turn: public SkillParameters{
 std::string skill;
 Eigen::Matrix<double,1,1> angle;
 Eigen::Matrix<double,1,1> speed;

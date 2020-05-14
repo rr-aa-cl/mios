@@ -6,7 +6,7 @@
 
 namespace mios {
 
-struct ConfigSkill_polish : public ConfigSkill{
+struct SkillParameters_polish : public SkillParameters{
     double a_x;
     double a_y;
     double f_x;

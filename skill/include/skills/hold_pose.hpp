@@ -6,13 +6,13 @@
 
 namespace mios {
 
-struct ConfigSkill_hold_pose : public ConfigSkill{
+struct SkillParameters_hold_pose : public SkillParameters{
     double t_max;
 };
 
 class hold_pose : public Skill{
 public:
-    hold_pose(KnowledgeBase *kb, std::shared_ptr<ConfigSkill> config);
+    hold_pose(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config);
 
     void evaluate();
     bool read_skill_parameters(const nlohmann::json& p);

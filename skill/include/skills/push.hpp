@@ -6,7 +6,7 @@
 
 namespace mios {
 
-struct ConfigSkill_push : public ConfigSkill{
+struct SkillParameters_push : public SkillParameters{
     double F_d;
     double t_max;
 };

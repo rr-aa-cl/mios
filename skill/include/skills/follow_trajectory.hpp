@@ -6,7 +6,7 @@
 
 
 namespace mios{
-struct ConfigSkill_follow_trajectory: public ConfigSkill{
+struct SkillParameters_follow_trajectory: public SkillParameters{
 std::vector<std::string> locations;
 bool flag_cart;
 Eigen::Matrix<double,2,1> speed;

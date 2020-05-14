@@ -2,13 +2,13 @@
 
 namespace mios {
 
-hold_pose::hold_pose(KnowledgeBase *kb, std::shared_ptr<ConfigSkill> config):Skill("hold_pose",kb,config){
+hold_pose::hold_pose(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config):Skill("hold_pose",kb,config){
 
 }
 
 bool hold_pose::read_skill_parameters(const nlohmann::json &p){
 
-    std::shared_ptr<ConfigSkill_hold_pose> c = this->get_config<ConfigSkill_hold_pose>();
+    std::shared_ptr<SkillParameters_hold_pose> c = this->get_config<SkillParameters_hold_pose>();
     if(!msrm_utils::read_json_param(p,"t_max",c->t_max)){
         msrm_utils::print_error("Missing parameter: t_max");
     }
@@ -16,7 +16,7 @@ bool hold_pose::read_skill_parameters(const nlohmann::json &p){
 }
 
 void hold_pose::create_config(){
-    m_config=std::make_shared<ConfigSkill_hold_pose>();
+    m_config=std::make_shared<SkillParameters_hold_pose>();
 }
 
 void hold_pose::build_primitives(const Percept &p){
@@ -33,7 +33,7 @@ std::tuple<bool,std::string> hold_pose::check_edges(const Percept &p){
 //}
 
 bool hold_pose::check_local_suc_conditions(const Percept &p){
-    std::shared_ptr<ConfigSkill_hold_pose> c = this->get_config<ConfigSkill_hold_pose>();
+    std::shared_ptr<SkillParameters_hold_pose> c = this->get_config<SkillParameters_hold_pose>();
     return p.time-this->get_t_init()>c->t_max;
 }
 

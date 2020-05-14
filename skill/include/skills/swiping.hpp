@@ -5,7 +5,7 @@
 #include "primitives/mp_basic.hpp"
 
 namespace mios{
-struct ConfigSkill_swiping: public ConfigSkill{
+struct SkillParameters_swiping: public SkillParameters{
 std::string skill;
 double F_c;
 Eigen::Matrix<double,2,1> speed;

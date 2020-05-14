@@ -9,9 +9,9 @@ namespace mios {
 IdleTask::IdleTask(Core *core):Task("IdleTask",core){
 }
 void IdleTask::initialize_task(){
-    this->create_skill<motions_generic_wiggle>("sleep",m_kb,std::make_shared<ConfigSkill_motions_generic_wiggle>());
-    this->create_skill<hold_pose>("hold",m_kb,std::make_shared<ConfigSkill_hold_pose>());
-    this->create_skill<move_to_pose_joint>("move",m_kb,std::make_shared<ConfigSkill_move_to_pose_joint>());
+    this->create_skill<motions_generic_wiggle>("sleep",m_kb,std::make_shared<SkillParameters_motions_generic_wiggle>());
+    this->create_skill<hold_pose>("hold",m_kb,std::make_shared<SkillParameters_hold_pose>());
+    this->create_skill<move_to_pose_joint>("move",m_kb,std::make_shared<SkillParameters_move_to_pose_joint>());
 }
 void IdleTask::execute_task(){
     std::map<std::string,std::array<unsigned,3> > colors;

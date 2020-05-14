@@ -6,7 +6,7 @@
 
 namespace mios {
 
-struct ConfigSkill_motions_generic_wiggle : public ConfigSkill{
+struct SkillParameters_motions_generic_wiggle : public SkillParameters{
     Eigen::Matrix<double,6,1> dX_fourier_a_a;
     Eigen::Matrix<double,6,1> dX_fourier_b_a;
     Eigen::Matrix<double,6,1> dX_fourier_a_f;
@@ -19,7 +19,7 @@ struct ConfigSkill_motions_generic_wiggle : public ConfigSkill{
 
 class motions_generic_wiggle : public Skill{
 public:
-    motions_generic_wiggle(KnowledgeBase *kb, std::shared_ptr<ConfigSkill> config);
+    motions_generic_wiggle(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config);
 
     void evaluate();
     bool read_skill_parameters(const nlohmann::json& p);

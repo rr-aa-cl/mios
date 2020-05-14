@@ -5,14 +5,14 @@ namespace mios{
 TestTask2::TestTask2(Core* core):Task("TestTask2",core){
 }
 void TestTask2::initialize_task(){
-    this->create_skill<test_skill_1>("t2_s1",m_kb,std::make_shared<ConfigSkill_test_skill_1>());
-    this->create_skill<test_skill_1>("t2_s2",m_kb,std::make_shared<ConfigSkill_test_skill_1>());
+    this->create_skill<test_skill_1>("t2_s1",m_kb,std::make_shared<SkillParameters_test_skill_1>());
+    this->create_skill<test_skill_1>("t2_s2",m_kb,std::make_shared<SkillParameters_test_skill_1>());
     this->create_subtask<TestTask1>("t2_t1");
 }
 void TestTask2::execute_task(){
 
-    std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t2_s1")->get_config())->run_time=0;
-    std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t2_s2")->get_config())->run_time=0;
+    std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t2_s1")->get_config())->run_time=0;
+    std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t2_s2")->get_config())->run_time=0;
 
     this->execute_skill("t2_s1");
     this->execute_subtask("t2_t1");

@@ -4,14 +4,14 @@
 #include "primitives/mp_basic.hpp"
 
 namespace mios{
-struct ConfigSkill_hand_guiding: public ConfigSkill{
+struct SkillParameters_hand_guiding: public SkillParameters{
 std::string skill;
 Eigen::Matrix<double,6,1> fix_dim;
 Eigen::Matrix<double,6,1> dist_walls;
 Eigen::Matrix<double,6,1> use_walls;
 };class hand_guiding : public Skill{
 public:
-hand_guiding(KnowledgeBase* kb,std::shared_ptr<ConfigSkill> config);
+hand_guiding(KnowledgeBase* kb,std::shared_ptr<SkillParameters> config);
 void evaluate();
 bool read_skill_parameters(const nlohmann::json& p);
 private:

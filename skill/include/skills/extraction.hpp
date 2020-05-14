@@ -6,7 +6,7 @@
 
 namespace mios {
 
-struct ConfigSkill_extraction : public ConfigSkill{
+struct SkillParameters_extraction : public SkillParameters{
     Eigen::Matrix<double,2,1> speed;
     Eigen::Matrix<double,1,1> F_contact;
     Eigen::Matrix<double,1,1> wiggle_a_t;

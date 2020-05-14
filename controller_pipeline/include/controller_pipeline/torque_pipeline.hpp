@@ -15,9 +15,11 @@ namespace mios {
 
 class CartTorqueControllerPipeline : public ControllerPipeline{
 public:
-    void initialize(const Percept& p_0,KnowledgeBase* kb);
-    franka::Finishable step(const Percept &p, const Actuator &cmd);
-    void terminate();
+    CartTorqueControllerPipeline();
+    void initialize(const Percept& p_0,KnowledgeBase* kb) override;
+    franka::Finishable* step(const Percept &p, const Actuator &cmd) override;
+    void update_percept(Percept::Controller &p) override;
+    void terminate() override;
 
 public:
     void set_virtual_cube(bool on);
@@ -50,6 +52,8 @@ private:
 
     Eigen::Matrix<double,6,1> m_virt_cube_distances;
     Eigen::Matrix<double,14,1> m_virt_joint_walls_distances;
+
+    franka::Torques m_panda_cmd;
 
 private:
     cntr_aic::cntr_aic m_cntr_aic;

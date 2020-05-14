@@ -6,7 +6,7 @@
 
 namespace mios {
 
-struct ConfigSkill_move_to_contact : public ConfigSkill{
+struct SkillParameters_move_to_contact : public SkillParameters{
     Eigen::Matrix<double,1,1> speed;
 };
 

@@ -2,7 +2,7 @@
 #include "skill/skill.hpp"
 #include "primitives/mp_basic.hpp"
 namespace mios{
-struct ConfigSkill_learner_test_skill: public ConfigSkill{
+struct SkillParameters_learner_test_skill: public SkillParameters{
 std::string skill;
 Eigen::Matrix<double,6,1> x;
 double A;

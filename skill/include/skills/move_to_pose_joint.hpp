@@ -6,7 +6,7 @@
 
 namespace mios {
 
-struct ConfigSkill_move_to_pose_joint : public ConfigSkill{
+struct SkillParameters_move_to_pose_joint : public SkillParameters{
     Eigen::Matrix<double,1,1> speed;
     Eigen::Matrix<double,1,1> acc;
     Eigen::Matrix<double,7,1> q_g;
@@ -15,7 +15,7 @@ struct ConfigSkill_move_to_pose_joint : public ConfigSkill{
 
 class move_to_pose_joint : public Skill{
 public:
-    move_to_pose_joint(KnowledgeBase *kb, std::shared_ptr<ConfigSkill> config);
+    move_to_pose_joint(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config);
 
     void evaluate();
     bool read_skill_parameters(const nlohmann::json& p);

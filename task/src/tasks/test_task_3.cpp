@@ -6,17 +6,17 @@ namespace mios{
 TestTask3::TestTask3(Core *core):Task("TestTask3",core){
 }
 void TestTask3::initialize_task(){
-    this->create_skill<test_skill_1>("t3_s1",m_kb,std::make_shared<ConfigSkill_test_skill_1>());
-    this->create_skill<test_skill_1>("t3_s2",m_kb,std::make_shared<ConfigSkill_test_skill_1>());
-    this->create_skill<test_skill_1>("t3_s3",m_kb,std::make_shared<ConfigSkill_test_skill_1>());
+    this->create_skill<test_skill_1>("t3_s1",m_kb,std::make_shared<SkillParameters_test_skill_1>());
+    this->create_skill<test_skill_1>("t3_s2",m_kb,std::make_shared<SkillParameters_test_skill_1>());
+    this->create_skill<test_skill_1>("t3_s3",m_kb,std::make_shared<SkillParameters_test_skill_1>());
     this->create_subtask<TestTask1>("t3_t1");
     this->create_subtask<TestTask2>("t3_t2");
 }
 void TestTask3::execute_task(){
 
-    std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t3_s1")->get_config())->run_time=0;
-    std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t3_s2")->get_config())->run_time=0;
-    std::static_pointer_cast<ConfigSkill_test_skill_1>(this->get_skill("t3_s3")->get_config())->run_time=0;
+    std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t3_s1")->get_config())->run_time=0;
+    std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t3_s2")->get_config())->run_time=0;
+    std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t3_s3")->get_config())->run_time=0;
 
     this->execute_skill("t3_s1");
     this->execute_subtask("t3_t1");

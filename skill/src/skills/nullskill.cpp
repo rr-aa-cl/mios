@@ -2,7 +2,12 @@
 
 namespace mios {
 
-NullSkill::NullSkill(KnowledgeBase *kb, std::shared_ptr<ConfigSkill> config):Skill("NullSkill",kb,config){
+
+bool SkillParametersNullSkill::read_parameters(const nlohmann::json &parameters){
+    return false;
+}
+
+NullSkill::NullSkill(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config):Skill("NullSkill",kb,config){
 
 }
 
@@ -15,7 +20,7 @@ bool NullSkill::read_skill_parameters(const nlohmann::json &p){
 }
 
 void NullSkill::create_config(){
-    m_config=std::make_shared<ConfigSkill_NullSkill>();
+    m_config=std::make_shared<SkillParameters_NullSkill>();
 }
 
 void NullSkill::build_primitives(const Percept &p){

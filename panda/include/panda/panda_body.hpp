@@ -20,13 +20,13 @@ public:
 
     bool pre_run_checks();
 
-    void start_desk_task(const std::string& task);
-    void stop_desk_task();
+    bool start_desk_task(const std::string& task, const std::string &ip, const std::string user, const std::string &password);
+    void stop_desk_task(const std::string &ip, const std::string user, const std::string &password);
     bool wait_for_desk_task();
-    bool shutdown_robot();
-    bool move_to_pack_pose();
-    bool unlock_brakes();
-    bool lock_brakes();
+    bool shutdown_robot(const std::string& ip, const std::string user, const std::string& password);
+    bool move_to_pack_pose(const std::string& ip, const std::string user, const std::string& password);
+    bool unlock_brakes(const std::string& ip, const std::string user, const std::string& password);
+    bool lock_brakes(const std::string& ip, const std::string user, const std::string& password);
 
 
     bool grasp(double width,double speed,double force,double epsilon_inner,double epsilon_outer);
@@ -34,11 +34,11 @@ public:
     bool home_gripper();
 
 public:
-    bool torque_control(std::functional<franka::Torques(const franka::RobotState&)> controller_callback);
-    bool cartesian_velocity_control(std::functional<franka::CartesianVelocities(const franka::RobotState&)> controller_callback);
-    bool joint_velocity_control(std::functional<franka::JointVelocities(const franka::RobotState&)> controller_callback);
-    bool cartesian_pose_control(std::functional<franka::CartesianPose(const franka::RobotState&)> controller_callback);
-    bool joint_pose_control(std::functional<franka::JointPositions(const franka::RobotState&)> controller_callback);
+    bool torque_control(std::function<franka::Torques(const franka::RobotState &)> controller_callback);
+    bool cartesian_velocity_control(std::function<franka::Finishable*(const franka::RobotState&)> controller_callback);
+    bool joint_velocity_control(std::function<franka::Finishable*(const franka::RobotState&)> controller_callback);
+    bool cartesian_pose_control(std::function<franka::Finishable*(const franka::RobotState&)> controller_callback);
+    bool joint_pose_control(std::function<franka::Finishable*(const franka::RobotState&)> controller_callback);
 
 public:
     bool set_robot_parameters(double load_m,std::array<double,3> load_com,std::array<double,9> load_I,std::array<double,7> tau_ext_contact,std::array<double,7> tau_ext_max,

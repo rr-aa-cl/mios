@@ -15,6 +15,7 @@
 
 #include "knowledge_base/concepts.hpp"
 #include "knowledge_base/local_memory.hpp"
+#include "utils/percept.hpp"
 
 #include "utils/exceptions.hpp"
 #include "bsoncxx/builder/stream/document.hpp"

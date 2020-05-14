@@ -2,11 +2,11 @@
 
 namespace mios {
 
-move_to_pose_joint::move_to_pose_joint(KnowledgeBase *kb, std::shared_ptr<ConfigSkill> config):Skill("move_to_pose_joint",kb,config){
+move_to_pose_joint::move_to_pose_joint(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config):Skill("move_to_pose_joint",kb,config){
 }
 
 bool move_to_pose_joint::read_skill_parameters(const nlohmann::json &p){
-    std::shared_ptr<ConfigSkill_move_to_pose_joint> c = this->get_config<ConfigSkill_move_to_pose_joint>();
+    std::shared_ptr<SkillParameters_move_to_pose_joint> c = this->get_config<SkillParameters_move_to_pose_joint>();
     msrm_utils::read_json_param<double,1,1>(p,"speed",c->speed);
     msrm_utils::read_json_param<double,1,1>(p,"acc",c->acc);
     msrm_utils::read_json_param<double,7,1>(p,"q_g_offset",c->q_g_offset);
@@ -19,7 +19,7 @@ bool move_to_pose_joint::read_skill_parameters(const nlohmann::json &p){
 }
 
 void move_to_pose_joint::create_config(){
-    m_config=std::make_shared<ConfigSkill_move_to_pose_joint>();
+    m_config=std::make_shared<SkillParameters_move_to_pose_joint>();
 }
 
 void move_to_pose_joint::build_primitives(const Percept &p){
@@ -28,7 +28,7 @@ void move_to_pose_joint::build_primitives(const Percept &p){
 
     std::shared_ptr<ConfigMP_mp_basic_joint> c_move_to_pose_joint = std::static_pointer_cast<ConfigMP_mp_basic_joint>(this->get_mp("move_to_pose_joint")->get_config());
 
-    std::shared_ptr<ConfigSkill_move_to_pose_joint> c = std::static_pointer_cast<ConfigSkill_move_to_pose_joint>(m_config);
+    std::shared_ptr<SkillParameters_move_to_pose_joint> c = std::static_pointer_cast<SkillParameters_move_to_pose_joint>(m_config);
 
     c_move_to_pose_joint->dq_d<<c->speed(0)*c->user.dq_max(0);
     c_move_to_pose_joint->ddq_d<<c->acc(0)*c->user.ddq_max(0);

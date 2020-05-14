@@ -3,10 +3,10 @@
 
 namespace mios{
 
-hand_guiding::hand_guiding(KnowledgeBase *kb, std::shared_ptr<ConfigSkill> config):Skill("hand_guiding",kb,config){}
+hand_guiding::hand_guiding(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config):Skill("hand_guiding",kb,config){}
 
 bool hand_guiding::read_skill_parameters(const nlohmann::json& p){
-    std::shared_ptr<ConfigSkill_hand_guiding> c = std::static_pointer_cast<ConfigSkill_hand_guiding>(m_config);
+    std::shared_ptr<SkillParameters_hand_guiding> c = std::static_pointer_cast<SkillParameters_hand_guiding>(m_config);
     if(!msrm_utils::read_json_param<double,6,1>(p,"fix_dim",c->fix_dim)){
         c->fix_dim.setZero();
     }
@@ -23,7 +23,7 @@ void hand_guiding::build_primitives(const Percept& p){
     this->insert_mp<mp_basic>("guiding",p);
     this->set_init_mp("guiding");
 
-    std::shared_ptr<ConfigSkill_hand_guiding> c = std::static_pointer_cast<ConfigSkill_hand_guiding>(m_config);
+    std::shared_ptr<SkillParameters_hand_guiding> c = std::static_pointer_cast<SkillParameters_hand_guiding>(m_config);
     std::shared_ptr<ConfigMP_mp_basic> c_guiding = std::static_pointer_cast<ConfigMP_mp_basic>(this->get_mp("guiding")->get_config());
 
     m_config->controller.virt_cube_on=true;
@@ -76,6 +76,6 @@ void hand_guiding::evaluate(){
 
 }
 void hand_guiding::create_config(){
-    m_config=std::make_shared<ConfigSkill_hand_guiding>();
+    m_config=std::make_shared<SkillParameters_hand_guiding>();
 }
 }
