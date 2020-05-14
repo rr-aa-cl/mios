@@ -9,14 +9,13 @@
 #include <msrm_utils/json.hpp>
 
 #include "skill/skill.hpp"
+#include "core/core.hpp"
 #include "task/taskobserver.hpp"
 #include "knowledge_base/knowledge_base.hpp"
 
 namespace mios {
 
-class Core;
 class KnowledgeBase;
-class Skill;
 class LEDPattern;
 
 
@@ -247,12 +246,11 @@ protected:
      *
      * @throw TaskException if a skill with the given name id already exists.
      */
-    template<typename T>void create_skill(const std::string& name,KnowledgeBase* kb,std::shared_ptr<ConfigSkill> config){
-        if(m_skills.find(name)!=m_skills.end()){
+    template<typename T>void create_skill_context(const std::string& name){
+        if(m_context.find(name)!=m_context.end()){
             throw TaskException("Skill with name "+name+" already exists, aborting...");
         }else{
-            m_skills.insert(std::pair<std::string,std::shared_ptr<Skill> >(name,std::make_shared<T>(kb,config)));
-            m_skills[name]->set_id(name);
+            m_context.insert(std::make_pair(name,std::make_shared<T>()));
         }
     }
 
@@ -270,7 +268,7 @@ protected:
         if(m_subtasks.find(name)!=m_subtasks.end()){
             throw TaskException("Subtask with name "+name+" already exists, aborting...");
         }else{
-            m_subtasks.insert(std::pair<std::string,std::shared_ptr<Task> >(name,std::make_shared<T>(m_core)));
+            m_subtasks.insert(std::make_pair(name,std::make_shared<T>(m_core)));
         }
     }
 
@@ -282,7 +280,26 @@ protected:
      * @throw TaskException if core or knowledge base are not connected, if skill with name id s does not exist in this task, or if the skill
      * has been terminated by a non-nominal event.
      */
-    void execute_skill(const std::string &s, bool log=false);
+    template<typename T>void execute_skill(const std::string &skill_id){
+        if(m_context.find(skill_id)==m_context.end()){
+            spdlog::error("Skill with id "+skill_id+" not in this task. Check your task description for consistency. Stopping task.");
+            this->abort_task();
+            throw TaskException("Skill with id "+skill_id+" not in this task. Check your task description for consistency. Stopping task.");
+        }
+        if(m_flag_stop){
+            //        msrm_utils::print_info("Task has been stopped recently, aborting skill execution.");
+            return;
+        }
+        std::shared_ptr<Skill> skill = std::make_shared<T>(m_kb,m_context[skill_id],m_core->get_percept());
+        if(!m_core->load_skill(skill)){
+            throw TaskException("Skill could not be loaded into core.");
+        }
+        spdlog::info("Executing skill "+skill_id+".");
+        bool valid=m_core->start_control_cycle();
+        m_skills[skill_id]->terminate();
+        m_core->unload_skill();
+        m_results.insert(std::make_pair(skill_id,skill->get_eval()));
+    }
 
     /**
      * Executes the subtask with the given name id. Use this ONLY in the execute_task function.
@@ -314,6 +331,8 @@ private:
     void load_description_category(const nlohmann::json& parameters, const std::string& category, const std::string& id_skill, nlohmann::json& task_descr) const;
     static std::string generate_uuid();
 
+    std::unordered_map<std::string,std::shared_ptr<SkillParameters> > m_context;
+    std::unordered_map<std::string,EvalSkill > m_results;
     std::map<std::string,std::shared_ptr<Skill> > m_skills;
     std::map<std::string,std::shared_ptr<Task> > m_subtasks;
 

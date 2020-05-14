@@ -35,7 +35,8 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/utils/include
     ${CMAKE_SOURCE_DIR}/event_publisher/include
     ${CMAKE_SOURCE_DIR}/plugins/include
-    ${CMAKE_SOURCE_DIR}/panda/include)
+    ${CMAKE_SOURCE_DIR}/panda/include
+    ${CMAKE_SOURCE_DIR}/controller_pipeline/include)
 
 set(PLUGINS mogen_p2p mogen_p2p_joint cntr_aic cntr_force cntr_joint_imp cntr_joint_var_imp cntr_mux cntr_nullsp_proj
     conv_vel2pose motion_error_cart virtual_cube virtual_walls_joint wave_variables tp_joint_lim)
@@ -44,7 +45,7 @@ link_directories(${CMAKE_SOURCE_DIR}/plugins/lib)
 set(SOURCES core/src/core.cpp event_publisher/src/event_publisher.cpp interface/src/interface.cpp interface/src/parameter_server.cpp knowledge_base/src/concepts.cpp knowledge_base/src/knowledge_base.cpp
     knowledge_base/src/local_memory.cpp led_pattern/src/led_pattern.cpp manipulation_primitive/src/manipulation_primitive.cpp skill/src/skill.cpp task/src/task.cpp task/src/task_handler.cpp
     task/src/taskfactory.cpp task/src/taskobserver.cpp
-    telemetry/src/telemetry_udp.cpp utils/src/actuator.cpp utils/src/percept.cpp panda/src/panda_body.cpp)
+    telemetry/src/telemetry_udp.cpp utils/src/actuator.cpp utils/src/percept.cpp panda/src/panda_body.cpp controller_pipeline/src/torque_pipeline.cpp)
 
 set(SOURCES_PRIMITIVES manipulation_primitive/src/primitives/mp_basic.cpp manipulation_primitive/src/primitives/mp_basic_joint.cpp manipulation_primitive/src/primitives/mp_telepresence.cpp
     manipulation_primitive/src/primitives/mp_external.cpp manipulation_primitive/src/primitives/nullprimitive.cpp)

@@ -18,6 +18,8 @@ public:
     void disconnect_from_gripper();
     bool recover();
 
+    bool pre_run_checks();
+
     void start_desk_task(const std::string& task);
     void stop_desk_task();
     bool wait_for_desk_task();
@@ -39,11 +41,14 @@ public:
     bool joint_pose_control(std::functional<franka::JointPositions(const franka::RobotState&)> controller_callback);
 
 public:
-    bool set_robot_parameters();
+    bool set_robot_parameters(double load_m,std::array<double,3> load_com,std::array<double,9> load_I,std::array<double,7> tau_ext_contact,std::array<double,7> tau_ext_max,
+                              std::array<double,6> F_ext_K_contact,std::array<double,6> F_ext_K_max,std::array<double,16> EE_T_K,std::array<double,6> K_x,std::array<double,7> K_theta,
+                              std::array<double,16> F_T_EE);
 
 public:
     bool get_robot_state(franka::RobotState& state) const;
     bool get_gripper_state(franka::GripperState& state) const;
+    const std::unique_ptr<franka::Model>& get_panda_model() const;
     std::optional<std::string> get_robot_ip(const std::optional<std::string> last_ip);
 private:
 

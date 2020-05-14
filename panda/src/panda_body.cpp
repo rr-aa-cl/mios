@@ -60,12 +60,41 @@ bool PandaBody::connect_to_gripper(const std::string &ip){
 }
 
 void PandaBody::disconnect_from_robot(){
+    m_arm_connected=false;
     m_panda_model.release();
     m_panda_arm.release();
 }
 
 void PandaBody::disconnect_from_gripper(){
+    m_hand_connected=false;
     m_panda_hand.release();
+}
+
+bool PandaBody::recover(){
+    if(m_arm_connected){
+        return true;
+    }
+    try{
+        m_panda_arm->automaticErrorRecovery();
+        return true;
+    }catch(const franka::NetworkException& e){
+        spdlog::debug(e.what());
+        return false;
+    }catch(const franka::CommandException& e){
+        spdlog::debug(e.what());
+        return false;
+    }
+}
+
+bool PandaBody::pre_run_checks(){
+    franka::RobotState state;
+    if(!get_robot_state(state)){
+        return false;
+    }
+    if(state.robot_mode!=franka::RobotMode::kIdle){
+        return false;
+    }
+    return true;
 }
 
 bool PandaBody::is_robot(const std::string &ip){
@@ -126,6 +155,67 @@ bool PandaBody::torque_control(std::functional<franka::Torques (const franka::Ro
             spdlog::debug(e.what());
         }
     }
+}
+
+bool PandaBody::set_robot_parameters(double load_m,std::array<double,3> load_com,std::array<double,9> load_I,std::array<double,7> tau_ext_contact,std::array<double,7> tau_ext_max,
+                                     std::array<double,6> F_ext_K_contact,std::array<double,6> F_ext_K_max,std::array<double,16> EE_T_K,std::array<double,6> K_x,std::array<double,7> K_theta,
+                                     std::array<double,16> F_T_EE){
+    if(!m_arm_connected){
+        return true;
+    }
+    try{
+        m_panda_arm->setLoad(load_m,load_com,load_I);
+        m_panda_arm->setEE(F_T_EE);
+        m_panda_arm->setCollisionBehavior(tau_ext_contact,tau_ext_max,F_ext_K_contact,F_ext_K_max);
+        m_panda_arm->setK(EE_T_K);
+        m_panda_arm->setCartesianImpedance(K_x);
+        m_panda_arm->setJointImpedance(K_theta);
+    }catch(franka::CommandException& e){
+        spdlog::debug(e.what());
+        return false;
+    }catch(franka::NetworkException& e){
+        spdlog::debug(e.what());
+        return false;
+    }
+    return true;
+}
+
+bool PandaBody::get_robot_state(franka::RobotState &state) const{
+    if(m_arm_connected){
+        try{
+            state=m_panda_arm->readOnce();
+            return true;
+        }catch(const franka::InvalidOperationException& e){
+            spdlog::debug(e.what());
+            return false;
+        }catch(const franka::NetworkException& e){
+            spdlog::debug(e.what());
+            return false;
+        }
+    }else{
+        return false;
+    }
+}
+
+bool PandaBody::get_gripper_state(franka::GripperState &state) const{
+    if(m_hand_connected){
+        try{
+            state=m_panda_hand->readOnce();
+            return true;
+        }catch(const franka::InvalidOperationException& e){
+            spdlog::debug(e.what());
+            return false;
+        }catch(const franka::NetworkException& e){
+            spdlog::debug(e.what());
+            return false;
+        }
+    }else{
+        return false;
+    }
+}
+
+const std::unique_ptr<franka::Model>& PandaBody::get_panda_model() const{
+    return m_panda_model;
 }
 
 }

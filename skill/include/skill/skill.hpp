@@ -27,8 +27,8 @@ const static std::set<std::string> global_skill_parameters={"time_max,w_cost_fun
 /**
  * The base struct for the skill configuration defines common parameters for all skills.
  */
-struct ConfigSkill{
-    ConfigSkill(){
+struct SkillParameters{
+    SkillParameters(){
         this->time_max=0;
         this->w_cost_function.resize(10);
         this->w_cost_function[0]=1;
@@ -37,6 +37,8 @@ struct ConfigSkill{
         this->k_h_p.setZero();
         this->k_h_d.setZero();
     }
+
+    virtual bool read_parameters(const nlohmann::json& parameters) = 0;
 
     ConfigFrames frames;
     ConfigGeneral general;
@@ -165,7 +167,7 @@ public:
      */
     bool initialize(const Percept &p);
 
-    void write_O_R_TF(const Percept& p);
+    void write_O_R_TF_to_config(const Percept& p);
 
     /**
      * Calculates O_R_TF for this skill. It can be static, provided in the task description or based on the percept at time of skill execution.
@@ -208,7 +210,7 @@ public:
      * Returns a const reference to the evaluation struct of this skill.
      * @return A const reference to the evaluation struct of this skill.
      */
-    const EvalSkill& get_eval() const;
+    EvalSkill get_eval() const;
 
     /**
      * Returns a pointer to the configuration struct of this skill. It is explicitly allowed to modify the struct.

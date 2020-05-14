@@ -116,12 +116,6 @@ bool Task::load(const nlohmann::json &parameters){
             return false;
         }
 
-        for(auto& s : m_skills){
-            s.second->create_config();
-            s.second->set_kb(m_kb);
-            s.second->get_config()->w_cost_function=m_w_cost_function;
-        }
-
         for(auto& t : m_subtasks){
             nlohmann::json parameters_sub=nlohmann::json();
             if(parameters.find("subtasks")!=parameters.end()){
@@ -134,21 +128,22 @@ bool Task::load(const nlohmann::json &parameters){
                 return false;
             }
         }
-        for(auto& s : m_skills){
+        for(auto& s : m_context){
             if(!m_core->get_kb()->load_parameters()){
                 spdlog::error("Could not load parameters from knowledge base");
                 return false;
             }
-            std::string id_skill=s.second->get_id();
-            s.second->get_config()->controller=m_core->get_kb()->get_local_memory()->access_config_cntr();
-            s.second->get_config()->frames=m_core->get_kb()->get_local_memory()->access_config_frames();
-            s.second->get_config()->general=m_core->get_kb()->get_local_memory()->access_config_general();
-            s.second->get_config()->limits=m_core->get_kb()->get_local_memory()->access_config_limits();
-            s.second->get_config()->system=m_core->get_kb()->get_local_memory()->access_config_system();
-            s.second->get_config()->user=m_core->get_kb()->get_local_memory()->access_config_user();
+            std::string id_skill=s.first;
+            std::string skill_type=task_descr["skills"][id_skill]["type"];
+            s.second->controller=m_core->get_kb()->get_local_memory()->access_config_cntr();
+            s.second->->frames=m_core->get_kb()->get_local_memory()->access_config_frames();
+            s.second->general=m_core->get_kb()->get_local_memory()->access_config_general();
+            s.second->limits=m_core->get_kb()->get_local_memory()->access_config_limits();
+            s.second->system=m_core->get_kb()->get_local_memory()->access_config_system();
+            s.second->user=m_core->get_kb()->get_local_memory()->access_config_user();
 
             nlohmann::json skill_descr;
-            if(!m_core->get_kb()->load_skill(s.second->get_type(),skill_descr)){
+            if(!m_core->get_kb()->load_skill(skill_type,skill_descr)){
                 spdlog::error("Could not load a valid skill description for "+id_skill+".");
                 return false;
             }
@@ -182,16 +177,16 @@ bool Task::load(const nlohmann::json &parameters){
             if(task_descr.find("skills")!=task_descr.end()){
                 if(task_descr["skills"].find(id_skill)!=task_descr["skills"].end()){
                     if(task_descr["skills"][id_skill].find("control")!=task_descr["skills"][id_skill].end()){
-                        s.second->get_config()->controller.read_parameters(task_descr["skills"][id_skill]["control"]);
+                        s.second->controller.read_parameters(task_descr["skills"][id_skill]["control"]);
                     }
                     if(task_descr["skills"][id_skill].find("frames")!=task_descr["skills"][id_skill].end()){
-                        s.second->get_config()->frames.read_parameters(task_descr["skills"][id_skill]["frames"]);
+                        s.second->frames.read_parameters(task_descr["skills"][id_skill]["frames"]);
                     }
                     if(task_descr["skills"][id_skill].find("genral")!=task_descr["skills"][id_skill].end()){
-                        s.second->get_config()->general.read_parameters(task_descr["skills"][id_skill]["general"]);
+                        s.second->general.read_parameters(task_descr["skills"][id_skill]["general"]);
                     }
                     if(task_descr["skills"][id_skill].find("user")!=task_descr["skills"][id_skill].end()){
-                        s.second->get_config()->user.read_parameters(task_descr["skills"][id_skill]["user"]);
+                        s.second->user.read_parameters(task_descr["skills"][id_skill]["user"]);
                     }
                 }
             }
@@ -218,7 +213,7 @@ bool Task::load(const nlohmann::json &parameters){
                 }
             }
 
-            if(!s.second->read_skill_parameters(task_descr["skills"][id_skill]["skill"])){
+            if(!s.second->read_parameters(task_descr["skills"][id_skill]["skill"])){
                 spdlog::error("Could not load skill parameters from task description for skill "+id_skill+".");
                 return false;
             }
@@ -234,7 +229,7 @@ bool Task::load(const nlohmann::json &parameters){
                     for(unsigned i=0;i<skill_descr["objects"].size();i++){
                         objects.insert(std::pair<std::string,std::string>(skill_descr["objects"][i],task_descr["skills"][id_skill]["objects"][i]));
                     }
-                    if(!s.second->load_objects(objects)){
+                    if(!s.second->objects=objects){
                         spdlog::error("Could not load objects for skill "+id_skill);
                         return false;
                     }
@@ -251,9 +246,6 @@ bool Task::load(const nlohmann::json &parameters){
         return false;
     }
     spdlog::info("Task configuration loaded.");
-
-    m_core->get_mios_state()->active_task=get_id();
-
     return true;
 }
 

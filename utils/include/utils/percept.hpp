@@ -11,7 +11,7 @@ namespace mios {
 
 class Percept{
 public:
-    update(std::unique_ptr<franka::Model> const& model, const franka::RobotState& robot_state, const franka::GripperState &gripper_state,Eigen::Matrix<double,3,3> O_R_TF);
+    void update(std::unique_ptr<franka::Model> const& model, const franka::RobotState& robot_state, const franka::GripperState &gripper_state,std::optional<Eigen::Matrix<double,3,3> > O_R_TF);
 
     struct Proprioception{
 

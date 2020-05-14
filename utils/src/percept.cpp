@@ -3,7 +3,7 @@
 
 namespace mios {
 
-void Percept::update(std::unique_ptr<franka::Model> const& model, const franka::RobotState &robot_state, const franka::GripperState &gripper_state,Eigen::Matrix<double,3,3> O_R_TF){
+void Percept::update(std::unique_ptr<franka::Model> const& model, const franka::RobotState &robot_state, const franka::GripperState &gripper_state,std::optional<Eigen::Matrix<double,3,3> > O_R_TF){
 
     // Internal Model
     InternalModel.B_J_EE=Eigen::Matrix<double,6,7>(model->bodyJacobian(franka::Frame::kEndEffector,robot_state).data());
@@ -29,9 +29,10 @@ void Percept::update(std::unique_ptr<franka::Model> const& model, const franka::
     Proprioception.O_F_ext_K=Eigen::Matrix<double,6,1>(robot_state.O_F_ext_hat_K.data());
     Proprioception.K_F_ext_K=Eigen::Matrix<double,6,1>(robot_state.K_F_ext_hat_K.data());
 
-    Proprioception.TF_T_EE=msrm_utils::rotate_matrix(Proprioception.O_T_EE,O_R_TF.transpose());
-    Proprioception.TF_F_ext_K=msrm_utils::rotate_vector(Proprioception.O_F_ext_K,O_R_TF.transpose());
-    Proprioception.TF_dX_EE=msrm_utils::rotate_vector(Proprioception.O_dX_EE,O_R_TF.transpose());
+    Eigen::Matrix<double,3,3> O_R_TF_id = Eigen::Matrix<double,3,3>::Identity();
+    Proprioception.TF_T_EE=msrm_utils::rotate_matrix(Proprioception.O_T_EE,O_R_TF.value_or(O_R_TF_id).transpose());
+    Proprioception.TF_F_ext_K=msrm_utils::rotate_vector(Proprioception.O_F_ext_K,O_R_TF.value_or(O_R_TF_id).transpose());
+    Proprioception.TF_dX_EE=msrm_utils::rotate_vector(Proprioception.O_dX_EE,O_R_TF.value_or(O_R_TF_id).transpose());
 
     Proprioception.finger_width=gripper_state.width;
     Proprioception.finger_temperature=gripper_state.temperature;

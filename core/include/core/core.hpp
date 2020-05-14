@@ -19,25 +19,17 @@
 
 #include "utils/types.hpp"
 #include "utils/percept.hpp"
-
-
-#include "plugins/cntr_aic_wrapper.hpp"
-#include "plugins/cntr_force_wrapper.hpp"
-#include "plugins/cntr_joint_var_imp_wrapper.hpp"
-#include "plugins/cntr_mux_wrapper.hpp"
-#include "plugins/conv_vel2pose_wrapper.hpp"
-#include "plugins/virtual_cube_wrapper.hpp"
-#include "plugins/virtual_walls_joint_wrapper.hpp"
-#include "plugins/cntr_nullsp_proj_wrapper.hpp"
-#include "plugins/motion_error_cart_wrapper.hpp"
+#include "utils/actuator.hpp"
 
 #include <msrm_utils/geometry.hpp>
+#include "controller_pipeline/torque_pipeline.hpp"
 
 
 namespace mios {
 
+enum ControlMode{mCartTorque,mJointTorque,mCartVelocity,mJointVelocity};
+
 class Skill;
-class CmdSkill;
 
 class Core{
 public:
@@ -50,7 +42,6 @@ public:
     bool reset();
     bool write_config_to_robot();
 //    void stop();
-    bool recover();
     bool has_terminated() const;
 
     void login_digital_twin();
@@ -72,12 +63,12 @@ public:
     KnowledgeBase *get_kb();
     void set_live_parameter_server(ParameterServer *server);
 
-    bool start_control_cycle();
+    bool execute_skill();
     void terminate_control_cycle();
 
     MiosState* get_mios_state();
 
-    bool load_skill(std::shared_ptr<Skill> skill, bool log=false);
+    bool load_skill(std::shared_ptr<Skill> skill);
     void unload_skill();
     void toggle_skill_pause(bool pause);
 
@@ -90,7 +81,8 @@ public:
     bool home_gripper();
     bool set_grasped_object(const std::string& o);
 
-    bool refresh_percept(Eigen::Matrix<double, 3, 3> O_R_TF=Eigen::Matrix<double,3,3>::Zero(3,3), bool wait=false);
+    bool refresh_percept(std::optional<Eigen::Matrix<double, 3, 3> > O_R_TF);
+    const Percept& get_percept() const;
 
     // Sound output
     bool init_sound();
@@ -109,20 +101,9 @@ private:
     bool set_ee();
 
     // controller
-    void initialize_control_aic(const Percept &p);
     void initialize_control_joint_imp(const Percept &p);
-    void initialize_control_force(const Percept &p);
-    void initialize_control_mux(const Percept &p);
-    void initialize_virtual_cube(const Percept &p);
-    void initialize_virtual_walls_joint(const Percept &p);
-    void initialize_control_nullspace(const Percept &p);
     void initialize_motion_error(const Percept &p);
-    void input_control_aic(const Percept &p);
     void input_control_joint_imp(const Percept &p);
-    void input_control_force(const Percept &p);
-    void input_control_mux(const Percept &p);
-    void input_virtual_cube(const Percept &p);
-    void input_virtual_walls_joint(const Percept &p);
     void input_control_nullspace(const Percept &p);
     void input_motion_error(const Percept &p);
     void terminate_control();
@@ -137,7 +118,7 @@ private:
     void gripper_cycle();
     void terminate_gripper();
 
-    bool control_base_cycle(const franka::RobotState state, CmdSkill &cmd);
+    Actuator* control_base_cycle(const franka::RobotState& state);
     franka::Torques control_cycle_torque_cart(const franka::RobotState state);
     franka::Torques control_cycle_torque_joint(const franka::RobotState state);
     franka::CartesianVelocities control_cycle_velocity_cart(const franka::RobotState state);
@@ -239,13 +220,15 @@ private:
     motion_error_cart::Out_Y_motion_error_cart _out_y_motion_error_cart;
 
     KnowledgeBase _kb;
-    std::shared_ptr<Skill> _active_skill;
+    std::shared_ptr<Skill> m_active_skill;
 
     std::map<std::string,unsigned> _led_panel_id;
     nlohmann::json event;
     std::chrono::system_clock::time_point t_event;
 
     PandaBody m_panda_body;
+
+    std::unique_ptr<ControllerPipeline> m_controller_pipeline;
 
 };
 

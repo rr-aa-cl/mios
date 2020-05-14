@@ -118,34 +118,6 @@ bool Core::check_lockdown() const{
     return this->_flag_lockdown;
 }
 
-bool Core::recover(){
-    if(this->_kb.get_local_memory()->access_config_system().has_robot){
-        if(this->m_panda_body==nullptr){
-            spdlog::error("Robot is not connected, attempting to reinitialize.");
-            if(!this->terminate()){
-                spdlog::error("Re-initialization has failed.");
-                return false;
-            }
-            if(!this->initialize()){
-                spdlog::error("Re-initialization has failed.");
-                return false;
-            }
-        }
-    }else{
-        return true;
-    }
-    try{
-        this->m_panda_body->automaticErrorRecovery();
-    }catch(const franka::NetworkException& e){
-        std::cout<<e.what()<<std::endl;
-        return false;
-    }catch(const franka::CommandException& e){
-        std::cout<<e.what()<<std::endl;
-        return false;
-    }
-    return true;
-}
-
 bool Core::lock_robot_connection(bool force_lock){
     //    if(this->check_lockdown()){
     //        spdlog::error("Core is under lockdown.");
@@ -255,8 +227,8 @@ bool Core::write_config_to_robot(){
             return false;
         }
         this->m_panda_body->setCollisionBehavior(msrm_utils::convert_to_array<double,7,1>(c_user.tau_contact),
-                                           msrm_utils::convert_to_array<double,7,1>(c_limits.tau_ext_max),
-                                           msrm_utils::convert_to_array<double,6,1>(c_user.F_contact),
+                                                 msrm_utils::convert_to_array<double,7,1>(c_limits.tau_ext_max),
+                                                 msrm_utils::convert_to_array<double,6,1>(c_user.F_contact),
         {c_limits.F_ext_max(0),c_limits.F_ext_max(0),c_limits.F_ext_max(0),c_limits.F_ext_max(1),c_limits.F_ext_max(1),c_limits.F_ext_max(1)});
         this->m_panda_body->setK(msrm_utils::convert_to_array<double,4,4>(c_frames.EE_T_K));
 
@@ -364,53 +336,6 @@ bool Core::validity_check_torque(std::array<double,7>& tau_J){
     return true;
 }
 
-bool Core::validity_check_virtual_cube(){
-    std::array<bool,3> in_cube={false,false,false};
-    Eigen::Matrix<double,6,1> dist_walls = this->get_kb()->get_local_memory()->access_config_cntr().virt_cube_walls;
-    bool safe_activation=true;
-    for(unsigned i=0;i<6;i++){
-        if(fabs(this->_out_y_virt_cube.wall_flag(i))>0){
-            safe_activation=false;
-            break;
-        }
-    }
-    for(unsigned i=0;i<3;i++){
-        if(this->_percept.O_T_EE(i,3)>dist_walls(i*2) || this->_percept.O_T_EE(i,3)<dist_walls(i*2+1)){
-            in_cube[i]=false;
-        }else{
-            in_cube[i]=true;
-        }
-    }
-    if(in_cube[0] && in_cube[1] && in_cube[2] && safe_activation){
-        this->_flag_virt_cube_valid=true;
-    }
-    return this->_flag_virt_cube_valid;
-}
-
-bool Core::validity_check_virtual_walls_joint(){
-    std::array<bool,7> in_walls={false,false,false,false,false,false,false};
-    Eigen::Matrix<double,14,1> dist_walls = this->get_kb()->get_local_memory()->access_config_cntr().virt_walls_joint_walls;
-
-    bool safe_activation=true;
-    for(unsigned i=0;i<7;i++){
-        if(fabs(this->_out_y_virt_walls_joint.wall_flag(i))>0){
-            safe_activation=false;
-            break;
-        }
-    }
-    for(unsigned i=0;i<7;i++){
-        if(this->_percept.q(i)>dist_walls(i*2) || this->_percept.q(i)<dist_walls(i*2+1)){
-            in_walls[i]=false;
-        }else{
-            in_walls[i]=true;
-        }
-    }
-    if(in_walls[0] && in_walls[1] && in_walls[2] && in_walls[3] && in_walls[4] && in_walls[5] && in_walls[6] && safe_activation){
-        this->_flag_virt_walls_joint_valid=true;
-    }
-    return this->_flag_virt_walls_joint_valid;
-}
-
 bool Core::validity_check_velocity_cart(std::array<double, 6> &O_dP_EE_d){
     const ConfigLimits& c_limits=this->_kb.get_local_memory()->access_config_limits();
     const ConfigFrames& c_frames=this->_kb.get_local_memory()->access_config_frames();
@@ -476,192 +401,39 @@ bool Core::validity_check_velocity_joint(std::array<double, 7> &dq_d){
     return true;
 }
 
-std::string Core::get_ip_robot(){
-    const ConfigSystem& c=this->_kb.get_local_memory()->access_config_system();
-    if(c.ip_robot!="none"){
-        if(msrm_utils::ping(c.ip_robot.c_str())==false){
-            spdlog::warn("IP was set to "+c.ip_robot+" but no device has been found. Searching for new connection...");
-            nlohmann::json p;
-            p["ip_robot"]="none";
-            this->_kb.get_local_memory()->modify_config_system(p);
-            this->_kb.set_parameter("ip_robot","system","none");
-        }else{
-            if(!this->test_robot_connection(c.ip_robot)){
-                spdlog::warn("IP was set to "+c.ip_robot+" but no compatible robot seems to be connected. Searching for new connection...");
-                nlohmann::json p;
-                p["ip_robot"]="none";
-                this->_kb.get_local_memory()->modify_config_system(p);
-                this->_kb.set_parameter("ip_robot","system","none");
-            }
-        }
-    }
-
-    if(c.ip_robot=="none"){
-        std::string ip=this->find_robot();
-        if(ip=="none"){
-            spdlog::error("No robot seems to be connected.");
-        }else{
-            nlohmann::json p;
-            p["ip_robot"]=ip;
-            this->_kb.get_local_memory()->modify_config_system(p);
-            this->_kb.set_parameter("ip_robot","system",ip);
-        }
-    }
-    return c.ip_robot;
-}
-
-std::string Core::get_ip_primary(){
-    //    ConfigGlobal* c=this->_kb.get_local_memory()->get_config_global();
-    //    if(c->ip_primary!="none"){
-    //        if(msrm_utils::ping(c->ip_primary.c_str())==1){
-    //            spdlog::warn("Last known IP of primary was "+c->ip_primary+" but I can not ping it. Searching for new connection...");
-    //            c->ip_primary="none";
-    //            this->_kb.set_parameter("ip_primary",c->ip_primary);
-    //        }else{
-    //            if(!this->test_primary_connection(c->ip_primary)){
-    //                spdlog::warn("Last known IP of primary was "+c->ip_primary+" but I do not receive any response. Searching for new connection...");
-    //                c->ip_primary="none";
-    //                this->_kb.set_parameter("ip_primary",c->ip_primary);
-    //            }
-    //        }
-    //    }
-    //    if(c->ip_primary=="none"){
-    //        std::string ip=this->find_primary();
-    //        c->ip_primary=ip;
-    //        this->_kb.set_parameter("ip_primary",c->ip_primary);
-    //    }
-    //    return c->ip_primary;
-    return "void";
-}
-
-bool Core::connect_to_robot(){
-    std::string ip=this->get_ip_robot();
-    if(ip=="none"){
-        return false;
-    }
-    try{
-        this->m_panda_body = std::make_unique<franka::Robot>(ip);
-        this->m_panda_model = std::make_unique<franka::Model>(this->m_panda_body->loadModel());
-        this->_flag_robot_connected=true;
-    }catch(const franka::NetworkException& e){
-        std::cout << e.what() << std::endl;
-        spdlog::error("Cannot connect to robot at IP "+ip);
-        return false;
-    }catch(const franka::IncompatibleVersionException& e){
-        std::cout<<e.what()<<std::endl;
-        spdlog::error("Cannot connect to robot at IP "+ip);
-        exit(-1);
-    }catch(const franka::ModelException& e){
-        std::cout<<e.what()<<std::endl;
-        spdlog::error("Model could not be loaded.");
-        return false;
-    }
-    //    msrm_utils::print_success("done");
-    return true;
-}
-
-bool Core::connect_to_gripper(){
-    try{
-        this->m_panda_hand = std::make_unique<franka::Gripper>(this->_kb.get_local_memory()->access_config_system().ip_robot);
-        this->_flag_gripper_connected=true;
-    }catch(const franka::NetworkException& e){
-        std::cout << e.what() << std::endl;
-        spdlog::error("Can not connect to gripper");
-        return false;
-    }catch(const franka::IncompatibleVersionException& e){
-        std::cout<<e.what()<<std::endl;
-        spdlog::error("Can not connect to gripper");
-        return false;
-    }
-    //    msrm_utils::print_success("done");
-    return true;
-}
-
-bool Core::conncet_to_primary(){
-    return true;
-}
-
-bool Core::disconnect_from_robot(){
-    this->m_panda_model=nullptr;
-    this->m_panda_body=nullptr;
-    this->_flag_robot_connected=false;
-    return true;
-}
-
-bool Core::disconnect_from_gripper(){
-    this->terminate_gripper();
-    this->m_panda_hand=nullptr;
-    this->_flag_gripper_connected=false;
-    return true;
-}
-
 MiosState* Core::get_mios_state(){
     return &this->_percept.mios_state;
 }
 
-bool Core::load_skill(std::shared_ptr<Skill> skill, bool log){
-    if(this->check_lockdown()){
-        spdlog::error("Core is under lockdown.");
-        return false;
-    }
+bool Core::load_skill(std::shared_ptr<Skill> skill){
     spdlog::info("Loading skill "+skill->get_id()+".");
     // set active skill and setup
-    this->_active_skill=skill;
-    try{
-        if(this->_kb.get_local_memory()->access_config_system().has_robot){
-            this->lock_robot_connection();
-            if(this->_kb.get_local_memory()->access_config_system().has_gripper){
-                this->m_panda_hand->readOnce();
-                this->_gripper_state=this->m_panda_hand->readOnce();
-            }
-            franka::RobotState state=this->m_panda_body->readOnce();
-            this->process_percept(state,this->_gripper_state);
-            this->unlock_robot_connection();
-        }
-        spdlog::info("Write O_R_TF");
-        this->_active_skill->write_O_R_TF(this->_percept);
-        if(this->_kb.get_local_memory()->access_config_system().has_robot){
-            this->lock_robot_connection();
-            if(this->_kb.get_local_memory()->access_config_system().has_gripper){
-                this->_gripper_state=this->m_panda_hand->readOnce();
-            }
-            this->process_percept(this->m_panda_body->readOnce(),this->_gripper_state);
-            this->unlock_robot_connection();
-        }
-        spdlog::info("Write O_R_TF_end");
-        this->_percept.K_x=this->_active_skill->get_config<>()->controller.K_0;
-        this->_percept.xi_x=this->_active_skill->get_config<>()->controller.xi;
-        this->_percept.K_theta=this->_active_skill->get_config<>()->controller.K_theta;
-        this->_percept.xi_theta=this->_active_skill->get_config<>()->controller.xi_theta;
-        spdlog::info("Initializing skill "+this->_active_skill->get_id()+"...",false);
-        if(!this->_active_skill->initialize(this->_percept)){
-            spdlog::info("failed.");
-            return false;
-        }
-        spdlog::info("done.");
-        this->_kb.get_local_memory()->upload_config_cntr(this->_active_skill->get_config<>()->controller);
-        this->_kb.get_local_memory()->upload_config_frames(this->_active_skill->get_config<>()->frames);
-        this->_kb.get_local_memory()->upload_config_general(this->_active_skill->get_config<>()->general);
-        this->_kb.get_local_memory()->upload_config_user(this->_active_skill->get_config<>()->user);
-
-        this->start_telemetry();
-    }catch(const franka::InvalidOperationException& e){
-        std::cout<<e.what()<<std::endl;
-        this->unlock_robot_connection();
-        return false;
-    }catch(const franka::NetworkException& e){
-        std::cout<<e.what()<<std::endl;
-        this->unlock_robot_connection();
+    m_active_skill=skill;
+    refresh_percept();
+    m_active_skill->write_O_R_TF_to_config(m_percept);
+    refresh_percept(m_active_skill->get_config<>()->frames.O_R_TF);
+    m_percept.Controller.K_x=m_active_skill->get_config<>()->controller.K_0;
+    m_percept.Controller.xi_x=m_active_skill->get_config<>()->controller.xi;
+    m_percept.Controller.K_theta=m_active_skill->get_config<>()->controller.K_theta;
+    m_percept.Controller.xi_theta=m_active_skill->get_config<>()->controller.xi_theta;
+    spdlog::info("Initializing skill "+m_active_skill->get_id);
+    if(!m_active_skill->initialize(m_percept)){
+        spdlog::info("failed.");
         return false;
     }
+    spdlog::info("done.");
+    this->_kb.get_local_memory()->upload_config_cntr(m_active_skill->get_config<>()->controller);
+    this->_kb.get_local_memory()->upload_config_frames(m_active_skill->get_config<>()->frames);
+    this->_kb.get_local_memory()->upload_config_general(m_active_skill->get_config<>()->general);
+    this->_kb.get_local_memory()->upload_config_user(m_active_skill->get_config<>()->user);
+
     return true;
 }
 
 void Core::unload_skill(){
-    this->_active_skill=std::make_shared<NullSkill>(&_kb,std::make_shared<ConfigSkill>());
+    m_active_skill=std::make_shared<NullSkill>(&_kb,std::make_shared<ConfigSkill>());
     this->_kb.load_parameters();
     this->_flag_stop_control=false;
-    this->terminate_telemetry();
 }
 
 void Core::toggle_skill_pause(bool pause){
@@ -703,44 +475,6 @@ void Core::terminate_periphery(){
     }
 }
 
-void Core::initialize_control_aic(const Percept& p){
-
-    cntr_aic::In_P_cntr_aic in_p_aic;
-    conv_vel2pose::In_P_conv_vel2pose in_p_vel2pose;
-    const ConfigController& c_cntr=this->_kb.get_local_memory()->access_config_cntr();
-    const ConfigFrames& c_frames=this->_kb.get_local_memory()->access_config_frames();
-    in_p_aic.alpha=c_cntr.alpha;
-    in_p_aic.beta=c_cntr.beta;
-    in_p_aic.gamma_a=c_cntr.gamma_a;
-    in_p_aic.gamma_b=c_cntr.gamma_b;
-    in_p_aic.L=c_cntr.L;
-    in_p_aic.K_0=c_cntr.K_0;
-    in_p_aic.F_ff_0=c_cntr.F_ff_0;
-    in_p_aic.xi=c_cntr.xi;
-    in_p_aic.F_ff_max=c_cntr.F_ff_max;
-    in_p_aic.dF_ff_max=c_cntr.dF_ff_max;
-    in_p_aic.K_max=c_cntr.K_max;
-    in_p_aic.dK_max=c_cntr.dK_max;
-    in_p_aic.O_R_TF=c_frames.O_R_TF;
-    in_p_aic.EE_T_K=c_frames.EE_T_K;
-    in_p_aic.dtau_max<<1000,1000,1000,1000,1000,1000,1000;
-    in_p_aic.tau_max<<87,87,87,87,12,12,12;
-    in_p_aic.TF_control<<c_cntr.TF_control;
-    in_p_aic.kappa<<c_cntr.kappa;
-
-    this->input_control_aic(p);
-
-    this->_in_u_aic.K_x=c_cntr.K_0;
-    this->_in_u_aic.xi_x=c_cntr.xi;
-
-    this->_cntr_aic.initialize(this->_in_u_aic,in_p_aic);
-    this->_conv_vel2pose.initialize(this->_in_u_vel2pose,in_p_vel2pose);
-
-    this->_percept.K_x=c_cntr.K_0;
-    this->_percept.xi_x=c_cntr.xi;
-
-}
-
 void Core::initialize_control_joint_imp(const Percept &p){
     cntr_joint_var_imp::In_P_cntr_joint_var_imp in_p_joint_imp;
     const ConfigController& c_cntr=this->_kb.get_local_memory()->access_config_cntr();
@@ -760,86 +494,6 @@ void Core::initialize_control_joint_imp(const Percept &p){
     this->_percept.xi_theta=c_cntr.xi_theta;
 }
 
-void Core::initialize_control_force(const Percept &p){
-    cntr_force::In_P_cntr_force in_p_force;
-    const ConfigController& c_cntr=this->_kb.get_local_memory()->access_config_cntr();
-    in_p_force.active=c_cntr.f_cntr_active;
-    in_p_force.dF_d_max=c_cntr.dF_c_max;
-    in_p_force.F_d_max=c_cntr.F_c_max;
-    in_p_force.dtau_max<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),
-            std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max();
-    in_p_force.tau_max<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),
-            std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max();
-    in_p_force.k_p=c_cntr.f_cntr_k_p;
-    in_p_force.k_i=c_cntr.f_cntr_k_i;
-    in_p_force.k_d=c_cntr.f_cntr_k_d;
-    in_p_force.k_d_N=c_cntr.f_cntr_k_d_N;
-    in_p_force.d_max=c_cntr.f_cntr_d_max;
-    in_p_force.phi_max=c_cntr.f_cntr_phi_max;
-    in_p_force.sf_on<<c_cntr.f_cntr_sf_on;
-
-    this->input_control_force(p);
-
-    this->_cntr_force.initialize(this->_in_u_force,in_p_force);
-}
-
-void Core::initialize_control_mux(const Percept &p){
-    cntr_mux::In_P_cntr_mux in_p_mux;
-    const ConfigController& c_cntr=this->_kb.get_local_memory()->access_config_cntr();
-
-    in_p_mux.dtau_max=c_cntr.dtau_c_max;
-    in_p_mux.tau_max=c_cntr.tau_c_max;
-    this->_cntr_mux.initialize(this->_in_u_mux,in_p_mux);
-}
-
-void Core::initialize_virtual_cube(const Percept &p){
-    virtual_cube::In_P_virtual_cube in_p_virt_cube;
-    const ConfigController& c_cntr=this->_kb.get_local_memory()->access_config_cntr();
-    in_p_virt_cube.damping_distance=c_cntr.virt_cube_damp_dist;
-    in_p_virt_cube.damping_factor=c_cntr.virt_cube_damp;
-    in_p_virt_cube.eta=c_cntr.virt_cube_eta;
-    in_p_virt_cube.rho_min=c_cntr.virt_cube_rho_min;
-    in_p_virt_cube.cube_walls=c_cntr.virt_cube_walls;
-    in_p_virt_cube.f_max=c_cntr.virt_cube_f_max;
-    this->_virt_cube.initialize(this->_in_u_virt_cube,in_p_virt_cube);
-
-    this->_flag_virt_cube_valid=false;
-}
-
-void Core::initialize_virtual_walls_joint(const Percept &p){
-    virtual_walls_joint::In_P_virtual_walls_joint in_p_virt_walls_joint;
-    const ConfigController& c_cntr=this->_kb.get_local_memory()->access_config_cntr();
-    in_p_virt_walls_joint.damping_distance=c_cntr.virt_walls_joint_damp_dist;
-    in_p_virt_walls_joint.damping_factor=c_cntr.virt_walls_joint_damp;
-    in_p_virt_walls_joint.eta=c_cntr.virt_walls_joint_eta;
-    in_p_virt_walls_joint.rho_min=c_cntr.virt_walls_joint_rho_min;
-    in_p_virt_walls_joint.tau_max=c_cntr.virt_walls_joint_tau_max;
-    in_p_virt_walls_joint.walls=c_cntr.virt_walls_joint_walls;
-    this->_virt_walls_joint.initialize(this->_in_u_virt_walls_joint,in_p_virt_walls_joint);
-
-    this->_flag_virt_walls_joint_valid=false;
-}
-
-void Core::initialize_control_nullspace(const Percept &p){
-    const ConfigController& c_cntr=this->_kb.get_local_memory()->access_config_cntr();
-
-    this->_in_u_cntr_nullsp_q.theta_d=p.q;
-
-    cntr_joint_var_imp::In_P_cntr_joint_var_imp in_p_cntr_nullsp_q;
-
-    in_p_cntr_nullsp_q.enable_ffwd_acc.setZero();
-    in_p_cntr_nullsp_q.enable_ffwd_vel.setZero();
-
-    this->_cntr_nullsp_q.initialize(this->_in_u_cntr_nullsp_q,in_p_cntr_nullsp_q);
-    this->input_control_nullspace(p);
-    this->_in_u_cntr_nullsp_q.K_theta=c_cntr.K_theta;
-    this->_in_u_cntr_nullsp_q.D_theta=c_cntr.xi_theta;
-
-    cntr_nullsp_proj::In_P_cntr_nullsp_proj in_p_cntr_nullsp_proj;
-    in_p_cntr_nullsp_proj.singlr_comp_mode.setZero();
-    in_p_cntr_nullsp_proj.singlr_threshold.setZero();
-    this->_cntr_nullsp_proj.initialize(this->_in_u_cntr_nullsp_proj,in_p_cntr_nullsp_proj);
-}
 
 void Core::initialize_motion_error(const Percept &p){
     this->_in_u_motion_error_cart.O_T_EE=p.TF_T_EE;
@@ -855,19 +509,6 @@ void Core::input_motion_error(const Percept &p){
     this->_in_u_motion_error_cart.O_T_EE_d=p.TF_T_EE_d;
 }
 
-void Core::input_control_aic(const Percept &p){
-    this->_in_u_aic.B_J_EE=p.B_J_EE;
-    this->_in_u_aic.dtheta=p.dtheta;
-    this->_in_u_aic.M=p.M;
-    this->_in_u_aic.TF_F_ext=p.TF_F_ext;
-    this->_in_u_aic.TF_F_ff<<0,0,0,0,0,0;
-    this->_in_u_aic.TF_T_EE=p.TF_T_EE;
-    this->_in_u_aic.TF_T_EE_d=p.TF_T_EE;
-
-    this->_in_u_vel2pose.TF_dX_d<<0,0,0,0,0,0;
-    this->_in_u_vel2pose.TF_T_EE=p.TF_T_EE;
-}
-
 void Core::input_control_joint_imp(const Percept &p){    
     this->_in_u_joint_imp.theta=p.q;
     this->_in_u_joint_imp.theta_d=p.q;
@@ -878,28 +519,6 @@ void Core::input_control_joint_imp(const Percept &p){
     this->_in_u_joint_imp.tau_ff.setZero();
 }
 
-void Core::input_control_force(const Percept &p){
-    this->_in_u_force.B_J_EE=p.B_J_EE;
-    this->_in_u_force.DX<<0,0,0,0,0,0;
-    this->_in_u_force.TF_F_d_K<<0,0,0,0,0,0;
-    this->_in_u_force.TF_F_ext_K=-p.TF_F_ext;
-}
-
-void Core::input_control_mux(const Percept &p){
-    this->_in_u_mux.B_J_EE=p.B_J_EE;
-    this->_in_u_mux.tau_J_d<<0,0,0,0,0,0,0;
-}
-
-void Core::input_virtual_cube(const Percept &p){
-    this->_in_u_virt_cube.dx_EE=p.O_dX;
-    this->_in_u_virt_cube.p_EE=p.O_T_EE.block<3,1>(0,3);
-    this->_in_u_virt_cube.Jacobian_EE=p.B_J_O;
-}
-
-void Core::input_virtual_walls_joint(const Percept &p){
-    this->_in_u_virt_walls_joint.dq=p.dq;
-    this->_in_u_virt_walls_joint.q=p.q;
-}
 
 void Core::input_control_nullspace(const Percept &p){
     this->_in_u_cntr_nullsp_q.theta=p.q;
@@ -947,12 +566,8 @@ void Core::terminate_control(){
 
 }
 
-bool Core::start_control_cycle(){
-    spdlog::debug("CORE: start_control_cycle");
-    if(this->check_lockdown()){
-        spdlog::error("Core is under lockdown.");
-        return false;
-    }
+bool Core::execute_skill(){
+    spdlog::debug("CORE: execute_skill");
 
     this->_flag_stop_control=false;
     this->_flag_virt_cube_valid=false;
@@ -961,215 +576,65 @@ bool Core::start_control_cycle(){
 
     this->_last_error="none";
 
-    if(this->_flag_invalid_mode){
-        //        spdlog::warn("Robot is in invalid mode, attempting automatic error recovery...");
-        try{
-            this->m_panda_body->automaticErrorRecovery();
-            this->_flag_invalid_mode=false;
-            //            msrm_utils::print_success("Recovery successful.");
-        }catch(const franka::CommandException& e){
-            spdlog::error("Automatic error recovery failed, check the user-stop.");
-            return false;
-        }catch(const franka::NetworkException& e){
-            spdlog::error("Automatic error recovery failed, check the network connection.");
+
+    if(!m_panda_body.pre_run_checks()){
+        if(!m_panda_body.recover()){
             return false;
         }
     }
-
-    bool valid=true;
-    bool flag_recovery=false;
-    this->lock_robot_connection();
 
     spdlog::debug("CORE: start_control_cycle: while-loop");
-    while(!this->_flag_stop_control){
-        try{
-            this->_tau_J_old={0,0,0,0,0,0,0};
-            if(this->_kb.get_local_memory()->access_config_system().has_robot){
-                if(this->_kb.get_local_memory()->access_config_system().has_gripper){
-                    this->_gripper_state=this->m_panda_hand->readOnce();
-                }
-                this->process_percept(this->m_panda_body->readOnce(),this->_gripper_state);
-                CmdSkill cmd;
-                cmd.set_0(this->_percept);
-                this->process_commands(cmd);
-
-                if(this->_percept.robot_mode!=franka::RobotMode::kIdle){
-                    spdlog::error("INVALID MODE");
-                    this->unlock_robot_connection();
-                    throw CoreException("Robot is in invalid mode.");
-                }
-
-                if(!this->write_config_to_robot()){
-                    spdlog::error("Could not set robot configuration.");
-                    this->terminate_control_cycle();
-                    valid=false;
-                    break;
-                }
-            }
-            if(this->_kb.get_local_memory()->access_config_system().has_gripper){
-                this->_flag_run_gripper=true;
-                //                this->_thr_gripper=std::thread(&Core::gripper_cycle,this);
-//                this->_thr_gripper.detach();
-            }
-            if(this->_kb.get_local_memory()->access_config_general().control_mode==0){
-                this->input_control_aic(this->_percept);
-                this->input_control_force(this->_percept);
-                this->input_control_mux(this->_percept);
-                this->input_virtual_cube(this->_percept);
-                this->input_virtual_walls_joint(this->_percept);
-                this->input_control_nullspace(this->_percept);
-                this->initialize_control_aic(this->_percept);
-                this->initialize_control_force(this->_percept);
-                this->initialize_control_mux(this->_percept);
-                this->initialize_virtual_cube(this->_percept);
-                if(this->_kb.get_local_memory()->access_config_cntr().virt_walls_joint_on){
-                    this->initialize_virtual_walls_joint(this->_percept);
-                }
-                if(this->_kb.get_local_memory()->access_config_cntr().nullspace_cntr_on){
-                    this->initialize_control_nullspace(this->_percept);
-                }
-
-                if(this->_kb.get_local_memory()->access_config_system().has_robot){
-                    this->m_panda_body->control(std::bind(&Core::control_cycle_torque_cart,this,std::placeholders::_1));
-                }else{
-                    this->dummy_control(std::bind(&Core::control_cycle_torque_cart,this,std::placeholders::_1));
-                }
-            }
-            else if(this->_kb.get_local_memory()->access_config_general().control_mode==1){
-                if(this->_kb.get_local_memory()->access_config_system().has_robot){
-                    this->m_panda_body->control(std::bind(&Core::control_cycle_velocity_cart,this,std::placeholders::_1));
-                }else{
-                    this->dummy_control(std::bind(&Core::control_cycle_velocity_cart,this,std::placeholders::_1));
-                }
-            }
-            else if(this->_kb.get_local_memory()->access_config_general().control_mode==2){
-                this->input_control_joint_imp(this->_percept);
-                this->input_control_mux(this->_percept);
-                this->input_control_nullspace(this->_percept);
-                this->initialize_control_joint_imp(this->_percept);
-                this->initialize_control_mux(this->_percept);
-                if(this->_kb.get_local_memory()->access_config_cntr().virt_walls_joint_on){
-                    this->initialize_virtual_walls_joint(this->_percept);
-                }
-                if(this->_kb.get_local_memory()->access_config_cntr().nullspace_cntr_on){
-                    this->initialize_control_nullspace(this->_percept);
-                }
-
-                if(this->_kb.get_local_memory()->access_config_system().has_robot){
-                    this->m_panda_body->control(std::bind(&Core::control_cycle_torque_joint,this,std::placeholders::_1));
-                }else{
-                    this->dummy_control(std::bind(&Core::control_cycle_torque_joint,this,std::placeholders::_1));
-                }
-            }
-            else if(this->_kb.get_local_memory()->access_config_general().control_mode==3){
-                if(this->_kb.get_local_memory()->access_config_system().has_robot){
-                    this->m_panda_body->control(std::bind(&Core::control_cycle_velocity_joint,this,std::placeholders::_1));
-                }else{
-                    this->dummy_control(std::bind(&Core::control_cycle_velocity_joint,this,std::placeholders::_1));
-                }
-            }
-            else{
-                spdlog::error("There is no control mode "+std::to_string(this->_kb.get_local_memory()->access_config_general().control_mode)+". Choose between 0 (torque), 1 (Cartesian velocity)");
-                this->terminate_control_cycle();
-                valid=false;
-            }
-        }catch (const franka::ControlException& e) {
-            std::cout << e.what() << std::endl;
-            flag_recovery=true;
-            if(!this->_kb.get_local_memory()->access_config_general().instant_recovery){
-                this->terminate_control_cycle();
-                valid=false;
-                this->_last_error="control_exception";
-            }
-            this->_active_skill->append_error("control_exception");
-        }catch (const franka::InvalidOperationException& e){
-            std::cout << e.what() << std::endl;
-            spdlog::error("A conflicting operation is already running.");
-            flag_recovery=true;
-            this->terminate_control_cycle();
-            valid=false;
-            this->_active_skill->append_error("invalid_operation_exception");
-        }catch(const franka::NetworkException& e){
-            std::cout << e.what() << std::endl;
-            spdlog::error("Check connections and ip settings.");
-            flag_recovery=true;
-            this->terminate_control_cycle();
-            valid=false;
-            this->_active_skill->append_error("network_exception");
-        }catch(const franka::RealtimeException& e){
-            std::cout << e.what() << std::endl;
-            spdlog::error("Realtime priority could not be set. Check for other running instances of libfranka.");
-            flag_recovery=true;
-            this->terminate_control_cycle();
-            valid=false;
-            this->_active_skill->append_error("realtime_exception");
-        }catch(const SkillException& e){
-            std::cout<<e.what()<<std::endl;
-            spdlog::error("Skill exception has been thrown during core activity.");
-            flag_recovery=true;
-            this->terminate_control_cycle();
-            valid=false;
-            this->_active_skill->append_error("skill_exception");
-        }
-        flag_recovery=true;
-        if(flag_recovery && this->_kb.get_local_memory()->access_config_system().has_robot){
-            try{
-                spdlog::info("Attempting automatic error recovery...",false);
-                this->m_panda_body->automaticErrorRecovery();
-                spdlog::info("done.");
-            }catch(const franka::CommandException& e){
-                spdlog::info("failed.");
-                spdlog::error("Automatic error recovery failed, check the user-stop.");
-                this->_flag_invalid_mode=true;
-                flag_recovery=false;
-                valid=false;
-                this->_active_skill->append_error("command_exception");
-            }catch(const franka::NetworkException& e){
-                spdlog::info("failed.");
-                spdlog::error("Automatic error recovery failed, check the network connection.");
-                this->_flag_invalid_mode=true;
-                flag_recovery=false;
-                valid=false;
-                this->_active_skill->append_error("network_exception");
-            }
-        }
-        this->terminate_gripper();
-        this->terminate_control();
-        this->terminate_periphery();
+    this->_tau_J_old={0,0,0,0,0,0,0};
+    refresh_percept(m_active_skill->get_config<>()->frames.O_R_TF);
+    this->process_commands(cmd);
+    auto config_control = m_active_skill->get_config<>()->control;
+    if(!m_panda_body.set_robot_parameters()){
+        return false;
     }
 
-    this->unlock_robot_connection();
-    return valid;
+    bool result;
+    if(this->_kb.get_local_memory()->access_config_general().control_mode==ControlMode::mCartTorque){
+
+        m_controller_pipeline=std::make_unique<CartTorqueControllerPipeline>();
+        m_controller_pipeline->initialize(m_percept,_kb);
+        result=m_panda_body.torque_control(std::bind(&Core::control_cycle_torque_cart,this,std::placeholders::_1));
+    }
+    if(this->_kb.get_local_memory()->access_config_general().control_mode==ControlMode::mJointTorque){
+        result=m_panda_body.torque_control(std::bind(&Core::control_cycle_torque_cart,this,std::placeholders::_1));
+    }
+    if(this->_kb.get_local_memory()->access_config_general().control_mode==ControlMode::mCartVelocity){
+        result=m_panda_body.torque_control(std::bind(&Core::control_cycle_torque_cart,this,std::placeholders::_1));
+    }
+    if(this->_kb.get_local_memory()->access_config_general().control_mode==ControlMode::mJointVelocity){
+        result=m_panda_body.torque_control(std::bind(&Core::control_cycle_torque_cart,this,std::placeholders::_1));
+    }
+
+    this->terminate_gripper();
+    this->terminate_control();
+    this->terminate_periphery();
+
+
+    return result;
 }
 
 void Core::terminate_control_cycle(){
     this->_flag_stop_control=true;
 }
 
-bool Core::control_base_cycle(const franka::RobotState state,CmdSkill& cmd){
+Actuator* Core::control_base_cycle(const franka::RobotState& state){
 
-    this->process_percept(state,this->_gripper_state);
+    franka::GripperState gripper_state;
+    m_percept.update(m_panda_body.get_panda_model(),state,gripper_state,m_active_skill->get_config<>()->frames.O_R_TF);
 
     this->input_motion_error(this->_percept);
     this->_motion_error_cart.step(this->_in_u_motion_error_cart,this->_out_y_motion_error_cart);
-    cmd=this->_active_skill->cycle(this->_percept);
-    if(!cmd.validity_check()){
-        spdlog::error("Validity check of robot command has failed.");
-        this->terminate_control_cycle();
-        return false;
-    }
-    this->process_commands(cmd);
+    Actuator* cmd=m_active_skill->cycle(m_percept);
 
-    if(this->_active_skill->get_flag_terminate()){
-        spdlog::info("Skill has terminated nominally.");
+    if(cmd->is_stopped()){
+        spdlog::info("Skill has terminated.");
         this->terminate_control_cycle();
     }
-
-    if(this->_kb.get_local_memory()->access_config_system().telemetry_on){
-        this->_telemetry_udp.send_telemetry(this->_percept);
-    }
-
-    return true;
+    return cmd;
 }
 
 
@@ -1190,7 +655,7 @@ franka::Torques Core::control_cycle_torque_cart(const franka::RobotState state){
     this->input_control_nullspace(this->_percept);
 
     this->check_cartesian_velocity_workspace(cmd_skill.TF_dX_d,this->_percept);
-//    this->base_avoidance(cmd_skill.TF_dX_d,this->_percept);
+    //    this->base_avoidance(cmd_skill.TF_dX_d,this->_percept);
 
     this->_in_u_vel2pose.TF_dX_d=cmd_skill.TF_dX_d;
     this->_conv_vel2pose.step(this->_in_u_vel2pose,this->_out_y_vel2pose);
@@ -1256,7 +721,7 @@ franka::Torques Core::control_cycle_torque_cart(const franka::RobotState state){
             if(fabs(this->_percept.dq(i))>0.5){
                 this->_in_u_mux.tau_J_d(i)-=this->get_kb()->get_local_memory()->access_config_cntr().D_additional(i)*(fabs(this->_percept.dq(i))-0.5)*msrm_utils::sgn(this->_percept.dq(i));
             }
-//            this->_in_u_mux.tau_J_d(i)-=this->get_kb()->get_local_memory()->access_config_cntr().D_additional(i)*this->_percept.dq(i);
+            //            this->_in_u_mux.tau_J_d(i)-=this->get_kb()->get_local_memory()->access_config_cntr().D_additional(i)*this->_percept.dq(i);
         }
     }
 
@@ -1424,94 +889,6 @@ franka::JointVelocities Core::control_cycle_velocity_joint(const franka::RobotSt
     return dq_d;
 }
 
-void Core::process_percept(const franka::RobotState &state, const franka::GripperState &state_gripper,Eigen::Matrix<double,3,3> O_R_TF){
-//    spdlog::info("process_percept");
-    if(!this->_kb.get_local_memory()->access_config_system().has_robot){
-        this->_percept.set_0();
-        this->_percept.time+=0.001;
-        return;
-    }
-
-    this->_percept.B_J_EE=Eigen::Map<Eigen::Matrix<double,6,7> > (this->m_panda_model->bodyJacobian(franka::Frame::kEndEffector,state).data());
-    this->_percept.B_J_O=Eigen::Map<Eigen::Matrix<double,6,7> >(this->m_panda_model->zeroJacobian(franka::Frame::kEndEffector,state).data());
-    this->_percept.M=Eigen::Map<Eigen::Matrix<double,7,7> >(this->m_panda_model->mass(state).data());
-    this->_percept.C=Eigen::Map<Eigen::Matrix<double,7,1> >(this->m_panda_model->coriolis(state).data());
-    this->_percept.G=Eigen::Map<Eigen::Matrix<double,7,1> >(this->m_panda_model->gravity(state).data());
-
-    this->_percept.q=Eigen::Map<Eigen::Matrix<double,7,1> >(std::array<double,7>(state.q).data());
-    this->_percept.dq=Eigen::Map<Eigen::Matrix<double,7,1> >(std::array<double,7>(state.dq).data());
-    this->_percept.theta=Eigen::Map<Eigen::Matrix<double,7,1> >(std::array<double,7>(state.theta).data());
-    this->_percept.dtheta=Eigen::Map<Eigen::Matrix<double,7,1> >(std::array<double,7>(state.dtheta).data());
-
-    this->_percept.O_dX=this->_percept.B_J_O*this->_percept.dq;
-    this->_percept.O_T_EE=Eigen::Matrix<double,4,4>(Eigen::Map<Eigen::Matrix<double,4,4> >(std::array<double,16>(state.O_T_EE).data()));
-
-    this->_percept.K_F_ext=Eigen::Map<Eigen::Matrix<double,6,1> >(std::array<double,6>(state.K_F_ext_hat_K).data());
-    this->_percept.O_F_ext=Eigen::Map<Eigen::Matrix<double,6,1> >(std::array<double,6>(state.O_F_ext_hat_K).data());
-
-    msrm_utils::write_json_array<double,6,1>(this->event["K_F_ext"],this->_percept.K_F_ext);
-
-    if(this->_active_skill->get_type()=="NullSkill" && O_R_TF.isZero(0)){
-        this->_percept.TF_dX=msrm_utils::rotate_vector(this->_percept.O_dX,msrm_utils::invert_matrix(this->_kb.get_local_memory()->access_config_frames().O_R_TF));
-        if(this->_kb.get_local_memory()->access_config_cntr().TF_control){
-            this->_percept.TF_F_ext=msrm_utils::rotate_vector(this->_percept.K_F_ext,msrm_utils::invert_matrix(this->_kb.get_local_memory()->access_config_frames().O_R_TF));
-        }else{
-            this->_percept.TF_F_ext=this->_percept.K_F_ext;
-        }
-        this->_percept.TF_T_EE=msrm_utils::rotate_matrix(Eigen::Matrix<double,4,4>(Eigen::Map<Eigen::Matrix<double,4,4> >(std::array<double,16>(state.O_T_EE).data())),msrm_utils::invert_matrix(this->_kb.get_local_memory()->access_config_frames().O_R_TF));
-    }else if(this->_active_skill->get_type()=="NullSkill" && !O_R_TF.isZero(0)){
-        this->_percept.TF_dX=msrm_utils::rotate_vector(this->_percept.O_dX,msrm_utils::invert_matrix(O_R_TF));
-        if(this->_kb.get_local_memory()->access_config_cntr().TF_control){
-            this->_percept.TF_F_ext=msrm_utils::rotate_vector(this->_percept.K_F_ext,msrm_utils::invert_matrix(O_R_TF));
-        }else{
-            this->_percept.TF_F_ext=this->_percept.K_F_ext;
-        }
-        this->_percept.TF_T_EE=msrm_utils::rotate_matrix(Eigen::Matrix<double,4,4>(Eigen::Map<Eigen::Matrix<double,4,4> >(std::array<double,16>(state.O_T_EE).data())),msrm_utils::invert_matrix(O_R_TF));
-    }else if(this->_active_skill->get_type()!="NullSkill"){
-        this->_percept.TF_dX=msrm_utils::rotate_vector(this->_percept.O_dX,msrm_utils::invert_matrix(this->_active_skill->get_config<>()->frames.O_R_TF));
-        if(this->_kb.get_local_memory()->access_config_cntr().TF_control){
-            Eigen::Matrix<double,3,3> O_R_EE = this->_percept.O_T_EE.block<3,3>(0,0);
-            Eigen::Matrix<double,6,1> O_F_ext_hat_K_ = msrm_utils::rotate_vector(this->_percept.K_F_ext,O_R_EE);
-            this->_percept.TF_F_ext=msrm_utils::rotate_vector(O_F_ext_hat_K_,msrm_utils::invert_matrix(this->_active_skill->get_config<>()->frames.O_R_TF));
-        }else{
-            this->_percept.TF_F_ext=this->_percept.K_F_ext;
-        }
-        this->_percept.TF_T_EE=msrm_utils::rotate_matrix(Eigen::Matrix<double,4,4>(Eigen::Map<Eigen::Matrix<double,4,4> >(std::array<double,16>(state.O_T_EE).data())),msrm_utils::invert_matrix(this->_active_skill->get_config<>()->frames.O_R_TF));
-    }
-
-    this->_percept.tau_ext=Eigen::Map<Eigen::Matrix<double,7,1> >(std::array<double,7>(state.tau_ext_hat_filtered).data());
-    this->_percept.tau_j=Eigen::Map<Eigen::Matrix<double,7,1> >(std::array<double,7>(state.tau_J).data());
-
-    this->_percept.robot_mode=state.robot_mode;
-
-    this->_percept.e=this->_out_y_motion_error_cart.e;
-
-    this->_percept.time=state.time.toSec();
-
-    if(this->_flag_gripper){
-        this->_percept.gripper_width=state_gripper.width;
-        this->_percept.is_grasping=state_gripper.is_grasped;
-        this->_flag_gripper=false;
-    }
-
-    // update mios state
-    if(this->_active_skill!=nullptr){
-        this->_percept.mios_state.active_skill=this->_active_skill->get_id();
-    }else{
-        this->_percept.mios_state.active_skill="none";
-    }
-
-    // post telemetry
-    this->_telemetry.q[0]={state.q[0],state.q[1],state.q[2],state.q[3],state.q[4],state.q[5],state.q[6]};
-    this->_telemetry.tau_ext[0]={state.tau_ext_hat_filtered[0],state.tau_ext_hat_filtered[1],state.tau_ext_hat_filtered[2],state.tau_ext_hat_filtered[3],state.tau_ext_hat_filtered[4],state.tau_ext_hat_filtered[5],state.tau_ext_hat_filtered[6]};
-    auto t_diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-t_event);
-    if(t_diff.count()>100){
-        EventPublisher::publish_event(this->event);
-        this->t_event = std::chrono::system_clock::now();
-    }
-
-}
-
 void Core::process_commands(const CmdSkill &cmd){
     this->_percept.TF_T_EE_d=cmd.TF_T_EE_d;
     this->_percept.TF_dX_d=cmd.TF_dX_d;
@@ -1586,7 +963,7 @@ void Core::cycle_sound(std::function<SoundCmd(const Percept& p)> callback_sound)
             if (Mix_PlayMusic(music, 1) == 0){
                 while (Mix_PlayingMusic()){
                     SDL_Delay(10);
-//                    boost::this_thread::interruption_point();
+                    //                    boost::this_thread::interruption_point();
                 }
             }
             else{
@@ -1957,39 +1334,21 @@ void Core::gripper_stop(){
     this->_flag_gripper_busy=false;
 }
 
-bool Core::refresh_percept(Eigen::Matrix<double,3,3> O_R_TF, bool wait){
-    if(!this->_kb.get_local_memory()->access_config_system().has_robot){
-        this->_percept.robot_mode=franka::RobotMode::kIdle;
-        return true;
-    }
-    if(!this->has_robot_connection()){
-        spdlog::warn("Not connected to robot, could not refresh perception.");
+bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF){
+    franka::RobotState robot_state;
+    franka::GripperState gripper_state;
+    if(!m_panda_body.get_robot_state(robot_state)){
         return false;
     }
-    if(!this->lock_robot_connection(wait)){
+    if(!m_panda_body.get_gripper_state(gripper_state)){
         return false;
     }
-    try{
-        franka::RobotState robot_state;
-        franka::GripperState gripper_state;
-        if(this->_kb.get_local_memory()->access_config_system().has_robot){
-            robot_state=m_panda_body->readOnce();
-        }
-        if(this->_kb.get_local_memory()->access_config_system().has_gripper){
-            gripper_state=m_panda_hand->readOnce();
-        }
-        m_percept.update(m_panda_model,robot_state,gripper_state);
-    }catch(franka::InvalidOperationException& e){
-        spdlog::debug(e.what());
-        this->unlock_robot_connection();
-        return false;
-    }catch(franka::NetworkException& e){
-        spdlog::debug(e.what());
-        this->unlock_robot_connection();
-        return false;
-    }
-    this->unlock_robot_connection();
+    m_percept.update(m_panda_body.get_panda_model(),robot_state,gripper_state,O_R_TF);
     return true;
+}
+
+const Percept& Core::get_percept() const{
+    return m_percept;
 }
 
 void Core::check_cartesian_velocity_workspace(Eigen::Matrix<double, 6, 1> &TF_dX_d, const Percept& p){
@@ -2311,28 +1670,28 @@ bool Core::test_robot_connection(const std::string &ip) const{
 
 std::string Core::find_primary(){
     std::string ip="none";
-//    std::vector<std::string> ifaces = msrm_utils::get_ifaces();
-//    for(unsigned i=0;i<ifaces.size();i++){
-//        std::string ip_subnet = ifaces[i];
-//        std::vector<std::string> ip_tmp = msrm_utils::split_string(ip_subnet,".");
-//        ip_subnet=ip_tmp[0]+"."+ip_tmp[1]+"."+ip_tmp[2]+".";
-//        for(unsigned i=1;i<254;i++){
-//            std::string address = ip_subnet+std::to_string(i);
-//            if(msrm_utils::ping(address.c_str())==1){
-//                continue;
-//            }else{
-//                if(this->test_primary_connection(address)){
-//                    ip=address;
-//                }
-//            }
-//        }
+    //    std::vector<std::string> ifaces = msrm_utils::get_ifaces();
+    //    for(unsigned i=0;i<ifaces.size();i++){
+    //        std::string ip_subnet = ifaces[i];
+    //        std::vector<std::string> ip_tmp = msrm_utils::split_string(ip_subnet,".");
+    //        ip_subnet=ip_tmp[0]+"."+ip_tmp[1]+"."+ip_tmp[2]+".";
+    //        for(unsigned i=1;i<254;i++){
+    //            std::string address = ip_subnet+std::to_string(i);
+    //            if(msrm_utils::ping(address.c_str())==1){
+    //                continue;
+    //            }else{
+    //                if(this->test_primary_connection(address)){
+    //                    ip=address;
+    //                }
+    //            }
+    //        }
 
-//    }
-//    if(ip=="none"){
-//        spdlog::error("No primary has been found in this network.");
-//    }else{
-//        spdlog::info("Found primary, I am connected to a collective.");
-//    }
+    //    }
+    //    if(ip=="none"){
+    //        spdlog::error("No primary has been found in this network.");
+    //    }else{
+    //        spdlog::info("Found primary, I am connected to a collective.");
+    //    }
     return ip;
 }
 
@@ -2340,7 +1699,7 @@ bool Core::test_primary_connection(const std::string &ip){
     nlohmann::json request=nlohmann::json();
     nlohmann::json response;
     return false;
-//    return msrm_utils::rpc_call(ip,8390,"is_primary",request,response);
+    //    return msrm_utils::rpc_call(ip,8390,"is_primary",request,response);
 }
 
 bool Core::init_sound(){

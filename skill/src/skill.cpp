@@ -40,7 +40,7 @@ const Object& Skill::get_object(const std::string &o) const{
     return m_objects.at(o);
 }
 
-void Skill::write_O_R_TF(const Percept &p){
+void Skill::write_O_R_TF_to_config(const Percept &p){
     if(!this->get_O_R_TF(p).isZero(0)){
         m_config->frames.O_R_TF=this->get_O_R_TF(p);
     }
@@ -239,7 +239,7 @@ bool Skill::check_local_ex_conditions(const Percept &p){
     return true;
 }
 
-const EvalSkill &Skill::get_eval() const{
+EvalSkill Skill::get_eval() const{
     return m_eval;
 }
 
