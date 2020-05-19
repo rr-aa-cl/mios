@@ -2,21 +2,20 @@
 
 #include <list>
 #include <map>
-#include <set>
+#include <unordered_set>
 #include <atomic>
 #include <stdlib.h>
 #include <memory>
 #include <msrm_utils/json.hpp>
+#include <spdlog/spdlog.h>
 
 #include "skill/skill.hpp"
 #include "core/core.hpp"
 #include "task/taskobserver.hpp"
-#include "knowledge_base/knowledge_base.hpp"
 
 namespace mios {
 
-class KnowledgeBase;
-class LEDPattern;
+class Memory;
 
 
 /**
@@ -84,7 +83,7 @@ public:
      * @param core Pointer to the core module.
      * @return Returns true if the task and all its subtasks and skills were successfully loaded.
      */
-    bool load(const nlohmann::json &parameters);
+    bool load_context(const nlohmann::json &user_context, nlohmann::json& active_context);
 
     /**
      * Implements task execution in derived tasks.
@@ -281,21 +280,19 @@ protected:
      * has been terminated by a non-nominal event.
      */
     template<typename T>void execute_skill(const std::string &skill_id){
-        if(m_context.find(skill_id)==m_context.end()){
-            spdlog::error("Skill with id "+skill_id+" not in this task. Check your task description for consistency. Stopping task.");
+        if(m_context["skills"].find(skill_id)==m_context["skills"].end()){
+            spdlog::error("Skill with id "+skill_id+" not in this task. Check the task context for consistency. Stopping task.");
             this->abort_task();
-            throw TaskException("Skill with id "+skill_id+" not in this task. Check your task description for consistency. Stopping task.");
+            throw TaskException("Skill with id "+skill_id+" not in this task. Check the task context for consistency. Stopping task.");
         }
         if(m_flag_stop){
-            //        msrm_utils::print_info("Task has been stopped recently, aborting skill execution.");
             return;
         }
-        std::shared_ptr<Skill> skill = std::make_shared<T>(m_kb,m_context[skill_id],m_core->get_percept());
+        std::shared_ptr<Skill> skill = std::make_shared<T>(m_memory,m_context[skill_id],m_core->get_percept());
         if(!m_core->load_skill(skill)){
             throw TaskException("Skill could not be loaded into core.");
         }
         spdlog::info("Executing skill "+skill_id+".");
-        bool valid=m_core->execute_skill();
         m_skills[skill_id]->terminate();
         m_core->unload_skill();
         m_results.insert(std::make_pair(skill_id,skill->get_eval()));
@@ -326,12 +323,11 @@ private:
      * @param[in] descr The task description to check.
      * @return True if the given task description is valid, false otherwise.
      */
-    bool check_task_description(const nlohmann::json& description) const;
-    bool check_user_input(const nlohmann::json& parameters, const nlohmann::json &description) const;
-    void load_description_category(const nlohmann::json& parameters, const std::string& category, const std::string& id_skill, nlohmann::json& task_descr) const;
-    static std::string generate_uuid();
+    bool check_context(const nlohmann::json& default_context, const nlohmann::json &user_context) const;
+    static std::string generate_uuid() const;
 
-    std::unordered_map<std::string,std::shared_ptr<SkillParameters> > m_context;
+//    std::unordered_map<std::string,nlohmann::json> m_context;
+    nlohmann::json m_context;
     std::unordered_map<std::string,EvalSkill > m_results;
     std::map<std::string,std::shared_ptr<Skill> > m_skills;
     std::map<std::string,std::shared_ptr<Task> > m_subtasks;
@@ -340,6 +336,7 @@ private:
     std::atomic<bool> m_flag_recover;
     std::atomic<bool> m_flag_in_recovery;
     Core* m_core;
+    Memory* m_memory;
     std::string m_id;
 
     std::string m_state;

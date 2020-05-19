@@ -12,14 +12,6 @@ namespace mios {
 
 class ParameterServer;
 
-struct MiosState{
-    MiosState();
-
-    std::string active_task;
-    std::string active_skill;
-    std::string grasped_object;
-};
-
 struct ConfigLimits{
     ConfigLimits();
 

@@ -11,15 +11,15 @@
 #include <franka/model.h>
 #include <franka/exception.h>
 
-#include "knowledge_base/knowledge_base.hpp"
+#include "memory/memory.hpp"
 #include "led_pattern/led_pattern.hpp"
 #include "telemetry/telemetry_udp.hpp"
 #include "interface/parameter_server.hpp"
 #include "panda/panda_body.hpp"
 
 #include "utils/types.hpp"
-#include "utils/percept.hpp"
-#include "utils/actuator.hpp"
+#include "data_structures/percept.hpp"
+#include "data_structures/actuator.hpp"
 
 #include <msrm_utils/geometry.hpp>
 #include "controller_pipeline/torque_pipeline.hpp"
@@ -44,7 +44,7 @@ public:
 
     std::string get_last_error() const;
 
-    KnowledgeBase *get_kb();
+    Memory* get_memory();
     void set_live_parameter_server(ParameterServer *server);
 
     bool execute_skill();
@@ -118,7 +118,7 @@ private:
     std::mutex m_mtx_robot;
     std::thread _thr_beacons;
 
-    KnowledgeBase _kb;
+    Memory m_memory;
     std::shared_ptr<Skill> m_active_skill;
 
     std::map<std::string,unsigned> _led_panel_id;

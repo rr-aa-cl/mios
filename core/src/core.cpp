@@ -30,13 +30,13 @@
 
 namespace mios {
 
-Core::Core(int argc, char **argv):m_active_skill(std::make_shared<NullSkill>(&_kb,std::make_shared<SkillParametersNullSkill>())){
+Core::Core(int argc, char **argv):m_active_skill(std::make_shared<NullSkill>(&m_memory,std::make_shared<SkillParametersNullSkill>())){
 
     this->_config_internal.path_executable=msrm_utils::get_path_executable(argv);
     this->_config_internal.grasped_object="none";
 
     spdlog::info("Initializing knowledgebase...");
-    if(!this->_kb.initialize(this->_config_internal)){
+    if(!m_memory.initialize(this->_config_internal)){
         spdlog::error("Could not initialize knowledge base, shutting down. Mongodb service must run on port 27017. Check status with <systemctl status mongodb.service>.");
         exit(-1);
     }
@@ -48,24 +48,23 @@ Core::Core(int argc, char **argv):m_active_skill(std::make_shared<NullSkill>(&_k
 }
 
 Core::~Core(){
-    this->terminate();
+    terminate();
 }
 
 bool Core::initialize(){
-
-    if(!this->_kb.load_parameters()){
+    if(!m_memory.load_parameters()){
         spdlog::error("Could not load all parameters. Robot is not operational.");
         return false;
     }
 
-    std::optional<std::string> panda_ip = m_panda_body.get_robot_ip(_kb.get_local_memory()->access_config_system().ip_robot);
+    std::optional<std::string> panda_ip = m_panda_body.get_robot_ip(m_memory.read_parameters()->system.robot_ip);
 
-    if(this->_kb.get_local_memory()->access_config_system().has_robot && panda_ip.has_value()){
+    if(m_memory.read_parameters()->system.has_robot){
         if(!m_panda_body.connect_to_robot(panda_ip.value())){
             return false;
         }
     }
-    if(this->_kb.get_local_memory()->access_config_system().has_gripper && panda_ip.has_value()){
+    if(m_memory.read_parameters()->system.has_gripper){
         if(!m_panda_body.connect_to_gripper(panda_ip.value())){
             return false;
         }
@@ -76,7 +75,6 @@ bool Core::initialize(){
 void Core::terminate(){
     m_panda_body.disconnect_from_robot();
     m_panda_body.disconnect_from_gripper();
-    this->_kb.terminate();
 }
 
 bool Core::has_terminated() const{
@@ -84,56 +82,15 @@ bool Core::has_terminated() const{
 }
 
 bool Core::reset(){
-    if(!this->_kb.load_parameters()){
+    if(!m_memory.load_parameters()){
         return false;
     }
     spdlog::info("Core reset finished.");
     return true;
 }
 
-bool Core::set_ee(){
-//    //    if(this->check_lockdown()){
-//    //        spdlog::error("Core is under lockdown.");
-//    //        return false;
-//    //    }
-//    if(!this->_kb.get_local_memory()->access_config_system().has_robot){
-//        return true;
-//    }
-//    if(this->m_panda_body==nullptr){
-//        spdlog::error("Can not set EE, no connection to robot.");
-//        return false;
-//    }
-//    Object obj;
-//    if(!this->_kb.load_object(this->_percept.mios_state.grasped_object,obj)){
-//        return false;
-//    }
-//    nlohmann::json p_frame;
-//    msrm_utils::write_json_array<double,4,4>(p_frame["EE_T_TCP"],obj.EE_T_O);
-//    //    this->_kb.get_local_memory()->modify_config_frames(p_frame);
-//    this->get_kb()->get_local_memory()->get_persistent_data()->EE_T_TCP=obj.EE_T_O;
-//    Eigen::Matrix<double,4,4> F_T_TCP=msrm_utils::rotate_matrix(this->get_kb()->get_local_memory()->get_persistent_data()->EE_T_TCP,this->_kb.get_local_memory()->access_config_frames().F_T_EE);
-//    try{
-//        this->m_panda_body->setEE(msrm_utils::convert_to_array<double,4,4>(F_T_TCP));
-//    }catch(franka::CommandException& e){
-//        std::cout<<e.what()<<std::endl;
-//        return false;
-//    }catch(franka::NetworkException& e){
-//        std::cout<<e.what()<<std::endl;
-//        return false;
-//    }
-    return true;
-}
-
-std::string Core::get_last_error() const{
-    return this->_last_error;
-}
-
-void Core::set_live_parameter_server(ParameterServer* server){
-    this->_kb.set_live_parameter_server(server);
-}
-
-KnowledgeBase* Core::get_kb(){
-    return &this->_kb;
+Memory* Core::get_memory(){
+    return &m_memory;
 }
 
 bool Core::load_skill(std::shared_ptr<Skill> skill){
@@ -147,24 +104,18 @@ bool Core::load_skill(std::shared_ptr<Skill> skill){
     m_percept.controller.xi_x=m_active_skill->get_config<>()->controller.xi;
     m_percept.controller.K_theta=m_active_skill->get_config<>()->controller.K_theta;
     m_percept.controller.xi_theta=m_active_skill->get_config<>()->controller.xi_theta;
-    spdlog::info("Initializing skill "+m_active_skill->get_id());
+    spdlog::info("Applying skill context...");
+    m_memory.apply_skill_context(m_active_skill->get_id());
+    spdlog::info("Initializing skill...");
     if(!m_active_skill->initialize(m_percept)){
-        spdlog::info("failed.");
         return false;
     }
-    spdlog::info("done.");
-    this->_kb.get_local_memory()->upload_config_cntr(m_active_skill->get_config<>()->controller);
-    this->_kb.get_local_memory()->upload_config_frames(m_active_skill->get_config<>()->frames);
-    this->_kb.get_local_memory()->upload_config_general(m_active_skill->get_config<>()->general);
-    this->_kb.get_local_memory()->upload_config_user(m_active_skill->get_config<>()->user);
-
     return true;
 }
 
 void Core::unload_skill(){
-    m_active_skill=std::make_shared<NullSkill>(&_kb,std::make_shared<SkillParameters>());
-    this->_kb.load_parameters();
-    this->_flag_stop_control=false;
+    m_active_skill=std::make_shared<NullSkill>(&m_memory,std::make_shared<SkillParametersNullSkill>());
+    _flag_stop_control=false;
 }
 
 bool Core::execute_skill(){
@@ -183,8 +134,18 @@ bool Core::execute_skill(){
     ConfigUser config_user = m_active_skill->get_config<>()->user;
     ConfigFrames config_frames = m_active_skill->get_config<>()->frames;
 
-    if(!m_panda_body.set_robot_parameters(config_user.load_m,config_user.load_com,config_user.load_I,config_user.tau_contact,config_user.tau_max,config_user.F_contact,config_user.F_max,
-                                          config_frames.EE_T_K,config_controller.K_theta,config_controller.K_0,config_frames.F_T_EE)){
+    std::array<double,3> load_com = msrm_utils::convert_to_array<double,3,1>(config_user.load_com);
+    std::array<double,9> load_I = msrm_utils::convert_to_array<double,3,3>(config_user.load_I);
+    std::array<double,7> tau_contact = msrm_utils::convert_to_array<double,7,1>(config_user.tau_contact);
+    std::array<double,7> tau_max = msrm_utils::convert_to_array<double,7,1>(config_user.tau_max);
+    std::array<double,6> F_contact = msrm_utils::convert_to_array<double,6,1>(config_user.F_contact);
+    std::array<double,6> F_max = msrm_utils::convert_to_array<double,6,1>(config_user.F_max);
+    std::array<double,16> EE_T_K = msrm_utils::convert_to_array<double,4,4>(config_frames.EE_T_K);
+    std::array<double,7> K_theta = msrm_utils::convert_to_array<double,7,1>(config_controller.K_theta);
+    std::array<double,6> K_x = msrm_utils::convert_to_array<double,6,1>(config_controller.K_0);
+    std::array<double,16> F_T_EE = msrm_utils::convert_to_array<double,4,4>(config_frames.F_T_EE);
+
+    if(!m_panda_body.set_robot_parameters(config_user.load_m,load_com,load_I,tau_contact,tau_max,F_contact,F_max,EE_T_K,K_x,K_theta,F_T_EE)){
         return false;
     }
 

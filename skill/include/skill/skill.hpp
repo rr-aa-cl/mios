@@ -5,75 +5,14 @@
 #include <atomic>
 
 #include "manipulation_primitive/manipulation_primitive.hpp"
-#include "knowledge_base/local_memory.hpp"
-#include "knowledge_base/knowledge_base.hpp"
-#include "knowledge_base/concepts.hpp"
+#include "memory/memory.hpp"
 
-#include <msrm_utils/conversion.hpp>
-#include <msrm_utils/files.hpp>
-#include <msrm_utils/json.hpp>
-#include <msrm_utils/math.hpp>
-#include <msrm_utils/output.hpp>
-
-#include "utils/percept.hpp"
-#include "utils/actuator.hpp"
+#include "data_structures/percept.hpp"
+#include "data_structures/actuator.hpp"
+#include "data_structures/parameters.hpp"
 
 
 namespace mios {
-
-
-const static std::set<std::string> global_skill_parameters={"time_max,w_cost_function,parallels_frequency"};
-
-/**
- * The base struct for the skill configuration defines common parameters for all skills.
- */
-struct SkillParameters{
-    SkillParameters(){
-        this->time_max=0;
-        this->w_cost_function.resize(10);
-        this->w_cost_function[0]=1;
-        this->parallels_frequency=1;
-
-        this->k_h_p.setZero();
-        this->k_h_d.setZero();
-    }
-
-    virtual bool read_parameters(const nlohmann::json& parameters) = 0;
-
-    ConfigFrames frames;
-    ConfigGeneral general;
-    ConfigUser user;
-    ConfigLimits limits;
-    ConfigSystem system;
-
-    /**
-     * Controller configuration.
-     */
-    ConfigController controller;
-
-    /**
-     * Mapping of skill objects to objects in the knowledge base.
-     */
-    std::map<std::string,std::string> objects;
-
-    /**
-     * Maximum time for skill execution. After exceeding this time the skill is terminated unsuccessful. A value of 0 allows for infinite execution time.
-     */
-    double time_max;
-
-    /**
-     * Id to select a custom cost function.
-     */
-    std::vector<double> w_cost_function;
-
-    /**
-     * Frequency of parallel thread
-     */
-    unsigned parallels_frequency;
-
-    Eigen::Matrix<double,6,1> k_h_p;
-    Eigen::Matrix<double,6,1> k_h_d;
-};
 
 /**
  * The evaluation struct contains quality metrics for the skill execution and further meta information.
@@ -226,19 +165,6 @@ public:
 
     void read_configuration(const nlohmann::json & p);
 
-    /**
-     * Reads common skill parameters into the local configuration struct.
-     * @param[in] p Common skill parameters in json format.
-     */
-    void read_global_skill_parameters(const nlohmann::json& p);
-
-    /**
-     * Reads specific skill parameters into the local configuration struct. This function has to be defined by the skill developer.
-     * It can return a bool to indicate invalid parameter settings.
-     * @param[in] p Specific skill parameters in json format.
-     * @return Has to be defined by developer. False aborts skill execution.
-     */
-    virtual bool read_skill_parameters(const nlohmann::json& p) = 0;
 
     /**
      * Manually connects an existing object (in the knowledge base) to a valid skill object.
@@ -293,7 +219,7 @@ protected:
      * This function needs to be defined by the developer. It contains the setup of all manipulation primitives.
      * @param[in] p Percept struct.
      */
-    virtual void build_primitives(const Percept& p) = 0;
+    virtual bool build_primitives(const Percept& p) = 0;
 
     /**
      * This function may be overwritten by the developer and may contain any additional functionality of the skill that does not fit into the other functions.
@@ -395,7 +321,7 @@ protected:
     EvalSkill m_eval;
 
     std::shared_ptr<ManipulationPrimitive> m_active_mp;
-    KnowledgeBase* m_kb;
+    Memory* m_kb;
 
 private:
 

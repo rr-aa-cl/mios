@@ -7,7 +7,7 @@ bool SkillParametersNullSkill::read_parameters(const nlohmann::json &parameters)
     return false;
 }
 
-NullSkill::NullSkill(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config):Skill("NullSkill",kb,config){
+NullSkill::NullSkill(Memory *memory, std::shared_ptr<SkillParameters> config):Skill("NullSkill",memory,config){
 
 }
 
@@ -23,8 +23,8 @@ void NullSkill::create_config(){
     m_config=std::make_shared<SkillParameters_NullSkill>();
 }
 
-void NullSkill::build_primitives(const Percept &p){
-
+bool NullSkill::build_primitives(const Percept &p){
+    return false;
 }
 
 std::tuple<bool,std::string> NullSkill::check_edges(const Percept &p){

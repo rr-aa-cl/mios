@@ -9,6 +9,14 @@
 
 namespace mios {
 
+void SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
+    msrm_utils::read_json_param(p,"time_max",time_max);
+    msrm_utils::read_json_param(p,"w_cost_function",w_cost_function);
+    msrm_utils::read_json_param(p,"parallels_frequency",parallels_frequency);
+    msrm_utils::read_json_param<double,6,1>(p,"k_h_p",k_h_p);
+    msrm_utils::read_json_param<double,6,1>(p,"k_h_d",k_h_d);
+}
+
 EvalSkill::EvalSkill(){
     this->config=std::make_shared<SkillParametersNullSkill>();
     this->cost_suc=0;
@@ -279,16 +287,8 @@ void Skill::read_configuration(const nlohmann::json &p){
         m_config->user.read_parameters(p["user"]);
     }
     if(p.find("skill")!=p.end()){
-        this->read_global_skill_parameters(p["skill"]);
+        m_config->read_global_skill_parameters(p["skill"]);
     }
-}
-
-void Skill::read_global_skill_parameters(const nlohmann::json &p){
-    msrm_utils::read_json_param(p,"time_max",m_config->time_max);
-    msrm_utils::read_json_param(p,"w_cost_function",m_config->w_cost_function);
-    msrm_utils::read_json_param(p,"parallels_frequency",m_config->parallels_frequency);
-    msrm_utils::read_json_param<double,6,1>(p,"k_h_p",m_config->k_h_p);
-    msrm_utils::read_json_param<double,6,1>(p,"k_h_d",m_config->k_h_d);
 }
 
 void Skill::set_object(const std::string& o_type, const std::string& o){

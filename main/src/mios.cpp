@@ -56,7 +56,7 @@ int main(int argc, char** argv){
     mios::Interface interface(port);
     mios::ParameterServer live_params(port+1);
     mios::Core core(argc,argv);
-    mios::TaskHandler task_handler(&core);
+    mios::TaskEngine task_handler(&core);
     interface.initialize(&core,&task_handler);
     interface.start();
     live_params.initialize();

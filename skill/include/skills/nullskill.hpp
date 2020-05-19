@@ -11,10 +11,10 @@ struct SkillParametersNullSkill : public SkillParameters{
 
 class NullSkill : public Skill{
 public:
-    NullSkill(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config);
+    NullSkill(Memory *memory, std::shared_ptr<SkillParameters> config);
     void evaluate();
 private:
-    void build_primitives(const Percept& p);
+    bool build_primitives(const Percept& p);
     std::tuple<bool,std::string> check_edges(const Percept& p);
     bool check_local_suc_conditions(const Percept& p);
     bool check_local_err_conditions(const Percept &p);

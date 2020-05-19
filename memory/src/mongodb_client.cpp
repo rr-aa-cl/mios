@@ -1,0 +1,218 @@
+#include "mongodb_client/mongodb_client.hpp"
+#include <spdlog/spdlog.h>
+
+#include <bsoncxx/json.hpp>
+#include <bsoncxx/document/view_or_value.hpp>
+#include <bsoncxx/document/view.hpp>
+#include <bsoncxx/builder/stream/document.hpp>
+#include <mongocxx/uri.hpp>
+
+#include <mongocxx/exception/bulk_write_exception.hpp>
+#include <mongocxx/exception/logic_error.hpp>
+#include <mongocxx/exception/query_exception.hpp>
+#include <mongocxx/exception/operation_exception.hpp>
+#include <bsoncxx/exception/exception.hpp>
+
+#include "data_structures/parameters.hpp"
+
+namespace mios {
+
+MongodbClient::MongodbClient(const std::string &database, unsigned port){
+    spdlog::debug("[MONGODBCLIENT]: CONSTRUCTOR");
+    std::scoped_lock<std::mutex> lock(m_mutex_db_access);
+    mongocxx::uri uri("mongodb://localhost:"+std::to_string(port));
+    m_client = mongocxx::client(uri);
+    try{
+        m_mongodb=m_client.database(database);
+        m_collections.clear();
+        m_collections.insert(std::pair<const char*,mongocxx::collection>("prototypes",m_mongodb["prototypes"]));
+        m_collections.insert(std::pair<const char*,mongocxx::collection>("parameters",m_mongodb["parameters"]));
+    }catch(const mongocxx::exception& e){
+        spdlog::debug(e.what());
+    }
+}
+
+bool MongodbClient::read_document(const std::string& name, const std::string& collection, nlohmann::json &descr){
+    spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENT("+name+","+collection+")");
+    std::scoped_lock<std::mutex> lock(m_mutex_db_access);
+    try{
+        if(!m_mongodb.has_collection(collection)){
+            spdlog::error("Database has no "+collection+" collection");
+            return false;
+        }
+        if(m_collections.find(collection)==m_collections.end()){
+            spdlog::error("Database has no "+collection+" collection");
+            return false;
+        }
+        spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENT.PRE_COUNT");
+        unsigned n_doc = m_collections[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize});
+        if(n_doc==0){
+            //                                            msrm_utils::print_error("No document with id "+id+" of type "+type+" present in knowledge base");
+            descr=nlohmann::json();
+            return false;
+        }
+        if(n_doc>1){
+            spdlog::error("Multiple documents with name "+name+" of type "+collection+" present in knowledge base.");
+            descr=nlohmann::json();
+            return false;
+        }
+        spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENT.PRE_FIND");
+        bsoncxx::stdx::optional<bsoncxx::document::value> doc = m_collections[collection].find_one({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize});
+        std::string descr_str=bsoncxx::to_json(*doc);
+        descr=nlohmann::json::parse(descr_str);
+        return true;
+    }catch(const mongocxx::logic_error& e){
+        spdlog::error("Reading of document with name "+name+" of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const mongocxx::operation_exception& e){
+        spdlog::error("Reading of document with name "+name+" of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const mongocxx::exception& e){
+        spdlog::error("Reading of document with name "+name+" of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const bsoncxx::exception& e){
+        spdlog::error("Reading of document with name "+name+" of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const nlohmann::detail::parse_error& e){
+        spdlog::error("Reading of document with name "+name+" of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }
+    return false;
+}
+
+bool MongodbClient::write_document(const std::string& name, const std::string& collection, const nlohmann::json &descr){
+    std::scoped_lock<std::mutex> lock(m_mutex_db_access);
+    try{
+        if(!m_mongodb.has_collection(collection)){
+            spdlog::error("Database has no collection "+collection+".");
+            return false;
+        }
+        nlohmann::json descr_in=descr;
+        descr_in["name"]=name;
+        bsoncxx::document::view_or_value doc=bsoncxx::from_json(descr_in.dump());
+        if(m_collections[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize})>1){
+            m_mongodb[collection].replace_one(bsoncxx::builder::stream::document{} << "name" << name << bsoncxx::builder::stream::finalize,doc);
+
+        }else{
+            m_mongodb[collection].insert_one(doc);
+        }
+    }catch(const mongocxx::query_exception& e){
+        spdlog::error("Writing of document with name "+name+" of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const mongocxx::operation_exception& e){
+        spdlog::error("Writing of document with name "+name+" of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const mongocxx::logic_error& e){
+        spdlog::error("Writing of document with name "+name+" of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const bsoncxx::exception& e){
+        spdlog::error("Writing of document with name "+name+" of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const nlohmann::detail::type_error& e){
+        spdlog::error("Writing of document with name "+name+" of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }
+    return true;
+}
+
+bool MongodbClient::make_document_consistent(const std::string& name, std::string collection, const nlohmann::json& template_doc){
+    try{
+        bsoncxx::document::view_or_value doc=bsoncxx::from_json(template_doc.dump());
+        if(!m_mongodb.has_collection(collection)){
+            m_mongodb[collection].insert_one(doc);
+        }else{
+            if(m_mongodb[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize})==0){
+                m_mongodb[collection].insert_one(doc);
+            }else if(m_mongodb[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize})>1){
+                m_mongodb[collection].delete_many({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize});
+                m_mongodb[collection].insert_one(doc);
+            }else{
+                nlohmann::json doc_in_database;
+                read_document(name,collection,doc_in_database);
+                for(const auto& el : template_doc.items()){ // for every element in template
+                    if(el.key()=="_id"){
+                        continue;
+                    }
+                    if(doc_in_database.find(el.key())!=doc_in_database.end()){ // if element is found in doc
+                        if(el.value().type()!=doc_in_database[el.key()].type()){ // if type of element is not equal to type of element with same key in doc
+                            doc_in_database[el.key()]=template_doc[el.key()]; // replace with template
+                        }else{
+
+                        }
+                    }else{
+                        doc_in_database[el.key()]=template_doc[el.key()]; // assign with template
+                    }
+                }
+                for(const auto& el : doc_in_database.items()){ // for every element in document from database
+                    if(el.key()=="_id"){
+                        continue;
+                    }
+                    if(template_doc.find(el.key())==template_doc.end()){ // if element is not found in template
+                        doc_in_database.erase(el.key());
+                    }
+                }
+                bsoncxx::document::view_or_value doc_replacement=bsoncxx::from_json(doc_in_database.dump());
+                m_mongodb[collection].replace_one({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize},doc_replacement);
+            }
+        }
+    }catch(const bsoncxx::exception& e){
+        spdlog::debug(e.what());
+        spdlog::error("Could not make document with name " + name + " in collection " + collection + " consistent.");
+        return false;
+    }catch(const mongocxx::bulk_write_exception& e){
+        spdlog::debug(e.what());
+        spdlog::error("Could not make document with name " + name + " in collection " + collection + " consistent.");
+        return false;
+    }catch(const mongocxx::logic_error& e){
+        spdlog::debug(e.what());
+        spdlog::error("Could not make document with name " + name + " in collection " + collection + " consistent.");
+        return false;
+    }catch(const mongocxx::query_exception& e){
+        spdlog::debug(e.what());
+        spdlog::error("Could not make document with name " + name + " in collection " + collection + " consistent.");
+        return false;
+    }catch(const nlohmann::detail::type_error& e){
+        spdlog::debug(e.what());
+        spdlog::error("Could not make document with name " + name + " in collection " + collection + " consistent.");
+        return false;
+    }
+    return true;
+}
+
+bool MongodbClient::health_check() const{
+    try{
+        unsigned n_doc_parameters=3;
+        if(!m_mongodb.has_collection("parameters")){
+            spdlog::error("Database has no parameters collection.");
+            return false;
+        }
+        if(!m_mongodb.has_collection("prototypes")){
+            spdlog::error("Database has no prototypes collection.");
+            return false;
+        }
+        unsigned cnt_doc = m_mongodb.collection("parameters").count_documents({});
+        if(cnt_doc>n_doc_parameters){
+            spdlog::error("The parameters collection of the database has more than " + std::to_string(n_doc_parameters) + " documents.");
+            return false;
+        }
+    }catch(const mongocxx::query_exception& e){
+        spdlog::debug(e.what());
+        return false;
+    }catch(const mongocxx::operation_exception& e){
+        spdlog::debug(e.what());
+        return false;
+    }
+    return true;
+}
+
+}

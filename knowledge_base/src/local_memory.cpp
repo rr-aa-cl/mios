@@ -4,52 +4,6 @@
 
 namespace mios {
 
-MiosState::MiosState(){
-    this->active_skill="none";
-    this->active_task="none";
-    this->grasped_object="none";
-}
-
-Percept::Percept(){
-    this->set_0();
-    robot_mode=franka::RobotMode::kIdle;
-    time=0;
-}
-
-void Percept::set_0(){
-    O_T_EE=Eigen::Matrix<double,4,4>::Identity();
-    TF_T_EE=Eigen::Matrix<double,4,4>::Identity();
-    q.setZero();
-    dq.setZero();
-    theta.setZero();
-    dtheta.setZero();
-    O_dX.setZero();
-    TF_dX.setZero();
-    tau_ext.setZero();
-    tau_j.setZero();
-    K_F_ext.setZero();
-    K_dF_ext.setZero();
-    O_F_ext.setZero();
-    O_dF_ext.setZero();
-    TF_F_ext.setZero();
-    TF_dF_ext.setZero();
-    M.setZero();
-    C.setZero();
-    G.setZero();
-    B_J_EE.setZero();
-    B_J_O.setZero();
-    rho.setZero();
-    gripper_width=0;
-    is_grasping=false;
-
-    TF_T_EE_d=Eigen::Matrix<double,4,4>::Identity();
-    TF_dX_d.setZero();
-    TF_F_ff.setZero();
-    q_d.setZero();
-    dq_d.setZero();
-    tau_ff.setZero();
-}
-
 ConfigLimits::ConfigLimits(){
     q_upper<<2.85,1.7,2.85,0,2.85,3.7,2.85;
     q_lower<<-2.85,-1.7,-2.85,-3,-2.85,-0.05,-2.85;

@@ -1,12 +1,7 @@
 #include "task/task_handler.hpp"
-
-#include "core/core.hpp"
 #include "task/taskfactory.hpp"
-#include "patterns/pattern_custom.hpp"
-
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#include "core/core.hpp"
+#include "memory/memory.hpp"
 
 #include <sstream>
 #include <spdlog/spdlog.h>
@@ -15,18 +10,18 @@ namespace mios {
 
 
 
-TaskHandler::TaskHandler(Core *core):m_core(core),m_task_life_cycle(TaskLifeCycle::Switch),m_active_task(TaskFactory::create_task(TaskName::TaskName_IdleTask,core)){
+TaskEngine::TaskEngine(Core *core):m_core(core),m_memory(core->get_memory()),m_task_life_cycle(TaskLifeCycle::Switch),m_active_task(TaskFactory::create_task(TaskName::TaskName_IdleTask,core)){
 }
 
-void TaskHandler::reset(){
+void TaskEngine::reset(){
 
 }
 
-std::string TaskHandler::get_active_task_id() const{
+std::string TaskEngine::get_active_task_id() const{
     return m_active_task->get_id();
 }
 
-void TaskHandler::life_cycle(){
+void TaskEngine::life_cycle(){
     while(true){
         bool exceptional_event=false;
         bool user_stop=false;
@@ -195,7 +190,7 @@ void TaskHandler::life_cycle(){
                 m_task_queue.clear();
             }
             if(m_task_queue.empty()){
-                m_task_queue.emplace_back(std::tuple<std::string,std::shared_ptr<Task>,nlohmann::json>("IdleTask",TaskFactory::create_task(TaskName::TaskName_IdleTask,m_core),nlohmann::json()));
+                m_task_queue.emplace_back(std::make_tuple("IdleTask",m_memory->load_task("IdleTask",nlohmann::json(),m_core),nlohmann::json()));
             }
             m_active_task = std::get<1>(m_task_queue.front());
             m_task_life_cycle = TaskLifeCycle::Startup;
@@ -204,7 +199,7 @@ void TaskHandler::life_cycle(){
     }
 }
 
-std::tuple<bool,std::string,std::string> TaskHandler::start_task(const std::string &task_id, const nlohmann::json &parameters, bool queue_task){
+std::tuple<bool,std::string,std::string> TaskEngine::start_task(const std::string &task_id, const nlohmann::json &parameters, bool queue_task){
     std::scoped_lock<std::mutex> queue_lock(m_mtx_task_queue);
     std::string err="";
     std::string task_uuid="INVALID";
@@ -227,8 +222,9 @@ std::tuple<bool,std::string,std::string> TaskHandler::start_task(const std::stri
             task_uuid="INVALID";
             result=false;
         }else{
-            std::shared_ptr<Task> new_task=TaskFactory::create_task(task_name,m_core);
+            std::shared_ptr<Task> new_task=m_memory->load_task(task_id,parameters,m_core);
             spdlog::info("Queuing task with uuid " + new_task->get_uuid());
+
             m_task_queue.emplace_back(std::tuple<std::string,std::shared_ptr<Task>,nlohmann::json>(new_task->get_uuid(),new_task,parameters));
             result=true;
             task_uuid=new_task->get_uuid();
@@ -241,7 +237,7 @@ std::tuple<bool,std::string,std::string> TaskHandler::start_task(const std::stri
     return std::make_tuple(result,task_uuid,err);
 }
 
-std::pair<bool,std::string> TaskHandler::stop_task(bool nominal, bool success, bool recover,bool empty_queue, double cost_suc, double cost_err){
+std::pair<bool,std::string> TaskEngine::stop_task(bool nominal, bool success, bool recover,bool empty_queue, double cost_suc, double cost_err){
     if(m_active_task->get_id()=="IdleTask"){
         return std::pair<bool,std::string>(true,"");
     }
@@ -250,7 +246,7 @@ std::pair<bool,std::string> TaskHandler::stop_task(bool nominal, bool success, b
     return std::pair<bool,std::string>(true,"");
 }
 
-std::pair<bool,std::string> TaskHandler::remove_task(const std::string& uuid){
+std::pair<bool,std::string> TaskEngine::remove_task(const std::string& uuid){
     std::scoped_lock<std::mutex> lock(m_mtx_task_queue);
     auto it=m_task_queue.begin();
     while(it!=m_task_queue.end()){
@@ -264,7 +260,7 @@ std::pair<bool,std::string> TaskHandler::remove_task(const std::string& uuid){
     return std::pair<bool,std::string>(false,"No task with uuid "+uuid+" in queue.");
 }
 
-bool TaskHandler::subscribe(const std::string& task_uuid, std::shared_ptr<TaskObserver> observer){
+bool TaskEngine::subscribe(const std::string& task_uuid, std::shared_ptr<TaskObserver> observer){
     bool found_uuid=false;
     for(const auto& t : m_task_queue){
         if(std::get<1>(t)->get_uuid()==task_uuid){
@@ -280,7 +276,7 @@ bool TaskHandler::subscribe(const std::string& task_uuid, std::shared_ptr<TaskOb
     }
 }
 
-std::tuple<bool,EvalTask,std::string> TaskHandler::wait_for_task(const std::string &task_uuid){
+std::tuple<bool,EvalTask,std::string> TaskEngine::wait_for_task(const std::string &task_uuid){
     std::shared_ptr<TaskObserver> observer = std::make_shared<TaskObserver>();
     EvalTask e;
     std::string err="";
@@ -298,7 +294,7 @@ std::tuple<bool,EvalTask,std::string> TaskHandler::wait_for_task(const std::stri
     return std::make_tuple(result,e,err);
 }
 
-std::pair<EvalTask, bool> TaskHandler::check_if_finished(const std::string &task_uuid){
+std::pair<EvalTask, bool> TaskEngine::check_if_finished(const std::string &task_uuid){
     EvalTask e;
     if(this->request_eval(task_uuid,e)){
         return std::pair<EvalTask,bool>(e,true);
@@ -307,7 +303,7 @@ std::pair<EvalTask, bool> TaskHandler::check_if_finished(const std::string &task
     }
 }
 
-bool TaskHandler::request_eval(const std::string &id, EvalTask &e) const{
+bool TaskEngine::request_eval(const std::string &id, EvalTask &e) const{
     if(m_eval_storage.find(id)==m_eval_storage.end()){
         return false;
     }else{
@@ -316,7 +312,7 @@ bool TaskHandler::request_eval(const std::string &id, EvalTask &e) const{
     }
 }
 
-bool TaskHandler::is_busy() const{
+bool TaskEngine::is_busy() const{
     if((m_task_life_cycle==TaskLifeCycle::Startup || m_task_life_cycle==TaskLifeCycle::Execution) && m_active_task->get_id()=="IdleTask"){
         return false;
     }else{
@@ -324,7 +320,7 @@ bool TaskHandler::is_busy() const{
     }
 }
 
-const std::list<std::tuple<std::string, std::shared_ptr<Task>, nlohmann::json> > *TaskHandler::get_task_queue(){
+const std::list<std::tuple<std::string, std::shared_ptr<Task>, nlohmann::json> > *TaskEngine::get_task_queue(){
     return &m_task_queue;
 }
 

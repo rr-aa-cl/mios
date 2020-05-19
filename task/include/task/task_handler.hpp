@@ -11,13 +11,14 @@ namespace mios {
 
 class Core;
 class TaskList;
+class Memory;
 
 enum TaskLifeCycle{PreChecks,Startup,Termination,Execution,Recovery,Switch,Idle};
 
 
-class TaskHandler{
+class TaskEngine{
 public:
-    TaskHandler(Core* core);
+    TaskEngine(Core* core,);
 
     void life_cycle();
 
@@ -43,6 +44,7 @@ private:
     std::map<std::string,EvalTask> m_eval_storage;
 
     Core* m_core;
+    Memory* m_memory;
 };
 
 }

@@ -7,13 +7,13 @@ class JsonUDPServer;
 }
 namespace mios {
 class Core;
-class TaskHandler;
+class TaskEngine;
 
 class Interface{
 public:
     Interface(unsigned port);
 
-    void initialize(Core* core, TaskHandler* task_handler);
+    void initialize(Core* core, TaskEngine* task_handler);
     void start();
     void stop();
 
@@ -68,7 +68,7 @@ private:
 
     msrm_utils::JsonUDPServer _ws_server;
     Core* _core;
-    TaskHandler* _task_handler;
+    TaskEngine* _task_handler;
 };
 
 

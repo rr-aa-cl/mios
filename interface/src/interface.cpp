@@ -10,7 +10,7 @@ namespace mios {
 Interface::Interface(unsigned port):_core(nullptr),_task_handler(nullptr),_ws_server(msrm_utils::JsonUDPServer(port)){
 }
 
-void Interface::initialize(Core *core, TaskHandler *task_handler){
+void Interface::initialize(Core *core, TaskEngine *task_handler){
     _core=core;
     _task_handler=task_handler;
     this->bind_methods();

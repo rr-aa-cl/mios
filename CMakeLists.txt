@@ -36,7 +36,8 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/event_publisher/include
     ${CMAKE_SOURCE_DIR}/plugins/include
     ${CMAKE_SOURCE_DIR}/panda/include
-    ${CMAKE_SOURCE_DIR}/controller_pipeline/include)
+    ${CMAKE_SOURCE_DIR}/controller_pipeline/include
+    ${CMAKE_SOURCE_DIR}/memory/include)
 
 set(PLUGINS mogen_p2p mogen_p2p_joint cntr_aic cntr_force cntr_joint_imp cntr_joint_var_imp cntr_mux cntr_nullsp_proj
     conv_vel2pose motion_error_cart virtual_cube virtual_walls_joint wave_variables tp_joint_lim)
@@ -47,6 +48,8 @@ set(SOURCES core/src/core.cpp event_publisher/src/event_publisher.cpp interface/
     task/src/taskfactory.cpp task/src/taskobserver.cpp
     telemetry/src/telemetry_udp.cpp utils/src/actuator.cpp utils/src/percept.cpp panda/src/panda_body.cpp controller_pipeline/src/torque_pipeline.cpp)
 
+set(MEMORY_SRC memory/src/memory.cpp memory/src/lt_memory.cpp memory/src/st_memory.cpp memory/src/mongodb_client.cpp memory/src/parameters.cpp)
+
 set(SOURCES_PRIMITIVES manipulation_primitive/src/primitives/mp_basic.cpp manipulation_primitive/src/primitives/mp_basic_joint.cpp manipulation_primitive/src/primitives/mp_telepresence.cpp
     manipulation_primitive/src/primitives/mp_external.cpp manipulation_primitive/src/primitives/nullprimitive.cpp)
 
@@ -54,7 +57,7 @@ file(GLOB SOURCES_SKILLS "skill/src/skills/*.cpp")
 file(GLOB SOURCES_TASKS "task/src/tasks/*.cpp")
 #file(GLOB SOURCES_PATTERN "led_pattern/src/patterns/*.cpp")
 
-add_executable(mios main/src/mios.cpp ${SOURCES} ${SOURCES_PRIMITIVES} ${SOURCES_SKILLS} ${SOURCES_TASKS} ${SOURCES_PATTERN})
+add_executable(mios main/src/mios.cpp ${SOURCES} ${MEMORY_SRC} ${SOURCES_PRIMITIVES} ${SOURCES_SKILLS} ${SOURCES_TASKS} ${SOURCES_PATTERN})
 cotire(mios)
 
 target_link_libraries(mios general ${PLUGINS} franka mongocxx bsoncxx boost_system SDL2 SDL2_mixer ssl crypto pthread
