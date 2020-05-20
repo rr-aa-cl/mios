@@ -146,7 +146,7 @@ std::optional<std::string> PandaBody::find_robot(){
     return robot_address;
 }
 
-bool PandaBody::torque_control(std::function<franka::Torques (const franka::RobotState &)> controller_callback){
+bool PandaBody::control(std::function<franka::Torques (const franka::RobotState &)> controller_callback){
     if(m_arm_connected){
         try{
             m_panda_arm->control(controller_callback);
@@ -154,6 +154,145 @@ bool PandaBody::torque_control(std::function<franka::Torques (const franka::Robo
         }catch(const franka::ControlException& e){
             spdlog::debug(e.what());
         }
+    }else{
+        dummy_control(controller_callback);
+    }
+}
+
+bool PandaBody::control(std::function<franka::CartesianVelocities (const franka::RobotState &)> controller_callback){
+    if(m_arm_connected){
+        try{
+            m_panda_arm->control(controller_callback);
+            return true;
+        }catch(const franka::ControlException& e){
+            spdlog::debug(e.what());
+        }
+    }else{
+        dummy_control(controller_callback);
+    }
+}
+
+bool PandaBody::control(std::function<franka::JointVelocities (const franka::RobotState &)> controller_callback){
+    if(m_arm_connected){
+        try{
+            m_panda_arm->control(controller_callback);
+            return true;
+        }catch(const franka::ControlException& e){
+            spdlog::debug(e.what());
+        }
+    }else{
+        dummy_control(controller_callback);
+    }
+}
+
+bool PandaBody::control(std::function<franka::CartesianPose (const franka::RobotState &)> controller_callback){
+    if(m_arm_connected){
+        try{
+            m_panda_arm->control(controller_callback);
+            return true;
+        }catch(const franka::ControlException& e){
+            spdlog::debug(e.what());
+        }
+    }else{
+        dummy_control(controller_callback);
+    }
+}
+
+bool PandaBody::control(std::function<franka::JointPositions (const franka::RobotState &)> controller_callback){
+    if(m_arm_connected){
+        try{
+            m_panda_arm->control(controller_callback);
+            return true;
+        }catch(const franka::ControlException& e){
+            spdlog::debug(e.what());
+        }
+    }else{
+        dummy_control(controller_callback);
+    }
+}
+
+void PandaBody::dummy_control(std::function<franka::Torques (const franka::RobotState &)> controller_callback){
+    franka::Torques tau_J={0,0,0,0,0,0,0};
+    franka::RobotState state;
+    state.K_F_ext_hat_K={0,0,0,0,0,0};
+    state.O_F_ext_hat_K={0,0,0,0,0,0};
+    state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
+    state.q={0,0,0,0,0,0,0};
+    state.dq={0,0,0,0,0,0,0};
+    while(!tau_J.motion_finished){
+        auto t_s_start = std::chrono::system_clock::now();
+        tau_J=controller_callback(state);
+        auto t_s_end = std::chrono::system_clock::now();
+        double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
+        std::this_thread::sleep_for(std::chrono::microseconds(1000-static_cast<int>(t)));
+    }
+}
+
+void PandaBody::dummy_control(std::function<franka::CartesianVelocities (const franka::RobotState &)> controller_callback){
+    franka::CartesianVelocities tau_J={0,0,0,0,0,0,0};
+    franka::RobotState state;
+    state.K_F_ext_hat_K={0,0,0,0,0,0};
+    state.O_F_ext_hat_K={0,0,0,0,0,0};
+    state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
+    state.q={0,0,0,0,0,0,0};
+    state.dq={0,0,0,0,0,0,0};
+    while(!tau_J.motion_finished){
+        auto t_s_start = std::chrono::system_clock::now();
+        tau_J=controller_callback(state);
+        auto t_s_end = std::chrono::system_clock::now();
+        double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
+        std::this_thread::sleep_for(std::chrono::microseconds(1000-static_cast<int>(t)));
+    }
+}
+
+void PandaBody::dummy_control(std::function<franka::JointVelocities (const franka::RobotState &)> controller_callback){
+    franka::JointVelocities tau_J={0,0,0,0,0,0,0};
+    franka::RobotState state;
+    state.K_F_ext_hat_K={0,0,0,0,0,0};
+    state.O_F_ext_hat_K={0,0,0,0,0,0};
+    state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
+    state.q={0,0,0,0,0,0,0};
+    state.dq={0,0,0,0,0,0,0};
+    while(!tau_J.motion_finished){
+        auto t_s_start = std::chrono::system_clock::now();
+        tau_J=controller_callback(state);
+        auto t_s_end = std::chrono::system_clock::now();
+        double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
+        std::this_thread::sleep_for(std::chrono::microseconds(1000-static_cast<int>(t)));
+    }
+}
+
+void PandaBody::dummy_control(std::function<franka::CartesianPose (const franka::RobotState &)> controller_callback){
+    franka::CartesianPose tau_J={0,0,0,0,0,0,0};
+    franka::RobotState state;
+    state.K_F_ext_hat_K={0,0,0,0,0,0};
+    state.O_F_ext_hat_K={0,0,0,0,0,0};
+    state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
+    state.q={0,0,0,0,0,0,0};
+    state.dq={0,0,0,0,0,0,0};
+    while(!tau_J.motion_finished){
+        auto t_s_start = std::chrono::system_clock::now();
+        tau_J=controller_callback(state);
+        auto t_s_end = std::chrono::system_clock::now();
+        double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
+        std::this_thread::sleep_for(std::chrono::microseconds(1000-static_cast<int>(t)));
+    }
+}
+
+void PandaBody::dummy_control(std::function<franka::JointPositions (const franka::RobotState &)> controller_callback){
+    franka::JointPositions tau_J={0,0,0,0,0,0,0};
+    franka::RobotState state;
+    state.K_F_ext_hat_K={0,0,0,0,0,0};
+    state.O_F_ext_hat_K={0,0,0,0,0,0};
+    state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
+    state.q={0,0,0,0,0,0,0};
+    state.dq={0,0,0,0,0,0,0};
+    while(!tau_J.motion_finished){
+        auto t_s_start = std::chrono::system_clock::now();
+        tau_J=controller_callback(state);
+        auto t_s_end = std::chrono::system_clock::now();
+        double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
+        std::this_thread::sleep_for(std::chrono::microseconds(1000-static_cast<int>(t)));
     }
 }
 

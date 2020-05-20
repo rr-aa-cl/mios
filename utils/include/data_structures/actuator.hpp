@@ -2,7 +2,7 @@
 
 #include <eigen3/Eigen/Core>
 
-#include "utils/percept.hpp"
+#include "data_structures/percept.hpp"
 #include "knowledge_base/local_memory.hpp"
 
 namespace mios {

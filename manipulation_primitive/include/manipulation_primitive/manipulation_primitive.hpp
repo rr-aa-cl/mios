@@ -1,10 +1,11 @@
 #pragma once
 
-#include "knowledge_base/knowledge_base.hpp"
-#include "utils/percept.hpp"
-#include "utils/actuator.hpp"
+#include "data_structures/percept.hpp"
+#include "data_structures/actuator.hpp"
 
 namespace mios {
+
+class Memory;
 
 struct ConfigMP{
 
@@ -16,7 +17,7 @@ class Attractor{
 
 class ManipulationPrimitive{
 public:
-    ManipulationPrimitive(const std::string& type, const Percept& p_0, std::shared_ptr<ConfigMP> config, std::shared_ptr<Attractor> attractor, KnowledgeBase* kb, const std::string& id);
+    ManipulationPrimitive(const std::string& type, const Percept& p_0, std::shared_ptr<ConfigMP> config, std::shared_ptr<Attractor> attractor, Memory* memory, const std::string& id);
     virtual ~ManipulationPrimitive();
 
     bool get_flag_error() const;
@@ -43,7 +44,7 @@ public:
     virtual void i_terminate() = 0;
 protected:
     Actuator m_cmd;
-    KnowledgeBase* m_kb;
+    Memory* m_memory;
 private:
     std::shared_ptr<ConfigMP> m_config;
     std::shared_ptr<Attractor> m_attractor;

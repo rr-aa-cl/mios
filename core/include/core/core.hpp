@@ -27,8 +27,6 @@
 
 namespace mios {
 
-enum ControlMode{mCartTorque,mJointTorque,mCartVelocity,mJointVelocity};
-
 class Skill;
 
 class Core{
@@ -42,11 +40,6 @@ public:
     bool reset();
     bool has_terminated() const;
 
-    std::string get_last_error() const;
-
-    Memory* get_memory();
-    void set_live_parameter_server(ParameterServer *server);
-
     bool execute_skill();
     void terminate_control_cycle();
 
@@ -54,16 +47,19 @@ public:
     void unload_skill();
 
     // Gripper
-//    bool grasp_object(const std::string& o, double width=-1, double speed=1, double force=30, bool check_width=false);
-//    bool release_object(double width=-1,double speed=1);
-//    bool grasp(double width,double speed,double force);
-//    bool move_gripper(double width,double speed);
-//    bool is_grasping() const;
-//    bool home_gripper();
-//    bool set_grasped_object(const std::string& o);
+    bool grasp_object(const std::string& o, double speed=1);
+    bool release_object(double width=-1,double speed=1);
+    bool grasp(double width,double speed,double force);
+    bool move_gripper(double width,double speed);
+    bool is_grasping() const;
+    bool home_gripper();
+    bool set_grasped_object(const std::string& o);
 
     bool refresh_percept(std::optional<Eigen::Matrix<double, 3, 3> > O_R_TF);
-    const Percept& get_percept() const;
+
+public:
+    Memory* get_memory();
+    const Percept * const get_percept() const;
 
 private:
 
@@ -72,17 +68,13 @@ private:
     void check_cartesian_velocity_workspace(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
     void base_avoidance(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
 
-    void dummy_control(std::function<franka::Torques(const franka::RobotState& state)> control_cycle);
-    void dummy_control(std::function<franka::CartesianVelocities(const franka::RobotState& state)> control_cycle);
-    void dummy_control(std::function<franka::JointVelocities(const franka::RobotState& state)> control_cycle);
-
     franka::Finishable *control_base_cycle(const franka::RobotState& state);
     franka::Torques cart_torque_controller_pipeline(const franka::RobotState& state);
+    franka::Torques joint_torque_controller_pipeline(const franka::RobotState& state);
+    franka::CartesianVelocities cart_velocity_controller_pipeline(const franka::RobotState& state);
+    franka::JointPositions joint_velocity_controller_pipeline(const franka::RobotState& state);
 
     void terminate_periphery();
-
-    void start_telemetry();
-    void terminate_telemetry();
 
     bool validity_check_torque(std::array<double, 7>& tau_J);
     bool validity_check_velocity_cart(std::array<double, 6>& O_dP_EE_d);

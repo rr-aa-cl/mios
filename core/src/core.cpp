@@ -36,13 +36,13 @@ Core::Core(int argc, char **argv):m_active_skill(std::make_shared<NullSkill>(&m_
     this->_config_internal.grasped_object="none";
 
     spdlog::info("Initializing knowledgebase...");
-    if(!m_memory.initialize(this->_config_internal)){
-        spdlog::error("Could not initialize knowledge base, shutting down. Mongodb service must run on port 27017. Check status with <systemctl status mongodb.service>.");
+    if(!m_memory.initialize()){
+        spdlog::error("Could not initialize memory, shutting down. Mongodb service must run on port 27017. Check status with <systemctl status mongodb.service>.");
         exit(-1);
     }
 
     spdlog::info("Initializing MIOS core...");
-    if(!this->initialize()){
+    if(!initialize()){
         spdlog::warn("Could not initialize MIOS core. I may be able to recover...");
     }
 }
@@ -52,8 +52,7 @@ Core::~Core(){
 }
 
 bool Core::initialize(){
-    if(!m_memory.load_parameters()){
-        spdlog::error("Could not load all parameters. Robot is not operational.");
+    if(!m_memory.set_default_parameters()){
         return false;
     }
 
@@ -95,15 +94,11 @@ Memory* Core::get_memory(){
 
 bool Core::load_skill(std::shared_ptr<Skill> skill){
     spdlog::info("Loading skill "+skill->get_id()+".");
-    // set active skill and setup
     m_active_skill=skill;
     refresh_percept({});
     m_active_skill->write_O_R_TF_to_config(m_percept);
-    refresh_percept(m_active_skill->get_config<>()->frames.O_R_TF);
-    m_percept.controller.K_x=m_active_skill->get_config<>()->controller.K_0;
-    m_percept.controller.xi_x=m_active_skill->get_config<>()->controller.xi;
-    m_percept.controller.K_theta=m_active_skill->get_config<>()->controller.K_theta;
-    m_percept.controller.xi_theta=m_active_skill->get_config<>()->controller.xi_theta;
+    refresh_percept(m_memory.read_parameters()->frames.O_R_T);
+    m_controller_pipeline->update_percept(m_percept.controller);
     spdlog::info("Applying skill context...");
     m_memory.apply_skill_context(m_active_skill->get_id());
     spdlog::info("Initializing skill...");
@@ -129,10 +124,10 @@ bool Core::execute_skill(){
 
     spdlog::debug("CORE: start_control_cycle: while-loop");
     this->_tau_J_old={0,0,0,0,0,0,0};
-    refresh_percept(m_active_skill->get_config<>()->frames.O_R_TF);
-    ConfigController config_controller = m_active_skill->get_config<>()->controller;
-    ConfigUser config_user = m_active_skill->get_config<>()->user;
-    ConfigFrames config_frames = m_active_skill->get_config<>()->frames;
+    refresh_percept(m_memory.read_parameters()->frames.O_R_T);
+    ConfigController config_controller = m_memory.read_parameters()->controller;
+    ConfigUser config_user = m_memory.read_parameters()->user;
+    ConfigFrames config_frames =m_memory.read_parameters()->frames;
 
     std::array<double,3> load_com = msrm_utils::convert_to_array<double,3,1>(config_user.load_com);
     std::array<double,9> load_I = msrm_utils::convert_to_array<double,3,3>(config_user.load_I);
@@ -150,11 +145,10 @@ bool Core::execute_skill(){
     }
 
     bool result;
-    if(this->_kb.get_local_memory()->access_config_general().control_mode==ControlMode::mCartTorque){
-
+    if(m_memory.read_parameters()->control.control_mode==ControlMode::mCartTorque){
         m_controller_pipeline=std::make_unique<CartTorqueControllerPipeline>();
-        m_controller_pipeline->initialize(m_percept,&_kb);
-        result=m_panda_body.torque_control(std::bind(&Core::cart_torque_controller_pipeline,this,std::placeholders::_1));
+        m_controller_pipeline->initialize(m_percept,&m_memory);
+        result=m_panda_body.control(std::bind(&Core::cart_torque_controller_pipeline,this,std::placeholders::_1));
     }
 
     m_controller_pipeline->terminate();
@@ -168,7 +162,7 @@ void Core::terminate_control_cycle(){
 franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
 
     franka::GripperState gripper_state;
-    m_percept.update(m_panda_body.get_panda_model(),state,gripper_state,m_active_skill->get_config<>()->frames.O_R_TF);
+    m_percept.update(m_panda_body.get_panda_model(),state,gripper_state,m_memory.read_parameters()->frames.O_R_T);
     Actuator* cmd=m_active_skill->cycle(m_percept);
     franka::Finishable* panda_cmd=m_controller_pipeline->step(m_percept,*cmd);
     m_controller_pipeline->update_percept(m_percept.controller);
@@ -180,6 +174,18 @@ franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
 
 franka::Torques Core::cart_torque_controller_pipeline(const franka::RobotState& state){
     return *static_cast<franka::Torques*>(control_base_cycle(state));
+}
+
+franka::Torques Core::joint_torque_controller_pipeline(const franka::RobotState& state){
+    return *static_cast<franka::Torques*>(control_base_cycle(state));
+}
+
+franka::CartesianVelocities Core::cart_velocity_controller_pipeline(const franka::RobotState& state){
+    return *static_cast<franka::CartesianVelocities*>(control_base_cycle(state));
+}
+
+franka::JointVelocities Core::joint_velocity_controller_pipeline(const franka::RobotState& state){
+    return *static_cast<franka::JointVelocities*>(control_base_cycle(state));
 }
 
 //franka::Torques Core::control_cycle_torque_joint(const franka::RobotState state){
@@ -315,93 +321,6 @@ franka::Torques Core::cart_torque_controller_pipeline(const franka::RobotState& 
 //    }
 
 //    return dq_d;
-//}
-
-//void Core::cycle_led(std::function<LEDCmd(const Percept& p)> callback_led){
-//    unsigned T;
-
-//    while(true){
-//        LEDCmd led_output = callback_led(this->_percept);
-//        if(led_output.finished){
-//            spdlog::info("Unloading LED pattern");
-//            return;
-//        }
-
-//        if(led_output.f>0){
-//            T=1/led_output.f*1000;
-//        }
-//        if(led_output.f<=0){
-//            T=std::numeric_limits<unsigned>::max();
-//        }
-//        nlohmann::json request;
-//        for(const auto& led : led_output.led){
-//            nlohmann::json l;
-//            l["colors"].emplace_back(std::get<0>(led.second.colors));
-//            l["colors"].emplace_back(std::get<1>(led.second.colors));
-//            l["colors"].emplace_back(std::get<2>(led.second.colors));
-//            l["tt"]=led.second.tt;
-//            l["id"]=this->_led_panel_id[led.first];
-//            request.push_back(l);
-//        }
-//        nlohmann::json response;
-//        msrm_utils::JsonRPCClient::call_method("localhost",9000,"set_led",request,response);
-
-//        std::this_thread::sleep_for(std::chrono::milliseconds(T));
-//        if(!this->_flag_run_led){
-//            spdlog::info("LED thread has been stopped.");
-//            return;
-//        }
-//    }
-//}
-
-//void Core::cycle_led_wrapper(std::shared_ptr<LEDPattern> p){
-//    this->cycle_led(std::bind(&LEDPattern::cycle_led,p.get(),&this->_percept));
-//}
-
-//void Core::cycle_sound(std::function<SoundCmd(const Percept& p)> callback_sound){
-
-//    while(true){
-//        SoundCmd sound_output = callback_sound(this->_percept);
-//        if(sound_output.f>10){
-//            spdlog::warn("Setting the sound cycle frequency to more than 10 Hz may lead to undefined behavior.");
-//        }
-//        unsigned T;
-//        if(sound_output.f>0){
-//            T=1/sound_output.f*1000;
-//        }
-//        if(sound_output.f<=0){
-//            T=std::numeric_limits<unsigned>::max();
-//        }
-//        if(!sound_output.update || sound_output.file==""){
-//            continue;
-//        }
-//        std::string path=this->_config_internal.path_executable+"/../resources/audio/"+sound_output.file;
-//        Mix_Music* music = Mix_LoadMUS(path.c_str());
-
-//        if (music){
-//            if (Mix_PlayMusic(music, 1) == 0){
-//                while (Mix_PlayingMusic()){
-//                    SDL_Delay(10);
-//                    //                    boost::this_thread::interruption_point();
-//                }
-//            }
-//            else{
-//                std::cerr << "Mix_PlayMusic ERROR: " << Mix_GetError() << std::endl;
-//            }
-
-//            Mix_FreeMusic(music);
-//            music = 0;
-//        }
-//        else{
-//            std::cerr << "Mix_LoadMuS ERROR: " << Mix_GetError() << std::endl;
-//        }
-//        std::this_thread::sleep_for(std::chrono::milliseconds(T));
-//        if(!this->_flag_run_sound){
-//            Mix_HaltMusic();
-//            spdlog::info("Sound thread has been stopped.");
-//            return;
-//        }
-//    }
 //}
 
 //bool Core::set_grasped_object(const std::string &o){
@@ -766,7 +685,7 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF){
     return true;
 }
 
-const Percept& Core::get_percept() const{
+const Percept* const Core::get_percept() const{
     return m_percept;
 }
 
@@ -827,47 +746,6 @@ const Percept& Core::get_percept() const{
 //        TF_dX_d=msrm_utils::rotate_vector(Cyl_dX_d,O_R_Cyl);
 //    }
 //}
-
-void Core::dummy_control(std::function<franka::Torques (const franka::RobotState &)> control_cycle){
-    franka::Torques tau_J={0,0,0,0,0,0,0};
-    franka::RobotState state;
-    state.K_F_ext_hat_K={0,0,0,0,0,0};
-    state.O_F_ext_hat_K={0,0,0,0,0,0};
-    state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
-    state.q={0,0,0,0,0,0,0};
-    state.dq={0,0,0,0,0,0,0};
-    while(!tau_J.motion_finished){
-        auto t_s_start = std::chrono::system_clock::now();
-        tau_J=control_cycle(state);
-        auto t_s_end = std::chrono::system_clock::now();
-        double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
-        std::this_thread::sleep_for(std::chrono::microseconds(1000-static_cast<int>(t)));
-    }
-}
-
-void Core::dummy_control(std::function<franka::CartesianVelocities (const franka::RobotState &)> control_cycle){
-    franka::CartesianVelocities dX_d={0,0,0,0,0,0};
-    franka::RobotState state;
-    while(!dX_d.motion_finished){
-        auto t_s_start = std::chrono::system_clock::now();
-        dX_d=control_cycle(state);
-        auto t_s_end = std::chrono::system_clock::now();
-        double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
-        std::this_thread::sleep_for(std::chrono::microseconds(1000-static_cast<int>(t)));
-    }
-}
-
-void Core::dummy_control(std::function<franka::JointVelocities (const franka::RobotState &)> control_cycle){
-    franka::JointVelocities dq_d={0,0,0,0,0,0,0};
-    franka::RobotState state;
-    while(!dq_d.motion_finished){
-        auto t_s_start = std::chrono::system_clock::now();
-        dq_d=control_cycle(state);
-        auto t_s_end = std::chrono::system_clock::now();
-        double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
-        std::this_thread::sleep_for(std::chrono::microseconds(1000-static_cast<int>(t)));
-    }
-}
 
 std::tuple<std::string,std::string,std::string> Core::get_desk_data(){
     return std::tie(this->_kb.get_local_memory()->access_config_system().ip_robot,

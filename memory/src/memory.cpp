@@ -30,12 +30,20 @@ bool Memory::load_default_parameters(nlohmann::json& parameters){
     return m_lt_memory.load_default_parameters(parameters);
 }
 
+bool Memory::set_default_parameters(){
+    return m_st_memory.set_default_parameters();
+}
+
 bool Memory::apply_skill_context(const std::string skill_id){
     return m_st_memory.apply_skill_context(skill_id);
 }
 
 std::shared_ptr<Task> Memory::load_task(const std::string &task_id, const nlohmann::json &parameters,Core* core){
     return m_lt_memory.load_task(task_id,parameters,core);
+}
+
+std::shared_ptr<Task> Memory::load_subtask(const std::string &task_id, const nlohmann::json &parameters,Core* core){
+    return m_lt_memory.load_subtask(task_id,parameters,core);
 }
 
 bool Memory::load_default_task_context(const std::string task_id, nlohmann::json &task_context){
@@ -47,19 +55,23 @@ bool Memory::load_default_skill_context(const std::string skill_type, nlohmann::
 }
 
 Parameters* Memory::get_parameters(){
-    return m_lt_memory.get_parameters();
-}
-
-const Parameters* const Memory::read_parameters() const{
-    return m_lt_memory.read_parameters();
-}
-
-ShortTermParameters *Memory::get_short_term_parameters(){
     return m_st_memory.get_parameters();
 }
 
-bool Memory::store_prototype_result(const std::string &prototype_uuid, const nlohmann::json &result){
-    return m_st_memory.store_prototype_result(prototype_uuid,result);
+const Parameters* const Memory::read_parameters() const{
+    return m_st_memory.read_parameters();
+}
+
+LiveContext *Memory::get_live_context(){
+    return m_st_memory.get_live_context();
+}
+
+bool Memory::get_task_data(const std::string uuid, TaskData &data) const{
+    return m_lt_memory.get_task_data(uuid,data);
+}
+
+bool Memory::store_task_result(const std::string &uuid, const nlohmann::json &result){
+    return m_st_memory.store_task_result(uuid,result);
 }
 
 void  Memory::set_live_parameter(const std::string &key, const nlohmann::json &value){

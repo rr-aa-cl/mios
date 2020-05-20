@@ -2,8 +2,8 @@
 
 namespace mios {
 
-ManipulationPrimitive::ManipulationPrimitive(const std::string &type, const Percept &p_0, std::shared_ptr<ConfigMP> config, std::shared_ptr<Attractor> attractor, KnowledgeBase* kb, const std::string &id)
-    :m_type(type),m_config(config),m_attractor(attractor),m_kb(kb),m_id(id),m_cmd(Actuator(p_0)),m_flag_initialized(false),m_flag_terminated(false){
+ManipulationPrimitive::ManipulationPrimitive(const std::string &type, const Percept &p_0, std::shared_ptr<ConfigMP> config, std::shared_ptr<Attractor> attractor, Memory *memory, const std::string &id)
+    :m_type(type),m_config(config),m_attractor(attractor),m_memory(memory),m_id(id),m_cmd(Actuator(p_0)),m_flag_initialized(false),m_flag_terminated(false){
 }
 
 ManipulationPrimitive::~ManipulationPrimitive(){

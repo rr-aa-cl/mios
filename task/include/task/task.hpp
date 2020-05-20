@@ -3,6 +3,7 @@
 #include <list>
 #include <map>
 #include <unordered_set>
+#include <unordered_map>
 #include <atomic>
 #include <stdlib.h>
 #include <memory>
@@ -21,30 +22,31 @@ class Memory;
 /**
  * The evaluation struct contains quality metrics about the task execution as well as necessary information for the task handling procedures.
  */
-struct EvalTask{
+struct TaskResult{
     /**
      * The constructor of the struct is by default called to build a nominal, unsuccessful task evaluation.
      * @param nominal
      */
-    EvalTask(bool nominal=true){
-        this->cost_suc=0;
-        this->cost_err=0;
-        this->success=false;
-        this->nominal_termination=nominal;
-        this->empty_queue=false;
-        this->results=nlohmann::json();
-        this->last_error="none";
+    TaskResult(){
+        cost_suc=0;
+        cost_err=0;
+        success=false;
+        exception=false;
+        empty_queue=false;
+        custom_results=nlohmann::json();
+        errors.resize(0);
     }
+
+    std::unordered_map<std::string,SkillResult> m_skill_results;
+    std::unordered_map<std::string,TaskResult> m_subtask_results;
 
     double cost_suc;
     double cost_err;
-    std::map<std::string,double> constraints;
-    nlohmann::json results;
     bool success;
-    bool nominal_termination;
+    bool exception;
     bool empty_queue;
-    std::string last_error;
-
+    nlohmann::json custom_results;
+    std::vector<std::string> errors;
 };
 
 
@@ -70,7 +72,7 @@ public:
      * @param cost_suc[in] Sets the cost for the task execution in case of success.
      * @param cost_err[in] Sets the cost for the task execution in case of failure.
      */
-    void stop_task(bool nominal=false, bool success=false, bool recover=true, bool empty_queue=false, double cost_suc=0, double cost_err=0);
+    void stop_task(bool raise_exception=false, bool success=false, bool recover=true, bool empty_queue=false, double cost_suc=0, double cost_err=0);
 
     /**
      * Will be removed in future updates.
@@ -104,7 +106,7 @@ public:
      * Implements the evaluation routine. The user has to define how the members of the evaluation struct are set. This function is called at the end of a nominal task execution.
      * @return Return the current evaluation struct (will change to void in future updates).
      */
-    virtual const EvalTask& evaluate_task() = 0;
+    virtual void evaluate_task() = 0;
 
     /**
      * Starts the recovery routine of the task. This function is called at the end of a task execution if it has terminated before the nominal end.
@@ -154,6 +156,7 @@ public:
     virtual bool read_parameters(const nlohmann::json& params);
 
     std::string get_uuid() const;
+    TaskResult get_result() const;
     void notify_observers();
     void subscribe(std::shared_ptr<TaskObserver> observer);
 
@@ -238,38 +241,9 @@ protected:
      */
     const Percept& request_percept(Eigen::Matrix<double, 3, 3> O_R_TF=Eigen::Matrix<double,3,3>::Zero(3,3));
 
-    /**
-     * Creates a skill with a given name id. Afterwards, the skill is accessible from the task.
-     * @param s Pointer to skill object, implicit construction is recommended.
-     * @param name Name id of the skill.
-     *
-     * @throw TaskException if a skill with the given name id already exists.
-     */
-    template<typename T>void create_skill_context(const std::string& name){
-        if(m_context.find(name)!=m_context.end()){
-            throw TaskException("Skill with name "+name+" already exists, aborting...");
-        }else{
-            m_context.insert(std::make_pair(name,std::make_shared<T>()));
-        }
-    }
 
-    /**
-     * Creates a subtask with a given name id. Afterwards, the subtask is accessible from the task.
-     * @param t Pointer to task object, implicit construction is recommended.
-     * @param name Name id of the subtask.
-     *
-     * @throw TaskException if a subtask with the given name id already exists or if the subtask is of the same type as its parent.
-     */
-    template<typename T>void create_subtask(const std::string& name){
-//        if(this->get_id()==t->get_id()){
-//            throw TaskException("Can not create subtask of same type as parent task.");
-//        }
-        if(m_subtasks.find(name)!=m_subtasks.end()){
-            throw TaskException("Subtask with name "+name+" already exists, aborting...");
-        }else{
-            m_subtasks.insert(std::make_pair(name,std::make_shared<T>(m_core)));
-        }
-    }
+    bool reserve_skill(const std::string& name);
+    bool reserve_subtask(const std::string& name);
 
     /**
      * Executes the skill with the given name id. Use this ONLY in the execute_task function.
@@ -293,9 +267,10 @@ protected:
             throw TaskException("Skill could not be loaded into core.");
         }
         spdlog::info("Executing skill "+skill_id+".");
-        m_skills[skill_id]->terminate();
+        m_core->execute_skill();
         m_core->unload_skill();
-        m_results.insert(std::make_pair(skill_id,skill->get_eval()));
+        skill->terminate();
+        m_result.m_skill_results.insert(std::make_pair(skill_id,skill->get_eval()));
     }
 
     /**
@@ -304,7 +279,7 @@ protected:
      *
      * @throw TaskException if core or knowledge base are not connected or if subtask with name id s does not exist in this task.
      */
-    void execute_subtask(const std::string& t);
+    void execute_subtask(const std::string& task_id, const std::string task_name);
 
     /**
      * Executes the specified desk timeline.
@@ -312,9 +287,8 @@ protected:
      */
     void execute_desk_timeline(const std::string& id);
 
-    KnowledgeBase* m_kb;
-    EvalTask m_eval_task;
-    std::vector<double> m_w_cost_function;
+    void write_result(bool success,double cost_suc,double cost_err,nlohmann::json custom_results);
+
 
 private:
 
@@ -326,21 +300,21 @@ private:
     bool check_context(const nlohmann::json& default_context, const nlohmann::json &user_context) const;
     static std::string generate_uuid() const;
 
-//    std::unordered_map<std::string,nlohmann::json> m_context;
     nlohmann::json m_context;
-    std::unordered_map<std::string,EvalSkill > m_results;
-    std::map<std::string,std::shared_ptr<Skill> > m_skills;
-    std::map<std::string,std::shared_ptr<Task> > m_subtasks;
+    TaskResult m_result;
+
+    std::unordered_set<std::string> m_reserved_skills;
+    std::unordered_set<std::string> m_reserved_subtasks;
 
     std::atomic<bool> m_flag_stop;
     std::atomic<bool> m_flag_recover;
     std::atomic<bool> m_flag_in_recovery;
     Core* m_core;
     Memory* m_memory;
-    std::string m_id;
 
     std::string m_state;
 
+    const std::string m_id;
     const std::string m_uuid;
 
     std::set<std::shared_ptr<TaskObserver> > m_observers;

@@ -92,9 +92,9 @@ void test_skill_1::auxiliaries(const Percept &p){
 void test_skill_1::evaluate(){
     msrm_utils::print_debug("Evaluate");
     std::shared_ptr<SkillParameters_test_skill_1> c = std::static_pointer_cast<SkillParameters_test_skill_1>(m_config);
-    m_eval.results["test_parameter_1"]=m_kb->get_live_parameter("test_parameter_1");
-    m_eval.results["test_parameter_2"]=m_kb->get_live_parameter("test_parameter_2");
-    m_eval.results["test_parameter_3"]=m_kb->get_live_parameter("test_parameter_3");
+    m_eval.results["test_parameter_1"]=m_memory->get_live_parameter("test_parameter_1");
+    m_eval.results["test_parameter_2"]=m_memory->get_live_parameter("test_parameter_2");
+    m_eval.results["test_parameter_3"]=m_memory->get_live_parameter("test_parameter_3");
 
     m_eval.results["exception"]=c->exception;
     m_eval.results["run_time"]=c->run_time;

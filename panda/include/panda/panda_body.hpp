@@ -34,11 +34,17 @@ public:
     bool home_gripper();
 
 public:
-    bool torque_control(std::function<franka::Torques(const franka::RobotState &)> controller_callback);
-    bool cartesian_velocity_control(std::function<franka::Finishable*(const franka::RobotState&)> controller_callback);
-    bool joint_velocity_control(std::function<franka::Finishable*(const franka::RobotState&)> controller_callback);
-    bool cartesian_pose_control(std::function<franka::Finishable*(const franka::RobotState&)> controller_callback);
-    bool joint_pose_control(std::function<franka::Finishable*(const franka::RobotState&)> controller_callback);
+    bool control(std::function<franka::Torques(const franka::RobotState &)> controller_callback);
+    bool control(std::function<franka::CartesianVelocities*(const franka::RobotState&)> controller_callback);
+    bool control(std::function<franka::JointVelocities*(const franka::RobotState&)> controller_callback);
+    bool control(std::function<franka::CartesianPose*(const franka::RobotState&)> controller_callback);
+    bool control(std::function<franka::JointPositions*(const franka::RobotState&)> controller_callback);
+
+    void dummy_control(std::function<franka::Torques(const franka::RobotState& state)> controller_callback);
+    void dummy_control(std::function<franka::CartesianVelocities(const franka::RobotState& state)> controller_callback);
+    void dummy_control(std::function<franka::JointVelocities(const franka::RobotState& state)> controller_callback);
+    void dummy_control(std::function<franka::CartesianPose(const franka::RobotState& state)> controller_callback);
+    void dummy_control(std::function<franka::JointPositions(const franka::RobotState& state)> controller_callback);
 
 public:
     bool set_robot_parameters(double load_m,std::array<double,3> load_com,std::array<double,9> load_I,std::array<double,7> tau_ext_contact,std::array<double,7> tau_ext_max,

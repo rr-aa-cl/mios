@@ -112,70 +112,72 @@ struct SystemParameters{
     bool has_gripper;
 };
 
-class ControllerParameters{
-    ControllerParameters();
-    void read_parameters(const nlohmann::json& p);
+enum ControlMode{mCartTorque,mJointTorque,mCartVelocity,mJointVelocity};
 
-    Eigen::Matrix<double,6,1> alpha;
-    Eigen::Matrix<double,6,1> beta;
-    Eigen::Matrix<double,6,1> gamma_a;
-    Eigen::Matrix<double,6,1> gamma_b;
-    Eigen::Matrix<double,6,1> K_x;
-    Eigen::Matrix<double,6,1> F_ff_0;
-    Eigen::Matrix<double,6,1> L;
-    Eigen::Matrix<double,6,1> xi;
-    Eigen::Matrix<double,6,1> K_max;
-    Eigen::Matrix<double,6,1> dK_max;
-    Eigen::Matrix<double,6,1> F_ff_max;
-    Eigen::Matrix<double,6,1> dF_ff_max;
+class ControlParameters{
+    ControlParameters();
+    bool read_parameters(const nlohmann::json& parameters);
+    static nlohmann::json get_default_values();
 
-    Eigen::Matrix<double,7,1> K_theta;
-    Eigen::Matrix<double,7,1> xi_theta;
+    ControlMode control_mode;
 
-    Eigen::Matrix<double,7,1> D_additional;
+    struct CartImpAdaptationStage{
+        Eigen::Matrix<double,6,1> alpha;
+        Eigen::Matrix<double,6,1> beta;
+        Eigen::Matrix<double,6,1> gamma_a;
+        Eigen::Matrix<double,6,1> gamma_b;
+        Eigen::Matrix<double,6,1> L;
+        Eigen::Matrix<double,6,1> F_ff_0;
+        double kappa;
+    }cart_imp_adaptation_stage;
 
-    double kappa;
-    bool TF_control;
+    struct CartImp{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,6,1> xi;
+    }cart_imp;
 
-    Eigen::Matrix<double,6,1> f_cntr_k_p;
-    Eigen::Matrix<double,6,1> f_cntr_k_i;
-    Eigen::Matrix<double,6,1> f_cntr_k_d;
-    Eigen::Matrix<double,6,1> f_cntr_k_d_N;
-    Eigen::Matrix<double,3,1> f_cntr_d_max;
-    Eigen::Matrix<double,1,1> f_cntr_phi_max;
-    Eigen::Matrix<double,6,1> F_c_max;
-    Eigen::Matrix<double,6,1> dF_c_max;
-    Eigen::Matrix<double,6,1> f_cntr_active;
+    struct JointImp{
+        Eigen::Matrix<double,7,1> K_theta;
+        Eigen::Matrix<double,7,1> xi_theta;
+    }joint_imp;
 
-    bool f_cntr_sf_on;
+    struct ForceControl{
+        Eigen::Matrix<double,6,1> k_p;
+        Eigen::Matrix<double,6,1> k_i;
+        Eigen::Matrix<double,6,1> k_d;
+        Eigen::Matrix<double,6,1> k_d_N;
+        Eigen::Matrix<double,3,1> d_max;
+        Eigen::Matrix<double,1,1> phi_max;
+        Eigen::Matrix<double,6,1> active;
+        bool sf_on;
+    }force_control;
 
-    Eigen::Matrix<double,7,1> tau_c_max;
-    Eigen::Matrix<double,7,1> dtau_c_max;
+    struct VirtualCube{
+        Eigen::Matrix<double,1,1> damping;
+        Eigen::Matrix<double,1,1> damping_dist;
+        Eigen::Matrix<double,1,1> eta;
+        Eigen::Matrix<double,1,1> rho_min;
+        Eigen::Matrix<double,6,1> walls;
+        Eigen::Matrix<double,1,1> f_max;
+        bool active;
+    }virtual_cube;
 
-    Eigen::Matrix<double,1,1> virt_cube_damp;
-    Eigen::Matrix<double,1,1> virt_cube_damp_dist;
-    Eigen::Matrix<double,1,1> virt_cube_eta;
-    Eigen::Matrix<double,1,1> virt_cube_rho_min;
-    Eigen::Matrix<double,6,1> virt_cube_walls;
-    Eigen::Matrix<double,1,1> virt_cube_f_max;
+    struct VirtualJointWalls{
+        Eigen::Matrix<double,7,1> damping;
+        Eigen::Matrix<double,7,1> damping_dist;
+        Eigen::Matrix<double,7,1> eta;
+        Eigen::Matrix<double,7,1> rho_min;
+        Eigen::Matrix<double,7,1> tau_max;
+        Eigen::Matrix<double,14,1> walls;
+        bool active;
+    }virtual_joint_walls;
 
-    bool virt_cube_on;
-
-    Eigen::Matrix<double,7,1> virt_walls_joint_damp;
-    Eigen::Matrix<double,7,1> virt_walls_joint_damp_dist;
-    Eigen::Matrix<double,7,1> virt_walls_joint_eta;
-    Eigen::Matrix<double,7,1> virt_walls_joint_rho_min;
-    Eigen::Matrix<double,7,1> virt_walls_joint_tau_max;
-    Eigen::Matrix<double,14,1> virt_walls_joint_walls;
-
-    bool virt_walls_joint_on;
-
-    bool nullspace_cntr_on;
-    Eigen::Matrix<double,7,1> nullspace_cntr_K;
-    Eigen::Matrix<double,7,1> nullspace_cntr_xi;
-
-    Eigen::Matrix<double,7,1> nullspace_cntr_q;
-
+    struct NullSpaceControl{
+        Eigen::Matrix<double,7,1> K_theta;
+        Eigen::Matrix<double,7,1> xi_theta;
+        Eigen::Matrix<double,7,1> q_d;
+        bool active;
+    }nullspace_control;
 };
 
 class SkillParameters{
@@ -220,7 +222,7 @@ class SkillParameters{
 class Parameters{
 public:
     Parameters();
-    ControllerParameters control;
+    ControlParameters control;
     SystemParameters system;
     LimitParameters limits;
     UserParameters user;
@@ -232,11 +234,10 @@ public:
     }
 };
 
-class ShortTermParameters{
+class LiveContext{
 public:
-    ShortTermParameters();
+    LiveContext();
     std::string executable_path;
-    nlohmann::json last_result;
     nlohmann::json live_parameters;
 };
 

@@ -177,7 +177,7 @@ void TaskEngine::life_cycle(){
             }catch(const std::exception& e){
                 std::cout<<e.what()<<std::endl;
             }
-            m_eval_storage.emplace(std::pair<std::string,EvalTask>(m_active_task->get_uuid(),m_active_task->get_eval()));
+            m_memory->store_task_result(m_active_task->get_uuid(),m_active_task->get_result());
             m_task_life_cycle=TaskLifeCycle::Switch;
         }
         if(m_task_life_cycle==TaskLifeCycle::Switch){
@@ -276,40 +276,22 @@ bool TaskEngine::subscribe(const std::string& task_uuid, std::shared_ptr<TaskObs
     }
 }
 
-std::tuple<bool,EvalTask,std::string> TaskEngine::wait_for_task(const std::string &task_uuid){
+std::tuple<bool,TaskResult,std::string> TaskEngine::wait_for_task(const std::string &task_uuid){
     std::shared_ptr<TaskObserver> observer = std::make_shared<TaskObserver>();
-    EvalTask e;
+    TaskResult task_result;
     std::string err="";
     bool result=false;
     if(this->subscribe(task_uuid,observer)){
         observer->wait_for_finish();
     }
-    if(this->request_eval(task_uuid,e)){
-        msrm_utils::print_info("Loaded task evaluation for task with uuid "+task_uuid+" from memory.");
+    if(m_memory->get_task_data(task_uuid,task_result)){
+        msrm_utils::print_info("Loaded task result for task with uuid "+task_uuid+" from memory.");
         result=true;
     }else{
         err="I have no memory of a task with uuid " + task_uuid;
         result=false;
     }
-    return std::make_tuple(result,e,err);
-}
-
-std::pair<EvalTask, bool> TaskEngine::check_if_finished(const std::string &task_uuid){
-    EvalTask e;
-    if(this->request_eval(task_uuid,e)){
-        return std::pair<EvalTask,bool>(e,true);
-    }else{
-        return std::pair<EvalTask,bool>(e,false);
-    }
-}
-
-bool TaskEngine::request_eval(const std::string &id, EvalTask &e) const{
-    if(m_eval_storage.find(id)==m_eval_storage.end()){
-        return false;
-    }else{
-        e=m_eval_storage.at(id);
-        return true;
-    }
+    return std::make_tuple(result,task_result,err);
 }
 
 bool TaskEngine::is_busy() const{

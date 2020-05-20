@@ -17,8 +17,8 @@ namespace mios {
 /**
  * The evaluation struct contains quality metrics for the skill execution and further meta information.
  */
-class EvalSkill{
-    EvalSkill();
+class SkillResult{
+    SkillResult();
 
     /**
      * Pointer to the skill configuration.
@@ -84,7 +84,7 @@ public:
      * The skill base constructor. It is called by the constructor of any derived skill class.
      * @param[in] type The type id of the skill.
      */
-    Skill(const std::string& type, KnowledgeBase *kb, std::shared_ptr<SkillParameters> config, const Percept& p);
+    Skill(const std::string& type, Memory *memory, std::shared_ptr<SkillParameters> config, const Percept& p);
 
     /**
      * The skill destructor.
@@ -141,7 +141,7 @@ public:
      * Returns a const reference to the evaluation struct of this skill.
      * @return A const reference to the evaluation struct of this skill.
      */
-    EvalSkill get_eval() const;
+    SkillResult get_eval() const;
 
     /**
      * Returns a pointer to the configuration struct of this skill. It is explicitly allowed to modify the struct.
@@ -249,7 +249,7 @@ protected:
             throw SkillException("Could not insert new manipulation primitive. MP with id "+id+" already exists.");
         }else{
             m_mp_graph.insert(std::pair<std::string,std::shared_ptr<ManipulationPrimitive> >(id,std::make_shared<T_primitive>(p,std::make_shared<T_config>(),
-                                                                                                                      std::make_shared<T_attractor>(),m_kb,id)));
+                                                                                                                      std::make_shared<T_attractor>(),m_memory,id)));
         }
     }
 
@@ -317,13 +317,12 @@ protected:
 
     double get_t_init() const;
 
-    std::shared_ptr<SkillParameters> m_config;
-    EvalSkill m_eval;
 
     std::shared_ptr<ManipulationPrimitive> m_active_mp;
-    Memory* m_kb;
+    Memory* m_memory;
 
 private:
+    SkillResult m_result;
 
     void run_parallels();
     void terminate_parallels();

@@ -9,9 +9,8 @@
 
 namespace mios {
 
-Task::Task(const std::string& id, Core* core,Memory* memory):m_id(id),m_memory(memory),m_uuid(Task::generate_uuid()),m_core(core),m_kb(core->get_kb()),m_flag_stop(false),m_flag_in_recovery(false),m_flag_recover(false){
-    m_skills.clear();
-    m_subtasks.clear();
+Task::Task(const std::string& id, Core* core,Memory* memory):m_id(id),m_memory(memory),m_uuid(Task::generate_uuid()),m_core(core),m_flag_stop(false),m_flag_in_recovery(false),m_flag_recover(false){
+
 }
 
 Task::~Task(){
@@ -22,20 +21,20 @@ void Task::recover_task(){
     msrm_utils::print_warning("Recovery routine of task "+m_id+" is empty.");
 }
 
-void Task::stop_task(bool nominal,bool success,bool recover, bool empty_queue, double cost_suc, double cost_err){
+void Task::stop_task(bool raise_exception,bool success,bool recover, bool empty_queue, double cost_suc, double cost_err){
     if(m_flag_stop){
         return;
     }
-    if(m_flag_in_recovery && nominal){
+    if(m_flag_in_recovery && !raise_exception){
         spdlog::warn("Can not invoke nominal stop while in recovery mode.");
         return;
     }
-    if(!nominal){
-        spdlog::warn("Non-nominal stop invoked. I will not attempt to recover task " + m_id + ".");
+    if(raise_exception){
+        spdlog::warn("Exception has been raised. I will not attempt to recover task " + m_id + ".");
     }
-    m_eval_task.nominal_termination=nominal;
-    m_eval_task.empty_queue=empty_queue;
-    m_flag_recover=recover && nominal;
+    m_result.exception=raise_exception;
+    m_result.empty_queue=empty_queue;
+    m_flag_recover=recover && !raise_exception;
     for(auto& s : m_skills){
         if(success && nominal){
             s.second->invoke_success();
@@ -65,6 +64,13 @@ void Task::execute_desk_timeline(const std::string &id){
         return;
     }
     m_core->start_desk_task(id);
+}
+
+void Task::write_result(bool success, double cost_suc, double cost_err, nlohmann::json custom_results){
+    m_result.success=success;
+    m_result.cost_suc=cost_suc;
+    m_result.cost_err=cost_err;
+    m_result.custom_results=custom_results;
 }
 
 void Task::reset_soft(){
@@ -97,12 +103,6 @@ bool Task::load_context(const nlohmann::json &user_context, nlohmann::json& acti
                 }
                 msrm_utils::overwrite_valid_json(user_context["parameters"][el.key()],m_context["parameters"][el.key()]);
             }
-        }
-
-        spdlog::info("Checking user input for task " + m_id + "...");
-        if(!this->check_user_input(user_context, m_context)){
-            spdlog::error("User input contains errors for task " + m_id + ".");
-            return false;
         }
 
         if(user_context.find("subtasks")!=user_context.end()){
@@ -206,28 +206,50 @@ std::string Task::get_state() const{
     return m_state;
 }
 
-void Task::execute_subtask(const std::string& t){
-    if(m_subtasks.find(t)==m_subtasks.end()){
+bool Task::reserve_skill(const std::string &name){
+    if(m_reserved_skills.find(name)==m_reserved_skills.end()){
+        m_reserved_skills.insert(name);
+        return true;
+    }else{
+        spdlog::error("A skill with name " + name + " has already been reserved");
+        return false;
+    }
+}
+
+bool Task::reserve_subtask(const std::string &name){
+    if(m_reserved_subtasks.find(name)==m_reserved_subtasks.end()){
+        m_reserved_subtasks.insert(name);
+        return true;
+    }else{
+        spdlog::error("A skill with name " + name + " has already been reserved");
+        return false;
+    }
+}
+
+void Task::execute_subtask(const std::string& task_id,const std::string task_name){
+    if(m_reserved_subtasks.find(task_name)==m_reserved_subtasks.end()){
         this->abort_task();
         throw TaskException("Subtask with id "+t+" not in task "+ m_id +". Stopping task.");
     }
     if(m_flag_stop){
-        //        if(this->_kb->get_local_memory()->access_config_global()->verbosity>1){
-        //            msrm_utils::print_info("Task has been stopped recently, aborting subtask execution.");
-        //        }
         return;
     }
-    spdlog::info("Executing subtask "+t+".");
-    this->get_subtask(t)->reset_soft();
-    this->get_subtask(t)->execute_task();
-    spdlog::info("Subtask "+t+" has terminated.");
-    this->get_subtask(t)->evaluate_task();
-    if(this->get_subtask(t)->do_recovery()){
-        this->get_subtask(t)->start_recovery();
-        spdlog::info("Subtask "+t+" is attempting recovery.");
-        this->get_subtask(t)->recover_task();
+    spdlog::info("Executing subtask "+task_name+"...");
+    std::shared_ptr<Task> subtask = m_memory->load_subtask(task_id,m_context["subtasks"][t],m_core);
+    if(subtask->get_id()=="IdleTask"){
+        throw TaskException("Error when loading subtask with name " + task_name);
     }
-    spdlog::info("End of lifecycle of subtask "+t+".");
+    spdlog::info("Executing subtask "+task_name+"...");
+    subtask->execute_task();
+    spdlog::info("Subtask "+t+" has terminated.");
+    subtask->evaluate_task();
+    if(subtask->do_recovery()){
+        subtask->start_recovery();
+        spdlog::info("Subtask "+task_name+" is attempting recovery.");
+        subtask->recover_task();
+    }
+    m_result.m_subtask_results.insert(std::make_pair(task_name,subtask->get_result()));
+    spdlog::info("End of lifecycle of subtask "+task_name+".");
 }
 
 bool Task::read_parameters(const nlohmann::json &params){
@@ -295,6 +317,10 @@ bool Task::get_recovery_flag() const{
 
 std::string Task::get_uuid() const{
     return m_uuid;
+}
+
+TaskResult Task::get_result() const{
+    return m_result;
 }
 
 bool Task::check_context(const nlohmann::json &default_context, const nlohmann::json &user_context) const{

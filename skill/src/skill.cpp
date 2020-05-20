@@ -17,7 +17,7 @@ void SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
     msrm_utils::read_json_param<double,6,1>(p,"k_h_d",k_h_d);
 }
 
-EvalSkill::EvalSkill(){
+SkillResult::SkillResult(){
     this->config=std::make_shared<SkillParametersNullSkill>();
     this->cost_suc=0;
     this->cost_err=0;
@@ -27,8 +27,8 @@ EvalSkill::EvalSkill(){
     exception=false;
 }
 
-Skill::Skill(const std::string &type, KnowledgeBase* kb, std::shared_ptr<SkillParameters> config, const Percept &p):m_type(type),m_kb(kb),m_config(config),m_active_mp(std::make_shared<NullPrimitive>()),
-m_life_cycle(SkillLifeCycle::slInit),m_active_mp(std::make_shared<NullPrimitive>(p,std::make_shared<ConfigMP_NullPrimitive>(),std::make_shared<NullAttractor>(),m_kb,"NullPrimitive")),
+Skill::Skill(const std::string &type, Memory *memory, std::shared_ptr<SkillParameters> config, const Percept &p):m_type(type),m_memory(memory),m_config(config),m_active_mp(std::make_shared<NullPrimitive>()),
+m_life_cycle(SkillLifeCycle::slInit),m_active_mp(std::make_shared<NullPrimitive>(p,std::make_shared<ConfigMP_NullPrimitive>(),std::make_shared<NullAttractor>(),memory,"NullPrimitive")),
 m_flag_pause(false),m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_parallels_running(false){
 }
 
@@ -45,9 +45,9 @@ std::shared_ptr<ManipulationPrimitive> Skill::get_mp(const std::string &mp) cons
 
 Eigen::Matrix<double,4,4> Skill::get_object_pose(const std::string &o, bool TF){
     if(TF){
-        return m_kb->transform_to_EE(msrm_utils::rotate_matrix(this->get_object(o).O_T_o,msrm_utils::invert_matrix(m_config->frames.O_R_TF)));
+        return m_memory->transform_to_EE(msrm_utils::rotate_matrix(this->get_object(o).O_T_o,msrm_utils::invert_matrix(m_config->frames.O_R_TF)));
     }else{
-        return m_kb->transform_to_EE(this->get_object(o).O_T_o);
+        return m_memory->transform_to_EE(this->get_object(o).O_T_o);
     }
 }
 
@@ -61,14 +61,14 @@ const Object& Skill::get_object(const std::string &o) const{
 
 void Skill::write_O_R_TF_to_config(const Percept &p){
     if(!this->get_O_R_TF(p).isZero(0)){
-        m_config->frames.O_R_TF=this->get_O_R_TF(p);
+        m_memory->read_parameters()->frames.O_R_T=this->get_O_R_TF(p);
     }
 }
 
 bool Skill::initialize(const Percept &p){
-    if(!msrm_utils::is_orthonormal(m_config->frames.O_R_TF)){
+    if(!msrm_utils::is_orthonormal(m_memory->read_parameters()->frames.O_R_T)){
         msrm_utils::print_error("O_R_TF of skill "+m_id+" is invalid. Aborting execution.");
-        std::cout<<"O_R_TF: "<<m_config->frames.O_R_TF<<std::endl;
+        std::cout<<"O_R_TF: "<<m_memory->read_parameters()->frames.O_R_T<<std::endl;
         return false;
     }
     m_mp_graph.clear();
@@ -77,14 +77,14 @@ bool Skill::initialize(const Percept &p){
 }
 
 Actuator* Skill::cycle(const Percept &p){
-    m_eval.p_1=p;
+    m_result.p_1=p;
     Actuator* cmd;
     std::optional<std::string> transition={};
 
     if(m_life_cycle==SkillLifeCycle::slInit){
-        m_eval.config=m_config;
-        m_eval.p_0=p;
-        m_eval.percepts.emplace(std::make_pair(m_active_mp->get_id(),p));
+        m_result.config=m_config;
+        m_result.p_0=p;
+        m_result.percepts.emplace(std::make_pair(m_active_mp->get_id(),p));
         if(!this->check_local_pre_conditions(p)){
             cmd=m_active_mp->stop(p);
             m_life_cycle=SkillLifeCycle::slTerminate;
@@ -258,7 +258,7 @@ bool Skill::check_local_ex_conditions(const Percept &p){
     return true;
 }
 
-EvalSkill Skill::get_eval() const{
+SkillResult Skill::get_eval() const{
     return m_eval;
 }
 
@@ -293,7 +293,7 @@ void Skill::read_configuration(const nlohmann::json &p){
 
 void Skill::set_object(const std::string& o_type, const std::string& o){
     Object obj;
-    if(!m_kb->load_object(o,obj)){
+    if(!m_memory->load_object(o,obj)){
         throw SkillException("Object with id "+o+" required by skill "+m_id+" does not exist in knowledge base.");
     }
     if(m_objects.find(o_type)==m_objects.end()){
@@ -310,7 +310,7 @@ bool Skill::load_objects(const std::map<std::string, std::string>& objects){
     m_objects.clear();
     for(auto& o : objects){
         Object obj;
-        if(!m_kb->load_object(o.second,obj)){
+        if(!m_memory->load_object(o.second,obj)){
             msrm_utils::print_error("Could not load "+o.second+" as type " +o.first+".");
             return false;
         }
