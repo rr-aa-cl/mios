@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mutex>
+#include <set>
 
 #include <mongocxx/client.hpp>
 #include <mongocxx/instance.hpp>
@@ -16,6 +17,7 @@ public:
     MongodbClient(const std::string& database, unsigned port=27017);
 
     bool read_document(const std::string& name, const std::string& collection, nlohmann::json& descr);
+    bool read_documents(const std::string& collection,std::set<nlohmann::json>& docs);
     bool write_document(const std::string& name, const std::string& collection, const nlohmann::json &descr);
     bool make_document_consistent(const std::string& name, std::string collection, const nlohmann::json &template_json);
     bool health_check() const;

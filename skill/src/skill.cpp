@@ -9,14 +9,6 @@
 
 namespace mios {
 
-void SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
-    msrm_utils::read_json_param(p,"time_max",time_max);
-    msrm_utils::read_json_param(p,"w_cost_function",w_cost_function);
-    msrm_utils::read_json_param(p,"parallels_frequency",parallels_frequency);
-    msrm_utils::read_json_param<double,6,1>(p,"k_h_p",k_h_p);
-    msrm_utils::read_json_param<double,6,1>(p,"k_h_d",k_h_d);
-}
-
 SkillResult::SkillResult(){
     this->config=std::make_shared<SkillParametersNullSkill>();
     this->cost_suc=0;
@@ -27,7 +19,7 @@ SkillResult::SkillResult(){
     exception=false;
 }
 
-Skill::Skill(const std::string &type, Memory *memory, std::shared_ptr<SkillParameters> config, const Percept &p):m_type(type),m_memory(memory),m_config(config),m_active_mp(std::make_shared<NullPrimitive>()),
+Skill::Skill(const std::string &type, const std::vector<std::string> &objects, const std::string& id, Memory *memory, const Percept &p):m_type(type),m_id(id),m_objects(objects),m_memory(memory),m_active_mp(std::make_shared<NullPrimitive>()),
 m_life_cycle(SkillLifeCycle::slInit),m_active_mp(std::make_shared<NullPrimitive>(p,std::make_shared<ConfigMP_NullPrimitive>(),std::make_shared<NullAttractor>(),memory,"NullPrimitive")),
 m_flag_pause(false),m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_parallels_running(false){
 }
@@ -51,8 +43,8 @@ Eigen::Matrix<double,4,4> Skill::get_object_pose(const std::string &o, bool TF){
     }
 }
 
-const Object& Skill::get_object(const std::string &o) const{
-    if(m_objects.find(o)==m_objects.end()){
+const Object* const Skill::get_object(const std::string &o) const{
+    if(m_grounded_objects.find(o)==m_grounded_objects.end()){
         throw SkillException("No object of type "+o+" in skill "+ this->get_id() +" of type "+m_type+" has been assigned. "
                                                                                                           "Check the task description or assign it manually in the task implementation.");
     }
@@ -270,51 +262,22 @@ const std::string& Skill::get_id() const{
     return m_id;
 }
 
-void Skill::read_configuration(const nlohmann::json &p){
-    if(p.find("controller")!=p.end()){
-        m_config->controller.read_parameters(p["controller"]);
-    }
-    if(p.find("frames")!=p.end()){
-        m_config->frames.read_parameters(p["frames"]);
-    }
-    if(p.find("general")!=p.end()){
-        m_config->general.read_parameters(p["general"]);
-    }
-    if(p.find("system")!=p.end()){
-        m_config->system.read_parameters(p["system"]);
-    }
-    if(p.find("user")!=p.end()){
-        m_config->user.read_parameters(p["user"]);
-    }
-    if(p.find("skill")!=p.end()){
-        m_config->read_global_skill_parameters(p["skill"]);
-    }
-}
-
-void Skill::set_object(const std::string& o_type, const std::string& o){
-    Object obj;
-    if(!m_memory->load_object(o,obj)){
-        throw SkillException("Object with id "+o+" required by skill "+m_id+" does not exist in knowledge base.");
-    }
-    if(m_objects.find(o_type)==m_objects.end()){
-        throw SkillException("Skill "+m_id+" of type "+m_type+" has no object of type "+o_type+".");
-    }
-    m_objects[o_type]=obj;
-}
-
-void Skill::set_object(const std::string &o_type, const Object &o){
-    m_objects[o_type]=o;
-}
-
-bool Skill::load_objects(const std::map<std::string, std::string>& objects){
-    m_objects.clear();
-    for(auto& o : objects){
-        Object obj;
-        if(!m_memory->load_object(o.second,obj)){
-            msrm_utils::print_error("Could not load "+o.second+" as type " +o.first+".");
+bool Skill::ground_objects(){
+    for(const std::pair<std::string,std::string>& m : m_memory->get_parameters()->skill->common.objects){
+        if(m_objects.find(m.first)==m_objects.end()){
+            spdlog::error("Skill of type " + m_type + " does not use an object of type " + m.first +".");
             return false;
         }
-        m_objects.insert(std::pair<std::string,Object>(o.first,obj));
+        if(m_grounded_objects.find(m.first)!=m_grounded_objects.end()){
+            spdlog::error("Skill " + m_id + " already has a grounded object of type " + m.first + ".");
+            return false;
+        }
+        Object* o = m_memory->get_object(m.second);
+        if(o==nullptr){
+            spdlog::error("No object with name "+m.second+" exists.");
+            return false;
+        }
+        m_grounded_objects.insert(std::make_pair(m.first,o));
     }
     return true;
 }

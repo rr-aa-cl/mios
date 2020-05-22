@@ -340,6 +340,25 @@ nlohmann::json SystemParameters::get_default_values(){
     return default_values;
 }
 
+SkillParameters::SkillParameters(){
+    common.time_max=0;
+    common.w_cost_function.resize(1);
+    common.w_cost_function[0]=1;
+    common.parallels_frequency=1;
+}
+
+void SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
+    msrm_utils::read_json_param(p,"time_max",common.time_max);
+    msrm_utils::read_json_param(p,"w_cost_function",common.w_cost_function);
+    msrm_utils::read_json_param(p,"parallels_frequency",common.parallels_frequency);
+}
+
+void SkillParameters::read_skill_objects(const nlohmann::json &p){
+    for(const auto& o : p.items()){
+        common.objects.insert(std::make_pair(o.key(),o.value()));
+    }
+}
+
 Parameters::Parameters():limits(LimitParameters()),system(ParametersSystem()),control(ParametersControl()),prototype(nullptr){
 
 }

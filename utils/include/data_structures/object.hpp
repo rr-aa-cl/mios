@@ -25,7 +25,7 @@ public:
      * Reads an object description from json format.
      * @param p Object description in json format.
      */
-    void from_json(const nlohmann::json& p);
+    static Object from_json(const nlohmann::json& p);
 
     /**
      * The object id in both internal representation as well as the mongodb database.
@@ -46,6 +46,7 @@ public:
      * Transformation matrix from EE frame to object frame.
      */
     Eigen::Matrix<double,4,4> OB_T_gp;
+    Eigen::Matrix<double,4,4> OB_T_TCP;
 
     /**
      * The object's intertial tensor in object frame.
@@ -61,6 +62,7 @@ public:
      * Expected finger width when grasping the object.
      */
     double grasp_width;
+    double grasp_force;
 
     /**
      * The object's geometry description. It can have arbitrary properties that can be represented as scalars and arrays.

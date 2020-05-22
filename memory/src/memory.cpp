@@ -82,4 +82,12 @@ std::optional<nlohmann::json> Memory::get_live_parameter(const std::string &para
     return m_st_memory.get_live_parameter(parameter);
 }
 
+bool Memory::update_object(const std::string &name, const Percept &p){
+    return m_st_memory.update_object(name,p);
+}
+
+const Object* const Memory::get_object(const std::string& name) const{
+    return m_st_memory.get_object(name);
+}
+
 }

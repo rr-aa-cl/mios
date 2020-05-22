@@ -22,7 +22,7 @@
 #include "data_structures/actuator.hpp"
 
 #include <msrm_utils/geometry.hpp>
-#include "controller_pipeline/torque_pipeline.hpp"
+#include "controller_pipeline/controller_pipeline.hpp"
 
 
 namespace mios {
@@ -47,13 +47,13 @@ public:
     void unload_skill();
 
     // Gripper
-    bool grasp_object(const std::string& o, double speed=1);
+    bool grasp_object(const std::string& name, double speed=1);
     bool release_object(double width=-1,double speed=1);
-    bool grasp(double width,double speed,double force);
+    bool grasp(double width, double speed, double force, double epsilon_inner, double epsilon_outer);
     bool move_gripper(double width,double speed);
     bool is_grasping() const;
     bool home_gripper();
-    bool set_grasped_object(const std::string& o);
+    bool set_grasped_object(const std::string& name);
 
     bool refresh_percept(std::optional<Eigen::Matrix<double, 3, 3> > O_R_TF);
 
@@ -63,7 +63,7 @@ public:
 
 private:
 
-    bool set_ee();
+    bool set_robot_parameters();
 
     void check_cartesian_velocity_workspace(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
     void base_avoidance(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
@@ -74,53 +74,14 @@ private:
     franka::CartesianVelocities cart_velocity_controller_pipeline(const franka::RobotState& state);
     franka::JointPositions joint_velocity_controller_pipeline(const franka::RobotState& state);
 
-    void terminate_periphery();
+    std::tuple<std::string,std::string,std::string> get_desk_data() const;
 
-    bool validity_check_torque(std::array<double, 7>& tau_J);
-    bool validity_check_velocity_cart(std::array<double, 6>& O_dP_EE_d);
-    bool validity_check_velocity_joint(std::array<double, 7>& dq_d);
-
-    std::tuple<std::string,std::string,std::string> get_desk_data();
-
-    ConfigInternal _config_internal;
-
+private:
     Percept m_percept;
-    std::array<double,7> _tau_J_old;
-    std::array<double,7> _tau_J_last;
-//    CmdSkill _skill_last;
-
-    bool _flag_stop_control;
-    bool _flag_invalid_mode;
-    bool _flag_robot_connected;
-    bool _flag_gripper_connected;
-    bool _flag_gripper_busy;
-    bool _flag_virt_cube_valid;
-    bool _flag_virt_walls_joint_valid;
-    bool _flag_lockdown;
-    bool _flag_logged_in_digital_twin;
-
-    std::atomic<bool> _flag_run_gripper;
-    std::atomic<bool> _flag_run_led;
-    std::atomic<bool> _flag_run_sound;
-    std::atomic<bool> _flag_run_beacon;
-
-    std::string _last_error;
-
-    std::mutex _mtx_control_cycle;
-    std::mutex m_mtx_robot;
-    std::thread _thr_beacons;
-
     Memory m_memory;
     std::shared_ptr<Skill> m_active_skill;
-
-    std::map<std::string,unsigned> _led_panel_id;
-    nlohmann::json event;
-    std::chrono::system_clock::time_point t_event;
-
     PandaBody m_panda_body;
-
     std::unique_ptr<ControllerPipeline> m_controller_pipeline;
-
 };
 
 }

@@ -16,8 +16,9 @@ namespace mios {
 class CartTorqueControllerPipeline : public ControllerPipeline{
 public:
     CartTorqueControllerPipeline();
-    void initialize(const Percept& p_0,KnowledgeBase* kb) override;
+    void initialize(const Percept& p_0,Memory* memory) override;
     franka::Finishable* step(const Percept &p, const Actuator &cmd) override;
+    bool is_valid_command(const franka::Finishable* const cmd) const;
     void update_percept(Percept::Controller &p) override;
     void terminate() override;
 
@@ -27,12 +28,12 @@ public:
     void set_nullspace_control(bool on);
 
 private:
-    void initialize_cntr_aic(const Percept &p,KnowledgeBase* kb);
-    void initialize_cntr_force(const Percept &p,KnowledgeBase* kb);
-    void initialize_cntr_mux(const Percept &p, KnowledgeBase *kb);
-    void initialize_virt_cube(const Percept &p, KnowledgeBase *kb);
-    void initialize_virt_walls_joint(const Percept &p, KnowledgeBase *kb);
-    void initialize_cntr_nullsp(const Percept &p,KnowledgeBase* kb);
+    void initialize_cntr_aic(const Percept &p,Memory* memory);
+    void initialize_cntr_force(const Percept &p,Memory* memory);
+    void initialize_cntr_mux(const Percept &p, Memory *memory);
+    void initialize_virt_cube(const Percept &p, Memory *memory);
+    void initialize_virt_walls_joint(const Percept &p, Memory *memory);
+    void initialize_cntr_nullsp(const Percept &p,Memory* memory);
 
     void input_cntr_aic(const Percept& p);
     void input_cntr_force(const Percept& p);

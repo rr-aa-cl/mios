@@ -86,7 +86,7 @@ bool PandaBody::recover(){
     }
 }
 
-bool PandaBody::pre_run_checks(){
+bool PandaBody::pre_run_checks() const{
     franka::RobotState state;
     if(!get_robot_state(state)){
         return false;
@@ -319,6 +319,32 @@ bool PandaBody::set_robot_parameters(double load_m,std::array<double,3> load_com
     return true;
 }
 
+bool PandaBody::set_load(double load_m, std::array<double, 3> load_com, std::array<double, 9> load_I){
+    try{
+        m_panda_arm->setLoad(load_m,load_com,load_I);
+        return true;
+    }catch(franka::CommandException& e){
+        spdlog::debug(e.what());
+        return false;
+    }catch(franka::NetworkException& e){
+        spdlog::debug(e.what());
+        return false;
+    }
+}
+
+bool PandaBody::set_ee(std::array<double, 16> F_T_EE){
+    try{
+        m_panda_arm->setEE(F_T_EE);
+        return true;
+    }catch(franka::CommandException& e){
+        spdlog::debug(e.what());
+        return false;
+    }catch(franka::NetworkException& e){
+        spdlog::debug(e.what());
+        return false;
+    }
+}
+
 bool PandaBody::get_robot_state(franka::RobotState &state) const{
     if(m_arm_connected){
         try{
@@ -492,6 +518,81 @@ bool PandaBody::move_to_pack_pose(const std::string& ip, const std::string user,
         return false;
     }
     return true;
+}
+
+bool PandaBody::grasp(double width, double speed, double force, double epsilon_inner, double epsilon_outer) const{
+    if(!m_hand_connected){
+        return false;
+    }
+    try{
+        franka::GripperState state = m_panda_hand->readOnce();
+        double max_width=state.max_width;
+        double current_width=state.width;
+
+        if(width<0 || width>max_width){
+            spdlog::error("Gripper cannot reach width of "+std::to_string(width)+". Must be between 0 and "+std::to_string(max_width)+".");
+            return false;
+        }
+        if(width>=current_width){
+            spdlog::error("Grasping to a width larger than the current width is not possible.");
+            return false;
+        }
+
+        if(state.is_grasped){
+            spdlog::error("I am already grasping something.");
+            return false;
+        }
+        return this->m_panda_hand->grasp(width,speed,force,epsilon_inner,epsilon_outer);
+    }catch(franka::CommandException& e){
+        spdlog::debug(e.what());
+        return false;
+    }catch(franka::NetworkException& e){
+        spdlog::debug(e.what());
+        return false;
+    }catch(franka::InvalidOperationException& e){
+        spdlog::debug(e.what());
+        return false;
+    }
+}
+
+bool PandaBody::move_to_finger_position(double width, double speed) const{
+    if(!m_hand_connected){
+        return false;
+    }
+    try{
+        franka::GripperState state = m_panda_hand->readOnce();
+        double max_width=state.max_width;
+
+        if(width<0 || width>max_width){
+            spdlog::error("Gripper cannot reach width of "+std::to_string(width)+". Must be between 0 and "+std::to_string(max_width)+".");
+            return false;
+        }
+        return this->m_panda_hand->move(width,speed);
+    }catch(franka::CommandException& e){
+        spdlog::debug(e.what());
+        return false;
+    }catch(franka::NetworkException& e){
+        spdlog::debug(e.what());
+        return false;
+    }catch(franka::InvalidOperationException& e){
+        spdlog::debug(e.what());
+        return false;
+    }
+}
+
+bool PandaBody::home_gripper() const{
+    if(!m_hand_connected){
+        return false;
+    }
+    try{
+        return this->m_panda_hand->homing();
+    }catch(franka::CommandException& e){
+        spdlog::debug(e.what());
+        return false;
+    }catch(franka::NetworkException& e){
+        spdlog::debug(e.what());
+        return false;
+    }
 }
 
 }

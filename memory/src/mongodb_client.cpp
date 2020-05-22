@@ -85,6 +85,14 @@ bool MongodbClient::read_document(const std::string& name, const std::string& co
     return false;
 }
 
+bool MongodbClient::read_documents(const std::string &collection, std::set<nlohmann::json> &docs){
+    spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENTS("+collection+")");
+    std::scoped_lock<std::mutex> lock(m_mutex_db_access);
+    try{
+        bsoncxx::stdx::optional<bsoncxx::document::value> docs = m_collections[collection].find({});
+    }
+}
+
 bool MongodbClient::write_document(const std::string& name, const std::string& collection, const nlohmann::json &descr){
     std::scoped_lock<std::mutex> lock(m_mutex_db_access);
     try{

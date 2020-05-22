@@ -5,6 +5,7 @@
 #include "data_structures/parameters.hpp"
 #include "data_structures/task_data.hpp"
 #include "data_structures/object.hpp"
+#include "data_structures/percept.hpp"
 
 namespace mios {
 
@@ -15,6 +16,7 @@ public:
     bool initialize();
     bool is_ok() const;
     void link_to_lt_memory(LTMemory* lt_memory);
+    bool syncronize_with_lt_memory();
 
     void put_task(const std::string& name, const nlohmann::json& context);
     void put_subtask(const std::string& name, const nlohmann::json& context);
@@ -30,11 +32,17 @@ public:
 
     bool set_default_parameters();
 
+    bool update_object(const std::string& name, const Percept& p);
+    const Object* const get_object(const std::string& name) const;
+private:
+
+    void merge_live_context();
+
 private:
     LiveContext m_live_context;
     Parameters m_parameters;
     TaskData m_task_data;
-    std::unordered_map<std::string,Object> m_objects;
+    std::unordered_map<std::string,Object> m_environment;
 
     LTMemory* m_lt_memory;
 

@@ -131,5 +131,20 @@ void LTMemory::save_task_data(const std::string &uuid, const TaskData &data){
     m_task_data.insert(std::make_pair(uuid,data));
 }
 
+bool LTMemory::load_environment(std::unordered_map<std::string, Object> &environment){
+    std::set<nlohmann::json> docs;
+    environment.emplace(std::make_pair("NullObject",Object("NullObject")));
+    if(!m_mongodb_client.read_documents("environment",docs)){
+        return false;
+    }
+    for(const auto& d: docs){
+        environment.emplace(std::make_pair(d["name"],Object::from_json(d)));
+    }
+    return true;
+}
+
+bool LTMemory::upload_environment_element(const Object& element){
+    return m_mongodb_client.write_document(element.name,"environment",element.to_json());
+}
 
 }

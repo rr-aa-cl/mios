@@ -2,11 +2,7 @@
 #include <spdlog/spdlog.h>
 
 #include <msrm_utils/system.hpp>
-
-#include <sstream>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_io.hpp>
+#include <msrm_utils/math.hpp>
 
 namespace mios {
 
@@ -20,11 +16,18 @@ void STMemory::link_to_lt_memory(LTMemory *lt_memory){
 
 bool STMemory::initialize(){
     spdlog::info("Initializing short-term memory...");
+    if(!syncronize_with_lt_memory()){
+        return false;
+    }
     return true;
 }
 
-LiveContext *STMemory::get_parameters(){
-    return &m_param;
+bool STMemory::syncronize_with_lt_memory(){
+    if(!m_lt_memory->load_environment(m_environment)){
+        return false;
+    }else{
+        return true;
+    }
 }
 
 void STMemory::put_task(const std::string &name, const nlohmann::json &context){
@@ -66,14 +69,14 @@ void STMemory::store_task_result(const std::string uuid, const TaskResult& resul
 }
 
 void STMemory::set_live_parameter(const std::string &key, const nlohmann::json &value){
-    m_param.live_parameters[key]=value;
+    m_live_context.live_parameters[key]=value;
 }
 
 std::optional<nlohmann::json> STMemory::get_live_parameter(const std::string &parameter) const{
-    if(m_param.live_parameters.find(parameter)==m_param.live_parameters.end()){
+    if(m_live_context.live_parameters.find(parameter)==m_live_context.live_parameters.end()){
         return {};
     }else{
-        return m_param.live_parameters[parameter];
+        return m_live_context.live_parameters[parameter];
     }
 }
 
@@ -97,6 +100,9 @@ bool STMemory::apply_skill_context(const std::string &skill_id){
         return false;
     }
     if(!m_parameters.skill->read_parameters(m_task_data.context["skills"][skill_id]["skill"])){
+        return false;
+    }
+    if(!m_parameters.skill->read_global_skill_parameters(m_task_data.context["skills"][skill_id]["skill"])){
         return false;
     }
     if(!m_parameters.system.read_parameters(m_task_data.context["skills"][skill_id]["system"])){
@@ -128,7 +134,39 @@ bool STMemory::set_default_parameters(){
     if(!m_parameters.user.read_parameters(default_parameters["user"])){
         return false;
     }
+    merge_live_context();
     return true;
+}
+
+void STMemory::merge_live_context(){
+    if(m_live_context.grasped_object->name!="NullObject"){
+        m_parameters.user.load_m=m_live_context.grasped_object->mass;
+        m_parameters.user.load_com=m_parameters.frames.F_T_EE*msrm_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp);;
+        m_parameters.user.load_I=m_live_context.grasped_object->OB_I;
+        m_parameters.frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp)*m_live_context.grasped_object->OB_T_TCP;
+    }
+}
+
+bool STMemory::update_object(const std::string &name, const Percept& p){
+    if(name=="NullObject"){
+        spdlog::error("Cannot overwrite NullObject");
+        return false;
+    }
+    if(m_environment.find(name)==m_environment.end()){
+        return false;
+    }
+//    m_environment[object].O_T_OB
+    if(!m_lt_memory->upload_environment_element(m_environment[name])){
+        return false;
+    }
+}
+
+const Object* const STMemory::get_object(const std::string &name) const{
+    if(m_environment.find(name)==m_environment.end()){
+        return &m_environment.at("NullObject");
+    }else{
+        return &m_environment.at(name);
+    }
 }
 
 }

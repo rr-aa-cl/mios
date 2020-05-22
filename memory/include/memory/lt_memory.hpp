@@ -2,6 +2,7 @@
 
 #include <nlohmann/json.hpp>
 #include <memory>
+#include <unordered_map>
 
 #include "mongodb_client/mongodb_client.hpp"
 #include "data_structures/parameters.hpp"
@@ -32,6 +33,8 @@ public:
 
     void save_task_data(const std::string& uuid,const TaskData& data);
 
+    bool load_environment(std::unordered_map<std::string,Object>& environment);
+    bool upload_environment_element(const Object &element);
 
 private:
     bool make_database_consistent();

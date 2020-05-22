@@ -262,7 +262,7 @@ protected:
         if(m_flag_stop){
             return;
         }
-        std::shared_ptr<Skill> skill = std::make_shared<T>(m_memory,m_context[skill_id],m_core->get_percept());
+        std::shared_ptr<Skill> skill = std::make_shared<T>(skill_id,m_memory,m_context[skill_id],m_core->get_percept());
         if(!m_core->load_skill(skill)){
             throw TaskException("Skill could not be loaded into core.");
         }

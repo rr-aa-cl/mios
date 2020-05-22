@@ -2,6 +2,7 @@
 
 #include <list>
 #include <map>
+#include <unordered_map>
 #include <atomic>
 
 #include "manipulation_primitive/manipulation_primitive.hpp"
@@ -84,7 +85,7 @@ public:
      * The skill base constructor. It is called by the constructor of any derived skill class.
      * @param[in] type The type id of the skill.
      */
-    Skill(const std::string& type, Memory *memory, std::shared_ptr<SkillParameters> config, const Percept& p);
+    Skill(const std::string& type, const std::vector<std::string>& objects, const std::string &id, Memory *memory, const Percept& p);
 
     /**
      * The skill destructor.
@@ -171,16 +172,8 @@ public:
      * @param[in] o_type Skill object id.
      * @param o Id of object in knowledge base.
      */
-    void set_object(const std::string& o_type, const std::string& o);
-    void set_object(const std::string& o_type, const Object& o);
 
-    /**
-     * Loads skill object from the skill description and maps them to objects in the knowledge base as defined by the task description.
-     * @param[in] object_types Skill objects in json format.
-     * @param[in] objects Objects in knowledge base in json format.
-     * @return Returns false if objects are invalid.
-     */
-    bool load_objects(const std::map<std::string, std::string> &objects);
+    bool ground_objects();
 
     /**
      * Returns a const reference to the indicated skill object.
@@ -189,7 +182,7 @@ public:
      *
      * @throw SkillException if o is not a skill object.
      */
-    const Object &get_object(const std::string& o) const;
+    const Object * const get_object(const std::string& o) const;
 
 
     /**
@@ -331,7 +324,7 @@ private:
     std::map<std::string,std::shared_ptr<ManipulationPrimitive> > m_mp_graph;
     std::string m_init_mp;
 
-    std::map<std::string,Object> m_objects;
+    std::unordered_map<std::string,Object*> m_grounded_objects;
 
 
     double m_time_start;
@@ -342,8 +335,9 @@ private:
     std::atomic<bool> m_flag_parallels_running;
     std::atomic<bool> m_flag_run_parallels;
 
-    std::string m_id;
-    std::string const m_type;
+    const std::string m_id;
+    const std::string m_type;
+    const std::unordered_set<std::string> m_objects;
 
     std::thread m_thr_parallels;
     SkillLifeCycle m_life_cycle;

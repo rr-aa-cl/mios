@@ -33,6 +33,9 @@ public:
     void set_live_parameter(const std::string& key, const nlohmann::json& value);
     std::optional<nlohmann::json> get_live_parameter(const std::string& parameter)const;
 
+    bool update_object(const std::string& name,const Percept& p);
+    const Object* const get_object(const std::string& name) const;
+
 private:
 
     LTMemory m_lt_memory;

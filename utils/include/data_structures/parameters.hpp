@@ -7,6 +7,8 @@
 
 namespace mios {
 
+class Object;
+
 enum CommandMode{None,Torque,CartesianVelocity,JointVelocity,CartesianPose,JointPose};
 
 class LimitParameters{
@@ -181,18 +183,15 @@ class ControlParameters{
 };
 
 class SkillParameters{
-    SkillParameters(){
-        common.time_max=0;
-        common.w_cost_function.resize(10);
-        common.w_cost_function[0]=1;
-        common.parallels_frequency=1;
-    }
+public:
+    SkillParameters();
 
     /**
      * Reads common skill parameters into the local configuration struct.
      * @param[in] p Common skill parameters in json format.
      */
     void read_global_skill_parameters(const nlohmann::json& p);
+    void read_skill_objects(const nlohmann::json& p);
     virtual bool read_parameters(const nlohmann::json& parameters) = 0;
 
     struct Common{
@@ -239,6 +238,7 @@ public:
     LiveContext();
     std::string executable_path;
     nlohmann::json live_parameters;
+    Object* grasped_object;
 };
 
 }
