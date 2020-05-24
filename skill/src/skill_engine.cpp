@@ -1,4 +1,5 @@
 #include "skill/skill_engine.hpp"
+//#include "skill/skill.hpp"
 #include "skills/nullskill.hpp"
 #include "core/core.hpp"
 #include "memory/memory.hpp"
@@ -29,8 +30,14 @@ void SkillEngine::unload_skill(){
     m_active_skill=std::make_shared<NullSkill>("NullSkill",m_memory,*m_core->get_percept());
 }
 
-bool SkillEngine::execute_skill(){
+bool SkillEngine::execute_skill(std::shared_ptr<Skill> skill){
+    if(!load_skill(skill)){
+        spdlog::error("Skill could not be loaded.");
+        return false;
+    }
     return m_core->execute_skill();
+    unload_skill();
+    skill->terminate();
 }
 
 void SkillEngine::stop_skill(bool success){

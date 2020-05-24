@@ -52,7 +52,7 @@ void Task::execute_desk_timeline(const std::string &id){
 //    m_core->start_desk_task(id);
 }
 
-void Task::write_result(bool success, double cost_suc, double cost_err, nlohmann::json custom_results){
+void Task::write_result(bool success, double cost_suc, double cost_err, std::optional<nlohmann::json> custom_results){
     m_result.success=success;
     m_result.cost_suc=cost_suc;
     m_result.cost_err=cost_err;
@@ -145,6 +145,15 @@ nlohmann::json Task::get_context() const{
     return m_context;
 }
 
+void Task::overwrite_context(const std::string &skill_name, const std::string &parameter_type, const std::string &parameter,const nlohmann::json& value){
+    try {
+        m_context["skills"][skill_name][parameter_type][parameter]=value;
+    }catch(const nlohmann::detail::type_error& e){
+        spdlog::debug(e.what());
+        throw TaskException("Error when attempting to overwrite task context. Make sure the skill and the parameter exist in the default context.");
+    }
+}
+
 bool Task::grasp_object(const std::string &name, double speed){
     if(!m_flag_stop){
         return m_core->grasp_object(name,speed);
@@ -169,7 +178,7 @@ bool Task::move_gripper(double width, double speed){
     }
 }
 
-bool Task::request_percept(Percept &percept, std::optional<Eigen::Matrix<double, 3, 3> > O_R_T){
+bool Task::get_percept(Percept &percept, std::optional<Eigen::Matrix<double, 3, 3> > O_R_T){
     if(!m_core->refresh_percept(O_R_T)){
         return false;
     }else{
@@ -274,7 +283,7 @@ std::string Task::get_id() const{
 }
 
 bool Task::get_stop_flag() const{
-    return m_flag_stop || m_core->has_terminated();
+    return m_flag_stop;
 }
 
 bool Task::get_recovery_flag() const{

@@ -7,7 +7,6 @@
 #include "utils/exceptions.hpp"
 #include "skill/skill.hpp"
 #include "skills/nullskill.hpp"
-#include "event_publisher/event_publisher.hpp"
 #include "controller_pipeline/cart_torque_pipeline.hpp"
 #include "controller_pipeline/joint_torque_pipeline.hpp"
 #include "controller_pipeline/cart_velocity_pipeline.hpp"
@@ -66,14 +65,6 @@ void Core::terminate(){
     m_panda_body.disconnect_from_gripper();
 }
 
-bool Core::reset(){
-    if(!m_memory.load_parameters()){
-        return false;
-    }
-    spdlog::info("Core reset finished.");
-    return true;
-}
-
 Memory* Core::get_memory(){
     return &m_memory;
 }
@@ -130,7 +121,7 @@ bool Core::execute_skill(){
 }
 
 bool Core::set_robot_parameters(){
-    ControlParameters controller= m_memory.read_parameters()->controller;
+    ControlParameters control= m_memory.read_parameters()->control;
     UserParameters user= m_memory.read_parameters()->user;
     FramesParameters frames =m_memory.read_parameters()->frames;
 
@@ -138,11 +129,11 @@ bool Core::set_robot_parameters(){
     std::array<double,9> load_I = msrm_utils::convert_to_array<double,3,3>(user.load_I);
     std::array<double,7> tau_contact = msrm_utils::convert_to_array<double,7,1>(user.tau_ext_contact);
     std::array<double,7> tau_max = msrm_utils::convert_to_array<double,7,1>(user.tau_ext_max);
-    std::array<double,6> F_contact = msrm_utils::convert_to_array<double,6,1>(user.F_ext_contact);
-    std::array<double,6> F_max = msrm_utils::convert_to_array<double,6,1>(user.F_ext_max);
+    std::array<double,6> F_contact = {user.F_ext_contact(0),user.F_ext_contact(0),user.F_ext_contact(0),user.F_ext_contact(1),user.F_ext_contact(1),user.F_ext_contact(1)};
+    std::array<double,6> F_max = {user.F_ext_max(0),user.F_ext_max(0),user.F_ext_max(0),user.F_ext_max(1),user.F_ext_max(1),user.F_ext_max(1)};
     std::array<double,16> EE_T_K = msrm_utils::convert_to_array<double,4,4>(frames.EE_T_K);
-    std::array<double,7> K_theta = msrm_utils::convert_to_array<double,7,1>(controller.joint_imp.K_theta);
-    std::array<double,6> K_x = msrm_utils::convert_to_array<double,6,1>(controller.cart_imp.K_x);
+    std::array<double,7> K_theta = msrm_utils::convert_to_array<double,7,1>(control.joint_imp.K_theta);
+    std::array<double,6> K_x = msrm_utils::convert_to_array<double,6,1>(control.cart_imp.K_x);
     std::array<double,16> F_T_EE = msrm_utils::convert_to_array<double,4,4>(frames.F_T_EE);
 
     return m_panda_body.set_robot_parameters(user.load_m,load_com,load_I,tau_contact,tau_max,F_contact,F_max,EE_T_K,K_x,K_theta,F_T_EE);
@@ -181,7 +172,7 @@ franka::JointVelocities Core::joint_velocity_controller_pipeline(const franka::R
 }
 
 bool Core::grasp_object(const std::string &name,double speed){
-    Object* object=m_memory.get_object(name);
+    const Object* object=m_memory.get_object(name);
     if(object->name=="NullObject"){
         spdlog::error("Cannot find object "+name+" in knowledge base.");
         return false;
@@ -189,7 +180,7 @@ bool Core::grasp_object(const std::string &name,double speed){
     if(m_panda_body.grasp(object->grasp_width,speed,object->grasp_force,0.005,0.005)){
         m_memory.get_live_context()->grasped_object=object;
         m_memory.get_parameters()->user.load_m=object->mass;
-        m_memory.get_parameters()->user.load_com=m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp);
+        m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
         m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
         if(!set_robot_parameters()){
@@ -219,14 +210,14 @@ bool Core::is_grasping(){
 }
 
 bool Core::set_grasped_object(const std::string &name){
-    Object* object=m_memory.get_object(name);
+    const Object* object=m_memory.get_object(name);
     if(object->name=="NullObject"){
         spdlog::error("Cannot find object "+name+" in knowledge base.");
         return false;
     }
     m_memory.get_live_context()->grasped_object=object;
     m_memory.get_parameters()->user.load_m=object->mass;
-    m_memory.get_parameters()->user.load_com=m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp);
+    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
     m_memory.get_parameters()->user.load_I=object->OB_I;
     m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
     return set_robot_parameters();
@@ -242,7 +233,7 @@ bool Core::release_object(double speed){
     if(m_panda_body.move_to_finger_position(m_percept.internal_model.max_finger_width,speed)){
         m_memory.get_live_context()->grasped_object=object;
         m_memory.get_parameters()->user.load_m=object->mass;
-        m_memory.get_parameters()->user.load_com=m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp);
+        m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
         m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
         set_robot_parameters();
@@ -349,7 +340,7 @@ const Percept* Core::get_percept() const{
 //}
 
 std::tuple<std::string,std::string,std::string> Core::get_desk_data() const{
-    return std::make_tuple(m_memory.read_parameters()->system.desk_name,
+    return std::make_tuple(m_memory.read_parameters()->system.desk_user,
                            m_memory.read_parameters()->system.desk_pwd,
                            m_memory.read_parameters()->system.robot_ip);
 }

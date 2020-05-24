@@ -7,7 +7,7 @@
 
 namespace mios {
 
-struct ConfigMP_mp_basic : public ConfigMP{
+struct ConfigMP_mp_basic : public ResultMP{
     ConfigMP_mp_basic(){
         dX_d.setZero();
         ddX_d.setZero();

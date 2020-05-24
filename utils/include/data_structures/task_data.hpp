@@ -4,7 +4,7 @@
 #include <string>
 #include <nlohmann/json.hpp>
 
-#include "task/task.hpp"
+#include "data_structures/results.hpp"
 
 namespace mios {
 

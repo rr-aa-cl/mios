@@ -10,7 +10,7 @@ public:
     void initialize_context();
     void execute_task();
     void recover_task();
-    const EvalTask& evaluate_task();
+    void evaluate_task();
     bool read_parameters(const nlohmann::json &params);
 private:
 std::string idle_mode;

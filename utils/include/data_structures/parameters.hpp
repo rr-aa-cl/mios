@@ -111,7 +111,7 @@ public:
     static nlohmann::json get_default_values();
 
     std::string robot_ip;
-    std::string desk_name;
+    std::string desk_user;
     std::string desk_pwd;
 
 
@@ -247,7 +247,7 @@ public:
     LiveContext();
     std::string executable_path;
     nlohmann::json live_parameters;
-    Object* grasped_object;
+    const Object* grasped_object;
 };
 
 }

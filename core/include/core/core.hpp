@@ -39,9 +39,6 @@ public:
     bool initialize();
     void terminate();
 
-    bool reset();
-    bool has_terminated() const;
-
     bool execute_skill();
     void terminate_control_cycle();
 

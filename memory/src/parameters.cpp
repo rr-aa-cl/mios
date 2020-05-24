@@ -300,7 +300,7 @@ nlohmann::json FramesParameters::get_default_values(){
 
 SystemParameters::SystemParameters(){
     robot_ip={};
-    desk_name={};
+    desk_user={};
     desk_pwd={};
 
     has_robot=false;
@@ -312,7 +312,7 @@ bool SystemParameters::read_parameters(const nlohmann::json &parameters){
         spdlog::error("Could not read robot_ip.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"desk_name",desk_name)){
+    if(!msrm_utils::read_json_param(parameters,"desk_name",desk_user)){
         spdlog::error("Could not read desk_name.");
         return false;
     }

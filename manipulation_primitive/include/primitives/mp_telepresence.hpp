@@ -19,7 +19,7 @@ namespace mios {
 
 enum TelepresenceMode{None,JointDirect,CartesianDirect,Joystick};
 
-struct ConfigMP_mp_telepresence : public ConfigMP{
+struct ConfigMP_mp_telepresence : public ResultMP{
     ConfigMP_mp_telepresence(){
         ip_dst="none";
         port_dst=0;

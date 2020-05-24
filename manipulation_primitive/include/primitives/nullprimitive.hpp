@@ -5,33 +5,21 @@
 
 namespace mios {
 
-struct ConfigMP_NullPrimitive : public ConfigMP{
+struct MPParametersNullPrimitive : public MPParameters{
 
 };
 
-struct EvalMP_NullPrimitive : public EvalMP{
-
-};
-
-struct NullAttractor : public Attractor{
-    void reset(){
-    }
+class NullAttractor : public Attractor{
+    bool reached(const Percept& p);
 };
 
 class NullPrimitive : public ManipulationPrimitive{
 public:
-    NullPrimitive();
+    NullPrimitive(const std::string& name, const Percept& p_0, std::shared_ptr<MPParameters> parameters, std::shared_ptr<Attractor> attractor, Memory* memory);
 
-    void initialize(const Percept &p_0,const std::shared_ptr<ConfigUser> config);
-    CmdMP& step(const Percept& p);
-    void terminate();
-
-    bool in_attractor(const Percept &p);
-    bool init_attractor(const Percept &p, const std::shared_ptr<ConfigUser> config);
-    bool check_attractor();
-
-    void setup_logs(unsigned long long length);
-    void write_logs();
+    void i_initialize(const Percept &p_0) override;
+    Actuator * step(const Percept &p) override;
+    void i_terminate() override;
 };
 
 }

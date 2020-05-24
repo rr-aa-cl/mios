@@ -3,8 +3,8 @@
 
 namespace mios {
 
-ManipulationPrimitive::ManipulationPrimitive(const std::string &type, const Percept &p_0, std::shared_ptr<ConfigMP> config, std::shared_ptr<Attractor> attractor, Memory *memory, const std::string &id)
-    :m_type(type),m_config(config),m_attractor(attractor),m_memory(memory),m_id(id),m_cmd(Actuator(p_0)),m_flag_initialized(false),m_flag_terminated(false){
+ManipulationPrimitive::ManipulationPrimitive(const std::string &type, const std::string& name, const Percept &p_0, std::shared_ptr<MPParameters> parameters, std::shared_ptr<Attractor> attractor, Memory *memory)
+    :m_memory(memory),m_cmd(Actuator(p_0)),m_flag_initialized(false),m_flag_terminated(false),m_parameters(parameters),m_attractor(attractor),m_type(type),m_name(name){
 }
 
 ManipulationPrimitive::~ManipulationPrimitive(){
@@ -52,8 +52,8 @@ void ManipulationPrimitive::set_flag_error(){
     m_flag_error=true;
 }
 
-std::string ManipulationPrimitive::get_id() const{
-    return m_id;
+std::string ManipulationPrimitive::get_name() const{
+    return m_name;
 }
 
 std::string ManipulationPrimitive::get_type() const{

@@ -6,7 +6,7 @@
 
 namespace mios {
 
-struct ConfigMP_mp_basic_joint : public ConfigMP{
+struct ConfigMP_mp_basic_joint : public ResultMP{
     ConfigMP_mp_basic_joint(){
         dq_d<<0;
         ddq_d<<0;

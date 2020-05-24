@@ -10,44 +10,16 @@
 #include <msrm_utils/json.hpp>
 #include <spdlog/spdlog.h>
 
-#include "skill/skill.hpp"
-#include "core/core.hpp"
 #include "task/taskobserver.hpp"
 #include "skill/skill_engine.hpp"
 #include "utils/exceptions.hpp"
+#include "data_structures/results.hpp"
+#include "skill/skill.hpp"
 
 namespace mios {
 
 class Memory;
-
-/**
- * The evaluation struct contains quality metrics about the task execution as well as necessary information for the task handling procedures.
- */
-struct TaskResult{
-    /**
-     * The constructor of the struct is by default called to build a nominal, unsuccessful task evaluation.
-     * @param nominal
-     */
-    TaskResult(){
-        cost_suc=0;
-        cost_err=0;
-        success=false;
-        exception=false;
-        empty_queue=false;
-        custom_results=nlohmann::json();
-        errors.resize(0);
-    }
-
-    std::unordered_map<std::string,SkillResult> m_skill_results;
-
-    double cost_suc;
-    double cost_err;
-    bool success;
-    bool exception;
-    bool empty_queue;
-    nlohmann::json custom_results;
-    std::vector<std::string> errors;
-};
+class Core;
 
 
 /**
@@ -77,6 +49,7 @@ public:
      */
     bool load_context(const nlohmann::json &user_context);
     nlohmann::json get_context() const;
+    void overwrite_context(const std::string& skill_name, const std::string& parameter_type, const std::string& parameter, const nlohmann::json &value);
 
     /**
      * Implements task execution in derived tasks.
@@ -205,7 +178,7 @@ protected:
      * @param[in] O_R_TF If specified the percept is calculated in the given task frame.
      * @return Current percept struct.
      */
-    bool request_percept(Percept& percept,std::optional<Eigen::Matrix<double, 3, 3> > O_R_T);
+    bool get_percept(Percept& percept,std::optional<Eigen::Matrix<double, 3, 3> > O_R_T);
 
 
     bool reserve_skill(const std::string& name);
@@ -219,27 +192,29 @@ protected:
      * @throw TaskException if core or knowledge base are not connected, if skill with name id s does not exist in this task, or if the skill
      * has been terminated by a non-nominal event.
      */
-    template<typename T>void execute_skill(const std::string &skill_id){
-        if(m_context["skills"].find(skill_id)==m_context["skills"].end()){
-            spdlog::error("Skill with id "+skill_id+" not in this task. Check the task context for consistency. Stopping task.");
+
+//    void execute_skill(const std::string& name);
+    template<typename T>void execute_skill(const std::string &name){
+        if(m_context["skills"].find(name)==m_context["skills"].end()){
+            spdlog::error("Skill with id "+name+" not in this task. Check the task context for consistency. Stopping task.");
             stop_task(true);
-            throw TaskException("Skill with id "+skill_id+" not in this task. Check the task context for consistency. Stopping task.");
+            throw TaskException("Skill with id "+name+" not in this task. Check the task context for consistency. Stopping task.");
         }
         if(m_flag_stop){
             return;
         }
-        if(!m_core->refresh_percept({})){
+        Percept p;
+        if(!get_percept(p,{})){
             throw TaskException("Could not refresh perception.");
         }
-        std::shared_ptr<Skill> skill = std::make_shared<T>(skill_id,m_memory,m_context[skill_id],m_core->get_percept());
-        if(!m_skill_engine->load_skill(skill)){
-            throw TaskException("Skill could not be loaded into core.");
+
+        std::shared_ptr<Skill> skill = std::make_shared<T>(name,m_memory,m_context[name],p);
+        spdlog::info("Executing skill "+name+".");
+        if(!m_skill_engine->execute_skill(skill)){
+            throw TaskException("Could not execute skill " + name + ".");
         }
-        spdlog::info("Executing skill "+skill_id+".");
-        m_skill_engine->execute_skill();
-        m_skill_engine->unload_skill();
-        skill->terminate();
-        m_result.m_skill_results.emplace(std::make_pair(skill_id,skill->get_result()));
+        m_result.m_skill_results.emplace(std::make_pair(name,skill->get_result()));
+        m_flag_stop = skill->get_result().exception;
     }
 
     /**
@@ -256,8 +231,9 @@ protected:
      */
     void execute_desk_timeline(const std::string& id);
 
-    void write_result(bool success,double cost_suc,double cost_err,nlohmann::json custom_results);
+    void write_result(bool success, double cost_suc, double cost_err, std::optional<nlohmann::json> custom_results);
 
+protected:
 
 private:
 
@@ -269,13 +245,13 @@ private:
     bool check_context(const nlohmann::json& default_context, const nlohmann::json &user_context) const;
     static std::string generate_uuid();
 
-    nlohmann::json m_context;
     TaskResult m_result;
     std::unordered_map<std::string,TaskResult> m_subtask_results;
 
     std::unordered_set<std::string> m_reserved_skills;
     std::unordered_set<std::string> m_reserved_subtasks;
 
+    nlohmann::json m_context;
     Core* m_core;
     Memory* m_memory;
     SkillEngine* m_skill_engine;

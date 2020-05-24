@@ -21,7 +21,7 @@ void TestTask2::execute_task(){
     }
     this->execute_skill("t2_s2");
 }
-const EvalTask& TestTask2::evaluate_task(){
+void TestTask2::evaluate_task(){
     m_eval_task.success=this->get_subtask("t2_t1")->get_eval().success;
     m_eval_task.results["t2_s1"]=this->get_skill("t2_s1")->get_eval().results;
     m_eval_task.results["t2_s2"]=this->get_skill("t2_s2")->get_eval().results;

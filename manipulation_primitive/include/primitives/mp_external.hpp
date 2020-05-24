@@ -18,7 +18,7 @@ namespace mios {
 
 enum InputMode{Torque,CartesianVelocityTorque,CartesianVelocity,JointVelocityTorque,JointVelocity,CartesianPosition,JointPosition};
 
-struct ConfigMP_mp_external : public ConfigMP{
+struct ConfigMP_mp_external : public ResultMP{
     ConfigMP_mp_external(){
         mode=InputMode::Torque;
         port_recv=0;

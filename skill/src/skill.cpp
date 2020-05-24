@@ -11,19 +11,9 @@
 
 namespace mios {
 
-SkillResult::SkillResult(){
-    this->config=std::make_shared<SkillParametersNullSkill>();
-    this->cost_suc=0;
-    this->cost_err=0;
-    this->success=false;
-    this->last_errors.resize(0);
-    this->results=nlohmann::json();
-    exception=false;
-}
-
 Skill::Skill(const std::string &type, const std::unordered_set<std::string> &objects, const std::string& id, Memory *memory, const Percept &p):
-m_active_mp(std::make_shared<NullPrimitive>(p,std::make_shared<ConfigMP_NullPrimitive>(),std::make_shared<NullAttractor>(),memory,"NullPrimitive")),m_memory(memory),m_life_cycle(SkillLifeCycle::slInit),
-m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_type(type),m_id(id),m_objects(objects){
+    m_memory(memory),m_active_mp(std::make_shared<NullPrimitive>("NullPrimitive",p,std::make_shared<MPParametersNullPrimitive>(),std::make_shared<NullAttractor>(),memory,"NullPrimitive")),m_life_cycle(SkillLifeCycle::slInit),
+    m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_type(type),m_id(id),m_objects(objects){
 }
 
 Skill::~Skill(){
@@ -37,12 +27,20 @@ std::shared_ptr<ManipulationPrimitive> Skill::get_mp(const std::string &mp) cons
     return m_mp_graph.at(mp);
 }
 
-Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose(const std::string &o, bool TF){
-    if(m_grounded_objects.find(o)==m_grounded_objects.end()){
-        throw SkillException("No object of type "+o+" in skill "+ this->get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
+Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_T(const std::string &object_name){
+    if(m_grounded_objects.find(object_name)==m_grounded_objects.end()){
+        throw SkillException("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
     }
-    const Object* object=m_memory->get_object(o);
-    return msrm_utils::rotate_matrix(object->O_T_OB*object->OB_T_gp,msrm_utils::invert_matrix(m_memory->read_parameters()->frames.O_R_T));
+    const Object* object=m_memory->get_object(object_name);
+    return msrm_utils::rotate_matrix(object->O_T_OB*object->OB_T_gp,m_memory->read_parameters()->frames.O_R_T.transpose());
+}
+
+Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_O(const std::string &object_name){
+    if(m_grounded_objects.find(object_name)==m_grounded_objects.end()){
+        throw SkillException("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
+    }
+    const Object* object=m_memory->get_object(object_name);
+    return object->O_T_OB*object->OB_T_gp;
 }
 
 const Object* Skill::get_object(const std::string &o) const{
@@ -64,19 +62,18 @@ bool Skill::initialize(const Percept &p){
         std::cout<<"O_R_TF: "<<m_memory->read_parameters()->frames.O_R_T<<std::endl;
         return false;
     }
-    m_mp_graph.clear();
-    build_primitives(p);
     return true;
 }
 
 Actuator* Skill::cycle(const Percept &p){
     m_result.p_1=p;
     Actuator* cmd;
-    std::optional<std::tuple<bool,std::string> > transition;
+    std::optional<std::shared_ptr<ManipulationPrimitive> > next_mp;
 
     if(m_life_cycle==SkillLifeCycle::slInit){
+        m_active_mp=get_initial_mp(p);
         m_result.p_0=p;
-        m_result.percepts.emplace(std::make_pair(m_active_mp->get_id(),p));
+        m_result.percepts.emplace(std::make_pair(m_active_mp->get_name(),p));
         if(!this->check_local_pre_conditions(p)){
             cmd=m_active_mp->stop(p);
             m_life_cycle=SkillLifeCycle::slTerminate;
@@ -129,23 +126,15 @@ Actuator* Skill::cycle(const Percept &p){
         m_life_cycle=SkillLifeCycle::slSettle;
         return m_active_mp->stop(p);
     }
-    transition=check_edges(p);
-    if(transition.has_value()){
-        if(m_mp_graph.find(std::get<1>(transition.value()))==m_mp_graph.end()){
-            m_result.last_errors.emplace_back("Missing manipulation primitive");
-            m_result.success=false;
-            m_result.exception=true;
-            m_life_cycle=SkillLifeCycle::slSettle;
-            return m_active_mp->stop(p);
-        }else{
-            m_life_cycle=SkillLifeCycle::slTransition;
-        }
+    next_mp=graph_transition(p);
+    if(next_mp.has_value()){
+        m_life_cycle=SkillLifeCycle::slTransition;
     }
 
     if(m_life_cycle==SkillLifeCycle::slTransition){
         Actuator blend_cmd=*(m_active_mp->cmd_from_buffer());
-        m_active_mp=m_mp_graph[std::get<1>(transition.value())];
-        m_result.percepts.emplace(std::make_pair(m_active_mp->get_id(),p));
+        m_active_mp=next_mp.value();
+        m_result.percepts.emplace(std::make_pair(m_active_mp->get_name(),p));
         m_life_cycle=SkillLifeCycle::slExecution;
         return m_active_mp->initialize(p,blend_cmd);
     }
@@ -169,10 +158,8 @@ void Skill::append_error(const std::string& error){
     m_result.last_errors.emplace_back(error);
 }
 
-Eigen::Matrix<double,3,3> Skill::get_O_R_TF(const Percept &p){
-    Eigen::Matrix<double,3,3> O_R_TF;
-    O_R_TF.setZero();
-    return O_R_TF;
+Eigen::Matrix<double,3,3> Skill::get_O_R_TF(const Percept &p) const{
+    return m_memory->read_parameters()->frames.O_R_T;
 }
 
 void Skill::set_init_mp(const std::string& name){

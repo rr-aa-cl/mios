@@ -1,10 +1,9 @@
 #pragma once
 
-#include <list>
-#include <map>
 #include <unordered_map>
 #include <unordered_set>
 #include <atomic>
+#include <thread>
 
 #include "manipulation_primitive/manipulation_primitive.hpp"
 #include "memory/memory.hpp"
@@ -13,64 +12,13 @@
 #include "data_structures/actuator.hpp"
 #include "data_structures/parameters.hpp"
 
+#include "utils/exceptions.hpp"
+#include "data_structures/results.hpp"
+
 
 namespace mios {
 
 class Object;
-
-/**
- * The evaluation struct contains quality metrics for the skill execution and further meta information.
- */
-class SkillResult{
-public:
-    SkillResult();
-    /**
-     * Map that contains the percept struct at the beginning of execution of each manipulation primitive of the skill.
-     * The key is the name of the respective primitive.
-     */
-    std::map<std::string,Percept> percepts;
-
-    /**
-     * Percept struct at the beginning of skill execution.
-     */
-    Percept p_0;
-
-    /**
-     * Percept struct at the end of skill execution.
-     */
-    Percept p_1;
-
-    /**
-     * Cost of skill execution in case of success.
-     */
-    double cost_suc;
-
-    /**
-     * Cost of skill execution in case of failure.
-     */
-    double cost_err;
-
-    /**
-     * Additional inquality constraints. The key is the constraint's identifier, the value the constraint in implicit form.
-     */
-    std::map<std::string,double> constraints;
-
-    /**
-     * Indicates whether the skill execution was successful.
-     */
-    bool success;
-
-    bool exception;
-
-    /**
-     * Lists the last thrown exceptions.
-     */
-    std::vector<std::string> last_errors;
-
-    nlohmann::json results;
-
-};
-
 
 enum SkillLifeCycle{slInit,slTransition,slExecution,slSettle,slTerminate};
 
@@ -104,7 +52,7 @@ public:
      * @param[in] p Percept struct.
      * @return Return O_R_TF to be used for this skill. Return the 0 matrix to use the values from the task description.
      */
-    virtual Eigen::Matrix<double,3,3> get_O_R_TF(const Percept& p);
+    virtual Eigen::Matrix<double,3,3> get_O_R_TF(const Percept& p) const;
 
     /**
      * Main execution loop of the skill. Manages all manipulation primitives, local and global conditions.
@@ -186,7 +134,8 @@ public:
      * @param TF Determines whether the pose should be given in task frame or base frame.
      * @return Object pose.
      */
-    Eigen::Matrix<double,4,4> get_object_grasp_pose(const std::string& o, bool TF=true);
+    Eigen::Matrix<double,4,4> get_object_grasp_pose_T(const std::string& object_name);
+    Eigen::Matrix<double,4,4> get_object_grasp_pose_O(const std::string& object_name);
 
     /**
      * To be defined by developer. This function sets up the evaluation struct based on the skill execution.
@@ -202,12 +151,6 @@ protected:
      * @throw SkillException if mp does not exist in this skill.
      */
     std::shared_ptr<ManipulationPrimitive> get_mp(const std::string& mp) const;
-
-    /**
-     * This function needs to be defined by the developer. It contains the setup of all manipulation primitives.
-     * @param[in] p Percept struct.
-     */
-    virtual bool build_primitives(const Percept& p) = 0;
 
     /**
      * This function may be overwritten by the developer and may contain any additional functionality of the skill that does not fit into the other functions.
@@ -232,13 +175,8 @@ protected:
      *
      * @throw SkillException if manipulation primitive with id already exists.
      */
-    template<typename T_primitive,typename T_config,typename T_attractor>void insert_mp(const std::string& id, const Percept &p){
-        if(m_mp_graph.find(id)!=m_mp_graph.end()){
-            throw SkillException("Could not insert new manipulation primitive. MP with id "+id+" already exists.");
-        }else{
-            m_mp_graph.insert(std::pair<std::string,std::shared_ptr<ManipulationPrimitive> >(id,std::make_shared<T_primitive>(p,std::make_shared<T_config>(),
-                                                                                                                      std::make_shared<T_attractor>(),m_memory,id)));
-        }
+    template<typename T_primitive,typename T_parameters,typename T_attractor>std::shared_ptr<ManipulationPrimitive> create_mp(const std::string& name, const Percept &p){
+        return std::make_shared<ManipulationPrimitive>(std::make_shared<T_primitive>(name,p,std::make_shared<T_parameters>(),std::make_shared<T_attractor>(),m_memory));
     }
 
     /**
@@ -258,6 +196,10 @@ protected:
      */
     bool check_global_suc_conditions(const Percept& p) const;
 
+    Memory* m_memory;
+
+protected:
+    virtual void parallels();
     /**
      * Checks the skills preconditions that have to be defined by the developer. This function is optional, the default return value is true.
      * Preconditions are checked at start of skill execution.
@@ -290,30 +232,18 @@ protected:
      */
     virtual bool check_local_ex_conditions(const Percept& p);
 
-    /**
-     * This function checks the transitions of the MP graph. It is user-defined and needs to check for every MP (a node in the graph)
-     * if it may switch to another MP.
-     * @param[in] p Percept struct.
-     * @return A tuple consisting of a bool (to indicate whether to trigger a transition) and a string that is the id of the successor MP if the transition is activated.
-     */
-    virtual std::optional<std::tuple<bool,std::string> > check_edges(const Percept& p) = 0;
-
-    /**
-     * This function runs as a parallel thread at a specified frequency.
-     */
-    virtual void parallels();
-
-    std::shared_ptr<ManipulationPrimitive> m_active_mp;
-    Memory* m_memory;
+    virtual std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept& p);
+    virtual std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept& p_0) = 0;
 
 private:
+    std::shared_ptr<ManipulationPrimitive> m_active_mp;
     SkillResult m_result;
 
     void run_parallels();
     void terminate_parallels();
     bool has_settled();
 
-    std::map<std::string,std::shared_ptr<ManipulationPrimitive> > m_mp_graph;
+    std::unordered_map<std::string,std::shared_ptr<ManipulationPrimitive> > m_mp_graph;
     std::string m_init_mp;
 
     std::unordered_map<std::string,const Object*> m_grounded_objects;

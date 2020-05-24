@@ -7,51 +7,20 @@
 
 namespace mios {
 
-
-class ParameterLoadException :  public std::exception{
-public:
-    virtual const char* what() const throw(){
-        return "what(): Could not load a parameter from database.";
-    }
-};
-
 class TaskException :  public std::exception{
 public:
-    TaskException(const std::string& msg){
-        this->msg=msg;
-    }
-    virtual const char* what() const throw(){
-        msrm_utils::print_error(msg);
-        return "what(): Task exeption has been thrown, see above error message for more information.";
-    }
+    TaskException(const std::string& msg);
+    virtual const char* what() const throw();
 private:
-    std::string msg;
+    std::string m_msg;
 };
 
 class SkillException :  public std::exception{
 public:
-    SkillException(const std::string& msg){
-        this->msg=msg;
-    }
-    virtual const char* what() const throw(){
-        msrm_utils::print_error(msg);
-        return "what(): Skill exeption has been thrown, see above error message for more information.";
-    }
+    SkillException(const std::string& msg);
+    virtual const char* what() const throw();
 private:
-    std::string msg;
-};
-
-class CoreException :  public std::exception{
-public:
-    CoreException(const std::string& msg){
-        this->msg=msg;
-    }
-    virtual const char* what() const throw(){
-        msrm_utils::print_error(msg);
-        return "what(): Core exeption has been thrown, see above error message for more information.";
-    }
-private:
-    std::string msg;
+    std::string m_msg;
 };
 
 }
