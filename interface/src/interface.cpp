@@ -28,7 +28,7 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("home_gripper",std::bind(&CommandInterface::home_gripper,this,std::placeholders::_1),{});
 
     m_portal->bind_method_to_all("teach_object",std::bind(&CommandInterface::teach_object,this,std::placeholders::_1),{ArgPair("object",{}),ArgPair("teach_width",false)});
-    m_portal->bind_method_to_all("apply_reference_frame",std::bind(&CommandInterface::apply_reference_frame,this,std::placeholders::_1),{ArgPair("frame",{})});
+//    m_portal->bind_method_to_all("apply_reference_frame",std::bind(&CommandInterface::apply_reference_frame,this,std::placeholders::_1),{ArgPair("frame",{})});
 //    m_portal->bind_method_to_all("download_task_description",std::bind(&CommandInterface::download_task_description,this,std::placeholders::_1),{"task"});
 //    m_portal->bind_method_to_all("download_skill_description",std::bind(&CommandInterface::download_skill_description,this,std::placeholders::_1),{"skill"});
 //    m_portal->bind_method_to_all("download_object_description",std::bind(&CommandInterface::download_object_description,this,std::placeholders::_1),{"object"});

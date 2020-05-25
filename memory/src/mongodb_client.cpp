@@ -25,7 +25,10 @@ MongodbClient::MongodbClient(const std::string &database, unsigned port){
     try{
         m_mongodb=m_client.database(database);
         m_collections.clear();
-        m_collections.insert(std::pair<const char*,mongocxx::collection>("prototypes",m_mongodb["prototypes"]));
+        m_collections.insert(std::pair<const char*,mongocxx::collection>("skills",m_mongodb["skills"]));
+        m_collections.insert(std::pair<const char*,mongocxx::collection>("tasks",m_mongodb["tasks"]));
+        m_collections.insert(std::pair<const char*,mongocxx::collection>("frames",m_mongodb["frames"]));
+        m_collections.insert(std::pair<const char*,mongocxx::collection>("environment",m_mongodb["environment"]));
         m_collections.insert(std::pair<const char*,mongocxx::collection>("parameters",m_mongodb["parameters"]));
     }catch(const mongocxx::exception& e){
         spdlog::debug(e.what());
@@ -204,13 +207,21 @@ bool MongodbClient::make_document_consistent(const std::string& name, std::strin
 
 bool MongodbClient::health_check() const{
     try{
-        unsigned n_doc_parameters=3;
+        unsigned n_doc_parameters=5;
         if(!m_mongodb.has_collection("parameters")){
             spdlog::error("Database has no parameters collection.");
             return false;
         }
-        if(!m_mongodb.has_collection("prototypes")){
-            spdlog::error("Database has no prototypes collection.");
+        if(!m_mongodb.has_collection("skills")){
+            spdlog::error("Database has no frames collection.");
+            return false;
+        }
+        if(!m_mongodb.has_collection("tasks")){
+            spdlog::error("Database has no frames collection.");
+            return false;
+        }
+        if(!m_mongodb.has_collection("environment")){
+            spdlog::error("Database has no environment collection.");
             return false;
         }
         unsigned cnt_doc = m_mongodb.collection("parameters").count_documents({});

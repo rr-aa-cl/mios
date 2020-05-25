@@ -36,7 +36,6 @@ Object Object::from_json(const nlohmann::json& p){
         std::string name;
         p["name"].get_to(name);
         Object o(name);
-        msrm_utils::read_json_param(p,"name",o.name);
         msrm_utils::read_json_param<double,7,1>(p,"q",o.q);
         msrm_utils::read_json_param<double,4,4>(p,"O_T_OB",o.O_T_OB);
         msrm_utils::read_json_param<double,4,4>(p,"OB_T_gp",o.OB_T_gp);

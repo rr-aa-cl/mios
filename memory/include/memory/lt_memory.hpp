@@ -38,6 +38,9 @@ public:
 
 private:
     bool make_database_consistent();
+    bool make_default_skills_consistent();
+    bool make_default_tasks_consistent();
+    bool make_default_environment_consistent();
 
     MongodbClient m_mongodb_client;
     STMemory* m_st_memory;

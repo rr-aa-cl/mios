@@ -12,7 +12,7 @@
 namespace mios {
 
 Skill::Skill(const std::string &type, const std::unordered_set<std::string> &objects, const std::string& id, Memory *memory, const Percept &p):
-    m_memory(memory),m_active_mp(std::make_shared<NullPrimitive>("NullPrimitive",p,std::make_shared<MPParametersNullPrimitive>(),std::make_shared<NullAttractor>(),memory,"NullPrimitive")),m_life_cycle(SkillLifeCycle::slInit),
+    m_memory(memory),m_active_mp(std::make_shared<NullPrimitive>("NullPrimitive",p,std::make_shared<MPParametersNullPrimitive>(),std::make_shared<NullAttractor>(),memory)),m_life_cycle(SkillLifeCycle::slInit),
     m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_type(type),m_id(id),m_objects(objects){
 }
 
@@ -71,6 +71,7 @@ Actuator* Skill::cycle(const Percept &p){
     if(m_life_cycle==SkillLifeCycle::slInit){
         m_active_mp=get_initial_mp(p);
         m_result.p_0=p;
+        m_memory->get_live_context()->t_skill=std::chrono::high_resolution_clock::now();
         m_result.percepts.emplace(std::make_pair(m_active_mp->get_name(),p));
         if(!this->check_local_pre_conditions(p)){
             cmd=m_active_mp->stop(p);
@@ -308,6 +309,11 @@ nlohmann::json& Skill::get_custom_results(){
 
 const std::shared_ptr<ManipulationPrimitive> Skill::get_active_mp() const{
     return m_active_mp;
+}
+
+void Skill::write_costs(double cost_suc, double cost_err){
+    m_result.cost_suc=cost_suc;
+    m_result.cost_err=cost_err;
 }
 
 void Skill::evaluate(){

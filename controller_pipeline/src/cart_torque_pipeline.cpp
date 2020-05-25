@@ -62,7 +62,7 @@ franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const A
 
 bool CartTorqueControllerPipeline::is_valid_command(const franka::Finishable* const cmd) const{
     for(unsigned i=0;i<7;i++){
-        if(static_cast<franka::Torques*>(cmd)->tau_J[i]!=static_cast<franka::Torques*>(cmd)->tau_J[i]){
+        if(static_cast<const franka::Torques*>(cmd)->tau_J[i]!=static_cast<const franka::Torques*>(cmd)->tau_J[i]){
             return false;
         }
     }
@@ -104,21 +104,20 @@ void CartTorqueControllerPipeline::initialize_cntr_aic(const Percept &p,Memory* 
     in_p_aic.F_ff_0=p_cntr.cart_imp_adaptation_stage.F_ff_0;
     in_p_aic.K_0=p_cntr.cart_imp.K_x;
     in_p_aic.xi=p_cntr.cart_imp.xi;
-    in_p_aic.F_ff_max=p_limits.cartesian_space.F_J_max;
-    in_p_aic.dF_ff_max=p_limits.cartesian_space.dF_J_max;
+    in_p_aic.F_ff_max<<p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1);
+    in_p_aic.dF_ff_max<<p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1);
     in_p_aic.K_max=p_limits.cartesian_space.K_x_max;
     in_p_aic.dK_max=p_limits.cartesian_space.dK_x_max;
     in_p_aic.O_R_TF=p_frames.O_R_T;
     in_p_aic.EE_T_K=p_frames.EE_T_K;
     in_p_aic.dtau_max=p_limits.joint_space.dtau_J_max;
     in_p_aic.tau_max=p_limits.joint_space.tau_J_max;
-    in_p_aic.TF_control<<p_cntr.TF_control;
     in_p_aic.kappa<<p_cntr.cart_imp_adaptation_stage.kappa;
 
     input_cntr_aic(p);
 
     m_in_u_aic.K_x=p_cntr.cart_imp.K_x;
-    m_in_u_aic.xi_x=p_cntr.cart_imp.xi_x;
+    m_in_u_aic.xi_x=p_cntr.cart_imp.xi;
 
     m_cntr_aic.initialize(m_in_u_aic,in_p_aic);
     m_conv_vel2pose.initialize(m_in_u_vel2pose,in_p_vel2pose);
@@ -143,8 +142,8 @@ void CartTorqueControllerPipeline::initialize_cntr_force(const Percept &p, Memor
     const ControlParameters& p_cntr=memory->read_parameters()->control;
     const LimitParameters& p_limits=memory->read_parameters()->limits;
     in_p_force.active=p_cntr.force_control.active;
-    in_p_force.dF_d_max=p_limits.cartesian_space.dF_J_max;
-    in_p_force.F_d_max=p_limits.cartesian_space.F_J_max;
+    in_p_force.dF_d_max<<p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1);
+    in_p_force.F_d_max<<p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1);
     in_p_force.dtau_max<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),
             std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max();
     in_p_force.tau_max<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),
@@ -155,7 +154,7 @@ void CartTorqueControllerPipeline::initialize_cntr_force(const Percept &p, Memor
     in_p_force.k_d_N=p_cntr.force_control.k_d_N;
     in_p_force.d_max=p_cntr.force_control.d_max;
     in_p_force.phi_max=p_cntr.force_control.phi_max;
-    in_p_force.sf_on=p_cntr.force_control.sf_on;
+    in_p_force.sf_on<<p_cntr.force_control.sf_on;
 
     input_cntr_force(p);
 
@@ -166,7 +165,7 @@ void CartTorqueControllerPipeline::input_cntr_force(const Percept &p){
     m_in_u_force.B_J_EE=p.internal_model.B_J_EE;
     m_in_u_force.DX<<0,0,0,0,0,0;
     m_in_u_force.TF_F_d_K<<0,0,0,0,0,0;
-    m_in_u_force.TF_F_ext_K=-p.proprioception.TF_F_ext;
+    m_in_u_force.TF_F_ext_K=-p.proprioception.TF_F_ext_K;
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_mux(const Percept &p,Memory* memory){

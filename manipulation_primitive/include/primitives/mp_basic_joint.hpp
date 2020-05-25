@@ -55,13 +55,6 @@ public:
     Actuator* step(const Percept& p);
     void i_terminate();
 
-    bool in_attractor(const Percept &p);
-    bool init_attractor(const Percept &p, const std::shared_ptr<ConfigUser> config);
-    bool check_attractor();
-
-    void setup_logs(unsigned long long length);
-    void write_logs();
-
 private:
 
     mogen_p2p_joint::mogen_p2p_joint m_mogen_p2p_joint;

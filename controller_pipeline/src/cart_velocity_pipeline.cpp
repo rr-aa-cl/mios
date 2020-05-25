@@ -21,11 +21,19 @@ franka::Finishable *CartVelocityControllerPipeline::step(const Percept &p, const
 
 bool CartVelocityControllerPipeline::is_valid_command(const franka::Finishable* const cmd) const{
     for(unsigned i=0;i<6;i++){
-        if(static_cast<franka::CartesianVelocities*>(cmd)->O_dP_EE[i]!=static_cast<franka::CartesianVelocities*>(cmd)->O_dP_EE[i]){
+        if(static_cast<const franka::CartesianVelocities*>(cmd)->O_dP_EE[i]!=static_cast<const franka::CartesianVelocities*>(cmd)->O_dP_EE[i]){
             return false;
         }
     }
     return true;
+}
+
+void CartVelocityControllerPipeline::update_percept(Percept::Controller &p){
+
+}
+
+void CartVelocityControllerPipeline::terminate(){
+
 }
 
 }

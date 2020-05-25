@@ -34,18 +34,13 @@ bool STMemory::syncronize_with_lt_memory(){
 void STMemory::put_task(const std::string &name, const nlohmann::json &context){
     m_task_data.name=name;
     m_task_data.context=context;
-    m_task_data.result=nlohmann::json();
 }
 
 void STMemory::put_subtask(const std::string &name, const nlohmann::json &context){
     if(m_task_data.context.find("subtasks")==m_task_data.context.end()){
         m_task_data.context["subtasks"]=nlohmann::json();
     }
-    if(m_task_data.result.find("subtasks")==m_task_data.result.end()){
-        m_task_data.result["subtasks"]=nlohmann::json();
-    }
     m_task_data.context["subtasks"][name]=context;
-    m_task_data.result["subtasks"][name]=nlohmann::json();
 }
 
 LiveContext* STMemory::get_live_context(){
@@ -142,7 +137,7 @@ bool STMemory::set_default_parameters(){
 void STMemory::merge_live_context(){
     if(m_live_context.grasped_object->name!="NullObject"){
         m_parameters.user.load_m=m_live_context.grasped_object->mass;
-        m_parameters.user.load_com=m_parameters.frames.F_T_EE*msrm_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp);;
+        m_parameters.user.load_com=(m_parameters.frames.F_T_EE*msrm_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp)).block<3,1>(0,3);
         m_parameters.user.load_I=m_live_context.grasped_object->OB_I;
         m_parameters.frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp)*m_live_context.grasped_object->OB_T_TCP;
     }
@@ -156,14 +151,15 @@ bool STMemory::update_object(const std::string &name, bool teach_width, const Pe
     if(m_environment.find(name)==m_environment.end()){
         m_environment.insert(std::make_pair(name,Object(name)));
     }
-    m_environment[name].O_T_OB=p.proprioception.O_T_EE*msrm_utils::invert_transformation_matrix(m_environment[name].OB_T_gp);
-    m_environment[name].q=p.proprioception.q;
+    m_environment.at(name).O_T_OB=p.proprioception.O_T_EE*msrm_utils::invert_transformation_matrix(m_environment.at(name).OB_T_gp);
+    m_environment.at(name).q=p.proprioception.q;
     if(teach_width){
-        m_environment[name].grasp_width=p.proprioception.finger_width;
+        m_environment.at(name).grasp_width=p.proprioception.finger_width;
     }
-    if(!m_lt_memory->upload_environment_element(m_environment[name])){
+    if(!m_lt_memory->upload_environment_element(m_environment.at(name))){
         return false;
     }
+    return true;
 }
 
 const Object* STMemory::get_object(const std::string &name) const{

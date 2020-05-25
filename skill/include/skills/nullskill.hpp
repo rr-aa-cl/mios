@@ -13,10 +13,8 @@ public:
 class NullSkill : public Skill{
 public:
     NullSkill(const std::string& id,Memory *memory, const Percept& p);
-    void evaluate();
+    std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
 private:
-    bool build_primitives(const Percept& p);
-    std::optional<std::tuple<bool,std::string> > check_edges(const Percept& p);
     bool check_local_suc_conditions(const Percept& p);
     bool check_local_err_conditions(const Percept &p);
 };

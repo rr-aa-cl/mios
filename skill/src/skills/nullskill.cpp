@@ -1,4 +1,5 @@
 #include "skills/nullskill.hpp"
+#include "primitives/nullprimitive.hpp"
 
 namespace mios {
 
@@ -14,16 +15,8 @@ NullSkill::NullSkill(const std::string& id, Memory *memory, const Percept& p):Sk
 
 }
 
-void NullSkill::evaluate(){
-
-}
-
-bool NullSkill::build_primitives(const Percept &p){
-    return false;
-}
-
-std::optional<std::tuple<bool, std::string> > NullSkill::check_edges(const Percept &p){
-    return {};
+std::shared_ptr<ManipulationPrimitive> NullSkill::get_initial_mp(const Percept &p_0){
+    return create_mp<NullPrimitive,MPParametersNullPrimitive,NullAttractor>("null",p_0);
 }
 
 bool NullSkill::check_local_suc_conditions(const Percept &p){

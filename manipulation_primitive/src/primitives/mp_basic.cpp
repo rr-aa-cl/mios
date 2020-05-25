@@ -24,19 +24,19 @@ bool BasicAttractor::reached(const Percept &p){
     bool in_attr_pose_phi=true;
     bool in_attr_pose_dx=true;
     bool in_attr_pose_dphi=true;
-    if(sqrt(pow(attr_pose(0,3)-p.proprioception.proprioception.TF_T_EE(0,3),2)+pow(attr_pose(1,3)-p.proprioception.proprioception.TF_T_EE(1,3),2)+pow(attr_pose(2,3)-p.proprioception.proprioception.TF_T_EE(2,3),2))>neighbourhood_X(0)){
+    if(sqrt(pow(attr_pose(0,3)-p.proprioception.TF_T_EE(0,3),2)+pow(attr_pose(1,3)-p.proprioception.TF_T_EE(1,3),2)+pow(attr_pose(2,3)-p.proprioception.TF_T_EE(2,3),2))>neighbourhood_X(0)){
         in_attr_pose_x=false;
     }
-    if(sqrt(pow(p.proprioception.proprioception.TF_dX_EE(0),2)+pow(p.proprioception.proprioception.TF_dX_EE(1),2)+pow(p.proprioception.proprioception.TF_dX_EE(2),2))>neighbourhood_dX(0)){
+    if(sqrt(pow(p.proprioception.TF_dX_EE(0),2)+pow(p.proprioception.TF_dX_EE(1),2)+pow(p.proprioception.TF_dX_EE(2),2))>neighbourhood_dX(0)){
         in_attr_pose_dx=false;
     }
 
     bool in_attr_vel_dx=true;
     bool in_attr_vel_dphi=true;
-    if(sqrt(pow(p.proprioception.proprioception.TF_dX_EE(0)-attr_vel(0),2)+pow(p.proprioception.proprioception.TF_dX_EE(1)-attr_vel(1),2)+pow(p.proprioception.proprioception.TF_dX_EE(2)-attr_vel(2),2))>neighbourhood_dX(0)){
+    if(sqrt(pow(p.proprioception.TF_dX_EE(0)-attr_vel(0),2)+pow(p.proprioception.TF_dX_EE(1)-attr_vel(1),2)+pow(p.proprioception.TF_dX_EE(2)-attr_vel(2),2))>neighbourhood_dX(0)){
         in_attr_vel_dx=false;
     }
-    if(sqrt(pow(p.proprioception.proprioception.TF_dX_EE(3)-attr_vel(3),2)+pow(p.proprioception.proprioception.TF_dX_EE(4)-attr_vel(4),2)+pow(p.proprioception.proprioception.TF_dX_EE(5)-attr_vel(5),2))>neighbourhood_dX(1)){
+    if(sqrt(pow(p.proprioception.TF_dX_EE(3)-attr_vel(3),2)+pow(p.proprioception.TF_dX_EE(4)-attr_vel(4),2)+pow(p.proprioception.TF_dX_EE(5)-attr_vel(5),2))>neighbourhood_dX(1)){
         in_attr_vel_dphi=false;
     }
     bool in_attr_fc_x=true;
@@ -96,12 +96,12 @@ void BasicPrimitive::i_initialize(const Percept &p_0){
     }
     mogen_p2p::In_P_mogen_p2p mogen_p2p_in_p;
 
-    mogen_p2p_in_p.proprioception.dX_max<<c_mp->dX_d(0),c_mp->dX_d(1);
-    mogen_p2p_in_p.proprioception.ddX_max<<c_mp->ddX_d(0),c_mp->ddX_d(1);
+    mogen_p2p_in_p.dX_max<<c_mp->dX_d(0),c_mp->dX_d(1);
+    mogen_p2p_in_p.ddX_max<<c_mp->ddX_d(0),c_mp->ddX_d(1);
 
-    mogen_p2p_in_p.proprioception.TF_T_EE_0=p_0.proprioception.TF_T_EE;
-    mogen_p2p_in_p.proprioception.TF_T_EE_1=attr->attr_pose;
-    m_mogen_p2p.proprioception.initialize(m_mogen_p2p_in_u,mogen_p2p_in_p);
+    mogen_p2p_in_p.TF_T_EE_0=p_0.proprioception.TF_T_EE;
+    mogen_p2p_in_p.TF_T_EE_1=attr->attr_pose;
+    m_mogen_p2p.initialize(m_mogen_p2p_in_u,mogen_p2p_in_p);
 
     m_motion_error_u.O_T_EE=p_0.proprioception.TF_T_EE;
     m_motion_error_u.O_T_EE_d=attr->attr_pose;
@@ -117,20 +117,20 @@ Actuator* BasicPrimitive::step(const Percept &p){
 
     Eigen::Matrix<double,3,1> scale_t,scale_r;
     for(unsigned i=0;i<3;i++){
-        if(fabs(p.proprioception.proprioception.TF_F_ext_K(i))<c_mp->F_stop(i)-c_mp->DF_stop(i)){
+        if(fabs(p.proprioception.TF_F_ext_K(i))<c_mp->F_stop(i)-c_mp->DF_stop(i)){
             scale_t(i)=1;
-        }else if(fabs(p.proprioception.proprioception.TF_F_ext_K(i))<c_mp->F_stop(i)){
-            scale_t(i)=1+1/c_mp->DF_stop(i)*(c_mp->F_stop(i)-c_mp->DF_stop(i))-1/c_mp->DF_stop(i)*fabs(p.proprioception.proprioception.TF_F_ext_K(i));
+        }else if(fabs(p.proprioception.TF_F_ext_K(i))<c_mp->F_stop(i)){
+            scale_t(i)=1+1/c_mp->DF_stop(i)*(c_mp->F_stop(i)-c_mp->DF_stop(i))-1/c_mp->DF_stop(i)*fabs(p.proprioception.TF_F_ext_K(i));
         }else{
             scale_t(i)=0;
         }
         if(c_mp->F_stop(i)==0){
             scale_t(i)=1;
         }
-        if(fabs(p.proprioception.proprioception.TF_F_ext_K(i+3))<c_mp->F_stop(i+3)-c_mp->DF_stop(i+3)){
+        if(fabs(p.proprioception.TF_F_ext_K(i+3))<c_mp->F_stop(i+3)-c_mp->DF_stop(i+3)){
             scale_r(i)=1;
-        }else if(fabs(p.proprioception.proprioception.TF_F_ext_K(i+3))<c_mp->F_stop(i+3)){
-            scale_r(i)=1+1/c_mp->DF_stop(i+3)*(c_mp->F_stop(i+3)-c_mp->DF_stop(i+3))-1/c_mp->DF_stop(i+3)*fabs(p.proprioception.proprioception.TF_F_ext_K(i+3));
+        }else if(fabs(p.proprioception.TF_F_ext_K(i+3))<c_mp->F_stop(i+3)){
+            scale_r(i)=1+1/c_mp->DF_stop(i+3)*(c_mp->F_stop(i+3)-c_mp->DF_stop(i+3))-1/c_mp->DF_stop(i+3)*fabs(p.proprioception.TF_F_ext_K(i+3));
         }else{
             scale_r(i)=0;
         }
@@ -145,7 +145,7 @@ Actuator* BasicPrimitive::step(const Percept &p){
 
     m_mogen_p2p_in_u.t_scale<<scale_t.minCoeff(),scale_r.minCoeff();
 
-    m_mogen_p2p.proprioception.step(m_mogen_p2p_in_u,m_mogen_p2p_out_y);
+    m_mogen_p2p.step(m_mogen_p2p_in_u,m_mogen_p2p_out_y);
 
     Eigen::Matrix<double,6,1> dX_d_pose;
     if(attr->attr_pose.isZero(0)){
@@ -175,12 +175,12 @@ Actuator* BasicPrimitive::step(const Percept &p){
     Eigen::Matrix<double,6,1> F_ff_damp;
     F_ff_damp<<0,0,0,0,0,0;
     for(unsigned i=0;i<6;i++){
-        if(fabs(p.proprioception.proprioception.TF_dX_EE(i))>c_mp->dX_limit(i)){
+        if(fabs(p.proprioception.TF_dX_EE(i))>c_mp->dX_limit(i)){
             //            F_ff_damp(i)=(fabs(p.proprioception.TF_dX[i])-c_mp->dX_limit(i))*msrm_utils::sgn(p.proprioception.TF_dX(i))*c_mp->D_x(i);
         }
     }
 
-    m_motion_error_u.O_T_EE=p.proprioception.proprioception.TF_T_EE;
+    m_motion_error_u.O_T_EE=p.proprioception.TF_T_EE;
     m_motion_error_u.O_T_EE_d=attr->attr_pose;
 
     m_motion_error.step(m_motion_error_u,m_motion_error_y);
@@ -195,7 +195,7 @@ Actuator* BasicPrimitive::step(const Percept &p){
     for(unsigned i=0;i<6;i++){
         F_h_p(i)=this->_e(i)*c_mp->F_h_p(i);
         F_h_d(i)=this->_de(i)*c_mp->F_h_d(i);
-        F_h_e(i)=p.proprioception.proprioception.TF_F_ext_K(i)*c_mp->F_h_e(i);
+        F_h_e(i)=p.proprioception.TF_F_ext_K(i)*c_mp->F_h_e(i);
     }
 
     m_cmd.TF_dX_d=dX_d_pose+dX_d_vel;
@@ -207,11 +207,7 @@ Actuator* BasicPrimitive::step(const Percept &p){
 }
 
 void BasicPrimitive::i_terminate(){
-    m_mogen_p2p.proprioception.terminate();
-}
-
-bool BasicPrimitive::in_attractor(const Percept &p){
-
+    m_mogen_p2p.terminate();
 }
 
 }

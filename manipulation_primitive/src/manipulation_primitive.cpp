@@ -13,6 +13,7 @@ ManipulationPrimitive::~ManipulationPrimitive(){
 
 Actuator* ManipulationPrimitive::initialize(const Percept &p_0){
     m_cmd.initialize(p_0);
+    m_memory->get_live_context()->t_mp=std::chrono::high_resolution_clock::now();
     i_initialize(p_0);
     m_flag_initialized=true;
     m_flag_terminated=false;

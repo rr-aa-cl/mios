@@ -197,7 +197,7 @@ public:
      * Reads common skill parameters into the local configuration struct.
      * @param[in] p Common skill parameters in json format.
      */
-    void read_global_skill_parameters(const nlohmann::json& p);
+    bool read_global_skill_parameters(const nlohmann::json& p);
     void read_skill_objects(const nlohmann::json& p);
     virtual bool read_parameters(const nlohmann::json& parameters) = 0;
 
@@ -233,10 +233,10 @@ public:
     LimitParameters limits;
     UserParameters user;
     FramesParameters frames;
-    std::unique_ptr<SkillParameters> skill;
+    std::shared_ptr<SkillParameters> skill;
 
     template<typename T>void create_skill_parameters(){
-        skill = std::make_unique<T>();
+        skill = std::make_shared<T>();
     }
     template<typename T>const std::unique_ptr<T>& get_skill_parameters(){
         return std::static_pointer_cast<T>(skill);
@@ -245,7 +245,6 @@ public:
 
 class LiveContext{
 public:
-    LiveContext();
     std::string executable_path;
     nlohmann::json live_parameters;
     const Object* grasped_object;

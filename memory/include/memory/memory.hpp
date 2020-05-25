@@ -20,7 +20,7 @@ public:
     bool set_default_parameters();
     bool apply_skill_context(const std::string skill_id);
 
-    bool store_task_result(const std::string& uuid, const TaskResult &result);
+    void store_task_result(const std::string& uuid, const TaskResult &result);
     std::shared_ptr<Task> load_task(const std::string& task_id, const nlohmann::json& parameters,Core* core);
     std::shared_ptr<Task> load_subtask(const std::string& task_id, const nlohmann::json& parameters,Core* core);
     bool load_default_task_context(const std::string task_id, nlohmann::json &task_context);

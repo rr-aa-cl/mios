@@ -47,11 +47,23 @@ franka::Finishable *JointTorqueControllerPipeline::step(const Percept &p, const 
 
 bool JointTorqueControllerPipeline::is_valid_command(const franka::Finishable* const cmd) const{
     for(unsigned i=0;i<7;i++){
-        if(static_cast<franka::Torques*>(cmd)->tau_J[i]!=static_cast<franka::Torques*>(cmd)->tau_J[i]){
+        if(static_cast<const franka::Torques*>(cmd)->tau_J[i]!=static_cast<const franka::Torques*>(cmd)->tau_J[i]){
             return false;
         }
     }
     return true;
+}
+
+void JointTorqueControllerPipeline::update_percept(Percept::Controller &p){
+    p.q_d=m_in_u_cntr_joint_imp.theta_d;
+    p.dq_d=m_in_u_cntr_joint_imp.dtheta_d;
+}
+
+void JointTorqueControllerPipeline::terminate(){
+    m_cntr_joint_imp.terminate();
+    m_cntr_mux.terminate();
+    m_virt_cube.terminate();
+    m_virt_walls_joint.terminate();
 }
 
 
@@ -143,6 +155,54 @@ void JointTorqueControllerPipeline::initialize_virt_walls_joint(const Percept &p
 void JointTorqueControllerPipeline::input_virt_joint_walls(const Percept &p){
     m_in_u_virt_walls_joint.dq=p.proprioception.dq;
     m_in_u_virt_walls_joint.q=p.proprioception.q;
+}
+
+bool JointTorqueControllerPipeline::is_virt_cube_valid(const Percept& p){
+    std::array<bool,3> in_cube={false,false,false};
+    bool safe_activation=true;
+    for(unsigned i=0;i<6;i++){
+        if(fabs(m_out_y_virt_cube.wall_flag(i))>0){
+            safe_activation=false;
+            break;
+        }
+    }
+    for(unsigned i=0;i<3;i++){
+        if(p.proprioception.O_T_EE(i,3)>m_virt_cube_distances(i*2) || p.proprioception.O_T_EE(i,3)<m_virt_cube_distances(i*2+1)){
+            in_cube[i]=false;
+        }else{
+            in_cube[i]=true;
+        }
+    }
+    if(in_cube[0] && in_cube[1] && in_cube[2] && safe_activation){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+bool JointTorqueControllerPipeline::is_virt_joint_walls_valid(const Percept& p){
+    std::array<bool,7> in_walls={false,false,false,false,false,false,false};
+
+    bool safe_activation=true;
+    for(unsigned i=0;i<7;i++){
+        if(fabs(m_out_y_virt_walls_joint.wall_flag(i))>0){
+            safe_activation=false;
+            break;
+        }
+    }
+    for(unsigned i=0;i<7;i++){
+        if(p.proprioception.q(i)>m_virt_joint_walls_distances(i*2) || p.proprioception.q(i)<m_virt_joint_walls_distances(i*2+1)){
+            in_walls[i]=false;
+        }else{
+            in_walls[i]=true;
+        }
+    }
+    if(in_walls[0] && in_walls[1] && in_walls[2] && in_walls[3] && in_walls[4] && in_walls[5] && in_walls[6] && safe_activation){
+        return true;
+    }else{
+        return false;
+    }
 }
 
 }

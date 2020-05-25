@@ -182,11 +182,11 @@ protected:
      *
      * @throw SkillException if manipulation primitive with id already exists.
      */
-    template<typename T_primitive,typename T_parameters,typename T_attractor>std::shared_ptr<ManipulationPrimitive> create_mp(const std::string& name, const Percept &p){
+    template<typename T_primitive,typename T_parameters,typename T_attractor>std::shared_ptr<T_primitive> create_mp(const std::string& name, const Percept &p){
         if(m_active_mp->get_name()==name){
             throw SkillException("Manipulation primitive with name " + name + " is already active. Implementation of manipulation graph seems faulty.");
         }
-        return std::make_shared<ManipulationPrimitive>(std::make_shared<T_primitive>(name,p,std::make_shared<T_parameters>(),std::make_shared<T_attractor>(),m_memory));
+        return std::make_shared<T_primitive>(name,p,std::make_shared<T_parameters>(),std::make_shared<T_attractor>(),m_memory);
     }
 
     /**
@@ -245,7 +245,7 @@ protected:
     virtual std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept& p);
     virtual std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept& p_0) = 0;
     template<typename T> std::shared_ptr<T> get_parameters(){
-        return std::static_pointer_cast<T>(m_memory->read_parameters()->skill);
+        return std::static_pointer_cast<T>(m_memory->get_parameters()->skill);
     }
     template<typename T> const std::shared_ptr<T> read_parameters() const{
         return std::static_pointer_cast<T>(m_memory->read_parameters()->skill);

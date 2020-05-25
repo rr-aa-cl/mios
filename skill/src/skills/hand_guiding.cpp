@@ -20,7 +20,7 @@ HandGuiding::HandGuiding(const std::string &id, Memory *memory, const Percept &p
 }
 
 std::shared_ptr<ManipulationPrimitive> HandGuiding::get_initial_mp(const Percept &p_0){
-    std::shared_ptr<ManipulationPrimitive> mp = create_mp<BasicPrimitive,MPParametersBasic,BasicAttractor>("guiding",p_0);
+    std::shared_ptr<BasicPrimitive> mp = create_mp<BasicPrimitive,MPParametersBasic,BasicAttractor>("guiding",p_0);
     std::shared_ptr<SkillParametersHandGuiding> skill_params = get_parameters<SkillParametersHandGuiding>();
     std::shared_ptr<MPParametersBasic> mp_params = get_active_mp()->get_parameters<MPParametersBasic>();
 
@@ -62,6 +62,7 @@ std::shared_ptr<ManipulationPrimitive> HandGuiding::get_initial_mp(const Percept
             }
         }
     }
+    return mp;
 }
 
 bool HandGuiding::check_local_suc_conditions(const Percept& p){

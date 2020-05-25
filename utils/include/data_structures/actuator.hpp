@@ -41,7 +41,7 @@ private:
 
     Eigen::Matrix<double,4,4> m_TF_T_EE_d_buffer;
     Eigen::Matrix<double,6,1> m_TF_dX_d_buffer;
-    Eigen::Matrix<double,6,1> m_q_d_nullspace_buffer;
+    Eigen::Matrix<double,7,1> m_q_d_nullspace_buffer;
     Eigen::Matrix<double,6,1> m_TF_F_d_buffer;
     Eigen::Matrix<double,6,1> m_TF_F_ff_buffer;
     Eigen::Matrix<double,6,1> m_K_x_buffer;
@@ -57,7 +57,7 @@ private:
 
     Eigen::Matrix<double,4,4> m_TF_T_EE_d_limiter;
     Eigen::Matrix<double,6,1> m_TF_dX_d_limiter;
-    Eigen::Matrix<double,6,1> m_q_d_nullspace_limiter;
+    Eigen::Matrix<double,7,1> m_q_d_nullspace_limiter;
     Eigen::Matrix<double,6,1> m_TF_F_d_limiter;
     Eigen::Matrix<double,6,1> m_TF_F_ff_limiter;
     Eigen::Matrix<double,6,1> m_K_x_limiter;

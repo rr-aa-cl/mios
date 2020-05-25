@@ -92,13 +92,6 @@ public:
     Actuator* step(const Percept& p);
     void i_terminate();
 
-    bool in_attractor(const Percept &p);
-    bool init_attractor(const Percept &p, const std::shared_ptr<ConfigUser> config);
-    bool check_attractor();
-
-    void setup_logs(unsigned long long length);
-    void write_logs();
-
 private:
 
     Eigen::Matrix<double,6,1> _X_d_vel_old;

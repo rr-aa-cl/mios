@@ -70,8 +70,8 @@ bool Memory::get_task_data(const std::string uuid, TaskData &data) const{
     return m_lt_memory.get_task_data(uuid,data);
 }
 
-bool Memory::store_task_result(const std::string &uuid, const TaskResult& result){
-    return m_st_memory.store_task_result(uuid,result);
+void Memory::store_task_result(const std::string &uuid, const TaskResult& result){
+    m_st_memory.store_task_result(uuid,result);
 }
 
 void  Memory::set_live_parameter(const std::string &key, const nlohmann::json &value){

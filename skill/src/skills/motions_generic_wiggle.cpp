@@ -28,6 +28,7 @@ std::shared_ptr<ManipulationPrimitive> GenericWiggleMotion::get_initial_mp(const
     mp_params->dX_fourier_b_f=skill_params->dX_fourier_b_f;
     mp_params->dX_fourier_a_phi=skill_params->dX_fourier_a_phi;
     mp_params->dX_fourier_b_phi=skill_params->dX_fourier_b_phi;
+    return mp;
 }
 
 Eigen::Matrix<double,3,3> GenericWiggleMotion::get_O_R_T_0(const Percept &p) const{

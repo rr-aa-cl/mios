@@ -56,7 +56,11 @@ void Task::write_result(bool success, double cost_suc, double cost_err, std::opt
     m_result.success=success;
     m_result.cost_suc=cost_suc;
     m_result.cost_err=cost_err;
-    m_result.custom_results=custom_results;
+    if(custom_results.has_value()){
+        m_result.custom_results=custom_results.value();
+    }else{
+        m_result.custom_results=nlohmann::json();
+    }
 }
 
 bool Task::load_context(const nlohmann::json &user_context){

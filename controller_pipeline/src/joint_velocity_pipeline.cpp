@@ -18,11 +18,19 @@ franka::Finishable *JointVelocityControllerPipeline::step(const Percept &p, cons
 
 bool JointVelocityControllerPipeline::is_valid_command(const franka::Finishable* const cmd) const{
     for(unsigned i=0;i<7;i++){
-        if(static_cast<franka::JointVelocities*>(cmd)->dq[i]!=static_cast<franka::JointVelocities*>(cmd)->dq[i]){
+        if(static_cast<const franka::JointVelocities*>(cmd)->dq[i]!=static_cast<const franka::JointVelocities*>(cmd)->dq[i]){
             return false;
         }
     }
     return true;
+}
+
+void JointVelocityControllerPipeline::update_percept(Percept::Controller &p){
+
+}
+
+void JointVelocityControllerPipeline::terminate(){
+
 }
 
 }

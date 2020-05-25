@@ -127,6 +127,7 @@ void TaskEngine::life_cycle(){
         if(m_task_life_cycle==TaskLifeCycle::Startup){
             spdlog::debug("TaskLifeCycle: startup, task_uuid: "+m_active_task->get_uuid());
             spdlog::info("Loading task " + m_active_task->get_id() + " with uuid " + m_active_task->get_uuid());
+            m_memory->get_live_context()->t_task=std::chrono::high_resolution_clock::now();
             m_task_life_cycle=TaskLifeCycle::Execution;
         }
         if(m_task_life_cycle==TaskLifeCycle::Execution){

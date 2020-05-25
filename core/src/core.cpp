@@ -57,6 +57,7 @@ bool Core::initialize(){
             return false;
         }
     }
+    m_memory.get_live_context()->t_core=std::chrono::high_resolution_clock::now();
     return true;
 }
 
@@ -75,6 +76,10 @@ SkillEngine* Core::get_skill_engine(){
 
 Portal* Core::get_portal(){
     return &m_portal;
+}
+
+TaskEngine* Core::get_task_engine(){
+    return &m_task_engine;
 }
 
 CommandInterface* Core::get_command_interface(){

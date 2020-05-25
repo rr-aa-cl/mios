@@ -210,7 +210,7 @@ protected:
             throw TaskException("Could not refresh perception.");
         }
 
-        std::shared_ptr<Skill> skill = std::make_shared<T>(name,m_memory,m_context[name],p);
+        std::shared_ptr<Skill> skill = std::make_shared<T>(name,m_memory,p);
         spdlog::info("Executing skill "+name+".");
         if(!m_skill_engine->execute_skill(skill)){
             throw TaskException("Could not execute skill " + name + ".");
