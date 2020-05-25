@@ -3,6 +3,7 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <eigen3/Eigen/Core>
+#include <chrono>
 
 
 namespace mios {
@@ -248,6 +249,10 @@ public:
     std::string executable_path;
     nlohmann::json live_parameters;
     const Object* grasped_object;
+    std::chrono::high_resolution_clock::time_point t_core;
+    std::chrono::high_resolution_clock::time_point t_task;
+    std::chrono::high_resolution_clock::time_point t_skill;
+    std::chrono::high_resolution_clock::time_point t_mp;
 };
 
 }

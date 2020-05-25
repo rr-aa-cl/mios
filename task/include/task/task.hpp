@@ -50,6 +50,7 @@ public:
     bool load_context(const nlohmann::json &user_context);
     nlohmann::json get_context() const;
     void overwrite_context(const std::string& skill_name, const std::string& parameter_type, const std::string& parameter, const nlohmann::json &value);
+    void overwrite_context(const std::string& subtask_name, const std::string& skill_name, const std::string& parameter_type, const std::string& parameter, const nlohmann::json &value);
 
     /**
      * Implements task execution in derived tasks.
@@ -115,6 +116,7 @@ public:
 
     std::string get_uuid() const;
     TaskResult get_result() const;
+    TaskResult get_subtask_result(const std::string& subtask_name) const;
     void notify_observers();
     void subscribe(std::shared_ptr<TaskObserver> observer);
 

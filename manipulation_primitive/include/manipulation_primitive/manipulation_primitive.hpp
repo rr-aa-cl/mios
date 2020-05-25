@@ -33,10 +33,10 @@ public:
     Actuator* stop(const Percept &p);
     bool is_settled() const;
 
-    template<typename T>std::shared_ptr<T> get_parameters() const{
+    template<typename T>std::shared_ptr<T> get_parameters(){
         return std::static_pointer_cast<T>(m_parameters);
     }
-    template<typename T>std::shared_ptr<T> get_attractor() const{
+    template<typename T>std::shared_ptr<T> get_attractor(){
         return std::static_pointer_cast<T>(m_attractor);
     }
 public:

@@ -16,7 +16,7 @@ void TestTask1::execute_task(){
         if(m_exception=="task"){
             throw TaskException("This is a task exception that has been thrown for test purposes");
         }
-        execute_skill<test_skill_1>("t1_s1");
+        execute_skill<TestSkill1>("t1_s1");
     }
 
     if(m_skill_test==1){
@@ -26,19 +26,19 @@ void TestTask1::execute_task(){
 
         for(unsigned i=0;i<3;i++){
             overwrite_context("t1_s1","user","dX_max",{i*0.1,i*0.5});
-            execute_skill<test_skill_1>("t1_s2");
+            execute_skill<TestSkill1>("t1_s2");
         }
     }
     if(m_skill_test==2){
         overwrite_context("t1_s2","skill","run_time",3);
         overwrite_context("t1_s2","skill","parallels_frequency",100);
-        execute_skill<test_skill_1>("t1_s2");
+        execute_skill<TestSkill1>("t1_s2");
     }
     if(m_skill_test==3){
         overwrite_context("t1_s2","skill","run_time",0);
         overwrite_context("t1_s1","skill","object",{"test_object_2"});
         for(unsigned i=0;i<3;i++){
-            execute_skill<test_skill_1>("t1_s2");
+            execute_skill<TestSkill1>("t1_s2");
         }
     }
 
@@ -81,6 +81,6 @@ bool TestTask1::read_parameters(const nlohmann::json& params){
 }
 
 void TestTask1::recover_task(){
-    msrm_utils::print_debug("RECOVERY OF TEST TASK 1");
+    spdlog::debug("RECOVERY OF TEST TASK 1");
 }
 }

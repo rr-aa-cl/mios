@@ -1,49 +1,34 @@
 #include "skills/hold_pose.hpp"
+#include <spdlog/spdlog.h>
 
 namespace mios {
 
-hold_pose::hold_pose(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config):Skill("hold_pose",kb,config){
-
-}
-
-bool hold_pose::read_skill_parameters(const nlohmann::json &p){
-
-    std::shared_ptr<SkillParameters_hold_pose> c = this->get_config<SkillParameters_hold_pose>();
-    if(!msrm_utils::read_json_param(p,"t_max",c->t_max)){
-        msrm_utils::print_error("Missing parameter: t_max");
+bool SkillParametersHoldPose::read_parameters(const nlohmann::json &parameters){
+    if(!msrm_utils::read_json_param(parameters,"t_max",t_max)){
+        spdlog::error("Missing parameter: t_max");
     }
     return true;
 }
 
-void hold_pose::create_config(){
-    m_config=std::make_shared<SkillParameters_hold_pose>();
+HoldPose::HoldPose(const std::string &id, Memory *memory, const Percept &p):Skill("HoldPose",{},id,memory,p){
 }
 
-void hold_pose::build_primitives(const Percept &p){
-    this->insert_mp<mp_basic>("hold_pose",p);
-    this->set_init_mp("hold_pose");
+std::shared_ptr<ManipulationPrimitive> HoldPose::get_initial_mp(const Percept &p_0){
+    return create_mp<BasicPrimitive,MPParametersBasic,BasicAttractor>("hold_pose",p_0);
 }
 
-std::tuple<bool,std::string> hold_pose::check_edges(const Percept &p){
-    return std::tuple<bool,std::string>(false,"");
+bool HoldPose::check_local_suc_conditions(const Percept &p){
+    std::shared_ptr<SkillParametersHoldPose> c = get_parameters<SkillParametersHoldPose>();
+    double t_run=std::chrono::duration_cast<std::chrono::seconds>(p.time-m_memory->get_live_context()->t_skill).count();
+    return t_run>c->t_max;
 }
 
-//Eigen::Matrix<double,3,3> hold_pose::get_O_R_TF(const Percept &p){
-//    return p.O_T_EE.block<3,3>(0,0);
-//}
-
-bool hold_pose::check_local_suc_conditions(const Percept &p){
-    std::shared_ptr<SkillParameters_hold_pose> c = this->get_config<SkillParameters_hold_pose>();
-    return p.time-this->get_t_init()>c->t_max;
-}
-
-bool hold_pose::check_local_ex_conditions(const Percept &p){
+bool HoldPose::check_local_ex_conditions(const Percept &p){
     return true;
 }
 
-void hold_pose::evaluate(){
-    m_eval.cost_err=m_eval.p_1.time-m_eval.p_0.time;
-    m_eval.cost_suc=0;
+void HoldPose::evaluate(){
+    write_costs(0,std::chrono::duration_cast<std::chrono::seconds>(get_result().p_1.time-get_result().p_0.time).count());
 }
 
 }

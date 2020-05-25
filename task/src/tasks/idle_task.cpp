@@ -22,11 +22,11 @@ void IdleTask::execute_task(){
     case msrm_utils::str_to_int("sleep"):
 //        this->get_skill("move")->set_object("loc_goal","pose_sleep");
 //        this->execute_skill("move");
-        execute_skill<motions_generic_wiggle>("sleep");
+        execute_skill<GenericWiggleMotion>("sleep");
         this->sleep_1ms();
         break;
     case msrm_utils::str_to_int("hold"):
-        execute_skill<hold_pose>("hold");
+        execute_skill<HoldPose>("hold");
         break;
     default:
         msrm_utils::print_warning("Idle mode with id "+this->idle_mode+" does not exist, reverting to default mode.");

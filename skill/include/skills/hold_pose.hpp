@@ -6,23 +6,20 @@
 
 namespace mios {
 
-struct SkillParameters_hold_pose : public SkillParameters{
+class SkillParametersHoldPose : public SkillParameters{
+public:
+    bool read_parameters(const nlohmann::json &parameters) override;
     double t_max;
 };
 
-class hold_pose : public Skill{
+class HoldPose : public Skill{
 public:
-    hold_pose(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config);
+    HoldPose(const std::string& id,Memory *memory, const Percept& p);
 
+    std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     void evaluate();
-    bool read_skill_parameters(const nlohmann::json& p);
 
 private:
-
-    void create_config();
-    void build_primitives(const Percept& p);
-    std::tuple<bool,std::string> check_edges(const Percept &p);
-
     bool check_local_suc_conditions(const Percept &p);
     bool check_local_ex_conditions(const Percept &p);
 

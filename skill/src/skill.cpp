@@ -51,9 +51,7 @@ const Object* Skill::get_object(const std::string &o) const{
 }
 
 void Skill::write_O_R_TF_to_config(const Percept &p){
-    if(!this->get_O_R_TF(p).isZero(0)){
-        m_memory->get_parameters()->frames.O_R_T=get_O_R_TF(p);
-    }
+    m_memory->get_parameters()->frames.O_R_T=get_O_R_T_0(p);
 }
 
 bool Skill::initialize(const Percept &p){
@@ -158,7 +156,7 @@ void Skill::append_error(const std::string& error){
     m_result.last_errors.emplace_back(error);
 }
 
-Eigen::Matrix<double,3,3> Skill::get_O_R_TF(const Percept &p) const{
+Eigen::Matrix<double,3,3> Skill::get_O_R_T_0(const Percept &p) const{
     return m_memory->read_parameters()->frames.O_R_T;
 }
 
@@ -237,7 +235,11 @@ bool Skill::check_local_ex_conditions(const Percept &p){
     return true;
 }
 
-SkillResult Skill::get_result() const{
+std::optional<std::shared_ptr<ManipulationPrimitive> > Skill::graph_transition(const Percept &p){
+    return {};
+}
+
+const SkillResult &Skill::get_result() const{
     return m_result;
 }
 
@@ -294,6 +296,22 @@ void Skill::terminate_parallels(){
     if(m_thr_parallels.joinable()){
         m_thr_parallels.join();
     }
+}
+
+void Skill::write_custom_results(nlohmann::json results){
+    m_result.results=results;
+}
+
+nlohmann::json& Skill::get_custom_results(){
+    return m_result.results;
+}
+
+const std::shared_ptr<ManipulationPrimitive> Skill::get_active_mp() const{
+    return m_active_mp;
+}
+
+void Skill::evaluate(){
+
 }
 
 }

@@ -4,20 +4,20 @@
 #include "primitives/mp_basic.hpp"
 
 namespace mios{
-struct SkillParameters_hand_guiding: public SkillParameters{
-std::string skill;
-Eigen::Matrix<double,6,1> fix_dim;
-Eigen::Matrix<double,6,1> dist_walls;
-Eigen::Matrix<double,6,1> use_walls;
-};class hand_guiding : public Skill{
+class SkillParametersHandGuiding: public SkillParameters{
 public:
-hand_guiding(KnowledgeBase* kb,std::shared_ptr<SkillParameters> config);
-void evaluate();
-bool read_skill_parameters(const nlohmann::json& p);
+    bool read_parameters(const nlohmann::json &parameters) override;
+    std::string skill;
+    Eigen::Matrix<double,6,1> fix_dim;
+    Eigen::Matrix<double,6,1> dist_walls;
+    Eigen::Matrix<double,6,1> use_walls;
+};
+
+class HandGuiding : public Skill{
+public:
+    HandGuiding(const std::string& id,Memory *memory, const Percept& p);
+    std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
 private:
-void create_config();
-void build_primitives(const Percept& p);
-std::tuple<bool,std::string> check_edges(const Percept& p);
-bool check_local_suc_conditions(const Percept& p);
+    bool check_local_suc_conditions(const Percept& p);
 };
 }

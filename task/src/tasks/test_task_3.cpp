@@ -6,68 +6,70 @@ namespace mios{
 TestTask3::TestTask3(Core *core):Task("TestTask3",core){
 }
 void TestTask3::initialize_context(){
-    this->create_skill<test_skill_1>("t3_s1",m_kb,std::make_shared<SkillParameters_test_skill_1>());
-    this->create_skill<test_skill_1>("t3_s2",m_kb,std::make_shared<SkillParameters_test_skill_1>());
-    this->create_skill<test_skill_1>("t3_s3",m_kb,std::make_shared<SkillParameters_test_skill_1>());
-    this->create_subtask<TestTask1>("t3_t1");
-    this->create_subtask<TestTask2>("t3_t2");
+    reserve_skill("t3_s1");
+    reserve_skill("t3_s2");
+    reserve_skill("t3_s3");
+    reserve_subtask("t3_t1");
+    reserve_subtask("t3_t2");
 }
 void TestTask3::execute_task(){
 
-    std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t3_s1")->get_config())->run_time=0;
-    std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t3_s2")->get_config())->run_time=0;
-    std::static_pointer_cast<SkillParameters_test_skill_1>(this->get_skill("t3_s3")->get_config())->run_time=0;
+    overwrite_context("t3_s1","skill","run_time",0);
+    overwrite_context("t3_s2","skill","run_time",0);
+    overwrite_context("t3_s3","skill","run_time",0);
 
-    this->execute_skill("t3_s1");
-    this->execute_subtask("t3_t1");
-    this->execute_skill("t3_s2");
-    this->execute_subtask("t3_t2");
-    this->execute_skill("t3_s2");
+    execute_skill<TestSkill1>("t3_s1");
+    execute_subtask("test_task-1","t3_t1");
+    execute_skill<TestSkill1>("t3_s2");
+    execute_subtask("test_task-1","t3_t2");
+
 }
-const EvalTask& TestTask3::evaluate_task(){
-    m_eval_task.results["t3_s1"]=this->get_skill("t3_s1")->get_eval().results;
-    m_eval_task.results["t3_s2"]=this->get_skill("t3_s2")->get_eval().results;
-    m_eval_task.results["t3_s3"]=this->get_skill("t3_s3")->get_eval().results;
-    m_eval_task.results["t3_t1"]=this->get_subtask("t3_t1")->get_eval().results;
-    m_eval_task.results["t3_t2"]=this->get_subtask("t3_t2")->get_eval().results;
-    msrm_utils::write_json_array<double,4,1>(m_eval_task.results["g"],g);
-    m_eval_task.results["h"]=h;
-    m_eval_task.results["i"]=i;
-    return m_eval_task;
+void TestTask3::evaluate_task(){
+    nlohmann::json custom_results;
+    custom_results["t3_s1"]=get_result().m_skill_results["t3_s1"].results;
+    custom_results["t3_s2"]=get_result().m_skill_results["t3_s2"].results;
+    custom_results["t3_s3"]=get_result().m_skill_results["t3_s3"].results;
+    custom_results["t3_t1"]=get_subtask_result("t3_1").custom_results;
+    custom_results["t3_t2"]=get_subtask_result("t3_2").custom_results;
+    msrm_utils::write_json_array<double,4,1>(custom_results["g"],m_g);
+    custom_results["h"]=m_h;
+    custom_results["i"]=m_i;
 }
 bool TestTask3::read_parameters(const nlohmann::json& params){
     msrm_utils::print_debug("Reading parameters for task "+this->get_id());
-    if(!msrm_utils::read_json_param<double,4,1>(params,"g",this->g)){
-        this->g.setZero();
+    if(!msrm_utils::read_json_param<double,4,1>(params,"g",m_g)){
+        m_g.setZero();
     }
-    if(!msrm_utils::read_json_param(params,"h",this->h)){
-        this->h=false;
+    if(!msrm_utils::read_json_param(params,"h",m_h)){
+        m_h=false;
     }
-    if(!msrm_utils::read_json_param(params,"i",this->i)){
-        this->i=0;
+    if(!msrm_utils::read_json_param(params,"i",m_i)){
+        m_i=0;
     }
-    if(!msrm_utils::read_json_param(params,"j",this->j)){
-        this->j="none";
+    if(!msrm_utils::read_json_param(params,"j",m_j)){
+        m_j="none";
     }
-    if(!msrm_utils::read_json_param(params,"success",this->success)){
-        this->success=false;
+    if(!msrm_utils::read_json_param(params,"success",m_success)){
+        m_success=false;
     }
-    if(!msrm_utils::read_json_param(params,"stop_level",this->stop_level)){
-        this->stop_level=0;
+    if(!msrm_utils::read_json_param(params,"stop_level",m_stop_level)){
+        m_stop_level=0;
     }
-    msrm_utils::print_debug("########## Task parameters ###########");
-    std::cout<<"g: "<<this->g<<std::endl;
-    msrm_utils::print_debug("h: "+std::to_string(this->h));
-    msrm_utils::print_debug("i: "+std::to_string(this->i));
-    msrm_utils::print_debug("j: "+this->j);
-    msrm_utils::print_debug("success: "+std::to_string(this->success));
-    msrm_utils::print_debug("stop_level: "+std::to_string(this->stop_level));
-    msrm_utils::print_debug("########## End ###########");
+    spdlog::debug("########## Task parameters ###########");
+    std::stringstream ss_g;
+    ss_g<<m_g;
+    spdlog::debug("g: " + ss_g.str());
+    spdlog::debug("h: "+std::to_string(m_h));
+    spdlog::debug("i: "+std::to_string(m_i));
+    spdlog::debug("j: "+m_j);
+    spdlog::debug("success: "+std::to_string(m_success));
+    spdlog::debug("stop_level: "+std::to_string(m_stop_level));
+    spdlog::debug("########## End ###########");
     return true;
 }
 
 void TestTask3::recover_task(){
-    msrm_utils::print_debug("RECOVERY OF TEST TASK 3");
+    spdlog::debug("RECOVERY OF TEST TASK 3");
 }
 
 }

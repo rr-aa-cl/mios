@@ -45,8 +45,7 @@ set(UTILS_SRC utils/src/actuator.cpp utils/src/percept.cpp utils/src/object.cpp 
 set(MEMORY_SRC memory/src/memory.cpp memory/src/lt_memory.cpp memory/src/st_memory.cpp memory/src/mongodb_client.cpp memory/src/parameters.cpp)
 set(CONTROLLER_SRC controller_pipeline/src/cart_torque_pipeline.cpp controller_pipeline/src/joint_torque_pipeline.cpp controller_pipeline/src/cart_velocity_pipeline.cpp controller_pipeline/src/joint_velocity_pipeline.cpp)
 
-set(SOURCES_PRIMITIVES manipulation_primitive/src/primitives/mp_basic.cpp manipulation_primitive/src/primitives/mp_basic_joint.cpp manipulation_primitive/src/primitives/mp_telepresence.cpp
-    manipulation_primitive/src/primitives/mp_external.cpp manipulation_primitive/src/primitives/nullprimitive.cpp)
+set(SOURCES_PRIMITIVES manipulation_primitive/src/primitives/mp_basic.cpp manipulation_primitive/src/primitives/mp_basic_joint.cpp manipulation_primitive/src/primitives/nullprimitive.cpp)
 
 file(GLOB SOURCES_SKILLS "skill/src/skills/*.cpp")
 file(GLOB SOURCES_TASKS "task/src/tasks/*.cpp")

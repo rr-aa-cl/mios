@@ -3,20 +3,25 @@
 
 #include "primitives/mp_basic.hpp"
 namespace mios{
-struct SkillParameters_test_skill_1: public SkillParameters{
+class SkillParametersTestSkill1: public SkillParameters{
+public:
+    bool read_parameters(const nlohmann::json &parameters) override;
     std::string skill;
     double run_time;
     bool success;
     double t_exception;
     std::string exception;
 };
-class test_skill_1 : public Skill{
+class TestSkill1 : public Skill{
 public:
-    test_skill_1(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config);
+    TestSkill1(const std::string& name, Memory* memory, const Percept& p);
     void evaluate();
+
     bool read_skill_parameters(const nlohmann::json& p);
-    Eigen::Matrix<double,3,3> get_O_R_TF(const Percept &p);
+    Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept &p);
 private:
+    std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
+    std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept &p) override;
     void create_config();
     void build_primitives(const Percept& p);
     std::tuple<bool,std::string> check_edges(const Percept& p);

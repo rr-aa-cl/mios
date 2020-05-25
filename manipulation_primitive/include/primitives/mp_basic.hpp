@@ -7,8 +7,8 @@
 
 namespace mios {
 
-struct ConfigMP_mp_basic : public ResultMP{
-    ConfigMP_mp_basic(){
+struct MPParametersBasic : public MPParameters{
+    MPParametersBasic(){
         dX_d.setZero();
         ddX_d.setZero();
 
@@ -65,22 +65,12 @@ struct ConfigMP_mp_basic : public ResultMP{
     Eigen::Matrix<double,6,1> DF_stop;
 };
 
-struct EvalMP_mp_basic : public EvalMP{
+class BasicAttractor : public Attractor{
+public:
+    BasicAttractor();
+    bool reached(const Percept &p) override;
 
-};
-
-struct AttractorBasic : public Attractor{
-    void reset(){
-        attr_pose=Eigen::Array44d::Zero(4,4);
-        attr_vel<<0,0,0,0,0,0;
-        attr_fc<<0,0,0,0,0,0;
-        attr_ff<<0,0,0,0,0,0;
-
-        neighbourhood_X<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max();
-        neighbourhood_dX<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max();
-        neighbourhood_F<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max();
-        neighbourhood_dF<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max();
-    }
+    bool motion_generator_finished;
 
     Eigen::Matrix<double,4,4> attr_pose;
     Eigen::Matrix<double,6,1> attr_vel;
@@ -94,13 +84,13 @@ struct AttractorBasic : public Attractor{
     Eigen::Matrix<double,2,1> neighbourhood_dF;
 };
 
-class mp_basic : public ManipulationPrimitive{
+class BasicPrimitive : public ManipulationPrimitive{
 public:
-    mp_basic();
+    BasicPrimitive(const std::string& name, const Percept& p_0, std::shared_ptr<MPParameters> parameters, std::shared_ptr<Attractor> attractor, Memory* memory);
 
-    void initialize(const Percept &p_0,const std::shared_ptr<ConfigUser> config);
-    CmdMP& step(const Percept& p);
-    void terminate();
+    void i_initialize(const Percept &p_0);
+    Actuator* step(const Percept& p);
+    void i_terminate();
 
     bool in_attractor(const Percept &p);
     bool init_attractor(const Percept &p, const std::shared_ptr<ConfigUser> config);
@@ -113,14 +103,13 @@ private:
 
     Eigen::Matrix<double,6,1> _X_d_vel_old;
 
-    mogen_p2p::mogen_p2p _mogen_p2p;
-    mogen_p2p::In_P_mogen_p2p _mogen_p2p_in_p;
-    mogen_p2p::In_U_mogen_p2p _mogen_p2p_in_u;
-    mogen_p2p::Out_Y_mogen_p2p _mogen_p2p_out_y;
+    mogen_p2p::mogen_p2p m_mogen_p2p;
+    mogen_p2p::In_U_mogen_p2p m_mogen_p2p_in_u;
+    mogen_p2p::Out_Y_mogen_p2p m_mogen_p2p_out_y;
 
-    motion_error_cart::motion_error_cart _motion_error;
-    motion_error_cart::In_U_motion_error_cart _motion_error_u;
-    motion_error_cart::Out_Y_motion_error_cart _motion_error_y;
+    motion_error_cart::motion_error_cart m_motion_error;
+    motion_error_cart::In_U_motion_error_cart m_motion_error_u;
+    motion_error_cart::Out_Y_motion_error_cart m_motion_error_y;
 
     double _t_0;
     double _t;

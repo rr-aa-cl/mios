@@ -154,6 +154,15 @@ void Task::overwrite_context(const std::string &skill_name, const std::string &p
     }
 }
 
+void Task::overwrite_context(const std::string& subtask_name, const std::string &skill_name, const std::string &parameter_type, const std::string &parameter,const nlohmann::json& value){
+    try {
+        m_context["subtasks"][subtask_name]["skills"][skill_name][parameter_type][parameter]=value;
+    }catch(const nlohmann::detail::type_error& e){
+        spdlog::debug(e.what());
+        throw TaskException("Error when attempting to overwrite task context. Make sure the skill and the parameter exist in the default context.");
+    }
+}
+
 bool Task::grasp_object(const std::string &name, double speed){
     if(!m_flag_stop){
         return m_core->grasp_object(name,speed);
@@ -266,6 +275,13 @@ bool Task::do_recovery() const{
 
 TaskResult Task::get_result() const{
     return m_result;
+}
+
+TaskResult Task::get_subtask_result(const std::string &subtask_name) const{
+    if(m_subtask_results.find(subtask_name)==m_subtask_results.end()){
+        throw TaskException("Cannot return result for non-existing subtask with name " + subtask_name + ".");
+    }
+    return m_subtask_results.at(subtask_name);
 }
 
 void Task::sleep_1ms() const{

@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <atomic>
 #include <thread>
+#include <msrm_utils/json.hpp>
 
 #include "manipulation_primitive/manipulation_primitive.hpp"
 #include "memory/memory.hpp"
@@ -52,7 +53,7 @@ public:
      * @param[in] p Percept struct.
      * @return Return O_R_TF to be used for this skill. Return the 0 matrix to use the values from the task description.
      */
-    virtual Eigen::Matrix<double,3,3> get_O_R_TF(const Percept& p) const;
+    virtual Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const;
 
     /**
      * Main execution loop of the skill. Manages all manipulation primitives, local and global conditions.
@@ -88,7 +89,7 @@ public:
      * Returns a const reference to the evaluation struct of this skill.
      * @return A const reference to the evaluation struct of this skill.
      */
-    SkillResult get_result() const;
+    const SkillResult& get_result() const;
 
     /**
      * Returns a pointer to the configuration struct of this skill. It is explicitly allowed to modify the struct.
@@ -140,8 +141,14 @@ public:
     /**
      * To be defined by developer. This function sets up the evaluation struct based on the skill execution.
      */
-    virtual void evaluate() = 0;
+    virtual void evaluate();
+
+    void write_custom_results(nlohmann::json results);
+    nlohmann::json& get_custom_results();
 protected:
+
+    const std::shared_ptr<ManipulationPrimitive> get_active_mp() const;
+    void write_costs(double cost_suc, double cost_err);
 
     /**
      * Returns a pointer to the specified manipulation primitive.
@@ -176,6 +183,9 @@ protected:
      * @throw SkillException if manipulation primitive with id already exists.
      */
     template<typename T_primitive,typename T_parameters,typename T_attractor>std::shared_ptr<ManipulationPrimitive> create_mp(const std::string& name, const Percept &p){
+        if(m_active_mp->get_name()==name){
+            throw SkillException("Manipulation primitive with name " + name + " is already active. Implementation of manipulation graph seems faulty.");
+        }
         return std::make_shared<ManipulationPrimitive>(std::make_shared<T_primitive>(name,p,std::make_shared<T_parameters>(),std::make_shared<T_attractor>(),m_memory));
     }
 
@@ -234,6 +244,12 @@ protected:
 
     virtual std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept& p);
     virtual std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept& p_0) = 0;
+    template<typename T> std::shared_ptr<T> get_parameters(){
+        return std::static_pointer_cast<T>(m_memory->read_parameters()->skill);
+    }
+    template<typename T> const std::shared_ptr<T> read_parameters() const{
+        return std::static_pointer_cast<T>(m_memory->read_parameters()->skill);
+    }
 
 private:
     std::shared_ptr<ManipulationPrimitive> m_active_mp;

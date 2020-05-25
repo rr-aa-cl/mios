@@ -6,7 +6,9 @@
 
 namespace mios {
 
-struct SkillParameters_motions_generic_wiggle : public SkillParameters{
+class SkillParametersGenericWiggleMotion : public SkillParameters{
+public:
+    bool read_parameters(const nlohmann::json &parameters) override;
     Eigen::Matrix<double,6,1> dX_fourier_a_a;
     Eigen::Matrix<double,6,1> dX_fourier_b_a;
     Eigen::Matrix<double,6,1> dX_fourier_a_f;
@@ -17,20 +19,15 @@ struct SkillParameters_motions_generic_wiggle : public SkillParameters{
     bool tap_to_finish;
 };
 
-class motions_generic_wiggle : public Skill{
+class GenericWiggleMotion : public Skill{
 public:
-    motions_generic_wiggle(KnowledgeBase *kb, std::shared_ptr<SkillParameters> config);
+    GenericWiggleMotion(const std::string& id,Memory *memory, const Percept& p);
 
-    void evaluate();
-    bool read_skill_parameters(const nlohmann::json& p);
-    Eigen::Matrix<double,3,3> get_O_R_TF(const Percept& p);
+    std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
+
+    Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const;
 
 private:
-
-    void create_config();
-    void build_primitives(const Percept& p);
-    std::tuple<bool,std::string> check_edges(const Percept &p);
-
     bool check_local_suc_conditions(const Percept &p);
     bool check_local_ex_conditions(const Percept &p);
 };

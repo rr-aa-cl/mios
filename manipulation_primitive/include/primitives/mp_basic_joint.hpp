@@ -6,25 +6,9 @@
 
 namespace mios {
 
-struct ConfigMP_mp_basic_joint : public ResultMP{
-    ConfigMP_mp_basic_joint(){
-        dq_d<<0;
-        ddq_d<<0;
-
-        dq_fourier_a_a.setZero();
-        dq_fourier_b_a.setZero();
-        dq_fourier_a_f.setZero();
-        dq_fourier_b_f.setZero();
-        dq_fourier_a_phi.setZero();
-        dq_fourier_b_phi.setZero();
-
-        ff_fourier_a_a.setZero();
-        ff_fourier_b_a.setZero();
-        ff_fourier_a_f.setZero();
-        ff_fourier_b_f.setZero();
-        ff_fourier_a_phi.setZero();
-        ff_fourier_b_phi.setZero();
-    }
+class MPParametersBasicJointMP : public MPParameters{
+public:
+    MPParametersBasicJointMP();
 
     Eigen::Matrix<double,1,1> dq_d;
     Eigen::Matrix<double,1,1> ddq_d;
@@ -44,22 +28,10 @@ struct ConfigMP_mp_basic_joint : public ResultMP{
     Eigen::Matrix<double,7,1> ff_fourier_b_phi;
 };
 
-struct EvalMP_mp_basic_joint : public EvalMP{
-
-};
-
-struct AttractorBasicJoint : public Attractor{
-    void reset(){
-        attr_pose.setZero();
-        attr_vel.setZero();
-        attr_tauc.setZero();
-        attr_ff.setZero();
-
-        neighbourhood_q<<std::numeric_limits<double>::max();
-        neighbourhood_dq<<std::numeric_limits<double>::max();
-        neighbourhood_tau<<std::numeric_limits<double>::max();
-        neighbourhood_dtau<<std::numeric_limits<double>::max();
-    }
+class BasicJointAttractor : public Attractor{
+public:
+    BasicJointAttractor();
+    bool reached(const Percept &p) override;
 
     Eigen::Matrix<double,7,1> attr_pose;
     Eigen::Matrix<double,7,1> attr_vel;
@@ -71,16 +43,17 @@ struct AttractorBasicJoint : public Attractor{
 
     Eigen::Matrix<double,1,1> neighbourhood_tau;
     Eigen::Matrix<double,1,1> neighbourhood_dtau;
+
+    bool motion_generator_finished;
 };
 
-class mp_basic_joint : public ManipulationPrimitive{
+class BasicJointPrimitive : public ManipulationPrimitive{
 public:
-    mp_basic_joint();
-    ~mp_basic_joint();
+    BasicJointPrimitive(const std::string& name, const Percept& p_0, std::shared_ptr<MPParameters> parameters, std::shared_ptr<Attractor> attractor, Memory* memory);
 
-    void initialize(const Percept &p_0,const std::shared_ptr<ConfigUser> config);
-    CmdMP& step(const Percept& p);
-    void terminate();
+    void i_initialize(const Percept &p_0) override;
+    Actuator* step(const Percept& p);
+    void i_terminate();
 
     bool in_attractor(const Percept &p);
     bool init_attractor(const Percept &p, const std::shared_ptr<ConfigUser> config);
@@ -91,10 +64,9 @@ public:
 
 private:
 
-    mogen_p2p_joint::mogen_p2p_joint _mogen_p2p_joint;
-    mogen_p2p_joint::In_P_mogen_p2p_joint _mogen_p2p_joint_in_p;
-    mogen_p2p_joint::In_U_mogen_p2p_joint _mogen_p2p_joint_in_u;
-    mogen_p2p_joint::Out_Y_mogen_p2p_joint _mogen_p2p_joint_out_y;
+    mogen_p2p_joint::mogen_p2p_joint m_mogen_p2p_joint;
+    mogen_p2p_joint::In_U_mogen_p2p_joint m_mogen_p2p_joint_in_u;
+    mogen_p2p_joint::Out_Y_mogen_p2p_joint m_mogen_p2p_joint_out_y;
 
 };
 

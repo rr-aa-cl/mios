@@ -11,10 +11,10 @@ void recover_task();
 void evaluate_task();
 bool read_parameters(const nlohmann::json& params);
 private:
-Eigen::Matrix<double,2,1> d;
-bool e;
-double f;
-unsigned stop_level;
-bool success;
+Eigen::Matrix<double,2,1> m_d;
+bool m_e;
+double m_f;
+unsigned m_stop_level;
+bool m_success;
 };
 }
