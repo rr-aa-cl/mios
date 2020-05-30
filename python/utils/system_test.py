@@ -289,58 +289,83 @@ def test_multilayer_tasks(address):
     msg_error(results["e"] == True, 'two_layer_task', 'Parameter throughput is faulty.', rtn)
     msg_error(results["t2_s1"]["exception"] == "abc", 'two_layer_task', 'Parameter throughput is faulty.', rtn)
     msg_error(results["t2_t1"]["t1_s2"]["exception"] == "cba", 'two_layer_task', 'Parameter throughput is faulty.', rtn)
-    return
 
     print('Testing three-layer task...')
     rtn = start_task(address, "TestTask3", queue=False, parameters={'parameters': {'g': [20, 21, 22, 23], 'h': False, 'i': 98.33,
                                                                           'j': 'this is j', 'stop_level': 3,
                                                                           'success': True, },
-                    'subtasks': {'t2': {'parameters': {'d': [1, 2],
+                    'subtasks': {'t3_t1': {'parameters': {'d': [1, 2],
                                                        'e': True,
                                                        'success': False,
                                                        'stop_level': 4},
-                                        'subtasks': {'t1': {'parameters': {
-                                            'a': [10, 11,
-                                                  12],
+                                        'subtasks': {'t2_t1': {'parameters': {
+                                            'a': [30, 31,
+                                                  32],
                                             'b': True,
                                             'success': True}}}}}})
-    wait_for_task(address, rtn['result']['task_uuid'])
+    rtn = wait_for_task(address, rtn['result']['task_uuid'])
+    print(rtn)
+    results = rtn["result"]["task_result"]["results"]
+    msg_error(results["g"] == [20, 21, 22, 23], 'three_layer_task', 'Parameter throughput is faulty.', rtn)
+    msg_error(results["t3_t1"]["t2_t1"]["a"] == [30, 31, 32], 'three_layer_task', 'Parameter throughput is faulty.', rtn)
 
 
 def test_subtask_start_stop(address):
-    print('Testing non-nominal stop...')
+    print('Testing exceptional stop...')
+    #input('Press Enter to continue...')
+    rtn = start_task(address, "TestTask3", queue=True)
+    time.sleep(1)
+    stop_task(address, raise_exception=True)
+    rtn = wait_for_task(address, rtn["result"]["task_uuid"])
+
+    msg_error(rtn['result']['task_result']["exception"] is True, 'subtask_start_stop_success_exception', 'Result has no exception',
+              rtn)
+    msg_error(rtn['result']['task_result']["success"] is False, 'subtask_start_stop_success_exception',
+              'Result is successful',
+              rtn)
+    msg_error(rtn["result"]["task_result"]["cost_suc"] == 0, "subtask_start_stop_success_exception",
+              "Wrong error costs", rtn)
+    msg_error(rtn["result"]["task_result"]["cost_suc"] == 0, "subtask_start_stop_success_exception",
+              "Wrong success costs", rtn)
+
+    print('Testing unsuccessful stop without recovery...')
     #input('Press Enter to continue...')
     rtn = start_task(address, "TestTask3", queue=True)
     time.sleep(1)
     stop_task(address)
     wait_for_task(address, rtn["result"]["task_uuid"])
+    msg_error(rtn['result']['task_result']["exception"] is False, 'subtask_start_stop_success_exception',
+              'Result has exception',
+              rtn)
+    msg_error(rtn['result']['task_result']["success"] is False, 'subtask_start_stop_success_exception',
+              'Result is successful',
+              rtn)
+    msg_error(rtn["result"]["task_result"]["cost_suc"] == 0, "subtask_start_stop_success_exception",
+              "Wrong error costs", rtn)
+    msg_error(rtn["result"]["task_result"]["cost_suc"] == 0, "subtask_start_stop_success_exception",
+              "Wrong success costs", rtn)
 
-    print('Testing nominal unsuccessful stop without recovery...')
-    #input('Press Enter to continue...')
-    rtn = start_task(address, "TestTask3", queue=True)
-    time.sleep(1)
-    stop_task(address, nominal=True)
-    wait_for_task(address, rtn["result"]["task_uuid"])
+    return
 
     print('Testing nominal unsuccessful stop with recovery...')
     #input('Press Enter to continue...')
     rtn = start_task(address, "TestTask3", queue=True)
     time.sleep(1)
-    stop_task(address, nominal=True, recover=True)
+    stop_task(address, recover=True)
     wait_for_task(address, rtn["result"]["task_uuid"])
 
     print('Testing nominal successful stop without recovery...')
     #input('Press Enter to continue...')
     rtn = start_task(address, "TestTask3", queue=True)
     time.sleep(1)
-    stop_task(address, nominal=True, success=True)
+    stop_task(address, success=True)
     wait_for_task(address, rtn["result"]["task_uuid"])
 
     print('Testing nominal successful stop with recovery...')
     #input('Press Enter to continue...')
     rtn = start_task(address, "TestTask3", queue=True)
     time.sleep(1)
-    stop_task(address, nominal=True, success=True, recover=True)
+    stop_task(address, success=True, recover=True)
     wait_for_task(address, rtn["result"]["task_uuid"])
 
 

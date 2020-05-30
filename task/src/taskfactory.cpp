@@ -4,6 +4,7 @@
 #include "tasks/test_task_1.hpp"
 #include "tasks/test_task_2.hpp"
 #include "tasks/test_task_3.hpp"
+#include "tasks/nulltask.hpp"
 //#include "tasks/learner_test.hpp"
 //#include "tasks/external.hpp"
 //#include "tasks/move_to_joint_pose.hpp"
@@ -23,6 +24,7 @@
 //#include "tasks/handover_object.hpp"
 
 #include <msrm_utils/files.hpp>
+#include <spdlog/spdlog.h>
 
 namespace mios{
 
@@ -36,9 +38,10 @@ TaskName TaskFactory::get_task_name(const std::string &task){
         return TaskName::TaskName_TestTask2;
     case msrm_utils::str_to_int("TestTask3"):
         return TaskName::TaskName_TestTask3;
-    default: return TaskName::TaskName_None;
+    default:
+        spdlog::error("Task with id " + task + " does not exist.");
+        return TaskName::TaskName_NullTask;
     }
-    return TaskName::TaskName_None;
 }
 
 std::shared_ptr<Task> TaskFactory::create_task(TaskName task,Core* core){
@@ -52,7 +55,7 @@ std::shared_ptr<Task> TaskFactory::create_task(TaskName task,Core* core){
     case TaskName::TaskName_TestTask3:
         return std::make_shared<TestTask3>(core);
     default:
-        return std::make_shared<IdleTask>(core);
+        return std::make_shared<NullTask>(core);
 
     }
 }

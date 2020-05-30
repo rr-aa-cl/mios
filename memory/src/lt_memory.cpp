@@ -279,20 +279,12 @@ std::shared_ptr<Task> LTMemory::load_task(const std::string& task_id, const nloh
     task->initialize_context();
     if(!task->load_context(user_context)){
         spdlog::error("Could not load context for task " + task->get_id());
-        return TaskFactory::create_task(TaskName::TaskName_IdleTask,core);
-//        task->initialize_context();
-//        if(!task->load_context(nlohmann::json())){
-//            spdlog::critical("Cannot load default context for idle task.");
-//        }
+        return TaskFactory::create_task(TaskName::TaskName_NullTask,core);
     }
     if(task->get_context().find("parameters")!=task->get_context().end()){
         if(!task->read_parameters(task->get_context()["parameters"])){
             spdlog::error("Could not read parameters for task " + task->get_id());
-            return TaskFactory::create_task(TaskName::TaskName_IdleTask,core);
-//            task->initialize_context();
-//            if(!task->load_context(nlohmann::json())){
-//                spdlog::critical("Cannot load default context for idle task.");
-//            }
+            return TaskFactory::create_task(TaskName::TaskName_NullTask,core);
         }
     }
     return task;
@@ -303,12 +295,12 @@ std::shared_ptr<Task> LTMemory::load_subtask(const std::string& task_id, const n
     task->initialize_context();
     if(!task->load_context(user_context)){
         spdlog::error("Could not load context for subtask " + task->get_id());
-        return TaskFactory::create_task(TaskName::TaskName_IdleTask,core);
+        return TaskFactory::create_task(TaskName::TaskName_NullTask,core);
     }
     if(task->get_context().find("parameters")!=task->get_context().end()){
         if(!task->read_parameters(task->get_context()["parameters"])){
             spdlog::error("Could not read parameters for subtask " + task->get_id());
-            return TaskFactory::create_task(TaskName::TaskName_IdleTask,core);
+            return TaskFactory::create_task(TaskName::TaskName_NullTask,core);
         }
     }
     m_st_memory->put_subtask(task_id,task->get_context());

@@ -19,9 +19,9 @@ void TestTask3::execute_task(){
     overwrite_context("t3_s3","skill","run_time",0);
 
     execute_skill<TestSkill1,SkillParametersTestSkill1>("t3_s1");
-    execute_subtask("test_task-1","t3_t1");
+    execute_subtask("TestTask2","t3_t1");
     execute_skill<TestSkill1,SkillParametersTestSkill1>("t3_s2");
-    execute_subtask("test_task-1","t3_t2");
+    execute_subtask("TestTask1","t3_t2");
 
 }
 void TestTask3::evaluate_task(){
@@ -29,11 +29,12 @@ void TestTask3::evaluate_task(){
     custom_results["t3_s1"]=get_result().m_skill_results["t3_s1"].results;
     custom_results["t3_s2"]=get_result().m_skill_results["t3_s2"].results;
     custom_results["t3_s3"]=get_result().m_skill_results["t3_s3"].results;
-    custom_results["t3_t1"]=get_subtask_result("t3_1").custom_results;
-    custom_results["t3_t2"]=get_subtask_result("t3_2").custom_results;
+    custom_results["t3_t1"]=get_subtask_result("t3_t1").custom_results;
+    custom_results["t3_t2"]=get_subtask_result("t3_t2").custom_results;
     msrm_utils::write_json_array<double,4,1>(custom_results["g"],m_g);
     custom_results["h"]=m_h;
     custom_results["i"]=m_i;
+    write_result(false,0,0,custom_results);
 }
 bool TestTask3::read_parameters(const nlohmann::json& params){
     spdlog::debug("Reading parameters for task "+this->get_id());

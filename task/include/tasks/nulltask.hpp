@@ -6,11 +6,11 @@ namespace mios {
 
 class NullTask : public Task{
 public:
-    NullTask();
+    NullTask(Core* core);
 
-    void initialize_task();
-    void execute_task();
-    const EvalTask& evaluate_task();
+    void initialize_context() override;
+    void execute_task() override;
+    void evaluate_task() override;
 };
 
 }

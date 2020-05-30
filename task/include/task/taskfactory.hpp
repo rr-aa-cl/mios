@@ -8,7 +8,7 @@ namespace mios{
 class Task;
 class Core;
 
-enum TaskName{TaskName_IdleTask,TaskName_TestTask1,TaskName_TestTask2,TaskName_TestTask3,TaskName_None};
+enum TaskName{TaskName_IdleTask,TaskName_TestTask1,TaskName_TestTask2,TaskName_TestTask3,TaskName_NullTask};
 
 class TaskFactory{
 public:

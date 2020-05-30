@@ -2,6 +2,7 @@
 
 #include "core/core.hpp"
 #include "memory/memory.hpp"
+#include "tasks/nulltask.hpp"
 
 #include <random>
 #include <sstream>
@@ -9,7 +10,8 @@
 
 namespace mios {
 
-Task::Task(const std::string& id, Core* core):m_core(core),m_memory(core->get_memory()),m_skill_engine(core->get_skill_engine()),m_flag_stop(false),m_flag_recover(false),m_flag_in_recovery(false),m_id(id),m_uuid(Task::generate_uuid()){
+Task::Task(const std::string& id, Core* core):m_core(core),m_memory(core->get_memory()),m_skill_engine(core->get_skill_engine()),m_flag_stop(false),m_flag_recover(false),m_flag_in_recovery(false),m_id(id),
+    m_uuid(Task::generate_uuid()),m_active_subtask(nullptr){
 
 }
 
@@ -41,6 +43,9 @@ void Task::stop_task(bool raise_exception,bool success,bool recover, bool empty_
         m_result.cost_err=cost_err.value();
     }
     m_flag_recover=recover && !raise_exception;
+    if(m_active_subtask!=nullptr){
+        m_active_subtask->stop_task(raise_exception,success,recover,empty_queue,cost_suc,cost_err);
+    }
     m_skill_engine->stop_skill(success && !raise_exception);
     m_flag_stop=true;
 }
@@ -75,7 +80,7 @@ bool Task::load_context(const nlohmann::json &user_context){
         if(m_context.find("parameters")!=m_context.end() && user_context.find("parameters")!=user_context.end()){
             for(const auto& el : user_context["parameters"].items()){
                 if((m_context["parameters"].find(el.key())==m_context["parameters"].end())){
-                    spdlog::error("Task parameter "+el.key()+" given by user does not exist in task description.");
+                    spdlog::error("Task parameter "+el.key()+" given by user does not exist in default task context.");
                     return false;
                 }
                 msrm_utils::overwrite_valid_json(user_context["parameters"][el.key()],m_context["parameters"][el.key()]);
@@ -242,41 +247,43 @@ bool Task::reserve_skill(const std::string &name){
 bool Task::reserve_subtask(const std::string &name){
     if(m_reserved_subtasks.find(name)==m_reserved_subtasks.end()){
         m_reserved_subtasks.insert(name);
+        m_subtask_results.insert(std::make_pair(name,TaskResult()));
         return true;
     }else{
-        spdlog::error("A skill with name " + name + " has already been reserved");
+        spdlog::error("A subtask with name " + name + " has already been reserved");
         return false;
     }
 }
 
 void Task::execute_subtask(const std::string& task_id,const std::string task_name){
     if(m_reserved_subtasks.find(task_name)==m_reserved_subtasks.end()){
-        this->stop_task(true);
+        stop_task(true);
         throw TaskException("Subtask with name "+task_name+" is not contained in task "+ m_id +". Stopping task.");
     }
     if(m_flag_stop){
         return;
     }
     spdlog::info("Executing subtask "+task_name+"...");
-    std::shared_ptr<Task> subtask = m_memory->load_subtask(task_id,m_context["subtasks"][task_name],m_core);
-    if(subtask->get_id()=="IdleTask"){
+    m_active_subtask = m_memory->load_subtask(task_id,m_context["subtasks"][task_name],m_core);
+    if(m_active_subtask->get_id()=="NullTask"){
         throw TaskException("Error when loading subtask with name " + task_name);
     }
     spdlog::info("Executing subtask "+task_name+"...");
-    subtask->execute_task();
+    m_active_subtask->execute_task();
     spdlog::info("Subtask "+task_name+" has terminated.");
-    subtask->evaluate_task();
-    if(subtask->do_recovery()){
-        subtask->start_recovery();
+    m_active_subtask->evaluate_task();
+    if(m_active_subtask->do_recovery()){
+        m_active_subtask->start_recovery();
         spdlog::info("Subtask "+task_name+" is attempting recovery.");
-        subtask->recover_task();
+        m_active_subtask->recover_task();
     }
     if(m_context.find("subtasks")==m_context.end()){
         m_context["subtasks"]=nlohmann::json();
     }
-    m_context["subtasks"][task_name]=subtask->get_context();
-    m_subtask_results.emplace(std::make_pair(task_name,subtask->get_result()));
+    m_context["subtasks"][task_name]=m_active_subtask->get_context();
+    m_subtask_results.emplace(std::make_pair(task_name,m_active_subtask->get_result()));
     spdlog::info("End of lifecycle of subtask "+task_name+".");
+    m_active_subtask.reset();
 }
 
 bool Task::read_parameters(const nlohmann::json &params){

@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
+
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+endif()
+
 project(mios
     LANGUAGES CXX
     )
@@ -14,7 +20,7 @@ set(CMAKE_LINK_DEPENDS_NO_SHARED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wreturn-type -Wno-error=deprecated-declarations")
 set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-include(cotire)
+#include(cotire)
 
 find_package(Eigen3 REQUIRED)
 find_package(libmongocxx REQUIRED)

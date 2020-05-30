@@ -214,8 +214,10 @@ protected:
         m_memory->get_parameters()->create_skill_parameters<T_param>();
         spdlog::info("Executing skill "+name+".");
         bool result=m_skill_engine->execute_skill(m_context,skill);
-        m_result.m_skill_results.emplace(std::make_pair(name,skill->get_result()));
-        m_flag_stop = skill->get_result().exception;
+        m_result.m_skill_results.insert(std::make_pair(name,skill->get_result()));
+        if(skill->get_result().exception){
+            m_flag_stop = true;
+        }
         if(!result){
             throw TaskException("Could not execute skill " + name + ".");
         }
@@ -269,6 +271,8 @@ private:
     const std::string m_uuid;
 
     std::set<std::shared_ptr<TaskObserver> > m_observers;
+
+    std::shared_ptr<Task> m_active_subtask;
 
 };
 

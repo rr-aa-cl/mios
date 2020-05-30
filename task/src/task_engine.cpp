@@ -200,6 +200,13 @@ std::tuple<bool,std::string,std::string> TaskEngine::start_task(const std::strin
     std::string task_uuid="INVALID";
     bool result=false;
 
+    if(task_id=="IdleTask"){
+        err="Cannot explicitly start idle task.";
+        task_uuid="INVALID";
+        result=false;
+        return std::make_tuple(result,task_uuid,err);
+    }
+
     if(!queue_task){
         if(m_active_task->get_id()=="IdleTask" && m_task_queue.size()==1){
             queue_task=true;
@@ -211,15 +218,14 @@ std::tuple<bool,std::string,std::string> TaskEngine::start_task(const std::strin
     }
     if(queue_task){
         TaskName task_name = TaskFactory::get_task_name(task_id);
-        if(task_name==TaskName::TaskName_None){
-            task_name=TaskName::TaskName_IdleTask;
+        if(task_name==TaskName::TaskName_NullTask){
             err="No task with name " + task_id + " exists.";
             task_uuid="INVALID";
             result=false;
         }else{
             std::shared_ptr<Task> new_task=m_memory->load_task(task_id,parameters,m_core);
 
-            if(new_task->get_id()!="IdleTask"){
+            if(new_task->get_id()!="NullTask"){
                 spdlog::info("Queuing task with uuid " + new_task->get_uuid());
                 m_task_queue.emplace_back(std::tuple<std::string,std::shared_ptr<Task>,nlohmann::json>(new_task->get_uuid(),new_task,parameters));
                 result=true;
