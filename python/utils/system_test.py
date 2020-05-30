@@ -283,11 +283,13 @@ def test_multilayer_tasks(address):
                                                }
                                            }}}})
     rtn = wait_for_task(address, rtn['result']['task_uuid'])
-    results = rtn["result"]["eval"]["results"]
+    print(rtn)
+    results = rtn["result"]["task_result"]["results"]
     msg_error(results["d"] == [1, 2], 'two_layer_task', 'Parameter throughput is faulty.', rtn)
     msg_error(results["e"] == True, 'two_layer_task', 'Parameter throughput is faulty.', rtn)
     msg_error(results["t2_s1"]["exception"] == "abc", 'two_layer_task', 'Parameter throughput is faulty.', rtn)
     msg_error(results["t2_t1"]["t1_s2"]["exception"] == "cba", 'two_layer_task', 'Parameter throughput is faulty.', rtn)
+    return
 
     print('Testing three-layer task...')
     rtn = start_task(address, "TestTask3", queue=False, parameters={'parameters': {'g': [20, 21, 22, 23], 'h': False, 'i': 98.33,

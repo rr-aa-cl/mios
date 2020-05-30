@@ -15,7 +15,7 @@ void TestTask2::execute_task(){
     overwrite_context("t2_s2","skill","run_time",0);
 
     execute_skill<TestSkill1,SkillParametersTestSkill1>("t2_s1");
-    execute_subtask("test_task_1","t2_t1");
+    execute_subtask("TestTask1","t2_t1");
     if(get_subtask_result("t2_t1").success){
         return;
     }

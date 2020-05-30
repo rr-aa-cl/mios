@@ -65,7 +65,7 @@ void Task::write_result(bool success, double cost_suc, double cost_err, std::opt
 
 bool Task::load_context(const nlohmann::json &user_context){
     try{
-        spdlog::info("Loading description for task " + m_id + "...");
+        spdlog::info("Loading context for task " + m_id + "...");
         if(!m_memory->load_default_task_context(m_id,m_context)){
             spdlog::error("Could not load a valid task description for "+m_id+".");
             return false;
@@ -91,7 +91,17 @@ bool Task::load_context(const nlohmann::json &user_context){
             return false;
         }
         if(m_context.find("skills")!=m_context.end()){
+            for(const auto& s : m_reserved_skills){
+                if(m_context["skills"].find(s)==m_context["skills"].end()){
+                    spdlog::error("Reserved skill " + s + " is not contained in default task context.");
+                    return false;
+                }
+            }
             for(auto& s : m_context["skills"].items()){
+                // CHECK; skill has been reserved
+                if(m_reserved_skills.find(s.key())==m_reserved_skills.end()){
+                    spdlog::error("Skill with name " + s.key() + " has not been reserved.");
+                }
                 std::string id_skill=s.key();
                 // CHECK: skill has type
                 if(s.value().find("type")==s.value().end()){
@@ -117,10 +127,19 @@ bool Task::load_context(const nlohmann::json &user_context){
                 }
 
             }
+        }else{
+            if(m_reserved_skills.size()>0){
+                spdlog::error("At least one skill has been reserved but the default task context does not contain any.");
+                return false;
+            }
         }
 
         if(user_context.find("skills")!=user_context.end()){
             for(auto& s : user_context["skills"].items()){
+                if(m_reserved_skills.find(s.key())==m_reserved_skills.end()){
+                    spdlog::error("Task " + m_id + " did not reserve a skill with name " + s.key() + " as defined in the user context.");
+                    return false;
+                }
                 std::string id_skill=s.key();
                 for(auto& cat : user_context["skills"][id_skill].items()){
                     for(auto& p: user_context["skills"][id_skill][cat.key()].items()){
@@ -233,19 +252,19 @@ bool Task::reserve_subtask(const std::string &name){
 void Task::execute_subtask(const std::string& task_id,const std::string task_name){
     if(m_reserved_subtasks.find(task_name)==m_reserved_subtasks.end()){
         this->stop_task(true);
-        throw TaskException("Subtask with id "+task_id+" is not contained in task "+ m_id +". Stopping task.");
+        throw TaskException("Subtask with name "+task_name+" is not contained in task "+ m_id +". Stopping task.");
     }
     if(m_flag_stop){
         return;
     }
     spdlog::info("Executing subtask "+task_name+"...");
-    std::shared_ptr<Task> subtask = m_memory->load_subtask(task_id,m_context["subtasks"][task_id],m_core);
+    std::shared_ptr<Task> subtask = m_memory->load_subtask(task_id,m_context["subtasks"][task_name],m_core);
     if(subtask->get_id()=="IdleTask"){
         throw TaskException("Error when loading subtask with name " + task_name);
     }
     spdlog::info("Executing subtask "+task_name+"...");
     subtask->execute_task();
-    spdlog::info("Subtask "+task_id+" has terminated.");
+    spdlog::info("Subtask "+task_name+" has terminated.");
     subtask->evaluate_task();
     if(subtask->do_recovery()){
         subtask->start_recovery();

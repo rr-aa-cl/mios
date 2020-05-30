@@ -218,14 +218,19 @@ std::tuple<bool,std::string,std::string> TaskEngine::start_task(const std::strin
             result=false;
         }else{
             std::shared_ptr<Task> new_task=m_memory->load_task(task_id,parameters,m_core);
-            spdlog::info("Queuing task with uuid " + new_task->get_uuid());
 
-            m_task_queue.emplace_back(std::tuple<std::string,std::shared_ptr<Task>,nlohmann::json>(new_task->get_uuid(),new_task,parameters));
-            result=true;
-            task_uuid=new_task->get_uuid();
-            if(m_active_task->get_id()=="IdleTask"){
-                spdlog::debug("Stopping IdleTask with uuid " +m_active_task->get_uuid());
-                m_active_task->stop_task(false,true,true);
+            if(new_task->get_id()!="IdleTask"){
+                spdlog::info("Queuing task with uuid " + new_task->get_uuid());
+                m_task_queue.emplace_back(std::tuple<std::string,std::shared_ptr<Task>,nlohmann::json>(new_task->get_uuid(),new_task,parameters));
+                result=true;
+                task_uuid=new_task->get_uuid();
+                if(m_active_task->get_id()=="IdleTask"){
+                    spdlog::debug("Stopping IdleTask with uuid " +m_active_task->get_uuid());
+                    m_active_task->stop_task(false,true,true);
+                }
+            }else{
+                result=false;
+                task_uuid="INVALID";
             }
         }
     }

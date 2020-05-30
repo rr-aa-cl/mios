@@ -40,14 +40,14 @@ int main(int argc, char** argv){
     }
 
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    console_sink->set_level(spdlog::level::debug);
+    console_sink->set_level(spdlog::level::info);
     console_sink->set_pattern("[mios] [%^%l%$] %v");
 
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/mios.txt", true);
     file_sink->set_level(spdlog::level::debug);
 
     auto logger = std::shared_ptr<spdlog::logger>(new spdlog::logger("mios", {console_sink, file_sink}));
-    logger->set_level(spdlog::level::debug);
+    logger->set_level(spdlog::level::info);
     spdlog::set_default_logger(logger);
 
     mios::Core core;

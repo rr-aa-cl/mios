@@ -133,6 +133,15 @@ bool LTMemory::make_default_tasks_consistent(){
         },
     {"control",{{"control_mode",0}}}
         },
+    },
+    {"t1_s2",{
+        {"type","TestSkill1"},
+            {"skill",{
+    {"objects",{{"object","TestObject1"}}}
+            }
+        },
+    {"control",{{"control_mode",0}}}
+        },
     }
     };
     default_values["parameters"]={
@@ -149,7 +158,7 @@ bool LTMemory::make_default_tasks_consistent(){
     default_values.clear();
     default_values["name"]="TestTask2";
     default_values["skills"]={
-    {"t1_s1",{
+    {"t2_s1",{
         {"type","TestSkill1"},
             {"skill",{
     {"objects",{{"object","TestObject1"}}}
@@ -158,7 +167,7 @@ bool LTMemory::make_default_tasks_consistent(){
             {"control",{{"control_mode",0}}}
         },
     },
-    {"t1_s2",{
+    {"t2_s2",{
         {"type","TestSkill1"},
             {"skill",{
     {"objects",{{"object","TestObject1"}}}
@@ -182,7 +191,7 @@ bool LTMemory::make_default_tasks_consistent(){
     default_values.clear();
     default_values["name"]="TestTask3";
     default_values["skills"]={
-    {"t1_s1",{
+    {"t3_s1",{
         {"type","TestSkill1"},
             {"skill",{
     {"objects",{{"object","TestObject1"}}}
@@ -191,7 +200,7 @@ bool LTMemory::make_default_tasks_consistent(){
             {"control",{{"control_mode",0}}}
         },
     },
-    {"t1_s2",{
+    {"t3_s2",{
         {"type","TestSkill1"},
             {"skill",{
     {"objects",{{"object","TestObject1"}}}
@@ -200,7 +209,7 @@ bool LTMemory::make_default_tasks_consistent(){
     {"control",{{"control_mode",0}}}
         },
     },
-    {"t1_s3",{
+    {"t3_s3",{
         {"type","TestSkill1"},
             {"skill",{
     {"objects",{{"object","TestObject1"}}}
@@ -269,15 +278,21 @@ std::shared_ptr<Task> LTMemory::load_task(const std::string& task_id, const nloh
     std::shared_ptr<Task> task = TaskFactory::create_task(TaskFactory::get_task_name(task_id),core);
     task->initialize_context();
     if(!task->load_context(user_context)){
-        task = TaskFactory::create_task(TaskName::TaskName_IdleTask,core);
-        if(!task->load_context(nlohmann::json())){
-            spdlog::critical("Cannot load default context for idle task.");
-        }
-        return task;
+        spdlog::error("Could not load context for task " + task->get_id());
+        return TaskFactory::create_task(TaskName::TaskName_IdleTask,core);
+//        task->initialize_context();
+//        if(!task->load_context(nlohmann::json())){
+//            spdlog::critical("Cannot load default context for idle task.");
+//        }
     }
     if(task->get_context().find("parameters")!=task->get_context().end()){
         if(!task->read_parameters(task->get_context()["parameters"])){
-            task = TaskFactory::create_task(TaskName::TaskName_IdleTask,core);
+            spdlog::error("Could not read parameters for task " + task->get_id());
+            return TaskFactory::create_task(TaskName::TaskName_IdleTask,core);
+//            task->initialize_context();
+//            if(!task->load_context(nlohmann::json())){
+//                spdlog::critical("Cannot load default context for idle task.");
+//            }
         }
     }
     return task;
@@ -287,10 +302,12 @@ std::shared_ptr<Task> LTMemory::load_subtask(const std::string& task_id, const n
     std::shared_ptr<Task> task = TaskFactory::create_task(TaskFactory::get_task_name(task_id),core);
     task->initialize_context();
     if(!task->load_context(user_context)){
+        spdlog::error("Could not load context for subtask " + task->get_id());
         return TaskFactory::create_task(TaskName::TaskName_IdleTask,core);
     }
     if(task->get_context().find("parameters")!=task->get_context().end()){
         if(!task->read_parameters(task->get_context()["parameters"])){
+            spdlog::error("Could not read parameters for subtask " + task->get_id());
             return TaskFactory::create_task(TaskName::TaskName_IdleTask,core);
         }
     }
