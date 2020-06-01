@@ -149,7 +149,8 @@ bool LTMemory::make_default_tasks_consistent(){
     {"b",false},
     {"success",false},
     {"exception","none"},
-    {"skill_test",0}
+    {"skill_test",0},
+    {"queue_number",0}
 };
     if(!m_mongodb_client.make_document_consistent("TestTask1","tasks",default_values)){
         return false;
@@ -259,6 +260,7 @@ bool LTMemory::make_default_tasks_consistent(){
 bool LTMemory::make_default_environment_consistent(){
     nlohmann::json default_values;
     Object o = Object("TestObject1");
+    o.grasp_force=1;
     if(!m_mongodb_client.make_document_consistent("TestObject1","environment",o.to_json())){
         return false;
     }

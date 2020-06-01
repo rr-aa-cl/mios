@@ -360,116 +360,153 @@ def test_subtask_start_stop(address):
               "Wrong success costs", rtn)
 
 
-def test_knowledgebase(address):
+def test_memory(address):
     url = "http://" + address + ":8383"
-    print("Testing task description download...")
+    print("Testing task context download...")
     for i in range(100):
-        response = call_method(address, 8383, method="download_task_description", payload={"task": "test_task_1"})
-        msg_error(response is not None, "knowledgebase", "Response is none", response)
-        msg_error(response["result"]["result"] is True, "knowledgebase", "Could not load task.", response)
-        msg_error(response["result"]["description"]["parameters"]["a"] == [1, 2, 3], "knowledgebase", "Task description is faulty.", response)
+        response = call_method(address, 12002, method="download_task_context", payload={"task": "TestTask1"})
+        msg_error(response is not None, "memory_task_download", "Response is none", response)
+        msg_error(response["result"]["result"] is True, "memory_task_download", "Could not load task.", response)
+        msg_error(response["result"]["context"]["parameters"]["a"] == [0, 0, 0], "memory_task_download", "Task description is faulty.", response)
 
-    print("Testing skill description download...")
+    print("Testing skill context download...")
     for i in range(100):
-        response = call_method(address, 8383, method="download_skill_description", payload={"skill": "test_skill_1"})
-        msg_error(response is not None, "knowledgebase", "Response is none", response)
-        msg_error(response["result"]["result"] is True, "knowledgebase", "Could not load skill.", response)
-        msg_error(response["result"]["description"]["success"] is False, "knowledgebase", "Skill description is faulty.", response)
+        response = call_method(address, 12002, method="download_skill_context", payload={"skill": "TestSkill1"})
+        msg_error(response is not None, "memory_skill_download", "Response is none", response)
+        msg_error(response["result"]["result"] is True, "memory_skill_download", "Could not load skill.", response)
+        msg_error(response["result"]["context"]["success"] is False, "memory_skill_download", "Skill description is faulty.", response)
 
-    print("Testing object description download...")
+    print("Testing object context download...")
     for i in range(100):
-        response = call_method(address, 8383, method="download_object_description", payload={"object": "test_object_1"})
-        msg_error(response is not None, "knowledgebase", "Response is none", response)
-        msg_error(response["result"]["result"] is True, "knowledgebase", "Could not load task.", response)
-        msg_error(response["result"]["description"]["EE_ob_com"] == [0, 0, 0], "knowledgebase", "Object description is faulty.", response)
+        response = call_method(address, 12002, method="download_object_context", payload={"object": "TestObject1"})
+        msg_error(response is not None, "memory_object_download", "Response is none", response)
+        msg_error(response["result"]["result"] is True, "memory_object_download", "Could not load object.", response)
+        msg_error(response["result"]["context"]["grasp_force"] == 1, "memory_object_download", "Object description is faulty.", response)
 
 
 def test_task_queue(address):
     url = "http://" + address + ":8383"
-    print('Testing queued non-nominal stop...')
+    print('Testing queued exceptional stop...')
     # input('Press Enter to continue...')
     results = []
     for i in range(10):
-        results.append(start_task(address, "TestTask1", queue=True))
+        results.append(start_task(address, "TestTask1", {"parameters": {"queue_number": i}}, queue=True))
 
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
-    time.sleep(1)
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
+    stop_task(address, True)
+    rtn = wait_for_task(address, results[8]['result']['task_uuid'])
+    msg_error(rtn["result"]["result"] is False, "queue_exception",
+              "Result is not False", rtn)
+    wait_for_task(address, results[9]['result']['task_uuid'])
+    msg_error(rtn["result"]["result"] is False, "queue_exception",
+              "Result is not False", rtn)
+
+    print('Testing queued stop...')
+    # input('Press Enter to continue...')
+    results = []
+    for i in range(10):
+        results.append(start_task(address, "TestTask1", {"parameters": {"queue_number": i}}, queue=True))
+
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
     stop_task(address)
-    time.sleep(0.5)
-    wait_for_task(address, results[8]['result']['task_uuid'])
-    wait_for_task(address, results[9]['result']['task_uuid'])
+    for i in range(10):
+        rtn = wait_for_task(address, results[i]['result']['task_uuid'])
+        if i == 0:
+            msg_error(rtn["result"]["task_result"]["external_stop"] is True, "queue",
+                      "No external stop", rtn)
+        elif i == 6 or i == 9:
+            msg_error(rtn["result"]["result"] is False, "queue",
+                      "Result is not False", rtn)
+        else:
+            msg_error(rtn["result"]["task_result"]["results"]["queue_number"] == i, "queue",
+                      "Wrong queue number", rtn)
 
-    print('Testing queued nominal unsuccessful stop without recovery...')
+    print('Testing queued stop with recovery...')
     # input('Press Enter to continue...')
     results = []
     for i in range(10):
-        results.append(start_task(address, "TestTask1", queue=True))
+        results.append(start_task(address, "TestTask1", {"parameters": {"queue_number": i}}, queue=True))
 
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
-    stop_task(address, nominal=True)
-    wait_for_task(address, results[5]['result']['task_uuid'])
-    wait_for_task(address, results[8]['result']['task_uuid'])
-    wait_for_task(address, results[9]['result']['task_uuid'])
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
+    stop_task(address, recover=True)
+    for i in range(10):
+        rtn = wait_for_task(address, results[i]['result']['task_uuid'])
+        if i == 0:
+            msg_error(rtn["result"]["task_result"]["external_stop"] is True, "queue_recovery",
+                      "No external stop", rtn)
+            msg_error(rtn["result"]["task_result"]["results"]["recovered"] is True, "queue_recovery",
+                      "Has not recovered", rtn)
+        elif i == 6 or i == 9:
+            msg_error(rtn["result"]["result"] is False, "queue_recovery",
+                      "Result is not False", rtn)
+        else:
+            msg_error(rtn["result"]["task_result"]["results"]["queue_number"] == i, "queue_recovery",
+                      "Wrong queue number", rtn)
 
-    print('Testing queued nominal unsuccessful stop with recovery...')
+    print('Testing queued exceptional stop and empty queue...')
     # input('Press Enter to continue...')
     results = []
     for i in range(10):
-        results.append(start_task(address, "TestTask1", queue=True))
+        results.append(start_task(address, "TestTask1", {"parameters": {"queue_number": i}}, queue=True))
 
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
-    stop_task(address, nominal=True, recover=True)
-    wait_for_task(address, results[5]['result']['task_uuid'])
-    wait_for_task(address, results[8]['result']['task_uuid'])
-    wait_for_task(address, results[9]['result']['task_uuid'])
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
+    stop_task(address, raise_exception=True, empty_queue=True)
+    for i in range(10):
+        rtn = wait_for_task(address, results[i]['result']['task_uuid'])
+        if i == 0:
+            msg_error(rtn["result"]["task_result"]["external_stop"] is True, "queue_exception_empty",
+                      "No external stop", rtn)
+        else:
+            msg_error(rtn["result"]["result"] is False, "queue_exception_empty",
+                      "Result is not False", rtn)
 
-    print('Testing queued nominal successful stop without recovery...')
+    print('Testing queued stop and empty queue...')
     # input('Press Enter to continue...')
     results = []
     for i in range(10):
-        results.append(start_task(address, "TestTask1", queue=True))
+        results.append(start_task(address, "TestTask1", {"parameters": {"queue_number": i}}, queue=True))
 
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
-    stop_task(address, nominal=True, success=True)
-    wait_for_task(address, results[5]['result']['task_uuid'])
-    wait_for_task(address, results[8]['result']['task_uuid'])
-    wait_for_task(address, results[9]['result']['task_uuid'])
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
+    stop_task(address, empty_queue=True)
+    for i in range(10):
+        rtn = wait_for_task(address, results[i]['result']['task_uuid'])
+        if i == 0:
+            msg_error(rtn["result"]["task_result"]["external_stop"] is True, "queue_empty",
+                      "No external stop", rtn)
+        else:
+            msg_error(rtn["result"]["result"] is False, "queue_empty",
+                      "Result is not False", rtn)
 
-    print('Testing queued nominal successful stop with recovery...')
+    print('Testing queued stop with recovery and empty queue...')
     # input('Press Enter to continue...')
     results = []
     for i in range(10):
-        results.append(start_task(address, "TestTask1", queue=True))
+        results.append(start_task(address, "TestTask1", {"parameters": {"queue_number": i}}, queue=True))
 
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
-    stop_task(address, nominal=True, success=True, recover=True)
-    wait_for_task(address, results[5]['result']['task_uuid'])
-    wait_for_task(address, results[8]['result']['task_uuid'])
-    wait_for_task(address, results[9]['result']['task_uuid'])
-
-    print('Testing queued nominal successful stop with recovery and empty queue...')
-    # input('Press Enter to continue...')
-    results = []
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
+    call_method(address, 12002, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
+    stop_task(address, recover=True, empty_queue=True)
     for i in range(10):
-        results.append(start_task(address, "TestTask1", queue=True))
-
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[0]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[6]['result']['task_uuid']})
-    call_method(address, 8383, 'remove_task', {'task_uuid': results[9]['result']['task_uuid']})
-    stop_task(address, nominal=True, success=True, recover=True, empty_queue=True)
-    wait_for_task(address, results[5]['result']['task_uuid'])
-    wait_for_task(address, results[8]['result']['task_uuid'])
-    wait_for_task(address, results[9]['result']['task_uuid'])
+        rtn = wait_for_task(address, results[i]['result']['task_uuid'])
+        if i == 0:
+            msg_error(rtn["result"]["task_result"]["external_stop"] is True, "queue_recovery_empty",
+                      "No external stop", rtn)
+            msg_error(rtn["result"]["task_result"]["results"]["recovered"] is True, "queue_recovery_empty",
+                      "Has not recovered", rtn)
+        else:
+            msg_error(rtn["result"]["result"] is False, "queue_recovery_empty",
+                      "Result is not False", rtn)
 
 
 def skill_tests(address):

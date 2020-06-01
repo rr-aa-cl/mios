@@ -30,9 +30,9 @@ void CommandInterface::bind_methods(){
 
     m_portal->bind_method_to_all("teach_object",std::bind(&CommandInterface::teach_object,this,std::placeholders::_1),{ArgPair("object",{}),ArgPair("teach_width",false)});
 //    m_portal->bind_method_to_all("apply_reference_frame",std::bind(&CommandInterface::apply_reference_frame,this,std::placeholders::_1),{ArgPair("frame",{})});
-//    m_portal->bind_method_to_all("download_task_description",std::bind(&CommandInterface::download_task_description,this,std::placeholders::_1),{"task"});
-//    m_portal->bind_method_to_all("download_skill_description",std::bind(&CommandInterface::download_skill_description,this,std::placeholders::_1),{"skill"});
-//    m_portal->bind_method_to_all("download_object_description",std::bind(&CommandInterface::download_object_description,this,std::placeholders::_1),{"object"});
+    m_portal->bind_method_to_all("download_task_context",std::bind(&CommandInterface::download_task_context,this,std::placeholders::_1),{ArgPair("task",{})});
+    m_portal->bind_method_to_all("download_skill_context",std::bind(&CommandInterface::download_skill_context,this,std::placeholders::_1),{ArgPair("skill",{})});
+    m_portal->bind_method_to_all("download_object_context",std::bind(&CommandInterface::download_object_context,this,std::placeholders::_1),{ArgPair("object",{})});
 
     m_portal->bind_method_to_all("get_state",std::bind(&CommandInterface::get_state,this,std::placeholders::_1),{});
 
@@ -221,47 +221,48 @@ nlohmann::json CommandInterface::teach_object(const nlohmann::json &request){
 //    return response;
 //}
 
-//nlohmann::json CommandInterface::download_task_description(const nlohmann::json &request){
-//    nlohmann::json response, description;
-//    std::string task;
-//    request["task"].get_to(task);
-//    if(this->_core->get_kb()->load_task(task,description)){
-//        response["description"]=description;
-//        response["result"]=true;
-//    }else{
-//        response["result"]=false;
-//        response["error"]="Could not download task with name "+task+".";
-//    }
-//    return response;
-//}
+nlohmann::json CommandInterface::download_task_context(const nlohmann::json &request){
+    nlohmann::json response, context;
+    std::string task_id;
+    request["task"].get_to(task_id);
+    if(m_core->get_memory()->load_default_task_context(task_id,context)){
+        response["context"]=context;
+        response["result"]=true;
+    }else{
+        response["result"]=false;
+        response["error"]="Could not download task with name "+task_id+".";
+    }
+    return response;
+}
 
-//nlohmann::json CommandInterface::download_skill_description(const nlohmann::json &request){
-//    nlohmann::json response, description;
-//    std::string skill;
-//    request["skill"].get_to(skill);
-//    if(this->_core->get_kb()->load_skill(skill,description)){
-//        response["description"]=description;
-//        response["result"]=true;
-//    }else{
-//        response["result"]=false;
-//        response["error"]="Could not download skill with name "+skill+".";
-//    }
-//    return response;
-//}
+nlohmann::json CommandInterface::download_skill_context(const nlohmann::json &request){
+    nlohmann::json response, context;
+    std::string skill_id;
+    request["skill"].get_to(skill_id);
+    if(m_core->get_memory()->load_default_skill_context(skill_id,context)){
+        response["context"]=context;
+        response["result"]=true;
+    }else{
+        response["result"]=false;
+        response["error"]="Could not download skill with name "+skill_id+".";
+    }
+    return response;
+}
 
-//nlohmann::json CommandInterface::download_object_description(const nlohmann::json &request){
-//    nlohmann::json response, description;
-//    std::string object;
-//    request["object"].get_to(object);
-//    if(this->_core->get_kb()->load_object(object,description)){
-//        response["description"]=description;
-//        response["result"]=true;
-//    }else{
-//        response["result"]=false;
-//        response["error"]="Could not download task with name "+object+".";
-//    }
-//    return response;
-//}
+nlohmann::json CommandInterface::download_object_context(const nlohmann::json &request){
+    nlohmann::json response, context;
+    std::string object;
+    request["object"].get_to(object);
+    const Object* o = m_core->get_memory()->get_object(object);
+    if(o->name!="NullObject"){
+        response["context"]=o->to_json();
+        response["result"]=true;
+    }else{
+        response["result"]=false;
+        response["error"]="Could not download object with name "+object+".";
+    }
+    return response;
+}
 
 nlohmann::json CommandInterface::get_state(const nlohmann::json &request){
     nlohmann::json response;

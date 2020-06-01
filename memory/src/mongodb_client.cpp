@@ -36,6 +36,45 @@ MongodbClient::MongodbClient(const std::string &database, unsigned port){
     }
 }
 
+bool MongodbClient::read_documents(const std::string &collection, std::set<nlohmann::json> &docs){
+    try {
+        if(!m_mongodb.has_collection(collection)){
+            spdlog::error("Database has no "+collection+" collection");
+            return false;
+        }
+        if(m_collections.find(collection)==m_collections.end()){
+            spdlog::error("Database has no "+collection+" collection");
+            return false;
+        }
+        spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENT.PRE_FIND");
+        for(const auto& d : m_collections[collection].find({})){
+            std::string description = bsoncxx::to_json(d);
+            docs.insert(nlohmann::json::parse(description));
+        }
+        return true;
+    }catch(const mongocxx::logic_error& e){
+        spdlog::error("Reading of documents in collection "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const mongocxx::operation_exception& e){
+        spdlog::error("Reading of documents in collection "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const mongocxx::exception& e){
+        spdlog::error("Reading of documents in collection "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const bsoncxx::exception& e){
+        spdlog::error("Reading of documents in collection "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const nlohmann::detail::parse_error& e){
+        spdlog::error("Reading of documents in collection "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }
+}
+
 bool MongodbClient::read_document(const std::string& name, const std::string& collection, nlohmann::json &descr){
     spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENT("+name+","+collection+")");
     std::scoped_lock<std::mutex> lock(m_mutex_db_access);
@@ -88,7 +127,7 @@ bool MongodbClient::read_document(const std::string& name, const std::string& co
     return false;
 }
 
-bool MongodbClient::read_documents(const std::string &collection, std::set<nlohmann::json> &docs){
+bool MongodbClient::write_documents(const std::string &collection, const std::set<nlohmann::json> &docs){
     spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENTS("+collection+")");
     for(const auto& d : docs){
         if(d.find("name")==d.end()){

@@ -245,28 +245,31 @@ std::tuple<bool,std::string,std::string> TaskEngine::start_task(const std::strin
 
 std::pair<bool,std::string> TaskEngine::stop_task(bool raise_exception, bool recover,bool empty_queue){
     if(m_active_task->get_id()=="IdleTask"){
-        return std::pair<bool,std::string>(true,"");
+        return std::make_pair(true,"");
     }
     spdlog::info("Stopping active task.");
     m_active_task->stop_task(raise_exception,recover,empty_queue);
-    return std::pair<bool,std::string>(true,"");
+    return std::make_pair(true,"");
 }
 
 std::pair<bool,std::string> TaskEngine::remove_task(const std::string& uuid){
     std::scoped_lock<std::mutex> lock(m_mtx_task_queue);
     auto it=m_task_queue.begin();
     while(it!=m_task_queue.end()){
-        if(std::get<1>(*it)->get_uuid()==uuid){
+        if(std::get<1>(*it)->get_uuid()==uuid && m_task_queue.begin()==it){
+            return std::make_pair(false,"Cannot remove active task_from queue");
+        }else if(std::get<1>(*it)->get_uuid()==uuid){
             m_task_queue.erase(it++);
-            return std::pair<bool,std::string>(true,"Removed task with uuid "+uuid+" from queue.");
+            return std::make_pair(true,"Removed task with uuid "+uuid+" from queue.");
         }else{
             ++it;
         }
     }
-    return std::pair<bool,std::string>(false,"No task with uuid "+uuid+" in queue.");
+    return std::make_pair(false,"No task with uuid "+uuid+" in queue.");
 }
 
 bool TaskEngine::subscribe(const std::string& task_uuid, std::shared_ptr<TaskObserver> observer){
+    std::scoped_lock<std::mutex> lock(m_mtx_task_queue);
     bool found_uuid=false;
     for(const auto& t : m_task_queue){
         if(std::get<1>(t)->get_uuid()==task_uuid){
@@ -309,6 +312,7 @@ bool TaskEngine::is_busy() const{
 }
 
 const std::list<std::tuple<std::string, std::shared_ptr<Task>, nlohmann::json> > *TaskEngine::get_task_queue(){
+    std::scoped_lock<std::mutex> lock(m_mtx_task_queue);
     return &m_task_queue;
 }
 

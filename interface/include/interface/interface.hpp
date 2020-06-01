@@ -34,9 +34,9 @@ private:
     // knowledge base level
     nlohmann::json teach_object(const nlohmann::json& request);
     nlohmann::json apply_reference_frame(const nlohmann::json& request);
-    nlohmann::json download_task_description(const nlohmann::json& request);
-    nlohmann::json download_skill_description(const nlohmann::json& request);
-    nlohmann::json download_object_description(const nlohmann::json& request);
+    nlohmann::json download_task_context(const nlohmann::json& request);
+    nlohmann::json download_skill_context(const nlohmann::json& request);
+    nlohmann::json download_object_context(const nlohmann::json& request);
 
     // info level
     nlohmann::json get_state(const nlohmann::json& request);

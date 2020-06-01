@@ -1,7 +1,7 @@
 #include "tasks/test_task_1.hpp"
 #include "skills/test_skill_1.hpp"
 namespace mios{
-TestTask1::TestTask1(Core* core):Task("TestTask1",core),result_code(-1),recovered(false){
+TestTask1::TestTask1(Core* core):Task("TestTask1",core),m_result_code(-1),recovered(false){
 }
 void TestTask1::initialize_context(){
     reserve_skill("t1_s1");
@@ -12,9 +12,10 @@ void TestTask1::execute_task(){
     if(m_skill_test==0){
         overwrite_context("t1_s1","skill","success",m_success);
         overwrite_context("t1_s1","skill","exception",m_exception);
+        overwrite_context("t1_s1","skill","run_time",3);
 
         if(m_exception=="task"){
-            result_code=9;
+            m_result_code=9;
             throw TaskException("This is a task exception that has been thrown for test purposes");
         }
         execute_skill<TestSkill1,SkillParametersTestSkill1>("t1_s1");
@@ -42,14 +43,15 @@ void TestTask1::execute_task(){
             execute_skill<TestSkill1,SkillParametersTestSkill1>("t1_s2");
         }
     }
-    result_code=-1;
+    m_result_code=-1;
 
 }
 void TestTask1::evaluate_task(){
     nlohmann::json custom_results;
     custom_results["t1_s1"]=get_result().m_skill_results["t1_s1"].results;
     custom_results["t1_s2"]=get_result().m_skill_results["t1_s2"].results;
-    custom_results["result_code"]=result_code;
+    custom_results["result_code"]=m_result_code;
+    custom_results["queue_number"]=m_queue_number;
     custom_results["recovered"]=recovered;
     msrm_utils::write_json_array<double,3,1>(custom_results["a"],m_a);
     custom_results["b"]=m_b;
@@ -72,6 +74,9 @@ bool TestTask1::read_parameters(const nlohmann::json& params){
     }
     if(!msrm_utils::read_json_param(params,"skill_test",m_skill_test)){
         m_skill_test=0;
+    }
+    if(!msrm_utils::read_json_param(params,"queue_number",m_queue_number)){
+        m_queue_number=0;
     }
     spdlog::debug("########## Task parameters ###########");
     std::cout<<"a: "<<m_a<<std::endl;
