@@ -13,6 +13,7 @@ public:
     std::string exception;
     double cost_err;
     double cost_suc;
+    std::vector<int> mp_sequence;
 };
 class TestSkill1 : public Skill{
 public:
@@ -28,6 +29,9 @@ private:
     void auxiliaries(const Percept& p) override;
     void parallels() override;
 private:
-    int result_code;
+    int m_result_code;
+    int m_sequence_index;
+    std::vector<std::string> m_mp_graph;
+    std::vector<std::string> m_result_graph;
 };
 }

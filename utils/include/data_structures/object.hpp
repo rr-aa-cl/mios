@@ -27,6 +27,8 @@ public:
      */
     static Object from_json(const nlohmann::json& p);
 
+    void update(const nlohmann::json& p);
+
     /**
      * The object id in both internal representation as well as the mongodb database.
      */

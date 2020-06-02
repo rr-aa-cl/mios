@@ -19,5 +19,6 @@ std::string m_exception;
 unsigned m_skill_test;
 int m_queue_number;
 int m_result_code;
+std::vector<int> m_mp_sequence;
 };
 }

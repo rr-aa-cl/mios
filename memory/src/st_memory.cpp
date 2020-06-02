@@ -164,6 +164,18 @@ bool STMemory::update_object(const std::string &name, bool teach_width, const Pe
     return true;
 }
 
+bool STMemory::update_object(const std::string &name, const nlohmann::json &description){
+    if(name=="NullObject"){
+        spdlog::error("Cannot overwrite NullObject");
+        return false;
+    }
+    if(m_environment.find(name)==m_environment.end()){
+        m_environment.insert(std::make_pair(name,Object(name)));
+    }
+    m_environment.at(name).update(description);
+    return true;
+}
+
 const Object* STMemory::get_object(const std::string &name) const{
     if(m_environment.find(name)==m_environment.end()){
         return &m_environment.at("NullObject");

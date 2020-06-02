@@ -84,6 +84,7 @@ bool LTMemory::make_default_skills_consistent(){
     default_values["cost_suc"]=0;
     default_values["cost_err"]=0;
     default_values["exception"]="none";
+    default_values["mp_sequence"]={};
     if(!m_mongodb_client.make_document_consistent("TestSkill1","skills",default_values)){
         return false;
     }
@@ -126,31 +127,32 @@ bool LTMemory::make_default_tasks_consistent(){
     default_values["name"]="TestTask1";
     default_values["skills"]={
     {"t1_s1",{
-        {"type","TestSkill1"},
-            {"skill",{
+    {"type","TestSkill1"},
+    {"skill",{
     {"objects",{{"object","TestObject1"}}}
-            }
-        },
+}
+},
     {"control",{{"control_mode",0}}}
-        },
-    },
+},
+},
     {"t1_s2",{
-        {"type","TestSkill1"},
-            {"skill",{
+    {"type","TestSkill1"},
+    {"skill",{
     {"objects",{{"object","TestObject1"}}}
-            }
-        },
+}
+},
     {"control",{{"control_mode",0}}}
-        },
-    }
-    };
+},
+}
+};
     default_values["parameters"]={
     {"a",{0,0,0}},
     {"b",false},
     {"success",false},
     {"exception","none"},
     {"skill_test",0},
-    {"queue_number",0}
+    {"queue_number",0},
+    {"mp_sequence",{}}
 };
     if(!m_mongodb_client.make_document_consistent("TestTask1","tasks",default_values)){
         return false;
@@ -160,24 +162,24 @@ bool LTMemory::make_default_tasks_consistent(){
     default_values["name"]="TestTask2";
     default_values["skills"]={
     {"t2_s1",{
-        {"type","TestSkill1"},
-            {"skill",{
+    {"type","TestSkill1"},
+    {"skill",{
     {"objects",{{"object","TestObject1"}}}
-            }
-        },
-            {"control",{{"control_mode",0}}}
-        },
-    },
+}
+},
+    {"control",{{"control_mode",0}}}
+},
+},
     {"t2_s2",{
-        {"type","TestSkill1"},
-            {"skill",{
+    {"type","TestSkill1"},
+    {"skill",{
     {"objects",{{"object","TestObject1"}}}
-            }
-        },
-            {"control",{{"control_mode",0}}}
-        },
-    }
-    };
+}
+},
+    {"control",{{"control_mode",0}}}
+},
+}
+};
     default_values["parameters"]={
     {"d",{0,0}},
     {"e",0},
@@ -193,33 +195,33 @@ bool LTMemory::make_default_tasks_consistent(){
     default_values["name"]="TestTask3";
     default_values["skills"]={
     {"t3_s1",{
-        {"type","TestSkill1"},
-            {"skill",{
+    {"type","TestSkill1"},
+    {"skill",{
     {"objects",{{"object","TestObject1"}}}
-            }
-        },
-            {"control",{{"control_mode",0}}}
-        },
-    },
+}
+},
+    {"control",{{"control_mode",0}}}
+},
+},
     {"t3_s2",{
-        {"type","TestSkill1"},
-            {"skill",{
+    {"type","TestSkill1"},
+    {"skill",{
     {"objects",{{"object","TestObject1"}}}
-            }
-        },
+}
+},
     {"control",{{"control_mode",0}}}
-        },
-    },
+},
+},
     {"t3_s3",{
-        {"type","TestSkill1"},
-            {"skill",{
+    {"type","TestSkill1"},
+    {"skill",{
     {"objects",{{"object","TestObject1"}}}
-            }
-        },
+}
+},
     {"control",{{"control_mode",0}}}
-        },
-    }
-    };
+},
+}
+};
     default_values["parameters"]={
     {"g",{0,0,0,0}},
     {"h",false},
@@ -237,19 +239,19 @@ bool LTMemory::make_default_tasks_consistent(){
     default_values["name"]="IdleTask";
     default_values["skills"]={
     {"sleep",{
-        {"type","GenericWiggleMotion"},
-        },
-    },
+    {"type","GenericWiggleMotion"},
+},
+},
     {"hold",{
     {"type","HoldPose"},
-    },},
+},},
     {"move",{
     {"type","MoveToPoseJoint"},
-    },}
-    };
+},}
+};
     default_values["parameters"]={
     {"idle_mode","none"},
-    };
+};
     if(!m_mongodb_client.make_document_consistent("IdleTask","tasks",default_values)){
         return false;
     }

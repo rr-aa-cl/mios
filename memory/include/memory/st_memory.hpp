@@ -34,6 +34,7 @@ public:
     bool set_default_parameters();
 
     bool update_object(const std::string& name, bool teach_width, const Percept& p);
+    bool update_object(const std::string& name, const nlohmann::json& description);
     const Object* get_object(const std::string& name) const;
 private:
 

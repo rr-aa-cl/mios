@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -u
 import time
 
-#from python.utils.ws_client import *
+# from python.utils.ws_client import *
 from udp_client import *
 
 
@@ -42,8 +42,8 @@ def test_exception_handling(hostname):
     msg_error(rtn['result']['result'], 'exception_handling_task', 'Result is false', rtn)
     msg_error('task_uuid' in rtn['result'], 'exception_handling_task', 'Result has no unique task id', rtn)
 
-    rtn = wait_for_task(address,rtn['result']['task_uuid'])
-    msg_error(rtn["result"]["task_result"]["results"]["result_code"] == 9,"exception_handling_task",
+    rtn = wait_for_task(address, rtn['result']['task_uuid'])
+    msg_error(rtn["result"]["task_result"]["results"]["result_code"] == 9, "exception_handling_task",
               "Wrong result code", rtn)
 
     rtn = start_task(address, 'TestTask1', {"parameters": {'exception': "skill", "success": True}})
@@ -51,7 +51,7 @@ def test_exception_handling(hostname):
     msg_error(rtn['result']['result'], 'exception_handling_skill', 'Result is false', rtn)
     msg_error('task_uuid' in rtn['result'], 'exception_handling_skill', 'Result has no unique task id', rtn)
 
-    rtn = wait_for_task(address,rtn['result']['task_uuid'])
+    rtn = wait_for_task(address, rtn['result']['task_uuid'])
     msg_error(rtn["result"]["task_result"]["results"]["t1_s1"]["result_code"] == 5, "exception_handling_task",
               "Wrong result code", rtn)
 
@@ -60,7 +60,7 @@ def test_exception_handling(hostname):
     msg_error(rtn['result']['result'], 'exception_handling_control', 'Result is false', rtn)
     msg_error('task_uuid' in rtn['result'], 'exception_handling_control', 'Result has no unique task id', rtn)
 
-    rtn = wait_for_task(address,rtn['result']['task_uuid'])
+    rtn = wait_for_task(address, rtn['result']['task_uuid'])
     msg_error(rtn["result"]["task_result"]["results"]["t1_s1"]["result_code"] == 1, "exception_handling_task",
               "Wrong result code", rtn)
 
@@ -69,7 +69,7 @@ def test_exception_handling(hostname):
     msg_error(rtn['result']['result'], 'exception_handling_invalid', 'Result is false', rtn)
     msg_error('task_uuid' in rtn['result'], 'exception_handling_invalid', 'Result has no unique task id', rtn)
 
-    rtn = wait_for_task(address,rtn['result']['task_uuid'])
+    rtn = wait_for_task(address, rtn['result']['task_uuid'])
     msg_error(rtn["result"]["task_result"]["results"]["t1_s1"]["result_code"] == 2, "exception_handling_task",
               "Wrong result code", rtn)
 
@@ -78,16 +78,16 @@ def test_exception_handling(hostname):
     msg_error(rtn['result']['result'], 'exception_handling_network', 'Result is false', rtn)
     msg_error('task_uuid' in rtn['result'], 'exception_handling_network', 'Result has no unique task id', rtn)
 
-    rtn = wait_for_task(address,rtn['result']['task_uuid'])
+    rtn = wait_for_task(address, rtn['result']['task_uuid'])
     msg_error(rtn["result"]["task_result"]["results"]["t1_s1"]["result_code"] == 3, "exception_handling_task",
               "Wrong result code", rtn)
 
-    rtn = start_task(address, 'TestTask1', {"parameters":{"exception": "realtime", "success": True}})
+    rtn = start_task(address, 'TestTask1', {"parameters": {"exception": "realtime", "success": True}})
     msg_error(rtn is not None, 'exception_handling_realtime', 'None returned', rtn)
     msg_error(rtn['result']['result'], 'exception_handling_realtime', 'Result is false', rtn)
     msg_error('task_uuid' in rtn['result'], 'exception_handling_realtime', 'Result has no unique task id', rtn)
 
-    rtn = wait_for_task(address,rtn['result']['task_uuid'])
+    rtn = wait_for_task(address, rtn['result']['task_uuid'])
     msg_error(rtn["result"]["task_result"]["results"]["t1_s1"]["result_code"] == 4, "exception_handling_task",
               "Wrong result code", rtn)
 
@@ -129,7 +129,8 @@ def test_start_stop(hostname):
     msg_error(rtn['result']['result'], 'start_stop_exception', 'Result is false', rtn)
     rtn = wait_for_task(address, task_uuid)
 
-    msg_error(rtn['result']['task_result']["exception"] is True, 'start_stop_exception_recovery', 'Result has no exception', rtn)
+    msg_error(rtn['result']['task_result']["exception"] is True, 'start_stop_exception_recovery',
+              'Result has no exception', rtn)
     msg_error(rtn['result']['task_result']["success"] is False, 'start_stop_exception_recovery', 'Result is successful',
               rtn)
     msg_error(rtn["result"]["task_result"]["results"]["recovered"] is False, "start_stop_exception_recovery",
@@ -151,7 +152,8 @@ def test_start_stop(hostname):
     msg_error(rtn['result']['result'], 'start_stop_unsuccessful', 'Result is false', rtn)
     rtn = wait_for_task(address, task_uuid)
 
-    msg_error(rtn['result']['task_result']["exception"] is False, 'start_stop_unsuccessful', 'Result has exception', rtn)
+    msg_error(rtn['result']['task_result']["exception"] is False, 'start_stop_unsuccessful', 'Result has exception',
+              rtn)
     msg_error(rtn['result']['task_result']["success"] is False, 'start_stop_unsuccessful', 'Result is successful',
               rtn)
     msg_error(rtn["result"]["task_result"]["results"]["recovered"] is False, "start_stop_unsuccessful",
@@ -172,9 +174,11 @@ def test_start_stop(hostname):
     msg_error(rtn is not None, 'start_stop_unsuccessful_recovery', 'None returned', rtn)
     msg_error(rtn['result']['result'], 'start_stop_unsuccessful_recovery', 'Result is false', rtn)
     rtn = wait_for_task(address, task_uuid)
-    msg_error(rtn['result']['task_result']["exception"] is False, 'start_stop_unsuccessful_recovery', 'Result has exception',
+    msg_error(rtn['result']['task_result']["exception"] is False, 'start_stop_unsuccessful_recovery',
+              'Result has exception',
               rtn)
-    msg_error(rtn['result']['task_result']["success"] is False, 'start_stop_unsuccessful_recovery', 'Result is successful',
+    msg_error(rtn['result']['task_result']["success"] is False, 'start_stop_unsuccessful_recovery',
+              'Result is successful',
               rtn)
     msg_error(rtn["result"]["task_result"]["results"]["recovered"] is True, "start_stop_unsuccessful_recovery",
               "Not recovered", rtn)
@@ -191,7 +195,7 @@ def test_start_wait(hostname):
     url = "http://" + hostname + ":8383"
 
     print('Testing execution with successful stop...')
-    rtn = start_task(address, "TestTask1", {"parameters":{"success": True}}, queue=True)
+    rtn = start_task(address, "TestTask1", {"parameters": {"success": True}}, queue=True)
     msg_error(rtn['result']['result'], 'start_wait_success', 'Result is false', rtn)
     rtn = wait_for_task(address, rtn['result']['task_uuid'])
     msg_error(rtn['result']['task_result']["exception"] is False, 'start_stop_success_recovery', 'Result has exception',
@@ -207,7 +211,7 @@ def test_start_wait(hostname):
               "Wrong success costs", rtn)
 
     print('Testing execution with unsuccessful stop...')
-    rtn = start_task(address, "TestTask1", {"parameters":{"success": False}}, queue=True)
+    rtn = start_task(address, "TestTask1", {"parameters": {"success": False}}, queue=True)
     msg_error(rtn['result']['result'], 'start_wait_success', 'Result is false', rtn)
     rtn = wait_for_task(address, rtn['result']['task_uuid'])
     msg_error(rtn['result']['task_result']["exception"] is False, 'start_stop_success_recovery', 'Result has exception',
@@ -223,29 +227,48 @@ def test_start_wait(hostname):
               "Wrong success costs", rtn)
 
 
+def test_primitive_sequence(address):
+    print("Testing manipulation primitive sequence...")
+    rtn = start_task(address, "TestTask1", queue=False, parameters={"parameters": {"skill_test": 4,
+                                                                                   "mp_sequence": [1, 2, 3, 4, 5, 6]}})
+    rtn = wait_for_task(address, rtn['result']['task_uuid'])
+    msg_error(
+        rtn["result"]["task_result"]["results"]["t1_s1"]["result_graph"] == ["mp_1", "mp_2", "mp_3", "mp_4", "mp_5",
+                                                                             "mp_6"], "primmitive_sequence",
+        "Wrong primitive sequence", rtn)
+
+    rtn = start_task(address, "TestTask1", queue=False, parameters={"parameters": {"skill_test": 4,
+                                                                                   "mp_sequence": [2, 4, 6]}})
+    rtn = wait_for_task(address, rtn['result']['task_uuid'])
+    msg_error(rtn["result"]["task_result"]["results"]["t1_s1"]["result_graph"] == ["mp_2", "mp_4", "mp_6"],
+              "primmitive_sequence",
+              "Wrong primitive sequence", rtn)
+
+
 def test_multilayer_tasks(address):
     print('Testing two-layer task...')
-    rtn = start_task(address, "TestTask2", queue=False, parameters={"parameters":{'d': [1, 2],'e': True,'success': False,
-                                                                   'stop_level': 4},
-                                                                  "skills": { "t2_s1": {
-                                               "skill": {
-                                                   "exception": "abc"
-                                               }
-                                           }
-                                       },
-                                       'subtasks': {'t2_t1': {'parameters': {
-                                           'a': [10, 11,
-                                                 12],
-                                           'b': True,
-                                           'success': True,
-                                           "skill_test": 2},
-                                           "skills": {
-                                               "t1_s2": {
-                                                   "skill": {
-                                                       "exception": "cba"
-                                                   }
-                                               }
-                                           }}}})
+    rtn = start_task(address, "TestTask2", queue=False,
+                     parameters={"parameters": {'d': [1, 2], 'e': True, 'success': False,
+                                                'stop_level': 4},
+                                 "skills": {"t2_s1": {
+                                     "skill": {
+                                         "exception": "abc"
+                                     }
+                                 }
+                                 },
+                                 'subtasks': {'t2_t1': {'parameters': {
+                                     'a': [10, 11,
+                                           12],
+                                     'b': True,
+                                     'success': True,
+                                     "skill_test": 2},
+                                     "skills": {
+                                         "t1_s2": {
+                                             "skill": {
+                                                 "exception": "cba"
+                                             }
+                                         }
+                                     }}}})
     rtn = wait_for_task(address, rtn['result']['task_uuid'])
     results = rtn["result"]["task_result"]["results"]
     msg_error(results["d"] == [1, 2], 'two_layer_task', 'Parameter throughput is faulty.', rtn)
@@ -254,33 +277,36 @@ def test_multilayer_tasks(address):
     msg_error(results["t2_t1"]["t1_s2"]["exception"] == "cba", 'two_layer_task', 'Parameter throughput is faulty.', rtn)
 
     print('Testing three-layer task...')
-    rtn = start_task(address, "TestTask3", queue=False, parameters={'parameters': {'g': [20, 21, 22, 23], 'h': False, 'i': 98.33,
-                                                                          'j': 'this is j', 'stop_level': 3,
-                                                                          'success': True, },
-                    'subtasks': {'t3_t1': {'parameters': {'d': [1, 2],
-                                                       'e': True,
-                                                       'success': False,
-                                                       'stop_level': 4},
-                                        'subtasks': {'t2_t1': {'parameters': {
-                                            'a': [30, 31,
-                                                  32],
-                                            'b': True,
-                                            'success': True}}}}}})
+    rtn = start_task(address, "TestTask3", queue=False,
+                     parameters={'parameters': {'g': [20, 21, 22, 23], 'h': False, 'i': 98.33,
+                                                'j': 'this is j', 'stop_level': 3,
+                                                'success': True, },
+                                 'subtasks': {'t3_t1': {'parameters': {'d': [1, 2],
+                                                                       'e': True,
+                                                                       'success': False,
+                                                                       'stop_level': 4},
+                                                        'subtasks': {'t2_t1': {'parameters': {
+                                                            'a': [30, 31,
+                                                                  32],
+                                                            'b': True,
+                                                            'success': True}}}}}})
     rtn = wait_for_task(address, rtn['result']['task_uuid'])
     results = rtn["result"]["task_result"]["results"]
     msg_error(results["g"] == [20, 21, 22, 23], 'three_layer_task', 'Parameter throughput is faulty.', rtn)
-    msg_error(results["t3_t1"]["t2_t1"]["a"] == [30, 31, 32], 'three_layer_task', 'Parameter throughput is faulty.', rtn)
+    msg_error(results["t3_t1"]["t2_t1"]["a"] == [30, 31, 32], 'three_layer_task', 'Parameter throughput is faulty.',
+              rtn)
 
 
 def test_subtask_start_stop(address):
     print('Testing exceptional stop...')
-    #input('Press Enter to continue...')
+    # input('Press Enter to continue...')
     rtn = start_task(address, "TestTask3", queue=True)
     time.sleep(1)
     stop_task(address, raise_exception=True)
     rtn = wait_for_task(address, rtn["result"]["task_uuid"])
 
-    msg_error(rtn['result']['task_result']["exception"] is True, 'subtask_start_stop_exception', 'Result has no exception',
+    msg_error(rtn['result']['task_result']["exception"] is True, 'subtask_start_stop_exception',
+              'Result has no exception',
               rtn)
     msg_error(rtn['result']['task_result']["success"] is False, 'subtask_start_stop_exception',
               'Result is successful',
@@ -295,13 +321,14 @@ def test_subtask_start_stop(address):
               "Wrong success costs", rtn)
 
     print('Testing exceptional stop with recovery...')
-    #input('Press Enter to continue...')
+    # input('Press Enter to continue...')
     rtn = start_task(address, "TestTask3", queue=True)
     time.sleep(1)
     stop_task(address, raise_exception=True, recover=True)
     rtn = wait_for_task(address, rtn["result"]["task_uuid"])
 
-    msg_error(rtn['result']['task_result']["exception"] is True, 'subtask_start_stop_success_exception', 'Result has no exception',
+    msg_error(rtn['result']['task_result']["exception"] is True, 'subtask_start_stop_success_exception',
+              'Result has no exception',
               rtn)
     msg_error(rtn['result']['task_result']["success"] is False, 'subtask_start_stop_success_exception',
               'Result is successful',
@@ -316,7 +343,7 @@ def test_subtask_start_stop(address):
               "Wrong success costs", rtn)
 
     print('Testing stop without recovery...')
-    #input('Press Enter to continue...')
+    # input('Press Enter to continue...')
     rtn = start_task(address, "TestTask3", queue=True)
     time.sleep(1)
     stop_task(address)
@@ -337,7 +364,7 @@ def test_subtask_start_stop(address):
               "Wrong success costs", rtn)
 
     print('Testing stop with recovery...')
-    #input('Press Enter to continue...')
+    # input('Press Enter to continue...')
     rtn = start_task(address, "TestTask3", queue=True)
     time.sleep(1)
     stop_task(address, recover=True)
@@ -365,21 +392,39 @@ def test_memory(address):
         response = call_method(address, 12002, method="download_task_context", payload={"task": "TestTask1"})
         msg_error(response is not None, "memory_task_download", "Response is none", response)
         msg_error(response["result"]["result"] is True, "memory_task_download", "Could not load task.", response)
-        msg_error(response["result"]["context"]["parameters"]["a"] == [0, 0, 0], "memory_task_download", "Task description is faulty.", response)
+        msg_error(response["result"]["context"]["parameters"]["a"] == [0, 0, 0], "memory_task_download",
+                  "Task description is faulty.", response)
 
     print("Testing skill context download...")
     for i in range(100):
         response = call_method(address, 12002, method="download_skill_context", payload={"skill": "TestSkill1"})
         msg_error(response is not None, "memory_skill_download", "Response is none", response)
         msg_error(response["result"]["result"] is True, "memory_skill_download", "Could not load skill.", response)
-        msg_error(response["result"]["context"]["success"] is False, "memory_skill_download", "Skill description is faulty.", response)
+        msg_error(response["result"]["context"]["success"] is False, "memory_skill_download",
+                  "Skill description is faulty.", response)
 
     print("Testing object context download...")
     for i in range(100):
         response = call_method(address, 12002, method="download_object_context", payload={"object": "TestObject1"})
         msg_error(response is not None, "memory_object_download", "Response is none", response)
         msg_error(response["result"]["result"] is True, "memory_object_download", "Could not load object.", response)
-        msg_error(response["result"]["context"]["grasp_force"] == 1, "memory_object_download", "Object description is faulty.", response)
+        msg_error(response["result"]["context"]["grasp_force"] == 1, "memory_object_download",
+                  "Object description is faulty.", response)
+
+    response = call_method(address, 12002, method="set_object",
+                           payload={"object": "TestObject1", "q": [0, 1, 2, 3, 4, 5, 6]})
+    msg_error(response["result"]["result"] is True, "memory_object_update", "Could not update object.", response)
+    response = call_method(address, 12002, method="download_object_context", payload={"object": "TestObject1"})
+    msg_error(response["result"]["result"] is True, "memory_object_update", "Could not load object.", response)
+    msg_error(response["result"]["context"]["q"] == [0, 1, 2, 3, 4, 5, 6], "memory_object_update",
+              "Object description is faulty.", response)
+    response = call_method(address, 12002, method="set_object",
+                           payload={"object": "TestObject1", "q": [0, 0, 0, 0, 0, 0, 0]})
+    msg_error(response["result"]["result"] is True, "memory_object_update", "Could not update object.", response)
+    response = call_method(address, 12002, method="download_object_context", payload={"object": "TestObject1"})
+    msg_error(response["result"]["result"] is True, "memory_object_update", "Could not load object.", response)
+    msg_error(response["result"]["context"]["q"] == [0, 0, 0, 0, 0, 0, 0], "memory_object_update",
+              "Object description is faulty.", response)
 
 
 def test_task_queue(address):
@@ -508,13 +553,13 @@ def test_task_queue(address):
 
 
 def test_skill_parallel(address):
-
     print('Testing parallel thread...')
     response = start_task(address, "TestTask1", queue=True, parameters={'parameters': {'skill_test': 2}})
     response = wait_for_task(address, response['result']['task_uuid'])
     msg_error(response is not None, 'live_parameter_server', 'None returned', response)
     task_result = response["result"]["task_result"]
-    msg_error("parallels_cnt" in task_result["results"]["t1_s2"], 'parallels_thread', 'Parallels counter not in results', response)
+    msg_error("parallels_cnt" in task_result["results"]["t1_s2"], 'parallels_thread',
+              'Parallels counter not in results', response)
     msg_error(task_result["results"]["t1_s2"]["parallels_cnt"] > 290, 'parallels_thread',
               'Parallels counter is wrong.', response)
 
@@ -525,21 +570,27 @@ def test_live_parameters(address):
     time.sleep(1)
     response_set1 = call_method(address, 12002, "set_live_parameter", {"key": "test_parameter_1", "value": 42})
     msg_error(response is not None, 'live_parameter_server', 'None returned', response_set1)
-    response_set2 = call_method(address, 12002, "set_live_parameter", {"key": "test_parameter_2", "value": "hello world"})
+    response_set2 = call_method(address, 12002, "set_live_parameter",
+                                {"key": "test_parameter_2", "value": "hello world"})
     msg_error(response is not None, 'live_parameter_server', 'None returned', response_set2)
-    response_set3 = call_method(address, 12002, "set_live_parameter", {"key": "test_parameter_3", "value": [1,2,3,4,5]})
+    response_set3 = call_method(address, 12002, "set_live_parameter",
+                                {"key": "test_parameter_3", "value": [1, 2, 3, 4, 5]})
     msg_error(response is not None, 'live_parameter_server', 'None returned', response_set3)
     response = wait_for_task(address, response['result']['task_uuid'])
     msg_error(response is not None, 'live_parameter_server', 'None returned', response)
     msg_error("result" in response, 'live_parameter_server', 'None returned', response)
     task_result = response["result"]["task_result"]
-    msg_error("test_parameter_1" in task_result["results"]["t1_s2"], 'live_parameter_server', 'Test parameter not in results', response)
-    msg_error("test_parameter_2" in task_result["results"]["t1_s2"], 'live_parameter_server', 'Test parameter not in results', response)
-    msg_error("test_parameter_3" in task_result["results"]["t1_s2"], 'live_parameter_server', 'Test parameter not in results', response)
-    msg_error(task_result["results"]["t1_s2"]["test_parameter_1"]==42, 'live_parameter_server', 'test_parameter_1 has not been put through.', response)
+    msg_error("test_parameter_1" in task_result["results"]["t1_s2"], 'live_parameter_server',
+              'Test parameter not in results', response)
+    msg_error("test_parameter_2" in task_result["results"]["t1_s2"], 'live_parameter_server',
+              'Test parameter not in results', response)
+    msg_error("test_parameter_3" in task_result["results"]["t1_s2"], 'live_parameter_server',
+              'Test parameter not in results', response)
+    msg_error(task_result["results"]["t1_s2"]["test_parameter_1"] == 42, 'live_parameter_server',
+              'test_parameter_1 has not been put through.', response)
     msg_error(task_result["results"]["t1_s2"]["test_parameter_2"] == "hello world", 'live_parameter_server',
               'test_parameter_2 has not been put through.', response)
-    msg_error(task_result["results"]["t1_s2"]["test_parameter_3"] == [1,2,3,4,5], 'live_parameter_server',
+    msg_error(task_result["results"]["t1_s2"]["test_parameter_3"] == [1, 2, 3, 4, 5], 'live_parameter_server',
               'test_parameter_3 has not been put through.', response)
 
 

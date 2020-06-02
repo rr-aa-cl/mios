@@ -29,7 +29,12 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("home_gripper",std::bind(&CommandInterface::home_gripper,this,std::placeholders::_1),{});
 
     m_portal->bind_method_to_all("teach_object",std::bind(&CommandInterface::teach_object,this,std::placeholders::_1),{ArgPair("object",{}),ArgPair("teach_width",false)});
-//    m_portal->bind_method_to_all("apply_reference_frame",std::bind(&CommandInterface::apply_reference_frame,this,std::placeholders::_1),{ArgPair("frame",{})});
+    m_portal->bind_method_to_all("set_object",std::bind(&CommandInterface::set_object,this,std::placeholders::_1),{ArgPair("object",{}),ArgPair("O_T_OB",nlohmann::json()),
+                                                                                                                   ArgPair("OB_T_TCP",nlohmann::json()),ArgPair("OB_T_gp",nlohmann::json()),
+                                                                                                                   ArgPair("geometry",nlohmann::json()),ArgPair("grasp_force",nlohmann::json()),
+                                                                                                                   ArgPair("grasp_width",nlohmann::json()),ArgPair("mass",nlohmann::json()),
+                                                                                                                   ArgPair("q",nlohmann::json()),ArgPair("OB_I",nlohmann::json())});
+    //    m_portal->bind_method_to_all("apply_reference_frame",std::bind(&CommandInterface::apply_reference_frame,this,std::placeholders::_1),{ArgPair("frame",{})});
     m_portal->bind_method_to_all("download_task_context",std::bind(&CommandInterface::download_task_context,this,std::placeholders::_1),{ArgPair("task",{})});
     m_portal->bind_method_to_all("download_skill_context",std::bind(&CommandInterface::download_skill_context,this,std::placeholders::_1),{ArgPair("skill",{})});
     m_portal->bind_method_to_all("download_object_context",std::bind(&CommandInterface::download_object_context,this,std::placeholders::_1),{ArgPair("object",{})});
@@ -209,6 +214,32 @@ nlohmann::json CommandInterface::teach_object(const nlohmann::json &request){
     }
     response["result"]=result;
     response["error"]=error_message;
+    return response;
+}
+
+nlohmann::json CommandInterface::set_object(const nlohmann::json &request){
+    nlohmann::json response;
+    std::string name;
+    request["object"].get_to(name);
+
+    nlohmann::json description={
+        {"O_T_OB",request["O_T_OB"]},
+        {"OB_T_gp",request["OB_T_gp"]},
+        {"OB_T_TCP",request["OB_T_TCP"]},
+        {"OB_I",request["OB_I"]},
+        {"q",request["q"]},
+        {"grasp_width",request["grasp_width"]},
+        {"grasp_force",request["grasp_force"]},
+        {"mass",request["mass"]},
+        {"geometry",request["geometry"]}
+    };
+    bool result = m_memory->update_object(name,description);
+    response["error"]="";
+    if(!result){
+        response["error"]="Could not update object with name " + name;
+    }
+    response["result"]=result;
+
     return response;
 }
 

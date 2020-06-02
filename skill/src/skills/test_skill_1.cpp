@@ -30,6 +30,10 @@ bool SkillParametersTestSkill1::read_parameters(const nlohmann::json& parameters
         spdlog::debug("Could not load parameter: cost_err [double]");
         cost_err=0;
     }
+    if(!msrm_utils::read_json_param<int>(parameters,"mp_sequence",mp_sequence)){
+        spdlog::debug("Could not load parameter: mp_sequence [vector<int>]");
+        mp_sequence.resize(0);
+    }
     spdlog::debug("###############################   Skill parameters   ######################################");
     spdlog::debug("run_time: "+std::to_string(run_time));
     spdlog::debug("success: "+std::to_string(success));
@@ -39,19 +43,37 @@ bool SkillParametersTestSkill1::read_parameters(const nlohmann::json& parameters
     return true;
 }
 
-TestSkill1::TestSkill1(const std::string &name, Memory *memory, const Percept &p):Skill("TestSkill1",{"object"},name,memory,p),result_code(-1){}
+TestSkill1::TestSkill1(const std::string &name, Memory *memory, const Percept &p):Skill("TestSkill1",{"object"},name,memory,p),m_result_code(-1),m_sequence_index(0),
+    m_mp_graph({"mp_0","mp_1","mp_2","mp_3","mp_4","mp_5","mp_6"}),m_result_graph({}){}
 
 std::shared_ptr<ManipulationPrimitive> TestSkill1::get_initial_mp(const Percept &p_0){
-    return create_mp<BasicPrimitive,MPParametersBasic,BasicAttractor>("mp",p_0);
+    return create_mp<BasicPrimitive,MPParametersBasic,BasicAttractor>(m_mp_graph[m_sequence_index],p_0);
 }
 
 std::optional<std::shared_ptr<ManipulationPrimitive> > TestSkill1::graph_transition(const Percept& p){
-    return {};
+    std::shared_ptr<SkillParametersTestSkill1> params = get_parameters<SkillParametersTestSkill1>();
+    std::string mp_name = get_active_mp()->get_name();
+    if(m_sequence_index>params->mp_sequence.size() || params->mp_sequence.size()==0){
+        return {};
+    }
+    if(mp_name != m_mp_graph[params->mp_sequence[m_sequence_index]]){
+        m_result_graph.emplace_back(m_mp_graph[params->mp_sequence[m_sequence_index]]);
+        return create_mp<BasicPrimitive,MPParametersBasic,BasicAttractor>(m_mp_graph[params->mp_sequence[m_sequence_index++]],p);
+    }else{
+        return {};
+    }
 }
 
 bool TestSkill1::check_local_suc_conditions(const Percept& p){
     std::shared_ptr<SkillParametersTestSkill1> c = get_parameters<SkillParametersTestSkill1>();
     double t_run=std::chrono::duration_cast<std::chrono::seconds>(p.time-m_memory->get_live_context()->t_skill).count();
+    if(c->success && c->mp_sequence.size()>0){
+        if(m_sequence_index==c->mp_sequence.size()){
+            return true;
+        }else{
+            return false;
+        }
+    }
     if(c->success && t_run>c->run_time && c->exception=="none"){
         spdlog::debug("Local success condition triggered at "+std::to_string(t_run));
         return true;
@@ -82,28 +104,28 @@ void TestSkill1::auxiliaries(const Percept &p){
     double t_run=std::chrono::duration_cast<std::chrono::seconds>(p.time-m_memory->get_live_context()->t_skill).count();
     if(t_run>c->t_exception){
         if(c->exception=="control"){
-            result_code=1;
+            m_result_code=1;
             throw franka::ControlException("This is a control exception that has been thrown for test purposes");
         }
         if(c->exception=="invalid"){
-            result_code=2;
+            m_result_code=2;
             throw franka::InvalidOperationException("This is an invalid operation exception that has been thrown for test purposes");
         }
         if(c->exception=="network"){
-            result_code=3;
+            m_result_code=3;
             throw franka::NetworkException("This is a network exception that has been thrown for test purposes");
         }
         if(c->exception=="realtime"){
-            result_code=4;
+            m_result_code=4;
             throw franka::RealtimeException("This is a realtime exception that has been thrown for test purposes");
         }
         if(c->exception=="skill"){
-            result_code=5;
+            m_result_code=5;
             throw SkillException("This is a skill exception that has been thrown for test purposes");
         }
     }
     write_costs(c->cost_suc,c->cost_err);
-    result_code=-1;
+    m_result_code=-1;
 }
 
 void TestSkill1::evaluate(){
@@ -113,7 +135,8 @@ void TestSkill1::evaluate(){
     get_custom_results()["run_time"]=c->run_time;
     get_custom_results()["success"]=c->success;
     get_custom_results()["t_exception"]=c->t_exception;
-    get_custom_results()["result_code"]=result_code;
+    get_custom_results()["result_code"]=m_result_code;
+    get_custom_results()["result_graph"]=m_result_graph;
     if(m_memory->get_live_parameter("test_parameter_1").has_value()){
         get_custom_results()["test_parameter_1"]=m_memory->get_live_parameter("test_parameter_1").value();
     }

@@ -43,6 +43,13 @@ void TestTask1::execute_task(){
             execute_skill<TestSkill1,SkillParametersTestSkill1>("t1_s2");
         }
     }
+    if(m_skill_test==4){
+        overwrite_context("t1_s1","skill","success",true);
+        overwrite_context("t1_s1","skill","mp_sequence",m_mp_sequence);
+        for(unsigned i=0;i<3;i++){
+            execute_skill<TestSkill1,SkillParametersTestSkill1>("t1_s1");
+        }
+    }
     m_result_code=-1;
 
 }
@@ -77,6 +84,9 @@ bool TestTask1::read_parameters(const nlohmann::json& params){
     }
     if(!msrm_utils::read_json_param(params,"queue_number",m_queue_number)){
         m_queue_number=0;
+    }
+    if(!msrm_utils::read_json_param(params,"mp_sequence",m_mp_sequence)){
+        m_mp_sequence.resize(0);
     }
     spdlog::debug("########## Task parameters ###########");
     std::cout<<"a: "<<m_a<<std::endl;

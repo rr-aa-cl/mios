@@ -86,6 +86,10 @@ bool Memory::update_object(const std::string &name, bool teach_width,const Perce
     return m_st_memory.update_object(name,teach_width,p);
 }
 
+bool Memory::update_object(const std::string &name, const nlohmann::json &description){
+    return m_st_memory.update_object(name, description);
+}
+
 const Object* Memory::get_object(const std::string& name) const{
     return m_st_memory.get_object(name);
 }
