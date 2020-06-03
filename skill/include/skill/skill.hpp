@@ -16,6 +16,8 @@
 #include "utils/exceptions.hpp"
 #include "data_structures/results.hpp"
 
+#include <spdlog/spdlog.h>
+
 
 namespace mios {
 
@@ -63,7 +65,7 @@ public:
     /**
      * Is called at the end of skill execution. Terminates manipulation primitives and calls the evaluate function.
      */
-    void terminate();
+    void terminate(const Percept &p);
 
     /**
      * Invokes a skill failure, this will stop skill execution and set the success indicator to false.
@@ -180,12 +182,8 @@ protected:
      *
      * @throw SkillException if manipulation primitive with id already exists.
      */
-    template<typename T_primitive,typename T_parameters,typename T_attractor>std::shared_ptr<T_primitive> create_mp(const std::string& name, const Percept &p){
-        if(m_active_mp->get_name()==name){
-            throw SkillException("Manipulation primitive with name " + name + " is already active. Implementation of manipulation graph seems faulty.");
-        }
-        return std::make_shared<T_primitive>(name,p,std::make_shared<T_parameters>(),std::make_shared<T_attractor>(),m_memory);
-    }
+    std::shared_ptr<ManipulationPrimitive> create_mp(const std::string& name, const Percept &p);
+
 
     /**
      * Checks global error conditions that hold for any skill. These are violations of maximum external wrench or joint torques, maximum execution time or

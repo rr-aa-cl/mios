@@ -1,5 +1,5 @@
 #include "skills/nullskill.hpp"
-#include "strategy/null_strategy.hpp"
+#include "strategies/null_strategy.hpp"
 
 namespace mios {
 

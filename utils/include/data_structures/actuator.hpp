@@ -41,6 +41,8 @@ public:
     Eigen::Matrix<double,7,1> tau_ff;
     Eigen::Matrix<double,7,1> K_theta;
     Eigen::Matrix<double,7,1> xi_theta;
+
+    double t;
 private:
 
     Eigen::Matrix<double,4,4> m_TF_T_EE_d_buffer;

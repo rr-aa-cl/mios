@@ -2,7 +2,6 @@
 #include <franka/exception.h>
 #include <chrono>
 
-#include "primitives/nullprimitive.hpp"
 #include "skills/nullskill.hpp"
 #include "utils/exceptions.hpp"
 #include "data_structures/object.hpp"
@@ -12,7 +11,7 @@
 namespace mios {
 
 Skill::Skill(const std::string &type, const std::unordered_set<std::string> &objects, const std::string& id, Memory *memory, const Percept &p):
-    m_memory(memory),m_active_mp(std::make_shared<NullPrimitive>("NullPrimitive",p,std::make_shared<MPParametersNullPrimitive>(),std::make_shared<NullAttractor>(),memory)),m_life_cycle(SkillLifeCycle::slInit),
+    m_memory(memory),m_active_mp(std::make_shared<ManipulationPrimitive>("NullPrimitive",p,memory)),m_life_cycle(SkillLifeCycle::slInit),
     m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_type(type),m_id(id),m_objects(objects){
 }
 
@@ -25,6 +24,13 @@ std::shared_ptr<ManipulationPrimitive> Skill::get_mp(const std::string &mp) cons
         throw SkillException("No MP with id "+mp+" is contained within skill of type "+m_type+". Check the skill implementation.");
     }
     return m_mp_graph.at(mp);
+}
+
+std::shared_ptr<ManipulationPrimitive> Skill::create_mp(const std::string &name, const Percept &p){
+    if(m_active_mp->get_name()==name){
+        throw SkillException("Manipulation primitive with name " + name + " is already active. Implementation of manipulation graph seems faulty.");
+    }
+    return std::make_shared<ManipulationPrimitive>(name,p,m_memory);
 }
 
 Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_T(const std::string &object_name) const{
@@ -89,7 +95,7 @@ Actuator* Skill::cycle(const Percept &p){
     }
     if(m_life_cycle==SkillLifeCycle::slTerminate){
         terminate_parallels();
-        m_active_mp->terminate();
+        m_active_mp->terminate(p);
         cmd=m_active_mp->stop(p);
         cmd->stop();
         m_result.p_1=p;
@@ -130,7 +136,7 @@ Actuator* Skill::cycle(const Percept &p){
 
     if(m_life_cycle==SkillLifeCycle::slTransition){
         Actuator blend_cmd=*(m_active_mp->cmd_from_buffer());
-        m_active_mp->terminate();
+        m_active_mp->terminate(p);
         m_active_mp=next_mp.value();
         m_result.percepts.emplace(std::make_pair(m_active_mp->get_name(),p));
         m_life_cycle=SkillLifeCycle::slExecution;
@@ -167,9 +173,9 @@ void Skill::set_init_mp(const std::string& name){
     m_active_mp=m_mp_graph[name];
 }
 
-void Skill::terminate(){
+void Skill::terminate(const Percept& p){
     for(auto& mp : m_mp_graph){
-        mp.second->terminate();
+        mp.second->terminate(p);
     }
     this->evaluate();
 }

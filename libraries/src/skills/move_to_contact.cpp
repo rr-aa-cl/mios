@@ -1,0 +1,75 @@
+#include "skills/move_to_contact.hpp"
+#include "strategies/move_to_pose.hpp"
+#include <msrm_utils/math.hpp>
+
+namespace mios {
+
+bool SkillParametersMoveToContact::read_parameters(const nlohmann::json &p){
+    if(!msrm_utils::read_json_param<double,1,1>(p,"speed",speed)){
+        spdlog::error("Parameter speed could not be loaded but is mandatory.");
+        return false;
+    }
+    return true;
+}
+
+MoveToContact::MoveToContact(const std::string &id, Memory *memory, const Percept &p):Skill("MoveToContact",{"goal_pose"},id,memory,p){
+}
+
+Eigen::Matrix<double,3,3> MoveToContact::get_O_R_T_0(const Percept &p) const{
+    if(this->get_object("loc_goal")->name=="NullObject"){
+        Eigen::Matrix<double,3,1> object_dir=get_object("loc_goal")->O_T_OB.block<3,1>(0,3)-p.proprioception.O_T_EE.block<3,1>(0,3);
+        Eigen::Matrix<double,3,1> tmp;
+        tmp<<0,0,1;
+        if(object_dir.dot(tmp)<1e-3){
+            tmp<<0,1,0;
+        }
+        return msrm_utils::build_rotation_matrix(object_dir,tmp);
+    }else{
+        throw SkillException("No valid object has been grounded.");
+    }
+}
+
+std::shared_ptr<ManipulationPrimitive> MoveToContact::get_initial_mp(const Percept &p_0){
+    std::shared_ptr<SkillParametersMoveToContact> skill_params = get_parameters<SkillParametersMoveToContact>();
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p_0);
+    mp->create_strategy<MoveToPoseStrategy>("s_0",1);
+
+    Eigen::Matrix<double,4,4> T_g;
+    if(this->get_object("loc_goal")->name=="NullObject"){
+        T_g=msrm_utils::rotate_matrix(get_object("loc_goal")->O_T_OB,m_memory->read_parameters()->frames.O_R_T.transpose());
+        Eigen::Matrix<double,3,1> goal_dir=T_g.block<3,1>(0,3)-p_0.proprioception.TF_T_EE.block<3,1>(0,3);
+        goal_dir.normalize();
+        T_g.block<3,1>(0,3)+=goal_dir*0.05;
+    }else{
+        throw SkillException("No valid object has been grounded.");
+    }
+    Eigen::Matrix<double,2,1> speed;
+    Eigen::Matrix<double,2,1> acc;
+    speed<<skill_params->speed(0)*m_memory->read_parameters()->user.dX_max(0),0.5*m_memory->read_parameters()->user.dX_max(1);
+    acc<<m_memory->read_parameters()->user.ddX_max(0),m_memory->read_parameters()->user.ddX_max(1);
+    mp->get_strategy<MoveToPoseStrategy>("s_0")->set_goal(T_g,speed,acc);
+    return mp;
+}
+
+bool MoveToContact::check_local_suc_conditions(const Percept &p){
+    for(unsigned i=0;i<3;i++){
+        if(fabs(p.proprioception.TF_F_ext_K(i))>m_memory->read_parameters()->user.F_ext_contact(i)){
+            return true;
+        }
+    }
+    return false;
+}
+
+bool MoveToContact::check_local_ex_conditions(const Percept &p){
+    return true;
+}
+
+bool MoveToContact::check_local_err_conditions(const Percept &p){
+    return get_active_mp()->get_strategy<MoveToPoseStrategy>("s_0")->finished();
+}
+
+void MoveToContact::evaluate(){
+    write_costs(0,std::chrono::duration_cast<std::chrono::seconds>(get_result().p_1.time-get_result().p_0.time).count());
+}
+
+}

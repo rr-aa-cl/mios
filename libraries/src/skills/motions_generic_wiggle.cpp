@@ -1,5 +1,5 @@
 #include "skills/motions_generic_wiggle.hpp"
-#include "strategy/twist_wiggle_strategy.hpp"
+#include "strategies/twist_wiggle_strategy.hpp"
 
 namespace mios {
 

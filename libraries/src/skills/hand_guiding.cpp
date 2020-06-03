@@ -1,5 +1,5 @@
 #include "skills/hand_guiding.hpp"
-#include "strategy/null_strategy.hpp"
+#include "strategies/null_strategy.hpp"
 
 
 namespace mios{

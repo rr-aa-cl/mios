@@ -1,5 +1,5 @@
 #include "skills/test_skill_1.hpp"
-#include "strategy/null_strategy.hpp"
+#include "strategies/null_strategy.hpp"
 #include <spdlog/spdlog.h>
 #include <franka/exception.h>
 

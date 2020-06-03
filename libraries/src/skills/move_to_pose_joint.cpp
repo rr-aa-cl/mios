@@ -1,12 +1,16 @@
 #include "skills/move_to_pose_joint.hpp"
 #include <spdlog/spdlog.h>
-#include "strategy/move_to_joint_pose.hpp"
+#include "strategies/move_to_joint_pose.hpp"
 
 namespace mios {
 
 bool SkillParametersMoveToPoseJoint::read_parameters(const nlohmann::json &p){
-    msrm_utils::read_json_param<double,1,1>(p,"speed",speed);
-    msrm_utils::read_json_param<double,1,1>(p,"acc",acc);
+    if(!msrm_utils::read_json_param<double,1,1>(p,"speed",speed)){
+        spdlog::error("Parameter speed could not be loaded but is mandatory.");
+    }
+    if(!msrm_utils::read_json_param<double,1,1>(p,"acc",acc)){
+        spdlog::error("Parameter acc could not be loaded but is mandatory.");
+    }
     msrm_utils::read_json_param<double,7,1>(p,"q_g_offset",q_g_offset);
 
     if(!msrm_utils::read_json_param<double,7,1>(p,"q_g",q_g)){

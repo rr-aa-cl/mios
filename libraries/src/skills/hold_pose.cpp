@@ -1,6 +1,6 @@
 #include "skills/hold_pose.hpp"
 #include <spdlog/spdlog.h>
-#include "strategy/null_strategy.hpp"
+#include "strategies/null_strategy.hpp"
 
 namespace mios {
 

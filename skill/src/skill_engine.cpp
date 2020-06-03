@@ -51,7 +51,10 @@ bool SkillEngine::execute_skill(const nlohmann::json& task_context, std::shared_
         result=false;
     }
     unload_skill();
-    skill->terminate();
+    if(!m_core->refresh_percept({})){
+        return false;
+    }
+    skill->terminate(*m_core->get_percept());
     return result;
 }
 

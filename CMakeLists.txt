@@ -39,7 +39,8 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/panda/include
     ${CMAKE_SOURCE_DIR}/controller_pipeline/include
     ${CMAKE_SOURCE_DIR}/memory/include
-    ${CMAKE_SOURCE_DIR}/portal/include)
+    ${CMAKE_SOURCE_DIR}/portal/include
+    ${CMAKE_SOURCE_DIR}/libraries/include)
 
 set(PLUGINS mogen_p2p mogen_p2p_joint cntr_aic cntr_force cntr_joint_imp cntr_joint_var_imp cntr_mux cntr_nullsp_proj
     conv_vel2pose motion_error_cart virtual_cube virtual_walls_joint wave_variables)
@@ -52,11 +53,11 @@ set(MEMORY_SRC memory/src/memory.cpp memory/src/lt_memory.cpp memory/src/st_memo
 set(CONTROLLER_SRC controller_pipeline/src/cart_torque_pipeline.cpp controller_pipeline/src/joint_torque_pipeline.cpp controller_pipeline/src/cart_velocity_pipeline.cpp
     controller_pipeline/src/joint_velocity_pipeline.cpp controller_pipeline/src/null_pipeline.cpp)
 
-set(SOURCES_PRIMITIVES manipulation_primitive/src/primitives/mp_basic.cpp manipulation_primitive/src/primitives/mp_basic_joint.cpp manipulation_primitive/src/primitives/nullprimitive.cpp)
-set(SOURCES_STRATEGIES manipulation_primitive/src/strategies/move_to_pose.cpp)
+#set(SOURCES_PRIMITIVES manipulation_primitive/src/primitives/mp_basic.cpp manipulation_primitive/src/primitives/mp_basic_joint.cpp manipulation_primitive/src/primitives/nullprimitive.cpp)
 
-file(GLOB SOURCES_SKILLS "skill/src/skills/*.cpp")
-file(GLOB SOURCES_TASKS "task/src/tasks/*.cpp")
+file(GLOB SOURCES_SKILLS "libraries/src/skills/*.cpp")
+file(GLOB SOURCES_TASKS "libraries//src/tasks/*.cpp")
+file(GLOB SOURCES_STRATEGIES "libraries/src/strategies/*.cpp")
 #file(GLOB SOURCES_PATTERN "led_pattern/src/patterns/*.cpp")
 
 add_executable(mios main/src/mios.cpp ${SOURCES} ${MEMORY_SRC} ${UTILS_SRC} ${CONTROLLER_SRC} ${SOURCES_STRATEGIES} ${SOURCES_PRIMITIVES} ${SOURCES_SKILLS} ${SOURCES_TASKS} ${SOURCES_PATTERN})
