@@ -1,4 +1,4 @@
-#include "strategy/move_to_joint_pose.hpp"
+#include "strategies/move_to_joint_pose.hpp"
 
 namespace mios{
 

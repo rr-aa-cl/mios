@@ -2,8 +2,6 @@
 
 #include "skill/skill.hpp"
 
-#include "primitives/mp_basic.hpp"
-
 namespace mios {
 
 struct SkillParametersMoveToContact : public SkillParameters{

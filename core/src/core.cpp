@@ -361,11 +361,5 @@ bool Core::is_ready() const{
 //    }
 //}
 
-std::tuple<std::string,std::string,std::string> Core::get_desk_data() const{
-    return std::make_tuple(m_memory.read_parameters()->system.desk_user,
-                           m_memory.read_parameters()->system.desk_pwd,
-                           m_memory.read_parameters()->system.robot_ip);
-}
-
 }
 

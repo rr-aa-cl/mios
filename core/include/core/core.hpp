@@ -1,15 +1,10 @@
 #pragma once
 
 #include <atomic>
-#include <string.h>
+#include <string>
 #include <tuple>
 #include <memory>
 #include <chrono>
-
-#include <franka/robot.h>
-#include <franka/gripper.h>
-#include <franka/model.h>
-#include <franka/exception.h>
 
 #include "memory/memory.hpp"
 #include "interface/parameter_server.hpp"
@@ -20,11 +15,9 @@
 #include "portal/portal.hpp"
 #include "interface/interface.hpp"
 
-#include "utils/types.hpp"
 #include "data_structures/percept.hpp"
 #include "data_structures/actuator.hpp"
 
-#include <msrm_utils/geometry.hpp>
 
 
 namespace mios {
@@ -53,7 +46,6 @@ public:
     bool home_gripper() const;
     bool set_grasped_object(const std::string& name);
 
-
     bool lock_body();
     bool unlock_body();
     bool shutdown_body();
@@ -71,19 +63,16 @@ public:
     bool is_ready() const;
 
 private:
-
     bool set_robot_parameters();
 
-    void check_cartesian_velocity_workspace(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
-    void base_avoidance(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
+//    void check_cartesian_velocity_workspace(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
+//    void base_avoidance(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
 
     franka::Finishable *control_base_cycle(const franka::RobotState& state);
     franka::Torques cart_torque_controller_pipeline(const franka::RobotState& state);
     franka::Torques joint_torque_controller_pipeline(const franka::RobotState& state);
     franka::CartesianVelocities cart_velocity_controller_pipeline(const franka::RobotState& state);
     franka::JointVelocities joint_velocity_controller_pipeline(const franka::RobotState& state);
-
-    std::tuple<std::string,std::string,std::string> get_desk_data() const;
 
 private:
     Percept m_percept;

@@ -60,8 +60,11 @@ file(GLOB SOURCES_TASKS "libraries//src/tasks/*.cpp")
 file(GLOB SOURCES_STRATEGIES "libraries/src/strategies/*.cpp")
 #file(GLOB SOURCES_PATTERN "led_pattern/src/patterns/*.cpp")
 
-add_executable(mios main/src/mios.cpp ${SOURCES} ${MEMORY_SRC} ${UTILS_SRC} ${CONTROLLER_SRC} ${SOURCES_STRATEGIES} ${SOURCES_PRIMITIVES} ${SOURCES_SKILLS} ${SOURCES_TASKS} ${SOURCES_PATTERN})
+add_executable(mios main/src/mios.cpp ${SOURCES} ${MEMORY_SRC} ${UTILS_SRC} ${CONTROLLER_SRC} ${SOURCES_STRATEGIES} ${SOURCES_SKILLS} ${SOURCES_TASKS} ${SOURCES_PATTERN})
 #cotire(mios)
+
+set_target_properties(mios PROPERTIES UNITY_BUILD ON)
+target_precompile_headers(mios PRIVATE ${CMAKE_SOURCE_DIR}/utils/include/utils/pch.hpp)
 
 target_link_libraries(mios general ${PLUGINS} franka mongocxx bsoncxx boost_system SDL2 SDL2_mixer ssl crypto pthread
                             debug msrm_cpp_utils_dbg ssl crypto

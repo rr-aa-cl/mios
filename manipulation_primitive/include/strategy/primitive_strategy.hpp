@@ -2,6 +2,7 @@
 
 #include "data_structures/actuator.hpp"
 #include "data_structures/percept.hpp"
+#include <eigen3/Eigen/Core>
 
 namespace mios {
 

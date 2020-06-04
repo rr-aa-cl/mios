@@ -13,7 +13,6 @@ public:
 
     void set_coefficients(Eigen::Matrix<double,6,1> a_a, Eigen::Matrix<double,6,1> b_a, Eigen::Matrix<double,6,1> a_f, Eigen::Matrix<double,6,1> b_f, Eigen::Matrix<double,6,1> a_phi, Eigen::Matrix<double,6,1> b_phi);
 
-
 private:
     Eigen::Matrix<double,6,1> m_a_a;
     Eigen::Matrix<double,6,1> m_b_a;
