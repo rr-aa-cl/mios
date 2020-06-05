@@ -25,7 +25,6 @@ public:
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept &p) override;
 
-
     void evaluate();
 private:
     bool is_stuck(const Percept& p);

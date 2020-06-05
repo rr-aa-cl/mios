@@ -24,7 +24,7 @@ Eigen::Matrix<double, 3, 3> Insertion::get_O_R_T_0(const Percept &p) const{
 }
 
 std::shared_ptr<ManipulationPrimitive> Insertion::get_initial_mp(const Percept &p_0){
-    create_move_mp(p_0);
+    return create_move_mp(p_0);
 }
 
 std::optional<std::shared_ptr<ManipulationPrimitive> > Insertion::graph_transition(const Percept &p){
@@ -42,6 +42,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Insertion::graph_transiti
             return {};
         }
     }
+    return {};
 }
 
 std::shared_ptr<ManipulationPrimitive> Insertion::create_move_mp(const Percept &p){
@@ -156,6 +157,10 @@ void Insertion::evaluate(){
 void Insertion::auxiliaries(const Percept &p){
     m_cf1_sum_force+=p.proprioception.K_F_ext_K.block<3,1>(0,0).norm();
     m_cf1_cnt++;
+}
+
+bool Insertion::is_stuck(const Percept &p){
+
 }
 
 }
