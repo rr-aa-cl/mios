@@ -360,7 +360,14 @@ bool LTMemory::load_environment(std::unordered_map<std::string, Object> &environ
 }
 
 bool LTMemory::upload_environment_element(const Object& element){
-    return m_mongodb_client.write_document(element.name,"environment",element.to_json());
+    return m_mongodb_client.write_document(element.name,"environment",element.to_json(),true);
+}
+
+bool LTMemory::update_database(){
+    if(!m_mongodb_client.write_document("system","parameters",m_st_memory->read_parameters()->system.to_json(),true)){
+        return false;
+    }
+    return true;
 }
 
 }

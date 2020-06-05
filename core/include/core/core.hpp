@@ -14,6 +14,7 @@
 #include "task/task_engine.hpp"
 #include "portal/portal.hpp"
 #include "interface/interface.hpp"
+#include "interface/ros_node.hpp"
 
 #include "data_structures/percept.hpp"
 #include "data_structures/actuator.hpp"
@@ -59,6 +60,7 @@ public:
     Portal* get_portal();
     TaskEngine* get_task_engine();
     CommandInterface* get_command_interface();
+    RosNode* get_ros_node();
     const Percept *get_percept() const;
     bool is_ready() const;
 
@@ -83,6 +85,7 @@ private:
     Portal m_portal;
     TaskEngine m_task_engine;
     CommandInterface m_command_interface;
+    RosNode m_ros_node;
     std::unique_ptr<ControllerPipeline> m_controller_pipeline;
 
 private:

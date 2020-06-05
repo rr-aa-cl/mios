@@ -64,50 +64,8 @@ std::shared_ptr<ManipulationPrimitive> Insertion::create_wiggle_mp(const Percept
     return mp;
 }
 
-void insertion::build_primitives(const Percept &p){
-
-    this->_cf1_sum_force=0;
-    this->_cf1_cnt=0;
-
-    this->insert_mp<mp_basic>("insert",p);
-    this->set_init_mp("insert");
-
-    std::shared_ptr<ConfigMP_mp_basic> c_insert = std::static_pointer_cast<ConfigMP_mp_basic>(this->get_mp("insert")->get_config());
-
-    std::shared_ptr<ConfigSkill_insertion> c = std::static_pointer_cast<ConfigSkill_insertion>(this->_config);
-
-    Eigen::Matrix<double,4,4> O_T_hole_est=this->get_object_pose("hole");
-    this->TF_T_hole_est=O_T_hole_est;
-    Eigen::Matrix<double,3,1> x_current=msrm_utils::invert_matrix(this->_config->frames.O_R_TF)*p.TF_T_EE.block<3,1>(0,3);
-    Eigen::Matrix<double,3,1> dir = this->TF_T_hole_est.block<3,1>(0,3)-x_current;
-    dir(2)=0;
-    Eigen::Matrix<double,3,1> dir_n = dir/msrm_utils::norm_2<3>(dir);
-
-    this->dir_hole=dir_n;
-
-    c_insert->F_h_p=c->k_h_p;
-    c_insert->F_h_d=c->k_h_d;
-
-    c_insert->ff_fourier_b_a<<c->wiggle_a_t(0),c->wiggle_a_t(0),0,c->wiggle_a_r(0),c->wiggle_a_r(0),c->wiggle_a_z(0);
-    c_insert->ff_fourier_b_f<<c->wiggle_f_t(0),c->wiggle_f_t(0)*3.0/4.0,0,c->wiggle_f_r(0),c->wiggle_f_r(0)*3.0/4.0,c->wiggle_f_z(0);
-    c_insert->dX_d<<c->speed(0)*c->user.dX_max(0),c->speed(1)*c->user.dX_max(1);
-    c_insert->ddX_d<<c->user.ddX_max(0),c->user.ddX_max(1);
-
-    c_insert->D_x<<200,200,200,0,0,0;
-    c_insert->dX_limit<<c->user.dX_max(0),c->user.dX_max(0),c->user.dX_max(0),
-            c->user.dX_max(1),c->user.dX_max(1),c->user.dX_max(1);
-
-    c_insert->F_stop<<0,0,c->F_contact,0,0,0;
-    c_insert->DF_stop<<0,0,2,0,0,0;
-
-    std::shared_ptr<AttractorBasic> attr_insert=std::static_pointer_cast<AttractorBasic>(this->get_mp("insert")->get_attractor());
-    attr_insert->attr_pose=this->TF_T_hole_est;
-
-    attr_insert->attr_ff<<0,0,c->controller.F_ff_0(2),0,0,0;
-}
-
 bool Insertion::check_local_suc_conditions(const Percept &p){
-    bool depth = p.proprioception.TF_T_EE(2,3)>this->TF_T_hole_est(2,3)-0.001;
+    bool depth = p.proprioception.TF_T_EE(2,3)>get_object("hole")->O_T_OB(2,3)-0.001;
     bool lateral = (p.proprioception.TF_T_EE.block<3,1>(0,3)-get_object("hole")->O_T_OB.block<3,1>(0,3)).norm()<0.002;
     return depth && lateral;
 }
@@ -117,23 +75,14 @@ bool Insertion::check_local_ex_conditions(const Percept &p){
 }
 
 bool Insertion::check_local_err_conditions(const Percept &p){
-    double error_angle=acos(p.proprioception.TF_T_EE.block<3,1>(0,2).dot(this->TF_T_hole_est.block<3,1>(0,2)));
-    double dist_xy=(p.proprioception.TF_T_EE.block<2,1>(0,3)-get_object("hole")->O_T_OB.block<2,1>(0,3)).norm();
-    double dist_z=fabs(p.proprioception.TF_T_EE(2,3)-get_object("hole")->O_T_OB(2,3));
-    double radius,depth;
-    if(!msrm_utils::read_json_param(get_object("hole")->geometry,"radius",radius)){
-        msrm_utils::print_error("Object "+get_object("hole")->name+" has no geometry property <depth>.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param(get_object("hole")->geometry,"depth",depth)){
-        msrm_utils::print_error("Object "+get_object("hole")->name+" has no geometry property <radius>.");
-        return false;
-    }
-    if(dist_xy>radius || dist_z>depth*2 || error_angle>30.0/180.0*M_PI || p.proprioception.TF_T_EE(2,3)<this->TF_T_hole_est(2,3)-depth-0.01){
+    const Eigen::Matrix<double,6,1>& ROI_x=get_parameters<SkillParametersInsertion>()->ROI_x;
+    const Eigen::Matrix<double,6,1>& ROI_phi=get_parameters<SkillParametersInsertion>()->ROI_phi;
+    double error_angle=acos(p.proprioception.TF_T_EE.block<3,1>(0,2).dot(get_object("hole")->O_T_OB.block<3,1>(0,2)));
+    Eigen::Matrix<double,3,1> dist = p.proprioception.TF_T_EE.block<3,1>(0,3)-get_object("hole")->O_T_OB.block<3,1>(0,3);
+    if(dist(0) < ROI_x(0) || dist(0) > ROI_x(1) || dist(1) < ROI_x(2) || dist(1) > ROI_x(3) || dist(2) < ROI_x(4) || dist(2) > ROI_x(5)){
         return true;
-    }else{
-        return false;
     }
+    return false;
 }
 
 void Insertion::evaluate(){
@@ -160,7 +109,7 @@ void Insertion::auxiliaries(const Percept &p){
 }
 
 bool Insertion::is_stuck(const Percept &p){
-
+    return false;
 }
 
 }

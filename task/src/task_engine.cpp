@@ -10,11 +10,16 @@ namespace mios {
 
 
 
-TaskEngine::TaskEngine(Core *core):m_core(core),m_memory(core->get_memory()),m_task_life_cycle(TaskLifeCycle::Switch),m_active_task(TaskFactory::create_task(TaskName::TaskName_IdleTask,core)){
+TaskEngine::TaskEngine(Core *core):m_keep_running(true),m_core(core),m_memory(core->get_memory()),m_task_life_cycle(TaskLifeCycle::Switch),m_active_task(TaskFactory::create_task(TaskName::TaskName_IdleTask,core)){
 }
 
 void TaskEngine::reset(){
 
+}
+
+void TaskEngine::stop(){
+    m_keep_running=false;
+    m_active_task->stop_task(false,false,true);
 }
 
 std::string TaskEngine::get_active_task_id() const{
@@ -22,7 +27,7 @@ std::string TaskEngine::get_active_task_id() const{
 }
 
 void TaskEngine::life_cycle(){
-    while(true){
+    while(m_keep_running){
         bool exceptional_event=false;
         bool user_stop=false;
         bool invalid_mode=false;

@@ -110,6 +110,7 @@ public:
 
     bool read_parameters(const nlohmann::json& parameters);
     static nlohmann::json get_default_values();
+    nlohmann::json to_json() const;
 
     std::string robot_ip;
     std::string desk_user;

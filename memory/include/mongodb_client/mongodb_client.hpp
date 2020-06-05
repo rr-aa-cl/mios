@@ -18,8 +18,8 @@ public:
 
     bool read_document(const std::string& name, const std::string& collection, nlohmann::json& descr);
     bool read_documents(const std::string& collection,std::set<nlohmann::json>& docs);
-    bool write_document(const std::string& name, const std::string& collection, const nlohmann::json &descr);
-    bool write_documents(const std::string& collection, const std::set<nlohmann::json>& docs);
+    bool write_document(const std::string& name, const std::string& collection, const nlohmann::json &descr, bool overwrite);
+    bool write_documents(const std::string& collection, const std::set<nlohmann::json>& docs, bool overwrite);
     bool make_document_consistent(const std::string& name, std::string collection, const nlohmann::json &template_json);
     bool health_check() const;
 

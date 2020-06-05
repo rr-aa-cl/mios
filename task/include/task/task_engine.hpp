@@ -32,8 +32,11 @@ public:
     std::tuple<bool, TaskResult, std::string> wait_for_task(const std::string& task_uuid);
 
     void reset();
+    void stop();
 
 private:
+    std::atomic<bool> m_keep_running;
+
     Core* m_core;
     Memory* m_memory;
 

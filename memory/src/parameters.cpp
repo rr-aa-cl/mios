@@ -355,6 +355,16 @@ nlohmann::json SystemParameters::get_default_values(){
     return default_values;
 }
 
+nlohmann::json SystemParameters::to_json() const{
+    nlohmann::json parameters;
+    parameters["robot_ip"]=robot_ip;
+    parameters["desk_name"]=desk_user;
+    parameters["desk_pwd"]=desk_pwd;
+    parameters["has_robot"]=has_robot;
+    parameters["has_gripper"]=has_gripper;
+    return parameters;
+}
+
 ControlParameters::ControlParameters(){
     control_mode=ControlMode::mNoControl;
 

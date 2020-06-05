@@ -50,6 +50,8 @@ private:
 
     nlohmann::json set_live_parameter(const nlohmann::json& request);
 
+    nlohmann::json terminate(const nlohmann::json& request);
+
 private:
     Core* m_core;
     TaskEngine* m_task_engine;

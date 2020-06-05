@@ -27,7 +27,6 @@ int main(int argc, char** argv){
     sigaction(SIGINT, &sigIntHandler, NULL);
 
 
-
     spdlog::info("############################################################");
     spdlog::info("MIOS");
     spdlog::info("Version: 0.6.0.0");
@@ -49,6 +48,8 @@ int main(int argc, char** argv){
     auto logger = std::shared_ptr<spdlog::logger>(new spdlog::logger("mios", {console_sink, file_sink}));
     logger->set_level(spdlog::level::debug);
     spdlog::set_default_logger(logger);
+
+    ros::init(argc, argv, "mios", ros::init_options::NoSigintHandler);
 
     mios::Core core;
     spdlog::info("############################################################");

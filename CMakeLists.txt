@@ -28,6 +28,11 @@ find_package(libbsoncxx REQUIRED)
 include_directories(${LIBMONGOCXX_INCLUDE_DIRS})
 include_directories(${LIBBSONCXX_INCLUDE_DIRS})
 
+find_package( roscpp )
+if (roscpp_FOUND)
+endif()
+include_directories(${roscpp_INCLUDE_DIRS})
+
 include_directories(
     ${CMAKE_SOURCE_DIR}/core/include
     ${CMAKE_SOURCE_DIR}/skill/include
@@ -47,7 +52,7 @@ set(PLUGINS mogen_p2p mogen_p2p_joint cntr_aic cntr_force cntr_joint_imp cntr_jo
 link_directories(${CMAKE_SOURCE_DIR}/plugins/lib)
 
 set(SOURCES core/src/core.cpp interface/src/interface.cpp manipulation_primitive/src/manipulation_primitive.cpp skill/src/skill.cpp task/src/task.cpp task/src/task_engine.cpp
-    task/src/taskfactory.cpp task/src/taskobserver.cpp skill/src/skill_engine.cpp portal/src/portal.cpp panda/src/panda_body.cpp)
+    task/src/taskfactory.cpp task/src/taskobserver.cpp skill/src/skill_engine.cpp portal/src/portal.cpp panda/src/panda_body.cpp interface/src/ros_node.cpp)
 set(UTILS_SRC utils/src/actuator.cpp utils/src/percept.cpp utils/src/object.cpp utils/src/exceptions.cpp utils/src/results.cpp)
 set(MEMORY_SRC memory/src/memory.cpp memory/src/lt_memory.cpp memory/src/st_memory.cpp memory/src/mongodb_client.cpp memory/src/parameters.cpp)
 set(CONTROLLER_SRC controller_pipeline/src/cart_torque_pipeline.cpp controller_pipeline/src/joint_torque_pipeline.cpp controller_pipeline/src/cart_velocity_pipeline.cpp
@@ -66,7 +71,7 @@ add_executable(mios main/src/mios.cpp ${SOURCES} ${MEMORY_SRC} ${UTILS_SRC} ${CO
 set_target_properties(mios PROPERTIES UNITY_BUILD ON)
 target_precompile_headers(mios PRIVATE ${CMAKE_SOURCE_DIR}/utils/include/utils/pch.hpp)
 
-target_link_libraries(mios general ${PLUGINS} franka mongocxx bsoncxx boost_system SDL2 SDL2_mixer ssl crypto pthread
+target_link_libraries(mios general ${PLUGINS} franka mongocxx bsoncxx boost_system SDL2 SDL2_mixer ssl crypto pthread ${roscpp_LIBRARIES}
                             debug msrm_cpp_utils_dbg ssl crypto
                             optimized msrm_cpp_utils ssl crypto)
 

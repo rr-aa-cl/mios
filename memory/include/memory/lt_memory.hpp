@@ -36,6 +36,8 @@ public:
     bool load_environment(std::unordered_map<std::string,Object>& environment);
     bool upload_environment_element(const Object &element);
 
+    bool update_database();
+
 private:
     bool make_database_consistent();
     bool make_default_skills_consistent();

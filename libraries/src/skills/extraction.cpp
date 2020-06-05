@@ -1,86 +1,106 @@
 #include "skills/extraction.hpp"
+#include "strategies/move_to_pose.hpp"
+#include "strategies/ff_wiggle_strategy.hpp"
 
 namespace mios {
 
-extraction::extraction():Skill("extraction"){
-}
-
-void extraction::create_config(){
-    this->_config = std::make_shared<ConfigSkill_extraction>();
-}
-
-bool extraction::read_skill_parameters(const nlohmann::json &p){
-    std::shared_ptr<ConfigSkill_extraction> c = std::static_pointer_cast<ConfigSkill_extraction>(this->_config);
-    msrm_utils::read_json_param<double,2,1>(p,"speed",c->speed);
-    msrm_utils::read_json_param<double,1,1>(p,"F_contact",c->F_contact);
-    msrm_utils::read_json_param<double,1,1>(p,"wiggle_a_r",c->wiggle_a_r);
-    msrm_utils::read_json_param<double,1,1>(p,"wiggle_a_t",c->wiggle_a_t);
-    msrm_utils::read_json_param<double,1,1>(p,"wiggle_a_z",c->wiggle_a_z);
-    msrm_utils::read_json_param<double,1,1>(p,"wiggle_f_r",c->wiggle_f_r);
-    msrm_utils::read_json_param<double,1,1>(p,"wiggle_f_t",c->wiggle_f_t);
-    msrm_utils::read_json_param<double,1,1>(p,"wiggle_f_z",c->wiggle_f_z);
+bool SkillParametersExtraction::read_parameters(const nlohmann::json &parameters){
+    msrm_utils::read_json_param<double,2,1>(parameters,"traj_speed",traj_speed);
+    msrm_utils::read_json_param(parameters,"F_limit",F_limit);
+    msrm_utils::read_json_param<double,6,1>(parameters,"search_a",search_a);
+    msrm_utils::read_json_param<double,6,1>(parameters,"search_f",search_f);
     return true;
 }
 
-void extraction::build_primitives(const Percept &p){
+Extraction::Extraction(const std::string &name, Memory *memory, const Percept &p):Skill("TestSkill1",{"object"},name,memory,p){
 
-    this->insert_mp<mp_basic>("extract",p);
-    this->set_init_mp("extract");
-
-    std::shared_ptr<ConfigMP_mp_basic> c_extract = std::static_pointer_cast<ConfigMP_mp_basic>(this->get_mp("extract")->get_config());
-
-    std::shared_ptr<ConfigSkill_extraction> c = std::static_pointer_cast<ConfigSkill_extraction>(this->_config);
-
-    this->TF_T_hole_est=this->get_object_pose("hole");
-
-    c_extract->D_x<<200,200,200,10,10,10;
-    c_extract->dX_limit<<c->user.dX_max(0),c->user.dX_max(0),c->user.dX_max(0),
-            c->user.dX_max(1),c->user.dX_max(1),c->user.dX_max(1);
-
-    c_extract->ff_fourier_b_a<<c->wiggle_a_t(0),c->wiggle_a_t(0),0,c->wiggle_a_r(0),c->wiggle_a_r(0),c->wiggle_a_z(0);
-    c_extract->ff_fourier_b_f<<c->wiggle_f_t(0),c->wiggle_f_t(0)*3.0/4.0,0,c->wiggle_f_r(0),c->wiggle_f_r(0)*3.0/4.0,c->wiggle_f_z(0);
-    c_extract->dX_d<<c->speed(0)*c->user.dX_max(0),c->speed(1)*c->user.dX_max(1);
-    c_extract->ddX_d<<c->user.ddX_max(0),c->user.ddX_max(1);
-
-    std::shared_ptr<AttractorBasic> attr_extract=std::static_pointer_cast<AttractorBasic>(this->get_mp("extract")->get_attractor());
-    attr_extract->attr_vel<<0,0,-c->user.dX_max[0]*c->speed[0],0,0,0;
-
-    c_extract->F_stop<<0,0,c->F_contact,0,0,0;
-    c_extract->DF_stop<<0,0,2,0,0,0;
 }
 
-Eigen::Matrix<double,3,3> extraction::get_O_R_TF(const Percept& p){
-    Eigen::Matrix<double,3,3> R = msrm_utils::eulerRPY_to_mat(0,180,0);
-    Eigen::Matrix<double,3,3> R_o = this->get_object_pose("hole",false).block<3,3>(0,0);
-//    return rotate_matrix(R_o,R);
-    return this->get_object_pose("hole",false).block<3,3>(0,0);
+
+Eigen::Matrix<double, 3, 3> Extraction::get_O_R_T_0(const Percept &p) const{
+    return get_object("hole")->O_T_OB.block<3,3>(0,0);
 }
 
-std::tuple<bool,std::string> extraction::check_edges(const Percept &p){
-    return std::tuple<bool,std::string>(false,"");
+std::shared_ptr<ManipulationPrimitive> Extraction::get_initial_mp(const Percept &p_0){
+    return create_move_mp(p_0);
 }
 
-bool extraction::check_local_suc_conditions(const Percept &p){
-    double depth;
-    if(!msrm_utils::read_json_param(this->get_object("hole").geometry,"depth",depth)){
-        msrm_utils::print_error("Object "+this->get_object("hole").name+" has no geometry property <depth>.");
-        return false;
+std::optional<std::shared_ptr<ManipulationPrimitive> > Extraction::graph_transition(const Percept &p){
+    if(get_active_mp()->get_name()=="move"){
+        if(!is_stuck(p)){
+            return {};
+        }else{
+            return create_wiggle_mp(p);
+        }
     }
-    return p.TF_T_EE(2,3)<this->TF_T_hole_est(2,3)-depth-0.01;
+    if(get_active_mp()->get_name()=="wiggle"){
+        if(!is_stuck(p)){
+            return create_move_mp(p);
+        }else{
+            return {};
+        }
+    }
+    return {};
 }
 
-bool extraction::check_local_ex_conditions(const Percept &p){
+std::shared_ptr<ManipulationPrimitive> Extraction::create_move_mp(const Percept &p){
+    std::shared_ptr<SkillParametersExtraction> skill_params = get_parameters<SkillParametersExtraction>();
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
+    mp->create_strategy<MoveToPoseStrategy>("s_move",1);
+    std::shared_ptr<MoveToPoseStrategy> s_move = mp->get_strategy<MoveToPoseStrategy>("s_move");
+    s_move->set_goal(get_object("hole")->O_T_OB,skill_params->traj_speed,skill_params->traj_acc);
+    return mp;
+}
+
+std::shared_ptr<ManipulationPrimitive> Extraction::create_wiggle_mp(const Percept &p){
+    std::shared_ptr<SkillParametersExtraction> skill_params = get_parameters<SkillParametersExtraction>();
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("wiggle",p);
+    mp->create_strategy<FFWiggleStrategy>("wiggle_x",1);
+    mp->get_strategy<FFWiggleStrategy>("s_move")->set_coefficients(Eigen::Matrix<double,6,1>::Zero(),skill_params->search_a,
+                                                                   Eigen::Matrix<double,6,1>::Zero(),skill_params->search_f,
+                                                                   Eigen::Matrix<double,6,1>::Zero(),Eigen::Matrix<double,6,1>::Zero());
+    return mp;
+}
+
+bool Extraction::check_local_suc_conditions(const Percept &p){
+    bool depth = p.proprioception.TF_T_EE(2,3)>get_object("hole")->O_T_OB(2,3)-0.001;
+    bool lateral = (p.proprioception.TF_T_EE.block<3,1>(0,3)-get_object("hole")->O_T_OB.block<3,1>(0,3)).norm()<0.002;
+    return depth && lateral;
+}
+
+bool Extraction::check_local_ex_conditions(const Percept &p){
     return true;
 }
 
-bool extraction::check_local_err_conditions(const Percept &p){
+bool Extraction::check_local_err_conditions(const Percept &p){
     return false;
 }
 
-void extraction::evaluate(){
-    this->_eval.cost_err=this->_eval.p_1.time-this->_eval.p_0.time;
-    this->_eval.cost_suc=0;
+void Extraction::evaluate(){
+
+        double c_err_1=m_memory->read_parameters()->skill->time_max+exp((get_result().p_1.proprioception.TF_T_EE.block<3,1>(0,3)-get_object("hole")->O_T_OB.block<3,1>(0,3)).norm()*100)-1;
+        double c_suc_1=std::chrono::duration_cast<std::chrono::seconds>(get_result().p_1.time-get_result().p_0.time).count();
+
+        double c_err_2=m_memory->read_parameters()->user.F_ext_max(0)+exp((get_result().p_1.proprioception.TF_T_EE.block<3,1>(0,3)-get_object("hole")->O_T_OB.block<3,1>(0,3)).norm()*100)-1;
+        double c_suc_2=0;
+        if(m_cf1_cnt==0){
+            c_suc_2=get_result().cost_err;
+        }else{
+            c_suc_2=m_cf1_sum_force/m_cf1_cnt;
+        }
+        msrm_utils::print_critical_error("COST_ERR: " + std::to_string(c_err_1));
+        msrm_utils::print_critical_error("COST_SUC: " + std::to_string(c_suc_1));
+        write_costs(m_memory->read_parameters()->skill->w_cost_function[0]*c_suc_1+m_memory->read_parameters()->skill->w_cost_function[1]*c_suc_2,
+                m_memory->read_parameters()->skill->w_cost_function[0]*c_err_1+m_memory->read_parameters()->skill->w_cost_function[1]*c_err_2);
+}
+
+void Extraction::auxiliaries(const Percept &p){
+    m_cf1_sum_force+=p.proprioception.K_F_ext_K.block<3,1>(0,0).norm();
+    m_cf1_cnt++;
+}
+
+bool Extraction::is_stuck(const Percept &p){
+    return false;
 }
 
 }
-

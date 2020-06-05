@@ -6,6 +6,7 @@
 #include "utils/exceptions.hpp"
 #include "data_structures/object.hpp"
 #include <msrm_utils/math.hpp>
+#include <msrm_utils/benchmarking.hpp>
 #include <spdlog/spdlog.h>
 
 namespace mios {
@@ -66,6 +67,7 @@ bool Skill::initialize(const Percept &p){
 }
 
 Actuator* Skill::cycle(const Percept &p){
+    msrm_utils::ScopedTimer<std::chrono::microseconds> timer;
     m_result.p_1=p;
     Actuator* cmd;
     std::optional<std::shared_ptr<ManipulationPrimitive> > next_mp;

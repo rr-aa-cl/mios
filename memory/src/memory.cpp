@@ -94,4 +94,8 @@ const Object* Memory::get_object(const std::string& name) const{
     return m_st_memory.get_object(name);
 }
 
+bool Memory::update_database(){
+    return m_lt_memory.update_database();
+}
+
 }

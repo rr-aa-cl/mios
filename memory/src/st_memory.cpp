@@ -173,6 +173,9 @@ bool STMemory::update_object(const std::string &name, const nlohmann::json &desc
         m_environment.insert(std::make_pair(name,Object(name)));
     }
     m_environment.at(name).update(description);
+    if(!m_lt_memory->upload_environment_element(m_environment.at(name))){
+        return false;
+    }
     return true;
 }
 

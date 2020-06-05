@@ -46,7 +46,14 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("shutdown",std::bind(&CommandInterface::shutdown,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("pack_pose",std::bind(&CommandInterface::pack_pose,this,std::placeholders::_1),{});
 
+    m_portal->bind_method_to_all("terminate",std::bind(&CommandInterface::terminate,this,std::placeholders::_1),{});
+
     m_portal->bind_method_to_all("set_live_parameter",std::bind(&CommandInterface::set_live_parameter,this,std::placeholders::_1),{ArgPair("key",{}),ArgPair("value",{})});
+}
+
+nlohmann::json CommandInterface::terminate(const nlohmann::json &request){
+    m_task_engine->stop();
+    return nlohmann::json();
 }
 
 nlohmann::json CommandInterface::start_task(const nlohmann::json &request){

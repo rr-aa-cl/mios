@@ -128,21 +128,21 @@ bool MongodbClient::read_document(const std::string& name, const std::string& co
     return false;
 }
 
-bool MongodbClient::write_documents(const std::string &collection, const std::set<nlohmann::json> &docs){
+bool MongodbClient::write_documents(const std::string &collection, const std::set<nlohmann::json> &docs, bool overwrite){
     spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENTS("+collection+")");
     for(const auto& d : docs){
         if(d.find("name")==d.end()){
             spdlog::error("Cannot upload document to database since it has no field <name>.");
             return false;
         }
-        if(!write_document(d["name"],collection,d)){
+        if(!write_document(d["name"],collection,d, overwrite)){
             return false;
         }
     }
     return true;
 }
 
-bool MongodbClient::write_document(const std::string& name, const std::string& collection, const nlohmann::json &descr){
+bool MongodbClient::write_document(const std::string& name, const std::string& collection, const nlohmann::json &descr, bool overwrite){
     std::scoped_lock<std::mutex> lock(m_mutex_db_access);
     try{
         if(!m_mongodb.has_collection(collection)){
@@ -152,8 +152,14 @@ bool MongodbClient::write_document(const std::string& name, const std::string& c
         nlohmann::json descr_in=descr;
         descr_in["name"]=name;
         bsoncxx::document::view_or_value doc=bsoncxx::from_json(descr_in.dump());
-        if(m_collections[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize})>1){
+        int n_docs = m_collections[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize});
+        if(n_docs>1){
+            spdlog::error("Multiple documents with name " + name + " present in collection " + collection + ".");
+            return false;
+        }else if(n_docs==1 && overwrite){
             m_mongodb[collection].replace_one(bsoncxx::builder::stream::document{} << "name" << name << bsoncxx::builder::stream::finalize,doc);
+        }else if(n_docs==1 && !overwrite){
+            spdlog::error("Document with name " + name + " already exists in collection " + collection + " and overwrite was not set.");
         }else{
             m_mongodb[collection].insert_one(doc);
         }

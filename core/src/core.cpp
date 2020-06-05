@@ -24,7 +24,7 @@
 namespace mios {
 
 Core::Core():m_skill_engine(SkillEngine(this)),m_portal(Portal("0.0.0.0",12000,"mios/core","0.0.0.0",12001,12002)),m_task_engine(TaskEngine(this)),
-m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false){
+m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_ros_node(100),m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false){
 
     spdlog::info("Initializing knowledgebase...");
     if(!m_memory.initialize()){
@@ -50,6 +50,9 @@ bool Core::initialize(){
     spdlog::debug("Core: initialize.check_if_robot");
     if(m_memory.read_parameters()->system.has_robot || m_memory.read_parameters()->system.has_gripper){
         m_memory.get_parameters()->system.robot_ip = m_panda_body.get_robot_ip(m_memory.read_parameters()->system.robot_ip).value_or("127.0.0.1");
+        if(!m_memory.update_database()){
+            spdlog::warn("Could not update database.");
+        }
     }
     spdlog::debug("Core: initialize.check_if_robot2");
     if(m_memory.read_parameters()->system.has_robot){
@@ -94,6 +97,10 @@ TaskEngine* Core::get_task_engine(){
 
 CommandInterface* Core::get_command_interface(){
     return &m_command_interface;
+}
+
+RosNode* Core::get_ros_node(){
+    return &m_ros_node;
 }
 
 bool Core::execute_skill(){
