@@ -252,6 +252,7 @@ private:
     SkillResult m_result;
 
     void run_parallels();
+    void stop_parallels();
     void terminate_parallels();
     bool has_settled();
 

@@ -67,7 +67,6 @@ bool Skill::initialize(const Percept &p){
 }
 
 Actuator* Skill::cycle(const Percept &p){
-    msrm_utils::ScopedTimer<std::chrono::microseconds> timer;
     m_result.p_1=p;
     Actuator* cmd;
     std::optional<std::shared_ptr<ManipulationPrimitive> > next_mp;
@@ -90,13 +89,15 @@ Actuator* Skill::cycle(const Percept &p){
         return cmd;
     }
     if(m_life_cycle==SkillLifeCycle::slSettle){
+        msrm_utils::ScopedTimer<std::chrono::microseconds> timer("settle_timer");
         if(m_active_mp->is_settled()){
             m_life_cycle=SkillLifeCycle::slTerminate;
         }
         return m_active_mp->stop(p);
     }
     if(m_life_cycle==SkillLifeCycle::slTerminate){
-        terminate_parallels();
+        msrm_utils::ScopedTimer<std::chrono::microseconds> timer("terminate_timer");
+        stop_parallels();
         m_active_mp->terminate(p);
         cmd=m_active_mp->stop(p);
         cmd->stop();
@@ -304,6 +305,10 @@ void Skill::run_parallels(){
 
         std::this_thread::sleep_for(std::chrono::microseconds(long(t_sleep_max*1000000-elapsed.count())));
     }
+}
+
+void Skill::stop_parallels(){
+    m_flag_parallels_running=false;
 }
 
 void Skill::terminate_parallels(){
