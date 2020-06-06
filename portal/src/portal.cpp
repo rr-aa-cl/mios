@@ -37,7 +37,7 @@ Portal::~Portal(){
 }
 
 void Portal::bind_method_to_websocket_server(const char *method_name, std::function<nlohmann::json (const nlohmann::json &)> method_callback,
-                                               const std::vector<msrm_utils::ArgPair> &method_arguments){
+                                             const std::vector<msrm_utils::ArgPair> &method_arguments){
     m_servers[JsonServers::Websocket]->bind_method(method_name,method_callback,method_arguments);
 }
 
@@ -62,6 +62,36 @@ void Portal::bind_method_to_all(const char *method_name, std::function<nlohmann:
                 spdlog::warn("Could not bind method with name "+std::string(method_name)+" to udp server.");
             }
         }
+    }
+}
+
+std::shared_ptr<msrm_utils::UDPStreamSender> Portal::open_udp_outstream(const std::string &name, const std::string &address, unsigned int port){
+    if(m_outstreams.find(name)!=m_outstreams.end()){
+        spdlog::error("A UDP channel with name " + name + " already exists.");
+        return nullptr;
+    }
+    m_outstreams.insert(std::make_pair(name,std::make_shared<msrm_utils::UDPStreamSender>(address,port)));
+    return m_outstreams[name];
+}
+
+std::shared_ptr<msrm_utils::UDPStreamReceiver> Portal::open_udp_instream(const std::string &name, unsigned port, unsigned buffer_size,unsigned timeout_s,unsigned timeout_us,unsigned max_lost_packet,std::function<void(std::vector<double>&)> callback){
+    if(m_instreams.find(name)!=m_instreams.end()){
+        spdlog::error("A UDP channel with name " + name + " already exists.");
+        return nullptr;
+    }
+    m_instreams.insert(std::make_pair(name,std::make_shared<msrm_utils::UDPStreamReceiver>(port,buffer_size,timeout_s,timeout_us,max_lost_packet,callback)));
+    return m_instreams[name];
+}
+
+void Portal::close_udp_outstream(const std::string &name){
+    if(m_outstreams.find(name)!=m_outstreams.end()){
+        m_outstreams.erase(m_outstreams.find(name));
+    }
+}
+
+void Portal::close_udp_instream(const std::string &name){
+    if(m_instreams.find(name)!=m_instreams.end()){
+        m_instreams.erase(m_instreams.find(name));
     }
 }
 

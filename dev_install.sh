@@ -24,7 +24,7 @@ n_cpu=$(ceil)
 
 
 # install libmongoc (v1.15)
-git clone https://github.com/mongodb/mongo-c-driver.git --branch r1.15
+git clone https://github.com/mongodb/mongo-c-driver.git --branch r1.17
 cd mongo-c-driver
 mkdir cmake-build
 cd cmake-build

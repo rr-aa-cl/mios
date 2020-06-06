@@ -589,6 +589,7 @@ bool PandaBody::unlock_brakes(const std::optional<std::string> &ip, const std::s
 }
 
 bool PandaBody::lock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password){
+
     disconnect_from_gripper();
     disconnect_from_robot();
     nlohmann::json response;

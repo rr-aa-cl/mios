@@ -22,3 +22,5 @@
 #include <eigen3/Eigen/Core>
 
 #include <spdlog/spdlog.h>
+
+#include <ros/ros.h>
