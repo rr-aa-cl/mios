@@ -35,7 +35,7 @@ include_directories(${roscpp_INCLUDE_DIRS})
 
 find_package(pybind11 REQUIRED)
 find_package(PythonLibs REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS})
+#include_directories(${PYTHON_INCLUDE_DIRS})
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/core/include

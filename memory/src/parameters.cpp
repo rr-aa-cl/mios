@@ -480,9 +480,22 @@ bool ControlParameters::read_parameters(const nlohmann::json &parameters){
         return false;
     }
 
-    if(!msrm_utils::read_json_param(parameters,"control_mode",control_mode)){
+    int control_mode_tmp;
+    if(!msrm_utils::read_json_param(parameters,"control_mode",control_mode_tmp)){
         spdlog::error("Could not read control_mode.");
         return false;
+    }
+    std::cout<<"CONTROL_MODE: "<<control_mode_tmp<<std::endl;
+    if(control_mode_tmp==0){
+        control_mode=ControlMode::mCartTorque;
+    }else if(control_mode_tmp==1){
+        control_mode=ControlMode::mJointTorque;
+    }else if(control_mode_tmp==2){
+        control_mode=ControlMode::mCartVelocity;
+    }else if(control_mode_tmp==3){
+        control_mode=ControlMode::mJointVelocity;
+    }else{
+        control_mode=ControlMode::mNoControl;
     }
 
     if(!msrm_utils::read_json_param<double,6,1>(parameters["cart_imp"],"K_x",cart_imp.K_x)){
@@ -737,6 +750,7 @@ bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
 
 void SkillParameters::read_skill_objects(const nlohmann::json &p){
     for(const auto& o : p.items()){
+        spdlog::debug("SKILLPARAMETERS:READ_SKILL_OBJECTS: o.key: " + o.key());
         objects.insert(std::make_pair(o.key(),o.value()));
     }
 }

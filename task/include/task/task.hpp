@@ -196,6 +196,8 @@ protected:
      * has been terminated by a non-nominal event.
      */
 
+    void write_skill_object(const std::string skill,const std::string groundable,const std::string object);
+
 //    void execute_skill(const std::string& name);
     template<typename T_skill, typename T_param>void execute_skill(const std::string &name){
         std::scoped_lock<std::mutex> lock(m_mtx_execution);

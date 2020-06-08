@@ -120,6 +120,7 @@ bool Core::execute_skill(){
     set_robot_parameters();
 
     bool result=false;
+    spdlog::debug("CORE:EXECUTE_SKILL.control_mode: "+static_cast<int>(m_memory.read_parameters()->control.control_mode));
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mCartTorque){
         m_controller_pipeline=std::make_unique<CartTorqueControllerPipeline>();
         m_safety_stage_1.insert(std::make_unique<VelocityWallsSafetyModule>());
@@ -179,14 +180,21 @@ bool Core::set_robot_parameters(){
 franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
 
     franka::GripperState gripper_state;
+    std::cout<<"CYCLE1"<<std::endl;
     m_percept.update(m_panda_body.get_panda_model(),state,gripper_state,m_memory.read_parameters()->frames.O_R_T);
+    std::cout<<"CYCLE2"<<std::endl;
     Actuator* cmd=m_skill_engine.get_next_command(m_percept);
+    std::cout<<"CYCLE3"<<std::endl;
     for(auto& m : m_safety_stage_1){
         m->step(m_percept,*cmd);
     }
+    std::cout<<"CYCLE4"<<std::endl;
     cmd->limit_output_rate(m_memory.read_parameters()->limits);
+    std::cout<<"CYCLE5"<<std::endl;
     cmd->limit_output(m_memory.read_parameters()->limits);
+    std::cout<<"CYCLE6"<<std::endl;
     franka::Finishable* panda_cmd=m_controller_pipeline->step(m_percept,*cmd);
+    std::cout<<"CYCLE7"<<std::endl;
     if(!m_controller_pipeline->is_valid_command(panda_cmd)){
         cmd->stop();
     }

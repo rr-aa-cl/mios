@@ -63,6 +63,12 @@ bool Skill::initialize(const Percept &p){
         std::cout<<"O_R_T: "<<m_memory->read_parameters()->frames.O_R_T<<std::endl;
         return false;
     }
+    for(const auto& o : m_objects){
+        if(m_grounded_objects.find(o)==m_grounded_objects.end()){
+            spdlog::error("Object type " + o + " has not been grounded.");
+            return false;
+        }
+    }
     return true;
 }
 
@@ -266,7 +272,9 @@ const std::string& Skill::get_id() const{
 }
 
 bool Skill::ground_objects(){
+    spdlog::debug("SKILL:GROUND_OBJECTS");
     for(const std::pair<std::string,std::string>& m : m_memory->get_parameters()->skill->objects){
+        spdlog::debug("object_ungrounded: "+m.first + ", object_grounded: " + m.second);
         if(m_objects.find(m.first)==m_objects.end()){
             spdlog::error("Skill of type " + m_type + " does not use an object of type " + m.first +".");
             return false;

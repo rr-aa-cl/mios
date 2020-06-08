@@ -6,8 +6,8 @@ namespace mios {
 
 struct SkillParametersMoveToPoseJoint : public SkillParameters{
     bool read_parameters(const nlohmann::json &parameters) override;
-    Eigen::Matrix<double,1,1> speed;
-    Eigen::Matrix<double,1,1> acc;
+    double speed;
+    double acc;
     Eigen::Matrix<double,7,1> q_g;
     Eigen::Matrix<double,7,1> q_g_offset;
 };

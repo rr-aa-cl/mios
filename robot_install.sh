@@ -3,6 +3,7 @@
 cd
 
 sudo apt-get install -y libboost1.65-all-dev
+sudo apt-get install -y python3.8-dev
 sudo apt-get install -y build-essential cmake git libpoco-dev libeigen3-dev ssh
 
 wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | sudo apt-key add -

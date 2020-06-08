@@ -5,11 +5,13 @@
 namespace mios {
 
 bool SkillParametersMoveToPoseJoint::read_parameters(const nlohmann::json &p){
-    if(!msrm_utils::read_json_param<double,1,1>(p,"speed",speed)){
+    if(!msrm_utils::read_json_param(p,"speed",speed)){
         spdlog::error("Parameter speed could not be loaded but is mandatory.");
+        return false;
     }
-    if(!msrm_utils::read_json_param<double,1,1>(p,"acc",acc)){
+    if(!msrm_utils::read_json_param(p,"acc",acc)){
         spdlog::error("Parameter acc could not be loaded but is mandatory.");
+        return false;
     }
     msrm_utils::read_json_param<double,7,1>(p,"q_g_offset",q_g_offset);
 
@@ -29,12 +31,12 @@ std::shared_ptr<ManipulationPrimitive> MoveToPoseJoint::get_initial_mp(const Per
     mp->create_strategy<MoveToJointPoseStrategy>("s_0",1);
     std::shared_ptr<MoveToJointPoseStrategy> move_s0 = mp->get_strategy<MoveToJointPoseStrategy>("s_0");
     Eigen::Matrix<double,7,1> q_g;
-    if(this->get_object("loc_goal")->name=="NullObject"){
+    if(this->get_object("goal_pose")->name=="NullObject"){
         q_g=skill_params->q_g;
     }else{
         q_g=get_object("goal_pose")->q;
     }
-    move_s0->set_goal(q_g,skill_params->speed(0)*m_memory->read_parameters()->user.dq_max(0),skill_params->acc(0)*m_memory->read_parameters()->user.ddq_max(0));
+    move_s0->set_goal(q_g,skill_params->speed*m_memory->read_parameters()->user.dq_max(0),skill_params->acc*m_memory->read_parameters()->user.ddq_max(0));
     return mp;
 }
 

@@ -84,11 +84,11 @@ bool Task::load_context(const nlohmann::json &user_context){
                 msrm_utils::overwrite_valid_json(user_context["parameters"][el.key()],m_context["parameters"][el.key()]);
             }
         }
-        initialize_context();
 
         if(user_context.find("subtasks")!=user_context.end()){
             m_context["subtasks"]=user_context["subtasks"];
         }
+        initialize_context();
 
         nlohmann::json default_parameters;
         if(!m_memory->load_default_parameters(default_parameters)){
@@ -177,6 +177,15 @@ void Task::overwrite_context(const std::string &skill_name, const std::string &p
     }catch(const nlohmann::detail::type_error& e){
         spdlog::debug(e.what());
         throw TaskException("Error when attempting to overwrite task context. Make sure the skill and the parameter exist in the default context.");
+    }
+}
+
+void Task::write_skill_object(const std::string skill, const std::string groundable, const std::string object){
+    try{
+        m_context["skills"][skill]["skill"]["objects"][groundable]=object;
+    }catch(const nlohmann::detail::type_error& e){
+        spdlog::debug(e.what());
+        throw TaskException("Error when attempting to overwrite skill objects. Make sure the skill and the parameter exist in the default context.");
     }
 }
 
