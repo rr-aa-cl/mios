@@ -46,7 +46,7 @@ void ManipulationPrimitive::terminate(const Percept &p){
 }
 
 bool ManipulationPrimitive::compose_command(const Percept& p){
-    m_cmd.initialize(p);
+    m_cmd.set_zero(p);
     if(m_strategies.size()==0){
         return false;
     }
@@ -114,7 +114,7 @@ Actuator* ManipulationPrimitive::cmd_from_buffer(){
 }
 
 Actuator* ManipulationPrimitive::stop(const Percept& p){
-    m_cmd.initialize(p);
+    m_cmd.set_zero(p);
     return &m_cmd;
 }
 

@@ -5,6 +5,7 @@
 namespace mios {
 
 Actuator::Actuator(const Percept &p_0){
+    spdlog::debug("Actuator:Constructor");
     initialize(p_0);
 }
 
@@ -247,7 +248,6 @@ void Actuator::limit_output_rate(const LimitParameters &parameters){
     m_tau_ff_limiter=tau_ff;
     m_K_theta_limiter=K_theta;
     m_xi_theta_limiter=xi_theta;
-
 }
 
 bool Actuator::is_valid() const{
@@ -351,7 +351,17 @@ bool Actuator::is_settled(const LimitParameters &parameters) const{
     return all_zero;
 }
 
-void Actuator::set_zero(){
+void Actuator::set_zero(const Percept &p_0){
+    TF_T_EE_d=p_0.proprioception.TF_T_EE;
+    TF_dX_d.setZero();
+    TF_F_d.setZero();
+    TF_F_ff.setZero();
+
+    q_d_nullspace=p_0.proprioception.q;
+    q_d=p_0.proprioception.q;
+    dq_d.setZero();
+    tau_d.setZero();
+    tau_ff.setZero();
 
 }
 

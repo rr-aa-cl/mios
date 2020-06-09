@@ -21,7 +21,7 @@ public:
     bool is_valid() const;
     bool is_stopped() const;
     bool is_settled(const LimitParameters& parameters) const;
-    void set_zero();
+    void set_zero(const Percept& p_0);
 
 public:
 

@@ -11,7 +11,7 @@ ceil() {
   echo $((($n_cpu_total+2-1)/2))
 }
 
-n_cpu=$(ceil)
+n_cpu=2
 
 ### refresh code ###
 
