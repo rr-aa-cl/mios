@@ -1,44 +1,68 @@
 #pragma once
 
-#include "simulink_pipeline/plugin.hpp"
+#include <vector>
+#include <string>
+#include <memory>
+#include <eigen3/Eigen/Core>
+
 class mogen_p2p_jointModelClass;
 
 namespace mogen_p2p_joint {
 
-struct In_P_mogen_p2p_joint : public In_P{
+struct In_P_mogen_p2p_joint{
 Eigen::Matrix<double,7,1> q_0;
 Eigen::Matrix<double,7,1> q_g;
 Eigen::Matrix<double,1,1> dq_max;
 Eigen::Matrix<double,1,1> ddq_max;
+In_P_mogen_p2p_joint(){
+q_0.setZero();
+q_g.setZero();
+dq_max.setZero();
+ddq_max.setZero();
+}
 };
-struct In_U_mogen_p2p_joint : public In_U{
+struct In_U_mogen_p2p_joint{
 Eigen::Matrix<double,2,1> dummy;
+In_U_mogen_p2p_joint(){
+dummy.setZero();
+}
 };
-struct Out_Y_mogen_p2p_joint : public Out_Y{
+struct Out_Y_mogen_p2p_joint{
 Eigen::Matrix<double,7,1> q_d;
 Eigen::Matrix<double,7,1> dq_d;
+Out_Y_mogen_p2p_joint(){
+q_d.setZero();
+dq_d.setZero();
+}
 };
-struct Out_L_mogen_p2p_joint : public Out_L{
+struct Out_L_mogen_p2p_joint{
 Eigen::Matrix<double,1,1> arrived;
+Out_L_mogen_p2p_joint(){
+arrived.setZero();
+}
 };
-class mogen_p2p_joint : Plugin{
+class mogen_p2p_joint{
 public:
 mogen_p2p_joint();
 ~mogen_p2p_joint();
-Out_Y_mogen_p2p_joint get_out_y();
-Out_L_mogen_p2p_joint get_out_l();
-void initialize(const In_U& in_u,const In_P& in_p,bool log = false,unsigned long long l_len = 0,std::string path_logs="");
-void step(const In_U& in_u,Out_Y& out_y);
+void initialize(bool log = false,unsigned long long l_len = 0,const std::string& path_logs="");
+void step();
 void terminate();
+In_P_mogen_p2p_joint p;
+In_U_mogen_p2p_joint u;
+Out_Y_mogen_p2p_joint y;
+Out_L_mogen_p2p_joint l;
 
 private:
-void write_params_to_model();
-void write_logs();
-mogen_p2p_jointModelClass* _model;
-std::vector<In_U_mogen_p2p_joint> _log_in_u;
-std::vector<Out_Y_mogen_p2p_joint> _log_out_y;
-std::vector<Out_L_mogen_p2p_joint> _log_out_l;
-Out_L_mogen_p2p_joint _log;
-};
+void write_input();
+void write_output();
+void write_log();
+std::unique_ptr<mogen_p2p_jointModelClass> m_model;
+std::vector<In_U_mogen_p2p_joint> m_log_u;
+std::vector<Out_Y_mogen_p2p_joint> m_log_y;
+std::vector<Out_L_mogen_p2p_joint> m_log_l;
+std::string m_path_logs;
+unsigned long long m_cnt_step;
+bool m_flag_log;};
 
 }

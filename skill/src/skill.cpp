@@ -116,7 +116,7 @@ Actuator* Skill::cycle(const Percept &p){
         return m_active_mp->stop(p);
     }
     if(check_local_suc_conditions(p)){
-        spdlog::info("Local success conditions of skill" + m_id + " have been triggered.");
+        spdlog::info("Local success conditions of skill " + m_id + " have been triggered.");
         m_result.success=true;
     }
     if(check_local_ex_conditions(p) && m_result.success){

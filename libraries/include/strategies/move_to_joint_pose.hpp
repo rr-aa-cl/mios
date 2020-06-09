@@ -22,8 +22,6 @@ private:
     double m_ddq_max;
 
     mogen_p2p_joint::mogen_p2p_joint m_mogen_p2p_joint;
-    mogen_p2p_joint::In_U_mogen_p2p_joint m_mogen_p2p_joint_in_u;
-    mogen_p2p_joint::Out_Y_mogen_p2p_joint m_mogen_p2p_joint_out_y;
 
 };
 

@@ -138,12 +138,12 @@ bool Core::execute_skill(){
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mCartVelocity){
         m_controller_pipeline=std::make_unique<CartVelocityControllerPipeline>();
         m_controller_pipeline->initialize(m_percept,&m_memory);
-        result=m_panda_body.control(std::bind(&Core::joint_torque_controller_pipeline,this,std::placeholders::_1));
+        result=m_panda_body.control(std::bind(&Core::cart_velocity_controller_pipeline,this,std::placeholders::_1));
     }
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mJointVelocity){
         m_controller_pipeline=std::make_unique<JointVelocityControllerPipeline>();
         m_controller_pipeline->initialize(m_percept,&m_memory);
-        result=m_panda_body.control(std::bind(&Core::joint_torque_controller_pipeline,this,std::placeholders::_1));
+        result=m_panda_body.control(std::bind(&Core::joint_velocity_controller_pipeline,this,std::placeholders::_1));
     }
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mNoControl){
         spdlog::error("No control mode has been selected.");

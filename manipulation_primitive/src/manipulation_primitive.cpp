@@ -17,6 +17,7 @@ Actuator* ManipulationPrimitive::initialize(const Percept &p_0, const Actuator& 
     m_cmd=cmd;
     m_memory->get_live_context()->t_mp=std::chrono::high_resolution_clock::now();
     for(auto& s : m_strategies){
+        s.second.strategy->initialize(p_0);
         s.second.strategy->get_next_command(s.second.cmd,p_0);
     }
     m_flag_initialized=true;
