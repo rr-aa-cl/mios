@@ -13,7 +13,7 @@ void MoveToJointPose::initialize_context(){
 }
 
 void MoveToJointPose::execute_task(){
-    overwrite_context("move","control","control_mode",3);
+    overwrite_context("move","control","control_mode",1);
     overwrite_context("move","skill","speed",m_speed);
     overwrite_context("move","skill","acc",m_acc);
     overwrite_context("move","skill","q_g",msrm_utils::from_eigen<double,7,1>(m_q_g));

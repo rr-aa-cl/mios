@@ -13,10 +13,11 @@ void MoveToCartPose::initialize_context(){
 }
 
 void MoveToCartPose::execute_task(){
+    overwrite_context("move","control","control_mode",2);
     overwrite_context("move","skill","speed",msrm_utils::from_eigen<double,2,1>(m_speed));
     overwrite_context("move","skill","acc",msrm_utils::from_eigen<double,2,1>(m_acc));
     overwrite_context("move","skill","q_g",msrm_utils::from_eigen<double,4,4>(m_T_EE_g));
-    overwrite_context("move","skill","object",{m_pose.value_or("NullObject")});
+    write_skill_object("move","goal_pose",m_pose.value_or("NullObject"));
     execute_skill<MoveToPoseCart,SkillParametersMoveToPoseCart>("move");
 }
 
