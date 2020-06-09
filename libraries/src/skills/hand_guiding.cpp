@@ -25,11 +25,11 @@ std::shared_ptr<ManipulationPrimitive> HandGuiding::get_initial_mp(const Percept
     mp->create_strategy<NullStrategy>("s_0",1);
     std::shared_ptr<SkillParametersHandGuiding> skill_params = get_parameters<SkillParametersHandGuiding>();
 
-    m_memory->get_parameters()->control.virtual_cube.active=true;
-    m_memory->get_parameters()->control.virtual_cube.damping<<0.004;
-    m_memory->get_parameters()->control.virtual_cube.damping_dist<<0.03;
-    m_memory->get_parameters()->control.virtual_cube.eta<<0.001;
-    m_memory->get_parameters()->control.virtual_cube.rho_min<<0.02;
+    m_memory->get_parameters()->safety.virtual_cube.active=true;
+    m_memory->get_parameters()->safety.virtual_cube.damping<<0.004;
+    m_memory->get_parameters()->safety.virtual_cube.damping_dist<<0.03;
+    m_memory->get_parameters()->safety.virtual_cube.eta<<0.001;
+    m_memory->get_parameters()->safety.virtual_cube.rho_min<<0.02;
 
     for(unsigned i=0;i<skill_params->fix_dim.rows();i++){
         if(i<3){
@@ -52,14 +52,14 @@ std::shared_ptr<ManipulationPrimitive> HandGuiding::get_initial_mp(const Percept
     }
 
     for(unsigned i=0;i<skill_params->dist_walls.rows();i++){
-        m_memory->get_parameters()->control.virtual_cube.walls(i)=skill_params->dist_walls(i);
+        m_memory->get_parameters()->safety.virtual_cube.walls(i)=skill_params->dist_walls(i);
     }
 
     for(unsigned i=0;i<skill_params->use_walls.rows();i++){
         if(skill_params->use_walls(i)==0){
-            m_memory->get_parameters()->control.virtual_cube.walls(i)=1000;
+            m_memory->get_parameters()->safety.virtual_cube.walls(i)=1000;
             if(i%2==0){
-                m_memory->get_parameters()->control.virtual_cube.walls(i)*=-1;
+                m_memory->get_parameters()->safety.virtual_cube.walls(i)*=-1;
             }
         }
     }

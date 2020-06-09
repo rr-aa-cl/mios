@@ -1,11 +1,15 @@
 #pragma once
 
-#include "simulink_pipeline/plugin.hpp"
+#include <vector>
+#include <string>
+#include <memory>
+#include <eigen3/Eigen/Core>
+
 class cntr_aicModelClass;
 
 namespace cntr_aic {
 
-struct In_P_cntr_aic : public In_P{
+struct In_P_cntr_aic{
 Eigen::Matrix<double,6,1> alpha;
 Eigen::Matrix<double,6,1> beta;
 Eigen::Matrix<double,6,1> gamma_a;
@@ -45,7 +49,7 @@ EE_T_K.setZero();
 O_R_TF.setZero();
 }
 };
-struct In_U_cntr_aic : public In_U{
+struct In_U_cntr_aic{
 Eigen::Matrix<double,4,4> TF_T_EE_d;
 Eigen::Matrix<double,4,4> TF_T_EE;
 Eigen::Matrix<double,6,1> TF_F_ff;
@@ -67,13 +71,13 @@ K_x.setZero();
 xi_x.setZero();
 }
 };
-struct Out_Y_cntr_aic : public Out_Y{
+struct Out_Y_cntr_aic{
 Eigen::Matrix<double,7,1> tau_J_d;
 Out_Y_cntr_aic(){
 tau_J_d.setZero();
 }
 };
-struct Out_L_cntr_aic : public Out_L{
+struct Out_L_cntr_aic{
 Eigen::Matrix<double,1,1> valid;
 Eigen::Matrix<double,6,1> TF_F_ff;
 Eigen::Matrix<double,6,1> K_x;
@@ -85,24 +89,28 @@ K_x.setZero();
 xi_x.setZero();
 }
 };
-class cntr_aic : Plugin{
+class cntr_aic{
 public:
 cntr_aic();
 ~cntr_aic();
-Out_Y_cntr_aic get_out_y();
-Out_L_cntr_aic get_out_l();
-void initialize(const In_U& in_u,const In_P& in_p,bool log = false,unsigned long long l_len = 0,std::string path_logs="");
-void step(const In_U& in_u,Out_Y& out_y);
+void initialize(bool log = false,unsigned long long l_len = 0,const std::string& path_logs="");
+void step();
 void terminate();
+In_P_cntr_aic p;
+In_U_cntr_aic u;
+Out_Y_cntr_aic y;
+Out_L_cntr_aic l;
 
 private:
-void write_params_to_model();
-void write_logs();
-cntr_aicModelClass* _model;
-std::vector<In_U_cntr_aic> _log_in_u;
-std::vector<Out_Y_cntr_aic> _log_out_y;
-std::vector<Out_L_cntr_aic> _log_out_l;
-Out_L_cntr_aic _log;
-};
+void write_input();
+void write_output();
+void write_log();
+std::unique_ptr<cntr_aicModelClass> m_model;
+std::vector<In_U_cntr_aic> m_log_u;
+std::vector<Out_Y_cntr_aic> m_log_y;
+std::vector<Out_L_cntr_aic> m_log_l;
+std::string m_path_logs;
+unsigned long long m_cnt_step;
+bool m_flag_log;};
 
 }

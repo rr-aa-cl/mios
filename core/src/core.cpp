@@ -15,6 +15,8 @@
 #include "controller_pipeline/null_pipeline.hpp"
 
 #include "safety_stage_1/velocity_walls.hpp"
+#include "safety_stage_2/virtual_cube.hpp"
+#include "safety_stage_2/virtual_joint_walls.hpp"
 
 #include <iostream>
 #include <chrono>
@@ -124,15 +126,29 @@ bool Core::execute_skill(){
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mCartTorque){
         m_controller_pipeline=std::make_unique<CartTorqueControllerPipeline>();
         m_safety_stage_1.insert(std::make_unique<VelocityWallsSafetyModule>());
+        m_safety_stage_2.insert(std::make_unique<VirtualCubeSafetyModule>());
+        m_safety_stage_2.insert(std::make_unique<VirtualJointWallsSafetyModule>());
         m_controller_pipeline->initialize(m_percept,&m_memory);
         for(auto& m : m_safety_stage_1){
+            m->initialize(m_percept,&m_memory);
+        }
+        for(auto& m : m_safety_stage_2){
             m->initialize(m_percept,&m_memory);
         }
         result=m_panda_body.control(std::bind(&Core::cart_torque_controller_pipeline,this,std::placeholders::_1));
     }
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mJointTorque){
         m_controller_pipeline=std::make_unique<JointTorqueControllerPipeline>();
+        m_safety_stage_1.insert(std::make_unique<VelocityWallsSafetyModule>());
+        m_safety_stage_2.insert(std::make_unique<VirtualCubeSafetyModule>());
+        m_safety_stage_2.insert(std::make_unique<VirtualJointWallsSafetyModule>());
         m_controller_pipeline->initialize(m_percept,&m_memory);
+        for(auto& m : m_safety_stage_1){
+            m->initialize(m_percept,&m_memory);
+        }
+        for(auto& m : m_safety_stage_2){
+            m->initialize(m_percept,&m_memory);
+        }
         result=m_panda_body.control(std::bind(&Core::joint_torque_controller_pipeline,this,std::placeholders::_1));
     }
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mCartVelocity){
@@ -154,7 +170,11 @@ bool Core::execute_skill(){
     for(auto& m : m_safety_stage_1){
         m->terminate();
     }
+    for(auto& m : m_safety_stage_2){
+        m->terminate();
+    }
     m_safety_stage_1.clear();
+    m_safety_stage_2.clear();
     return result;
 }
 
@@ -180,25 +200,21 @@ bool Core::set_robot_parameters(){
 franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
 
     franka::GripperState gripper_state;
-    std::cout<<"CYCLE1"<<std::endl;
     m_percept.update(m_panda_body.get_panda_model(),state,gripper_state,m_memory.read_parameters()->frames.O_R_T);
-    std::cout<<"CYCLE2"<<std::endl;
     Actuator* cmd=m_skill_engine.get_next_command(m_percept);
-    std::cout<<"CYCLE3"<<std::endl;
     for(auto& m : m_safety_stage_1){
         m->step(m_percept,*cmd);
     }
-    std::cout<<"CYCLE4"<<std::endl;
     cmd->limit_output_rate(m_memory.read_parameters()->limits);
-    std::cout<<"CYCLE5"<<std::endl;
     cmd->limit_output(m_memory.read_parameters()->limits);
-    std::cout<<"CYCLE6"<<std::endl;
     franka::Finishable* panda_cmd=m_controller_pipeline->step(m_percept,*cmd);
-    std::cout<<"CYCLE7"<<std::endl;
     if(!m_controller_pipeline->is_valid_command(panda_cmd)){
         cmd->stop();
     }
     m_controller_pipeline->update_percept(m_percept.controller);
+    for(auto& m : m_safety_stage_2){
+        m->step(m_percept,panda_cmd);
+    }
     if(cmd->is_stopped()){
         panda_cmd->motion_finished=true;
     }

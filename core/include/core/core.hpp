@@ -12,6 +12,7 @@
 #include "panda/panda_body.hpp"
 #include "controller_pipeline/controller_pipeline.hpp"
 #include "safety_stage_1/safety_module_stage_1.hpp"
+#include "safety_stage_2/safety_module_stage_2.hpp"
 #include "skill/skill_engine.hpp"
 #include "task/task_engine.hpp"
 #include "portal/portal.hpp"
@@ -90,6 +91,7 @@ private:
     RosNode m_ros_node;
     std::unique_ptr<ControllerPipeline> m_controller_pipeline;
     std::unordered_set<std::unique_ptr<SafetyModuleStage1> > m_safety_stage_1;
+    std::unordered_set<std::unique_ptr<SafetyModuleStage2> > m_safety_stage_2;
 
 private:
     bool m_is_ready;

@@ -53,7 +53,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/libraries/include)
 
 set(PLUGINS mogen_p2p mogen_p2p_joint cntr_aic cntr_force cntr_joint_imp cntr_joint_var_imp cntr_mux cntr_nullsp_proj
-    conv_vel2pose motion_error_cart virtual_cube virtual_walls_joint wave_variables)
+    conv_vel2pose motion_error_cart virtual_cube virtual_walls_joint)
 link_directories(${CMAKE_SOURCE_DIR}/plugins/lib)
 
 set(SOURCES core/src/core.cpp interface/src/interface.cpp manipulation_primitive/src/manipulation_primitive.cpp skill/src/skill.cpp task/src/task.cpp task/src/task_engine.cpp
@@ -62,7 +62,7 @@ set(UTILS_SRC utils/src/actuator.cpp utils/src/percept.cpp utils/src/object.cpp 
 set(MEMORY_SRC memory/src/memory.cpp memory/src/lt_memory.cpp memory/src/st_memory.cpp memory/src/mongodb_client.cpp memory/src/parameters.cpp)
 set(CONTROLLER_SRC controller_pipeline/src/cart_torque_pipeline.cpp controller_pipeline/src/joint_torque_pipeline.cpp controller_pipeline/src/cart_velocity_pipeline.cpp
     controller_pipeline/src/joint_velocity_pipeline.cpp controller_pipeline/src/null_pipeline.cpp)
-set(SAFETY_SRC safety/src/velocity_walls.cpp)
+set(SAFETY_SRC safety/src/velocity_walls.cpp safety/src/virtual_cube.cpp safety/src/virtual_joint_walls.cpp)
 
 #set(SOURCES_PRIMITIVES manipulation_primitive/src/primitives/mp_basic.cpp manipulation_primitive/src/primitives/mp_basic_joint.cpp manipulation_primitive/src/primitives/nullprimitive.cpp)
 
@@ -77,7 +77,7 @@ add_executable(mios main/src/mios.cpp ${SOURCES} ${MEMORY_SRC} ${UTILS_SRC} ${CO
 set_target_properties(mios PROPERTIES UNITY_BUILD ON)
 target_precompile_headers(mios PRIVATE ${CMAKE_SOURCE_DIR}/utils/include/utils/pch.hpp)
 
-target_link_libraries(mios general ${PLUGINS} franka mongocxx bsoncxx boost_system ssl crypto pthread ${roscpp_LIBRARIES} pybind11::embed
+target_link_libraries(mios general ${PLUGINS} franka mongocxx bsoncxx boost_system stdc++fs ssl crypto pthread ${roscpp_LIBRARIES} pybind11::embed
                             debug msrm_cpp_utils_dbg ssl crypto
                             optimized msrm_cpp_utils ssl crypto)
 

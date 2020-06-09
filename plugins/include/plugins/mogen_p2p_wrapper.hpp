@@ -1,11 +1,15 @@
 #pragma once
 
-#include "simulink_pipeline/plugin.hpp"
+#include <vector>
+#include <string>
+#include <memory>
+#include <eigen3/Eigen/Core>
+
 class mogen_p2pModelClass;
 
 namespace mogen_p2p {
 
-struct In_P_mogen_p2p : public In_P{
+struct In_P_mogen_p2p{
 Eigen::Matrix<double,4,4> TF_T_EE_0;
 Eigen::Matrix<double,4,4> TF_T_EE_1;
 Eigen::Matrix<double,2,1> dX_max;
@@ -17,19 +21,19 @@ dX_max.setZero();
 ddX_max.setZero();
 }
 };
-struct In_U_mogen_p2p : public In_U{
+struct In_U_mogen_p2p{
 Eigen::Matrix<double,2,1> t_scale;
 In_U_mogen_p2p(){
 t_scale.setZero();
 }
 };
-struct Out_Y_mogen_p2p : public Out_Y{
+struct Out_Y_mogen_p2p{
 Eigen::Matrix<double,6,1> dX_d;
 Out_Y_mogen_p2p(){
 dX_d.setZero();
 }
 };
-struct Out_L_mogen_p2p : public Out_L{
+struct Out_L_mogen_p2p{
 Eigen::Matrix<double,1,1> arrived;
 Eigen::Matrix<double,2,1> phase;
 Out_L_mogen_p2p(){
@@ -37,24 +41,28 @@ arrived.setZero();
 phase.setZero();
 }
 };
-class mogen_p2p : Plugin{
+class mogen_p2p{
 public:
 mogen_p2p();
 ~mogen_p2p();
-Out_Y_mogen_p2p get_out_y();
-Out_L_mogen_p2p get_out_l();
-void initialize(const In_U& in_u,const In_P& in_p,bool log = false,unsigned long long l_len = 0,std::string path_logs="");
-void step(const In_U& in_u,Out_Y& out_y);
+void initialize(bool log = false,unsigned long long l_len = 0,const std::string& path_logs="");
+void step();
 void terminate();
+In_P_mogen_p2p p;
+In_U_mogen_p2p u;
+Out_Y_mogen_p2p y;
+Out_L_mogen_p2p l;
 
 private:
-void write_params_to_model();
-void write_logs();
-mogen_p2pModelClass* _model;
-std::vector<In_U_mogen_p2p> _log_in_u;
-std::vector<Out_Y_mogen_p2p> _log_out_y;
-std::vector<Out_L_mogen_p2p> _log_out_l;
-Out_L_mogen_p2p _log;
-};
+void write_input();
+void write_output();
+void write_log();
+std::unique_ptr<mogen_p2pModelClass> m_model;
+std::vector<In_U_mogen_p2p> m_log_u;
+std::vector<Out_Y_mogen_p2p> m_log_y;
+std::vector<Out_L_mogen_p2p> m_log_l;
+std::string m_path_logs;
+unsigned long long m_cnt_step;
+bool m_flag_log;};
 
 }

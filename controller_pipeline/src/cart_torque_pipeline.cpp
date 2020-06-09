@@ -2,7 +2,7 @@
 
 namespace mios {
 
-CartTorqueControllerPipeline::CartTorqueControllerPipeline():m_panda_cmd({0,0,0,0,0,0,0}),m_virtual_cube_on(false),m_virtual_joint_walls_on(false),m_nullspace_control_on(false){
+CartTorqueControllerPipeline::CartTorqueControllerPipeline():m_panda_cmd({0,0,0,0,0,0,0}),m_nullspace_control_on(false){
 
 }
 
@@ -11,8 +11,6 @@ void CartTorqueControllerPipeline::initialize(const Percept &p_0, Memory *memory
     initialize_cntr_aic(p_0,memory);
     initialize_cntr_force(p_0,memory);
     initialize_cntr_mux(p_0,memory);
-    initialize_virt_cube(p_0,memory);
-    initialize_virt_walls_joint(p_0,memory);
     initialize_cntr_nullsp(p_0,memory);
 }
 
@@ -20,41 +18,29 @@ franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const A
     input_cntr_aic(p);
     input_cntr_force(p);
     input_cntr_mux(p);
-    input_virt_cube(p);
-    input_virt_joint_walls(p);
     input_cntr_nullsp(p);
 
-    m_in_u_vel2pose.TF_dX_d=cmd.TF_dX_d;
-    m_conv_vel2pose.step(m_in_u_vel2pose,m_out_y_vel2pose);
-    m_in_u_aic.TF_T_EE_d=m_out_y_vel2pose.TF_T_EE_d;
-    m_in_u_aic.K_x=cmd.K_x;
-    m_cntr_aic.step(m_in_u_aic,m_out_y_aic);
+    m_conv_vel2pose.u.TF_dX_d=cmd.TF_dX_d;
+    m_conv_vel2pose.step();
+    m_cntr_aic.u.TF_T_EE_d=m_conv_vel2pose.y.TF_T_EE_d;
+    m_cntr_aic.u.K_x=cmd.K_x;
+    m_cntr_aic.step();
 
-    m_in_u_force.TF_F_d_K=cmd.TF_F_d;
-    m_cntr_force.step(m_in_u_force,m_out_y_force);
+    m_cntr_force.u.TF_F_d_K=cmd.TF_F_d;
+    m_cntr_force.step();
 
-    m_virt_cube.step(m_in_u_virt_cube,m_out_y_virt_cube);
+    m_cntr_nullsp_q.u.theta_d=cmd.q_d_nullspace;
+    m_cntr_nullsp_q.step();
+    m_cntr_nullsp_proj.u.tau_c=m_cntr_nullsp_q.y.tau_J_d;
+    m_cntr_nullsp_proj.step();
 
-    m_virt_walls_joint.step(m_in_u_virt_walls_joint,m_out_y_virt_walls_joint);
-
-    m_in_u_cntr_nullsp_q.theta_d=cmd.q_d_nullspace;
-    m_cntr_nullsp_q.step(m_in_u_cntr_nullsp_q,m_out_y_cntr_nullsp_q);
-    m_in_u_cntr_nullsp_proj.tau_c=m_out_y_cntr_nullsp_q.tau_J_d;
-    m_cntr_nullsp_proj.step(m_in_u_cntr_nullsp_proj,m_out_y_cntr_nullsp_proj);
-
-    Eigen::Matrix<double,7,1> tau_J_d_total=m_out_y_aic.tau_J_d+m_out_y_force.tau_J_d+cmd.tau_ff;
-    if(m_virtual_cube_on && is_virt_cube_valid(p)){
-        tau_J_d_total+=m_out_y_virt_cube.tau_vwalls;
-    }
-    if(m_virtual_joint_walls_on && is_virt_joint_walls_valid(p)){
-        tau_J_d_total+=m_out_y_virt_walls_joint.tau_vwalls;
-    }
+    Eigen::Matrix<double,7,1> tau_J_d_total=m_cntr_aic.y.tau_J_d+m_cntr_force.y.tau_J_d+cmd.tau_ff;
     if(m_nullspace_control_on){
-        tau_J_d_total+=m_out_y_cntr_nullsp_proj.tau_n;
+        tau_J_d_total+=m_cntr_nullsp_proj.y.tau_n;
     }
 
-    m_in_u_mux.tau_J_d=tau_J_d_total;
-    m_cntr_mux.step(m_in_u_mux,m_out_y_mux);
+    m_cntr_mux.u.tau_J_d=tau_J_d_total;
+    m_cntr_mux.step();
     m_panda_cmd.tau_J={tau_J_d_total(0),tau_J_d_total(1),tau_J_d_total(2),tau_J_d_total(3),tau_J_d_total(4),tau_J_d_total(5),tau_J_d_total(6)};
 
     return &m_panda_cmd;
@@ -70,9 +56,9 @@ bool CartTorqueControllerPipeline::is_valid_command(const franka::Finishable* co
 }
 
 void CartTorqueControllerPipeline::update_percept(Percept::Controller &p){
-    p.TF_T_EE_d=m_out_y_vel2pose.TF_T_EE_d;
-    p.K_x=m_cntr_aic.get_out_l().K_x;
-    p.K_theta=m_cntr_nullsp_q.get_out_l().K_theta;
+    p.TF_T_EE_d=m_conv_vel2pose.y.TF_T_EE_d;
+    p.K_x=m_cntr_aic.l.K_x;
+    p.K_theta=m_cntr_nullsp_q.l.K_theta;
 }
 
 void CartTorqueControllerPipeline::terminate(){
@@ -80,245 +66,138 @@ void CartTorqueControllerPipeline::terminate(){
     m_cntr_aic.terminate();
     m_cntr_force.terminate();
     m_cntr_mux.terminate();
-}
-
-void CartTorqueControllerPipeline::set_virtual_cube(bool on){
-    m_virtual_cube_on=on;
-}
-
-void CartTorqueControllerPipeline::set_virtual_joint_walls(bool on){
-    m_virtual_joint_walls_on=on;
+    m_cntr_nullsp_q.terminate();
+    m_cntr_nullsp_proj.terminate();
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_aic(const Percept &p,Memory* memory){
-    cntr_aic::In_P_cntr_aic in_p_aic;
-    conv_vel2pose::In_P_conv_vel2pose in_p_vel2pose;
     const ControlParameters& p_cntr=memory->read_parameters()->control;
     const FramesParameters& p_frames=memory->read_parameters()->frames;
     const LimitParameters& p_limits=memory->read_parameters()->limits;
-    in_p_aic.alpha=p_cntr.cart_imp_adaptation_stage.alpha;
-    in_p_aic.beta=p_cntr.cart_imp_adaptation_stage.beta;
-    in_p_aic.gamma_a=p_cntr.cart_imp_adaptation_stage.gamma_a;
-    in_p_aic.gamma_b=p_cntr.cart_imp_adaptation_stage.gamma_b;
-    in_p_aic.L=p_cntr.cart_imp_adaptation_stage.L;
-    in_p_aic.F_ff_0=p_cntr.cart_imp_adaptation_stage.F_ff_0;
-    in_p_aic.K_0=p_cntr.cart_imp.K_x;
-    in_p_aic.xi=p_cntr.cart_imp.xi;
-    in_p_aic.F_ff_max<<p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1);
-    in_p_aic.dF_ff_max<<p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1);
-    in_p_aic.K_max=p_limits.cartesian_space.K_x_max;
-    in_p_aic.dK_max=p_limits.cartesian_space.dK_x_max;
-    in_p_aic.O_R_TF=p_frames.O_R_T;
-    in_p_aic.EE_T_K=p_frames.EE_T_K;
-    in_p_aic.dtau_max=p_limits.joint_space.dtau_J_max;
-    in_p_aic.tau_max=p_limits.joint_space.tau_J_max;
-    in_p_aic.kappa<<p_cntr.cart_imp_adaptation_stage.kappa;
+    m_cntr_aic.p.alpha=p_cntr.cart_imp_adaptation_stage.alpha;
+    m_cntr_aic.p.beta=p_cntr.cart_imp_adaptation_stage.beta;
+    m_cntr_aic.p.gamma_a=p_cntr.cart_imp_adaptation_stage.gamma_a;
+    m_cntr_aic.p.gamma_b=p_cntr.cart_imp_adaptation_stage.gamma_b;
+    m_cntr_aic.p.L=p_cntr.cart_imp_adaptation_stage.L;
+    m_cntr_aic.p.F_ff_0=p_cntr.cart_imp_adaptation_stage.F_ff_0;
+    m_cntr_aic.p.K_0=p_cntr.cart_imp.K_x;
+    m_cntr_aic.p.xi=p_cntr.cart_imp.xi;
+    m_cntr_aic.p.F_ff_max<<p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1);
+    m_cntr_aic.p.dF_ff_max<<p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1);
+    m_cntr_aic.p.K_max=p_limits.cartesian_space.K_x_max;
+    m_cntr_aic.p.dK_max=p_limits.cartesian_space.dK_x_max;
+    m_cntr_aic.p.O_R_TF=p_frames.O_R_T;
+    m_cntr_aic.p.EE_T_K=p_frames.EE_T_K;
+    m_cntr_aic.p.dtau_max=p_limits.joint_space.dtau_J_max;
+    m_cntr_aic.p.tau_max=p_limits.joint_space.tau_J_max;
+    m_cntr_aic.p.kappa<<p_cntr.cart_imp_adaptation_stage.kappa;
 
     input_cntr_aic(p);
 
-    m_in_u_aic.K_x=p_cntr.cart_imp.K_x;
-    m_in_u_aic.xi_x=p_cntr.cart_imp.xi;
+    m_cntr_aic.u.K_x=p_cntr.cart_imp.K_x;
+    m_cntr_aic.u.xi_x=p_cntr.cart_imp.xi;
 
-    m_cntr_aic.initialize(m_in_u_aic,in_p_aic);
-    m_conv_vel2pose.initialize(m_in_u_vel2pose,in_p_vel2pose);
+    m_cntr_aic.initialize();
+    m_conv_vel2pose.initialize();
 
 }
 
 void CartTorqueControllerPipeline::input_cntr_aic(const Percept &p){
-    m_in_u_aic.B_J_EE=p.internal_model.B_J_EE;
-    m_in_u_aic.M=p.internal_model.M;
-    m_in_u_aic.dtheta=p.proprioception.dtheta;
-    m_in_u_aic.TF_F_ext=p.proprioception.TF_F_ext_K;
-    m_in_u_aic.TF_F_ff<<0,0,0,0,0,0;
-    m_in_u_aic.TF_T_EE=p.proprioception.TF_T_EE;
-    m_in_u_aic.TF_T_EE_d=p.proprioception.TF_T_EE;
+    m_cntr_aic.u.B_J_EE=p.internal_model.B_J_EE;
+    m_cntr_aic.u.M=p.internal_model.M;
+    m_cntr_aic.u.dtheta=p.proprioception.dtheta;
+    m_cntr_aic.u.TF_F_ext=p.proprioception.TF_F_ext_K;
+    m_cntr_aic.u.TF_F_ff<<0,0,0,0,0,0;
+    m_cntr_aic.u.TF_T_EE=p.proprioception.TF_T_EE;
+    m_cntr_aic.u.TF_T_EE_d=p.proprioception.TF_T_EE;
 
-    m_in_u_vel2pose.TF_dX_d<<0,0,0,0,0,0;
-    m_in_u_vel2pose.TF_T_EE=p.proprioception.TF_T_EE;
+    m_conv_vel2pose.u.TF_dX_d<<0,0,0,0,0,0;
+    m_conv_vel2pose.u.TF_T_EE=p.proprioception.TF_T_EE;
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_force(const Percept &p, Memory *memory){
-    cntr_force::In_P_cntr_force in_p_force;
     const ControlParameters& p_cntr=memory->read_parameters()->control;
     const LimitParameters& p_limits=memory->read_parameters()->limits;
-    in_p_force.active=p_cntr.force_control.active;
-    in_p_force.dF_d_max<<p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1);
-    in_p_force.F_d_max<<p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1);
-    in_p_force.dtau_max<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),
+    m_cntr_force.p.active=p_cntr.force_control.active;
+    m_cntr_force.p.dF_d_max<<p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1);
+    m_cntr_force.p.F_d_max<<p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1);
+    m_cntr_force.p.dtau_max<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),
             std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max();
-    in_p_force.tau_max<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),
+    m_cntr_force.p.tau_max<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),
             std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max();
-    in_p_force.k_p=p_cntr.force_control.k_p;
-    in_p_force.k_i=p_cntr.force_control.k_i;
-    in_p_force.k_d=p_cntr.force_control.k_d;
-    in_p_force.k_d_N=p_cntr.force_control.k_d_N;
-    in_p_force.d_max=p_cntr.force_control.d_max;
-    in_p_force.phi_max=p_cntr.force_control.phi_max;
-    in_p_force.sf_on<<p_cntr.force_control.sf_on;
+    m_cntr_force.p.k_p=p_cntr.force_control.k_p;
+    m_cntr_force.p.k_i=p_cntr.force_control.k_i;
+    m_cntr_force.p.k_d=p_cntr.force_control.k_d;
+    m_cntr_force.p.k_d_N=p_cntr.force_control.k_d_N;
+    m_cntr_force.p.d_max=p_cntr.force_control.d_max;
+    m_cntr_force.p.phi_max=p_cntr.force_control.phi_max;
+    m_cntr_force.p.sf_on<<p_cntr.force_control.sf_on;
 
     input_cntr_force(p);
 
-    m_cntr_force.initialize(m_in_u_force,in_p_force);
+    m_cntr_force.initialize();
 }
 
 void CartTorqueControllerPipeline::input_cntr_force(const Percept &p){
-    m_in_u_force.B_J_EE=p.internal_model.B_J_EE;
-    m_in_u_force.DX<<0,0,0,0,0,0;
-    m_in_u_force.TF_F_d_K<<0,0,0,0,0,0;
-    m_in_u_force.TF_F_ext_K=-p.proprioception.TF_F_ext_K;
+    m_cntr_force.u.B_J_EE=p.internal_model.B_J_EE;
+    m_cntr_force.u.DX<<0,0,0,0,0,0;
+    m_cntr_force.u.TF_F_d_K<<0,0,0,0,0,0;
+    m_cntr_force.u.TF_F_ext_K=-p.proprioception.TF_F_ext_K;
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_mux(const Percept &p,Memory* memory){
-    cntr_mux::In_P_cntr_mux in_p_mux;
     const LimitParameters& p_limits=memory->read_parameters()->limits;
 
-    in_p_mux.dtau_max=p_limits.joint_space.dtau_J_max;
-    in_p_mux.tau_max=p_limits.joint_space.tau_J_max;
+    m_cntr_mux.p.dtau_max=p_limits.joint_space.dtau_J_max;
+    m_cntr_mux.p.tau_max=p_limits.joint_space.tau_J_max;
 
     input_cntr_mux(p);
 
-    m_cntr_mux.initialize(m_in_u_mux,in_p_mux);
+    m_cntr_mux.initialize();
 }
 
 void CartTorqueControllerPipeline::input_cntr_mux(const Percept &p){
-    m_in_u_mux.B_J_EE=p.internal_model.B_J_EE;
-    m_in_u_mux.tau_J_d<<0,0,0,0,0,0,0;
-}
-
-void CartTorqueControllerPipeline::initialize_virt_cube(const Percept &p,Memory* memory){
-    virtual_cube::In_P_virtual_cube in_p_virt_cube;
-    const ControlParameters& p_cntr=memory->read_parameters()->control;
-    in_p_virt_cube.damping_distance=p_cntr.virtual_cube.damping_dist;
-    in_p_virt_cube.damping_factor=p_cntr.virtual_cube.damping;
-    in_p_virt_cube.eta=p_cntr.virtual_cube.eta;
-    in_p_virt_cube.rho_min=p_cntr.virtual_cube.rho_min;
-    in_p_virt_cube.cube_walls=p_cntr.virtual_cube.walls;
-    in_p_virt_cube.f_max=p_cntr.virtual_cube.f_max;
-
-    m_virt_cube_distances=p_cntr.virtual_cube.walls;
-
-    input_virt_cube(p);
-
-    m_virt_cube.initialize(m_in_u_virt_cube,in_p_virt_cube);
-
-    m_virtual_cube_on=memory->read_parameters()->control.virtual_cube.active;
-}
-
-void CartTorqueControllerPipeline::input_virt_cube(const Percept &p){
-    m_in_u_virt_cube.dx_EE=p.proprioception.O_dX_EE;
-    m_in_u_virt_cube.p_EE=p.proprioception.O_T_EE.block<3,1>(0,3);
-    m_in_u_virt_cube.Jacobian_EE=p.internal_model.B_J_O;
-}
-
-void CartTorqueControllerPipeline::initialize_virt_walls_joint(const Percept &p,Memory* memory){
-    virtual_walls_joint::In_P_virtual_walls_joint in_p_virt_walls_joint;
-    const ControlParameters& p_cntr=memory->read_parameters()->control;
-    in_p_virt_walls_joint.damping_distance=p_cntr.virtual_joint_walls.damping_dist;
-    in_p_virt_walls_joint.damping_factor=p_cntr.virtual_joint_walls.damping;
-    in_p_virt_walls_joint.eta=p_cntr.virtual_joint_walls.eta;
-    in_p_virt_walls_joint.rho_min=p_cntr.virtual_joint_walls.rho_min;
-    in_p_virt_walls_joint.tau_max=p_cntr.virtual_joint_walls.tau_max;
-    in_p_virt_walls_joint.walls=p_cntr.virtual_joint_walls.walls;
-
-    m_virt_joint_walls_distances=p_cntr.virtual_joint_walls.walls;
-
-    input_virt_joint_walls(p);
-
-    m_virt_walls_joint.initialize(m_in_u_virt_walls_joint,in_p_virt_walls_joint);
-
-    m_virtual_joint_walls_on=memory->read_parameters()->control.virtual_joint_walls.active;
-}
-
-void CartTorqueControllerPipeline::input_virt_joint_walls(const Percept &p){
-    m_in_u_virt_walls_joint.dq=p.proprioception.dq;
-    m_in_u_virt_walls_joint.q=p.proprioception.q;
+    m_cntr_mux.u.B_J_EE=p.internal_model.B_J_EE;
+    m_cntr_mux.u.tau_J_d<<0,0,0,0,0,0,0;
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_nullsp(const Percept& p,Memory* memory){
     const ControlParameters& p_cntr=memory->read_parameters()->control;
 
-    m_in_u_cntr_nullsp_q.theta_d=p.proprioception.q;
+    m_cntr_nullsp_q.u.theta_d=p.proprioception.q;
 
     cntr_joint_var_imp::In_P_cntr_joint_var_imp in_p_cntr_nullsp_q;
 
-    in_p_cntr_nullsp_q.enable_ffwd_acc.setZero();
-    in_p_cntr_nullsp_q.enable_ffwd_vel.setZero();
+    m_cntr_nullsp_q.p.enable_ffwd_acc.setZero();
+    m_cntr_nullsp_q.p.enable_ffwd_vel.setZero();
 
     cntr_nullsp_proj::In_P_cntr_nullsp_proj in_p_cntr_nullsp_proj;
-    in_p_cntr_nullsp_proj.singlr_comp_mode.setZero();
-    in_p_cntr_nullsp_proj.singlr_threshold.setZero();
+    m_cntr_nullsp_proj.p.singlr_comp_mode.setZero();
+    m_cntr_nullsp_proj.p.singlr_threshold.setZero();
 
     input_cntr_nullsp(p);
 
-    m_in_u_cntr_nullsp_q.K_theta=p_cntr.joint_imp.K_theta;
-    m_in_u_cntr_nullsp_q.D_theta=p_cntr.joint_imp.xi_theta;
+    m_cntr_nullsp_q.u.K_theta=p_cntr.joint_imp.K_theta;
+    m_cntr_nullsp_q.u.D_theta=p_cntr.joint_imp.xi_theta;
 
-    m_cntr_nullsp_q.initialize(m_in_u_cntr_nullsp_q,in_p_cntr_nullsp_q);
-    m_cntr_nullsp_proj.initialize(m_in_u_cntr_nullsp_proj,in_p_cntr_nullsp_proj);
+    m_cntr_nullsp_q.initialize();
+    m_cntr_nullsp_proj.initialize();
 
     m_nullspace_control_on = memory->read_parameters()->control.nullspace_control.active;
 }
 
 void CartTorqueControllerPipeline::input_cntr_nullsp(const Percept &p){
-    m_in_u_cntr_nullsp_q.theta=p.proprioception.q;
-    m_in_u_cntr_nullsp_q.theta_d=p.proprioception.q;
-    m_in_u_cntr_nullsp_q.dtheta=p.proprioception.dq;
-    m_in_u_cntr_nullsp_q.dtheta_d<<0,0,0,0,0,0,0;
-    m_in_u_cntr_nullsp_q.ddtheta_d<<0,0,0,0,0,0,0;
-    m_in_u_cntr_nullsp_q.M=p.internal_model.M;
-    m_in_u_cntr_nullsp_q.tau_ff.setZero();
+    m_cntr_nullsp_q.u.theta=p.proprioception.q;
+    m_cntr_nullsp_q.u.theta_d=p.proprioception.q;
+    m_cntr_nullsp_q.u.dtheta=p.proprioception.dq;
+    m_cntr_nullsp_q.u.dtheta_d<<0,0,0,0,0,0,0;
+    m_cntr_nullsp_q.u.ddtheta_d<<0,0,0,0,0,0,0;
+    m_cntr_nullsp_q.u.M=p.internal_model.M;
+    m_cntr_nullsp_q.u.tau_ff.setZero();
 
-    m_in_u_cntr_nullsp_proj.J=p.internal_model.B_J_EE;
-    m_in_u_cntr_nullsp_proj.M=p.internal_model.M;
-    m_in_u_cntr_nullsp_proj.tau_c.setZero();
-}
-
-bool CartTorqueControllerPipeline::is_virt_cube_valid(const Percept& p){
-    std::array<bool,3> in_cube={false,false,false};
-    bool safe_activation=true;
-    for(unsigned i=0;i<6;i++){
-        if(fabs(m_out_y_virt_cube.wall_flag(i))>0){
-            safe_activation=false;
-            break;
-        }
-    }
-    for(unsigned i=0;i<3;i++){
-        if(p.proprioception.O_T_EE(i,3)>m_virt_cube_distances(i*2) || p.proprioception.O_T_EE(i,3)<m_virt_cube_distances(i*2+1)){
-            in_cube[i]=false;
-        }else{
-            in_cube[i]=true;
-        }
-    }
-    if(in_cube[0] && in_cube[1] && in_cube[2] && safe_activation){
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-
-bool CartTorqueControllerPipeline::is_virt_joint_walls_valid(const Percept& p){
-    std::array<bool,7> in_walls={false,false,false,false,false,false,false};
-
-    bool safe_activation=true;
-    for(unsigned i=0;i<7;i++){
-        if(fabs(m_out_y_virt_walls_joint.wall_flag(i))>0){
-            safe_activation=false;
-            break;
-        }
-    }
-    for(unsigned i=0;i<7;i++){
-        if(p.proprioception.q(i)>m_virt_joint_walls_distances(i*2) || p.proprioception.q(i)<m_virt_joint_walls_distances(i*2+1)){
-            in_walls[i]=false;
-        }else{
-            in_walls[i]=true;
-        }
-    }
-    if(in_walls[0] && in_walls[1] && in_walls[2] && in_walls[3] && in_walls[4] && in_walls[5] && in_walls[6] && safe_activation){
-        return true;
-    }else{
-        return false;
-    }
+    m_cntr_nullsp_proj.u.J=p.internal_model.B_J_EE;
+    m_cntr_nullsp_proj.u.M=p.internal_model.M;
+    m_cntr_nullsp_proj.u.tau_c.setZero();
 }
 
 }

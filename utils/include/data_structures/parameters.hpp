@@ -133,6 +133,26 @@ public:
         double brake_distance;
         bool active;
     }velocity_walls;
+
+    struct VirtualCube{
+        Eigen::Matrix<double,1,1> damping;
+        Eigen::Matrix<double,1,1> damping_dist;
+        Eigen::Matrix<double,1,1> eta;
+        Eigen::Matrix<double,1,1> rho_min;
+        Eigen::Matrix<double,6,1> walls;
+        Eigen::Matrix<double,1,1> f_max;
+        bool active;
+    }virtual_cube;
+
+    struct VirtualJointWalls{
+        Eigen::Matrix<double,7,1> damping;
+        Eigen::Matrix<double,7,1> damping_dist;
+        Eigen::Matrix<double,7,1> eta;
+        Eigen::Matrix<double,7,1> rho_min;
+        Eigen::Matrix<double,7,1> tau_max;
+        Eigen::Matrix<double,14,1> walls;
+        bool active;
+    }virtual_joint_walls;
 };
 
 class ControlParameters{
@@ -173,26 +193,6 @@ public:
         Eigen::Matrix<double,6,1> active;
         bool sf_on;
     }force_control;
-
-    struct VirtualCube{
-        Eigen::Matrix<double,1,1> damping;
-        Eigen::Matrix<double,1,1> damping_dist;
-        Eigen::Matrix<double,1,1> eta;
-        Eigen::Matrix<double,1,1> rho_min;
-        Eigen::Matrix<double,6,1> walls;
-        Eigen::Matrix<double,1,1> f_max;
-        bool active;
-    }virtual_cube;
-
-    struct VirtualJointWalls{
-        Eigen::Matrix<double,7,1> damping;
-        Eigen::Matrix<double,7,1> damping_dist;
-        Eigen::Matrix<double,7,1> eta;
-        Eigen::Matrix<double,7,1> rho_min;
-        Eigen::Matrix<double,7,1> tau_max;
-        Eigen::Matrix<double,14,1> walls;
-        bool active;
-    }virtual_joint_walls;
 
     struct NullSpaceControl{
         Eigen::Matrix<double,7,1> K_theta;

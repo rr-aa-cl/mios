@@ -1,39 +1,58 @@
 #pragma once
 
-#include "simulink_pipeline/plugin.hpp"
+#include <vector>
+#include <string>
+#include <memory>
+#include <eigen3/Eigen/Core>
+
 class conv_vel2poseModelClass;
 
 namespace conv_vel2pose {
 
-struct In_P_conv_vel2pose : public In_P{
+struct In_P_conv_vel2pose{
+In_P_conv_vel2pose(){
+}
 };
-struct In_U_conv_vel2pose : public In_U{
+struct In_U_conv_vel2pose{
 Eigen::Matrix<double,6,1> TF_dX_d;
 Eigen::Matrix<double,4,4> TF_T_EE;
+In_U_conv_vel2pose(){
+TF_dX_d.setZero();
+TF_T_EE.setZero();
+}
 };
-struct Out_Y_conv_vel2pose : public Out_Y{
+struct Out_Y_conv_vel2pose{
 Eigen::Matrix<double,4,4> TF_T_EE_d;
+Out_Y_conv_vel2pose(){
+TF_T_EE_d.setZero();
+}
 };
-struct Out_L_conv_vel2pose : public Out_L{
+struct Out_L_conv_vel2pose{
+Out_L_conv_vel2pose(){
+}
 };
-class conv_vel2pose : Plugin{
+class conv_vel2pose{
 public:
 conv_vel2pose();
 ~conv_vel2pose();
-Out_Y_conv_vel2pose get_out_y();
-Out_L_conv_vel2pose get_out_l();
-void initialize(const In_U& in_u,const In_P& in_p,bool log = false,unsigned long long l_len = 0,std::string path_logs="");
-void step(const In_U& in_u,Out_Y& out_y);
+void initialize(bool log = false,unsigned long long l_len = 0,const std::string& path_logs="");
+void step();
 void terminate();
+In_P_conv_vel2pose p;
+In_U_conv_vel2pose u;
+Out_Y_conv_vel2pose y;
+Out_L_conv_vel2pose l;
 
 private:
-void write_params_to_model();
-void write_logs();
-conv_vel2poseModelClass* _model;
-std::vector<In_U_conv_vel2pose> _log_in_u;
-std::vector<Out_Y_conv_vel2pose> _log_out_y;
-std::vector<Out_L_conv_vel2pose> _log_out_l;
-Out_L_conv_vel2pose _log;
-};
+void write_input();
+void write_output();
+void write_log();
+std::unique_ptr<conv_vel2poseModelClass> m_model;
+std::vector<In_U_conv_vel2pose> m_log_u;
+std::vector<Out_Y_conv_vel2pose> m_log_y;
+std::vector<Out_L_conv_vel2pose> m_log_l;
+std::string m_path_logs;
+unsigned long long m_cnt_step;
+bool m_flag_log;};
 
 }

@@ -1,11 +1,15 @@
 #pragma once
 
-#include "simulink_pipeline/plugin.hpp"
+#include <vector>
+#include <string>
+#include <memory>
+#include <eigen3/Eigen/Core>
+
 class cntr_joint_var_impModelClass;
 
 namespace cntr_joint_var_imp {
 
-struct In_P_cntr_joint_var_imp : public In_P{
+struct In_P_cntr_joint_var_imp{
 Eigen::Matrix<double,1,1> enable_ffwd_vel;
 Eigen::Matrix<double,1,1> enable_ffwd_acc;
 In_P_cntr_joint_var_imp(){
@@ -13,7 +17,7 @@ enable_ffwd_vel.setZero();
 enable_ffwd_acc.setZero();
 }
 };
-struct In_U_cntr_joint_var_imp : public In_U{
+struct In_U_cntr_joint_var_imp{
 Eigen::Matrix<double,7,1> theta;
 Eigen::Matrix<double,7,1> dtheta;
 Eigen::Matrix<double,7,1> theta_d;
@@ -35,13 +39,13 @@ K_theta.setZero();
 D_theta.setZero();
 }
 };
-struct Out_Y_cntr_joint_var_imp : public Out_Y{
+struct Out_Y_cntr_joint_var_imp{
 Eigen::Matrix<double,7,1> tau_J_d;
 Out_Y_cntr_joint_var_imp(){
 tau_J_d.setZero();
 }
 };
-struct Out_L_cntr_joint_var_imp : public Out_L{
+struct Out_L_cntr_joint_var_imp{
 Eigen::Matrix<double,7,1> tau_J_d_K;
 Eigen::Matrix<double,7,1> tau_J_d_D;
 Eigen::Matrix<double,7,1> K_theta;
@@ -53,24 +57,28 @@ K_theta.setZero();
 D_theta.setZero();
 }
 };
-class cntr_joint_var_imp : Plugin{
+class cntr_joint_var_imp{
 public:
 cntr_joint_var_imp();
 ~cntr_joint_var_imp();
-Out_Y_cntr_joint_var_imp get_out_y();
-Out_L_cntr_joint_var_imp get_out_l();
-void initialize(const In_U& in_u,const In_P& in_p,bool log = false,unsigned long long l_len = 0,std::string path_logs="");
-void step(const In_U& in_u,Out_Y& out_y);
+void initialize(bool log = false,unsigned long long l_len = 0,const std::string& path_logs="");
+void step();
 void terminate();
+In_P_cntr_joint_var_imp p;
+In_U_cntr_joint_var_imp u;
+Out_Y_cntr_joint_var_imp y;
+Out_L_cntr_joint_var_imp l;
 
 private:
-void write_params_to_model();
-void write_logs();
-cntr_joint_var_impModelClass* _model;
-std::vector<In_U_cntr_joint_var_imp> _log_in_u;
-std::vector<Out_Y_cntr_joint_var_imp> _log_out_y;
-std::vector<Out_L_cntr_joint_var_imp> _log_out_l;
-Out_L_cntr_joint_var_imp _log;
-};
+void write_input();
+void write_output();
+void write_log();
+std::unique_ptr<cntr_joint_var_impModelClass> m_model;
+std::vector<In_U_cntr_joint_var_imp> m_log_u;
+std::vector<Out_Y_cntr_joint_var_imp> m_log_y;
+std::vector<Out_L_cntr_joint_var_imp> m_log_l;
+std::string m_path_logs;
+unsigned long long m_cnt_step;
+bool m_flag_log;};
 
 }
