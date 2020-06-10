@@ -48,7 +48,7 @@ bool LTMemory::make_database_consistent(){
     if(!m_mongodb_client.make_document_consistent("control","parameters",default_values)){
         return false;
     }
-    default_values=LimitParameters::get_default_values();
+    default_values=LimitParameters().to_json();
     default_values["name"]="limits";
     if(!m_mongodb_client.make_document_consistent("limits","parameters",default_values)){
         return false;
@@ -58,7 +58,7 @@ bool LTMemory::make_database_consistent(){
     if(!m_mongodb_client.make_document_consistent("frames","parameters",default_values)){
         return false;
     }
-    default_values=UserParameters::get_default_values();
+    default_values=UserParameters().to_json();
     default_values["name"]="user";
     if(!m_mongodb_client.make_document_consistent("user","parameters",default_values)){
         return false;
@@ -371,6 +371,9 @@ bool LTMemory::upload_environment_element(const Object& element){
 
 bool LTMemory::update_database(){
     if(!m_mongodb_client.write_document("system","parameters",m_st_memory->read_parameters()->system.to_json(),true)){
+        return false;
+    }
+    if(!m_mongodb_client.write_document("system","parameters",m_st_memory->read_parameters()->user.to_json(),true)){
         return false;
     }
     return true;

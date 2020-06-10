@@ -29,18 +29,7 @@
 namespace mios {
 
 Core::Core():m_skill_engine(SkillEngine(this)),m_portal(Portal("0.0.0.0",12000,"mios/core","0.0.0.0",12001,12002)),m_task_engine(TaskEngine(this)),
-m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_ros_node(100),m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false){
-
-    spdlog::info("Initializing knowledgebase...");
-    if(!m_memory.initialize()){
-        spdlog::error("Could not initialize memory, shutting down. Mongodb service must run on port 27017. Check status with <systemctl status mongodb.service>.");
-        exit(-1);
-    }
-
-    spdlog::info("Initializing MIOS core...");
-    if(!initialize()){
-        spdlog::warn("Could not initialize MIOS core. I may be able to recover...");
-    }
+    m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_ros_node(100),m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false){
 }
 
 Core::~Core(){
@@ -48,30 +37,31 @@ Core::~Core(){
 }
 
 bool Core::initialize(){
+    spdlog::info("Initializing MIOS core...");
+    if(!m_memory.initialize()){
+        spdlog::error("Could not initialize memory.");
+        return false;
+    }
     spdlog::debug("Core: initialize.m_memory.set_default_parameters");
     if(!m_memory.set_default_parameters()){
         return false;
     }
     spdlog::debug("Core: initialize.check_if_robot");
-    if(m_memory.read_parameters()->system.has_robot || m_memory.read_parameters()->system.has_gripper){
-        m_memory.get_parameters()->system.robot_ip = m_panda_body.get_robot_ip(m_memory.read_parameters()->system.robot_ip).value_or("127.0.0.1");
-        if(!m_memory.update_database()){
-            spdlog::warn("Could not update database.");
-        }
+    m_panda_body.set_arm(m_memory.read_parameters()->system.has_robot);
+    m_panda_body.set_hand(m_memory.read_parameters()->system.has_gripper);
+    m_memory.get_parameters()->system.robot_ip = m_panda_body.get_robot_ip(m_memory.read_parameters()->system.robot_ip).value_or("127.0.0.1");
+    if(!m_memory.update_database()){
+        spdlog::warn("Could not update database.");
     }
     spdlog::debug("Core: initialize.check_if_robot2");
-    if(m_memory.read_parameters()->system.has_robot){
-        spdlog::debug("Core: initialize.connect_to_robot");
-        if(!m_panda_body.connect_to_robot(m_memory.read_parameters()->system.robot_ip)){
-            return false;
-        }
+    spdlog::debug("Core: initialize.connect_to_robot");
+    if(!m_panda_body.connect_to_robot(m_memory.read_parameters()->system.robot_ip)){
+        return false;
     }
     spdlog::debug("Core: initialize.check_if_gripper");
-    if(m_memory.read_parameters()->system.has_gripper){
-        spdlog::debug("Core: initialize.connect_to_gripper");
-        if(!m_panda_body.connect_to_gripper(m_memory.read_parameters()->system.robot_ip)){
-            return false;
-        }
+    spdlog::debug("Core: initialize.connect_to_gripper");
+    if(!m_panda_body.connect_to_gripper(m_memory.read_parameters()->system.robot_ip)){
+        return false;
     }
     spdlog::debug("Core: initialize.set_time");
     m_memory.get_live_context()->t_core=std::chrono::high_resolution_clock::now();
@@ -337,6 +327,14 @@ bool Core::shutdown_body(){
 
 bool Core::pack_body(){
     return m_panda_body.move_to_pack_pose(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
+}
+
+bool Core::start_desk_task(const std::string &task){
+    return m_panda_body.start_desk_task(task,m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
+}
+
+bool Core::stop_desk_task(){
+    return m_panda_body.stop_desk_task(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
 }
 
 bool Core::recover_body(){

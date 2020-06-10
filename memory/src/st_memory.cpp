@@ -106,7 +106,7 @@ bool STMemory::apply_skill_context(const nlohmann::json task_context, const std:
         spdlog::error("Could not apply frames parameters from context for skill " + skill_id);
         return false;
     }
-    if(!m_parameters.limits.read_parameters(task_context["skills"][skill_id]["limits"])){
+    if(!m_parameters.limits.from_json(task_context["skills"][skill_id]["limits"])){
         spdlog::error("Could not apply limits parameters from context for skill " + skill_id);
         return false;
     }
@@ -122,7 +122,7 @@ bool STMemory::apply_skill_context(const nlohmann::json task_context, const std:
         spdlog::error("Could not apply system parameters from context for skill " + skill_id);
         return false;
     }
-    if(!m_parameters.user.read_parameters(task_context["skills"][skill_id]["user"])){
+    if(!m_parameters.user.from_json(task_context["skills"][skill_id]["user"])){
         spdlog::error("Could not apply user parameters from context for skill " + skill_id);
         return false;
     }
@@ -140,13 +140,13 @@ bool STMemory::set_default_parameters(){
     if(!m_parameters.frames.read_parameters(default_parameters["frames"])){
         return false;
     }
-    if(!m_parameters.limits.read_parameters(default_parameters["limits"])){
+    if(!m_parameters.limits.from_json(default_parameters["limits"])){
         return false;
     }
     if(!m_parameters.system.read_parameters(default_parameters["system"])){
         return false;
     }
-    if(!m_parameters.user.read_parameters(default_parameters["user"])){
+    if(!m_parameters.user.from_json(default_parameters["user"])){
         return false;
     }
     merge_live_context();

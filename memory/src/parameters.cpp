@@ -7,33 +7,33 @@
 namespace mios {
 
 LimitParameters::LimitParameters(){
-    joint_space.dddq_max.setZero();
-    joint_space.ddq_max.setZero();
-    joint_space.dq_max.setZero();
-    joint_space.q_upper.setZero();
-    joint_space.q_lower.setZero();
-    joint_space.tau_J_max.setZero();
-    joint_space.dtau_J_max.setZero();
-    joint_space.tau_ext_max.setZero();
-    joint_space.K_theta_max.setZero();
-    joint_space.dK_theta_max.setZero();
-    joint_space.xi_theta_max.setZero();
-    joint_space.dxi_theta_max.setZero();
+    joint_space.dddq_max<<7500,3750,5000,6250,7500,10000,10000;
+    joint_space.ddq_max<<15,7.5,10,12.5,15,20,20;
+    joint_space.dq_max<<2.1,2.1,2.1,2.1,2.6,2.6,2.6;
+    joint_space.q_upper<<2.85,1.7,2.85,0,2.85,3.7,2.85;
+    joint_space.q_lower<<-2.85,-1.7,-2.85,-3,-2.85,-0.05,-2.85;
+    joint_space.tau_J_max<<87,87,87,87,12,12,12;
+    joint_space.dtau_J_max<<1000,1000,1000,1000,1000,1000,1000;
+    joint_space.tau_ext_max<<87,87,87,87,12,12,12;
+    joint_space.K_theta_max<<10000,10000,10000,10000,10000,10000,10000;
+    joint_space.dK_theta_max<<10000,10000,10000,10000,10000,10000,10000;
+    joint_space.xi_theta_max<<2,2,2,2,2,2,2;
+    joint_space.dxi_theta_max<<10,10,10,10,10,10,10;
 
-    cartesian_space.dddX_max.setZero();
-    cartesian_space.ddX_max.setZero();
-    cartesian_space.dX_max.setZero();
-    cartesian_space.x_lower.setZero();
-    cartesian_space.x_upper.setZero();
-    cartesian_space.F_J_max.setZero();
-    cartesian_space.dF_J_max.setZero();
-    cartesian_space.K_x_max.setZero();
-    cartesian_space.dK_x_max.setZero();
-    cartesian_space.xi_x_max.setZero();
-    cartesian_space.dxi_x_max.setZero();
+    cartesian_space.x_upper<<0.96,0.96,1.3;
+    cartesian_space.x_lower<<-0.96,-0.96,-0.4;
+    cartesian_space.dX_max<<1.7,2.5;
+    cartesian_space.ddX_max<<13,25;
+    cartesian_space.dddX_max<<6500,12500;
+    cartesian_space.F_J_max<<100,50;
+    cartesian_space.dF_J_max<<1000,500;
+    cartesian_space.K_x_max<<3000,3000,3000,200,200,200;
+    cartesian_space.dK_x_max<<5000,5000,5000,500,500,500;
+    cartesian_space.xi_x_max<<2,2,2,2,2,2;
+    cartesian_space.dxi_x_max<<10,10,10,10,10,10;
 }
 
-bool LimitParameters::read_parameters(const nlohmann::json &parameters){
+bool LimitParameters::from_json(const nlohmann::json &parameters){
     if(parameters.find("joint_space")==parameters.end()){
         spdlog::error("Control parameters do not have joint_space subsection.");
         return false;
@@ -143,57 +143,52 @@ bool LimitParameters::read_parameters(const nlohmann::json &parameters){
     return true;
 }
 
-nlohmann::json LimitParameters::get_default_values(){
-    nlohmann::json default_values;
-    nlohmann::json joint_space;
-    nlohmann::json cartesian_space;
-    joint_space["dddq_max"]={7500,3750,5000,6250,7500,10000,10000};
-    joint_space["ddq_max"]={15,7.5,10,12.5,15,20,20};
-    joint_space["dq_max"]={2.1,2.1,2.1,2.1,2.6,2.6,2.6};
-    joint_space["q_upper"]={2.85,1.7,2.85,0,2.85,3.7,2.85};
-    joint_space["q_lower"]={-2.85,-1.7,-2.85,-3,-2.85,-0.05,-2.85};
-    joint_space["tau_J_max"]={87,87,87,87,12,12,12};
-    joint_space["dtau_J_max"]={1000,1000,1000,1000,1000,1000,1000};
+nlohmann::json LimitParameters::to_json() const{
+    nlohmann::json json_object;
+    nlohmann::json json_joint_space;
+    nlohmann::json json_cartesian_space;
+    json_joint_space["dddq_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.dddq_max);
+    json_joint_space["ddq_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.ddq_max);
+    json_joint_space["dq_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.dq_max);
+    json_joint_space["q_upper"]=msrm_utils::from_eigen<double,7,1>(joint_space.q_upper);
+    json_joint_space["q_lower"]=msrm_utils::from_eigen<double,7,1>(joint_space.q_lower);
+    json_joint_space["tau_J_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.tau_J_max);
+    json_joint_space["dtau_J_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.dtau_J_max);
+    json_joint_space["K_theta_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.K_theta_max);
+    json_joint_space["dK_theta_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.dK_theta_max);
+    json_joint_space["xi_theta_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.xi_theta_max);
+    json_joint_space["dxi_theta_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.dxi_theta_max);
+    json_joint_space["tau_ext_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.tau_ext_max);
 
-    joint_space["K_theta_max"]={10000,10000,10000,10000,10000,10000,10000};
-    joint_space["dK_theta_max"]={10000,10000,10000,10000,10000,10000,10000};
-    joint_space["xi_theta_max"]={2,2,2,2,2,2,2};
-    joint_space["dxi_theta_max"]={10,10,10,10,10,10,10};
+    json_cartesian_space["x_upper"]=msrm_utils::from_eigen<double,3,1>(cartesian_space.x_upper);
+    json_cartesian_space["x_lower"]=msrm_utils::from_eigen<double,3,1>(cartesian_space.x_lower);
+    json_cartesian_space["dX_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.dX_max);
+    json_cartesian_space["ddX_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.ddX_max);
+    json_cartesian_space["dddX_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.dddX_max);
+    json_cartesian_space["F_ext_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.F_ext_max);
+    json_cartesian_space["F_J_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.F_J_max);
+    json_cartesian_space["dF_J_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.dF_J_max);
 
-    joint_space["tau_ext_max"]={87,87,87,87,12,12,12};
+    json_cartesian_space["K_x_max"]=msrm_utils::from_eigen<double,6,1>(cartesian_space.K_x_max);
+    json_cartesian_space["dK_x_max"]=msrm_utils::from_eigen<double,6,1>(cartesian_space.dK_x_max);
+    json_cartesian_space["xi_x_max"]=msrm_utils::from_eigen<double,6,1>(cartesian_space.xi_x_max);
+    json_cartesian_space["dxi_x_max"]=msrm_utils::from_eigen<double,6,1>(cartesian_space.dxi_x_max);
 
-    cartesian_space["x_upper"]={0.96,0.96,1.3};
-    cartesian_space["x_lower"]={-0.96,-0.96,-0.4};
-
-    cartesian_space["dX_max"]={1.7,2.5};
-    cartesian_space["ddX_max"]={13,25};
-    cartesian_space["dddX_max"]={6500,12500};
-
-    cartesian_space["F_ext_max"]={100,50};
-
-    cartesian_space["F_J_max"]={100,50};
-    cartesian_space["dF_J_max"]={1000,500};
-
-    cartesian_space["K_x_max"]={3000,3000,3000,200,200,200};
-    cartesian_space["dK_x_max"]={5000,5000,5000,500,500,500};
-    cartesian_space["xi_x_max"]={2,2,2,2,2,2};
-    cartesian_space["dxi_x_max"]={10,10,10,10,10,10};
-
-    default_values["joint_space"]=joint_space;
-    default_values["cartesian_space"]=cartesian_space;
-    return default_values;
+    json_object["joint_space"]=json_joint_space;
+    json_object["cartesian_space"]=json_cartesian_space;
+    return json_object;
 }
 
 UserParameters::UserParameters(){
-    dX_max.setZero();
-    ddX_max.setZero();
-    dq_max.setZero();
-    ddq_max.setZero();
+    dX_max<<1.7,2.5;
+    ddX_max<<13,25;
+    dq_max<<2.1,2.1,2.1,2.1,2.6,2.6,2.6;
+    ddq_max<<15,7.5,10,12.5,15,20,20;
 
-    F_ext_contact.setZero();
-    tau_ext_contact.setZero();
-    F_ext_max.setZero();
-    tau_ext_max.setZero();
+    F_ext_contact<<4,2;
+    tau_ext_contact<<2,2,2,2,2,2,2;
+    F_ext_max<<100,50;
+    tau_ext_max<<87,87,87,87,12,12,12;
 
     load_m=0;
     load_com.setZero();
@@ -202,7 +197,7 @@ UserParameters::UserParameters(){
     safe_mode=true;
 }
 
-bool UserParameters::read_parameters(const nlohmann::json &parameters){
+bool UserParameters::from_json(const nlohmann::json &parameters){
     if(!msrm_utils::read_json_param<double,2,1>(parameters,"dX_max",dX_max)){
         spdlog::error("Could not read dX_max.");
         return false;
@@ -256,24 +251,24 @@ bool UserParameters::read_parameters(const nlohmann::json &parameters){
     return true;
 }
 
-nlohmann::json UserParameters::get_default_values(){
-    nlohmann::json default_values;
-    default_values["dX_max"]={1.7,2.5};
-    default_values["ddX_max"]={13,25};
-    default_values["dq_max"]={2.1,2.1,2.1,2.1,2.6,2.6,2.6};
-    default_values["ddq_max"]={15,7.5,10,12.5,15,20,20};
+nlohmann::json UserParameters::to_json() const{
+    nlohmann::json json_object;
+    json_object["dX_max"]=msrm_utils::from_eigen<double,2,1>(dX_max);
+    json_object["ddX_max"]=msrm_utils::from_eigen<double,2,1>(ddX_max);
+    json_object["dq_max"]=msrm_utils::from_eigen<double,7,1>(dq_max);
+    json_object["ddq_max"]=msrm_utils::from_eigen<double,7,1>(ddq_max);
 
-    default_values["F_ext_contact"]={4,2};
-    default_values["F_ext_max"]={100,50};
-    default_values["tau_ext_contact"]={2,2,2,2,2,2,2};
-    default_values["tau_ext_max"]={87,87,87,87,12,12,12};
+    json_object["F_ext_contact"]=msrm_utils::from_eigen<double,2,1>(F_ext_contact);
+    json_object["F_ext_max"]=msrm_utils::from_eigen<double,2,1>(F_ext_max);
+    json_object["tau_ext_contact"]=msrm_utils::from_eigen<double,7,1>(tau_ext_contact);
+    json_object["tau_ext_max"]=msrm_utils::from_eigen<double,7,1>(tau_ext_max);
 
-    default_values["load_m"]=0;
-    default_values["load_com"]={0,0,0};
-    default_values["load_I"]={0,0,0,0,0,0,0,0,0};
+    json_object["load_m"]=load_m;
+    json_object["load_com"]=msrm_utils::from_eigen<double,3,1>(load_com);
+    json_object["load_I"]=msrm_utils::from_eigen<double,3,3>(load_I);
 
-    default_values["safe_mode"]=true;
-    return default_values;
+    json_object["safe_mode"]=safe_mode;
+    return json_object;
 }
 
 FramesParameters::FramesParameters(){
@@ -313,7 +308,7 @@ nlohmann::json FramesParameters::get_default_values(){
 }
 
 SystemParameters::SystemParameters(){
-    robot_ip="";
+    robot_ip="127.0.0.1";
     desk_user="";
     desk_pwd="";
 

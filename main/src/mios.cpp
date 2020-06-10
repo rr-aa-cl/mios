@@ -52,6 +52,10 @@ int main(int argc, char** argv){
     ros::init(argc, argv, "mios", ros::init_options::NoSigintHandler);
 
     mios::Core core;
+    if(!core.initialize()){
+        spdlog::error("MIOS core could not be initialized, shutting down...");
+        return -1;
+    }
     spdlog::info("############################################################");
     spdlog::info("System is ready.");
     core.get_task_engine()->life_cycle();

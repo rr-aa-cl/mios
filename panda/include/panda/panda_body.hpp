@@ -25,8 +25,8 @@ public:
     bool pre_run_checks() const;
 
     bool start_desk_task(const std::string& task, const std::optional<std::string> &ip, const std::string user, const std::string &password);
-    void stop_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string &password);
-    bool wait_for_desk_task();
+    bool stop_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string &password);
+    void wait_for_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string& password);
     bool shutdown_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password);
     bool move_to_pack_pose(const std::optional<std::string> &ip, const std::string user, const std::string& password);
     bool unlock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password);
@@ -57,6 +57,9 @@ public:
     bool set_load(double load_m,std::array<double,3> load_com,std::array<double,9> load_I);
     bool set_ee(std::array<double,16> F_T_EE);
 
+    void set_arm(bool has_arm);
+    void set_hand(bool has_hand);
+
 public:
     bool get_robot_state(franka::RobotState& state) const;
     bool get_gripper_state(franka::GripperState& state) const;
@@ -76,6 +79,9 @@ private:
     std::unique_ptr<franka::Gripper> m_panda_hand;
     franka::RobotState m_robot_state;
     franka::GripperState m_gripper_state;
+
+    bool m_has_arm;
+    bool m_has_hand;
 
     std::atomic<bool> m_arm_connected;
     std::atomic<bool> m_hand_connected;

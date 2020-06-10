@@ -55,6 +55,9 @@ public:
     bool shutdown_body();
     bool pack_body();
 
+    bool start_desk_task(const std::string& task);
+    bool stop_desk_task();
+
     bool recover_body();
 
 public:

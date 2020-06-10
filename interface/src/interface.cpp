@@ -45,6 +45,8 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("lock_brakes",std::bind(&CommandInterface::lock_brakes,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("shutdown",std::bind(&CommandInterface::shutdown,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("pack_pose",std::bind(&CommandInterface::pack_pose,this,std::placeholders::_1),{});
+    m_portal->bind_method_to_all("start_desk_task",std::bind(&CommandInterface::start_desk_task,this,std::placeholders::_1),{ArgPair("task",{})});
+    m_portal->bind_method_to_all("stop_desk_task",std::bind(&CommandInterface::stop_desk_task,this,std::placeholders::_1),{});
 
     m_portal->bind_method_to_all("terminate",std::bind(&CommandInterface::terminate,this,std::placeholders::_1),{});
 
@@ -363,25 +365,41 @@ nlohmann::json CommandInterface::get_state(const nlohmann::json &request){
 //    return response;
 //}
 
+nlohmann::json CommandInterface::start_desk_task(const nlohmann::json &request){
+    nlohmann::json response;
+    std::string task;
+    request["task"].get_to(task);
+    bool result=m_core->start_desk_task(task);
+    response["result"]=result;
+    return response;
+}
+
+nlohmann::json CommandInterface::stop_desk_task(const nlohmann::json &request){
+    nlohmann::json response;
+    bool result=m_core->stop_desk_task();
+    response["result"]=result;
+    return response;
+}
+
 nlohmann::json CommandInterface::unlock_brakes(const nlohmann::json &request){
     nlohmann::json response;
     bool result=m_core->unlock_body();
     response["result"]=result;
-    return nlohmann::json();
+    return response;
 }
 
 nlohmann::json CommandInterface::lock_brakes(const nlohmann::json &request){
     nlohmann::json response;
     bool result=m_core->lock_body();
     response["result"]=result;
-    return nlohmann::json();
+    return response;
 }
 
 nlohmann::json CommandInterface::shutdown(const nlohmann::json &request){
     nlohmann::json response;
     bool result=m_core->shutdown_body();
     response["result"]=result;
-    return nlohmann::json();
+    return response;
 }
 
 nlohmann::json CommandInterface::pack_pose(const nlohmann::json &request){

@@ -43,6 +43,8 @@ private:
     nlohmann::json get_state(const nlohmann::json& request);
 
     // robot level
+    nlohmann::json start_desk_task(const nlohmann::json& request);
+    nlohmann::json stop_desk_task(const nlohmann::json& request);
     nlohmann::json unlock_brakes(const nlohmann::json& request);
     nlohmann::json lock_brakes(const nlohmann::json& request);
     nlohmann::json shutdown(const nlohmann::json& request);

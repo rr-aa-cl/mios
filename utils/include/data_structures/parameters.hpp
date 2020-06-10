@@ -12,12 +12,19 @@ class Object;
 
 enum CommandMode{None,Torque,CartesianVelocity,JointVelocity,CartesianPose,JointPose};
 
-class LimitParameters{
+class IParameters{
+public:
+    virtual bool from_json(const nlohmann::json& parameters) = 0;
+    virtual nlohmann::json to_json() const = 0;
+
+};
+
+class LimitParameters : public IParameters{
 public:
     LimitParameters();
 
-    bool read_parameters(const nlohmann::json& parameters);
-    static nlohmann::json get_default_values();
+    bool from_json(const nlohmann::json& parameters);
+    nlohmann::json to_json() const;
 
     struct{
         Eigen::Matrix<double,7,1> q_upper;
@@ -52,12 +59,12 @@ public:
     }cartesian_space;
 };
 
-class UserParameters{
+class UserParameters : public IParameters{
 public:
     UserParameters();
 
-    bool read_parameters(const nlohmann::json& parameters);
-    static nlohmann::json get_default_values();
+    bool from_json(const nlohmann::json& parameters);
+    nlohmann::json to_json() const;
 
     Eigen::Matrix<double,2,1> dX_max;
     Eigen::Matrix<double,2,1> ddX_max;
@@ -89,19 +96,6 @@ public:
     Eigen::Matrix<double,4,4> F_T_EE;
     Eigen::Matrix<double,4,4> EE_T_TCP;
     Eigen::Matrix<double,4,4> EE_T_K;
-};
-
-class GeneralParameters{
-public:
-    GeneralParameters();
-
-    bool read_parameters(const nlohmann::json& parameters);
-    static nlohmann::json get_default_values();
-
-    bool safe_mode;
-    bool instant_recovery;
-    unsigned control_mode;
-    unsigned command_mode;
 };
 
 class SystemParameters{
