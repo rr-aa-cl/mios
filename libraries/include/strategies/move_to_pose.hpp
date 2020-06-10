@@ -24,8 +24,6 @@ private:
     Eigen::Matrix<double,2,1> m_t_scale;
 
     mogen_p2p::mogen_p2p m_mogen_p2p;
-    mogen_p2p::In_U_mogen_p2p m_mogen_p2p_in_u;
-    mogen_p2p::Out_Y_mogen_p2p m_mogen_p2p_out_y;
 
 };
 

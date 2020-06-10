@@ -1,5 +1,6 @@
 #!/usr/bin/python3 -u
 import time
+import numpy as np
 
 from ws_client import *
 # from udp_client import *
@@ -596,6 +597,29 @@ def test_live_parameters(address):
               'test_parameter_2 has not been put through.', response)
     msg_error(task_result["results"]["t1_s2"]["test_parameter_3"] == [1, 2, 3, 4, 5], 'live_parameter_server',
               'test_parameter_3 has not been put through.', response)
+
+
+def test_controllers(address):
+    print("Testing controller pipeline: 2")
+    T_EE_g = [np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.5, -0.2, 0.5, 1]),
+              np.array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.5, 0.2, 0.5, 1])]
+    for T_EE in T_EE_g:
+        response = start_task(address, "MoveToCartPose", parameters={"parameters": {"T_EE_g": T_EE.tolist()}})
+        response = wait_for_task(address, response['result']['task_uuid'])
+        response = call_method(address, 12000, "get_state")
+        T_EE_now = np.asarray(response["result"]["O_T_EE"])
+        T_EE_diff = np.linalg.norm(T_EE[12:15] - T_EE_now[12:15])
+        msg_error(float(T_EE_diff) < 0.001, "test_controllers", "Goal pose and actual pose are too far apart.", response)
+
+    print("Testing controller pipeline: 3")
+    q_g = [np.array([-0.3, 1.5, 0, 1, 0, 0.7, 0]), np.array([0.3, 1.5, 0, 1, 0, 0.7, 0])]
+    for q in q_g:
+        response = start_task(address, "MoveToJointPose", parameters={"parameters": {"q_g": q.tolist()}})
+        response = wait_for_task(address, response['result']['task_uuid'])
+        response = call_method(address, 12000, "get_state")
+        q_now = np.asarray(response["result"]["q"])
+        q_diff = np.linalg.norm(q - q_now)
+        msg_error(float(q_diff) < 0.0001, "test_controllers", "Goal pose and actual pose are too far apart.", response)
 
 
 def gripper_tests(url):

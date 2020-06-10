@@ -122,7 +122,7 @@ bool Core::execute_skill(){
     set_robot_parameters();
 
     bool result=false;
-    spdlog::debug("CORE:EXECUTE_SKILL.control_mode: "+static_cast<int>(m_memory.read_parameters()->control.control_mode));
+    spdlog::debug("CORE: EXECUTE_SKILL.control_mode: ");
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mCartTorque){
         m_controller_pipeline=std::make_unique<CartTorqueControllerPipeline>();
         m_safety_stage_1.insert(std::make_unique<VelocityWallsSafetyModule>());

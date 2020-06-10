@@ -1,15 +1,18 @@
 #include "panda/panda_body.hpp"
 #include <spdlog/spdlog.h>
 #include <msrm_utils/network.hpp>
+#include <msrm_utils/conversion.hpp>
 
 #include <franka/exception.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
 
+#include "plugins/conv_vel2pose_wrapper.hpp"
+
 namespace mios {
 
 PandaBody::PandaBody():m_panda_arm(nullptr),m_panda_model(nullptr),m_panda_hand(nullptr),m_arm_connected(false),m_hand_connected(false){
-
+    m_robot_state.O_T_EE={1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 }
 
 std::optional<std::string> PandaBody::get_robot_ip(const std::optional<std::string>& last_ip){
@@ -307,18 +310,16 @@ bool PandaBody::control(std::function<franka::JointPositions (const franka::Robo
 
 void PandaBody::dummy_control(std::function<franka::Torques (const franka::RobotState &,franka::Duration)> controller_callback){
     franka::Torques tau_J={0,0,0,0,0,0,0};
-    franka::RobotState state;
 
-    state.K_F_ext_hat_K={0,0,0,0,0,0};
-    state.O_F_ext_hat_K={0,0,0,0,0,0};
-    state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
-    state.q={0,0,0,0,0,0,0};
-    state.dq={0,0,0,0,0,0,0};
+    m_robot_state.K_F_ext_hat_K={0,0,0,0,0,0};
+    m_robot_state.O_F_ext_hat_K={0,0,0,0,0,0};
+    m_robot_state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
+    m_robot_state.dq={0,0,0,0,0,0,0};
     std::chrono::high_resolution_clock::time_point t_0;
     franka::Duration duration(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-t_0));
     while(!tau_J.motion_finished){
         auto t_s_start = std::chrono::system_clock::now();
-        tau_J=controller_callback(state,duration);
+        tau_J=controller_callback(m_robot_state,duration);
         auto t_s_end = std::chrono::system_clock::now();
         double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
         duration=franka::Duration(t);
@@ -327,38 +328,47 @@ void PandaBody::dummy_control(std::function<franka::Torques (const franka::Robot
 }
 
 void PandaBody::dummy_control(std::function<franka::CartesianVelocities (const franka::RobotState &,franka::Duration)> controller_callback){
-    franka::CartesianVelocities tau_J={0,0,0,0,0,0,0};
-    franka::RobotState state;
-    state.K_F_ext_hat_K={0,0,0,0,0,0};
-    state.O_F_ext_hat_K={0,0,0,0,0,0};
-    state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
-    state.q={0,0,0,0,0,0,0};
-    state.dq={0,0,0,0,0,0,0};
+    franka::CartesianVelocities dX_d={0,0,0,0,0,0};
+    m_robot_state.K_F_ext_hat_K={0,0,0,0,0,0};
+    m_robot_state.O_F_ext_hat_K={0,0,0,0,0,0};
+    m_robot_state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
+    m_robot_state.dq={0,0,0,0,0,0,0};
     std::chrono::high_resolution_clock::time_point t_0;
     franka::Duration duration(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-t_0));
-    while(!tau_J.motion_finished){
+    conv_vel2pose::conv_vel2pose conv;
+    conv.u.TF_T_EE=Eigen::Matrix<double,4,4>(m_robot_state.O_T_EE.data());
+    conv.u.TF_dX_d.setZero();
+    conv.initialize();
+    while(!dX_d.motion_finished){
         auto t_s_start = std::chrono::system_clock::now();
-        tau_J=controller_callback(state,duration);
+        dX_d=controller_callback(m_robot_state,duration);
+        conv.u.TF_T_EE=Eigen::Matrix<double,4,4>(m_robot_state.O_T_EE.data());
+        conv.u.TF_dX_d=Eigen::Matrix<double,6,1>(dX_d.O_dP_EE.data());
+        conv.step();
+        m_robot_state.O_T_EE=msrm_utils::convert_to_array<double,4,4>(conv.y.TF_T_EE_d);
         auto t_s_end = std::chrono::system_clock::now();
         double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
         duration=franka::Duration(t);
         std::this_thread::sleep_for(std::chrono::microseconds(1000-static_cast<int>(t)));
     }
+    conv.terminate();
 }
 
 void PandaBody::dummy_control(std::function<franka::JointVelocities (const franka::RobotState &,franka::Duration)> controller_callback){
-    franka::JointVelocities tau_J={0,0,0,0,0,0,0};
-    franka::RobotState state;
-    state.K_F_ext_hat_K={0,0,0,0,0,0};
-    state.O_F_ext_hat_K={0,0,0,0,0,0};
-    state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
-    state.q={0,0,0,0,0,0,0};
-    state.dq={0,0,0,0,0,0,0};
+    franka::JointVelocities dq_d={0,0,0,0,0,0,0};
+    m_robot_state.K_F_ext_hat_K={0,0,0,0,0,0};
+    m_robot_state.O_F_ext_hat_K={0,0,0,0,0,0};
+    m_robot_state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
+    m_robot_state.dq={0,0,0,0,0,0,0};
     std::chrono::high_resolution_clock::time_point t_0;
     franka::Duration duration(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-t_0));
-    while(!tau_J.motion_finished){
+    while(!dq_d.motion_finished){
         auto t_s_start = std::chrono::system_clock::now();
-        tau_J=controller_callback(state,duration);
+        dq_d=controller_callback(m_robot_state,duration);
+        for(unsigned i=0;i<7;i++){
+            m_robot_state.q[i]+=dq_d.dq[i]*0.001;
+        }
+        m_robot_state.dq=dq_d.dq;
         auto t_s_end = std::chrono::system_clock::now();
         double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
         duration=franka::Duration(t);
@@ -367,18 +377,17 @@ void PandaBody::dummy_control(std::function<franka::JointVelocities (const frank
 }
 
 void PandaBody::dummy_control(std::function<franka::CartesianPose (const franka::RobotState &,franka::Duration)> controller_callback){
-    franka::CartesianPose tau_J={0,0,0,0,0,0,0};
-    franka::RobotState state;
-    state.K_F_ext_hat_K={0,0,0,0,0,0};
-    state.O_F_ext_hat_K={0,0,0,0,0,0};
-    state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
-    state.q={0,0,0,0,0,0,0};
-    state.dq={0,0,0,0,0,0,0};
+    franka::CartesianPose O_T_EE_d={1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
+    m_robot_state.K_F_ext_hat_K={0,0,0,0,0,0};
+    m_robot_state.O_F_ext_hat_K={0,0,0,0,0,0};
+    m_robot_state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
+    m_robot_state.dq={0,0,0,0,0,0,0};
     std::chrono::high_resolution_clock::time_point t_0;
     franka::Duration duration(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-t_0));
-    while(!tau_J.motion_finished){
+    while(!O_T_EE_d.motion_finished){
         auto t_s_start = std::chrono::system_clock::now();
-        tau_J=controller_callback(state,duration);
+        O_T_EE_d=controller_callback(m_robot_state,duration);
+        m_robot_state.O_T_EE=O_T_EE_d.O_T_EE;
         auto t_s_end = std::chrono::system_clock::now();
         double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
         duration=franka::Duration(t);
@@ -387,18 +396,18 @@ void PandaBody::dummy_control(std::function<franka::CartesianPose (const franka:
 }
 
 void PandaBody::dummy_control(std::function<franka::JointPositions (const franka::RobotState &,franka::Duration)> controller_callback){
-    franka::JointPositions tau_J={0,0,0,0,0,0,0};
-    franka::RobotState state;
-    state.K_F_ext_hat_K={0,0,0,0,0,0};
-    state.O_F_ext_hat_K={0,0,0,0,0,0};
-    state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
-    state.q={0,0,0,0,0,0,0};
-    state.dq={0,0,0,0,0,0,0};
+    franka::JointPositions q_d={0,0,0,0,0,0,0};
+    franka::RobotState m_robot_state;
+    m_robot_state.K_F_ext_hat_K={0,0,0,0,0,0};
+    m_robot_state.O_F_ext_hat_K={0,0,0,0,0,0};
+    m_robot_state.tau_ext_hat_filtered={0,0,0,0,0,0,0};
+    m_robot_state.dq={0,0,0,0,0,0,0};
     std::chrono::high_resolution_clock::time_point t_0;
     franka::Duration duration(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-t_0));
-    while(!tau_J.motion_finished){
+    while(!q_d.motion_finished){
         auto t_s_start = std::chrono::system_clock::now();
-        tau_J=controller_callback(state,duration);
+        q_d=controller_callback(m_robot_state,duration);
+        m_robot_state.q=q_d.q;
         auto t_s_end = std::chrono::system_clock::now();
         double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
         duration=franka::Duration(t);
@@ -727,11 +736,12 @@ bool PandaBody::home_gripper() const{
 }
 
 void PandaBody::get_default_robot_state(franka::RobotState &state) const{
+    state=m_robot_state;
     state.robot_mode=franka::RobotMode::kIdle;
 }
 
 void PandaBody::get_default_gripper_state(franka::GripperState &state) const{
-
+    state=m_gripper_state;
 }
 
 void PandaBody::call_desk(const std::string& function, const std::string &ip, const std::string &user, const std::string &password){

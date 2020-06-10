@@ -4,8 +4,14 @@
 namespace mios {
 
 bool SkillParametersMoveToPoseCart::read_parameters(const nlohmann::json &p){
-    msrm_utils::read_json_param<double,2,1>(p,"speed",speed);
-    msrm_utils::read_json_param<double,2,1>(p,"acc",acc);
+    if(!msrm_utils::read_json_param<double,2,1>(p,"speed",speed)){
+        spdlog::error("Parameter speed could not be loaded but is mandatory.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param<double,2,1>(p,"acc",acc)){
+        spdlog::error("Parameter acc could not be loaded but is mandatory.");
+        return false;
+    }
     msrm_utils::read_json_param<double,4,4>(p,"q_g_offset",TF_g_offset);
 
     if(!msrm_utils::read_json_param<double,4,4>(p,"TF_T_EE_g",TF_T_EE_g)){
@@ -23,7 +29,7 @@ std::shared_ptr<ManipulationPrimitive> MoveToPoseCart::get_initial_mp(const Perc
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p_0);
     mp->create_strategy<MoveToPoseStrategy>("s_0",1);
     Eigen::Matrix<double,4,4> T_g;
-    if(this->get_object("loc_goal")->name=="none"){
+    if(this->get_object("goal_pose")->name=="NullObject"){
         T_g=skill_params->TF_T_EE_g;
     }else{
         T_g=get_object("goal_pose")->O_T_OB;
@@ -33,6 +39,9 @@ std::shared_ptr<ManipulationPrimitive> MoveToPoseCart::get_initial_mp(const Perc
     speed<<skill_params->speed(0)*m_memory->read_parameters()->user.dX_max(0),skill_params->speed(1)*m_memory->read_parameters()->user.dX_max(1);
     acc<<skill_params->acc(0)*m_memory->read_parameters()->user.ddX_max(0),skill_params->acc(1)*m_memory->read_parameters()->user.ddX_max(1);
     mp->get_strategy<MoveToPoseStrategy>("s_0")->set_goal(T_g,speed,acc);
+    Eigen::Matrix<double,2,1> scale;
+    scale<<1,1;
+    mp->get_strategy<MoveToPoseStrategy>("s_0")->set_scale(scale);
     return mp;
 }
 

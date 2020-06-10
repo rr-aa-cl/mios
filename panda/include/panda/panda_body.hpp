@@ -74,6 +74,8 @@ private:
     std::unique_ptr<franka::Robot> m_panda_arm;
     std::unique_ptr<franka::Model> m_panda_model;
     std::unique_ptr<franka::Gripper> m_panda_hand;
+    franka::RobotState m_robot_state;
+    franka::GripperState m_gripper_state;
 
     std::atomic<bool> m_arm_connected;
     std::atomic<bool> m_hand_connected;

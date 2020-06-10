@@ -6,10 +6,12 @@ namespace mios {
 
 Actuator::Actuator(const Percept &p_0){
     spdlog::debug("Actuator:Constructor");
-    initialize(p_0);
+    initialize(p_0, Eigen::Matrix<double,3,3>::Identity());
 }
 
-void Actuator::initialize(const Percept &p_0){
+void Actuator::initialize(const Percept &p_0, Eigen::Matrix<double, 3, 3> O_R_T_0){
+    O_R_T=O_R_T_0;
+
     TF_T_EE_d=p_0.proprioception.TF_T_EE;
     TF_dX_d.setZero();
     q_d_nullspace=p_0.proprioception.q;

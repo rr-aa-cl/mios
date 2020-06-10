@@ -9,7 +9,7 @@ ManipulationPrimitive::ManipulationPrimitive(const std::string& name, const Perc
 }
 
 Actuator* ManipulationPrimitive::initialize(const Percept &p_0){
-    m_cmd.initialize(p_0);
+    m_cmd.initialize(p_0, m_memory->read_parameters()->frames.O_R_T);
     return initialize(p_0,m_cmd);
 }
 

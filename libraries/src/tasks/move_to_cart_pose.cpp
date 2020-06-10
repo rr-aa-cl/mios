@@ -4,7 +4,7 @@
 
 namespace mios {
 
-MoveToCartPose::MoveToCartPose(Core* core):Task("MoveToJointPose",core){
+MoveToCartPose::MoveToCartPose(Core* core):Task("MoveToCartPose",core){
 
 }
 
@@ -16,7 +16,7 @@ void MoveToCartPose::execute_task(){
     overwrite_context("move","control","control_mode",2);
     overwrite_context("move","skill","speed",msrm_utils::from_eigen<double,2,1>(m_speed));
     overwrite_context("move","skill","acc",msrm_utils::from_eigen<double,2,1>(m_acc));
-    overwrite_context("move","skill","q_g",msrm_utils::from_eigen<double,4,4>(m_T_EE_g));
+    overwrite_context("move","skill","TF_T_EE_g",msrm_utils::from_eigen<double,4,4>(m_T_EE_g));
     write_skill_object("move","goal_pose",m_pose.value_or("NullObject"));
     execute_skill<MoveToPoseCart,SkillParametersMoveToPoseCart>("move");
 }
@@ -26,7 +26,7 @@ bool MoveToCartPose::read_parameters(const nlohmann::json &params){
     if(!msrm_utils::read_json_param<double,4,4>(params,"T_EE_g",m_T_EE_g)){
         m_T_EE_g.setZero();
     }
-    if(!m_T_EE_g.isZero() && !m_pose.has_value()){
+    if(m_T_EE_g.isZero() && !m_pose.has_value()){
         spdlog::error("MoveToCartPose task requires either a location that exists in memory or an explicit goal pose.");
         return false;
     }

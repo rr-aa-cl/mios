@@ -52,7 +52,7 @@ Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_O(const std::string &obje
 
 const Object* Skill::get_object(const std::string &o) const{
     if(m_grounded_objects.find(o)==m_grounded_objects.end()){
-        throw SkillException("No object of type "+o+" in skill "+ this->get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
+        throw SkillException("Skill "+ this->get_id() +" of type "+m_type+" has no groundables with name.");
     }
     return m_grounded_objects.at(o);
 }
@@ -120,7 +120,7 @@ Actuator* Skill::cycle(const Percept &p){
         m_result.success=true;
     }
     if(check_local_ex_conditions(p) && m_result.success){
-        spdlog::info("Local exit conditions of skill" + m_id + " have been triggered.");
+        spdlog::info("Local exit conditions of skill " + m_id + " have been triggered.");
         m_life_cycle=SkillLifeCycle::slSettle;
         return m_active_mp->stop(p);
     }
