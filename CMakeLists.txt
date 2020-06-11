@@ -37,6 +37,8 @@ find_package(pybind11 REQUIRED)
 find_package(PythonLibs REQUIRED)
 #include_directories(${PYTHON_INCLUDE_DIRS})
 
+include_directories(${CMAKE_SOURCE_DIR}/third_party/include)
+
 include_directories(
     ${CMAKE_SOURCE_DIR}/core/include
     ${CMAKE_SOURCE_DIR}/skill/include
