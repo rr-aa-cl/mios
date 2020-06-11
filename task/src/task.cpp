@@ -291,9 +291,9 @@ void Task::execute_subtask(const std::string& task_id,const std::string task_nam
         throw TaskException("Error when loading subtask with name " + task_name);
     }
     spdlog::info("Executing subtask "+task_name+"...");
-    m_active_subtask->execute_task();
+    m_active_subtask->execute();
     spdlog::info("Subtask "+task_name+" has terminated.");
-    m_active_subtask->evaluate_task();
+    m_active_subtask->evaluate();
     if(m_active_subtask->do_recovery()){
         m_active_subtask->start_recovery();
         spdlog::info("Subtask "+task_name+" is attempting recovery.");

@@ -10,10 +10,10 @@ void LearnerTest::initialize_context(){
     reserve_skill("ml_test");
 }
 
-void LearnerTest::execute_task(){
+void LearnerTest::execute(){
     execute_skill<MLTestSkill,SkillParametersMLTestSkill>("ml_test");
 }
-void LearnerTest::evaluate_task(){
+void LearnerTest::evaluate(){
     write_result(get_result().skill_results["ml_test"].success,get_result().skill_results["ml_test"].cost_suc,get_result().skill_results["ml_test"].cost_err,get_result().skill_results["ml_test"].results);
 }
 

@@ -15,13 +15,13 @@ void GenericTask::initialize_context(){
     }
 }
 
-void GenericTask::execute_task(){
+void GenericTask::execute(){
     for(unsigned i=0;i<m_skills.size();i++){
         execute_any_skill(i);
     }
 }
 
-void GenericTask::evaluate_task(){
+void GenericTask::evaluate(){
 
 }
 

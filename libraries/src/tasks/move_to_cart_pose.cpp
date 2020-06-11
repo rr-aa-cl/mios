@@ -12,7 +12,7 @@ void MoveToCartPose::initialize_context(){
     reserve_skill("move");
 }
 
-void MoveToCartPose::execute_task(){
+void MoveToCartPose::execute(){
     overwrite_context("move","control","control_mode",2);
     overwrite_context("move","skill","speed",msrm_utils::from_eigen<double,2,1>(m_speed));
     overwrite_context("move","skill","acc",msrm_utils::from_eigen<double,2,1>(m_acc));
@@ -41,7 +41,7 @@ bool MoveToCartPose::read_parameters(const nlohmann::json &params){
     return true;
 }
 
-void MoveToCartPose::evaluate_task(){
+void MoveToCartPose::evaluate(){
     write_result(get_result().skill_results["move"].success,get_result().skill_results["move"].cost_suc,get_result().skill_results["move"].cost_err,get_result().skill_results["move"].results);
 }
 

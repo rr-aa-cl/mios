@@ -9,7 +9,7 @@ void TestTask2::initialize_context(){
     reserve_skill("t2_s2");
     reserve_subtask("t2_t1");
 }
-void TestTask2::execute_task(){
+void TestTask2::execute(){
 
     overwrite_context("t2_s1","skill","run_time",0);
     overwrite_context("t2_s2","skill","run_time",0);
@@ -21,7 +21,7 @@ void TestTask2::execute_task(){
     }
     execute_skill<TestSkill1,SkillParametersTestSkill1>("t2_s2");
 }
-void TestTask2::evaluate_task(){
+void TestTask2::evaluate(){
     nlohmann::json custom_results;
     custom_results["t2_s1"]=get_result().skill_results["t2_s1"].results;
     custom_results["t2_s2"]=get_result().skill_results["t2_s1"].results;

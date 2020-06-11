@@ -11,8 +11,8 @@ public:
     GenericTask(Core* core);
 
     void initialize_context() override;
-    void execute_task() override;
-    void evaluate_task() override;
+    void execute() override;
+    void evaluate() override;
     bool read_parameters(const nlohmann::json &params) override;
 
 private:

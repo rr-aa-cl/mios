@@ -15,7 +15,7 @@ void IdleTask::initialize_context(){
     reserve_skill("hold");
     reserve_skill("move");
 }
-void IdleTask::execute_task(){
+void IdleTask::execute(){
     switch(msrm_utils::str_to_int(this->idle_mode.c_str())){
     case msrm_utils::str_to_int("none"):
         this->sleep_1ms();
@@ -46,7 +46,7 @@ bool IdleTask::read_parameters(const nlohmann::json& params){
 return true;
 }
 
-void IdleTask::evaluate_task(){
+void IdleTask::evaluate(){
     write_result(true,0,0,{});
 }
 

@@ -10,11 +10,11 @@ void NullTask::initialize_context(){
 
 }
 
-void NullTask::execute_task(){
+void NullTask::execute(){
 
 }
 
-void NullTask::evaluate_task(){
+void NullTask::evaluate(){
 
 }
 

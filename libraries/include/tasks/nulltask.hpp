@@ -9,8 +9,8 @@ public:
     NullTask(Core* core);
 
     void initialize_context() override;
-    void execute_task() override;
-    void evaluate_task() override;
+    void execute() override;
+    void evaluate() override;
 };
 
 }

@@ -55,7 +55,7 @@ public:
     /**
      * Implements task execution in derived tasks.
      */
-    virtual void execute_task() = 0;
+    virtual void execute() = 0;
 
     /**
      * Implements recovery routine in derived tasks, optional.
@@ -71,7 +71,7 @@ public:
      * Implements the evaluation routine. The user has to define how the members of the evaluation struct are set. This function is called at the end of a nominal task execution.
      * @return Return the current evaluation struct (will change to void in future updates).
      */
-    virtual void evaluate_task() = 0;
+    virtual void evaluate() = 0;
 
     /**
      * Starts the recovery routine of the task. This function is called at the end of a task execution if it has terminated before the nominal end.

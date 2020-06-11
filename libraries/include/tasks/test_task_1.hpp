@@ -6,9 +6,9 @@ class TestTask1 : public Task{
 public:
     TestTask1(Core *core);
     void initialize_context();
-    void execute_task();
+    void execute();
     void recover_task();
-    void evaluate_task();
+    void evaluate();
     bool read_parameters(const nlohmann::json& params);
 private:
     bool recovered;

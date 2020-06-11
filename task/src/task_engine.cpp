@@ -10,7 +10,7 @@ namespace mios {
 
 
 
-TaskEngine::TaskEngine(Core *core):m_keep_running(true),m_core(core),m_memory(core->get_memory()),m_task_life_cycle(TaskLifeCycle::Switch),m_active_task(TaskFactory::create_task(TaskName::TaskName_IdleTask,core)){
+TaskEngine::TaskEngine(Core *core):m_keep_running(true),m_core(core),m_memory(core->get_memory()),m_task_life_cycle(TaskLifeCycle::Switch),m_active_task(TaskFactory::create_task(TaskName::TaskNameIdleTask,core)){
 }
 
 void TaskEngine::reset(){
@@ -147,7 +147,7 @@ void TaskEngine::life_cycle(){
             spdlog::debug("TaskLifeCycle: execution, task_uuid: "+m_active_task->get_uuid());
             try{
                 spdlog::info("Executing task " + m_active_task->get_id() + " with uuid " + m_active_task->get_uuid());
-                m_active_task->execute_task();
+                m_active_task->execute();
             }catch(const std::exception& e){
                 spdlog::debug(e.what());
                 exceptional_event=true;
@@ -173,7 +173,7 @@ void TaskEngine::life_cycle(){
             spdlog::debug("TaskLifeCycle: termination, task_uuid: "+m_active_task->get_uuid());
             try{
                 spdlog::info("Terminating task " + m_active_task->get_id() + " with uuid " + m_active_task->get_uuid());
-                m_active_task->evaluate_task();
+                m_active_task->evaluate();
             }catch(const std::exception& e){
                 spdlog::debug(e.what());
             }
@@ -223,7 +223,7 @@ std::tuple<bool,std::string,std::string> TaskEngine::start_task(const std::strin
     }
     if(queue_task){
         TaskName task_name = TaskFactory::get_task_name(task_id);
-        if(task_name==TaskName::TaskName_NullTask){
+        if(task_name==TaskName::TaskNameNullTask){
             err="No task with name " + task_id + " exists.";
             task_uuid="INVALID";
             result=false;

@@ -7,7 +7,7 @@ void TestTask1::initialize_context(){
     reserve_skill("t1_s1");
     reserve_skill("t1_s2");
 }
-void TestTask1::execute_task(){
+void TestTask1::execute(){
 
     if(m_skill_test==0){
         overwrite_context("t1_s1","skill","success",m_success);
@@ -53,7 +53,7 @@ void TestTask1::execute_task(){
     m_result_code=-1;
 
 }
-void TestTask1::evaluate_task(){
+void TestTask1::evaluate(){
     nlohmann::json custom_results;
     custom_results["t1_s1"]=get_result().skill_results["t1_s1"].results;
     custom_results["t1_s2"]=get_result().skill_results["t1_s2"].results;

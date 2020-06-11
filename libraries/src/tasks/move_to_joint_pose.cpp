@@ -12,7 +12,7 @@ void MoveToJointPose::initialize_context(){
     reserve_skill("move");
 }
 
-void MoveToJointPose::execute_task(){
+void MoveToJointPose::execute(){
     overwrite_context("move","control","control_mode",3);
     overwrite_context("move","skill","speed",m_speed);
     overwrite_context("move","skill","acc",m_acc);
@@ -42,7 +42,7 @@ bool MoveToJointPose::read_parameters(const nlohmann::json &params){
     return true;
 }
 
-void MoveToJointPose::evaluate_task(){
+void MoveToJointPose::evaluate(){
     write_result(get_result().skill_results["move"].success,get_result().skill_results["move"].cost_suc,get_result().skill_results["move"].cost_err,get_result().skill_results["move"].results);
 }
 

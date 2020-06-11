@@ -9,9 +9,9 @@ public:
     MoveToCartPose(Core* core);
 
     void initialize_context() override;
-    void execute_task() override;
+    void execute() override;
     bool read_parameters(const nlohmann::json &params) override;
-    void evaluate_task() override;
+    void evaluate() override;
 
 private:
     std::optional<std::string> m_pose;
