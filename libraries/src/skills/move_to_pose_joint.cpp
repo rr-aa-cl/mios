@@ -22,7 +22,7 @@ bool SkillParametersMoveToPoseJoint::from_json(const nlohmann::json &p){
     return true;
 }
 
-MoveToPoseJoint::MoveToPoseJoint(const std::string &id, Memory *memory, const Percept &p):Skill("MoveToPoseJoint",{"goal_pose"},id,memory,p){
+MoveToPoseJoint::MoveToPoseJoint(const std::string &id, Memory *memory, Portal* portal, const Percept &p):Skill("MoveToPoseJoint",{"goal_pose"},id,memory,portal,p){
 }
 
 std::shared_ptr<ManipulationPrimitive> MoveToPoseJoint::get_initial_mp(const Percept &p_0){

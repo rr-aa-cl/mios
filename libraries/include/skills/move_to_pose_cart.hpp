@@ -14,7 +14,7 @@ struct SkillParametersMoveToPoseCart : public SkillParameters{
 
 class MoveToPoseCart : public Skill{
 public:
-    MoveToPoseCart(const std::string& id,Memory *memory, const Percept& p);
+    MoveToPoseCart(const std::string& id,Memory *memory, Portal* portal, const Percept& p);
 
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
 

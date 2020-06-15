@@ -29,20 +29,20 @@ def create_strategy(description: dict):
     file_src = open(path_src + file_name + '.cpp', 'w')
 
     file_header.write('#pragma once\n'
-                     '\n'
-                     '#include "strategy/primitive_strategy.hpp"\n')
+                      '\n'
+                      '#include "strategy/primitive_strategy.hpp"\n')
 
     file_header.write('namespace mios{\n')
 
     file_header.write('class ' + name + ' : public PrimitiveStrategy{\n'
                                         'public:\n' +
-                             'void initialize(const Percept& p_0) override;\n'
-                             'void get_next_command(Actuator& cmd, const Percept& p) override;\n'
-                             'void terminate(const Percept& p) override;\n'
-                             'bool finished() override;\n'
-                             '\n'
-                             '};\n'
-                             '}')
+                      'void initialize(const Percept& p_0) override;\n'
+                      'void get_next_command(Actuator& cmd, const Percept& p) override;\n'
+                      'void terminate(const Percept& p) override;\n'
+                      'bool finished() override;\n'
+                      '\n'
+                      '};\n'
+                      '}')
 
     file_src.write("""#include "strategies/""" + file_name + """.hpp"\n""")
     file_src.write("namespace mios{\n")
@@ -55,3 +55,9 @@ def create_strategy(description: dict):
     file_src.write("}\n")
 
 
+def remove_strategy(file_name: str):
+    path_header = os.getcwd() + '/../../libraries/include/strategies/'
+    path_src = os.getcwd() + '/../../libraries/src/strategies/'
+
+    os.remove(path_header + file_name + ".hpp")
+    os.remove(path_src + file_name + ".cpp")

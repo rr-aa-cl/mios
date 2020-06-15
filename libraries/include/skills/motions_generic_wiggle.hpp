@@ -19,7 +19,7 @@ public:
 
 class GenericWiggleMotion : public Skill{
 public:
-    GenericWiggleMotion(const std::string& id,Memory *memory, const Percept& p);
+    GenericWiggleMotion(const std::string& id, Memory *memory, Portal *portal, const Percept& p);
 
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
 

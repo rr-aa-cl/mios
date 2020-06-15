@@ -12,7 +12,7 @@ bool SkillParametersMoveToContact::from_json(const nlohmann::json &p){
     return true;
 }
 
-MoveToContact::MoveToContact(const std::string &id, Memory *memory, const Percept &p):Skill("MoveToContact",{"goal_pose"},id,memory,p){
+MoveToContact::MoveToContact(const std::string &id, Memory *memory, Portal* portal, const Percept &p):Skill("MoveToContact",{"goal_pose"},id,memory,portal,p){
 }
 
 Eigen::Matrix<double,3,3> MoveToContact::get_O_R_T_0(const Percept &p) const{

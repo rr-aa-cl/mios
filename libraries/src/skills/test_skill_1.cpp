@@ -43,7 +43,7 @@ bool SkillParametersTestSkill1::from_json(const nlohmann::json& parameters){
     return true;
 }
 
-TestSkill1::TestSkill1(const std::string &name, Memory *memory, const Percept &p):Skill("TestSkill1",{"object"},name,memory,p),m_result_code(-1),m_sequence_index(0),
+TestSkill1::TestSkill1(const std::string &name, Memory *memory,Portal* portal, const Percept &p):Skill("TestSkill1",{"object"},name,memory,portal,p),m_result_code(-1),m_sequence_index(0),
     m_mp_graph({"mp_0","mp_1","mp_2","mp_3","mp_4","mp_5","mp_6"}),m_result_graph({}){}
 
 std::shared_ptr<ManipulationPrimitive> TestSkill1::get_initial_mp(const Percept &p_0){

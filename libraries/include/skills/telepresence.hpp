@@ -18,13 +18,16 @@ public:
 
 class Telepresence : public Skill{
 public:
-    Telepresence(const std::string& id, Memory *memory, const Percept& p);
+    Telepresence(const std::string& id, Memory *memory, Portal* portal, const Percept& p);
 
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept &p) override;
 
 private:
     bool check_local_suc_conditions(const Percept &p) override;
+
+private:
+    std::shared_ptr<msrm_utils::UDPStreamSender> m_udp_sender;
 
 };
 

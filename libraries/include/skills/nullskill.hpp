@@ -12,7 +12,7 @@ public:
 
 class NullSkill : public Skill{
 public:
-    NullSkill(const std::string& id,Memory *memory, const Percept& p);
+    NullSkill(const std::string& id,Memory *memory, Portal* portal, const Percept& p);
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
 private:
     bool check_local_suc_conditions(const Percept& p);

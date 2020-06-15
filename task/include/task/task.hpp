@@ -7,6 +7,7 @@
 #include <atomic>
 #include <stdlib.h>
 #include <memory>
+#include "portal/portal.hpp"
 #include <msrm_utils/json.hpp>
 #include <spdlog/spdlog.h>
 
@@ -214,7 +215,7 @@ protected:
             throw TaskException("Could not refresh perception.");
         }
 
-        std::shared_ptr<Skill> skill = std::make_shared<T_skill>(name,m_memory,p);
+        std::shared_ptr<Skill> skill = std::make_shared<T_skill>(name,m_memory,m_portal,p);
         m_memory->get_parameters()->create_skill_parameters<T_param>();
         spdlog::info("Executing skill "+name+".");
         bool result=m_skill_engine->execute_skill(m_context,skill);
@@ -264,6 +265,7 @@ private:
     nlohmann::json m_context;
     Core* m_core;
     Memory* m_memory;
+    Portal* m_portal;
     SkillEngine* m_skill_engine;
     std::atomic<bool> m_flag_stop;
     std::atomic<bool> m_flag_recover;

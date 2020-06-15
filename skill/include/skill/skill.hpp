@@ -8,6 +8,7 @@
 
 #include "manipulation_primitive/manipulation_primitive.hpp"
 #include "memory/memory.hpp"
+#include "portal/portal.hpp"
 
 #include "data_structures/percept.hpp"
 #include "data_structures/actuator.hpp"
@@ -34,7 +35,7 @@ public:
      * The skill base constructor. It is called by the constructor of any derived skill class.
      * @param[in] type The type id of the skill.
      */
-    Skill(const std::string& type, const std::unordered_set<std::string> &objects, const std::string &id, Memory *memory, const Percept& p);
+    Skill(const std::string& type, const std::unordered_set<std::string> &objects, const std::string &id, Memory *memory, Portal* portal, const Percept& p);
 
     /**
      * The skill destructor.
@@ -203,6 +204,7 @@ protected:
     bool check_global_suc_conditions(const Percept& p) const;
 
     Memory* m_memory;
+    Portal* m_portal;
 
 protected:
     virtual void parallels();

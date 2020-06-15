@@ -152,7 +152,11 @@ void TaskEngine::life_cycle(){
                 spdlog::debug(e.what());
                 exceptional_event=true;
             }
-            m_task_life_cycle=TaskLifeCycle::Recovery;
+            if(exceptional_event){
+                m_task_life_cycle=TaskLifeCycle::Termination;
+            }else{
+                m_task_life_cycle=TaskLifeCycle::Recovery;
+            }
         }
         if(m_task_life_cycle==TaskLifeCycle::Recovery){
             spdlog::debug("TaskLifeCycle: recovery, task_uuid: "+m_active_task->get_uuid());

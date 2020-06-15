@@ -11,8 +11,8 @@
 
 namespace mios {
 
-Skill::Skill(const std::string &type, const std::unordered_set<std::string> &objects, const std::string& id, Memory *memory, const Percept &p):
-    m_memory(memory),m_active_mp(std::make_shared<ManipulationPrimitive>("NullPrimitive",p,memory)),m_life_cycle(SkillLifeCycle::slInit),
+Skill::Skill(const std::string &type, const std::unordered_set<std::string> &objects, const std::string& id, Memory *memory, Portal* portal, const Percept &p):
+    m_memory(memory),m_portal(portal),m_active_mp(std::make_shared<ManipulationPrimitive>("NullPrimitive",p,memory)),m_life_cycle(SkillLifeCycle::slInit),
     m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_type(type),m_id(id),m_objects(objects){
 }
 

@@ -16,7 +16,7 @@ public:
 };
 class TestSkill1 : public Skill{
 public:
-    TestSkill1(const std::string& name, Memory* memory, const Percept& p);
+    TestSkill1(const std::string& name, Memory* memory, Portal *portal, const Percept& p);
     void evaluate();
 
     Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept &p) const override;

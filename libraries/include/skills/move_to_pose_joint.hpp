@@ -14,7 +14,7 @@ struct SkillParametersMoveToPoseJoint : public SkillParameters{
 
 class MoveToPoseJoint : public Skill{
 public:
-    MoveToPoseJoint(const std::string& id,Memory *memory, const Percept& p);
+    MoveToPoseJoint(const std::string& id, Memory *memory, Portal *portal, const Percept& p);
 
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     void evaluate();

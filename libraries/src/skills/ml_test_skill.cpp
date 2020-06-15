@@ -10,7 +10,7 @@ bool SkillParametersMLTestSkill::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-MLTestSkill::MLTestSkill(const std::string& id, Memory *memory, const Percept& p):Skill("MLTestSkill",{},id,memory,p){
+MLTestSkill::MLTestSkill(const std::string& id, Memory *memory,Portal* portal, const Percept& p):Skill("MLTestSkill",{},id,memory,portal,p){
 
 }
 

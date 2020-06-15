@@ -6,7 +6,7 @@
 
 namespace mios{
 
-SkillEngine::SkillEngine(Core* core):m_core(core),m_memory(core->get_memory()),m_active_skill(std::make_shared<NullSkill>("NullSkill",m_memory,*m_core->get_percept())){
+SkillEngine::SkillEngine(Core* core):m_core(core),m_memory(core->get_memory()),m_active_skill(std::make_shared<NullSkill>("NullSkill",m_memory,m_core->get_portal(),*m_core->get_percept())){
 
 }
 
@@ -35,7 +35,7 @@ bool SkillEngine::load_skill(const nlohmann::json task_context, std::shared_ptr<
 }
 
 void SkillEngine::unload_skill(){
-    m_active_skill=std::make_shared<NullSkill>("NullSkill",m_memory,*m_core->get_percept());
+    m_active_skill=std::make_shared<NullSkill>("NullSkill",m_memory,m_core->get_portal(),*m_core->get_percept());
 }
 
 bool SkillEngine::execute_skill(const nlohmann::json& task_context, std::shared_ptr<Skill> skill){
