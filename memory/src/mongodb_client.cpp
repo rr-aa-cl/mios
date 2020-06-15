@@ -90,11 +90,12 @@ bool MongodbClient::read_document(const std::string& name, const std::string& co
         spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENT.PRE_COUNT");
         unsigned n_doc = m_collections[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize});
         if(n_doc==0){
+            spdlog::error("No document with name "+name+" of type "+collection+" present in database.");
             descr=nlohmann::json();
             return false;
         }
         if(n_doc>1){
-            spdlog::error("Multiple documents with name "+name+" of type "+collection+" present in knowledge base.");
+            spdlog::error("Multiple documents with name "+name+" of type "+collection+" present in database.");
             descr=nlohmann::json();
             return false;
         }

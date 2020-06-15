@@ -1,4 +1,5 @@
 #include "strategies/move_to_pose.hpp"
+#include <iostream>
 
 namespace mios{
 

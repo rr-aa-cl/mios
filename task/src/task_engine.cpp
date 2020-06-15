@@ -71,6 +71,7 @@ void TaskEngine::life_cycle(){
             }
             if(reflex && mode==franka::RobotMode::kReflex){
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
             }
             // Handle other mode
             if(invalid_mode && mode!=franka::RobotMode::kOther){
@@ -135,7 +136,13 @@ void TaskEngine::life_cycle(){
             if(user_stop && mode==franka::RobotMode::kUserStopped){
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
-            m_task_life_cycle=TaskLifeCycle::Startup;
+            m_mtx_task_queue.lock();
+            if(m_task_queue.empty()){
+                m_task_life_cycle=TaskLifeCycle::Switch;
+            }else{
+                m_task_life_cycle=TaskLifeCycle::Startup;
+            }
+            m_mtx_task_queue.unlock();
         }
         if(m_task_life_cycle==TaskLifeCycle::Startup){
             spdlog::debug("TaskLifeCycle: startup, task_uuid: "+m_active_task->get_uuid());
@@ -188,12 +195,15 @@ void TaskEngine::life_cycle(){
             std::scoped_lock<std::mutex> queue_lock(m_mtx_task_queue);
             spdlog::debug("TaskLifeCycle: switch, task_uuid: "+m_active_task->get_uuid());
             if(!m_task_queue.empty()){
+                spdlog::debug("TaskEngine::life_cycle.get_first_element");
                 m_task_queue.pop_front();
             }
             if(m_active_task->get_result().exception || exceptional_event || m_active_task->get_result().empty_queue){
+                spdlog::debug("TaskEngine::life_cycle.empty_queue");
                 m_task_queue.clear();
             }
             if(m_task_queue.empty()){
+                spdlog::debug("TaskEngine::life_cycle.add_idle_task");
                 m_task_queue.emplace_back(std::make_tuple("IdleTask",m_memory->load_task("IdleTask",nlohmann::json(),m_core),nlohmann::json()));
             }
             m_active_task = std::get<1>(m_task_queue.front());
@@ -207,6 +217,7 @@ std::tuple<bool,std::string,std::string> TaskEngine::start_task(const std::strin
     std::scoped_lock<std::mutex> queue_lock(m_mtx_task_queue);
     std::string err="";
     std::string task_uuid="INVALID";
+    spdlog::debug("TaskEngine::start_task");
     bool result=false;
 
     if(task_id=="IdleTask"){
@@ -217,10 +228,12 @@ std::tuple<bool,std::string,std::string> TaskEngine::start_task(const std::strin
     }
 
     if(!queue_task){
+        spdlog::debug("TaskEngine::start_task.task_name: " + m_active_task->get_id());
+        spdlog::debug("TaskEngine::start_task.queue_size: " + std::to_string(m_task_queue.size()));
         if(m_active_task->get_id()=="IdleTask" && m_task_queue.size()==1){
             queue_task=true;
         }else{
-            err="Cannot start new task while another task is still active. In order to queue a new task set the argument queue to true.";
+            err="Cannot start new task while another task (" + m_active_task->get_id() + ") is still active. In order to queue a new task set the argument queue to true.";
             task_uuid="INVALID";
             result=false;
         }
@@ -232,8 +245,8 @@ std::tuple<bool,std::string,std::string> TaskEngine::start_task(const std::strin
             task_uuid="INVALID";
             result=false;
         }else{
+            spdlog::debug("TaskEngine::load_task");
             std::shared_ptr<Task> new_task=m_memory->load_task(task_id,parameters,m_core);
-
             if(new_task->get_id()!="NullTask"){
                 spdlog::info("Queuing task with uuid " + new_task->get_uuid());
                 m_task_queue.emplace_back(std::tuple<std::string,std::shared_ptr<Task>,nlohmann::json>(new_task->get_uuid(),new_task,parameters));

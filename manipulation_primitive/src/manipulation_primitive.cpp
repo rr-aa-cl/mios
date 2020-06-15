@@ -5,11 +5,11 @@
 namespace mios {
 
 ManipulationPrimitive::ManipulationPrimitive(const std::string& name, const Percept &p_0, Memory *memory)
-    :m_name(name),m_memory(memory),m_cmd(Actuator(p_0)),m_flag_initialized(false),m_flag_terminated(false){
+    :m_name(name),m_memory(memory),m_cmd(Actuator(p_0,memory->read_parameters()->control)),m_flag_initialized(false),m_flag_terminated(false){
 }
 
 Actuator* ManipulationPrimitive::initialize(const Percept &p_0){
-    m_cmd.initialize(p_0, m_memory->read_parameters()->frames.O_R_T);
+    m_cmd.initialize(p_0,m_memory->read_parameters()->control, m_memory->read_parameters()->frames.O_R_T);
     return initialize(p_0,m_cmd);
 }
 

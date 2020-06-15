@@ -1,5 +1,6 @@
 #include "skills/move_to_pose_cart.hpp"
 #include "strategies/move_to_pose.hpp"
+#include <franka/exception.h>
 
 namespace mios {
 

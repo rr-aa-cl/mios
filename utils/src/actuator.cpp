@@ -4,12 +4,12 @@
 
 namespace mios {
 
-Actuator::Actuator(const Percept &p_0){
+Actuator::Actuator(const Percept &p_0, const ControlParameters& controller){
     spdlog::debug("Actuator:Constructor");
-    initialize(p_0, Eigen::Matrix<double,3,3>::Identity());
+    initialize(p_0, controller, Eigen::Matrix<double,3,3>::Identity());
 }
 
-void Actuator::initialize(const Percept &p_0, Eigen::Matrix<double, 3, 3> O_R_T_0){
+void Actuator::initialize(const Percept &p_0, const ControlParameters& controller, Eigen::Matrix<double, 3, 3> O_R_T_0){
     O_R_T=O_R_T_0;
 
     TF_T_EE_d=p_0.proprioception.TF_T_EE;
@@ -17,15 +17,15 @@ void Actuator::initialize(const Percept &p_0, Eigen::Matrix<double, 3, 3> O_R_T_
     q_d_nullspace=p_0.proprioception.q;
     TF_F_d.setZero();
     TF_F_ff.setZero();
-    K_x=p_0.controller.K_x;
-    xi_x=p_0.controller.xi_x;
+    K_x=controller.cart_imp.K_x;
+    xi_x=controller.cart_imp.xi_x;
 
     q_d=p_0.proprioception.q;
     dq_d.setZero();
     tau_d.setZero();
     tau_ff.setZero();
-    K_theta=p_0.controller.K_theta;
-    xi_theta=p_0.controller.xi_theta;
+    K_theta=controller.joint_imp.K_theta;
+    xi_theta=controller.joint_imp.xi_theta;
 
     m_TF_T_EE_d_limiter=TF_T_EE_d;
     m_TF_dX_d_limiter=TF_dX_d;
@@ -358,12 +358,18 @@ void Actuator::set_zero(const Percept &p_0){
     TF_dX_d.setZero();
     TF_F_d.setZero();
     TF_F_ff.setZero();
+    K_x.setZero();
+    xi_x.setZero();
 
     q_d_nullspace=p_0.proprioception.q;
     q_d=p_0.proprioception.q;
     dq_d.setZero();
     tau_d.setZero();
     tau_ff.setZero();
+    K_theta.setZero();
+    xi_theta.setZero();
+
+    O_R_T.setIdentity();
 
 }
 

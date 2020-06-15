@@ -71,7 +71,7 @@ bool Task::load_context(const nlohmann::json &user_context){
     try{
         spdlog::info("Loading context for task " + m_id + "...");
         if(!m_memory->load_default_task_context(m_id,m_context)){
-            spdlog::error("Could not load a valid task description for "+m_id+".");
+            spdlog::error("Could not load a valid task context for "+m_id+".");
             return false;
         }
 
@@ -312,7 +312,7 @@ void Task::execute_subtask(const std::string& task_id,const std::string task_nam
 }
 
 bool Task::read_parameters(const nlohmann::json &params){
-    spdlog::error("This task has not overwritten the read_parameters method, yet the task description contains user-defined parameters. Undefined behavior is possible, aborting...");
+    spdlog::error("This task has not overwritten the read_parameters method, yet the task context contains user-defined parameters. Undefined behavior is possible, aborting...");
     return false;
 }
 

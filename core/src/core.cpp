@@ -66,6 +66,12 @@ bool Core::initialize(){
     spdlog::debug("Core: initialize.set_time");
     m_memory.get_live_context()->t_core=std::chrono::high_resolution_clock::now();
     m_is_ready=true;
+
+    if(!refresh_percept({})){
+        spdlog::error("Could not acquire iniital percept.");
+        return false;
+    }
+
     return true;
 }
 

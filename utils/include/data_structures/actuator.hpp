@@ -9,9 +9,9 @@ namespace mios {
 
 class Actuator{
 public:
-    Actuator(const Percept& p_0);
+    Actuator(const Percept& p_0, const ControlParameters& controller);
 
-    void initialize(const Percept& p_0, Eigen::Matrix<double,3,3> O_R_T_0);
+    void initialize(const Percept& p_0, const ControlParameters &controller, Eigen::Matrix<double,3,3> O_R_T_0);
     void stop();
     void read_from_buffer();
     void limit_output(const LimitParameters &parameters);
