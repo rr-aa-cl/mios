@@ -18,7 +18,7 @@ void RemoteTwistStrategy::terminate(const Percept &p){
 }
 
 bool RemoteTwistStrategy::finished(){
-    return false;
+    return !m_receiver->is_running();
 }
 
 bool RemoteTwistStrategy::connect(Portal *portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us,unsigned max_lost_packets){

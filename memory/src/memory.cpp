@@ -106,4 +106,8 @@ const Event* Memory::get_event(const std::string &name){
     return m_st_memory.get_event(name);
 }
 
+void Memory::remove_event(const std::string &name){
+    m_st_memory.remove_event(name);
+}
+
 }

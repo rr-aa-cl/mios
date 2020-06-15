@@ -33,6 +33,7 @@ public:
 
     bool update_database();
     void post_event(const std::string& name, const nlohmann::json& content);
+    void remove_event(const std::string& name);
 
 public:
     std::optional<nlohmann::json> get_live_parameter(const std::string& parameter);

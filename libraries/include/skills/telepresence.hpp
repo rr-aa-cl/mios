@@ -12,7 +12,8 @@ public:
 
     bool master;
     std::string peer_ip;
-    unsigned peer_port;
+    unsigned port_dst;
+    unsigned port_src;
     TelepresenceMode mode;
 };
 
@@ -29,6 +30,9 @@ private:
 
 private:
     std::shared_ptr<msrm_utils::UDPStreamSender> m_udp_sender;
+
+    unsigned m_handshake_stage;
+    std::string m_handshake_message_uuid;
 
 };
 

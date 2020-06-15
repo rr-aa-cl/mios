@@ -31,6 +31,7 @@ public:
     void put_subtask(const std::string& name, const nlohmann::json& context);
     void set_live_parameter(const std::string& key, const nlohmann::json& value);
     void post_event(const std::string& name, const nlohmann::json& content);
+    void remove_event(const std::string& name);
 
 public:
     LiveContext* get_live_context();

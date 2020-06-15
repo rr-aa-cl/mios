@@ -16,11 +16,11 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
 Telepresence::Telepresence(const std::string &name, Memory *memory, Portal *portal, const Percept &p):Skill("Telepresence",{},name,memory,portal,p){
     if(read_parameters<Params>()->master){
         if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
-            m_udp_sender = portal->open_udp_outstream("remote_twist_out",read_parameters<Params>()->peer_ip,read_parameters<Params>()->peer_port);
+            m_udp_sender = portal->open_udp_outstream("remote_twist_out",read_parameters<Params>()->peer_ip,read_parameters<Params>()->port_dst);
         }
     }else{
         if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
-            m_udp_sender = portal->open_udp_outstream("remote_force_out",read_parameters<Params>()->peer_ip,read_parameters<Params>()->peer_port);
+            m_udp_sender = portal->open_udp_outstream("remote_force_out",read_parameters<Params>()->peer_ip,read_parameters<Params>()->port_dst);
         }
     }
     if(!m_udp_sender->connect()){
@@ -48,21 +48,45 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
             if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
                 request["content"]["q_master"]=msrm_utils::from_eigen<double,7,1>(p.proprioception.q);
             }
-            m_portal->send_message(read_parameters<Params>()->peer_ip,12002,"post_event",{{"name","handshake"}});
-            if(!msrm_utils::JsonUDPClient::call_method(read_parameters<Params>()->peer_ip,12002,"post_event",{{"name","handshake"}},response)){
-                return {};
+            if(m_handshake_stage==0){
+                m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->peer_ip,12002,"post_event",request);
+                m_handshake_stage=1;
             }
-            if(m_memory->get_event("sync_done")!=nullptr){
-                std::shared_ptr<ManipulationPrimitive> mp = create_mp("telepresence",p);
-                if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
+            if(m_handshake_stage==1){
+                nlohmann::json response = m_portal->get_message_response(m_handshake_message_uuid);
+                if(response.is_boolean()){
+                    m_handshake_stage=0;
+                    return {};
+                }else if(response.is_null()){
+                    return {};
+                }else{
+                    m_handshake_stage=2;
+                }
+            }
+            if(m_handshake_stage==2){
+                if(m_memory->get_event("sync_done")!=nullptr){
+                    m_memory->remove_event("sync_done");
+                    std::shared_ptr<ManipulationPrimitive> mp = create_mp("telepresence",p);
+                    if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
 
-                }
-                if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
+                    }
+                    if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
 
+                    }
+                    if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
+                        mp->create_strategy<RemoteWrenchStrategy>("telepresence",1);
+                        mp->get_strategy<RemoteWrenchStrategy>("telepresence")->connect(m_portal,"remote_wrench_in",get_parameters<Params>()->port_src,256,0,10000,200);
+                    }
+                    return mp;
                 }
-                if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
-                    mp->create_strategy<RemoteWrenchStrategy>("telepresence",1);
-                }
+            }
+        }
+        if(get_active_mp()->get_name()=="telepresence"){
+            if(get_active_mp()->get_strategy_interface("telepresence")->finished()){
+                m_handshake_stage=0;
+                std::shared_ptr<ManipulationPrimitive> mp = create_mp("handshake",p);
+                nlohmann::json response;
+                mp->create_strategy<NullStrategy>("idle",1);
                 return mp;
             }
         }
@@ -88,6 +112,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
                     mp->create_strategy<NullStrategy>("move",1);
                 }
+                m_memory->remove_event("handshake");
                 return mp;
             }
             else{
@@ -107,9 +132,30 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     mp->create_strategy<RemoteTwistStrategy>("telepresence",1);
                 }
                 nlohmann::json response;
-                if(!msrm_utils::JsonUDPClient::call_method(read_parameters<Params>()->peer_ip,12002,"post_event",{{"name","sync_done"}},response)){
-                    return {};
+                if(m_handshake_stage==0){
+                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->peer_ip,12002,"post_event",{{"name","sync_done"}});
+                    m_handshake_stage++;
                 }
+                if(m_handshake_stage==1){
+                    nlohmann::json response = m_portal->get_message_response(m_handshake_message_uuid);
+                    if(response.is_boolean()){
+                        m_handshake_stage=0;
+                        return {};
+                    }else if(response.is_null()){
+                        return {};
+                    }else{
+                        m_handshake_stage=2;
+                    }
+                }
+                return mp;
+            }
+        }
+        if(get_active_mp()->get_name()=="telepresence"){
+            if(get_active_mp()->get_strategy_interface("telepresence")->finished()){
+                m_handshake_stage=0;
+                std::shared_ptr<ManipulationPrimitive> mp = create_mp("handshake",p);
+                nlohmann::json response;
+                mp->create_strategy<NullStrategy>("idle",1);
                 return mp;
             }
         }

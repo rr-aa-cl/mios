@@ -76,6 +76,12 @@ const Event* STMemory::get_event(const std::string &name) const{
     }
 }
 
+void STMemory::remove_event(const std::string &name){
+    if(m_events.find(name)!=m_events.end()){
+        m_events.erase(m_events.find(name));
+    }
+}
+
 std::optional<nlohmann::json> STMemory::get_live_parameter(const std::string &parameter) {
     if(!m_mtx_live_context.try_lock()){
         return {};
