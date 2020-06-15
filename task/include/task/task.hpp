@@ -254,7 +254,6 @@ private:
      * @return True if the given task description is valid, false otherwise.
      */
     bool check_context(const nlohmann::json& default_context, const nlohmann::json &user_context) const;
-    static std::string generate_uuid();
 
     TaskResult m_result;
     std::unordered_map<std::string,TaskResult> m_subtask_results;

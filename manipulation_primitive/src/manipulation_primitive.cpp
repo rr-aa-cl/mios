@@ -135,4 +135,8 @@ bool ManipulationPrimitive::is_settled() const{
     return m_cmd.is_settled(m_memory->read_parameters()->limits);
 }
 
+const std::shared_ptr<PrimitiveStrategy> ManipulationPrimitive::get_strategy_interface(const std::string &name) const{
+    return m_strategies.at(name).strategy;
+}
+
 }

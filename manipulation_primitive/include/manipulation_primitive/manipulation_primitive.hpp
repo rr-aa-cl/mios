@@ -57,6 +57,7 @@ public:
         }
         return std::static_pointer_cast<T>(m_strategies.at(name).strategy);
     }
+    const std::shared_ptr<PrimitiveStrategy> get_strategy_interface(const std::string& name) const;
 
 private:
     bool compose_command(const Percept &p);

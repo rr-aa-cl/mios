@@ -3,12 +3,22 @@
 #include <functional>
 #include <vector>
 #include <map>
+#include <unordered_map>
+#include <queue>
 #include <nlohmann/json.hpp>
 #include <msrm_utils/network.hpp>
 
 namespace mios {
 
 enum JsonServers{Websocket,RPC,UDP};
+
+struct Message{
+    std::string address;
+    unsigned port;
+    std::string method;
+    nlohmann::json request;
+    std::string uuid;
+};
 
 class Portal{
 public:
@@ -27,8 +37,19 @@ public:
     void close_udp_outstream(const std::string& name);
     void close_udp_instream(const std::string& name);
 
+    std::string send_message(const std::string& address, unsigned port, const std::string& method, const nlohmann::json request);
+    nlohmann::json get_message_response(const std::string& message_uuid);
 
 private:
+    void send_messages();
+
+private:
+    bool m_keep_running;
+    std::thread m_message_thread;
+    std::mutex m_mtx_message;
+    std::queue<Message> m_message_queue;
+    std::unordered_map<std::string,nlohmann::json> m_message_responses;
+
     std::unordered_map<std::string, std::shared_ptr<msrm_utils::UDPStreamSender> > m_outstreams;
     std::unordered_map<std::string, std::shared_ptr<msrm_utils::UDPStreamReceiver> > m_instreams;
 

@@ -1,11 +1,13 @@
 #include "portal/portal.hpp"
 
 #include <msrm_utils/network.hpp>
+#include "msrm_utils/system.hpp"
 #include <spdlog/spdlog.h>
 
 namespace mios {
 
-Portal::Portal(const std::string &websocket_address, unsigned websocket_port, const std::string &websocket_endpoint, const std::string &rpc_address, unsigned rpc_port, unsigned udp_port){
+Portal::Portal(const std::string &websocket_address, unsigned websocket_port, const std::string &websocket_endpoint, const std::string &rpc_address, unsigned rpc_port, unsigned udp_port):
+m_keep_running(false){
     spdlog::info("Initializing portal...");
     m_servers.insert(std::make_pair(JsonServers::Websocket,std::make_unique<msrm_utils::JsonWebsocketServer>(websocket_address,websocket_port,websocket_endpoint)));
     m_servers.insert(std::make_pair(JsonServers::RPC,std::make_unique<msrm_utils::JsonRPCServer>(rpc_address,rpc_port)));
@@ -28,11 +30,17 @@ Portal::Portal(const std::string &websocket_address, unsigned websocket_port, co
     if(n_failures>=m_servers.size()){
         spdlog::critical("Could not start any communication interfaces.");
     }
+    m_keep_running=true;
+    m_message_thread = std::thread(&Portal::send_messages,this);
 }
 
 Portal::~Portal(){
     for(const auto& s : m_servers){
         s.second->stop_listening();
+    }
+    m_keep_running=false;
+    if(m_message_thread.joinable()){
+        m_message_thread.join();
     }
 }
 
@@ -92,6 +100,40 @@ void Portal::close_udp_outstream(const std::string &name){
 void Portal::close_udp_instream(const std::string &name){
     if(m_instreams.find(name)!=m_instreams.end()){
         m_instreams.erase(m_instreams.find(name));
+    }
+}
+
+std::string Portal::send_message(const std::string &address, unsigned int port, const std::string &method, const nlohmann::json request){
+    std::scoped_lock<std::mutex> lock(m_mtx_message);
+    m_message_queue.emplace(Message{address,port,method,request,msrm_utils::generate_uuid()});
+    return m_message_queue.front().uuid;
+}
+
+nlohmann::json Portal::get_message_response(const std::string &message_uuid){
+    std::scoped_lock<std::mutex> lock(m_mtx_message);
+    if(m_message_responses.find(message_uuid)==m_message_responses.end()){
+        return nlohmann::json();
+    }else{
+        nlohmann::json response = m_message_responses.at(message_uuid);
+        m_message_responses.erase(m_message_responses.find(message_uuid));
+        return response;
+    }
+}
+
+void Portal::send_messages(){
+    while(m_keep_running){
+        m_mtx_message.lock();
+        if(m_message_queue.empty()){
+            Message m = m_message_queue.front();
+            nlohmann::json response;
+            if(!msrm_utils::JsonUDPClient::call_method(m.address,m.port,m.method,m.request,response,5)){
+                response=false;
+            }
+            m_message_responses.emplace(std::make_pair(m.uuid,response));
+            m_message_queue.pop();
+        }
+        m_mtx_message.unlock();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 

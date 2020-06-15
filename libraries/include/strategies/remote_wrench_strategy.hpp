@@ -13,7 +13,7 @@ namespace mios {
 
 class Portal;
 
-class RemoteTwistStrategy : public PrimitiveStrategy{
+class RemoteWrenchStrategy : public PrimitiveStrategy{
 public:
     void initialize(const Percept &p_0) override;
     void get_next_command(Actuator &cmd, const Percept &p) override;
@@ -25,7 +25,7 @@ public:
 private:
     void read_stream(std::vector<double> &data);
 
-    std::deque<std::array<double,6> > m_TF_dX_d_in;
+    std::deque<std::array<double,6> > m_TF_F_ff_in;
     std::shared_ptr<msrm_utils::UDPStreamReceiver> m_receiver;
 };
 

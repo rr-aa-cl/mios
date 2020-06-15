@@ -7,11 +7,12 @@
 #include <random>
 #include <sstream>
 #include <spdlog/spdlog.h>
+#include "msrm_utils/system.hpp"
 
 namespace mios {
 
 Task::Task(const std::string& id, Core* core):m_core(core),m_memory(core->get_memory()),m_portal(core->get_portal()),m_skill_engine(core->get_skill_engine()),m_flag_stop(false),m_flag_recover(false),m_flag_in_recovery(false),m_id(id),
-    m_uuid(Task::generate_uuid()),m_active_subtask(nullptr){
+    m_uuid(msrm_utils::generate_uuid()),m_active_subtask(nullptr){
 
 }
 
@@ -466,37 +467,6 @@ void Task::notify_observers(){
 
 void Task::subscribe(std::shared_ptr<TaskObserver> observer){
     m_observers.insert(observer);
-}
-
-std::string Task::generate_uuid(){
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, 15);
-    std::uniform_int_distribution<> dis2(8, 11);
-    std::stringstream ss;
-    int i;
-    ss << std::hex;
-    for (i = 0; i < 8; i++) {
-        ss << dis(gen);
-    }
-    ss << "-";
-    for (i = 0; i < 4; i++) {
-        ss << dis(gen);
-    }
-    ss << "-4";
-    for (i = 0; i < 3; i++) {
-        ss << dis(gen);
-    }
-    ss << "-";
-    ss << dis2(gen);
-    for (i = 0; i < 3; i++) {
-        ss << dis(gen);
-    }
-    ss << "-";
-    for (i = 0; i < 12; i++) {
-        ss << dis(gen);
-    };
-    return ss.str();
 }
 
 }

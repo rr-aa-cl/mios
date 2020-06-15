@@ -25,6 +25,7 @@ public:
 
 private:
     bool check_local_suc_conditions(const Percept &p) override;
+    void auxiliaries(const Percept &p) override;
 
 private:
     std::shared_ptr<msrm_utils::UDPStreamSender> m_udp_sender;

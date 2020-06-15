@@ -22,11 +22,11 @@ bool RemoteTwistStrategy::finished(){
 }
 
 bool RemoteTwistStrategy::connect(Portal *portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us,unsigned max_lost_packets){
-    std::shared_ptr<msrm_utils::UDPStreamReceiver> receiver = portal->open_udp_instream(name,port,buffer_size,timeout_s,timeout_us,max_lost_packets,std::bind(&RemoteTwistStrategy::read_stream,this,std::placeholders::_1));
-    if(receiver==nullptr){
+    m_receiver = portal->open_udp_instream(name,port,buffer_size,timeout_s,timeout_us,max_lost_packets,std::bind(&RemoteTwistStrategy::read_stream,this,std::placeholders::_1));
+    if(m_receiver==nullptr){
         return false;
     }
-    return receiver->connect();
+    return m_receiver->connect();
 }
 
 void RemoteTwistStrategy::read_stream(std::vector<double>& data){
