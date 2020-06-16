@@ -443,8 +443,8 @@ bool SafetyParameters::from_json(const nlohmann::json &parameters){
         spdlog::error("Could not read virtual_joint_walls.rho_min.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"f_max",virtual_joint_walls.tau_max)){
-        spdlog::error("Could not read virtual_joint_walls.f_max.");
+    if(!msrm_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"tau_max",virtual_joint_walls.tau_max)){
+        spdlog::error("Could not read virtual_joint_walls.tau_max.");
         return false;
     }
     if(!msrm_utils::read_json_param<double,14,1>(parameters["virtual_joint_walls"],"walls",virtual_joint_walls.walls)){

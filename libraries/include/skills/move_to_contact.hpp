@@ -6,7 +6,7 @@ namespace mios {
 
 struct SkillParametersMoveToContact : public SkillParameters{
     bool from_json(const nlohmann::json &parameters) override;
-    Eigen::Matrix<double,1,1> speed;
+    double speed;
 };
 
 class MoveToContact : public Skill{
@@ -15,7 +15,7 @@ public:
 
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     void evaluate();
-    Eigen::Matrix<double, 3, 3> get_O_R_T_0(const Percept &p) const override;
+//    Eigen::Matrix<double, 3, 3> get_O_R_T_0(const Percept &p) const override;
 
 private:
     bool check_local_suc_conditions(const Percept &p) override;

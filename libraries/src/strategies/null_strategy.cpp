@@ -15,7 +15,7 @@ void NullStrategy::terminate(const Percept &p){
 }
 
 bool NullStrategy::finished(){
-    return false;
+    return true;
 }
 
 }

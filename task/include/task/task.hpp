@@ -215,10 +215,12 @@ protected:
             throw TaskException("Could not refresh perception.");
         }
 
-        std::shared_ptr<Skill> skill = std::make_shared<T_skill>(name,m_memory,m_portal,p);
         m_memory->get_parameters()->create_skill_parameters<T_param>();
-        spdlog::info("Executing skill "+name+".");
-        bool result=m_skill_engine->execute_skill(m_context,skill);
+        if(!m_skill_engine->apply_skill_context(m_context,name)){
+            throw TaskException("Could not apply skill context.");
+        }
+        std::shared_ptr<Skill> skill = std::make_shared<T_skill>(name,m_memory,m_portal,p);
+        bool result=m_skill_engine->execute_skill(skill);
         m_result.skill_results.insert(std::make_pair(name,skill->get_result()));
         if(skill->get_result().exception){
             m_flag_stop = true;

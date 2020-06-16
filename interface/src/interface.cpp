@@ -428,6 +428,7 @@ nlohmann::json CommandInterface::post_event(const nlohmann::json &request){
     std::string name;
     request["name"].get_to(name);
     m_memory->post_event(name,request["content"]);
+    response["result"]=true;
     return response;
 }
 

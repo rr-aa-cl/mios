@@ -16,13 +16,14 @@ class SkillEngine{
 public:
     SkillEngine(Core* core);
 
-    bool execute_skill(const nlohmann::json &task_context, std::shared_ptr<Skill> skill);
+    bool apply_skill_context(const nlohmann::json& task_context, const std::string& skill_name);
+    bool execute_skill(std::shared_ptr<Skill> skill);
     void stop_skill();
     Actuator* get_next_command(const Percept& percept);
 
 private:
     bool get_percept(const Percept& p);
-    bool load_skill(const nlohmann::json task_context, std::shared_ptr<Skill> skill);
+    bool load_skill(std::shared_ptr<Skill> skill);
     void unload_skill();
     Core* m_core;
     Memory* m_memory;

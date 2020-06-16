@@ -123,12 +123,14 @@ nlohmann::json Portal::get_message_response(const std::string &message_uuid){
 void Portal::send_messages(){
     while(m_keep_running){
         m_mtx_message.lock();
-        if(m_message_queue.empty()){
+        if(!m_message_queue.empty()){
             Message m = m_message_queue.front();
+            m_mtx_message.unlock();
             nlohmann::json response;
-            if(!msrm_utils::JsonUDPClient::call_method(m.address,m.port,m.method,m.request,response,5)){
+            if(!msrm_utils::JsonWebsocketClient::call_method(m.address,m.port,"mios/core",m.method,m.request,response,5)){
                 response=false;
             }
+            m_mtx_message.lock();
             m_message_responses.emplace(std::make_pair(m.uuid,response));
             m_message_queue.pop();
         }

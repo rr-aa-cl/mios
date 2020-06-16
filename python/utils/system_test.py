@@ -3,6 +3,8 @@ import time
 import numpy as np
 
 from ws_client import *
+
+
 # from udp_client import *
 # from rpc_client import *
 
@@ -601,8 +603,12 @@ def test_live_parameters(address):
 
 def test_controllers(address):
     print("Testing controller pipeline: 2")
-    T_EE_g = [np.array([0.978038,-0.20829,0.00753134,0,-0.207918,-0.97754,-0.0344342,0,0.0145345,0.0321121,-0.999379,0,0.207653,0.452514,0.510002,1]),
-              np.array([0.710559,0.394384,0.582724,0,-0.546773,-0.211783,0.810054,0,0.442883,-0.894209,0.0651547,0,0.477753,0.0348045,0.548409,1])]
+    T_EE_g = [np.array(
+        [0.978038, -0.20829, 0.00753134, 0, -0.207918, -0.97754, -0.0344342, 0, 0.0145345, 0.0321121, -0.999379, 0,
+         0.207653, 0.452514, 0.510002, 1]),
+        np.array(
+            [0.710559, 0.394384, 0.582724, 0, -0.546773, -0.211783, 0.810054, 0, 0.442883, -0.894209, 0.0651547,
+             0, 0.477753, 0.0348045, 0.548409, 1])]
     for T_EE in T_EE_g:
         response = start_task(address, "MoveToCartPose", parameters={"parameters": {"T_EE_g": T_EE.tolist(),
                                                                                     "speed": [1, 1], "acc": [1, 1]}})
@@ -613,11 +619,9 @@ def test_controllers(address):
         T_EE_diff = np.linalg.norm(T_EE[12:15] - T_EE_now[12:15])
         msg_error(float(T_EE_diff) < 0.01, "test_controllers", "Goal pose and actual pose are too far apart.", response)
 
-    return
-
     print("Testing controller pipeline: 3")
-    q_g = [np.array([0.303584,-0.648212,0.649549,-2.15934,0.418512,1.53807,0.766482]),
-           np.array([-0.195319,-0.447499,0.0966129,-2.34595,-0.247264,2.01693,0.456673])]
+    q_g = [np.array([0.303584, -0.648212, 0.649549, -2.15934, 0.418512, 1.53807, 0.766482]),
+           np.array([-0.195319, -0.447499, 0.0966129, -2.34595, -0.247264, 2.01693, 0.456673])]
     for q in q_g:
         response = start_task(address, "MoveToJointPose", parameters={"parameters": {"q_g": q.tolist()}})
         response = wait_for_task(address, response['result']['task_uuid'])
@@ -626,6 +630,42 @@ def test_controllers(address):
         q_diff = np.linalg.norm(q - q_now)
         msg_error(float(q_diff) < 0.1, "test_controllers", "Goal pose and actual pose are too far apart.", response)
         input("Press key")
+
+
+def test_generic_task(address):
+    response = start_task(address, "GenericTask", parameters={"parameters": {
+        "skill_names": ["move"],
+        "skill_types": ["MoveToContact"]
+    },
+        "skills": {
+            "move": {
+                "skill": {
+                    "speed": 0.5,
+                    "objects": {
+                        "goal_pose": "table"
+                    }
+                },
+                "control": {
+                    "control_mode": 2
+                }
+            }
+        }})
+    print(response)
+
+
+def start_skill(address: str, skill: str, parameters: dict, control_mode: int):
+    response = start_task(address, "GenericTask", parameters={"parameters": {
+        "skill_names": ["skill"],
+        "skill_types": [skill]
+    },
+        "skills": {
+            "skill": {
+                "skill": parameters,
+                "control": {
+                    "control_mode": control_mode
+                }
+            }
+        }})
 
 
 def gripper_tests(url):

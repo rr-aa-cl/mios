@@ -2,6 +2,13 @@
 #include <msrm_utils/files.hpp>
 
 #include "skills/test_skill_1.hpp"
+#include "skills/move_to_pose_cart.hpp"
+#include "skills/move_to_pose_joint.hpp"
+#include "skills/move_to_contact.hpp"
+#include "skills/hand_guiding.hpp"
+#include "skills/hold_pose.hpp"
+#include "skills/motions_generic_wiggle.hpp"
+#include "skills/telepresence.hpp"
 
 namespace mios {
 
@@ -12,6 +19,7 @@ GenericTask::GenericTask(Core* core):Task("GenericTask",core){
 void GenericTask::initialize_context(){
     for(const auto& s : m_skills){
         insert_skill(s.first,s.second);
+        reserve_skill(s.first);
     }
 }
 
@@ -27,12 +35,34 @@ void GenericTask::evaluate(){
 
 void GenericTask::execute_any_skill(unsigned index){
     std::string name = m_skills[index].first;
-    switch(msrm_utils::str_to_int(name.c_str())){
+    std::string type = m_skills[index].second;
+    switch(msrm_utils::str_to_int(type.c_str())){
     case msrm_utils::str_to_int("TestSkill1"):
         execute_skill<TestSkill1,SkillParametersTestSkill1>(name);
         break;
+    case msrm_utils::str_to_int("MoveToPoseJoint"):
+        execute_skill<MoveToPoseJoint,SkillParametersMoveToPoseJoint>(name);
+        break;
+    case msrm_utils::str_to_int("MoveToPoseCart"):
+        execute_skill<MoveToPoseCart,SkillParametersMoveToPoseCart>(name);
+        break;
+    case msrm_utils::str_to_int("MoveToContact"):
+        execute_skill<MoveToContact,SkillParametersMoveToContact>(name);
+        break;
+    case msrm_utils::str_to_int("GenericWiggleMotion"):
+        execute_skill<GenericWiggleMotion,SkillParametersGenericWiggleMotion>(name);
+        break;
+    case msrm_utils::str_to_int("HoldPose"):
+        execute_skill<HoldPose,SkillParametersHoldPose>(name);
+        break;
+    case msrm_utils::str_to_int("HandGuiding"):
+        execute_skill<HandGuiding,SkillParametersHandGuiding>(name);
+        break;
+    case msrm_utils::str_to_int("Telepresence"):
+        execute_skill<Telepresence,SkillParametersTelepresence>(name);
+        break;
     default:
-        throw TaskException("Skill with name " + name + " not known to GenericTask");
+        throw TaskException("Skill with type " + type + " not known to GenericTask");
     }
 }
 

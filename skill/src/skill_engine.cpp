@@ -10,16 +10,20 @@ SkillEngine::SkillEngine(Core* core):m_core(core),m_memory(core->get_memory()),m
 
 }
 
-bool SkillEngine::load_skill(const nlohmann::json task_context, std::shared_ptr<Skill> skill){
-    spdlog::info("Loading skill "+skill->get_id()+".");
-    m_active_skill=skill;
+bool SkillEngine::apply_skill_context(const nlohmann::json &task_context, const std::string &skill_name){
     spdlog::info("Applying skill context...");
-    if(!m_memory->apply_skill_context(task_context,m_active_skill->get_id())){
-        return false;
-    }
+    return m_memory->apply_skill_context(task_context,skill_name);
+}
+
+bool SkillEngine::load_skill(std::shared_ptr<Skill> skill){
+    spdlog::info("Loading skill "+skill->get_id()+"...");
+    m_active_skill=skill;
+
+    spdlog::info("Grounding objects...");
     if(!m_active_skill->ground_objects()){
         return false;
     }
+    spdlog::info("Refreshing percept...");
     if(!m_core->refresh_percept({})){
         return false;
     }
@@ -27,7 +31,7 @@ bool SkillEngine::load_skill(const nlohmann::json task_context, std::shared_ptr<
     if(!m_core->refresh_percept(m_memory->read_parameters()->frames.O_R_T)){
         return false;
     }
-    spdlog::info("Initializing skill...");
+    spdlog::info("Initializing...");
     if(!m_active_skill->initialize(*m_core->get_percept())){
         return false;
     }
@@ -38,24 +42,27 @@ void SkillEngine::unload_skill(){
     m_active_skill=std::make_shared<NullSkill>("NullSkill",m_memory,m_core->get_portal(),*m_core->get_percept());
 }
 
-bool SkillEngine::execute_skill(const nlohmann::json& task_context, std::shared_ptr<Skill> skill){
-    if(!load_skill(task_context, skill)){
+bool SkillEngine::execute_skill(std::shared_ptr<Skill> skill){
+    if(!load_skill( skill)){
         spdlog::error("Skill could not be loaded.");
         return false;
     }
     bool result=false;
-    m_core->get_ros_node()->start();
     try{
-         result = m_core->execute_skill();
+        spdlog::info("Executing skill...");
+        result = m_core->execute_skill();
+        spdlog::info("Skill ran nominally.");
     }catch(const SkillException& e){
         spdlog::debug(e.what());
         result=false;
+        spdlog::warn("A skill exception occured.");
     }
-    m_core->get_ros_node()->stop();
+    spdlog::info("Unloading skill...");
     unload_skill();
     if(!m_core->refresh_percept({})){
         return false;
     }
+    spdlog::info("Terminating skill...");
     skill->terminate(*m_core->get_percept());
     return result;
 }

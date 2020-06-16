@@ -10,17 +10,48 @@ namespace mios{
 using Params=SkillParametersTelepresence;
 
 bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
+    if(!msrm_utils::read_json_param(parameters,"is_master",is_master)){
+        spdlog::error("Missing parameter: is_master");
+        return false;
+    }
+    if(!msrm_utils::read_json_param(parameters,"ip_dst",ip_dst)){
+        spdlog::error("Missing parameter: ip_dst");
+        return false;
+    }
+    if(!msrm_utils::read_json_param(parameters,"port_dst",port_dst)){
+        spdlog::error("Missing parameter: port_dst");
+        return false;
+    }
+    if(!msrm_utils::read_json_param(parameters,"port_src",port_src)){
+        spdlog::error("Missing parameter: port_src");
+        return false;
+    }
+    std::string telepresence_mode;
+    if(!msrm_utils::read_json_param(parameters,"telepresence_mode",telepresence_mode)){
+        spdlog::error("Missing parameter: telepresence_mode");
+        return false;
+    }
+    if(telepresence_mode=="Joystick"){
+        mode=TelepresenceMode::tmJoystick;
+    }else if(telepresence_mode=="DirectCart"){
+        mode=TelepresenceMode::tmDirectCart;
+    }else if(telepresence_mode=="DirectJoint"){
+        mode=TelepresenceMode::tmDirectJoint;
+    }else{
+        spdlog::error("Invalid telepresence mode.");
+        return false;
+    }
     return true;
 }
 
 Telepresence::Telepresence(const std::string &name, Memory *memory, Portal *portal, const Percept &p):Skill("Telepresence",{},name,memory,portal,p){
-    if(read_parameters<Params>()->master){
+    if(read_parameters<Params>()->is_master){
         if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
-            m_udp_sender = portal->open_udp_outstream("remote_twist_out",read_parameters<Params>()->peer_ip,read_parameters<Params>()->port_dst);
+            m_udp_sender = portal->open_udp_outstream("remote_twist_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
         }
     }else{
         if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
-            m_udp_sender = portal->open_udp_outstream("remote_force_out",read_parameters<Params>()->peer_ip,read_parameters<Params>()->port_dst);
+            m_udp_sender = portal->open_udp_outstream("remote_force_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
         }
     }
     if(!m_udp_sender->connect()){
@@ -37,7 +68,7 @@ std::shared_ptr<ManipulationPrimitive> Telepresence::get_initial_mp(const Percep
 }
 
 std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_transition(const Percept &p){
-    if(read_parameters<Params>()->master){
+    if(read_parameters<Params>()->is_master){
         if(get_active_mp()->get_name()=="handshake"){
             nlohmann::json response,request;
             request["name"]="handshake";
@@ -49,7 +80,8 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 request["content"]["q_master"]=msrm_utils::from_eigen<double,7,1>(p.proprioception.q);
             }
             if(m_handshake_stage==0){
-                m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->peer_ip,12002,"post_event",request);
+                spdlog::debug("Telepresence: Starting handshake (master)");
+                m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->ip_dst,12000,"post_event",request);
                 m_handshake_stage=1;
             }
             if(m_handshake_stage==1){
@@ -65,6 +97,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
             }
             if(m_handshake_stage==2){
                 if(m_memory->get_event("sync_done")!=nullptr){
+                    spdlog::debug("Telepresence: Received sync_done (master)");
                     m_memory->remove_event("sync_done");
                     std::shared_ptr<ManipulationPrimitive> mp = create_mp("telepresence",p);
                     if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
@@ -84,6 +117,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
         if(get_active_mp()->get_name()=="telepresence"){
             if(get_active_mp()->get_strategy_interface("telepresence")->finished()){
                 m_handshake_stage=0;
+                spdlog::debug("Telepresence: Terminating telepresence (master)");
                 std::shared_ptr<ManipulationPrimitive> mp = create_mp("handshake",p);
                 nlohmann::json response;
                 mp->create_strategy<NullStrategy>("idle",1);
@@ -93,6 +127,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
     }else{
         if(get_active_mp()->get_name()=="handshake"){
             if(m_memory->get_event("handshake")!=nullptr){
+                spdlog::debug("Telepresence: Received handshake (slave)");
                 std::shared_ptr<ManipulationPrimitive> mp = create_mp("sync",p);
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
                     Eigen::Matrix<double,4,4> O_T_EE_master;
@@ -121,19 +156,10 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
         }
         if(get_active_mp()->get_name()=="sync"){
             if(get_active_mp()->get_strategy_interface("move")->finished()){
-                std::shared_ptr<ManipulationPrimitive> mp = create_mp("telepresence",p);
-                if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
-
-                }
-                if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
-
-                }
-                if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
-                    mp->create_strategy<RemoteTwistStrategy>("telepresence",1);
-                }
                 nlohmann::json response;
                 if(m_handshake_stage==0){
-                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->peer_ip,12002,"post_event",{{"name","sync_done"}});
+                    spdlog::debug("Telepresence: Sending sync_done (slave)");
+                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->ip_dst,12000,"post_event",{{"name","sync_done"}});
                     m_handshake_stage++;
                 }
                 if(m_handshake_stage==1){
@@ -147,12 +173,24 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                         m_handshake_stage=2;
                     }
                 }
+                std::shared_ptr<ManipulationPrimitive> mp = create_mp("telepresence",p);
+                if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
+
+                }
+                if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
+
+                }
+                if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
+                    mp->create_strategy<RemoteTwistStrategy>("telepresence",1);
+                    mp->get_strategy<RemoteTwistStrategy>("telepresence")->connect(m_portal,"remote_twist_in",get_parameters<Params>()->port_src,256,0,10000,200);
+                }
                 return mp;
             }
         }
         if(get_active_mp()->get_name()=="telepresence"){
             if(get_active_mp()->get_strategy_interface("telepresence")->finished()){
                 m_handshake_stage=0;
+                spdlog::debug("Telepresence: Terminating telepresence (slave)");
                 std::shared_ptr<ManipulationPrimitive> mp = create_mp("handshake",p);
                 nlohmann::json response;
                 mp->create_strategy<NullStrategy>("idle",1);
@@ -164,19 +202,36 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
 }
 
 void Telepresence::auxiliaries(const Percept &p){
-    std::vector<double> payload;
-    if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
+    if(get_active_mp()->get_name()=="telepresence"){
+        std::vector<double> payload;
+        if(get_parameters<Params>()->is_master){
 
-    }
-    if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
+            if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
 
-    }
-    if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
-        for(unsigned i=0;i<6;i++){
-            payload.emplace_back(p.proprioception.TF_F_ext_K(i));
+            }
+            if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
+
+            }
+            if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
+                for(unsigned i=0;i<6;i++){
+                    payload.emplace_back(p.proprioception.TF_F_ext_K(i));
+                }
+            }
+        }else{
+            if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
+
+            }
+            if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
+
+            }
+            if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
+                for(unsigned i=0;i<6;i++){
+                    payload.emplace_back(p.proprioception.TF_F_ext_K(i));
+                }
+            }
         }
+        m_udp_sender->send(payload);
     }
-    m_udp_sender->send(payload);
 }
 
 bool Telepresence::check_local_suc_conditions(const Percept &p){

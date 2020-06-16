@@ -285,15 +285,15 @@ bool LTMemory::get_task_data(const std::string uuid, TaskData &data) const{
 
 std::shared_ptr<Task> LTMemory::load_task(const std::string& task_id, const nlohmann::json& user_context,Core* core){
     std::shared_ptr<Task> task = TaskFactory::create_task(TaskFactory::get_task_name(task_id),core);
+//    if(task->get_context().find("parameters")!=task->get_context().end()){
+//        if(!task->read_parameters(task->get_context()["parameters"])){
+//            spdlog::error("Could not read parameters for task " + task->get_id());
+//            return TaskFactory::create_task(TaskName::TaskNameNullTask,core);
+//        }
+//    }
     if(!task->load_context(user_context)){
         spdlog::error("Could not load context for task " + task->get_id());
         return TaskFactory::create_task(TaskName::TaskNameNullTask,core);
-    }
-    if(task->get_context().find("parameters")!=task->get_context().end()){
-        if(!task->read_parameters(task->get_context()["parameters"])){
-            spdlog::error("Could not read parameters for task " + task->get_id());
-            return TaskFactory::create_task(TaskName::TaskNameNullTask,core);
-        }
     }
     return task;
 }

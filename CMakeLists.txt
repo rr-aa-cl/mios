@@ -24,12 +24,18 @@ set(CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/third_party/share/cmake;${CMAKE_SOURCE
 find_package(Franka REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(pybind11 REQUIRED)
-find_package(roscpp REQUIRED)
 find_package(libmongocxx-static REQUIRED)
 find_package(libbsoncxx-static REQUIRED)
 #find_package(PythonLibs REQUIRED)
 
+find_package(roscpp REQUIRED
+    std_srvs REQUIRED
+    message_generation REQUIRED)
+
+
 include_directories(${roscpp_INCLUDE_DIRS})
+include_directories(${std_srvs_INCLUDE_DIRS})
+include_directories(${message_generation_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/third_party/include)
 include_directories(${LIBMONGOCXX_STATIC_INCLUDE_DIRS})
 include_directories(${LIBBSONCXX_STATIC_INCLUDE_DIRS})

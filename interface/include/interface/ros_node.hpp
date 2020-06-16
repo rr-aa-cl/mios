@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ros/ros.h"
+#include <ros/ros.h>
 
 namespace mios{
 
@@ -11,6 +11,8 @@ public:
     void start();
     void stop();
     ros::NodeHandle* get_node_handle();
+
+private:
 
 private:
     ros::NodeHandle m_node;

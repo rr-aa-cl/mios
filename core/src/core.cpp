@@ -71,6 +71,7 @@ bool Core::initialize(){
         spdlog::error("Could not acquire iniital percept.");
         return false;
     }
+    m_ros_node.start();
 
     return true;
 }

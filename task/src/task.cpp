@@ -86,6 +86,11 @@ bool Task::load_context(const nlohmann::json &user_context){
             }
         }
 
+        if(!read_parameters(m_context["parameters"])){
+            spdlog::error("Could not read task parameters.");
+            return false;
+        }
+
         if(user_context.find("subtasks")!=user_context.end()){
             m_context["subtasks"]=user_context["subtasks"];
         }

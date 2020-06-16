@@ -15,7 +15,7 @@ bool SkillParametersGenericWiggleMotion::from_json(const nlohmann::json &paramet
     return true;
 }
 
-GenericWiggleMotion::GenericWiggleMotion(const std::string &id, Memory *memory,Portal* portal, const Percept &p):Skill("GenericWiggleMotion",{"goal_pose"},id,memory,portal,p){
+GenericWiggleMotion::GenericWiggleMotion(const std::string &id, Memory *memory,Portal* portal, const Percept &p):Skill("GenericWiggleMotion",{},id,memory,portal,p){
 }
 
 std::shared_ptr<ManipulationPrimitive> GenericWiggleMotion::get_initial_mp(const Percept &p_0){
@@ -32,15 +32,15 @@ Eigen::Matrix<double,3,3> GenericWiggleMotion::get_O_R_T_0(const Percept &p) con
     if(c->use_EE){
         return p.proprioception.TF_T_EE.block<3,3>(0,0);
     }else{
-        return Eigen::Matrix<double,3,3>::Zero();
+        return Eigen::Matrix<double,3,3>::Identity();
     }
 }
 
 bool GenericWiggleMotion::check_local_suc_conditions(const Percept &p){
     std::shared_ptr<SkillParametersGenericWiggleMotion> c = get_parameters<SkillParametersGenericWiggleMotion>();
     if(c->tap_to_finish){
-        for(unsigned i=0;i<p.proprioception.K_F_ext_K.rows();i++){
-            if(fabs(p.proprioception.K_F_ext_K(i))>m_memory->read_parameters()->user.F_ext_contact(i)){
+        for(unsigned i=0;i<3;i++){
+            if(fabs(p.proprioception.K_F_ext_K(i))>m_memory->read_parameters()->user.F_ext_contact(0)){
                 return true;
             }
         }

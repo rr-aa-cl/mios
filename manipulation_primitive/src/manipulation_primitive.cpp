@@ -33,7 +33,10 @@ Actuator* ManipulationPrimitive::step(const Percept &p){
         spdlog::error("Command composition at primitive layer failed.");
         m_cmd.stop();
     }
-    m_cmd.t=std::chrono::duration_cast<std::chrono::seconds>(m_memory->get_live_context()->t_mp-std::chrono::high_resolution_clock::now()).count();
+    m_cmd.t=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_memory->get_live_context()->t_mp).count()/1000.0;
+    for(auto& s : m_strategies){
+        s.second.cmd.t=m_cmd.t;
+    }
     return &m_cmd;
 }
 

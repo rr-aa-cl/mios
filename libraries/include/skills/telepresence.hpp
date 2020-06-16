@@ -10,8 +10,8 @@ class SkillParametersTelepresence : public SkillParameters{
 public:
     bool from_json(const nlohmann::json &parameters) override;
 
-    bool master;
-    std::string peer_ip;
+    bool is_master;
+    std::string ip_dst;
     unsigned port_dst;
     unsigned port_src;
     TelepresenceMode mode;
