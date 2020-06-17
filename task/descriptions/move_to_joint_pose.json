@@ -1,1 +1,0 @@
-{"name": "move_to_joint_pose", "skills": {"move": {"type": "move_to_pose_joint", "skill": {"q_g": [0, 0, 0, 0, 0, 0, 0], "speed": [0.4], "acc": [0.5]}, "general": {"control_mode": 3}, "objects": ["none"]}}, "parameters": {"pose": "none", "q_g": [0, 0, 0, 0, 0, 0, 0], "speed": 0.5, "acc": 0.5}}

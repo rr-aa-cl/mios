@@ -16,9 +16,13 @@ franka::Finishable *JointTorqueControllerPipeline::step(const Percept &p, const 
     input_cntr_joint_imp(p);
     input_cntr_mux(p);
 
-    m_cntr_joint_imp.u.theta_d=m_q_d_old+cmd.dq_d*0.001;
+    if(cmd.command_mode==CommandMode::cmdPose){
+        m_cntr_joint_imp.u.theta_d=cmd.q_d;
+    }else{
+        m_cntr_joint_imp.u.theta_d=m_q_d_old+cmd.dq_d*0.001;
+        m_q_d_old+=cmd.dq_d*0.001;
+    }
     m_cntr_joint_imp.u.K_theta=cmd.K_theta;
-    m_q_d_old+=cmd.dq_d*0.001;
 
     m_cntr_joint_imp.step();
 

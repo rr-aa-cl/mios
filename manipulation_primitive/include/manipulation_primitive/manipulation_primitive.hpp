@@ -37,12 +37,14 @@ public:
     void set_flag_error();
     std::string get_name() const;
 
+    void set_command_mode(CommandMode command_mode);
+
     Actuator* initialize(const Percept &p_0);
     Actuator* initialize(const Percept &p_0, const Actuator &cmd);
     Actuator* step(const Percept& p);
     void terminate(const Percept& p);
     Actuator* cmd_from_buffer();
-    Actuator* stop(const Percept &p);
+    Actuator* stop(const Percept &p,double stop_factor=1.0);
     bool is_settled() const;
     template<typename T> void create_strategy(const std::string& name,double weight){
         if(m_strategies.find(name)!=m_strategies.end()){

@@ -272,6 +272,7 @@ private:
     std::atomic<bool> m_flag_pause;
     std::atomic<bool> m_flag_parallels_running;
     std::atomic<bool> m_flag_run_parallels;
+    double m_stop_factor;
 
     const std::string m_type;
     const std::string m_id;

@@ -563,6 +563,19 @@ bool ControlParameters::from_json(const nlohmann::json &parameters){
         control_mode=ControlMode::mNoControl;
     }
 
+    int command_mode_tmp;
+    if(!msrm_utils::read_json_param(parameters,"command_mode",command_mode_tmp)){
+        spdlog::error("Could not read control_mode.");
+        return false;
+    }
+    if(command_mode_tmp==0){
+        command_mode=CommandMode::cmdVelocity;
+    }else if(command_mode_tmp==1){
+        command_mode=CommandMode::cmdPose;
+    }else{
+        command_mode=CommandMode::cmdVelocity;
+    }
+
     if(!msrm_utils::read_json_param<double,6,1>(parameters["cart_imp"],"K_x",cart_imp.K_x)){
         spdlog::error("Could not read cart_imp.K_x.");
         return false;
@@ -668,6 +681,7 @@ nlohmann::json ControlParameters::to_json() const{
     nlohmann::json json_nullspace_control;
 
     json_object["control_mode"]=control_mode;
+    json_object["command_mode"]=command_mode;
 
     json_cart_imp["K_x"]=msrm_utils::from_eigen<double,6,1>(cart_imp.K_x);
     json_cart_imp["xi_x"]=msrm_utils::from_eigen<double,6,1>(cart_imp.xi_x);

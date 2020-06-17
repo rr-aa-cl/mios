@@ -4,7 +4,7 @@
 
 namespace mios {
 
-Actuator::Actuator(const Percept &p_0, const ControlParameters& controller){
+Actuator::Actuator(const Percept &p_0, const ControlParameters& controller):command_mode(CommandMode::cmdPose){
     spdlog::debug("Actuator:Constructor");
     initialize(p_0, controller, Eigen::Matrix<double,3,3>::Identity());
 }
@@ -58,6 +58,8 @@ void Actuator::initialize(const Percept &p_0, const ControlParameters& controlle
     m_xi_theta_buffer=xi_theta;
 
     m_stop=false;
+    m_stop_factor=1;
+
 }
 
 void Actuator::stop(){
@@ -176,23 +178,23 @@ void Actuator::limit_output_rate(const LimitParameters &parameters){
         double diff_dF_r = TF_F_d(i+3)-m_TF_F_d_limiter(i+3);
         double diff_dF_ff_t = TF_F_ff(i)-m_TF_F_ff_limiter(i);
         double diff_dF_ff_r = TF_F_ff(i+3)-m_TF_F_ff_limiter(i+3);
-        if(fabs(diff_dX_t)/0.001>parameters.cartesian_space.ddX_max[0]){
-            TF_dX_d(i)=m_TF_dX_d_limiter(i)+msrm_utils::sgn(diff_dX_t)*parameters.cartesian_space.ddX_max(0)*0.001;
+        if(fabs(diff_dX_t)/0.001>parameters.cartesian_space.ddX_max[0]*m_stop_factor){
+            TF_dX_d(i)=m_TF_dX_d_limiter(i)+msrm_utils::sgn(diff_dX_t)*parameters.cartesian_space.ddX_max(0)*0.001*m_stop_factor;
         }
-        if(fabs(diff_dX_r)/0.001>parameters.cartesian_space.ddX_max[1]){
-            TF_dX_d(i+3)=m_TF_dX_d_limiter(i+3)+msrm_utils::sgn(diff_dX_r)*parameters.cartesian_space.ddX_max(1)*0.001;
+        if(fabs(diff_dX_r)/0.001>parameters.cartesian_space.ddX_max[1]*m_stop_factor){
+            TF_dX_d(i+3)=m_TF_dX_d_limiter(i+3)+msrm_utils::sgn(diff_dX_r)*parameters.cartesian_space.ddX_max(1)*0.001*m_stop_factor;
         }
-        if(fabs(diff_dF_t)/0.001>parameters.cartesian_space.dF_J_max[0]){
-            TF_F_d(i)=m_TF_F_d_limiter(i)+msrm_utils::sgn(diff_dF_t)*parameters.cartesian_space.dF_J_max(0)*0.001;
+        if(fabs(diff_dF_t)/0.001>parameters.cartesian_space.dF_J_max[0]*m_stop_factor){
+            TF_F_d(i)=m_TF_F_d_limiter(i)+msrm_utils::sgn(diff_dF_t)*parameters.cartesian_space.dF_J_max(0)*0.001*m_stop_factor;
         }
-        if(fabs(diff_dF_r)/0.001>parameters.cartesian_space.dF_J_max[1]){
-            TF_F_d(i+3)=m_TF_F_d_limiter(i+3)+msrm_utils::sgn(diff_dF_r)*parameters.cartesian_space.dF_J_max(1)*0.001;
+        if(fabs(diff_dF_r)/0.001>parameters.cartesian_space.dF_J_max[1]*m_stop_factor){
+            TF_F_d(i+3)=m_TF_F_d_limiter(i+3)+msrm_utils::sgn(diff_dF_r)*parameters.cartesian_space.dF_J_max(1)*0.001*m_stop_factor;
         }
-        if(fabs(diff_dF_ff_t)/0.001>parameters.cartesian_space.dF_J_max[0]){
-            TF_F_ff(i)=m_TF_F_ff_limiter(i)+msrm_utils::sgn(diff_dF_ff_t)*parameters.cartesian_space.dF_J_max(0)*0.001;
+        if(fabs(diff_dF_ff_t)/0.001>parameters.cartesian_space.dF_J_max[0]*m_stop_factor){
+            TF_F_ff(i)=m_TF_F_ff_limiter(i)+msrm_utils::sgn(diff_dF_ff_t)*parameters.cartesian_space.dF_J_max(0)*0.001*m_stop_factor;
         }
-        if(fabs(diff_dF_ff_r)/0.001>parameters.cartesian_space.dF_J_max[1]){
-            TF_F_ff(i+3)=m_TF_F_ff_limiter(i+3)+msrm_utils::sgn(diff_dF_ff_r)*parameters.cartesian_space.dF_J_max(1)*0.001;
+        if(fabs(diff_dF_ff_r)/0.001>parameters.cartesian_space.dF_J_max[1]*m_stop_factor){
+            TF_F_ff(i+3)=m_TF_F_ff_limiter(i+3)+msrm_utils::sgn(diff_dF_ff_r)*parameters.cartesian_space.dF_J_max(1)*0.001*m_stop_factor;
         }
     }
 
@@ -215,20 +217,20 @@ void Actuator::limit_output_rate(const LimitParameters &parameters){
         double diff_tau_ff = tau_ff(i)-m_tau_ff_limiter(i);
         double diff_K_theta = K_theta(i)-m_K_theta_limiter(i);
         double diff_xi_theta = xi_theta(i)-m_xi_theta_limiter(i);
-        if(fabs(diff_q)/0.001>parameters.joint_space.dq_max(i)){
-            q_d(i)=m_q_d_limiter(i)+msrm_utils::sgn(diff_q)*parameters.joint_space.dq_max(i)*0.001;
+        if(fabs(diff_q)/0.001>parameters.joint_space.dq_max(i)*m_stop_factor){
+            q_d(i)=m_q_d_limiter(i)+msrm_utils::sgn(diff_q)*parameters.joint_space.dq_max(i)*0.001*m_stop_factor;
         }
-        if(fabs(diff_q_nullspace)/0.001>parameters.joint_space.dq_max(i)){
-            q_d_nullspace(i)=m_q_d_nullspace_limiter(i)+msrm_utils::sgn(diff_q_nullspace)*parameters.joint_space.dq_max(i)*0.001;
+        if(fabs(diff_q_nullspace)/0.001>parameters.joint_space.dq_max(i)*m_stop_factor){
+            q_d_nullspace(i)=m_q_d_nullspace_limiter(i)+msrm_utils::sgn(diff_q_nullspace)*parameters.joint_space.dq_max(i)*0.001*m_stop_factor;
         }
-        if(fabs(diff_dq)/0.001>parameters.joint_space.ddq_max(i)){
-            dq_d(i)=m_dq_d_limiter(i)+msrm_utils::sgn(diff_dq)*parameters.joint_space.ddq_max(i)*0.001;
+        if(fabs(diff_dq)/0.001>parameters.joint_space.ddq_max(i)*m_stop_factor){
+            dq_d(i)=m_dq_d_limiter(i)+msrm_utils::sgn(diff_dq)*parameters.joint_space.ddq_max(i)*0.001*m_stop_factor;
         }
-        if(fabs(diff_tau)/0.001>parameters.joint_space.tau_J_max(i)){
-            tau_d(i)=m_tau_d_limiter(i)+msrm_utils::sgn(diff_tau)*parameters.joint_space.tau_J_max(i)*0.001;
+        if(fabs(diff_tau)/0.001>parameters.joint_space.tau_J_max(i)*m_stop_factor){
+            tau_d(i)=m_tau_d_limiter(i)+msrm_utils::sgn(diff_tau)*parameters.joint_space.tau_J_max(i)*0.001*m_stop_factor;
         }
-        if(fabs(diff_tau_ff)/0.001>parameters.joint_space.tau_J_max(i)){
-            tau_ff(i)=m_tau_ff_limiter(i)+msrm_utils::sgn(diff_tau_ff)*parameters.joint_space.tau_J_max(i)*0.001;
+        if(fabs(diff_tau_ff)/0.001>parameters.joint_space.tau_J_max(i)*m_stop_factor){
+            tau_ff(i)=m_tau_ff_limiter(i)+msrm_utils::sgn(diff_tau_ff)*parameters.joint_space.tau_J_max(i)*0.001*m_stop_factor;
         }
         if(fabs(diff_K_theta)/0.001>parameters.joint_space.dK_theta_max(i)){
             K_theta(i)=m_K_theta_limiter(i)+msrm_utils::sgn(diff_K_theta)*parameters.joint_space.dK_theta_max(i)*0.001;
@@ -327,25 +329,25 @@ bool Actuator::is_stopped() const{
 bool Actuator::is_settled(const LimitParameters &parameters) const{
     bool all_zero=true;
     for(unsigned i=0;i<7;i++){
-        if(fabs(dq_d(i))>parameters.joint_space.ddq_max(0)/1000/2 ||
-                fabs(tau_d(i))>parameters.joint_space.dtau_J_max(0)/1000/2 ||
-                fabs(tau_ff(i))>parameters.joint_space.dtau_J_max(0)/1000/2){
+        if(fabs(dq_d(i))>parameters.joint_space.ddq_max(0)/1000*m_stop_factor ||
+                fabs(tau_d(i))>parameters.joint_space.dtau_J_max(0)/1000*m_stop_factor ||
+                fabs(tau_ff(i))>parameters.joint_space.dtau_J_max(0)/1000*m_stop_factor){
             all_zero=false;
             break;
         }
     }
     for(unsigned i=0;i<3;i++){
-        if(fabs(TF_dX_d(i))>parameters.cartesian_space.ddX_max(0)/1000/2 ||
-                fabs(TF_F_d(i))>parameters.cartesian_space.dF_J_max(0)/1000/2 ||
-                fabs(TF_F_ff(i))>parameters.cartesian_space.dF_J_max(0)/1000/2){
+        if(fabs(TF_dX_d(i))>parameters.cartesian_space.ddX_max(0)/1000*m_stop_factor ||
+                fabs(TF_F_d(i))>parameters.cartesian_space.dF_J_max(0)/1000*m_stop_factor ||
+                fabs(TF_F_ff(i))>parameters.cartesian_space.dF_J_max(0)/1000*m_stop_factor){
             all_zero=false;
             break;
         }
     }
     for(unsigned i=3;i<6;i++){
-        if(fabs(TF_dX_d(i))>parameters.cartesian_space.ddX_max(1)/1000/2 ||
-                fabs(TF_F_d(i))>parameters.cartesian_space.dF_J_max(1)/1000/2 ||
-                fabs(TF_F_ff(i))>parameters.cartesian_space.dF_J_max(1)/1000/2){
+        if(fabs(TF_dX_d(i))>parameters.cartesian_space.ddX_max(1)/1000*m_stop_factor ||
+                fabs(TF_F_d(i))>parameters.cartesian_space.dF_J_max(1)/1000*m_stop_factor ||
+                fabs(TF_F_ff(i))>parameters.cartesian_space.dF_J_max(1)/1000*m_stop_factor){
             all_zero=false;
             break;
         }
@@ -358,19 +360,28 @@ void Actuator::set_zero(const Percept &p_0){
     TF_dX_d.setZero();
     TF_F_d.setZero();
     TF_F_ff.setZero();
-    K_x.setZero();
-    xi_x.setZero();
+    K_x=p_0.controller.K_x;
+    xi_x=p_0.controller.xi_x;
 
     q_d_nullspace=p_0.proprioception.q;
     q_d=p_0.proprioception.q;
     dq_d.setZero();
     tau_d.setZero();
     tau_ff.setZero();
-    K_theta.setZero();
-    xi_theta.setZero();
+    K_theta=p_0.controller.K_theta;
+    xi_theta=p_0.controller.xi_theta;
 
     O_R_T.setIdentity();
+}
 
+void Actuator::set_stop_factor(double stop_factor){
+    m_stop_factor=stop_factor;
+    if(m_stop_factor>1){
+        m_stop_factor=1;
+    }
+    if(m_stop_factor<0.01){
+        m_stop_factor=0.01;
+    }
 }
 
 }

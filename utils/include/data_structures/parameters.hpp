@@ -10,8 +10,6 @@ namespace mios {
 
 class Object;
 
-enum CommandMode{None,Torque,CartesianVelocity,JointVelocity,CartesianPose,JointPose};
-
 class IParameters{
 public:
     virtual bool from_json(const nlohmann::json& parameters) = 0;
@@ -113,8 +111,6 @@ public:
     bool has_gripper;
 };
 
-enum ControlMode{mCartTorque,mJointTorque,mCartVelocity,mJointVelocity,mNoControl};
-
 class SafetyParameters : public IParameters{
 public:
     SafetyParameters();
@@ -148,6 +144,9 @@ public:
     }virtual_joint_walls;
 };
 
+enum ControlMode{mCartTorque,mJointTorque,mCartVelocity,mJointVelocity,mNoControl};
+enum CommandMode{cmdVelocity,cmdPose};
+
 class ControlParameters : public IParameters{
 public:
     ControlParameters();
@@ -155,6 +154,7 @@ public:
     nlohmann::json to_json() const;
 
     ControlMode control_mode;
+    CommandMode command_mode;
 
     struct CartImpAdaptationStage{
         Eigen::Matrix<double,6,1> alpha;

@@ -1,1 +1,0 @@
-{"name": "move_until_contact", "skills": {"move": {"type": "move_to_contact", "objects": ["none"]}}, "parameters": {"surface": "none", "speed": 0.2}}

@@ -1,1 +1,0 @@
-{"name": "place_object", "skills": {}, "parameters": {"loc_place": "none", "Delta_approach": [0, 0.1, 0], "Delta_retreat": [0, 0, 0.1], "loc_intermediate": ["none"], "loc_cart": [false, false]}}

@@ -15,6 +15,11 @@ public:
     unsigned port_dst;
     unsigned port_src;
     TelepresenceMode mode;
+
+    struct Joystick{
+        Eigen::Matrix<double,6,1> amp;
+        Eigen::Matrix<double,6,1> force_thr;
+    }joystick;
 };
 
 class Telepresence : public Skill{

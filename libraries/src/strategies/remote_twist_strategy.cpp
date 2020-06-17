@@ -11,6 +11,7 @@ void RemoteTwistStrategy::get_next_command(Actuator &cmd, const Percept &p){
     for(unsigned i=0;i<6;i++){
         cmd.TF_dX_d(i)=m_TF_dX_d_in[0][i];
     }
+    std::cout<<cmd.TF_dX_d<<std::endl;
 }
 
 void RemoteTwistStrategy::terminate(const Percept &p){

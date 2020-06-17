@@ -1,1 +1,0 @@
-{"name": "fetch_object", "skills": {}, "parameters": {"object": "test_object_1", "Delta_approach": [0, 0, 0.1], "Delta_retreat": [0, 0.1, 0], "loc_intermediate": ["none"], "loc_cart": [false, true]}}

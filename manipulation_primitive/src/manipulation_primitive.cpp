@@ -8,6 +8,11 @@ ManipulationPrimitive::ManipulationPrimitive(const std::string& name, const Perc
     :m_name(name),m_memory(memory),m_cmd(Actuator(p_0,memory->read_parameters()->control)),m_flag_initialized(false),m_flag_terminated(false){
 }
 
+void ManipulationPrimitive::set_command_mode(CommandMode command_mode){
+    std::cout<<"SETTING COMMAND MODE"<<std::endl;
+    m_cmd.command_mode=command_mode;
+}
+
 Actuator* ManipulationPrimitive::initialize(const Percept &p_0){
     m_cmd.initialize(p_0,m_memory->read_parameters()->control, m_memory->read_parameters()->frames.O_R_T);
     return initialize(p_0,m_cmd);
@@ -32,6 +37,9 @@ Actuator* ManipulationPrimitive::step(const Percept &p){
     if(!compose_command(p)){
         spdlog::error("Command composition at primitive layer failed.");
         m_cmd.stop();
+    }
+    if(m_cmd.command_mode==CommandMode::cmdPose){
+        std::cout<<"POSE"<<std::endl;
     }
     m_cmd.t=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_memory->get_live_context()->t_mp).count()/1000.0;
     for(auto& s : m_strategies){
@@ -104,10 +112,10 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
 
         weight_check+=s.second.weight;
     }
-    if(weight_check!=1){
-        spdlog::error("Strategy command weights do not sum up to 1");
-        return false;
-    }
+//    if(weight_check!=1){
+//        spdlog::error("Strategy command weights do not sum up to 1");
+//        return false;
+//    }
     return true;
 }
 
@@ -116,8 +124,9 @@ Actuator* ManipulationPrimitive::cmd_from_buffer(){
     return &m_cmd;
 }
 
-Actuator* ManipulationPrimitive::stop(const Percept& p){
+Actuator* ManipulationPrimitive::stop(const Percept& p, double stop_factor){
     m_cmd.set_zero(p);
+    m_cmd.set_stop_factor(stop_factor);
     return &m_cmd;
 }
 

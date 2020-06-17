@@ -2,8 +2,14 @@
 #include "strategies/move_to_joint_pose.hpp"
 #include "strategies/move_to_pose.hpp"
 #include "strategies/null_strategy.hpp"
+#include "strategies/cart_compliance_strategy.hpp"
+#include "strategies/joint_compliance_strategy.hpp"
 #include "strategies/remote_twist_strategy.hpp"
 #include "strategies/remote_wrench_strategy.hpp"
+#include "strategies/remote_joint_pose_strategy.hpp"
+#include "strategies/remote_torque_strategy.hpp"
+
+#include <msrm_utils/math.hpp>
 
 namespace mios{
 
@@ -41,16 +47,43 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
         spdlog::error("Invalid telepresence mode.");
         return false;
     }
+
+    if(parameters.find("joystick")==parameters.end() && mode==TelepresenceMode::tmJoystick){
+        spdlog::error("Joystick mode has been selected but no mode-related parameters were given.");
+        return false;
+    }else if(parameters.find("joystick")!=parameters.end() && mode==TelepresenceMode::tmJoystick){
+        if(is_master && !msrm_utils::read_json_param<double,6,1>(parameters["joystick"],"amp",joystick.amp)){
+            spdlog::error("Missing parameter: joystick.amp");
+            return false;
+        }
+        if(is_master && !msrm_utils::read_json_param<double,6,1>(parameters["joystick"],"force_thr",joystick.force_thr)){
+            spdlog::error("Missing parameter: joystick.force_thr");
+            return false;
+        }
+    }
+
     return true;
 }
 
-Telepresence::Telepresence(const std::string &name, Memory *memory, Portal *portal, const Percept &p):Skill("Telepresence",{},name,memory,portal,p){
+Telepresence::Telepresence(const std::string &name, Memory *memory, Portal *portal, const Percept &p):Skill("Telepresence",{},name,memory,portal,p),m_handshake_stage(0){
     if(read_parameters<Params>()->is_master){
         if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
             m_udp_sender = portal->open_udp_outstream("remote_twist_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
         }
+        if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
+            m_udp_sender = portal->open_udp_outstream("remote_joint_pose_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
+        }
+        if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
+            m_udp_sender = portal->open_udp_outstream("remote_cart_pose_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
+        }
     }else{
         if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
+            m_udp_sender = portal->open_udp_outstream("remote_force_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
+        }
+        if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
+            m_udp_sender = portal->open_udp_outstream("remote_torque_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
+        }
+        if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
             m_udp_sender = portal->open_udp_outstream("remote_force_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
         }
     }
@@ -104,7 +137,14 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
 
                     }
                     if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
-
+                        mp->create_strategy<RemoteTorqueStrategy>("telepresence",1);
+//                        mp->create_strategy<JointComplianceStrategy>("compliance",1);
+                        mp->get_strategy<RemoteTorqueStrategy>("telepresence")->connect(m_portal,"remote_joint_in",get_parameters<Params>()->port_src,256,0,10000,200);
+//                        Eigen::Matrix<double,7,1> K_theta_0;
+//                        Eigen::Matrix<double,7,1> xi_theta_0;
+//                        K_theta_0<<0,0,0,0,0,0,0;
+//                        xi_theta_0<<0,0,0,0,0,0,0;
+//                        mp->get_strategy<JointComplianceStrategy>("compliance")->set_complicance(K_theta_0,xi_theta_0);
                     }
                     if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
                         mp->create_strategy<RemoteWrenchStrategy>("telepresence",1);
@@ -139,8 +179,10 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(O_T_EE_master,speed,acc);
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
+                    mp->set_command_mode(CommandMode::cmdVelocity);
                     Eigen::Matrix<double,7,1> q_master;
                     msrm_utils::read_json_param<double,7,1>(m_memory->get_event("handshake")->get_content(),"q_master",q_master);
+                    std::cout<<"q_master: "<<q_master<<std::endl;
                     mp->create_strategy<MoveToJointPoseStrategy>("move",1);
                     mp->get_strategy<MoveToJointPoseStrategy>("move")->set_goal(q_master,0.5,2);
                 }
@@ -178,7 +220,10 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
 
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
-
+                    mp->set_command_mode(CommandMode::cmdPose);
+                    std::cout<<"SLAVE"<<std::endl;
+                    mp->create_strategy<RemoteJointPoseStrategy>("telepresence",1);
+                    mp->get_strategy<RemoteJointPoseStrategy>("telepresence")->connect(m_portal,"remote_twist_in",get_parameters<Params>()->port_src,256,0,10000,20);
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
                     mp->create_strategy<RemoteTwistStrategy>("telepresence",1);
@@ -210,11 +255,20 @@ void Telepresence::auxiliaries(const Percept &p){
 
             }
             if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
-
+                for(unsigned i=0;i<7;i++){
+                    payload.emplace_back(p.proprioception.q(i));
+                }
             }
             if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
+                Eigen::Matrix<double,6,1> joystick_command;
                 for(unsigned i=0;i<6;i++){
-                    payload.emplace_back(p.proprioception.TF_F_ext_K(i));
+                    if(fabs(p.proprioception.TF_F_ext_K(i))>get_parameters<Params>()->joystick.force_thr(i)){
+                        joystick_command(i)=(fabs(p.proprioception.TF_F_ext_K(i))-get_parameters<Params>()->joystick.force_thr(i))*
+                                msrm_utils::sgn(p.proprioception.TF_F_ext_K(i))*get_parameters<Params>()->joystick.amp(i);
+                    }else{
+                        joystick_command(i)=0;
+                    }
+                    payload.emplace_back(joystick_command(i));
                 }
             }
         }else{
@@ -222,7 +276,9 @@ void Telepresence::auxiliaries(const Percept &p){
 
             }
             if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
-
+                for(unsigned i=0;i<7;i++){
+                    payload.emplace_back(p.proprioception.tau_ext(i));
+                }
             }
             if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
                 for(unsigned i=0;i<6;i++){

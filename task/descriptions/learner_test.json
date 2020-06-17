@@ -1,1 +1,0 @@
-{"name": "learner_test", "skills": {"learner_test": {"type": "learner_test_skill"}}, "parameters": {"x": [0, 0, 0, 0, 0, 0]}, "mapping": {"x1": ["learner_test.skill.x-1"], "x2": ["learner_test.skill.x-2"], "x3": ["learner_test.skill.x-3"], "x4": ["learner_test.skill.x-4"], "x5": ["learner_test.skill.x-5"], "x6": ["learner_test.skill.x-6"]}}

@@ -13,7 +13,7 @@ namespace mios {
 
 Skill::Skill(const std::string &type, const std::unordered_set<std::string> &objects, const std::string& id, Memory *memory, Portal* portal, const Percept &p):
     m_memory(memory),m_portal(portal),m_active_mp(std::make_shared<ManipulationPrimitive>("NullPrimitive",p,memory)),m_life_cycle(SkillLifeCycle::slInit),
-    m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_type(type),m_id(id),m_objects(objects){
+    m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_stop_factor(1.0),m_type(type),m_id(id),m_objects(objects){
 }
 
 Skill::~Skill(){
@@ -84,7 +84,8 @@ Actuator* Skill::cycle(const Percept &p){
         m_result.percepts.emplace(std::make_pair(m_active_mp->get_name(),p));
         if(!this->check_local_pre_conditions(p)){
             spdlog::error("Preconditions are not fulfilled.");
-            cmd=m_active_mp->stop(p);
+            m_stop_factor=0.1;
+            cmd=m_active_mp->stop(p,m_stop_factor);
             m_life_cycle=SkillLifeCycle::slTerminate;
         }else{
             cmd=m_active_mp->initialize(p);
@@ -98,12 +99,12 @@ Actuator* Skill::cycle(const Percept &p){
         if(m_active_mp->is_settled()){
             m_life_cycle=SkillLifeCycle::slTerminate;
         }
-        return m_active_mp->stop(p);
+        return m_active_mp->stop(p,m_stop_factor);
     }
     if(m_life_cycle==SkillLifeCycle::slTerminate){
         stop_parallels();
         m_active_mp->terminate(p);
-        cmd=m_active_mp->stop(p);
+        cmd=m_active_mp->stop(p,m_stop_factor);
         cmd->stop();
         m_result.p_1=p;
         return cmd;
@@ -112,8 +113,6 @@ Actuator* Skill::cycle(const Percept &p){
     if(check_global_suc_conditions(p)){
         spdlog::info("Global success conditions of skill" + m_id + " have been triggered.");
         m_result.success=true;
-        m_life_cycle=SkillLifeCycle::slSettle;
-        return m_active_mp->stop(p);
     }
     if(check_local_suc_conditions(p)){
         spdlog::info("Local success conditions of skill " + m_id + " have been triggered.");
@@ -122,19 +121,22 @@ Actuator* Skill::cycle(const Percept &p){
     if(check_local_ex_conditions(p) && m_result.success){
         spdlog::info("Local exit conditions of skill " + m_id + " have been triggered.");
         m_life_cycle=SkillLifeCycle::slSettle;
-        return m_active_mp->stop(p);
+        m_stop_factor=0.1;
+        return m_active_mp->stop(p,m_stop_factor);
     }
     if(check_global_err_conditions(p)){
         spdlog::error("Global error conditions of skill " + m_id + " have been triggered.");
         m_result.success=false;
         m_life_cycle=SkillLifeCycle::slSettle;
-        return m_active_mp->stop(p);
+        m_stop_factor=0.1;
+        return m_active_mp->stop(p,m_stop_factor);
     }
     if(check_local_err_conditions(p)){
         spdlog::error("Local error conditions of skill " + m_id + " have been triggered.");
         m_result.success=false;
         m_life_cycle=SkillLifeCycle::slSettle;
-        return m_active_mp->stop(p);
+        m_stop_factor=0.1;
+        return m_active_mp->stop(p,m_stop_factor);
     }
     next_mp=graph_transition(p);
     if(next_mp.has_value()){
@@ -158,6 +160,7 @@ Actuator* Skill::cycle(const Percept &p){
     m_result.success=false;
     m_result.exception=true;
     m_life_cycle=SkillLifeCycle::slSettle;
+    m_stop_factor=1;
     return m_active_mp->stop(p);
 }
 

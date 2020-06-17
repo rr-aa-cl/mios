@@ -1,1 +1,0 @@
-{"name": "gesture", "skills": {"handover": {"skill": {"time_max": 1000, "F_trigger": [0, 7, 0, 0, 0, 0], "dir_trigger": [0, 0, 0, 0, 0, 0]}, "user": {"F_max": [40, 40, 40, 20, 20, 20], "tau_max": [40, 40, 40, 40, 12, 12, 12]}, "control": {"TF_control": 0}}}, "parameters": {"direction": 0, "F_thr": 5}}

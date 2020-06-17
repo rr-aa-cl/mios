@@ -1,1 +1,0 @@
-{"name": "test_task_2", "skills": {"t2_s1": {"type": "test_skill_1", "objects": ["test_object_1"]}, "t2_s2": {"type": "test_skill_1", "objects": ["test_object_1"]}}, "parameters": {"d": [1, 2], "e": false, "f": 0.5, "stop_level": 0, "success": false}}

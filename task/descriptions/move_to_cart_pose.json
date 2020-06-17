@@ -1,1 +1,0 @@
-{"name": "move_to_cart_pose", "skills": {"move": {"type": "move_to_pose_cart", "skill": {"TF_T_EE_g": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], "speed": [0.1], "acc": [0.5]}, "general": {"control_mode": 1, "safe_mode": false}, "objects": ["none"]}}, "parameters": {"pose": "none", "TF_T_EE_g": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], "speed": 0.5, "acc": 0.5}}

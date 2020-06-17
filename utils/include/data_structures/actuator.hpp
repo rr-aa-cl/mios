@@ -22,6 +22,7 @@ public:
     bool is_stopped() const;
     bool is_settled(const LimitParameters& parameters) const;
     void set_zero(const Percept& p_0);
+    void set_stop_factor(double stop_factor);
 
 public:
 
@@ -43,6 +44,8 @@ public:
     Eigen::Matrix<double,7,1> xi_theta;
 
     double t;
+
+    CommandMode command_mode;
 private:
 
     Eigen::Matrix<double,4,4> m_TF_T_EE_d_buffer;
@@ -78,6 +81,7 @@ private:
     Eigen::Matrix<double,7,1> m_xi_theta_limiter;
 
     bool m_stop;
+    double m_stop_factor;
 };
 
 }
