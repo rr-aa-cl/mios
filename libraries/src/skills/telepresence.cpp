@@ -185,7 +185,6 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     msrm_utils::read_json_param<double,4,4>(m_memory->get_event("handshake")->get_content(),"O_T_EE_master",O_T_EE_master);
                     mp->create_strategy<MoveToPoseStrategy>("move",1);
                     mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(O_T_EE_master,speed,acc);
-                    std::cout<<"O_T_EE_master: "<<O_T_EE_master<<std::endl;
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
                     Eigen::Matrix<double,7,1> q_master;
@@ -239,7 +238,6 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
             }
         }
         if(get_active_mp()->get_name()=="telepresence"){
-            exit(-1);
             if(get_active_mp()->get_strategy_interface("telepresence")->finished()){
                 m_handshake_stage=0;
                 spdlog::debug("Telepresence: Terminating telepresence (slave)");

@@ -122,7 +122,6 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
 
         weight_check+=s.second.weight;
     }
-    std::cout<<"TF_T_EE_d_cmd: "<<m_cmd.TF_T_EE_d<<std::endl;
 //    if(weight_check!=1){
 //        spdlog::error("Strategy command weights do not sum up to 1");
 //        return false;

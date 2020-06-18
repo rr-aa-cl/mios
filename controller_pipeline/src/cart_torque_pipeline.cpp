@@ -23,13 +23,8 @@ franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const A
 
     m_conv_vel2pose.u.TF_dX_d=cmd.TF_dX_d;
     m_conv_vel2pose.step();
-    std::cout<<"TF_T_EE_d_vel: "<<m_conv_vel2pose.y.TF_T_EE_d<<std::endl;
-    std::cout<<"TF_T_EE_d_cmd: "<<cmd.TF_T_EE_d<<std::endl;
-    m_cntr_aic.u.TF_T_EE_d.block<3,3>(0,0)=cmd.TF_T_EE_d.block<3,3>(0,0)*m_conv_vel2pose.y.TF_T_EE_d.block<3,3>(0,0);
-    m_cntr_aic.u.TF_T_EE_d.block<3,1>(0,3)=cmd.TF_T_EE_d.block<3,1>(0,3)+m_conv_vel2pose.y.TF_T_EE_d.block<3,1>(0,3);
+    m_cntr_aic.u.TF_T_EE_d=m_conv_vel2pose.y.TF_T_EE_d;
 
-    std::cout<<"TF_T_EE_d: "<<m_cntr_aic.u.TF_T_EE_d<<std::endl;
-    exit(-1);
     m_cntr_aic.u.K_x=cmd.K_x;
     m_cntr_aic.step();
 

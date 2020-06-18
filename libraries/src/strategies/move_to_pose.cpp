@@ -9,8 +9,6 @@ void MoveToPoseStrategy::initialize(const Percept &p_0){
     m_mogen_p2p.p.TF_T_EE_0=p_0.proprioception.TF_T_EE;
     m_mogen_p2p.p.TF_T_EE_1=m_T_EE_d;
     m_t_scale<<1,1;
-    std::cout<<"T_EE_0: "<<p_0.proprioception.TF_T_EE<<std::endl;
-    std::cout<<"T_EE_D: "<<m_T_EE_d<<std::endl;
     m_mogen_p2p.initialize();
 }
 
