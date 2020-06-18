@@ -272,7 +272,7 @@ void Telepresence::auxiliaries(const Percept &p){
                 Eigen::Matrix<double,6,1> joystick_command;
                 for(unsigned i=0;i<6;i++){
                     if(fabs(p.proprioception.TF_F_ext_K(i))>get_parameters<Params>()->joystick.force_thr(i)){
-                        joystick_command(i)=(fabs(p.proprioception.TF_F_ext_K(i))-get_parameters<Params>()->joystick.force_thr(i))*
+                        joystick_command(i)=-(fabs(p.proprioception.TF_F_ext_K(i))-get_parameters<Params>()->joystick.force_thr(i))*
                                 msrm_utils::sgn(p.proprioception.TF_F_ext_K(i))*get_parameters<Params>()->joystick.amp(i);
                     }else{
                         joystick_command(i)=0;
