@@ -23,7 +23,13 @@ franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const A
 
     m_conv_vel2pose.u.TF_dX_d=cmd.TF_dX_d;
     m_conv_vel2pose.step();
-    m_cntr_aic.u.TF_T_EE_d=m_conv_vel2pose.y.TF_T_EE_d;
+    std::cout<<"TF_T_EE_d_vel: "<<m_conv_vel2pose.y.TF_T_EE_d<<std::endl;
+    std::cout<<"TF_T_EE_d_cmd: "<<cmd.TF_T_EE_d<<std::endl;
+    m_cntr_aic.u.TF_T_EE_d.block<3,3>(0,0)=cmd.TF_T_EE_d.block<3,3>(0,0)*m_conv_vel2pose.y.TF_T_EE_d.block<3,3>(0,0);
+    m_cntr_aic.u.TF_T_EE_d.block<3,1>(0,3)=cmd.TF_T_EE_d.block<3,1>(0,3)+m_conv_vel2pose.y.TF_T_EE_d.block<3,1>(0,3);
+
+    std::cout<<"TF_T_EE_d: "<<m_cntr_aic.u.TF_T_EE_d<<std::endl;
+    exit(-1);
     m_cntr_aic.u.K_x=cmd.K_x;
     m_cntr_aic.step();
 
@@ -57,7 +63,7 @@ bool CartTorqueControllerPipeline::is_valid_command(const franka::Finishable* co
 }
 
 void CartTorqueControllerPipeline::update_percept(Percept::Controller &p){
-    p.TF_T_EE_d=m_conv_vel2pose.y.TF_T_EE_d;
+    p.TF_T_EE_d=m_cntr_aic.u.TF_T_EE_d;
     p.K_x=m_cntr_aic.l.K_x;
     p.K_theta=m_cntr_nullsp_q.l.K_theta;
 }
@@ -69,6 +75,10 @@ void CartTorqueControllerPipeline::terminate(){
     m_cntr_mux.terminate();
     m_cntr_nullsp_q.terminate();
     m_cntr_nullsp_proj.terminate();
+}
+
+void CartTorqueControllerPipeline::context_switch(const Percept &p){
+
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_aic(const Percept &p,Memory* memory){

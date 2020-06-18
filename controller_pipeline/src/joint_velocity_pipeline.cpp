@@ -26,10 +26,13 @@ bool JointVelocityControllerPipeline::is_valid_command(const franka::Finishable*
 }
 
 void JointVelocityControllerPipeline::update_percept(Percept::Controller &p){
-
 }
 
 void JointVelocityControllerPipeline::terminate(){
+
+}
+
+void JointVelocityControllerPipeline::context_switch(const Percept &p){
 
 }
 

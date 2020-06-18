@@ -9,11 +9,13 @@ namespace mios {
 
 class Actuator{
 public:
-    Actuator(const Percept& p_0, const ControlParameters& controller);
+    Actuator(const Percept& p_0, const ControlParameters& controller, CommandLevel command_level);
 
     void initialize(const Percept& p_0, const ControlParameters &controller, Eigen::Matrix<double,3,3> O_R_T_0);
+    void blend(const Actuator& cmd, const Percept& p);
     void stop();
     void read_from_buffer();
+    void write_to_buffer();
     void limit_output(const LimitParameters &parameters);
     void limit_output_rate(const LimitParameters& parameters);
 
@@ -23,6 +25,10 @@ public:
     bool is_settled(const LimitParameters& parameters) const;
     void set_zero(const Percept& p_0);
     void set_stop_factor(double stop_factor);
+    bool is_new();
+
+private:
+    void refresh_limiter();
 
 public:
 
@@ -45,7 +51,7 @@ public:
 
     double t;
 
-    CommandMode command_mode;
+    const CommandLevel command_level;
 private:
 
     Eigen::Matrix<double,4,4> m_TF_T_EE_d_buffer;
@@ -82,6 +88,8 @@ private:
 
     bool m_stop;
     double m_stop_factor;
+
+    bool m_new_command;
 };
 
 }

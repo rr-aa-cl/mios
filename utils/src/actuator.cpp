@@ -4,7 +4,7 @@
 
 namespace mios {
 
-Actuator::Actuator(const Percept &p_0, const ControlParameters& controller):command_mode(CommandMode::cmdPose){
+Actuator::Actuator(const Percept &p_0, const ControlParameters& controller, CommandLevel command_level):command_level(command_level){
     spdlog::debug("Actuator:Constructor");
     initialize(p_0, controller, Eigen::Matrix<double,3,3>::Identity());
 }
@@ -27,39 +27,31 @@ void Actuator::initialize(const Percept &p_0, const ControlParameters& controlle
     K_theta=controller.joint_imp.K_theta;
     xi_theta=controller.joint_imp.xi_theta;
 
-    m_TF_T_EE_d_limiter=TF_T_EE_d;
-    m_TF_dX_d_limiter=TF_dX_d;
-    m_q_d_nullspace_limiter=q_d_nullspace;
-    m_TF_F_d_limiter=TF_F_d;
-    m_TF_F_ff_limiter=TF_F_ff;
-    m_K_x_limiter=K_x;
-    m_xi_x_limiter=xi_x;
-
-    m_q_d_limiter=q_d;
-    m_dq_d_limiter=dq_d;
-    m_tau_d_limiter=tau_d;
-    m_tau_ff_limiter=tau_ff;
-    m_K_theta_limiter=K_theta;
-    m_xi_theta_limiter=xi_theta;
-
-    m_TF_T_EE_d_buffer=TF_T_EE_d;
-    m_TF_dX_d_buffer=TF_dX_d;
-    m_q_d_nullspace_buffer=q_d_nullspace;
-    m_TF_F_d_buffer=TF_F_d;
-    m_TF_F_ff_buffer=TF_F_ff;
-    m_K_x_buffer=K_x;
-    m_xi_x_buffer=xi_x;
-
-    m_q_d_buffer=q_d;
-    m_dq_d_buffer=dq_d;
-    m_tau_d_buffer=tau_d;
-    m_tau_ff_buffer=tau_ff;
-    m_K_theta_buffer=K_theta;
-    m_xi_theta_buffer=xi_theta;
+    refresh_limiter();
+    write_to_buffer();
 
     m_stop=false;
     m_stop_factor=1;
 
+    m_new_command=true;
+}
+
+void Actuator::blend(const Actuator &cmd, const Percept& p){
+    O_R_T=cmd.O_R_T;
+    TF_T_EE_d=p.controller.TF_T_EE_d;
+    TF_dX_d=cmd.TF_dX_d;
+    q_d_nullspace=cmd.q_d_nullspace;
+    TF_F_d=cmd.TF_F_d;
+    TF_F_ff=cmd.TF_F_ff;
+    K_x=cmd.K_x;
+    xi_x=cmd.xi_x;
+
+    q_d=p.controller.q_d;
+    dq_d=cmd.dq_d;
+    tau_d=cmd.tau_d;
+    tau_ff=cmd.tau_ff;
+    K_theta=cmd.K_theta;
+    xi_theta=cmd.xi_theta;
 }
 
 void Actuator::stop(){
@@ -81,6 +73,40 @@ void Actuator::read_from_buffer(){
     tau_ff=m_tau_ff_buffer;
     K_theta=m_K_theta_buffer;
     xi_theta=m_xi_theta_buffer;
+}
+
+void Actuator::refresh_limiter(){
+    m_TF_T_EE_d_limiter=TF_T_EE_d;
+    m_TF_dX_d_limiter=TF_dX_d;
+    m_q_d_nullspace_limiter=q_d_nullspace;
+    m_TF_F_d_limiter=TF_F_d;
+    m_TF_F_ff_limiter=TF_F_ff;
+    m_K_x_limiter=K_x;
+    m_xi_x_limiter=xi_x;
+
+    m_q_d_limiter=q_d;
+    m_dq_d_limiter=dq_d;
+    m_tau_d_limiter=tau_d;
+    m_tau_ff_limiter=tau_ff;
+    m_K_theta_limiter=K_theta;
+    m_xi_theta_limiter=xi_theta;
+}
+
+void Actuator::write_to_buffer(){
+    m_TF_T_EE_d_buffer=TF_T_EE_d;
+    m_TF_dX_d_buffer=TF_dX_d;
+    m_q_d_nullspace_buffer=q_d_nullspace;
+    m_TF_F_d_buffer=TF_F_d;
+    m_TF_F_ff_buffer=TF_F_ff;
+    m_K_x_buffer=K_x;
+    m_xi_x_buffer=xi_x;
+
+    m_q_d_buffer=q_d;
+    m_dq_d_buffer=dq_d;
+    m_tau_d_buffer=tau_d;
+    m_tau_ff_buffer=tau_ff;
+    m_K_theta_buffer=K_theta;
+    m_xi_theta_buffer=xi_theta;
 }
 
 void Actuator::limit_output(const LimitParameters &parameters){
@@ -208,7 +234,6 @@ void Actuator::limit_output_rate(const LimitParameters &parameters){
             xi_x(i)=m_xi_x_limiter(i)+msrm_utils::sgn(diff_xi_x)*parameters.cartesian_space.dxi_x_max(i)*0.001;
         }
     }
-
     for(unsigned i=0;i<7;i++){
         double diff_q = q_d(i)-m_q_d_limiter(i);
         double diff_q_nullspace = q_d_nullspace(i)-m_q_d_nullspace_limiter(i);
@@ -239,19 +264,8 @@ void Actuator::limit_output_rate(const LimitParameters &parameters){
             xi_theta(i)=m_xi_theta_limiter(i)+msrm_utils::sgn(diff_xi_theta)*parameters.joint_space.dxi_theta_max(i)*0.001;
         }
     }
-    m_TF_dX_d_limiter=TF_dX_d;
-    m_q_d_nullspace_limiter=q_d_nullspace;
-    m_TF_F_d_limiter=TF_F_d;
-    m_TF_F_ff_limiter=TF_F_ff;
-    m_K_x_limiter=K_x;
-    m_xi_x_limiter=xi_x;
 
-    m_q_d_limiter=q_d;
-    m_dq_d_limiter=dq_d;
-    m_tau_d_limiter=tau_d;
-    m_tau_ff_limiter=tau_ff;
-    m_K_theta_limiter=K_theta;
-    m_xi_theta_limiter=xi_theta;
+    refresh_limiter();
 }
 
 bool Actuator::is_valid() const{
@@ -381,6 +395,15 @@ void Actuator::set_stop_factor(double stop_factor){
     }
     if(m_stop_factor<0.01){
         m_stop_factor=0.01;
+    }
+}
+
+bool Actuator::is_new(){
+    if(m_new_command){
+        m_new_command=false;
+        return true;
+    }else{
+        return false;
     }
 }
 

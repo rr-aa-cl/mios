@@ -5,6 +5,7 @@
 #include "strategies/cart_compliance_strategy.hpp"
 #include "strategies/joint_compliance_strategy.hpp"
 #include "strategies/remote_twist_strategy.hpp"
+#include "strategies/remote_cart_pose_strategy.hpp"
 #include "strategies/remote_wrench_strategy.hpp"
 #include "strategies/remote_joint_pose_strategy.hpp"
 #include "strategies/remote_torque_strategy.hpp"
@@ -134,17 +135,24 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     m_memory->remove_event("sync_done");
                     std::shared_ptr<ManipulationPrimitive> mp = create_mp("telepresence",p);
                     if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
-
+                        mp->create_strategy<RemoteWrenchStrategy>("telepresence",1);
+                        mp->create_strategy<CartComplianceStrategy>("compliance",1);
+                        mp->get_strategy<RemoteWrenchStrategy>("telepresence")->connect(m_portal,"remote_joint_in",get_parameters<Params>()->port_src,256,0,10000,200);
+                        Eigen::Matrix<double,6,1> K_x_0;
+                        Eigen::Matrix<double,6,1> xi_x_0;
+                        K_x_0<<0,0,0,0,0,0;
+                        xi_x_0<<0,0,0,0,0,0;
+                        mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(K_x_0,xi_x_0);
                     }
                     if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
                         mp->create_strategy<RemoteTorqueStrategy>("telepresence",1);
-//                        mp->create_strategy<JointComplianceStrategy>("compliance",1);
+                        mp->create_strategy<JointComplianceStrategy>("compliance",1);
                         mp->get_strategy<RemoteTorqueStrategy>("telepresence")->connect(m_portal,"remote_joint_in",get_parameters<Params>()->port_src,256,0,10000,200);
-//                        Eigen::Matrix<double,7,1> K_theta_0;
-//                        Eigen::Matrix<double,7,1> xi_theta_0;
-//                        K_theta_0<<0,0,0,0,0,0,0;
-//                        xi_theta_0<<0,0,0,0,0,0,0;
-//                        mp->get_strategy<JointComplianceStrategy>("compliance")->set_complicance(K_theta_0,xi_theta_0);
+                        Eigen::Matrix<double,7,1> K_theta_0;
+                        Eigen::Matrix<double,7,1> xi_theta_0;
+                        K_theta_0<<0,0,0,0,0,0,0;
+                        xi_theta_0<<0,0,0,0,0,0,0;
+                        mp->get_strategy<JointComplianceStrategy>("compliance")->set_complicance(K_theta_0,xi_theta_0);
                     }
                     if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
                         mp->create_strategy<RemoteWrenchStrategy>("telepresence",1);
@@ -177,12 +185,11 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     msrm_utils::read_json_param<double,4,4>(m_memory->get_event("handshake")->get_content(),"O_T_EE_master",O_T_EE_master);
                     mp->create_strategy<MoveToPoseStrategy>("move",1);
                     mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(O_T_EE_master,speed,acc);
+                    std::cout<<"O_T_EE_master: "<<O_T_EE_master<<std::endl;
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
-                    mp->set_command_mode(CommandMode::cmdVelocity);
                     Eigen::Matrix<double,7,1> q_master;
                     msrm_utils::read_json_param<double,7,1>(m_memory->get_event("handshake")->get_content(),"q_master",q_master);
-                    std::cout<<"q_master: "<<q_master<<std::endl;
                     mp->create_strategy<MoveToJointPoseStrategy>("move",1);
                     mp->get_strategy<MoveToJointPoseStrategy>("move")->set_goal(q_master,0.5,2);
                 }
@@ -215,13 +222,12 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                         m_handshake_stage=2;
                     }
                 }
-                std::shared_ptr<ManipulationPrimitive> mp = create_mp("telepresence",p);
+                std::shared_ptr<ManipulationPrimitive> mp = create_mp("telepresence",p,CommandLevel::cmdPose);
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
-
+                    mp->create_strategy<RemoteCartPoseStrategy>("telepresence",1);
+                    mp->get_strategy<RemoteCartPoseStrategy>("telepresence")->connect(m_portal,"remote_twist_in",get_parameters<Params>()->port_src,256,0,10000,20);
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
-                    mp->set_command_mode(CommandMode::cmdPose);
-                    std::cout<<"SLAVE"<<std::endl;
                     mp->create_strategy<RemoteJointPoseStrategy>("telepresence",1);
                     mp->get_strategy<RemoteJointPoseStrategy>("telepresence")->connect(m_portal,"remote_twist_in",get_parameters<Params>()->port_src,256,0,10000,20);
                 }
@@ -233,6 +239,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
             }
         }
         if(get_active_mp()->get_name()=="telepresence"){
+            exit(-1);
             if(get_active_mp()->get_strategy_interface("telepresence")->finished()){
                 m_handshake_stage=0;
                 spdlog::debug("Telepresence: Terminating telepresence (slave)");
@@ -252,7 +259,11 @@ void Telepresence::auxiliaries(const Percept &p){
         if(get_parameters<Params>()->is_master){
 
             if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
-
+                for(unsigned i=0;i<4;i++){
+                    for(unsigned j=0;j<4;j++){
+                        payload.emplace_back(p.proprioception.TF_T_EE(j,i));
+                    }
+                }
             }
             if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
                 for(unsigned i=0;i<7;i++){
@@ -273,7 +284,9 @@ void Telepresence::auxiliaries(const Percept &p){
             }
         }else{
             if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
-
+                for(unsigned i=0;i<6;i++){
+                    payload.emplace_back(p.proprioception.TF_F_ext_K(i));
+                }
             }
             if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
                 for(unsigned i=0;i<7;i++){

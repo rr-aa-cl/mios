@@ -12,6 +12,7 @@ namespace mios {
  */
 class PrimitiveStrategy{
 public:
+    PrimitiveStrategy(bool command_TF_T_EE_d=false,bool command_TF_F_d=false,bool command_q_d=false,bool command_q_d_nullspace=false, bool command_tau_d=false);
     /**
      * @brief This method is called once at the beginning of the execution of the embedding manipulation primitive. It can be used to initialize custom members.
      * @param[in] p_0 The percept at initialization.
@@ -33,6 +34,20 @@ public:
      * @return True may indicate that the strategy is finished. How the return value is handled depends on the skill.
      */
     virtual bool finished() = 0;
+
+public:
+    bool is_commanding_TF_T_EE_d() const;
+    bool is_commanding_TF_F_d() const;
+    bool is_commanding_q_d() const;
+    bool is_commanding_q_d_nullspace() const;
+    bool is_commanding_tau_d() const;
+
+private:
+    const bool m_command_TF_T_EE_d;
+    const bool m_command_TF_F_d;
+    const bool m_command_q_d;
+    const bool m_command_q_d_nullspace;
+    const bool m_command_tau_d;
 };
 
 }

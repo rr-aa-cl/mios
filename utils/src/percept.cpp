@@ -42,8 +42,11 @@ void Percept::update(std::unique_ptr<franka::Model> const& model, const franka::
     // Others
     robot_mode=robot_state.robot_mode;
     time = std::chrono::high_resolution_clock::now();
+}
 
-
+void Percept::update_controller(){
+    controller.q_d=proprioception.q;
+    controller.TF_T_EE_d=proprioception.TF_T_EE;
 }
 
 }

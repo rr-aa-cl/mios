@@ -19,6 +19,7 @@ public:
     bool is_valid_command(const franka::Finishable* const cmd) const;
     void update_percept(Percept::Controller &p) override;
     void terminate() override;
+    void context_switch(const Percept &p) override;
 
 private:
     void initialize_cntr_aic(const Percept &p,Memory* memory);

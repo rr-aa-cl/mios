@@ -15,6 +15,7 @@ public:
     virtual bool is_valid_command(const franka::Finishable* const cmd) const = 0;
     virtual void terminate() = 0;
     virtual void update_percept(Percept::Controller& p) = 0;
+    virtual void context_switch(const Percept& p) = 0;
 };
 
 }

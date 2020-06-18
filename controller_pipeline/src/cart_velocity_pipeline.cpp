@@ -36,4 +36,8 @@ void CartVelocityControllerPipeline::terminate(){
 
 }
 
+void CartVelocityControllerPipeline::context_switch(const Percept &p){
+
+}
+
 }

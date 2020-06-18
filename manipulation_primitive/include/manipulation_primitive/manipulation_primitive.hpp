@@ -31,13 +31,11 @@ public:
      * @param[in] p_0 The percept at time of construction.
      * @param[in] memory A pointer to the global memory.
      */
-    ManipulationPrimitive(const std::string& name, const Percept& p_0, Memory* memory);
+    ManipulationPrimitive(const std::string& name, const Percept& p_0, Memory* memory, CommandLevel command_level=CommandLevel::cmdVelocity);
 
     bool get_flag_error() const;
     void set_flag_error();
     std::string get_name() const;
-
-    void set_command_mode(CommandMode command_mode);
 
     Actuator* initialize(const Percept &p_0);
     Actuator* initialize(const Percept &p_0, const Actuator &cmd);

@@ -26,4 +26,8 @@ void NullControllerPipeline::terminate(){
 
 }
 
+void NullControllerPipeline::context_switch(const Percept &p){
+
+}
+
 }

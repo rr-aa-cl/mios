@@ -14,7 +14,7 @@ void RemoteTorqueStrategy::get_next_command(Actuator &cmd, const Percept &p){
 }
 
 void RemoteTorqueStrategy::terminate(const Percept &p){
-
+    m_receiver->disconnect();
 }
 
 bool RemoteTorqueStrategy::finished(){

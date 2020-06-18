@@ -4,13 +4,8 @@
 
 namespace mios {
 
-ManipulationPrimitive::ManipulationPrimitive(const std::string& name, const Percept &p_0, Memory *memory)
-    :m_name(name),m_memory(memory),m_cmd(Actuator(p_0,memory->read_parameters()->control)),m_flag_initialized(false),m_flag_terminated(false){
-}
-
-void ManipulationPrimitive::set_command_mode(CommandMode command_mode){
-    std::cout<<"SETTING COMMAND MODE"<<std::endl;
-    m_cmd.command_mode=command_mode;
+ManipulationPrimitive::ManipulationPrimitive(const std::string& name, const Percept &p_0, Memory *memory, CommandLevel command_level)
+    :m_name(name),m_memory(memory),m_cmd(Actuator(p_0,memory->read_parameters()->control,command_level)),m_flag_initialized(false),m_flag_terminated(false){
 }
 
 Actuator* ManipulationPrimitive::initialize(const Percept &p_0){
@@ -19,9 +14,10 @@ Actuator* ManipulationPrimitive::initialize(const Percept &p_0){
 }
 
 Actuator* ManipulationPrimitive::initialize(const Percept &p_0, const Actuator& cmd){
-    m_cmd=cmd;
+    m_cmd.blend(cmd,p_0);
     m_memory->get_live_context()->t_mp=std::chrono::high_resolution_clock::now();
     for(auto& s : m_strategies){
+        s.second.cmd.blend(cmd,p_0);
         s.second.strategy->initialize(p_0);
         s.second.strategy->get_next_command(s.second.cmd,p_0);
     }
@@ -38,13 +34,11 @@ Actuator* ManipulationPrimitive::step(const Percept &p){
         spdlog::error("Command composition at primitive layer failed.");
         m_cmd.stop();
     }
-    if(m_cmd.command_mode==CommandMode::cmdPose){
-        std::cout<<"POSE"<<std::endl;
-    }
     m_cmd.t=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_memory->get_live_context()->t_mp).count()/1000.0;
     for(auto& s : m_strategies){
         s.second.cmd.t=m_cmd.t;
     }
+    m_cmd.write_to_buffer();
     return &m_cmd;
 }
 
@@ -57,7 +51,15 @@ void ManipulationPrimitive::terminate(const Percept &p){
 }
 
 bool ManipulationPrimitive::compose_command(const Percept& p){
-    m_cmd.set_zero(p);
+//    m_cmd.set_zero(p);
+    m_cmd.TF_dX_d.setZero();
+    m_cmd.TF_F_ff.setZero();
+    m_cmd.K_x.setZero();
+    m_cmd.xi_x.setZero();
+    m_cmd.dq_d.setZero();
+    m_cmd.tau_ff.setZero();
+    m_cmd.K_theta.setZero();
+    m_cmd.xi_theta.setZero();
     if(m_strategies.size()==0){
         return false;
     }
@@ -67,39 +69,47 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
     bool q_d_set=false;
     bool tau_d_set=false;
 
+    bool pose_level=false;
+
     double weight_check=0;
 
     for(auto& s : m_strategies){
-        if(TF_T_EE_d_set && !m_cmd.TF_T_EE_d.isIdentity()){
-            return false;
-        }else if(!TF_T_EE_d_set && !m_cmd.TF_T_EE_d.isIdentity()){
+        if(!TF_T_EE_d_set && s.second.strategy->is_commanding_TF_T_EE_d()){
             m_cmd.TF_T_EE_d=s.second.cmd.TF_T_EE_d;
             TF_T_EE_d_set=true;
-        }
-        if(TF_F_d_set && !m_cmd.TF_F_d.isZero()){
+        }else if(TF_T_EE_d_set && s.second.strategy->is_commanding_TF_T_EE_d()){
+            spdlog::error("More than one policy is commanding TF_T_EE_d.");
             return false;
-        }else if(!TF_F_d_set && !m_cmd.TF_F_d.isZero()){
+        }
+        if(!TF_F_d_set && s.second.strategy->is_commanding_TF_F_d()){
             m_cmd.TF_F_d=s.second.cmd.TF_F_d;
             TF_F_d_set=true;
-        }
-        if(q_d_nullspace_set && !m_cmd.q_d_nullspace.isZero()){
+        }else if(TF_F_d_set && s.second.strategy->is_commanding_TF_F_d()){
+            spdlog::error("More than one policy is commanding TF_F_d_set.");
             return false;
-        }else if(!q_d_nullspace_set && !m_cmd.q_d_nullspace.isZero()){
-            m_cmd.q_d_nullspace=s.second.cmd.q_d_nullspace;
-            q_d_nullspace_set=true;
         }
-        if(q_d_set && !m_cmd.q_d.isZero()){
-            return false;
-        }else if(!q_d_set && !m_cmd.q_d.isZero()){
+        if(!q_d_set && s.second.strategy->is_commanding_q_d()){
             m_cmd.q_d=s.second.cmd.q_d;
             q_d_set=true;
-        }
-        if(tau_d_set && !m_cmd.tau_d.isZero()){
+        }else if(q_d_set && s.second.strategy->is_commanding_q_d()){
+            spdlog::error("More than one policy is commanding q_d.");
             return false;
-        }else if(!tau_d_set && !m_cmd.tau_d.isZero()){
+        }
+        if(!q_d_nullspace_set && s.second.strategy->is_commanding_q_d_nullspace()){
+            m_cmd.q_d_nullspace=s.second.cmd.q_d_nullspace;
+            q_d_nullspace_set=true;
+        }else if(q_d_nullspace_set && s.second.strategy->is_commanding_q_d_nullspace()){
+            spdlog::error("More than one policy is commanding q_d_nullspace.");
+            return false;
+        }
+        if(!tau_d_set && s.second.strategy->is_commanding_tau_d()){
             m_cmd.tau_d=s.second.cmd.tau_d;
             tau_d_set=true;
+        }else if(tau_d_set && s.second.strategy->is_commanding_tau_d()){
+            spdlog::error("More than one policy is commanding tau_d.");
+            return false;
         }
+
         m_cmd.TF_dX_d+=s.second.cmd.TF_dX_d*s.second.weight;
         m_cmd.TF_F_ff+=s.second.cmd.TF_F_ff*s.second.weight;
         m_cmd.K_x+=s.second.cmd.K_x*s.second.weight;
@@ -112,6 +122,7 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
 
         weight_check+=s.second.weight;
     }
+    std::cout<<"TF_T_EE_d_cmd: "<<m_cmd.TF_T_EE_d<<std::endl;
 //    if(weight_check!=1){
 //        spdlog::error("Strategy command weights do not sum up to 1");
 //        return false;

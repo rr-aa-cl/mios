@@ -183,7 +183,7 @@ protected:
      *
      * @throw SkillException if manipulation primitive with id already exists.
      */
-    std::shared_ptr<ManipulationPrimitive> create_mp(const std::string& name, const Percept &p);
+    std::shared_ptr<ManipulationPrimitive> create_mp(const std::string& name, const Percept &p, CommandLevel command_level=CommandLevel::cmdVelocity);
 
 
     /**

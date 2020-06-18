@@ -569,11 +569,11 @@ bool ControlParameters::from_json(const nlohmann::json &parameters){
         return false;
     }
     if(command_mode_tmp==0){
-        command_mode=CommandMode::cmdVelocity;
+        command_level=CommandLevel::cmdVelocity;
     }else if(command_mode_tmp==1){
-        command_mode=CommandMode::cmdPose;
+        command_level=CommandLevel::cmdPose;
     }else{
-        command_mode=CommandMode::cmdVelocity;
+        command_level=CommandLevel::cmdVelocity;
     }
 
     if(!msrm_utils::read_json_param<double,6,1>(parameters["cart_imp"],"K_x",cart_imp.K_x)){
@@ -681,7 +681,7 @@ nlohmann::json ControlParameters::to_json() const{
     nlohmann::json json_nullspace_control;
 
     json_object["control_mode"]=control_mode;
-    json_object["command_mode"]=command_mode;
+    json_object["command_mode"]=command_level;
 
     json_cart_imp["K_x"]=msrm_utils::from_eigen<double,6,1>(cart_imp.K_x);
     json_cart_imp["xi_x"]=msrm_utils::from_eigen<double,6,1>(cart_imp.xi_x);

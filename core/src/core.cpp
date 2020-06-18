@@ -116,6 +116,7 @@ bool Core::execute_skill(){
 
     spdlog::debug("CORE: start_control_cycle: while-loop");
     refresh_percept(m_memory.read_parameters()->frames.O_R_T);
+    m_percept.update_controller();
     set_robot_parameters();
 
     bool result=false;
@@ -204,10 +205,14 @@ franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
     }
     cmd->limit_output_rate(m_memory.read_parameters()->limits);
     cmd->limit_output(m_memory.read_parameters()->limits);
+    if(cmd->is_new()){
+        m_controller_pipeline->context_switch(m_percept);
+    }
     franka::Finishable* panda_cmd=m_controller_pipeline->step(m_percept,*cmd);
     if(!m_controller_pipeline->is_valid_command(panda_cmd)){
         cmd->stop();
     }
+    m_percept.update_controller();
     m_controller_pipeline->update_percept(m_percept.controller);
     for(auto& m : m_safety_stage_2){
         m->step(m_percept,panda_cmd);

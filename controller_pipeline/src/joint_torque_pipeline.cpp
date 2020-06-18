@@ -1,4 +1,5 @@
 #include "controller_pipeline/joint_torque_pipeline.hpp"
+#include <iostream>
 
 namespace mios {
 
@@ -16,12 +17,9 @@ franka::Finishable *JointTorqueControllerPipeline::step(const Percept &p, const 
     input_cntr_joint_imp(p);
     input_cntr_mux(p);
 
-    if(cmd.command_mode==CommandMode::cmdPose){
-        m_cntr_joint_imp.u.theta_d=cmd.q_d;
-    }else{
-        m_cntr_joint_imp.u.theta_d=m_q_d_old+cmd.dq_d*0.001;
-        m_q_d_old+=cmd.dq_d*0.001;
-    }
+    m_cntr_joint_imp.u.theta_d=cmd.q_d;
+    m_cntr_joint_imp.u.theta_d+=m_q_d_old+cmd.dq_d*0.001;
+    m_q_d_old+=cmd.dq_d*0.001;
     m_cntr_joint_imp.u.K_theta=cmd.K_theta;
 
     m_cntr_joint_imp.step();
@@ -54,8 +52,12 @@ void JointTorqueControllerPipeline::terminate(){
     m_cntr_mux.terminate();
 }
 
+void JointTorqueControllerPipeline::context_switch(const Percept &p){
+    m_q_d_old.setZero();
+}
+
 void JointTorqueControllerPipeline::initialize_cntr_joint_imp(const Percept &p, Memory *memory){
-    m_q_d_old=p.proprioception.q;
+    m_q_d_old.setZero();
     const ControlParameters& p_cntr=memory->read_parameters()->control;
 
     m_cntr_joint_imp.p.enable_ffwd_acc.setZero();

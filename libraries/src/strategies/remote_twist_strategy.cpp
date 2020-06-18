@@ -15,7 +15,7 @@ void RemoteTwistStrategy::get_next_command(Actuator &cmd, const Percept &p){
 }
 
 void RemoteTwistStrategy::terminate(const Percept &p){
-
+    m_receiver->disconnect();
 }
 
 bool RemoteTwistStrategy::finished(){
