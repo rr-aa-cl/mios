@@ -2,6 +2,10 @@
 
 namespace mios {
 
+JointComplianceStrategy::JointComplianceStrategy():PrimitiveStrategy({CommandPatternJointCompliance}){
+
+}
+
 void JointComplianceStrategy::initialize(const Percept &p_0){
     m_K_theta=p_0.controller.K_theta;
     m_xi_theta=p_0.controller.xi_theta;

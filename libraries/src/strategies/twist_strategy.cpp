@@ -2,6 +2,10 @@
 
 namespace mios {
 
+TwistStrategy::TwistStrategy():PrimitiveStrategy({CommandPatternCartesianTwist}){
+
+}
+
 void TwistStrategy::initialize(const Percept &p_0){
     m_TF_dX_d.setZero();
 }

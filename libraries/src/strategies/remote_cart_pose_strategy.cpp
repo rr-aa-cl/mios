@@ -19,7 +19,6 @@ void RemoteCartPoseStrategy::get_next_command(Actuator &cmd, const Percept &p){
             cmd.TF_T_EE_d(j,i)=m_O_T_EE_d_in[0][4*i+j];
         }
     }
-    std::cout<<cmd.TF_T_EE_d<<std::endl;
 }
 
 void RemoteCartPoseStrategy::terminate(const Percept &p){

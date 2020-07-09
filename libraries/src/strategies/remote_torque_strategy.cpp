@@ -4,6 +4,10 @@
 
 namespace mios {
 
+RemoteTorqueStrategy::RemoteTorqueStrategy():PrimitiveStrategy({CommandPatternJointFFTorque}){
+
+}
+
 void RemoteTorqueStrategy::initialize(const Percept &p_0){
 }
 

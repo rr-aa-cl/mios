@@ -8,7 +8,9 @@
 
 namespace mios {
 
-enum CommandPattern{CommandPatternCartesianPose,CommandPatternJointPose,CommandPatternNullspacePose,CommandPatternDesiredWrench,CommandPatternDesiredTorque};
+enum CommandPattern{CommandPatternCartesianPose,CommandPatternJointPose,CommandPatternNullspacePose,CommandPatternDesiredWrench,CommandPatternDesiredTorque,
+                   CommandPatternCartesianCompliance,CommandPatternJointCompliance,CommandPatternCartesianTwist,CommandPatternCartesianFFWrench,
+                   CommandPatternJointVelocities,CommandPatternJointFFTorque};
 
 class Actuator{
 public:

@@ -2,6 +2,10 @@
 
 namespace mios {
 
+TwistWiggleStrategy::TwistWiggleStrategy():PrimitiveStrategy({CommandPatternCartesianTwist}){
+
+}
+
 void TwistWiggleStrategy::initialize(const Percept &p_0){
     m_X_d_old.setZero();
 }

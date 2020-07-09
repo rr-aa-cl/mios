@@ -602,22 +602,22 @@ def test_live_parameters(address):
 
 
 def test_controllers(address):
-    print("Testing controller pipeline: 2")
-    T_EE_g = [np.array(
-        [0.978038, -0.20829, 0.00753134, 0, -0.207918, -0.97754, -0.0344342, 0, 0.0145345, 0.0321121, -0.999379, 0,
-         0.207653, 0.452514, 0.510002, 1]),
-        np.array(
-            [0.710559, 0.394384, 0.582724, 0, -0.546773, -0.211783, 0.810054, 0, 0.442883, -0.894209, 0.0651547,
-             0, 0.477753, 0.0348045, 0.548409, 1])]
-    for T_EE in T_EE_g:
-        response = start_task(address, "MoveToCartPose", parameters={"parameters": {"T_EE_g": T_EE.tolist(),
-                                                                                    "speed": [1, 1], "acc": [1, 1]}})
-        print(response)
-        response = wait_for_task(address, response['result']['task_uuid'])
-        response = call_method(address, 12000, "get_state")
-        T_EE_now = np.asarray(response["result"]["O_T_EE"])
-        T_EE_diff = np.linalg.norm(T_EE[12:15] - T_EE_now[12:15])
-        msg_error(float(T_EE_diff) < 0.01, "test_controllers", "Goal pose and actual pose are too far apart.", response)
+    # print("Testing controller pipeline: 2")
+    # T_EE_g = [np.array(
+    #     [0.978038, -0.20829, 0.00753134, 0, -0.207918, -0.97754, -0.0344342, 0, 0.0145345, 0.0321121, -0.999379, 0,
+    #      0.207653, 0.452514, 0.510002, 1]),
+    #     np.array(
+    #         [0.710559, 0.394384, 0.582724, 0, -0.546773, -0.211783, 0.810054, 0, 0.442883, -0.894209, 0.0651547,
+    #          0, 0.477753, 0.0348045, 0.548409, 1])]
+    # for T_EE in T_EE_g:
+    #     response = start_task(address, "MoveToCartPose", parameters={"parameters": {"T_EE_g": T_EE.tolist(),
+    #                                                                                 "speed": [1, 1], "acc": [1, 1]}})
+    #     print(response)
+    #     response = wait_for_task(address, response['result']['task_uuid'])
+    #     response = call_method(address, 12000, "get_state")
+    #     T_EE_now = np.asarray(response["result"]["O_T_EE"])
+    #     T_EE_diff = np.linalg.norm(T_EE[12:15] - T_EE_now[12:15])
+    #     msg_error(float(T_EE_diff) < 0.01, "test_controllers", "Goal pose and actual pose are too far apart.", response)
 
     print("Testing controller pipeline: 3")
     q_g = [np.array([0.303584, -0.648212, 0.649549, -2.15934, 0.418512, 1.53807, 0.766482]),

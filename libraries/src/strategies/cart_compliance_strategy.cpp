@@ -2,6 +2,10 @@
 
 namespace mios {
 
+CartComplianceStrategy::CartComplianceStrategy():PrimitiveStrategy({CommandPatternCartesianCompliance}){
+
+}
+
 void CartComplianceStrategy::initialize(const Percept &p_0){
     m_K_x=p_0.controller.K_x;
     m_xi_x=p_0.controller.xi_x;

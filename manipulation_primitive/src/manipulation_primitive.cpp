@@ -54,12 +54,8 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
 //    m_cmd.set_zero(p);
     m_cmd.TF_dX_d.setZero();
     m_cmd.TF_F_ff.setZero();
-    m_cmd.K_x.setZero();
-    m_cmd.xi_x.setZero();
     m_cmd.dq_d.setZero();
     m_cmd.tau_ff.setZero();
-    m_cmd.K_theta.setZero();
-    m_cmd.xi_theta.setZero();
     if(m_strategies.size()==0){
         return false;
     }
@@ -68,6 +64,8 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
     bool q_d_nullspace_set=false;
     bool q_d_set=false;
     bool tau_d_set=false;
+    bool joint_compliance_set=false;
+    bool cart_compliance_set=false;
 
     double weight_check=0;
 
@@ -75,7 +73,7 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
     for(auto& s : m_strategies){
         std::set<CommandPattern> strategy_command_pattern = s.second.strategy->get_command_pattern();
         if(strategy_command_pattern.find(CommandPatternCartesianPose)!=strategy_command_pattern.end()){
-            if(TF_T_EE_d_set){
+            if(!TF_T_EE_d_set){
                 m_cmd.TF_T_EE_d=s.second.cmd.TF_T_EE_d;
                 actuator_command_pattern.insert(CommandPatternCartesianPose);
                 TF_T_EE_d_set=true;
@@ -85,7 +83,7 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
             }
         }
         if(strategy_command_pattern.find(CommandPatternJointPose)!=strategy_command_pattern.end()){
-            if(q_d_set){
+            if(!q_d_set){
                 m_cmd.q_d=s.second.cmd.q_d;
                 actuator_command_pattern.insert(CommandPatternJointPose);
                 q_d_set=true;
@@ -95,7 +93,7 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
             }
         }
         if(strategy_command_pattern.find(CommandPatternNullspacePose)!=strategy_command_pattern.end()){
-            if(q_d_nullspace_set){
+            if(!q_d_nullspace_set){
                 m_cmd.q_d_nullspace=s.second.cmd.q_d_nullspace;
                 actuator_command_pattern.insert(CommandPatternNullspacePose);
                 q_d_nullspace_set=true;
@@ -105,7 +103,7 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
             }
         }
         if(strategy_command_pattern.find(CommandPatternDesiredWrench)!=strategy_command_pattern.end()){
-            if(TF_F_d_set){
+            if(!TF_F_d_set){
                 m_cmd.TF_F_d=s.second.cmd.TF_F_d;
                 actuator_command_pattern.insert(CommandPatternDesiredWrench);
                 TF_F_d_set=true;
@@ -115,7 +113,7 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
             }
         }
         if(strategy_command_pattern.find(CommandPatternDesiredTorque)!=strategy_command_pattern.end()){
-            if(tau_d_set){
+            if(!tau_d_set){
                 m_cmd.tau_d=s.second.cmd.tau_d;
                 actuator_command_pattern.insert(CommandPatternDesiredTorque);
                 tau_d_set=true;
@@ -125,15 +123,38 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
             }
         }
 
-        m_cmd.TF_dX_d+=s.second.cmd.TF_dX_d*s.second.weight;
-        m_cmd.TF_F_ff+=s.second.cmd.TF_F_ff*s.second.weight;
-        m_cmd.K_x+=s.second.cmd.K_x*s.second.weight;
-        m_cmd.xi_x+=s.second.cmd.xi_x*s.second.weight;
+        if(strategy_command_pattern.find(CommandPatternCartesianTwist)!=strategy_command_pattern.end()){
+            m_cmd.TF_dX_d+=s.second.cmd.TF_dX_d*s.second.weight;
+        }
+        if(strategy_command_pattern.find(CommandPatternCartesianFFWrench)!=strategy_command_pattern.end()){
+            m_cmd.TF_F_ff+=s.second.cmd.TF_F_ff*s.second.weight;
+        }
 
-        m_cmd.dq_d+=s.second.cmd.dq_d*s.second.weight;
-        m_cmd.tau_ff+=s.second.cmd.tau_ff*s.second.weight;
-        m_cmd.K_theta+=s.second.cmd.K_theta*s.second.weight;
-        m_cmd.xi_theta+=s.second.cmd.xi_theta*s.second.weight;
+        if(strategy_command_pattern.find(CommandPatternCartesianCompliance)!=strategy_command_pattern.end()){
+            if(!cart_compliance_set){
+                m_cmd.K_x.setZero();
+                m_cmd.xi_x.setZero();
+                cart_compliance_set=true;
+            }
+            m_cmd.K_x+=s.second.cmd.K_x*s.second.weight;
+            m_cmd.xi_x+=s.second.cmd.xi_x*s.second.weight;
+        }
+
+        if(strategy_command_pattern.find(CommandPatternJointVelocities)!=strategy_command_pattern.end()){
+            m_cmd.dq_d+=s.second.cmd.dq_d*s.second.weight;
+        }
+        if(strategy_command_pattern.find(CommandPatternJointFFTorque)!=strategy_command_pattern.end()){
+            m_cmd.tau_ff+=s.second.cmd.tau_ff*s.second.weight;
+        }
+        if(strategy_command_pattern.find(CommandPatternJointCompliance)!=strategy_command_pattern.end()){
+            if(!joint_compliance_set){
+                m_cmd.K_theta.setZero();
+                m_cmd.xi_theta.setZero();
+                joint_compliance_set=true;
+            }
+            m_cmd.K_theta+=s.second.cmd.K_theta*s.second.weight;
+            m_cmd.xi_theta+=s.second.cmd.xi_theta*s.second.weight;
+        }
 
         weight_check+=s.second.weight;
     }

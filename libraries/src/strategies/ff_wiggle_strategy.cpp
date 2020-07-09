@@ -2,6 +2,10 @@
 
 namespace mios {
 
+FFWiggleStrategy::FFWiggleStrategy():PrimitiveStrategy({CommandPatternCartesianFFWrench}){
+
+}
+
 void FFWiggleStrategy::initialize(const Percept &p_0){
 }
 

@@ -3,6 +3,10 @@
 
 namespace mios{
 
+MoveToPoseStrategy::MoveToPoseStrategy():PrimitiveStrategy({CommandPatternCartesianTwist}){
+
+}
+
 void MoveToPoseStrategy::initialize(const Percept &p_0){
     m_mogen_p2p.p.dX_max=m_dX_max;
     m_mogen_p2p.p.ddX_max=m_ddX_max;

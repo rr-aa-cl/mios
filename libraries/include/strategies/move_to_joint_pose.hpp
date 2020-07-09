@@ -8,6 +8,7 @@ namespace mios {
 
 class MoveToJointPoseStrategy : public PrimitiveStrategy{
 public:
+    MoveToJointPoseStrategy();
     void initialize(const Percept &p_0) override;
     void get_next_command(Actuator &cmd, const Percept &p) override;
     void terminate(const Percept &p) override;
