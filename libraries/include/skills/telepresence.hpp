@@ -25,6 +25,7 @@ public:
 class Telepresence : public Skill{
 public:
     Telepresence(const std::string& id, Memory *memory, Portal* portal, const Percept& p);
+    ~Telepresence();
 
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept &p) override;

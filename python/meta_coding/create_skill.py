@@ -87,8 +87,8 @@ def create_skill(description: dict):
 
     file_header.write("class " + name + " : public Skill{\n"
                                         "public:\n" +
-                      name + "(const std::string& name,Memory* memory, const Percept& p);\n")
-    file_header.write("void evaluate();\n")
+                      name + "(const std::string& name,Memory* memory, Portal* portal, const Percept& p);\n")
+    file_header.write("void evaluate(); override\n")
     file_header.write("Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const override;\n")
     file_header.write("private:\n")
     file_header.write("std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept& p_0) override;\n")
@@ -106,8 +106,8 @@ def create_skill(description: dict):
             objects += '"' + o + '"'
         else:
             objects += '"' + o + '",'
-    file_src.write(name + "::" + name + "(const std::string& name, Memory* memory, const Percept& p):Skill"
-                                        '("' + name + '",{' + objects + "},name,memory,p){}\n")
+    file_src.write(name + "::" + name + "(const std::string& name, Memory* memory, Portal* portal, const Percept& p):Skill"
+                                        '("' + name + '",{' + objects + "},name,memory,portal,p){}\n")
 
     file_src.write("std::shared_ptr<ManipulationPrimitive> " + name + "::get_initial_mp(const Percept& p){}\n")
     file_src.write("void " + name + "::evaluate(){}\n")
