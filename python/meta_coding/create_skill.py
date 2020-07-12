@@ -88,7 +88,7 @@ def create_skill(description: dict):
     file_header.write("class " + name + " : public Skill{\n"
                                         "public:\n" +
                       name + "(const std::string& name,Memory* memory, Portal* portal, const Percept& p);\n")
-    file_header.write("void evaluate(); override\n")
+    file_header.write("void evaluate() override;\n")
     file_header.write("Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const override;\n")
     file_header.write("private:\n")
     file_header.write("std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept& p_0) override;\n")
