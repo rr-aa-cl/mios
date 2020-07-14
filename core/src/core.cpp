@@ -199,6 +199,7 @@ franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
 
     franka::GripperState gripper_state;
     m_percept.update(m_panda_body.get_panda_model(),state,gripper_state,m_memory.read_parameters()->frames.O_R_T);
+    m_memory.internal_update(m_percept);
     Actuator* cmd=m_skill_engine.get_next_command(m_percept);
     m_memory.get_parameters()->frames.O_R_T=cmd->O_R_T;
     for(auto& m : m_safety_stage_1){
@@ -323,6 +324,7 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF){
     }
     m_percept.update(m_panda_body.get_panda_model(),robot_state,gripper_state,O_R_TF);
     m_controller_pipeline->update_percept(m_percept.controller);
+    m_memory.internal_update(m_percept);
     return true;
 }
 
@@ -361,64 +363,6 @@ const Percept* Core::get_percept() const{
 bool Core::is_ready() const{
     return m_is_ready;
 }
-
-//void Core::check_cartesian_velocity_workspace(Eigen::Matrix<double, 6, 1> &TF_dX_d, const Percept& p){
-//    Eigen::Matrix<double,6,1> VC_dX_d = msrm_utils::rotate_vector(TF_dX_d,msrm_utils::invert_transformation_matrix(this->get_kb()->get_local_memory()->access_config_frames().O_T_VC));
-//    Eigen::Matrix<double,3,1> VC_x = msrm_utils::invert_transformation_matrix(this->get_kb()->get_local_memory()->access_config_frames().O_T_VC).block<3,3>(0,0)*p.TF_T_EE.block<3,1>(0,3);
-//    bool stop=false;
-//    this->event["wall_hit_O"]={false,false,false,false,false,false};
-//    double wall_distance=0.01;
-//    Eigen::Matrix<double,3,1> wall_hit_O_lower, wall_hit_O_upper, wall_hit_EE_lower, wall_hit_EE_upper;
-//    for(unsigned i=0;i<3;i++){
-//        double diff_lower = VC_x(i)-this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i);
-//        double wall_level_lower=1-diff_lower/wall_distance;
-//        if(wall_level_lower>1)wall_level_lower=1;
-//        if(wall_level_lower<0)wall_level_lower=0;
-//        this->event["wall_hit_O"][2*i]=wall_level_lower;
-//        wall_hit_O_lower(i)=wall_level_lower;
-//        if(VC_x(i)<=this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i) && VC_dX_d(i)<0){
-//            VC_dX_d(i)=0;
-//        }
-//        double diff_upper = this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i+1)-VC_x(i);
-//        double wall_level_upper=1-diff_upper/wall_distance;
-//        if(wall_level_upper>1)wall_level_upper=1;
-//        if(wall_level_upper<0)wall_level_upper=0;
-//        this->event["wall_hit_O"][2*i+1]=wall_level_upper;
-//        if(VC_x(i)>=this->get_kb()->get_local_memory()->access_config_user().x_limits(2*i+1) && VC_dX_d(i)>0){
-//            VC_dX_d(i)=0;
-//        }
-//        wall_hit_O_upper(i)=wall_level_upper;
-//    }
-//    wall_hit_EE_lower=p.TF_T_EE.block<3,3>(0,0).transpose()*wall_hit_O_lower;
-//    wall_hit_EE_upper=p.TF_T_EE.block<3,3>(0,0).transpose()*wall_hit_O_upper;
-//    Eigen::Matrix<double,6,1> wall_hit_EE;
-//    wall_hit_EE<<wall_hit_EE_lower(0),wall_hit_EE_upper(0),wall_hit_EE_lower(1),wall_hit_EE_upper(1),wall_hit_EE_lower(2),wall_hit_EE_upper(2);
-//    for(unsigned i=0;i<6;i++){
-//        if(wall_hit_EE(i)>1)wall_hit_EE(i)=1;
-//        if(wall_hit_EE(i)<0)wall_hit_EE(i)=0;
-//    }
-//    msrm_utils::write_json_array<double,6,1>(this->event["wall_hit_EE"],wall_hit_EE);
-//    TF_dX_d=msrm_utils::rotate_vector(VC_dX_d,this->get_kb()->get_local_memory()->access_config_frames().O_T_VC);
-//}
-
-
-//void Core::base_avoidance(Eigen::Matrix<double, 6, 1> &TF_dX_d, const Percept &p){
-//    Eigen::Vector3d cp1,cp2,p_ee;
-//    cp1<<0,0,0;
-//    cp2<<0,0,0.5;
-//    p_ee<<p.O_T_EE(0,3),p.O_T_EE(1,3),p.O_T_EE(2,3);
-//    msrm_utils::Cylinder base_cylinder(this->get_kb()->get_local_memory()->access_config_user().base_cylinder_p1,
-//                                       this->get_kb()->get_local_memory()->access_config_user().base_cylinder_p2,
-//                                       this->get_kb()->get_local_memory()->access_config_user().base_cylinder_radius);
-//    if(base_cylinder.contains(p_ee)){
-//        Eigen::Matrix<double,3,3> O_R_Cyl = base_cylinder.get_frame(p_ee);
-//        Eigen::Matrix<double,6,1> Cyl_dX_d = msrm_utils::rotate_vector(TF_dX_d,msrm_utils::invert_matrix(O_R_Cyl));
-//        if(Cyl_dX_d(0)<0){
-//            Cyl_dX_d(0)=0.01;
-//        }
-//        TF_dX_d=msrm_utils::rotate_vector(Cyl_dX_d,O_R_Cyl);
-//    }
-//}
 
 }
 

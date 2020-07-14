@@ -17,7 +17,7 @@ bool SkillParametersHandGuiding::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-HandGuiding::HandGuiding(const std::string &id, Memory *memory, Portal* portal, const Percept &p):Skill("HandGuiding",{},id,memory,portal,p){
+HandGuiding::HandGuiding(const std::string &id, Memory *memory, Portal* portal, const Percept &p):Skill("HandGuiding",{},id,memory,portal,p,{ControlMode::mCartTorque}){
 }
 
 std::shared_ptr<ManipulationPrimitive> HandGuiding::get_initial_mp(const Percept &p_0){

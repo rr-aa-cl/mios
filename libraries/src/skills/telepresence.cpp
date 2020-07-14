@@ -66,7 +66,8 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-Telepresence::Telepresence(const std::string &name, Memory *memory, Portal *portal, const Percept &p):Skill("Telepresence",{},name,memory,portal,p),m_handshake_stage(0){
+Telepresence::Telepresence(const std::string &name, Memory *memory, Portal *portal, const Percept &p):Skill("Telepresence",{},name,memory,portal,p,
+{ControlMode::mCartTorque,ControlMode::mJointTorque,ControlMode::mCartVelocity,ControlMode::mJointVelocity}),m_handshake_stage(0){
     if(read_parameters<Params>()->is_master){
         if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
             m_udp_sender = portal->open_udp_outstream("remote_twist_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);

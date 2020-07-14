@@ -11,7 +11,7 @@ bool SkillParametersNullSkill::from_json(const nlohmann::json &parameters){
     return false;
 }
 
-NullSkill::NullSkill(const std::string& id, Memory *memory, Portal* portal, const Percept& p):Skill("NullSkill",{},id,memory,portal,p){
+NullSkill::NullSkill(const std::string& id, Memory *memory, Portal* portal, const Percept& p):Skill("NullSkill",{},id,memory,portal,p,{ControlMode::mNoControl}){
 
 }
 

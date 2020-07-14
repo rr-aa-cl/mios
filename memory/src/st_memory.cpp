@@ -7,7 +7,7 @@
 
 namespace mios {
 
-STMemory::STMemory():m_environment({{"NullObject",Object("NullObject")}}),m_live_context(LiveContext(&m_environment.at("NullObject"))){
+STMemory::STMemory():m_environment({{"NullObject",Object("NullObject")},{"EndEffector",Object("EndEffector")}}),m_live_context(LiveContext(&m_environment.at("NullObject"))){
 
 }
 
@@ -207,6 +207,16 @@ bool STMemory::update_object(const std::string &name, const nlohmann::json &desc
         return false;
     }
     return true;
+}
+
+void STMemory::internal_update(const Percept &p){
+    // Update special objects
+    if(m_environment.find("EndEffector")==m_environment.end()){
+        m_environment.insert(std::make_pair("EndEffector",Object("EndEffector")));
+    }
+    m_environment.at("EndEffector").O_T_OB=p.proprioception.O_T_EE;
+
+    m_environment.at(m_live_context.grasped_object->name).O_T_OB=p.proprioception.O_T_EE*msrm_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp);
 }
 
 const Object* STMemory::get_object(const std::string &name) const{

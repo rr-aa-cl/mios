@@ -20,7 +20,7 @@ bool SkillParametersPush::from_json(const nlohmann::json& parameters){
     return true;
 }
 
-Push::Push(const std::string& name, Memory* memory, Portal *portal, const Percept& p):Skill("Push",{"pushable"},name,memory,portal,p){
+Push::Push(const std::string& name, Memory* memory, Portal *portal, const Percept& p):Skill("Push",{"pushable"},name,memory,portal,p,{ControlMode::mCartTorque}){
 
 }
 

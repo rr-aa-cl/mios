@@ -20,7 +20,7 @@ bool SkillParametersTip::from_json(const nlohmann::json& parameters){
     return true;
 }
 
-Tip::Tip(const std::string& name, Memory* memory, Portal* portal, const Percept& p):Skill("Tip",{"tippable"},name,memory,portal,p){
+Tip::Tip(const std::string& name, Memory* memory, Portal* portal, const Percept& p):Skill("Tip",{"tippable"},name,memory,portal,p,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
 
 }
 

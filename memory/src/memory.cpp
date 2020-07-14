@@ -98,6 +98,10 @@ bool Memory::update_database(){
     return m_lt_memory.update_database();
 }
 
+void Memory::internal_update(const Percept &p){
+    m_st_memory.internal_update(p);
+}
+
 void Memory::post_event(const std::string &name, const nlohmann::json &content){
     m_st_memory.post_event(name,content);
 }

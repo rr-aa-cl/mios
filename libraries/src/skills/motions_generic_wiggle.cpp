@@ -15,7 +15,7 @@ bool SkillParametersGenericWiggleMotion::from_json(const nlohmann::json &paramet
     return true;
 }
 
-GenericWiggleMotion::GenericWiggleMotion(const std::string &id, Memory *memory,Portal* portal, const Percept &p):Skill("GenericWiggleMotion",{},id,memory,portal,p){
+GenericWiggleMotion::GenericWiggleMotion(const std::string &id, Memory *memory,Portal* portal, const Percept &p):Skill("GenericWiggleMotion",{},id,memory,portal,p,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
 }
 
 std::shared_ptr<ManipulationPrimitive> GenericWiggleMotion::get_initial_mp(const Percept &p_0){

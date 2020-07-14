@@ -19,6 +19,11 @@ bool SkillEngine::load_skill(std::shared_ptr<Skill> skill){
     spdlog::info("Loading skill "+skill->get_id()+"...");
     m_active_skill=skill;
 
+    if(m_active_skill->get_valid_control_modes().find(m_memory->read_parameters()->control.control_mode)==m_active_skill->get_valid_control_modes().end()){
+        spdlog::error("Skill of type " + m_active_skill->get_type() + " is not compatible with the chosen controller pipeline.");
+        return false;
+    }
+
     spdlog::info("Grounding objects...");
     if(!m_active_skill->ground_objects()){
         return false;

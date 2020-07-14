@@ -12,7 +12,7 @@ bool SkillParametersExtraction::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-Extraction::Extraction(const std::string &name, Memory *memory, Portal* portal,const Percept &p):Skill("Extraction",{"Extractable,ExtractFrom"},name,memory,portal,p){
+Extraction::Extraction(const std::string &name, Memory *memory, Portal* portal,const Percept &p):Skill("Extraction",{"Extractable,ExtractFrom"},name,memory,portal,p,{ControlMode::mCartTorque}){
 
 }
 

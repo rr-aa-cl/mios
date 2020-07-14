@@ -25,6 +25,8 @@ public:
     bool update_object(const std::string& name, bool teach_width, const Percept& p);
     bool update_object(const std::string& name, const nlohmann::json& description);
 
+    void internal_update(const Percept& p);
+
 public:
     bool set_default_parameters();
     void put_task(const std::string& name, const nlohmann::json& context, const TaskResult& result);

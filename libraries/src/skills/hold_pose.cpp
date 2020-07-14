@@ -11,7 +11,7 @@ bool SkillParametersHoldPose::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-HoldPose::HoldPose(const std::string &id, Memory *memory, Portal *portal, const Percept &p):Skill("HoldPose",{},id,memory,portal,p){
+HoldPose::HoldPose(const std::string &id, Memory *memory, Portal *portal, const Percept &p):Skill("HoldPose",{},id,memory,portal,p,{ControlMode::mCartTorque,ControlMode::mJointTorque}){
 }
 
 std::shared_ptr<ManipulationPrimitive> HoldPose::get_initial_mp(const Percept &p_0){

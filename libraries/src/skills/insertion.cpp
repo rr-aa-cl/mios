@@ -14,7 +14,7 @@ bool SkillParametersInsertion::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-Insertion::Insertion(const std::string &name, Memory *memory,Portal* portal, const Percept &p):Skill("Insertion",{"Insertable","InsertInto"},name,memory,portal,p){
+Insertion::Insertion(const std::string &name, Memory *memory,Portal* portal, const Percept &p):Skill("Insertion",{"Insertable","InsertInto"},name,memory,portal,p,{ControlMode::mCartTorque}){
 
 }
 

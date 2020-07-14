@@ -27,7 +27,7 @@ bool SkillParametersMoveToPoseJoint::from_json(const nlohmann::json &p){
     return true;
 }
 
-MoveToPoseJoint::MoveToPoseJoint(const std::string &id, Memory *memory, Portal* portal, const Percept &p):Skill("MoveToPoseJoint",{"goal_pose"},id,memory,portal,p),
+MoveToPoseJoint::MoveToPoseJoint(const std::string &id, Memory *memory, Portal* portal, const Percept &p):Skill("MoveToPoseJoint",{"goal_pose"},id,memory,portal,p,{ControlMode::mJointTorque,ControlMode::mJointVelocity}),
 m_finished(false){
 }
 

@@ -27,7 +27,7 @@ bool SkillParametersMoveToPoseCart::from_json(const nlohmann::json &p){
     return true;
 }
 
-MoveToPoseCart::MoveToPoseCart(const std::string &id, Memory *memory, Portal *portal, const Percept &p):Skill("MoveToPoseJoint",{"goal_pose"},id,memory,portal,p){
+MoveToPoseCart::MoveToPoseCart(const std::string &id, Memory *memory, Portal *portal, const Percept &p):Skill("MoveToPoseJoint",{"goal_pose"},id,memory,portal,p,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
 }
 
 std::shared_ptr<ManipulationPrimitive> MoveToPoseCart::get_initial_mp(const Percept &p_0){

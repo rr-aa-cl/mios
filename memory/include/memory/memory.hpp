@@ -31,6 +31,8 @@ public:
     bool update_object(const std::string& name, bool teach_width, const Percept& p);
     bool update_object(const std::string& name, const nlohmann::json& description);
 
+    void internal_update(const Percept& p);
+
     bool update_database();
     void post_event(const std::string& name, const nlohmann::json& content);
     void remove_event(const std::string& name);
@@ -45,7 +47,6 @@ public:
     const Event* get_event(const std::string& name);
 
 private:
-
     LTMemory m_lt_memory;
     STMemory m_st_memory;
 

@@ -35,7 +35,7 @@ public:
      * The skill base constructor. It is called by the constructor of any derived skill class.
      * @param[in] type The type id of the skill.
      */
-    Skill(const std::string& type, const std::unordered_set<std::string> &objects, const std::string &id, Memory *memory, Portal* portal, const Percept& p);
+    Skill(const std::string& type, const std::unordered_set<std::string> &objects, const std::string &id, Memory *memory, Portal* portal, const Percept& p, std::set<ControlMode> control_modes);
 
     /**
      * The skill destructor.
@@ -146,6 +146,8 @@ public:
 
     void write_custom_results(nlohmann::json results);
     nlohmann::json& get_custom_results();
+
+    std::set<ControlMode> get_valid_control_modes();
 protected:
 
     const std::shared_ptr<ManipulationPrimitive> get_active_mp() const;
@@ -262,8 +264,7 @@ private:
     std::string m_init_mp;
 
     std::unordered_map<std::string,const Object*> m_grounded_objects;
-
-
+    const std::set<ControlMode> m_control_modes;
     std::chrono::high_resolution_clock::time_point m_time_start;
 
 private:
