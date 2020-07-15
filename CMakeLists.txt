@@ -53,7 +53,8 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/safety/include
     ${CMAKE_SOURCE_DIR}/memory/include
     ${CMAKE_SOURCE_DIR}/portal/include
-    ${CMAKE_SOURCE_DIR}/libraries/include)
+    ${CMAKE_SOURCE_DIR}/libraries/include
+    ${CMAKE_SOURCE_DIR}/ros_workspace/devel/include)
 
 link_directories(${CMAKE_SOURCE_DIR}/third_party/lib)
 
