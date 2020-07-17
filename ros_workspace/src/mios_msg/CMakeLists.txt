@@ -14,6 +14,28 @@ add_service_files(DIRECTORY srv
   StopTask.srv
   RemoveTask.srv
   WaitForTask.srv
+  PostEvent.srv
+  GetEvent.srv
+  SetGraspedObject.srv
+  GraspObject.srv
+  Grasp.srv
+  ReleaseObject.srv
+  MoveGripper.srv
+  HomeGripper.srv
+  TeachObject.srv
+  SetObject.srv
+  DownloadTaskContext.srv
+  DownloadSkillContext.srv
+  DownloadObjectContext.srv
+  GetState.srv
+  StartDeskTask.srv
+  StopDeskTask.srv
+  UnlockBrakes.srv
+  LockBrakes.srv
+  Shutdown.srv
+  PackPose.srv
+  SetLiveParameter.srv
+  Terminate.srv
 )
 
 generate_messages()

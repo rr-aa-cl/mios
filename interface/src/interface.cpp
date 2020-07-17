@@ -23,7 +23,7 @@ void CommandInterface::bind_methods(){
 
     m_portal->bind_method_to_all("set_grasped_object",std::bind(&CommandInterface::set_grasped_object,this,std::placeholders::_1),{ArgPair("object",{})});
     m_portal->bind_method_to_all("grasp_object",std::bind(&CommandInterface::grasp_object,this,std::placeholders::_1),{ArgPair("object",{}),ArgPair("speed",1)});
-    m_portal->bind_method_to_all("grasp",std::bind(&CommandInterface::grasp,this,std::placeholders::_1),{ArgPair("width",{}),ArgPair("speed",{}),ArgPair("force",{})});
+    m_portal->bind_method_to_all("grasp",std::bind(&CommandInterface::grasp,this,std::placeholders::_1),{ArgPair("width",{}),ArgPair("speed",{}),ArgPair("force",{}),ArgPair("epsilon_inner",0.001),ArgPair("epsilon_outer",0.001)});
     m_portal->bind_method_to_all("release_object",std::bind(&CommandInterface::release_object,this,std::placeholders::_1),{ArgPair("speed",1)});
     m_portal->bind_method_to_all("move_gripper",std::bind(&CommandInterface::move_gripper,this,std::placeholders::_1),{ArgPair("width",{}),ArgPair("speed",{})});
     m_portal->bind_method_to_all("home_gripper",std::bind(&CommandInterface::home_gripper,this,std::placeholders::_1),{});
@@ -341,6 +341,7 @@ nlohmann::json CommandInterface::get_state(const nlohmann::json &request){
     msrm_utils::write_json_array<double,4,4>(response["O_T_EE"],p->proprioception.O_T_EE);
     response["grasped_object"]=m_memory->get_live_context()->grasped_object->name;
     response["result"]=result;
+    response["error_message"]=error_message;
 
     return response;
 }

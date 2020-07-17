@@ -12,6 +12,7 @@
 #include "skills/push.hpp"
 #include "skills/shove.hpp"
 #include "skills/tip.hpp"
+#include "skills/file.hpp"
 
 namespace mios {
 
@@ -72,6 +73,9 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("Shove"):
         execute_skill<Shove,SkillParametersShove>(name);
+        break;
+    case msrm_utils::str_to_int("File"):
+        execute_skill<File,SkillParametersFile>(name);
         break;
     default:
         throw TaskException("Skill with type " + type + " not known to GenericTask");

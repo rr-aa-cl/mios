@@ -46,6 +46,16 @@ std::optional<std::string> PandaBody::get_robot_ip(const std::optional<std::stri
     return new_ip;
 }
 
+void PandaBody::get_gripper_configuration(Eigen::Matrix<double, 4, 4>& F_T_EE){
+    if(m_hand==PandaHandDefault){
+        F_T_EE<<0.7071,-0.7071,0,0,0.7071,0.7071,0,0,0,0,1,0,0,0,0.1034,1;
+        F_T_EE.transposeInPlace();
+    }
+    if(m_hand==PandaHandSofthand2){
+        F_T_EE.setIdentity();
+    }
+}
+
 bool PandaBody::connect_to_robot(const std::optional<std::string> &ip){
     if(!m_has_arm){
         m_arm_connected=false;
@@ -104,6 +114,7 @@ bool PandaBody::connect_to_gripper(const std::optional<std::string> &ip){
         if(!m_softhand2->initialize()){
             return false;
         }else{
+            m_hand_connected=true;
             return true;
         }
     }
@@ -704,10 +715,10 @@ bool PandaBody::move_to_pack_pose(const std::optional<std::string> &ip, const st
 
 bool PandaBody::grasp(double width, double speed, double force, double epsilon_inner, double epsilon_outer) const{
     if(!m_hand_connected){
+        spdlog::error("No gripper connected.");
         return false;
     }
     if(m_hand==PandaHandDefault){
-
         try{
             franka::GripperState state = m_panda_hand->readOnce();
             double max_width=state.max_width;

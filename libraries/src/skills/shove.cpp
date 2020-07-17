@@ -24,7 +24,8 @@ bool SkillParametersShove::from_json(const nlohmann::json& parameters){
     }
     return true;
 }
-Shove::Shove(const std::string& name, Memory* memory, Portal* portal, const Percept& p):Skill("Shove",{"shovable","location"},name,memory,portal,p,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
+Shove::Shove(const std::string& name, Memory* memory, Portal* portal, const Percept& p):Skill("Shove",{"shovable","location"},name,memory,portal,p,{ControlMode::mCartTorque,ControlMode::mCartVelocity}),
+m_in_contact(false){
 
 }
 

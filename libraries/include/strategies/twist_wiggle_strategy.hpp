@@ -24,7 +24,6 @@ private:
 
     Eigen::Matrix<double,6,1> m_X_d_old;
     Eigen::Matrix<double,6,1> m_X_d;
-    Eigen::Matrix<double,2,1> m_t_scale;
 };
 
 }

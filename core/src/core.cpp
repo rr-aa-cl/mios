@@ -64,8 +64,14 @@ bool Core::initialize(){
     if(!m_panda_body.connect_to_gripper(m_memory.read_parameters()->system.robot_ip)){
         return false;
     }
+    m_panda_body.get_gripper_configuration(m_memory.get_parameters()->frames.F_T_EE);
+    if(!m_memory.update_database()){
+        return false;
+    }
+    if(!set_robot_parameters()){
+        return false;
+    }
     spdlog::debug("Core: initialize.set_time");
-    m_memory.get_live_context()->t_core=std::chrono::high_resolution_clock::now();
     m_is_ready=true;
 
     if(!refresh_percept({})){

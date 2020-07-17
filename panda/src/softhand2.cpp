@@ -8,6 +8,10 @@ Softhand2::Softhand2(const char *port_s, int device_id, int BAUD_RATE):m_port_s(
 
 }
 
+Softhand2::~Softhand2(){
+    closeRS485(&m_settings);
+}
+
 bool Softhand2::initialize(){
     spdlog::debug("qb SoftHand Initialization");
     char serial_ports[10][255];
@@ -50,6 +54,7 @@ bool Softhand2::initialize(){
 }
 
 bool Softhand2::move(int position){
+    std::cout<<"MOVE"<<std::endl;
     short int commands[2];
     if ((position > 19000) || (position < 0)){
         spdlog::error("Position command out of range (0 - 19000)");
@@ -58,17 +63,16 @@ bool Softhand2::move(int position){
     commands[0] = position; // nearly half closure (max is 19000, min is 0)
     commands[1] = 0; // must be always 0 (only the first value is meaningful)
     commSetInputs(&m_settings, m_device_id, commands);
-
+    usleep(500000);
     char status;
-    commActivate(&m_settings, m_device_id, false);
-    usleep(10000);
-    int result = commGetActivate(&m_settings, m_device_id, &status);
-    if (result != 0 || status != 0) {
-        spdlog::error("ERROR: fails while deactivating motor");
-        return false;
-    }
-    closeRS485(&m_settings);
-    spdlog::debug("Comm deactivated and serial port closed");
+//    commActivate(&m_settings, m_device_id, false);
+//    usleep(10000);
+//    int result = commGetActivate(&m_settings, m_device_id, &status);
+//    if (result != 0 || status != 0) {
+//        spdlog::error("ERROR: fails while deactivating motor");
+//        return false;
+//    }
+//    spdlog::debug("Comm deactivated and serial port closed");
     return true;
 }
 

@@ -10,6 +10,7 @@ namespace mios{
 class Softhand2{
 public:
     Softhand2(const char *port_s = "/dev/ttyUSB0", int device_id = 1, int BAUD_RATE = B2000000);
+    ~Softhand2();
     bool initialize();
     bool move(int position);
 

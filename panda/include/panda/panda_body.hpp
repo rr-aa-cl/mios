@@ -66,6 +66,7 @@ public:
     bool get_gripper_state(franka::GripperState& state) const;
     const std::unique_ptr<franka::Model>& get_panda_model() const;
     std::optional<std::string> get_robot_ip(const std::optional<std::string>& last_ip);
+    void get_gripper_configuration(Eigen::Matrix<double, 4, 4> &F_T_EE);
 
 private:
     bool is_robot(const std::string& ip);

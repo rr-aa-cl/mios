@@ -13,11 +13,7 @@ void TwistWiggleStrategy::initialize(const Percept &p_0){
 void TwistWiggleStrategy::get_next_command(Actuator &cmd, const Percept &p){
     for(unsigned i=0;i<6;i++){
         m_X_d(i)=m_a_a(i)*cos(2*M_PI*m_a_f(i)*cmd.t+m_a_phi(i))+m_b_a(i)*sin(2*M_PI*m_b_f(i)*cmd.t+m_b_phi(i));
-        cmd.TF_dX_d(i)+=(m_X_d(i)-m_X_d_old(i))/0.001;
-    }
-    for(unsigned i=0;i<3;i++){
-        cmd.TF_dX_d(i)*=m_t_scale(0);
-        cmd.TF_dX_d(i+3)*=m_t_scale(1);
+        cmd.TF_dX_d(i)=(m_X_d(i)-m_X_d_old(i))/0.001;
     }
     m_X_d_old=m_X_d;
 }
