@@ -19,6 +19,7 @@ add_service_files(DIRECTORY srv
   SetGraspedObject.srv
   GraspObject.srv
   Grasp.srv
+  IsBusy.srv
   ReleaseObject.srv
   MoveGripper.srv
   HomeGripper.srv

@@ -76,4 +76,11 @@ bool RosNode::wait_for_task(mios_msg::WaitForTask::Request &request, mios_msg::W
     return true;
 }
 
+bool RosNode::is_busy(mios_msg::IsBusy::Request &request, mios_msg::IsBusy::Response &response){
+    spdlog::debug("RosNode: is_busy");
+    response.busy=m_task_engine->is_busy();
+    response.result=true;
+    return true;
+}
+
 }
