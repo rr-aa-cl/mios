@@ -7,31 +7,11 @@
 namespace mios {
 
 Portal::Portal(const std::string &websocket_address, unsigned websocket_port, const std::string &websocket_endpoint, const std::string &rpc_address, unsigned rpc_port, unsigned udp_port):
-m_keep_running(false){
-    spdlog::info("Initializing portal...");
-    m_servers.insert(std::make_pair(JsonServers::Websocket,std::make_unique<msrm_utils::JsonWebsocketServer>(websocket_address,websocket_port,websocket_endpoint)));
-    m_servers.insert(std::make_pair(JsonServers::RPC,std::make_unique<msrm_utils::JsonRPCServer>(rpc_address,rpc_port)));
-    m_servers.insert(std::make_pair(JsonServers::UDP,std::make_unique<msrm_utils::JsonUDPServer>(udp_port)));
-    unsigned n_failures=0;
-    for(const auto& s : m_servers){
-        if(!s.second->start_listening()){
-            n_failures++;
-            if(s.first==JsonServers::Websocket){
-                spdlog::warn("Could not start websocket server with parameters: [address: "+websocket_address+", port: "+std::to_string(websocket_port)+", endpoint: "+websocket_endpoint+"]");
-            }
-            if(s.first==JsonServers::Websocket){
-                spdlog::warn("Could not start rpc server with parameters: [address: "+rpc_address+", port: "+std::to_string(rpc_port)+"]");
-            }
-            if(s.first==JsonServers::UDP){
-                spdlog::warn("Could not start udp server with parameters: [port: "+std::to_string(udp_port)+"]");
-            }
-        }
-    }
-    if(n_failures>=m_servers.size()){
-        spdlog::critical("Could not start any communication interfaces.");
-    }
-    m_keep_running=true;
-    m_message_thread = std::thread(&Portal::send_messages,this);
+m_keep_running(false),m_websocket_address(websocket_address),m_websocket_port(websocket_port),m_websocket_endpoint(websocket_endpoint),m_rpc_address(rpc_address),m_rpc_port(rpc_port),
+m_udp_port(udp_port){
+    m_servers.insert(std::make_pair(JsonServers::Websocket,std::make_unique<msrm_utils::JsonWebsocketServer>(m_websocket_address,m_websocket_port,m_websocket_endpoint)));
+    m_servers.insert(std::make_pair(JsonServers::RPC,std::make_unique<msrm_utils::JsonRPCServer>(m_rpc_address,m_rpc_port)));
+    m_servers.insert(std::make_pair(JsonServers::UDP,std::make_unique<msrm_utils::JsonUDPServer>(m_udp_port)));
 }
 
 Portal::~Portal(){
@@ -42,6 +22,31 @@ Portal::~Portal(){
     if(m_message_thread.joinable()){
         m_message_thread.join();
     }
+}
+
+bool Portal::initialize(){
+    unsigned n_failures=0;
+    for(const auto& s : m_servers){
+        if(!s.second->start_listening()){
+            n_failures++;
+            if(s.first==JsonServers::Websocket){
+                spdlog::warn("Could not start websocket server with parameters: [address: "+m_websocket_address+", port: "+std::to_string(m_websocket_port)+", endpoint: "+m_websocket_endpoint+"]");
+            }
+            if(s.first==JsonServers::Websocket){
+                spdlog::warn("Could not start rpc server with parameters: [address: "+m_rpc_address+", port: "+std::to_string(m_rpc_port)+"]");
+            }
+            if(s.first==JsonServers::UDP){
+                spdlog::warn("Could not start udp server with parameters: [port: "+std::to_string(m_udp_port)+"]");
+            }
+        }
+    }
+    if(n_failures>=m_servers.size()){
+        spdlog::error("Could not start any communication interfaces.");
+        return false;
+    }
+    m_keep_running=true;
+    m_message_thread = std::thread(&Portal::send_messages,this);
+    return true;
 }
 
 void Portal::bind_method_to_websocket_server(const char *method_name, std::function<nlohmann::json (const nlohmann::json &)> method_callback,

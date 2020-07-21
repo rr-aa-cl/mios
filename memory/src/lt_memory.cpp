@@ -23,7 +23,6 @@ void LTMemory::link_to_st_memory(STMemory *st_memory){
 }
 
 bool LTMemory::initialize(){
-    spdlog::info("Initializing long-term memory...");
     if(!make_database_consistent()){
         return false;
     }else{

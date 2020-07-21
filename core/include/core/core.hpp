@@ -33,6 +33,7 @@ public:
     ~Core();
 
     bool initialize();
+    void start();
     void terminate();
 
     bool execute_skill();
@@ -70,11 +71,6 @@ public:
     bool is_ready() const;
 
 private:
-    bool set_robot_parameters();
-
-//    void check_cartesian_velocity_workspace(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
-//    void base_avoidance(Eigen::Matrix<double,6,1>& TF_dX_d, const Percept& p);
-
     franka::Finishable *control_base_cycle(const franka::RobotState& state);
     franka::Torques cart_torque_controller_pipeline(const franka::RobotState& state);
     franka::Torques joint_torque_controller_pipeline(const franka::RobotState& state);

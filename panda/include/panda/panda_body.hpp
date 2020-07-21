@@ -11,12 +11,14 @@
 #include "panda/softhand2.hpp"
 
 #include "data_structures/parameters.hpp"
+#include "memory/memory.hpp"
 
 namespace mios {
 
 class PandaBody{
 public:
-    PandaBody();
+    PandaBody(Memory* memory);
+    bool initialize();
     bool connect_to_robot(const std::optional<std::string> &ip);
     bool connect_to_gripper(const std::optional<std::string> &ip);
     void disconnect_from_robot();
@@ -52,23 +54,18 @@ public:
     void dummy_control(std::function<franka::JointPositions(const franka::RobotState& state,franka::Duration)> controller_callback);
 
 public:
-    bool set_robot_parameters(double load_m,std::array<double,3> load_com,std::array<double,9> load_I,std::array<double,7> tau_ext_contact,std::array<double,7> tau_ext_max,
-                              std::array<double,6> F_ext_K_contact,std::array<double,6> F_ext_K_max,std::array<double,16> EE_T_K,std::array<double,6> K_x,std::array<double,7> K_theta,
-                              std::array<double,16> F_T_EE);
+    bool set_robot_parameters();
     bool set_load(double load_m,std::array<double,3> load_com,std::array<double,9> load_I);
     bool set_ee(std::array<double,16> F_T_EE);
-
-    void set_arm(bool has_arm);
-    void set_hand(PandaHand hand);
 
 public:
     bool get_robot_state(franka::RobotState& state) const;
     bool get_gripper_state(franka::GripperState& state) const;
     const std::unique_ptr<franka::Model>& get_panda_model() const;
-    std::optional<std::string> get_robot_ip(const std::optional<std::string>& last_ip);
-    void get_gripper_configuration(Eigen::Matrix<double, 4, 4> &F_T_EE);
 
 private:
+    void load_gripper_configuration();
+    std::optional<std::string> get_robot_ip(const std::optional<std::string>& last_ip);
     bool is_robot(const std::string& ip);
     std::optional<std::string> find_robot();
     void get_default_robot_state(franka::RobotState& state) const;
@@ -88,6 +85,9 @@ private:
 
     std::atomic<bool> m_arm_connected;
     std::atomic<bool> m_hand_connected;
+
+private:
+    Memory* m_memory;
 };
 
 }

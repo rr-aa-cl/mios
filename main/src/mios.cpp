@@ -17,7 +17,25 @@ void exit_handler(int s);
 
 
 int main(int argc, char** argv){
-    std::cout<<"FIRST LINE OF CODE"<<std::endl;
+
+    spdlog::level::level_enum info_level;
+    info_level=spdlog::level::info;
+    if(argc==2){
+        if(strcmp(argv[1],"debug")==0){
+            info_level=spdlog::level::debug;
+        }
+    }
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    console_sink->set_level(info_level);
+    console_sink->set_pattern("[mios] [%^%l%$] %v");
+
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/mios.txt", true);
+    file_sink->set_level(spdlog::level::debug);
+
+    auto logger = std::shared_ptr<spdlog::logger>(new spdlog::logger("mios", {console_sink, file_sink}));
+    logger->set_level(info_level);
+    spdlog::set_default_logger(logger);
+    spdlog::debug("FIRST LINE OF CODE");
 
     struct sigaction sigIntHandler;
 
@@ -25,7 +43,6 @@ int main(int argc, char** argv){
     sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, NULL);
-
 
     spdlog::info("############################################################");
     spdlog::info("MIOS");
@@ -38,27 +55,17 @@ int main(int argc, char** argv){
         return -1;
     }
 
-    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    console_sink->set_level(spdlog::level::debug);
-    console_sink->set_pattern("[mios] [%^%l%$] %v");
-
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/mios.txt", true);
-    file_sink->set_level(spdlog::level::debug);
-
-    auto logger = std::shared_ptr<spdlog::logger>(new spdlog::logger("mios", {console_sink, file_sink}));
-    logger->set_level(spdlog::level::debug);
-    spdlog::set_default_logger(logger);
-
     ros::init(argc, argv, "mios", ros::init_options::NoSigintHandler);
 
     mios::Core core;
+    spdlog::info("Initializing MIOS core...");
     if(!core.initialize()){
         spdlog::error("MIOS core could not be initialized, shutting down...");
         return -1;
     }
     spdlog::info("############################################################");
     spdlog::info("System is ready.");
-    core.get_task_engine()->life_cycle();
+    core.start();
     spdlog::debug("LAST LINE OF CODE");
     return 0;
 }

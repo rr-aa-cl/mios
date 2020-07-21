@@ -27,6 +27,8 @@ public:
     Portal(const Portal&) = delete;
     ~Portal();
 
+    bool initialize();
+
     void bind_method_to_websocket_server(const char* method_name, std::function<nlohmann::json(const nlohmann::json&)> method_callback, const std::vector<msrm_utils::ArgPair> &method_arguments);
     void bind_method_to_rpc_server(const char* method_name, std::function<nlohmann::json(const nlohmann::json&)> method_callback, const std::vector<msrm_utils::ArgPair> &method_arguments);
     void bind_method_to_udp_server(const char* method_name, std::function<nlohmann::json(const nlohmann::json&)> method_callback, const std::vector<msrm_utils::ArgPair> &method_arguments);
@@ -54,6 +56,14 @@ private:
     std::unordered_map<std::string, std::shared_ptr<msrm_utils::UDPStreamReceiver> > m_instreams;
 
     std::map<JsonServers,std::unique_ptr<msrm_utils::IJsonMethodServer> > m_servers;
+
+private:
+    const std::string m_websocket_address;
+    const unsigned m_websocket_port;
+    const std::string m_websocket_endpoint;
+    const std::string m_rpc_address;
+    const unsigned m_rpc_port;
+    const unsigned m_udp_port;
 };
 
 }

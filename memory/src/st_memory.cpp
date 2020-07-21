@@ -20,7 +20,6 @@ void STMemory::link_to_lt_memory(LTMemory *lt_memory){
 }
 
 bool STMemory::initialize(){
-    spdlog::info("Initializing short-term memory...");
     if(!syncronize_with_lt_memory()){
         return false;
     }

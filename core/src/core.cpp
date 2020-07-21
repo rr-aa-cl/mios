@@ -28,7 +28,7 @@
 
 namespace mios {
 
-Core::Core():m_skill_engine(SkillEngine(this)),m_portal(Portal("0.0.0.0",12000,"mios/core","0.0.0.0",12001,12002)),m_task_engine(TaskEngine(this)),
+Core::Core():m_skill_engine(SkillEngine(this)),m_panda_body(PandaBody(&m_memory)),m_portal(Portal("0.0.0.0",12000,"mios/core","0.0.0.0",12001,12002)),m_task_engine(TaskEngine(this)),
     m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_ros_node(this,&m_task_engine,&m_portal,&m_memory),
     m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false){
 }
@@ -38,49 +38,41 @@ Core::~Core(){
 }
 
 bool Core::initialize(){
-    spdlog::info("Initializing MIOS core...");
+    spdlog::info("Initializing memory...");
     if(!m_memory.initialize()){
         spdlog::error("Could not initialize memory.");
         return false;
     }
-    spdlog::debug("Core: initialize.m_memory.set_default_parameters");
-    if(!m_memory.set_default_parameters()){
+    spdlog::info("Initializing robot...");
+    if(!m_panda_body.initialize()){
+        spdlog::error("Could not initialize robot.");
         return false;
     }
-    spdlog::debug("Core: initialize.check_if_robot");
-    m_panda_body.set_arm(m_memory.read_parameters()->system.has_robot);
-    m_panda_body.set_hand(m_memory.read_parameters()->system.gripper);
-    m_memory.get_parameters()->system.robot_ip = m_panda_body.get_robot_ip(m_memory.read_parameters()->system.robot_ip).value_or("127.0.0.1");
+    spdlog::info("Updating database...");
     if(!m_memory.update_database()){
-        spdlog::warn("Could not update database.");
-    }
-    spdlog::debug("Core: initialize.check_if_robot2");
-    spdlog::debug("Core: initialize.connect_to_robot");
-    if(!m_panda_body.connect_to_robot(m_memory.read_parameters()->system.robot_ip)){
+        spdlog::error("Could not update datebase.");
         return false;
     }
-    spdlog::debug("Core: initialize.check_if_gripper");
-    spdlog::debug("Core: initialize.connect_to_gripper");
-    if(!m_panda_body.connect_to_gripper(m_memory.read_parameters()->system.robot_ip)){
-        return false;
-    }
-    m_panda_body.get_gripper_configuration(m_memory.get_parameters()->frames.F_T_EE);
-    if(!m_memory.update_database()){
-        return false;
-    }
-    if(!set_robot_parameters()){
-        return false;
-    }
-    spdlog::debug("Core: initialize.set_time");
-    m_is_ready=true;
 
+    spdlog::info("Acquiring initial percept...");
     if(!refresh_percept({})){
         spdlog::error("Could not acquire iniital percept.");
         return false;
     }
+    spdlog::info("Initializing interfaces...");
+    if(!m_portal.initialize()){
+        spdlog::error("Could not initialize portal.");
+        return false;
+    }
     m_ros_node.start();
 
+    m_is_ready=true;
     return true;
+}
+
+void Core::start(){
+    spdlog::info("Starting task engine...");
+    m_task_engine.life_cycle();
 }
 
 void Core::terminate(){
@@ -124,7 +116,7 @@ bool Core::execute_skill(){
     spdlog::debug("CORE: start_control_cycle: while-loop");
     refresh_percept(m_memory.read_parameters()->frames.O_R_T);
     m_percept.update_controller();
-    set_robot_parameters();
+    m_panda_body.set_robot_parameters();
 
     bool result=false;
     spdlog::debug("CORE: EXECUTE_SKILL.control_mode: ");
@@ -181,25 +173,6 @@ bool Core::execute_skill(){
     m_safety_stage_1.clear();
     m_safety_stage_2.clear();
     return result;
-}
-
-bool Core::set_robot_parameters(){
-    ControlParameters control= m_memory.read_parameters()->control;
-    UserParameters user= m_memory.read_parameters()->user;
-    FramesParameters frames =m_memory.read_parameters()->frames;
-
-    std::array<double,3> load_com = msrm_utils::convert_to_array<double,3,1>(user.load_com);
-    std::array<double,9> load_I = msrm_utils::convert_to_array<double,3,3>(user.load_I);
-    std::array<double,7> tau_contact = msrm_utils::convert_to_array<double,7,1>(user.tau_ext_contact);
-    std::array<double,7> tau_max = msrm_utils::convert_to_array<double,7,1>(user.tau_ext_max);
-    std::array<double,6> F_contact = {user.F_ext_contact(0),user.F_ext_contact(0),user.F_ext_contact(0),user.F_ext_contact(1),user.F_ext_contact(1),user.F_ext_contact(1)};
-    std::array<double,6> F_max = {user.F_ext_max(0),user.F_ext_max(0),user.F_ext_max(0),user.F_ext_max(1),user.F_ext_max(1),user.F_ext_max(1)};
-    std::array<double,16> EE_T_K = msrm_utils::convert_to_array<double,4,4>(frames.EE_T_K);
-    std::array<double,7> K_theta = msrm_utils::convert_to_array<double,7,1>(control.joint_imp.K_theta);
-    std::array<double,6> K_x = msrm_utils::convert_to_array<double,6,1>(control.cart_imp.K_x);
-    std::array<double,16> F_T_EE = msrm_utils::convert_to_array<double,4,4>(frames.F_T_EE);
-
-    return m_panda_body.set_robot_parameters(user.load_m,load_com,load_I,tau_contact,tau_max,F_contact,F_max,EE_T_K,K_x,K_theta,F_T_EE);
 }
 
 franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
@@ -260,7 +233,7 @@ bool Core::grasp_object(const std::string &name,double speed){
         m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
         m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
-        if(!set_robot_parameters()){
+        if(!m_panda_body.set_robot_parameters()){
             return false;
         }
         return true;
@@ -297,7 +270,7 @@ bool Core::set_grasped_object(const std::string &name){
     m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
     m_memory.get_parameters()->user.load_I=object->OB_I;
     m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
-    return set_robot_parameters();
+    return m_panda_body.set_robot_parameters();
 }
 
 bool Core::release_object(double speed){
@@ -313,7 +286,7 @@ bool Core::release_object(double speed){
         m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
         m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
-        set_robot_parameters();
+        m_panda_body.set_robot_parameters();
         return true;
     }else{
         return false;

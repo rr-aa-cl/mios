@@ -11,16 +11,27 @@
 
 namespace mios {
 
-PandaBody::PandaBody():m_panda_arm(nullptr),m_panda_model(nullptr),m_panda_hand(nullptr),m_has_arm(false),m_hand(PandaHandNone),m_arm_connected(false),m_hand_connected(false){
+PandaBody::PandaBody(Memory *memory):m_panda_arm(nullptr),m_panda_model(nullptr),m_panda_hand(nullptr),m_has_arm(false),m_hand(PandaHandNone),m_arm_connected(false),m_hand_connected(false),
+m_memory(memory){
     m_robot_state.O_T_EE={1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 }
 
-void PandaBody::set_arm(bool has_arm){
-    m_has_arm=has_arm;
-}
+bool PandaBody::initialize(){
+    m_has_arm=m_memory->read_parameters()->system.has_robot;
+    m_hand=m_memory->read_parameters()->system.gripper;
+    m_memory->get_parameters()->system.robot_ip = get_robot_ip(m_memory->read_parameters()->system.robot_ip).value_or("127.0.0.1");
 
-void PandaBody::set_hand(PandaHand hand){
-    m_hand=hand;
+    if(!connect_to_robot(m_memory->read_parameters()->system.robot_ip)){
+        return false;
+    }
+    if(!connect_to_gripper(m_memory->read_parameters()->system.robot_ip)){
+        return false;
+    }
+    load_gripper_configuration();
+    if(!set_robot_parameters()){
+        return false;
+    }
+    return true;
 }
 
 std::optional<std::string> PandaBody::get_robot_ip(const std::optional<std::string>& last_ip){
@@ -46,13 +57,13 @@ std::optional<std::string> PandaBody::get_robot_ip(const std::optional<std::stri
     return new_ip;
 }
 
-void PandaBody::get_gripper_configuration(Eigen::Matrix<double, 4, 4>& F_T_EE){
+void PandaBody::load_gripper_configuration(){
     if(m_hand==PandaHandDefault){
-        F_T_EE<<0.7071,-0.7071,0,0,0.7071,0.7071,0,0,0,0,1,0,0,0,0.1034,1;
-        F_T_EE.transposeInPlace();
+        m_memory->get_parameters()->frames.F_T_EE<<0.7071,-0.7071,0,0,0.7071,0.7071,0,0,0,0,1,0,0,0,0.1034,1;
+        m_memory->get_parameters()->frames.F_T_EE.transposeInPlace();
     }
     if(m_hand==PandaHandSofthand2){
-        F_T_EE.setIdentity();
+        m_memory->get_parameters()->frames.F_T_EE.setIdentity();
     }
 }
 
@@ -463,14 +474,27 @@ void PandaBody::dummy_control(std::function<franka::JointPositions (const franka
     }
 }
 
-bool PandaBody::set_robot_parameters(double load_m,std::array<double,3> load_com,std::array<double,9> load_I,std::array<double,7> tau_ext_contact,std::array<double,7> tau_ext_max,
-                                     std::array<double,6> F_ext_K_contact,std::array<double,6> F_ext_K_max,std::array<double,16> EE_T_K,std::array<double,6> K_x,std::array<double,7> K_theta,
-                                     std::array<double,16> F_T_EE){
+bool PandaBody::set_robot_parameters(){
     if(!m_arm_connected){
         return true;
     }
+    ControlParameters control= m_memory->read_parameters()->control;
+    UserParameters user= m_memory->read_parameters()->user;
+    FramesParameters frames =m_memory->read_parameters()->frames;
+
+    std::array<double,3> load_com = msrm_utils::convert_to_array<double,3,1>(user.load_com);
+    std::array<double,9> load_I = msrm_utils::convert_to_array<double,3,3>(user.load_I);
+    std::array<double,7> tau_ext_contact = msrm_utils::convert_to_array<double,7,1>(user.tau_ext_contact);
+    std::array<double,7> tau_ext_max = msrm_utils::convert_to_array<double,7,1>(user.tau_ext_max);
+    std::array<double,6> F_ext_K_contact = {user.F_ext_contact(0),user.F_ext_contact(0),user.F_ext_contact(0),user.F_ext_contact(1),user.F_ext_contact(1),user.F_ext_contact(1)};
+    std::array<double,6> F_ext_K_max = {user.F_ext_max(0),user.F_ext_max(0),user.F_ext_max(0),user.F_ext_max(1),user.F_ext_max(1),user.F_ext_max(1)};
+    std::array<double,16> EE_T_K = msrm_utils::convert_to_array<double,4,4>(frames.EE_T_K);
+    std::array<double,7> K_theta = msrm_utils::convert_to_array<double,7,1>(control.joint_imp.K_theta);
+    std::array<double,6> K_x = msrm_utils::convert_to_array<double,6,1>(control.cart_imp.K_x);
+    std::array<double,16> F_T_EE = msrm_utils::convert_to_array<double,4,4>(frames.F_T_EE);
+
     try{
-        m_panda_arm->setLoad(load_m,load_com,load_I);
+        m_panda_arm->setLoad(user.load_m,load_com,load_I);
         m_panda_arm->setEE(F_T_EE);
         m_panda_arm->setCollisionBehavior(tau_ext_contact,tau_ext_max,F_ext_K_contact,F_ext_K_max);
         m_panda_arm->setK(EE_T_K);

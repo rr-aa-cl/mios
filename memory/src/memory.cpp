@@ -21,8 +21,20 @@ bool Memory::is_ok() const{
 }
 
 bool Memory::initialize(){
-    if(!m_lt_memory.initialize()) return false;
-    if(!m_st_memory.initialize()) return false;
+    spdlog::info("Initializing long-term memory...");
+    if(!m_lt_memory.initialize()){
+        spdlog::error("Could not initialize long-term memory.");
+        return false;
+    }
+    spdlog::info("Initializing short-term memory...");
+    if(!m_st_memory.initialize()){
+        spdlog::error("Could not initialize short-term memory.");
+        return false;
+    }
+    if(!set_default_parameters()){
+        spdlog::error("Could not set default parameters.");
+        return false;
+    }
     return true;
 }
 
