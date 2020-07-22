@@ -27,7 +27,6 @@ std::string TaskEngine::get_active_task_id() const{
 }
 
 void TaskEngine::life_cycle(){
-    bool exceptional_event=false;
     bool user_stop=false;
     bool invalid_mode=false;
     bool guiding=false;
@@ -145,6 +144,7 @@ void TaskEngine::life_cycle(){
             }
             m_mtx_task_queue.unlock();
         }
+        bool exceptional_event=false;
         if(m_task_life_cycle==TaskLifeCycle::Startup){
             spdlog::debug("TaskLifeCycle: startup, task_uuid: "+m_active_task->get_uuid());
             spdlog::info("Loading task " + m_active_task->get_id() + " with uuid " + m_active_task->get_uuid());
@@ -195,13 +195,13 @@ void TaskEngine::life_cycle(){
         if(m_task_life_cycle==TaskLifeCycle::Switch){
             std::scoped_lock<std::mutex> queue_lock(m_mtx_task_queue);
             spdlog::debug("TaskLifeCycle: switch, task_uuid: "+m_active_task->get_uuid());
-            if(!m_task_queue.empty()){
-                spdlog::debug("TaskEngine::life_cycle.get_first_element");
-                m_task_queue.pop_front();
-            }
             if(m_active_task->get_result().exception || exceptional_event || m_active_task->get_result().empty_queue){
                 spdlog::debug("TaskEngine::life_cycle.empty_queue");
                 m_task_queue.clear();
+            }
+            if(!m_task_queue.empty()){
+                spdlog::debug("TaskEngine::life_cycle.get_first_element");
+                m_task_queue.pop_front();
             }
             if(m_task_queue.empty()){
                 spdlog::debug("TaskEngine::life_cycle.add_idle_task");
