@@ -53,8 +53,8 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Tip::graph_transition(con
             mp->create_strategy<MoveToPoseStrategy>("move",1);
             Eigen::Matrix<double,2,1> dX_d,ddX_d,t_scale;
             t_scale<<1,1;
-            dX_d<<skill_params->speed,m_memory->read_parameters()->user.dX_max(1);
-            ddX_d<<skill_params->acceleration,m_memory->read_parameters()->user.ddX_max(1);
+            dX_d<<skill_params->speed,m_memory->read_parameters()->user.dX_default(1);
+            ddX_d<<skill_params->acceleration,m_memory->read_parameters()->user.ddX_default(1);
             mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(m_TF_T_EE_0,dX_d,ddX_d);
             mp->get_strategy<MoveToPoseStrategy>("move")->set_scale(t_scale);
             return mp;

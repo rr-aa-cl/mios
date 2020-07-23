@@ -13,6 +13,8 @@ void CartTorqueControllerPipeline::initialize(const Percept &p_0, Memory *memory
     initialize_cntr_force(p_0,memory);
     initialize_cntr_mux(p_0,memory);
     initialize_cntr_nullsp(p_0,memory);
+
+    m_T_T_EE_0=p_0.proprioception.T_T_EE;
 }
 
 franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const Actuator &cmd){
@@ -23,11 +25,13 @@ franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const A
 
     if(cmd.get_command_pattern()->find(CommandPatternCartesianPose)!=cmd.get_command_pattern()->end()){
         m_cntr_aic.u.TF_T_EE_d=cmd.TF_T_EE_d;
-    }
-    if(cmd.get_command_pattern()->find(CommandPatternCartesianTwist)!=cmd.get_command_pattern()->end()){
+    }else if(cmd.get_command_pattern()->find(CommandPatternCartesianTwist)!=cmd.get_command_pattern()->end()){
         m_conv_vel2pose.u.TF_dX_d=cmd.TF_dX_d;
         m_conv_vel2pose.step();
         m_cntr_aic.u.TF_T_EE_d=m_conv_vel2pose.y.TF_T_EE_d;
+    }
+    else{
+        m_cntr_aic.u.TF_T_EE_d=m_T_T_EE_0;
     }
     m_cntr_aic.u.O_R_T=cmd.O_R_T;
 
@@ -85,7 +89,14 @@ void CartTorqueControllerPipeline::context_switch(const Percept &p){
     m_conv_vel2pose.terminate();
     m_conv_vel2pose.u.TF_dX_d<<0,0,0,0,0,0;
     m_conv_vel2pose.u.TF_T_EE=m_cntr_aic.u.TF_T_EE_d;
+    m_conv_vel2pose.u.reset<<1;
     m_conv_vel2pose.initialize();
+    m_conv_vel2pose.step();
+    m_conv_vel2pose.u.reset<<0;
+    std::cout<<"CONV: "<<m_conv_vel2pose.y.TF_T_EE_d<<std::endl;
+    std::cout<<"T_T_EE: "<<p.proprioception.T_T_EE<<std::endl;
+    std::cout<<"T_T_EE_d: "<<m_cntr_aic.u.TF_T_EE_d<<std::endl;
+    m_T_T_EE_0=p.proprioception.T_T_EE;
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_aic(const Percept &p,Memory* memory){
@@ -115,7 +126,9 @@ void CartTorqueControllerPipeline::initialize_cntr_aic(const Percept &p,Memory* 
     m_cntr_aic.u.xi_x=p_cntr.cart_imp.xi_x;
 
     m_cntr_aic.initialize();
+    m_conv_vel2pose.u.reset<<1;
     m_conv_vel2pose.initialize();
+    m_conv_vel2pose.step();
 
 }
 
@@ -131,6 +144,7 @@ void CartTorqueControllerPipeline::input_cntr_aic(const Percept &p){
 
     m_conv_vel2pose.u.TF_dX_d<<0,0,0,0,0,0;
     m_conv_vel2pose.u.TF_T_EE=p.proprioception.T_T_EE;
+    m_conv_vel2pose.u.reset<<0;
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_force(const Percept &p, Memory *memory){

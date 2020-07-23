@@ -52,7 +52,7 @@ std::shared_ptr<ManipulationPrimitive> Wipe::get_initial_mp(const Percept& p){
     Eigen::Matrix<double,6,1> TF_dX_d;
     TF_dX_d<<0,0,skill_params->speed,0,0,0;
     Eigen::Matrix<double,2,1> ddX_max;
-    ddX_max<<m_memory->read_parameters()->user.ddX_max;
+    ddX_max<<m_memory->read_parameters()->user.ddX_default;
     mp->get_strategy<TwistStrategy>("twist")->set_TF_dX_d(TF_dX_d,ddX_max);
     return mp;
 }
@@ -66,7 +66,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Wipe::graph_transition(co
             mp->create_strategy<TwistStrategy>("twist",1);
             Eigen::Matrix<double,6,1> TF_dX_d;
             TF_dX_d<<skill_params->speed*skill_params->wipe_dir(0),skill_params->wipe_dir(1),0,0,0,0;
-            mp->get_strategy<TwistStrategy>("twist")->set_TF_dX_d(TF_dX_d,m_memory->read_parameters()->user.ddX_max);
+            mp->get_strategy<TwistStrategy>("twist")->set_TF_dX_d(TF_dX_d,m_memory->read_parameters()->user.ddX_default);
 
             mp->create_strategy<FFStrategy>("press",1);
             Eigen::Matrix<double,6,1> TF_F_ff;
@@ -82,10 +82,10 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Wipe::graph_transition(co
             mp->create_strategy<MoveToPoseStrategy>("move",1);
             Eigen::Matrix<double,2,1> dX_d,ddX_d,t_scale;
             t_scale<<1,1;
-            dX_d<<skill_params->speed,m_memory->read_parameters()->user.dX_max(1);
+            dX_d<<skill_params->speed,m_memory->read_parameters()->user.dX_default(1);
             Eigen::Matrix<double,4,4> T_T_EE_retract=p.proprioception.T_T_EE;
             T_T_EE_retract(2,3)=m_TF_T_EE_contact(2,3);
-            mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(T_T_EE_retract,dX_d,m_memory->read_parameters()->user.ddX_max);
+            mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(T_T_EE_retract,dX_d,m_memory->read_parameters()->user.ddX_default);
             mp->get_strategy<MoveToPoseStrategy>("move")->set_scale(t_scale);
             return mp;
         }

@@ -45,8 +45,8 @@ std::shared_ptr<ManipulationPrimitive> MoveToContact::get_initial_mp(const Perce
     }
     Eigen::Matrix<double,2,1> speed;
     Eigen::Matrix<double,2,1> acc;
-    speed<<skill_params->speed*m_memory->read_parameters()->user.dX_max(0),0.5*m_memory->read_parameters()->user.dX_max(1);
-    acc<<m_memory->read_parameters()->user.ddX_max(0),m_memory->read_parameters()->user.ddX_max(1);
+    speed<<skill_params->speed*m_memory->read_parameters()->user.dX_default(0),0.5*m_memory->read_parameters()->user.dX_default(1);
+    acc<<m_memory->read_parameters()->user.ddX_default(0),m_memory->read_parameters()->user.ddX_default(1);
     mp->get_strategy<MoveToPoseStrategy>("s_0")->set_goal(T_g,speed,acc);
     Eigen::Matrix<double,2,1> t_scale;
     t_scale<<1,1;

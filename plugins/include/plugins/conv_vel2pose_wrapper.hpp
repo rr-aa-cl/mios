@@ -16,9 +16,11 @@ In_P_conv_vel2pose(){
 struct In_U_conv_vel2pose{
 Eigen::Matrix<double,6,1> TF_dX_d;
 Eigen::Matrix<double,4,4> TF_T_EE;
+Eigen::Matrix<double,1,1> reset;
 In_U_conv_vel2pose(){
 TF_dX_d.setZero();
 TF_T_EE.setZero();
+reset.setZero();
 }
 };
 struct Out_Y_conv_vel2pose{

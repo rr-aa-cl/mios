@@ -50,7 +50,7 @@ std::shared_ptr<ManipulationPrimitive> File::get_initial_mp(const Percept& p){
     mp->create_strategy<TwistStrategy>("slide",1);
     Eigen::Matrix<double,6,1> TF_dX_d;
     TF_dX_d<<skill_params->speed,0,0,0,0,0;
-    mp->get_strategy<TwistStrategy>("slide")->set_TF_dX_d(TF_dX_d,m_memory->read_parameters()->user.ddX_max);
+    mp->get_strategy<TwistStrategy>("slide")->set_TF_dX_d(TF_dX_d,m_memory->read_parameters()->user.ddX_default);
     mp->create_strategy<TwistWiggleStrategy>("file",1);
     Eigen::Matrix<double,6,1> a_a,b_a,a_f,b_f,a_phi,b_phi;
     a_a.setZero();

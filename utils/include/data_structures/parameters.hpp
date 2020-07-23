@@ -66,10 +66,10 @@ public:
     bool from_json(const nlohmann::json& parameters);
     nlohmann::json to_json() const;
 
-    Eigen::Matrix<double,2,1> dX_max;
-    Eigen::Matrix<double,2,1> ddX_max;
-    Eigen::Matrix<double,7,1> dq_max;
-    Eigen::Matrix<double,7,1> ddq_max;
+    Eigen::Matrix<double,2,1> dX_default;
+    Eigen::Matrix<double,2,1> ddX_default;
+    double dq_default;
+    double ddq_default;
 
     Eigen::Matrix<double,2,1> F_ext_contact;
     Eigen::Matrix<double,7,1> tau_ext_contact;

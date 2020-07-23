@@ -33,11 +33,17 @@ bool SkillParametersExtraction::from_json(const nlohmann::json &parameters){
         spdlog::error("Parameter search_f could not be loaded but is mandatory.");
         return false;
     }
+
+    if(stuck_dx_thr>traj_speed(0) || stuck_dx_thr<0){
+        spdlog::error("stuck_dx_thr cannot be greater than traj_speed[0] or smaller than 0.");
+        return false;
+    }
+
     return true;
 }
 
 Extraction::Extraction(const std::string &name, Memory *memory, Portal* portal,const Percept &p):Skill("Extraction",{"Extractable","ExtractFrom","ExtractTo"},name,memory,portal,p,{ControlMode::mCartTorque}){
-
+    m_dx_avg_mem.resize(100);
 }
 
 
@@ -50,13 +56,13 @@ std::shared_ptr<ManipulationPrimitive> Extraction::get_initial_mp(const Percept 
 }
 
 std::optional<std::shared_ptr<ManipulationPrimitive> > Extraction::graph_transition(const Percept &p){
-//    if(get_active_mp()->get_name()=="move"){
-//        if(!is_stuck(p)){
-//            return {};
-//        }else{
-//            return create_wiggle_mp(p);
-//        }
-//    }
+    if(get_active_mp()->get_name()=="move"){
+        if(!is_stuck(p) || std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()<2000){
+            return {};
+        }else{
+            return create_wiggle_mp(p);
+        }
+    }
 //    if(get_active_mp()->get_name()=="wiggle"){
 //        if(!is_stuck(p)){
 //            return create_move_mp(p);
@@ -68,6 +74,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Extraction::graph_transit
 }
 
 std::shared_ptr<ManipulationPrimitive> Extraction::create_move_mp(const Percept &p){
+    std::cout<<"MOVE"<<std::endl;
     std::shared_ptr<SkillParametersExtraction> skill_params = get_parameters<SkillParametersExtraction>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
     mp->create_strategy<MoveToPoseStrategy>("s_move",1);
@@ -81,12 +88,20 @@ std::shared_ptr<ManipulationPrimitive> Extraction::create_move_mp(const Percept 
 }
 
 std::shared_ptr<ManipulationPrimitive> Extraction::create_wiggle_mp(const Percept &p){
+    std::cout<<"WIGGLE"<<std::endl;
     std::shared_ptr<SkillParametersExtraction> skill_params = get_parameters<SkillParametersExtraction>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("wiggle",p);
     mp->create_strategy<FFWiggleStrategy>("wiggle_x",1);
     mp->get_strategy<FFWiggleStrategy>("wiggle_x")->set_coefficients(Eigen::Matrix<double,6,1>::Zero(),skill_params->search_a,
                                                                    Eigen::Matrix<double,6,1>::Zero(),skill_params->search_f,
                                                                    Eigen::Matrix<double,6,1>::Zero(),Eigen::Matrix<double,6,1>::Zero());
+    mp->create_strategy<MoveToPoseStrategy>("s_move",1);
+    std::shared_ptr<MoveToPoseStrategy> s_move = mp->get_strategy<MoveToPoseStrategy>("s_move");
+    s_move->set_goal(get_object_pose_T("ExtractTo"),skill_params->traj_speed,skill_params->traj_acc);
+
+    Eigen::Matrix<double,2,1> t_scale;
+    t_scale<<1,1;
+    s_move->set_scale(t_scale);
     return mp;
 }
 
@@ -124,19 +139,27 @@ void Extraction::auxiliaries(const Percept &p){
 }
 
 bool Extraction::is_stuck(const Percept &p){
-    if(m_dx_avg_mem.size()==0 || std::chrono::duration_cast<std::chrono::seconds>(p.time-m_memory->get_live_context()->t_skill).count()<get_parameters<SkillParametersExtraction>()->stuck_t_thr){
-        return false;
-    }
+//    if(m_dx_avg_mem.size()==0 || std::chrono::duration_cast<std::chrono::seconds>(p.time-m_memory->get_live_context()->t_skill).count()<get_parameters<SkillParametersExtraction>()->stuck_t_thr){
+//        return false;
+//    }
     m_dx_avg_mem[m_dx_avg_last++]=p.proprioception.TF_dX_EE.block<3,1>(0,0).norm();
     if(m_dx_avg_last==m_dx_avg_mem.size()){
         m_dx_avg_last=0;
     }
-    m_dx_avg=std::accumulate(m_dx_avg_mem.begin(),m_dx_avg_mem.end(),0)/m_dx_avg_mem.size();
-    if(m_dx_avg<get_parameters<SkillParametersExtraction>()->stuck_dx_thr){
+    m_dx_avg=0;
+    for(unsigned i=0;i<m_dx_avg_mem.size();i++){
+        m_dx_avg+=m_dx_avg_mem[i];
+    }
+    m_dx_avg/=m_dx_avg_mem.size();
+//    m_dx_avg=std::accumulate(m_dx_avg_mem.begin(),m_dx_avg_mem.end(),0)/(double)m_dx_avg_mem.size();
+    if(!m_is_stuck && m_dx_avg<get_parameters<SkillParametersExtraction>()->stuck_dx_thr-get_parameters<SkillParametersExtraction>()->stuck_dx_thr*0.1){
+        m_is_stuck=true;
         return true;
-    }else{
+    }else if(m_is_stuck && m_dx_avg>get_parameters<SkillParametersExtraction>()->stuck_dx_thr+get_parameters<SkillParametersExtraction>()->stuck_dx_thr*0.1){
+        m_is_stuck=false;
         return false;
     }
+    return m_is_stuck;
 }
 
 }

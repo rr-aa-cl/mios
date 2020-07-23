@@ -42,6 +42,8 @@ private:
     double m_dx_avg;
     unsigned m_dx_avg_last;
     std::vector<double> m_dx_avg_mem;
+
+    bool m_is_stuck;
 };
 
 }

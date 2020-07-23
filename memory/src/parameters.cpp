@@ -180,10 +180,10 @@ nlohmann::json LimitParameters::to_json() const{
 }
 
 UserParameters::UserParameters(){
-    dX_max<<1.7,2.5;
-    ddX_max<<13,25;
-    dq_max<<2.1,2.1,2.1,2.1,2.6,2.6,2.6;
-    ddq_max<<15,7.5,10,12.5,15,20,20;
+    dX_default<<1.7,2.5;
+    ddX_default<<13,25;
+    dq_default=0.5;
+    ddq_default=1;
 
     F_ext_contact<<4,2;
     tau_ext_contact<<2,2,2,2,2,2,2;
@@ -198,20 +198,20 @@ UserParameters::UserParameters(){
 }
 
 bool UserParameters::from_json(const nlohmann::json &parameters){
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"dX_max",dX_max)){
-        spdlog::error("Could not read dX_max.");
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"dX_default",dX_default)){
+        spdlog::error("Could not read dX_default.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"ddX_max",ddX_max)){
-        spdlog::error("Could not read ddX_max.");
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"ddX_default",ddX_default)){
+        spdlog::error("Could not read ddX_default.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters,"dq_max",dq_max)){
-        spdlog::error("Could not read dq_max.");
+    if(!msrm_utils::read_json_param(parameters,"dq_default",dq_default)){
+        spdlog::error("Could not read dq_default.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters,"ddq_max",ddq_max)){
-        spdlog::error("Could not read ddq_max.");
+    if(!msrm_utils::read_json_param(parameters,"ddq_default",ddq_default)){
+        spdlog::error("Could not read ddq_default.");
         return false;
     }
     if(!msrm_utils::read_json_param<double,2,1>(parameters,"F_ext_contact",F_ext_contact)){
@@ -253,10 +253,10 @@ bool UserParameters::from_json(const nlohmann::json &parameters){
 
 nlohmann::json UserParameters::to_json() const{
     nlohmann::json json_object;
-    json_object["dX_max"]=msrm_utils::from_eigen<double,2,1>(dX_max);
-    json_object["ddX_max"]=msrm_utils::from_eigen<double,2,1>(ddX_max);
-    json_object["dq_max"]=msrm_utils::from_eigen<double,7,1>(dq_max);
-    json_object["ddq_max"]=msrm_utils::from_eigen<double,7,1>(ddq_max);
+    json_object["dX_default"]=msrm_utils::from_eigen<double,2,1>(dX_default);
+    json_object["ddX_default"]=msrm_utils::from_eigen<double,2,1>(ddX_default);
+    json_object["dq_default"]=dq_default;
+    json_object["ddq_default"]=ddq_default;
 
     json_object["F_ext_contact"]=msrm_utils::from_eigen<double,2,1>(F_ext_contact);
     json_object["F_ext_max"]=msrm_utils::from_eigen<double,2,1>(F_ext_max);

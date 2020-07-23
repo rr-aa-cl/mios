@@ -53,26 +53,16 @@ bool Softhand2::initialize(){
     return true;
 }
 
-bool Softhand2::move(int position){
+bool Softhand2::move(double position){
     std::cout<<"MOVE"<<std::endl;
     short int commands[2];
-    if ((position > 19000) || (position < 0)){
-        spdlog::error("Position command out of range (0 - 19000)");
-        return false;
-    }
-    commands[0] = position; // nearly half closure (max is 19000, min is 0)
-    commands[1] = 0; // must be always 0 (only the first value is meaningful)
+    if(position>1) position=1;
+    if(position<0) position=0;
+    commands[0] = static_cast<int>(position*19000);
+    commands[1] = 0;
     commSetInputs(&m_settings, m_device_id, commands);
     usleep(500000);
     char status;
-//    commActivate(&m_settings, m_device_id, false);
-//    usleep(10000);
-//    int result = commGetActivate(&m_settings, m_device_id, &status);
-//    if (result != 0 || status != 0) {
-//        spdlog::error("ERROR: fails while deactivating motor");
-//        return false;
-//    }
-//    spdlog::debug("Comm deactivated and serial port closed");
     return true;
 }
 

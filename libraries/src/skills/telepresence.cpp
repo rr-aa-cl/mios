@@ -200,7 +200,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     Eigen::Matrix<double,4,4> O_T_EE_master;
                     msrm_utils::read_json_param<double,4,4>(m_memory->get_event("handshake")->get_content(),"O_T_EE_master",O_T_EE_master);
                     mp->create_strategy<MoveToPoseStrategy>("move",1);
-                    mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(O_T_EE_master,m_memory->read_parameters()->user.dX_max,m_memory->read_parameters()->user.ddX_max);
+                    mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(O_T_EE_master,m_memory->read_parameters()->user.dX_default,m_memory->read_parameters()->user.ddX_default);
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
                     Eigen::Matrix<double,7,1> q_master;
