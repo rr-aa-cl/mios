@@ -14,6 +14,7 @@
 #include "skills/tip.hpp"
 #include "skills/file.hpp"
 #include "skills/extraction.hpp"
+#include "skills/insertion.hpp"
 
 namespace mios {
 
@@ -80,6 +81,9 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("Extraction"):
         execute_skill<Extraction,SkillParametersExtraction>(name);
+        break;
+    case msrm_utils::str_to_int("Insertion"):
+        execute_skill<Insertion,SkillParametersInsertion>(name);
         break;
     default:
         throw TaskException("Skill with type " + type + " not known to GenericTask");

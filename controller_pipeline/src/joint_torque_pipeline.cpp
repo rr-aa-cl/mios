@@ -11,6 +11,8 @@ JointTorqueControllerPipeline::JointTorqueControllerPipeline():m_panda_cmd({0,0,
 void JointTorqueControllerPipeline::initialize(const Percept &p_0, Memory *memory){
     initialize_cntr_joint_imp(p_0,memory);
     initialize_cntr_mux(p_0,memory);
+
+    m_q_0=p_0.proprioception.q;
 }
 
 franka::Finishable *JointTorqueControllerPipeline::step(const Percept &p, const Actuator &cmd){
@@ -19,10 +21,11 @@ franka::Finishable *JointTorqueControllerPipeline::step(const Percept &p, const 
 
     if(cmd.get_command_pattern()->find(CommandPatternJointPose)!=cmd.get_command_pattern()->end()){
         m_cntr_joint_imp.u.theta_d=cmd.q_d;
-    }
-    if(cmd.get_command_pattern()->find(CommandPatternJointVelocities)!=cmd.get_command_pattern()->end()){
+    }else if(cmd.get_command_pattern()->find(CommandPatternJointVelocities)!=cmd.get_command_pattern()->end()){
         m_q_d+=cmd.dq_d*0.001;
         m_cntr_joint_imp.u.theta_d=m_q_d;
+    }else{
+        m_cntr_joint_imp.u.theta_d=m_q_0;
     }
     m_cntr_joint_imp.u.K_theta=cmd.K_theta;
 

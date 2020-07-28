@@ -125,6 +125,11 @@ public:
         bool active;
     }velocity_walls;
 
+    struct VelocityScaler{
+        Eigen::Matrix<double,6,1> F_max;
+        Eigen::Matrix<double,6,1> DeltaF;
+    };
+
     struct VirtualCube{
         double damping;
         double damping_dist;

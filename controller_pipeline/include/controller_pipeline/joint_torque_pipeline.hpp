@@ -27,6 +27,7 @@ private:
 private:
     franka::Torques m_panda_cmd;
     Eigen::Matrix<double,7,1> m_q_d;
+    Eigen::Matrix<double,7,1> m_q_0;
 
 private:
     cntr_mux::cntr_mux m_cntr_mux;

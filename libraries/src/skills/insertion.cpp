@@ -79,7 +79,7 @@ std::shared_ptr<ManipulationPrimitive> Insertion::create_move_mp(const Percept &
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
     mp->create_strategy<MoveToPoseStrategy>("s_move",1);
     std::shared_ptr<MoveToPoseStrategy> s_move = mp->get_strategy<MoveToPoseStrategy>("s_move");
-    s_move->set_goal(get_object("InsertInto")->O_T_OB,skill_params->traj_speed,skill_params->traj_acc);
+    s_move->set_goal(get_object_pose_T("InsertInto"),skill_params->traj_speed,skill_params->traj_acc);
     return mp;
 }
 
@@ -101,8 +101,8 @@ std::shared_ptr<ManipulationPrimitive> Insertion::create_wiggle_mp(const Percept
 }
 
 bool Insertion::check_local_suc_conditions(const Percept &p){
-    bool depth = p.proprioception.T_T_EE(2,3)>get_object("InsertInto")->O_T_OB(2,3)-0.001;
-    bool lateral = (p.proprioception.T_T_EE.block<3,1>(0,3)-get_object("InsertInto")->O_T_OB.block<3,1>(0,3)).norm()<0.002;
+    bool depth = p.proprioception.T_T_EE(2,3)>get_object_pose_T("InsertInto")(2,3)-0.001;
+    bool lateral = (p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3)).norm()<0.002;
     return depth && lateral;
 }
 
@@ -113,8 +113,8 @@ bool Insertion::check_local_ex_conditions(const Percept &p){
 bool Insertion::check_local_err_conditions(const Percept &p){
     const Eigen::Matrix<double,6,1>& ROI_x=get_parameters<SkillParametersInsertion>()->ROI_x;
     const Eigen::Matrix<double,6,1>& ROI_phi=get_parameters<SkillParametersInsertion>()->ROI_phi;
-    double error_angle=acos(p.proprioception.T_T_EE.block<3,1>(0,2).dot(get_object("InsertInto")->O_T_OB.block<3,1>(0,2)));
-    Eigen::Matrix<double,3,1> dist = p.proprioception.T_T_EE.block<3,1>(0,3)-get_object("InsertInto")->O_T_OB.block<3,1>(0,3);
+    double error_angle=acos(p.proprioception.T_T_EE.block<3,1>(0,2).dot(get_object_pose_T("InsertInto").block<3,1>(0,2)));
+    Eigen::Matrix<double,3,1> dist = p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3);
     if(dist(0) < ROI_x(0) || dist(0) > ROI_x(1) || dist(1) < ROI_x(2) || dist(1) > ROI_x(3) || dist(2) < ROI_x(4) || dist(2) > ROI_x(5)){
         return true;
     }
@@ -123,10 +123,10 @@ bool Insertion::check_local_err_conditions(const Percept &p){
 
 void Insertion::evaluate(){
 
-        double c_err_1=m_memory->read_parameters()->skill->time_max+exp((get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object("InsertInto")->O_T_OB.block<3,1>(0,3)).norm()*100)-1;
+        double c_err_1=m_memory->read_parameters()->skill->time_max+exp((get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3)).norm()*100)-1;
         double c_suc_1=std::chrono::duration_cast<std::chrono::seconds>(get_result().p_1.time-get_result().p_0.time).count();
 
-        double c_err_2=m_memory->read_parameters()->user.F_ext_max(0)+exp((get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object("InsertInto")->O_T_OB.block<3,1>(0,3)).norm()*100)-1;
+        double c_err_2=m_memory->read_parameters()->user.F_ext_max(0)+exp((get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3)).norm()*100)-1;
         double c_suc_2=0;
         if(m_cf1_cnt==0){
             c_suc_2=get_result().cost_err;
