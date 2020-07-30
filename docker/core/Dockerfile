@@ -1,5 +1,7 @@
 FROM ros:melodic-ros-base
 
+RUN apt-get update
+RUN apt-get install -y fping
 COPY mios_package/ /mios/
 COPY dependencies/ /dependencies/
 
