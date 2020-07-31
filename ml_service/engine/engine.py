@@ -9,7 +9,7 @@ from utils.exception import *
 from utils.udp_client import *
 
 
-class LoadBalancer:
+class Engine:
     def __init__(self, agents: set=set()):
         self.logger.debug("LoadBalancer.__init__(" + str(agents) + ")")
         self.agents = agents
