@@ -2,7 +2,7 @@
 
 namespace mios {
 
-VirtualCubeSafetyModule::VirtualCubeSafetyModule():m_virtual_cube_on(false){
+VirtualCubeSafetyModule::VirtualCubeSafetyModule():m_virtual_cube_on(false),m_safe_activation(false){
 
 }
 
@@ -15,8 +15,13 @@ void VirtualCubeSafetyModule::step(const Percept &p, franka::Finishable *cmd){
         franka::Torques* cmd_torques = static_cast<franka::Torques*>(cmd);
         input_virt_cube(p);
         m_cube.step();
-        for(unsigned i=0;i<7;i++){
-            cmd_torques->tau_J[i]+=m_cube.y.tau_vwalls[i];
+        if(!m_safe_activation && is_cube_valid(p)){
+            m_safe_activation=true;
+        }
+        if(m_safe_activation){
+            for(unsigned i=0;i<7;i++){
+                cmd_torques->tau_J[i]+=m_cube.y.tau_vwalls[i];
+            }
         }
     }
 }
@@ -35,7 +40,7 @@ void VirtualCubeSafetyModule::initialize_virt_cube(const Percept &p,const Memory
     m_cube.p.f_max<<p_safety.virtual_cube.f_max;
 
     input_virt_cube(p);
-    m_cube.initialize();
+    m_cube.initialize(true,5000);
 
     m_virtual_cube_on=memory->read_parameters()->safety.virtual_cube.active;
 }

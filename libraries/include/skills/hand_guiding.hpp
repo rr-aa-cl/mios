@@ -8,7 +8,7 @@ public:
     std::string skill;
     Eigen::Matrix<double,6,1> fix_dim;
     Eigen::Matrix<double,6,1> dist_walls;
-    Eigen::Matrix<double,6,1> use_walls;
+    bool use_walls;
 };
 
 class HandGuiding : public Skill{
