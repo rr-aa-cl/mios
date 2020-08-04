@@ -7,9 +7,12 @@ from engine.engine import Engine
 from problem_definition.problem_definition import ProblemDefinition
 
 
+logger = logging.getLogger("ml_service")
+
+
 class BaseService(metaclass=ABCMeta):
     def __init__(self):
-        self.logger = logging.getLogger("ml_service")
+
         self.engine = None
         self.problem_definition = None
         self.engine_thread = None
@@ -28,7 +31,9 @@ class BaseService(metaclass=ABCMeta):
 
     def initialize(self, problem_definition: ProblemDefinition, agents: set) -> (bool, str):
         self.problem_definition = problem_definition
-        self.problem_definition.is_valid()
+        if self.problem_definition.is_valid() is False:
+            logger.error("Problem definition is not valid.")
+            return False
 
         self.engine = Engine(agents)
 

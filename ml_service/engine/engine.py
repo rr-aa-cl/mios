@@ -4,18 +4,53 @@ from threading import Thread
 from queue import Queue
 from multiprocessing.pool import ThreadPool
 from copy import deepcopy
+import uuid
 from utils.exception import *
-
 from utils.udp_client import *
+
+
+logger = logging.getLogger("ml_service")
+
+
+class TaskResult:
+    def __init__(self):
+        self.cost = None
+        self.success = None
+        self.t_0 = 0
+        self.t_1 = 0
+
+    def from_dict(self, result: dict) -> bool:
+        if "cost" not in result:
+            logger.error("No cost in task result.")
+            return False
+
+        self.cost = result["cost"]
+        self.success = result["success"]
+        return True
+
+
+class Trial:
+    def __init__(self, task_context: dict, reset_instructions: list):
+        self.task_context = task_context
+        self.reset_instructions = reset_instructions
+        self.task_result = TaskResult()
+
+        self.task_uuid = "INVALID"
+
+        self.assigned = False
+
+    def is_valid(self):
+        return True
 
 
 class Engine:
     def __init__(self, agents: set=set()):
         self.logger.debug("LoadBalancer.__init__(" + str(agents) + ")")
         self.agents = agents
+        self.free_agents = agents
         self.logger = logging.getLogger("ml_service")
-        self.job_queue = Queue()
-        self.task_results = Queue()
+        self.active_trials = dict()
+        self.completed_trials = dict()
 
         self.keep_running = False
         self.max_trial_repeats = 3
@@ -29,8 +64,10 @@ class Engine:
         if agent in self.agents:
             self.agents.remove(agent)
 
-    def push_task(self, task_context):
-        self.job_queue.put(deepcopy(task_context))
+    def push_trial(self, trial: Trial):
+        trial_uuid = str(uuid.uuid4())
+        self.active_trials[trial_uuid] = deepcopy(trial)
+        return trial_uuid
 
     def main_loop(self):
         worker_threads = dict()
@@ -38,78 +75,96 @@ class Engine:
             worker_threads[a] = None
 
         while self.keep_running is True:
-            job = self.job_queue.get()
+            for uuid, trial in self.active_trials.items():
+                if trial.assigned is True:
+                    continue
+                thread_started = False
+                while self.keep_running is True and thread_started is False:
+                    for a in self.agents:
+                        if a not in self.free_agents:
+                            continue
+                        if worker_threads[a].is_alive() is True:
+                            continue
 
-            thread_started = False
-            while self.keep_running is True and thread_started is False:
-                for a in self.agents:
-                    if worker_threads[a].is_alive() is True:
-                        continue
+                        response = call_method(a, 12002, "is_busy")
+                        if response is None:
+                            continue
+                        if response["result"]["busy"] is True:
+                            continue
 
-                    response = call_method(a, 12002, "is_busy")
-                    if response is None:
-                        continue
-                    if response["result"]["busy"] is True:
-                        continue
+                        trial.assigned = True
+                        self.free_agents.remove(a)
+                        worker_threads[a] = Thread(target=self._worker_loop, args=(a, uuid, trial,))
+                        worker_threads[a].start()
+                        thread_started = True
+                        break
 
-                    worker_threads[a] = Thread(target=self._worker_loop, args=(a, job,))
-                    worker_threads[a].start()
-                    thread_started = True
-                    break
+            time.sleep(0.1)
 
         for a in self.agents:
             if worker_threads[a] is not None:
                 worker_threads[a].join(1000)
 
-    def _worker_loop(self, agent, job):
-        if "task" not in job:
-            self.logger.critical("No task context in job!")
+    def _worker_loop(self, agent, trial_uuid: str, trial: Trial):
+        if trial.is_valid() is False:
             raise ProblemDefinitionError
 
-        if "reset_instructions" not in job["task"]:
-            self.logger.exception("Problem definition does not contain reset instructions, aborting...")
-            raise ProblemDefinitionError
-
-        result, task_result = self._execute_task(agent, job)
+        result = self._execute_task(agent, trial)
         if result is False:
-            self.logger.warning("Could not execute task for agent " + agent + ". Job will be re-inserted into queue.")
-            self.job_queue.task_done()
-            self.job_queue.put(deepcopy(job))
+            self.logger.warning("Could not execute task for agent " + agent + ". Trial will be re-inserted into queue.")
         else:
-            self.task_results.put(deepcopy(task_result))
-            self.job_queue.task_done()
+            self.active_trials.pop(trial_uuid)
+            self.completed_trials[trial_uuid] = trial
 
-    def _execute_task(self, agent: str, job: dict) -> (bool, dict):
+        trial.assigned = False
+        if self._reset_task(agent, trial) is False:
+            raise Exception
+
+        self.free_agents.add(agent)
+
+    def _execute_task(self, agent: str, trial: Trial) -> bool:
         cnt_repeat = -1
-        task_result = None
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
             cnt_repeat += 1
-            result, task_uuid = self._start_task(agent, job)
+            result, task_uuid = self._start_task(agent, trial.task_context)
+            trial.task_result.t_0 = time.time()
             if result is False:
-                return False, None
+                return False
 
-            result, task_result = self._wait_for_task(agent, task_uuid)
-            task_result["task_uuid"] = task_uuid
+            result, trial.task_result = self._wait_for_task(agent, task_uuid)
+            trial.task_result.t_1 = time.time()
             if result is False:
-                return False, None
+                return False
 
-            errors = task_result["error"]
+            errors = trial.task_result["error"]
             if "realtime_error" in errors:
                 time.sleep(1)
                 continue
 
             break
-        return cnt_repeat < self.max_trial_repeats, task_result
+        return cnt_repeat < self.max_trial_repeats
 
-    def _start_task(self, agent: str, job: dict) -> (bool, str):
+    def _reset_task(self, agent: str, trial: Trial) -> bool:
+        for i in trial.reset_instructions:
+            if i["method"] == "start_task":
+                result, task_uuid = self._start_task(agent, trial.task_context)
+                if result is False:
+                    return False
+
+                result, trial.task_result = self._wait_for_task(agent, task_uuid)
+                if result is False or trial.task_result.success is False:
+                    return False
+            else:
+                call_method(agent, 12002, i["method"], i["parameters"])
+
+    def _start_task(self, agent: str, task_context: dict) -> (bool, str):
         cnt_repeat = -1
         task_uuid = "INVALID"
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
             cnt_repeat += 1
-            task_name = job["task"]["name"]
-            job["meta"] = time.time()
+            task_name = task_context["name"]
             self.logger.info("Executing task " + task_name + " on agent " + agent + ".")
-            response = start_task(agent, task_name, job["task"], True)
+            response = start_task(agent, task_name, task_context, True)
             if response is None:
                 self.logger.warning("Agent " + agent + " is not responding.")
                 time.sleep(1)
@@ -134,9 +189,9 @@ class Engine:
 
         return cnt_repeat < self.max_trial_repeats, task_uuid
 
-    def _wait_for_task(self, agent: str, task_uuid: str) -> (bool, dict):
+    def _wait_for_task(self, agent: str, task_uuid: str) -> (bool, TaskResult):
         cnt_repeat = -1
-        task_result = None
+        task_result = TaskResult()
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
             cnt_repeat += 1
             response = wait_for_task(agent, task_uuid)
@@ -154,7 +209,9 @@ class Engine:
                 self.logger.warning("Received message: " + response["result"]["error"])
                 time.sleep(1)
                 continue
-            task_result = response["result"]["task_result"]
+            if task_result.from_dict(response["result"]["task_result"]) is False:
+                time.sleep(1)
+                continue
             break
 
-        return cnt_repeat < self.max_trial_repeats, task_result
+        return cnt_repeat < self.max_trial_repeats
