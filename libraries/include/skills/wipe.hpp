@@ -26,6 +26,7 @@ private:
 
 private:
     Eigen::Matrix<double,4,4> m_TF_T_EE_contact;
+    Eigen::Matrix<double,4,4> m_TF_T_EE_retract;
     bool m_in_contact;
     std::chrono::high_resolution_clock::time_point m_t_contact_loss;
 };

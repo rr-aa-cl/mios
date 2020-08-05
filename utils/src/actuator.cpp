@@ -36,6 +36,7 @@ void Actuator::initialize(const Percept &p_0, const ControlParameters& controlle
 }
 
 void Actuator::blend(const Actuator &cmd, const Percept& p){
+    spdlog::debug("Actuator::blend(cmd,p)");
     TF_T_EE_d=p.controller.TF_T_EE_d;
     TF_dX_d=cmd.TF_dX_d;
     q_d_nullspace=cmd.q_d_nullspace;
@@ -51,6 +52,8 @@ void Actuator::blend(const Actuator &cmd, const Percept& p){
     tau_ff=cmd.tau_ff;
     K_theta=cmd.K_theta;
     xi_theta=cmd.xi_theta;
+
+    write_to_buffer();
 }
 
 void Actuator::stop(){

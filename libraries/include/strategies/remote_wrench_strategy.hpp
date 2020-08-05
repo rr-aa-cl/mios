@@ -21,6 +21,7 @@ public:
     void terminate(const Percept &p) override;
     bool finished() override;
 
+    void set_damping(Eigen::Matrix<double,6,1> alpha);
     bool connect(Portal* portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us, unsigned max_lost_packets);
 
 private:
@@ -30,6 +31,7 @@ private:
     std::shared_ptr<msrm_utils::UDPStreamReceiver> m_receiver;
     Portal* m_portal;
     std::string m_stream_name;
+    Eigen::Matrix<double,6,1> m_alpha;
 };
 
 }

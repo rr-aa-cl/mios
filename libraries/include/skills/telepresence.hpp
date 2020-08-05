@@ -21,6 +21,14 @@ public:
         Eigen::Matrix<double,6,1> force_thr;
         bool static_frame;
     }joystick;
+
+    struct DirectJoint{
+        Eigen::Matrix<double,7,1> alpha;
+    }direct_joint;
+
+    struct DirectCart{
+        Eigen::Matrix<double,6,1> alpha;
+    }direct_cart;
 };
 
 class Telepresence : public Skill{

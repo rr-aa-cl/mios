@@ -31,6 +31,7 @@ RosNode::RosNode(Core *core, TaskEngine *task_engine, Portal *portal, Memory* me
     m_srv_download_object_context = m_node.advertiseService("download_object_context",&RosNode::download_object_context,this);
 
     m_srv_get_state = m_node.advertiseService("get_state",&RosNode::get_state,this);
+    m_srv_get_model = m_node.advertiseService("get_model",&RosNode::get_model,this);
 
     m_srv_start_desk_task = m_node.advertiseService("start_desk_task",&RosNode::start_desk_task,this);
     m_srv_stop_desk_task = m_node.advertiseService("stop_desk_task",&RosNode::stop_desk_task,this);
@@ -280,6 +281,27 @@ bool RosNode::get_state(mios_msg::GetState::Request &request, mios_msg::GetState
     response.q=std::vector<float>(q.begin(),q.end());
     response.O_T_EE=std::vector<float>(O_T_EE.begin(),O_T_EE.end());
     response.grasped_object=m_memory->get_live_context()->grasped_object->name;
+    return true;
+}
+
+bool RosNode::get_model(mios_msg::GetModel::Request &request, mios_msg::GetModel::Response &response){
+    response.error_message="";
+    response.result=true;
+    if(!m_core->refresh_percept({})){
+        response.error_message="No current state available, could not refresh perception.";
+        response.result=false;
+    }
+    const Percept* p = m_core->get_percept();
+    std::array<double,49> M=msrm_utils::convert_to_array<double,7,7>(p->internal_model.M);
+    std::array<double,7> C=msrm_utils::convert_to_array<double,7,1>(p->internal_model.C);
+    std::array<double,7> G=msrm_utils::convert_to_array<double,7,1>(p->internal_model.G);
+    std::array<double,42> B_J_O=msrm_utils::convert_to_array<double,6,7>(p->internal_model.B_J_O);
+    std::array<double,42> B_J_EE=msrm_utils::convert_to_array<double,6,7>(p->internal_model.B_J_EE);
+    response.M=std::vector<float>(M.begin(),M.end());
+    response.C=std::vector<float>(C.begin(),C.end());
+    response.G=std::vector<float>(G.begin(),G.end());
+    response.B_J_O=std::vector<float>(B_J_O.begin(),B_J_O.end());
+    response.B_J_EE=std::vector<float>(B_J_EE.begin(),B_J_EE.end());
     return true;
 }
 

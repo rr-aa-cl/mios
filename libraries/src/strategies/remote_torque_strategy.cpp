@@ -1,6 +1,8 @@
 #include "strategies/remote_torque_strategy.hpp"
 #include "portal/portal.hpp"
 #include <functional>
+#include <math.h>
+#include "msrm_utils/math.hpp"
 
 namespace mios {
 
@@ -12,8 +14,18 @@ void RemoteTorqueStrategy::initialize(const Percept &p_0){
 }
 
 void RemoteTorqueStrategy::get_next_command(Actuator &cmd, const Percept &p){
+    double power_in;
+    double power_scale;
+    double p_thr=1;
     for(unsigned i=0;i<7;i++){
         cmd.tau_ff(i)=-m_tau_in[0][i];
+        power_in=p.proprioception.dq(i)*m_tau_in[0][i];
+//        power_scale=1-0.5*(1-cos(M_PI*(1-power_in/p_thr)));
+        if(power_scale>p_thr)power_scale=0;
+        if(power_scale<=0)power_scale=1;
+        if(power_in<0){
+            cmd.tau_ff(i)-=m_alpha(i)*msrm_utils::sgn(p.proprioception.dq(i))*fabs(power_in);
+        }
     }
 }
 
@@ -48,6 +60,10 @@ void RemoteTorqueStrategy::read_stream(std::vector<double>& data){
     }else{
         m_tau_in[0]={0,0,0,0,0,0,0};
     }
+}
+
+void RemoteTorqueStrategy::set_damping(Eigen::Matrix<double, 7, 1> alpha){
+    m_alpha=alpha;
 }
 
 }

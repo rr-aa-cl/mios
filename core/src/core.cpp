@@ -181,6 +181,7 @@ franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
     m_percept.update(m_panda_body.get_panda_model(),state,gripper_state,m_memory.read_parameters()->frames.O_R_T);
     m_memory.internal_update(m_percept);
     Actuator* cmd=m_skill_engine.get_next_command(m_percept);
+
     m_memory.get_parameters()->frames.O_R_T=cmd->O_R_T;
     for(auto& m : m_safety_stage_1){
         m->step(m_percept,*cmd);

@@ -61,6 +61,7 @@ void JointTorqueControllerPipeline::terminate(){
 
 void JointTorqueControllerPipeline::context_switch(const Percept &p){
     m_q_d=p.proprioception.q;
+    m_q_0=m_q_d;
 }
 
 void JointTorqueControllerPipeline::initialize_cntr_joint_imp(const Percept &p, Memory *memory){

@@ -15,6 +15,7 @@
 #include "skills/file.hpp"
 #include "skills/extraction.hpp"
 #include "skills/insertion.hpp"
+#include "skills/wipe.hpp"
 
 namespace mios {
 
@@ -84,6 +85,9 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("Insertion"):
         execute_skill<Insertion,SkillParametersInsertion>(name);
+        break;
+    case msrm_utils::str_to_int("Wipe"):
+        execute_skill<Wipe,SkillParametersWipe>(name);
         break;
     default:
         throw TaskException("Skill with type " + type + " not known to GenericTask");

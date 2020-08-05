@@ -1,6 +1,7 @@
 #include "strategies/remote_wrench_strategy.hpp"
 #include "portal/portal.hpp"
 #include <functional>
+#include "msrm_utils/math.hpp"
 
 namespace mios {
 
@@ -12,8 +13,18 @@ void RemoteWrenchStrategy::initialize(const Percept &p_0){
 }
 
 void RemoteWrenchStrategy::get_next_command(Actuator &cmd, const Percept &p){
+    double power_in;
+    double power_scale;
+    double p_thr=1;
     for(unsigned i=0;i<6;i++){
         cmd.TF_F_ff(i)=-m_TF_F_ff_in[0][i];
+        power_in=p.proprioception.TF_dX_EE(i)*m_TF_F_ff_in[0][i];
+        power_scale=1-0.5*(1-cos(M_PI*(1-power_in/p_thr)));
+        if(power_scale>p_thr)power_scale=0;
+        if(power_scale<=0)power_scale=1;
+        if(power_in<0){
+            cmd.TF_F_ff(i)-=m_alpha(i)*msrm_utils::sgn(p.proprioception.TF_dX_EE(i))*fabs(power_in);
+        }
     }
     cmd.TF_F_ff(3)=0;
     cmd.TF_F_ff(4)=0;
@@ -31,6 +42,10 @@ void RemoteWrenchStrategy::terminate(const Percept &p){
 
 bool RemoteWrenchStrategy::finished(){
     return !m_receiver->is_running();
+}
+
+void RemoteWrenchStrategy::set_damping(Eigen::Matrix<double, 6, 1> alpha){
+    m_alpha=alpha;
 }
 
 bool RemoteWrenchStrategy::connect(Portal *portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us,unsigned max_lost_packets){

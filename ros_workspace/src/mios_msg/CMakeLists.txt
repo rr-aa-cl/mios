@@ -29,6 +29,7 @@ add_service_files(DIRECTORY srv
   DownloadSkillContext.srv
   DownloadObjectContext.srv
   GetState.srv
+  GetModel.srv
   StartDeskTask.srv
   StopDeskTask.srv
   UnlockBrakes.srv

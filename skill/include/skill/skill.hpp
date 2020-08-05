@@ -56,6 +56,8 @@ public:
      */
     virtual Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const;
 
+//    virtual nlohmann::json get_default_context() = 0;
+
     /**
      * Main execution loop of the skill. Manages all manipulation primitives, local and global conditions.
      * @param[in] p Percept struct.

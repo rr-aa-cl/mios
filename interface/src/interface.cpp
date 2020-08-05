@@ -40,6 +40,7 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("download_object_context",std::bind(&CommandInterface::download_object_context,this,std::placeholders::_1),{ArgPair("object",{})});
 
     m_portal->bind_method_to_all("get_state",std::bind(&CommandInterface::get_state,this,std::placeholders::_1),{});
+    m_portal->bind_method_to_all("get_model",std::bind(&CommandInterface::get_model,this,std::placeholders::_1),{});
 
     m_portal->bind_method_to_all("unlock_brakes",std::bind(&CommandInterface::unlock_brakes,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("lock_brakes",std::bind(&CommandInterface::lock_brakes,this,std::placeholders::_1),{});
@@ -340,6 +341,26 @@ nlohmann::json CommandInterface::get_state(const nlohmann::json &request){
     msrm_utils::write_json_array<double,7,1>(response["q"],p->proprioception.q);
     msrm_utils::write_json_array<double,4,4>(response["O_T_EE"],p->proprioception.O_T_EE);
     response["grasped_object"]=m_memory->get_live_context()->grasped_object->name;
+    response["result"]=result;
+    response["error_message"]=error_message;
+
+    return response;
+}
+
+nlohmann::json CommandInterface::get_model(const nlohmann::json &request){
+    nlohmann::json response;
+    bool result=true;
+    std::string error_message="";
+    if(!m_core->refresh_percept({})){
+        error_message="No current state available, could not refresh perception.";
+        result=false;
+    }
+    const Percept* p = m_core->get_percept();
+    msrm_utils::write_json_array<double,7,7>(response["M"],p->internal_model.M);
+    msrm_utils::write_json_array<double,7,1>(response["C"],p->internal_model.C);
+    msrm_utils::write_json_array<double,7,1>(response["G"],p->internal_model.G);
+    msrm_utils::write_json_array<double,6,7>(response["B_J_O"],p->internal_model.B_J_O);
+    msrm_utils::write_json_array<double,6,7>(response["B_J_EE"],p->internal_model.B_J_EE);
     response["result"]=result;
     response["error_message"]=error_message;
 

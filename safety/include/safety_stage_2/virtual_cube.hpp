@@ -21,6 +21,7 @@ private:
 private:
     virtual_cube::virtual_cube m_cube;
     bool m_virtual_cube_on;
+    bool m_safe_activation;
 
 };
 }

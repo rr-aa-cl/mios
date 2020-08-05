@@ -20,6 +20,7 @@
 #include "mios_msg/DownloadSkillContext.h"
 #include "mios_msg/DownloadObjectContext.h"
 #include "mios_msg/GetState.h"
+#include "mios_msg/GetModel.h"
 #include "mios_msg/StartDeskTask.h"
 #include "mios_msg/StopDeskTask.h"
 #include "mios_msg/UnlockBrakes.h"
@@ -68,6 +69,7 @@ private:
     bool download_object_context(mios_msg::DownloadObjectContext::Request& request, mios_msg::DownloadObjectContext::Response& response);
 
     bool get_state(mios_msg::GetState::Request& request, mios_msg::GetState::Response& response);
+    bool get_model(mios_msg::GetModel::Request& request, mios_msg::GetModel::Response& response);
 
     bool start_desk_task(mios_msg::StartDeskTask::Request& request, mios_msg::StartDeskTask::Response& response);
     bool stop_desk_task(mios_msg::StopDeskTask::Request& request, mios_msg::StopDeskTask::Response& response);
@@ -111,6 +113,7 @@ private:
     ros::ServiceServer m_srv_download_object_context;
 
     ros::ServiceServer m_srv_get_state;
+    ros::ServiceServer m_srv_get_model;
 
     ros::ServiceServer m_srv_start_desk_task;
     ros::ServiceServer m_srv_stop_desk_task;

@@ -66,6 +66,24 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
         }
     }
 
+    if(parameters.find("direct_joint")==parameters.end() && mode==TelepresenceMode::tmDirectJoint){
+        spdlog::error("DirectJoint mode has been selected but no mode-related parameters were given.");
+        return false;
+    }else if(parameters.find("direct_joint")!=parameters.end() && mode==TelepresenceMode::tmDirectJoint){
+        if(!msrm_utils::read_json_param<double,7,1>(parameters["direct_joint"],"alpha",direct_joint.alpha)){
+            direct_joint.alpha.setZero();
+        }
+    }
+
+    if(parameters.find("direct_cart")==parameters.end() && mode==TelepresenceMode::tmDirectCart){
+        spdlog::error("DirectCart mode has been selected but no mode-related parameters were given.");
+        return false;
+    }else if(parameters.find("direct_cart")!=parameters.end() && mode==TelepresenceMode::tmDirectCart){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["direct_cart"],"alpha",direct_cart.alpha)){
+            direct_cart.alpha.setZero();
+        }
+    }
+
     return true;
 }
 
@@ -131,6 +149,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     std::shared_ptr<ManipulationPrimitive> mp = create_mp("telepresence",p);
                     if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
                         mp->create_strategy<RemoteWrenchStrategy>("telepresence",1);
+                        mp->get_strategy<RemoteWrenchStrategy>("telepresence")->set_damping(get_parameters<Params>()->direct_cart.alpha);
                         mp->create_strategy<CartComplianceStrategy>("compliance",1);
                         if(!mp->get_strategy<RemoteWrenchStrategy>("telepresence")->connect(m_portal,"remote_cart_in",get_parameters<Params>()->port_src,256,0,10000,200)){
                             throw SkillException("Could not open incoming udp channel.");
@@ -144,6 +163,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     }
                     if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
                         mp->create_strategy<RemoteTorqueStrategy>("telepresence",1);
+                        mp->get_strategy<RemoteTorqueStrategy>("telepresence")->set_damping(get_parameters<Params>()->direct_joint.alpha);
                         mp->create_strategy<JointComplianceStrategy>("compliance",1);
                         if(!mp->get_strategy<RemoteTorqueStrategy>("telepresence")->connect(m_portal,"remote_joint_in",get_parameters<Params>()->port_src,256,0,10000,200)){
                             throw SkillException("Could not open incoming udp channel.");
