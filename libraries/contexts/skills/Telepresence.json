@@ -1,1 +1,1 @@
-{"name": "Telepresence", "is_master": null, "ip_dst": null, "port_dst": null, "port_src": null, "telepresence_mode": null, "joystick": {"amp": null, "force_thr": null}}
+{"name": "Telepresence", "is_master": null, "ip_dst": null, "port_dst": null, "port_src": null, "telepresence_mode": null, "joystick": {"amp": null, "force_thr": null}, "direct_joint": {"alpha": null}, "direct_cart": {"alpha": null}}

@@ -1,1 +1,1 @@
-{"name": "Wipe", "f_contact": 0.0, "wipe_dir": [0, 0, 1], "wipe_distance": 0.0, "speed": 0.0}
+{"f_contact": null, "speed": null, "wipe_distance": null, "t_contactless": null, "wipe_dir": null, "name": "Wipe"}
