@@ -22,7 +22,9 @@ void RemoteWrenchStrategy::get_next_command(Actuator &cmd, const Percept &p){
         power_scale=1-0.5*(1-cos(M_PI*(1-power_in/p_thr)));
         if(power_scale>p_thr)power_scale=0;
         if(power_scale<=0)power_scale=1;
-        cmd.TF_F_ff(i)-=power_scale*m_alpha(i)*msrm_utils::sgn(p.proprioception.TF_dX_EE(i)*fabs(power_in));
+        if(power_in<0){
+            cmd.TF_F_ff(i)-=m_alpha(i)*msrm_utils::sgn(p.proprioception.TF_dX_EE(i))*fabs(power_in);
+        }
     }
     cmd.TF_F_ff(3)=0;
     cmd.TF_F_ff(4)=0;

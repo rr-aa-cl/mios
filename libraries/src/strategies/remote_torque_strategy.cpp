@@ -20,10 +20,12 @@ void RemoteTorqueStrategy::get_next_command(Actuator &cmd, const Percept &p){
     for(unsigned i=0;i<7;i++){
         cmd.tau_ff(i)=-m_tau_in[0][i];
         power_in=p.proprioception.dq(i)*m_tau_in[0][i];
-        power_scale=1-0.5*(1-cos(M_PI*(1-power_in/p_thr)));
+//        power_scale=1-0.5*(1-cos(M_PI*(1-power_in/p_thr)));
         if(power_scale>p_thr)power_scale=0;
         if(power_scale<=0)power_scale=1;
-        cmd.tau_ff(i)-=power_scale*m_alpha(i)*msrm_utils::sgn(p.proprioception.dq(i)*fabs(power_in));
+        if(power_in<0){
+            cmd.tau_ff(i)-=m_alpha(i)*msrm_utils::sgn(p.proprioception.dq(i))*fabs(power_in);
+        }
     }
 }
 
