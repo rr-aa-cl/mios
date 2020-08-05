@@ -46,7 +46,7 @@ int main(int argc, char** argv){
 
     spdlog::info("############################################################");
     spdlog::info("MIOS");
-    spdlog::info("Version: 0.6.1.0");
+    spdlog::info("Version: 0.6.2.1");
 
     unsigned port=12000;
     if(!msrm_utils::is_port_available("localhost",port)){
