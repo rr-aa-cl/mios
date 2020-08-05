@@ -69,14 +69,14 @@ Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_O(const std::string &obje
 
 const Object* Skill::get_object(const std::string &o) const{
     if(m_grounded_objects.find(o)==m_grounded_objects.end()){
-        throw SkillException("Skill "+ this->get_id() +" of type "+m_type+" has no groundables with name.");
+        throw SkillException("Skill "+ this->get_id() +" of type "+m_type+" has no groundables with name " + o + ".");
     }
     return m_grounded_objects.at(o);
 }
 
 Object* Skill::update_object(const std::string &o){
     if(m_grounded_objects.find(o)==m_grounded_objects.end()){
-        throw SkillException("Skill "+ this->get_id() +" of type "+m_type+" has no groundables with name.");
+        throw SkillException("Skill "+ this->get_id() +" of type "+m_type+" has no groundables with name " + o + ".");
     }
     return m_grounded_objects.at(o);
 }
