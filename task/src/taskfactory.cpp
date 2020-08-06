@@ -2,15 +2,15 @@
 #include "task/task.hpp"
 #include <msrm_utils/files.hpp>
 #include <spdlog/spdlog.h>
-#include "tasks/nulltask.hpp"
-#include "tasks/test_task_2.hpp"
-#include "tasks/learner_test.hpp"
-#include "tasks/move_to_cart_pose.hpp"
-#include "tasks/move_to_joint_pose.hpp"
-#include "tasks/test_task_3.hpp"
-#include "tasks/generic_task.hpp"
-#include "tasks/test_task_1.hpp"
+#include "tasks/null_task.hpp"
 #include "tasks/idle_task.hpp"
+#include "tasks/test_task_1.hpp"
+#include "tasks/test_task_2.hpp"
+#include "tasks/test_task_3.hpp"
+//#include "tasks/learner_test.hpp"
+//#include "tasks/move_to_cart_pose.hpp"
+//#include "tasks/move_to_joint_pose.hpp"
+//#include "tasks/generic_task.hpp"
 namespace mios{
 
 TaskName TaskFactory::get_task_name(const std::string& task){
@@ -43,22 +43,22 @@ std::shared_ptr<Task> TaskFactory::create_task(TaskName task, Core* core){
 switch(task){
 case TaskNameNullTask:
 return std::make_shared<NullTask>(core);
-case TaskNameTestTask2:
-return std::make_shared<TestTask2>(core);
-case TaskNameLearnerTest:
-return std::make_shared<LearnerTest>(core);
-case TaskNameMoveToCartPose:
-return std::make_shared<MoveToCartPose>(core);
-case TaskNameMoveToJointPose:
-return std::make_shared<MoveToJointPose>(core);
-case TaskNameTestTask3:
-return std::make_shared<TestTask3>(core);
-case TaskNameGenericTask:
-return std::make_shared<GenericTask>(core);
-case TaskNameTestTask1:
-return std::make_shared<TestTask1>(core);
 case TaskNameIdleTask:
 return std::make_shared<IdleTask>(core);
+case TaskNameTestTask1:
+return std::make_shared<TestTask1>(core);
+case TaskNameTestTask2:
+return std::make_shared<TestTask2>(core);
+case TaskNameTestTask3:
+return std::make_shared<TestTask3>(core);
+//case TaskNameLearnerTest:
+//return std::make_shared<LearnerTest>(core);
+//case TaskNameMoveToCartPose:
+//return std::make_shared<MoveToCartPose>(core);
+//case TaskNameMoveToJointPose:
+//return std::make_shared<MoveToJointPose>(core);
+//case TaskNameGenericTask:
+//return std::make_shared<GenericTask>(core);
 default:
 return std::make_shared<NullTask>(core);
 }

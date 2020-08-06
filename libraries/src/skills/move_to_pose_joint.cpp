@@ -27,7 +27,7 @@ bool SkillParametersMoveToPoseJoint::from_json(const nlohmann::json &p){
     return true;
 }
 
-MoveToPoseJoint::MoveToPoseJoint(const std::string &id, Memory *memory, Portal* portal, const Percept &p):Skill("MoveToPoseJoint",{"goal_pose"},id,memory,portal,p,{ControlMode::mJointTorque,ControlMode::mJointVelocity}),
+MoveToPoseJoint::MoveToPoseJoint(const std::string &id, Memory *memory, Portal* portal):Skill("MoveToPoseJoint",{"goal_pose"},id,memory,portal,{ControlMode::mJointTorque,ControlMode::mJointVelocity}),
 m_finished(false){
 }
 
@@ -69,6 +69,16 @@ bool MoveToPoseJoint::check_local_ex_conditions(const Percept &p){
 
 void MoveToPoseJoint::evaluate(){
     write_costs(0,std::chrono::duration_cast<std::chrono::seconds>(get_result().p_1.time-get_result().p_0.time).count());
+}
+
+nlohmann::json MoveToPoseJoint::get_default_context(){
+    nlohmann::json context;
+    context["t_settle"]=0;
+    context["speed"]=m_memory->read_parameters()->user.dq_default;
+    context["acc"]=m_memory->read_parameters()->user.ddq_default;
+    context["q_g"]=nlohmann::json();
+    context["q_g_offset"]={0,0,0,0,0,0,0};
+    return context;
 }
 
 }

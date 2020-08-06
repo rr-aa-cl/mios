@@ -43,7 +43,7 @@ bool SkillParametersTestSkill1::from_json(const nlohmann::json& parameters){
     return true;
 }
 
-TestSkill1::TestSkill1(const std::string &name, Memory *memory,Portal* portal, const Percept &p):Skill("TestSkill1",{"object"},name,memory,portal,p,{ControlMode::mCartTorque}),m_result_code(-1),m_sequence_index(0),
+TestSkill1::TestSkill1(const std::string &name, Memory *memory,Portal* portal):Skill("TestSkill1",{"object"},name,memory,portal,{ControlMode::mCartTorque}),m_result_code(-1),m_sequence_index(0),
     m_mp_graph({"mp_0","mp_1","mp_2","mp_3","mp_4","mp_5","mp_6"}),m_result_graph({}){}
 
 std::shared_ptr<ManipulationPrimitive> TestSkill1::get_initial_mp(const Percept &p_0){
@@ -157,4 +157,17 @@ void TestSkill1::parallels(){
     msrm_utils::read_json_param(get_custom_results(),"parallels_cnt",cnt);
     get_custom_results()["parallels_cnt"]=cnt+1;
 }
+
+nlohmann::json TestSkill1::get_default_context(){
+    nlohmann::json context;
+    context["run_time"]=0;
+    context["success"]=false;
+    context["t_exception"]=0;
+    context["exception"]="none";
+    context["cost_err"]=0;
+    context["cost_suc"]=0;
+    context["mp_sequence"]={};
+    return context;
+}
+
 }

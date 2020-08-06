@@ -1,5 +1,5 @@
 #include "tasks/idle_task.hpp"
-#include "skills/motions_generic_wiggle.hpp"
+#include "skills/generic_wiggle_motion.hpp"
 #include "skills/hold_pose.hpp"
 #include "skills/move_to_pose_joint.hpp"
 

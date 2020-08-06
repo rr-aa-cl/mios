@@ -20,8 +20,9 @@ bool Memory::is_ok() const{
     return true;
 }
 
-bool Memory::initialize(){
+bool Memory::initialize(SkillLibrary *skill_library){
     spdlog::info("Initializing long-term memory...");
+    m_lt_memory.link_to_skill_library(skill_library);
     if(!m_lt_memory.initialize()){
         spdlog::error("Could not initialize long-term memory.");
         return false;

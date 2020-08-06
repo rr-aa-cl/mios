@@ -11,7 +11,7 @@ struct SkillParametersMoveToContact : public SkillParameters{
 
 class MoveToContact : public Skill{
 public:
-    MoveToContact(const std::string& id, Memory *memory, Portal *portal, const Percept& p);
+    MoveToContact(const std::string& id, Memory *memory, Portal *portal);
 
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     void evaluate();

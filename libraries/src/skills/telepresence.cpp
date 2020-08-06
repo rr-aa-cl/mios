@@ -87,7 +87,7 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-Telepresence::Telepresence(const std::string &name, Memory *memory, Portal *portal, const Percept &p):Skill("Telepresence",{},name,memory,portal,p,
+Telepresence::Telepresence(const std::string &name, Memory *memory, Portal *portal):Skill("Telepresence",{},name,memory,portal,
 {ControlMode::mCartTorque,ControlMode::mJointTorque,ControlMode::mCartVelocity,ControlMode::mJointVelocity}),m_handshake_stage(0){
     m_memory->remove_event("sync_done");
 }
@@ -364,6 +364,26 @@ void Telepresence::auxiliaries(const Percept &p){
 
 bool Telepresence::check_local_suc_conditions(const Percept &p){
     return false;
+}
+
+nlohmann::json Telepresence::get_default_context(){
+    nlohmann::json context;
+    context["is_master"]=nlohmann::json();
+    context["ip_dst"]=nlohmann::json();
+    context["port_dst"]=nlohmann::json();
+    context["port_src"]=nlohmann::json();
+    context["mode"]=nlohmann::json();
+    nlohmann::json joystick,direct_joint,direct_cart;
+    joystick["amp"]=nlohmann::json();
+    joystick["force_thr"]=nlohmann::json();
+    joystick["static_frame"]=nlohmann::json();
+    direct_joint["alpha"]={0,0,0,0,0,0,0};
+    direct_cart["alpha"]={0,0,0,0,0,0};
+    context["joystick"]=joystick;
+    context["direct_joint"]=direct_joint;
+    context["direct_cart"]=direct_cart;
+    return context;
+
 }
 
 

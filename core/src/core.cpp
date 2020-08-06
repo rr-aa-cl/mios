@@ -6,7 +6,6 @@
 #include <msrm_utils/system.hpp>
 #include "utils/exceptions.hpp"
 #include "skill/skill.hpp"
-#include "skills/nullskill.hpp"
 
 #include "controller_pipeline/cart_torque_pipeline.hpp"
 #include "controller_pipeline/joint_torque_pipeline.hpp"
@@ -28,8 +27,8 @@
 
 namespace mios {
 
-Core::Core():m_skill_engine(SkillEngine(this)),m_panda_body(PandaBody(&m_memory)),m_portal(Portal("0.0.0.0",12000,"mios/core","0.0.0.0",12001,12002)),m_task_engine(TaskEngine(this)),
-    m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_ros_node(this,&m_task_engine,&m_portal,&m_memory),
+Core::Core():m_skill_engine(SkillEngine(this)),m_panda_body(PandaBody(&m_memory)),m_portal(Portal("0.0.0.0",12000,"mios/core","0.0.0.0",12001,12002)),m_skill_library(&m_memory,&m_portal),
+    m_task_engine(TaskEngine(this)),m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_ros_node(this,&m_task_engine,&m_portal,&m_memory),
     m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false){
 }
 
@@ -39,7 +38,7 @@ Core::~Core(){
 
 bool Core::initialize(){
     spdlog::info("Initializing memory...");
-    if(!m_memory.initialize()){
+    if(!m_memory.initialize(&m_skill_library)){
         spdlog::error("Could not initialize memory.");
         return false;
     }

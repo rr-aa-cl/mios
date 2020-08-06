@@ -42,7 +42,7 @@ bool SkillParametersInsertion::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-Insertion::Insertion(const std::string &name, Memory *memory,Portal* portal, const Percept &p):Skill("Insertion",{"Insertable","InsertInto"},name,memory,portal,p,
+Insertion::Insertion(const std::string &name, Memory *memory,Portal* portal):Skill("Insertion",{"Insertable","InsertInto"},name,memory,portal,
 {ControlMode::mCartTorque}),m_is_stuck(false),m_dx_avg_last(0){
     m_dx_avg_mem.assign(100,0);
 }

@@ -1,4 +1,4 @@
-#include "skills/motions_generic_wiggle.hpp"
+#include "skills/generic_wiggle_motion.hpp"
 #include "strategies/twist_wiggle_strategy.hpp"
 
 namespace mios {
@@ -15,7 +15,7 @@ bool SkillParametersGenericWiggleMotion::from_json(const nlohmann::json &paramet
     return true;
 }
 
-GenericWiggleMotion::GenericWiggleMotion(const std::string &id, Memory *memory,Portal* portal, const Percept &p):Skill("GenericWiggleMotion",{},id,memory,portal,p,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
+GenericWiggleMotion::GenericWiggleMotion(const std::string &id, Memory *memory,Portal* portal):Skill("GenericWiggleMotion",{},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
 }
 
 std::shared_ptr<ManipulationPrimitive> GenericWiggleMotion::get_initial_mp(const Percept &p_0){
@@ -50,6 +50,19 @@ bool GenericWiggleMotion::check_local_suc_conditions(const Percept &p){
 
 bool GenericWiggleMotion::check_local_ex_conditions(const Percept &p){
     return true;
+}
+
+nlohmann::json GenericWiggleMotion::get_default_context(){
+    nlohmann::json context;
+    context["dX_fourier_a_a"]={0,0,0,0,0,0};
+    context["dX_fourier_b_a"]={0,0,0,0,0,0};
+    context["dX_fourier_a_f"]={0,0,0,0,0,0};
+    context["dX_fourier_b_f"]={0,0,0,0,0,0};
+    context["dX_fourier_a_phi"]={0,0,0,0,0,0};
+    context["dX_fourier_b_phi"]={0,0,0,0,0,0};
+    context["use_EE"]=nlohmann::json();
+    context["tap_to_finish"]=nlohmann::json();
+    return context;
 }
 
 }

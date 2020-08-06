@@ -16,6 +16,7 @@
 #include "skill/skill_engine.hpp"
 #include "task/task_engine.hpp"
 #include "portal/portal.hpp"
+#include "skill/skill_library.hpp"
 #include "interface/interface.hpp"
 #include "interface/ros_node.hpp"
 
@@ -85,6 +86,7 @@ private:
     SkillEngine m_skill_engine;
     PandaBody m_panda_body;
     Portal m_portal;
+    SkillLibrary m_skill_library;
     TaskEngine m_task_engine;
     CommandInterface m_command_interface;
     RosNode m_ros_node;

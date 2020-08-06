@@ -14,7 +14,7 @@ public:
 
 class MLTestSkill : public Skill{
 public:
-    MLTestSkill(const std::string& id, Memory *memory, Portal *portal, const Percept& p);
+    MLTestSkill(const std::string& id, Memory *memory, Portal *portal);
     void evaluate();
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
 private:

@@ -13,10 +13,6 @@ bool SkillParametersExtraction::from_json(const nlohmann::json &parameters){
         spdlog::error("Parameter traj_acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"F_limit",F_limit)){
-        spdlog::error("Parameter F_limit could not be loaded but is mandatory.");
-        return false;
-    }
     if(!msrm_utils::read_json_param(parameters,"stuck_dx_thr",stuck_dx_thr)){
         spdlog::error("Parameter stuck_dx_thr could not be loaded but is mandatory.");
         return false;
@@ -38,7 +34,7 @@ bool SkillParametersExtraction::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-Extraction::Extraction(const std::string &name, Memory *memory, Portal* portal,const Percept &p):Skill("Extraction",{"Extractable","ExtractFrom","ExtractTo"},name,memory,portal,p,
+Extraction::Extraction(const std::string &name, Memory *memory, Portal* portal):Skill("Extraction",{"Extractable","ExtractFrom","ExtractTo"},name,memory,portal,
 {ControlMode::mCartTorque}),m_is_stuck(false),m_dx_avg_last(0){
     m_dx_avg_mem.assign(100,0);
 }
@@ -154,6 +150,16 @@ bool Extraction::is_stuck(const Percept &p){
         return false;
     }
     return m_is_stuck;
+}
+
+nlohmann::json Extraction::get_default_context(){
+    nlohmann::json context;
+    context["traj_speed"]=msrm_utils::from_eigen<double,2,1>(m_memory->read_parameters()->user.dX_default);
+    context["traj_acc"]=msrm_utils::from_eigen<double,2,1>(m_memory->read_parameters()->user.ddX_default);
+    context["search_a"]={0,0,0,0,0,0};
+    context["search_f"]={0,0,0,0,0,0};
+    context["struck_dx_thr"]=0;
+    return context;
 }
 
 }

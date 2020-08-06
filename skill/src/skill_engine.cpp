@@ -1,12 +1,12 @@
 #include "skill/skill_engine.hpp"
 //#include "skill/skill.hpp"
-#include "skills/nullskill.hpp"
+#include "skills/null_skill.hpp"
 #include "core/core.hpp"
 #include "memory/memory.hpp"
 
 namespace mios{
 
-SkillEngine::SkillEngine(Core* core):m_core(core),m_memory(core->get_memory()),m_active_skill(std::make_shared<NullSkill>("NullSkill",m_memory,m_core->get_portal(),*m_core->get_percept())){
+SkillEngine::SkillEngine(Core* core):m_core(core),m_memory(core->get_memory()),m_active_skill(std::make_shared<NullSkill>("NullSkill",m_memory,m_core->get_portal())){
 
 }
 
@@ -44,7 +44,7 @@ bool SkillEngine::load_skill(std::shared_ptr<Skill> skill){
 }
 
 void SkillEngine::unload_skill(){
-    m_active_skill=std::make_shared<NullSkill>("NullSkill",m_memory,m_core->get_portal(),*m_core->get_percept());
+    m_active_skill=std::make_shared<NullSkill>("NullSkill",m_memory,m_core->get_portal());
 }
 
 bool SkillEngine::execute_skill(std::shared_ptr<Skill> skill){

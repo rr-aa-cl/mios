@@ -20,7 +20,7 @@ bool SkillParametersPush::from_json(const nlohmann::json& parameters){
     return true;
 }
 
-Push::Push(const std::string& name, Memory* memory, Portal *portal, const Percept& p):Skill("Push",{"pushable"},name,memory,portal,p,{ControlMode::mCartTorque}){
+Push::Push(const std::string& name, Memory* memory, Portal *portal):Skill("Push",{"pushable"},name,memory,portal,{ControlMode::mCartTorque}){
 
 }
 
@@ -63,6 +63,14 @@ bool Push::check_local_suc_conditions(const Percept &p){
         return true;
     }
     return false;
+}
+
+nlohmann::json Push::get_default_context(){
+    nlohmann::json context;
+    context["F_push"]=nlohmann::json();
+    context["DX_max"]=nlohmann::json();
+    context["duration"]=nlohmann::json();
+    return context;
 }
 
 }

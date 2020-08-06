@@ -27,7 +27,7 @@ bool SkillParametersFile::from_json(const nlohmann::json& parameters){
     return true;
 }
 
-File::File(const std::string& name, Memory* memory, Portal* portal, const Percept& p):Skill("File",{"fileable"},name,memory,portal,p,{ControlMode::mCartTorque}),m_in_contact(false){
+File::File(const std::string& name, Memory* memory, Portal* portal):Skill("File",{"fileable"},name,memory,portal,{ControlMode::mCartTorque}),m_in_contact(false){
 
 }
 

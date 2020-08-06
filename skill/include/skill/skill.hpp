@@ -35,7 +35,7 @@ public:
      * The skill base constructor. It is called by the constructor of any derived skill class.
      * @param[in] type The type id of the skill.
      */
-    Skill(const std::string& type, const std::unordered_set<std::string> &objects, const std::string &id, Memory *memory, Portal* portal, const Percept& p, std::set<ControlMode> control_modes);
+    Skill(const std::string& type, const std::unordered_set<std::string> &objects, const std::string &id, Memory *memory, Portal* portal, std::set<ControlMode> control_modes);
 
     /**
      * The skill destructor.
@@ -56,7 +56,7 @@ public:
      */
     virtual Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const;
 
-//    virtual nlohmann::json get_default_context() = 0;
+    virtual nlohmann::json get_default_context() = 0;
 
     /**
      * Main execution loop of the skill. Manages all manipulation primitives, local and global conditions.

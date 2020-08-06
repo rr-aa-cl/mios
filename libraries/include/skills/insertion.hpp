@@ -21,7 +21,7 @@ public:
 
 class Insertion : public Skill{
 public:
-    Insertion(const std::string& id, Memory *memory, Portal* portal, const Percept& p);
+    Insertion(const std::string& id, Memory *memory, Portal* portal);
 
     Eigen::Matrix<double, 3, 3> get_O_R_T_0(const Percept &p) const override;
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;

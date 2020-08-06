@@ -2,7 +2,6 @@
 #include <franka/exception.h>
 #include <chrono>
 
-#include "skills/nullskill.hpp"
 #include "utils/exceptions.hpp"
 #include "data_structures/object.hpp"
 #include <msrm_utils/math.hpp>
@@ -11,8 +10,8 @@
 
 namespace mios {
 
-Skill::Skill(const std::string &type, const std::unordered_set<std::string> &objects, const std::string& id, Memory *memory, Portal* portal, const Percept &p,std::set<ControlMode> control_modes):
-    m_memory(memory),m_portal(portal),m_active_mp(std::make_shared<ManipulationPrimitive>("NullPrimitive",p,memory)),m_control_modes(control_modes),m_life_cycle(SkillLifeCycle::slInit),
+Skill::Skill(const std::string &type, const std::unordered_set<std::string> &objects, const std::string& id, Memory *memory, Portal* portal,std::set<ControlMode> control_modes):
+    m_memory(memory),m_portal(portal),m_active_mp(std::make_shared<ManipulationPrimitive>("NullPrimitive",Percept(),memory)),m_control_modes(control_modes),m_life_cycle(SkillLifeCycle::slInit),
     m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_stop_factor(1.0),m_type(type),m_id(id),m_objects(objects),
     m_msg_local_success(false),m_msg_global_success(false){
 }

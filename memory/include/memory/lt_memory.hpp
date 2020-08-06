@@ -15,12 +15,14 @@ namespace mios {
 class STMemory;
 class Task;
 class Core;
+class SkillLibrary;
 
 class LTMemory{
 public:
     LTMemory();
     bool is_ok() const;
     void link_to_st_memory(STMemory* st_memory);
+    void link_to_skill_library(SkillLibrary* skill_library);
     bool initialize();
     bool load_default_parameters(nlohmann::json &parameters);
 
@@ -48,6 +50,8 @@ private:
     STMemory* m_st_memory;
 
     std::unordered_map<std::string,TaskData> m_task_data;
+
+    SkillLibrary* m_skill_library;
 };
 
 }

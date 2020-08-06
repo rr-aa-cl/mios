@@ -14,7 +14,7 @@ public:
 
 class Wipe : public Skill{
 public:
-    Wipe(const std::string& name,Memory* memory, Portal* portal, const Percept& p);
+    Wipe(const std::string& name, Memory* memory, Portal* portal);
     void evaluate() override;
     Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const override;
 private:

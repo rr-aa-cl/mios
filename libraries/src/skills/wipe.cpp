@@ -35,7 +35,7 @@ bool SkillParametersWipe::from_json(const nlohmann::json& parameters){
     return true;
 }
 
-Wipe::Wipe(const std::string& name, Memory* memory, Portal* portal, const Percept& p):Skill("Wipe",{"wipeable"},name,memory,portal,p,{ControlMode::mCartTorque}){
+Wipe::Wipe(const std::string& name, Memory* memory, Portal* portal):Skill("Wipe",{"wipeable"},name,memory,portal,{ControlMode::mCartTorque}){
 
 }
 

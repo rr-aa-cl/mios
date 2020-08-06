@@ -10,19 +10,19 @@ struct SkillParametersExtraction : public SkillParameters{
     Eigen::Matrix<double,2,1> traj_acc;
     Eigen::Matrix<double,6,1> search_a;
     Eigen::Matrix<double,6,1> search_f;
-    double F_limit;
 
     double stuck_dx_thr;
 };
 
 class Extraction : public Skill{
 public:
-    Extraction(const std::string& id, Memory *memory, Portal *portal, const Percept& p);
+    Extraction(const std::string& id, Memory *memory, Portal *portal);
 
     Eigen::Matrix<double, 3, 3> get_O_R_T_0(const Percept &p) const override;
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept &p) override;
     void evaluate() override;
+    nlohmann::json get_default_context() override;
 
 private:
     bool is_stuck(const Percept& p);

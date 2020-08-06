@@ -12,9 +12,10 @@ public:
 
 class Push : public Skill{
 public:
-    Push(const std::string& name,Memory* memory, Portal* portal, const Percept& p);
+    Push(const std::string& name, Memory* memory, Portal* portal);
     void evaluate() override;
     Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const override;
+    nlohmann::json get_default_context() override;
 
 private:
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept& p_0) override;

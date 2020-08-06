@@ -1,17 +1,21 @@
 #pragma once
 
-#include <set>
+#include <map>
+#include <string>
 #include "skill/skill.hpp"
 
 namespace mios{
 
+class Memory;
+class Portal;
+
 class SkillLibrary{
 public:
-    SkillLibrary();
-    const std::set<std::shared_ptr<Skill> >* get_skills() const;
+    SkillLibrary(Memory* memory, Portal* portal);
+    const std::map<std::string, std::shared_ptr<Skill> > *get_skills() const;
 private:
 
-    std::set<std::shared_ptr<Skill> > m_skills;
+    std::map<std::string,std::shared_ptr<Skill> > m_skills;
 };
 
 }

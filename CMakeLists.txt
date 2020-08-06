@@ -11,7 +11,7 @@ project(mios
 
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_BUILD_TYPE Release)
 endif()
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -31,6 +31,9 @@ find_package(libbsoncxx-static REQUIRED)
 find_package(roscpp REQUIRED
     std_srvs REQUIRED
     message_generation REQUIRED)
+
+
+option(MINIMAL_BUILD "Build with minimal set of skills, tasks and strategies" ON)
 
 
 include_directories(${roscpp_INCLUDE_DIRS})
@@ -64,7 +67,7 @@ link_directories(${CMAKE_SOURCE_DIR}/lib/plugins)
 
 set(SOURCES core/src/core.cpp interface/src/interface.cpp manipulation_primitive/src/manipulation_primitive.cpp manipulation_primitive/src/primitive_strategy.cpp
     skill/src/skill.cpp task/src/task.cpp task/src/task_engine.cpp panda/src/softhand2.cpp panda/src/qbmove_communications.cpp
-    task/src/taskfactory.cpp task/src/taskobserver.cpp skill/src/skill_engine.cpp portal/src/portal.cpp panda/src/panda_body.cpp interface/src/ros_node.cpp)
+    task/src/taskfactory.cpp task/src/taskobserver.cpp skill/src/skill_library.cpp skill/src/skill_engine.cpp portal/src/portal.cpp panda/src/panda_body.cpp interface/src/ros_node.cpp)
 set(UTILS_SRC utils/src/actuator.cpp utils/src/percept.cpp utils/src/object.cpp utils/src/exceptions.cpp utils/src/results.cpp utils/src/event.cpp)
 set(MEMORY_SRC memory/src/memory.cpp memory/src/lt_memory.cpp memory/src/st_memory.cpp memory/src/mongodb_client.cpp memory/src/parameters.cpp)
 set(CONTROLLER_SRC controller_pipeline/src/cart_torque_pipeline.cpp controller_pipeline/src/joint_torque_pipeline.cpp controller_pipeline/src/cart_velocity_pipeline.cpp
@@ -73,10 +76,15 @@ set(SAFETY_SRC safety/src/velocity_walls.cpp safety/src/virtual_cube.cpp safety/
 
 #set(SOURCES_PRIMITIVES manipulation_primitive/src/primitives/mp_basic.cpp manipulation_primitive/src/primitives/mp_basic_joint.cpp manipulation_primitive/src/primitives/nullprimitive.cpp)
 
-file(GLOB SOURCES_SKILLS "libraries/src/skills/*.cpp")
-file(GLOB SOURCES_TASKS "libraries//src/tasks/*.cpp")
-file(GLOB SOURCES_STRATEGIES "libraries/src/strategies/*.cpp")
-#file(GLOB SOURCES_PATTERN "led_pattern/src/patterns/*.cpp")
+if(MINIMAL_BUILD)
+    set(SOURCES_SKILLS libraries/src/skills/null_skill.cpp libraries/src/skills/move_to_pose_joint.cpp libraries/src/skills/generic_wiggle_motion.cpp libraries/src/skills/hold_pose.cpp libraries/src/skills/test_skill_1.cpp)
+    set(SOURCES_TASKS libraries/src/tasks/null_task.cpp libraries/src/tasks/idle_task.cpp libraries/src/tasks/test_task_1.cpp libraries/src/tasks/test_task_2.cpp libraries/src/tasks/test_task_3.cpp)
+    set(SOURCES_STRATEGIES libraries/src/strategies/null_strategy.cpp libraries/src/strategies/move_to_joint_pose.cpp libraries/src/strategies/twist_wiggle_strategy.cpp)
+else()
+    file(GLOB SOURCES_SKILLS "libraries/src/skills/*.cpp")
+    file(GLOB SOURCES_TASKS "libraries//src/tasks/*.cpp")
+    file(GLOB SOURCES_STRATEGIES "libraries/src/strategies/*.cpp")
+endif()
 
 add_executable(mios main/src/mios.cpp ${SOURCES} ${MEMORY_SRC} ${UTILS_SRC} ${CONTROLLER_SRC} ${SAFETY_SRC} ${SOURCES_STRATEGIES} ${SOURCES_SKILLS} ${SOURCES_TASKS} ${SOURCES_PATTERN})
 #cotire(mios)
@@ -85,7 +93,7 @@ set_target_properties(mios PROPERTIES UNITY_BUILD ON)
 target_precompile_headers(mios PRIVATE ${CMAKE_SOURCE_DIR}/utils/include/utils/pch.hpp)
 
 target_link_libraries(mios general ${PLUGINS} franka mongocxx-static ${LIBMONGOCXX_STATIC_LIBRARIES} stdc++fs ${roscpp_LIBRARIES} pybind11::embed
-                            debug msrm_cpp_utils_dbg httplib ssl crypto pthread boost_system
-                            optimized msrm_cpp_utils httplib ssl crypto pthread boost_system)
+    debug msrm_cpp_utils_dbg httplib ssl crypto pthread boost_system
+    optimized msrm_cpp_utils httplib ssl crypto pthread boost_system)
 
 install(TARGETS mios DESTINATION ${CMAKE_SOURCE_DIR}/bin)

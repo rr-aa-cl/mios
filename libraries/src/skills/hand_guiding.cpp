@@ -17,7 +17,7 @@ bool SkillParametersHandGuiding::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-HandGuiding::HandGuiding(const std::string &id, Memory *memory, Portal* portal, const Percept &p):Skill("HandGuiding",{},id,memory,portal,p,{ControlMode::mCartTorque}){
+HandGuiding::HandGuiding(const std::string &id, Memory *memory, Portal* portal):Skill("HandGuiding",{},id,memory,portal,{ControlMode::mCartTorque}){
     std::shared_ptr<SkillParametersHandGuiding> skill_params = get_parameters<SkillParametersHandGuiding>();
     m_memory->get_parameters()->safety.virtual_cube.active=skill_params->use_walls;
     m_memory->get_parameters()->safety.virtual_cube.damping=0.004;

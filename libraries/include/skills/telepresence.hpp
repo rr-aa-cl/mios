@@ -33,11 +33,13 @@ public:
 
 class Telepresence : public Skill{
 public:
-    Telepresence(const std::string& id, Memory *memory, Portal* portal, const Percept& p);
+    Telepresence(const std::string& id, Memory *memory, Portal* portal);
     ~Telepresence();
 
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept &p) override;
+
+    nlohmann::json get_default_context() override;
 
 private:
     bool check_local_suc_conditions(const Percept &p) override;

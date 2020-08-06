@@ -2,7 +2,7 @@
 
 #include "core/core.hpp"
 #include "memory/memory.hpp"
-#include "tasks/nulltask.hpp"
+#include "tasks/null_task.hpp"
 
 #include <random>
 #include <sstream>

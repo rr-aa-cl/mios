@@ -2,7 +2,7 @@
 #include <spdlog/spdlog.h>
 #include <msrm_utils/json.hpp>
 #include <nlohmann/json.hpp>
-#include "skills/nullskill.hpp"
+#include "skills/null_skill.hpp"
 
 namespace mios {
 
