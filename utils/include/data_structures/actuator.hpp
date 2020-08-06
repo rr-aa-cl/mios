@@ -13,6 +13,7 @@ enum CommandPattern{CommandPatternCartesianPose,CommandPatternJointPose,CommandP
                    CommandPatternJointVelocities,CommandPatternJointFFTorque,CommandPatternO_R_T};
 
 class Actuator{
+    friend Actuator;
 public:
     Actuator(const Percept& p_0, const ControlParameters& controller);
 
