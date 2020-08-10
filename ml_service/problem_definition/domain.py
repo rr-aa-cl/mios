@@ -2,6 +2,7 @@ class Domain:
     def __init__(self):
         self.limits = dict()
         self.vector_mapping = list()
+        self.context_mapping = dict()
         for p in self.limits.keys():
             self.vector_mapping.append(p)
 

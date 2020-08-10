@@ -46,3 +46,12 @@ class BaseService(metaclass=ABCMeta):
         result = self._learn_task()
 
         return result
+
+    def update_default_context(self, x) -> dict:
+        theta = dict()
+        updated_context = self.problem_definition.default_context
+        for i in range(len(self.problem_definition.domain.vector_mapping)):
+            theta[self.problem_definition.domain.vector_mapping[i]] = x[i]
+
+        for p in theta.keys():
+            for p_c in self.problem_definition.domain.context_mapping[p]:
