@@ -1,13 +1,32 @@
+import numpy as np
+
+
 class Domain:
-    def __init__(self):
-        self.limits = dict()
+    def __init__(self, limits: dict, context_mapping: dict):
+        # keys: parameters (string), values: limits (tuples)
+        self.limits = limits
+        # shows index of parameter
         self.vector_mapping = list()
-        self.context_mapping = dict()
+        # keys: parameters (string), values: mapped to (list of dot-separated strings, dimensions by dash)
+        self.context_mapping = context_mapping
         for p in self.limits.keys():
             self.vector_mapping.append(p)
 
-    def normalize(self, parameters):
-        pass
+    def get_default_x0(self):
+        return np.ones(len(self.limits)) * 0.5
 
-    def denormalize(self):
-        pass
+    def normalize(self, x: np.ndarray) -> np.ndarray:
+        x_norm = np.zeros((len(x), 1))
+        for i in range(len(x)):
+            x_norm[i] = (x[i] - self.limits[self.vector_mapping[i]][0]) / (
+                        self.limits[self.vector_mapping[i]][1] - self.limits[self.vector_mapping[i]][0])
+
+        return x_norm
+
+    def denormalize(self, x_norm: np.ndarray) -> np.ndarray:
+        x = np.zeros((len(x_norm), 1))
+        for i in range(len(x_norm)):
+            x[i] = x_norm[i] * (self.limits[self.vector_mapping[i]][1] - self.limits[self.vector_mapping[i]][0]) + \
+                   self.limits[self.vector_mapping[i]][0]
+
+        return x

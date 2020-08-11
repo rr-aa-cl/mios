@@ -11,8 +11,8 @@ class ProblemDefinition:
         self.domain = domain
         self.default_context = default_context
         self.setup_instructions = setup_instructions
-        self.termination_instruction = termination_instruction
-        self.reset_instruction = reset_instruction
+        self.termination_instructions = termination_instruction
+        self.reset_instructions = reset_instruction
 
     def is_valid(self) -> bool:
         valid = True
@@ -23,18 +23,18 @@ class ProblemDefinition:
             if "parameters" not in self.setup_instructions[i]:
                 logger.error("Setup instruction " + str(i) + " is missing parameters.")
                 valid = False
-        for i in range(len(self.termination_instruction)):
-            if "method" not in self.termination_instruction[i]:
+        for i in range(len(self.termination_instructions)):
+            if "method" not in self.termination_instructions[i]:
                 logger.error("Termination instruction " + str(i) + " is missing a method.")
                 valid = False
-            if "parameters" not in self.termination_instruction[i]:
+            if "parameters" not in self.termination_instructions[i]:
                 logger.error("Termination instruction " + str(i) + " is missing parameters.")
                 valid = False
-        for i in range(len(self.reset_instruction)):
-            if "method" not in self.reset_instruction[i]:
+        for i in range(len(self.reset_instructions)):
+            if "method" not in self.reset_instructions[i]:
                 logger.error("Reset instruction " + str(i) + " is missing a method.")
                 valid = False
-            if "parameters" not in self.reset_instruction[i]:
+            if "parameters" not in self.reset_instructions[i]:
                 logger.error("Reset instruction " + str(i) + " is missing parameters.")
                 valid = False
 

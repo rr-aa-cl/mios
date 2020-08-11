@@ -14,18 +14,22 @@ logger = logging.getLogger("ml_service")
 
 class TaskResult:
     def __init__(self):
-        self.cost = None
+        self.cost_suc = None
+        self.cost_err = None
         self.success = None
         self.t_0 = 0
         self.t_1 = 0
+        self.errors = []
 
     def from_dict(self, result: dict) -> bool:
-        if "cost" not in result:
+        if "cost_suc" not in result or "cost_err" not in result:
             logger.error("No cost in task result.")
             return False
 
-        self.cost = result["cost"]
+        self.cost_suc = result["cost_suc"]
+        self.cost_err = result["cost_err"]
         self.success = result["success"]
+        self.errors = result["error"]
         return True
 
 
@@ -40,15 +44,17 @@ class Trial:
         self.assigned = False
 
     def is_valid(self):
+        if "name" not in self.task_context:
+            logger.error("Task context has no name.")
+            return False
         return True
 
 
 class Engine:
     def __init__(self, agents: set=set()):
-        self.logger.debug("LoadBalancer.__init__(" + str(agents) + ")")
+        logger.debug("Engine.__init__(" + str(agents) + ")")
         self.agents = agents
         self.free_agents = agents
-        self.logger = logging.getLogger("ml_service")
         self.active_trials = dict()
         self.completed_trials = dict()
 
@@ -56,45 +62,66 @@ class Engine:
         self.max_trial_repeats = 3
 
     def add_agent(self, agent: str):
-        self.logger.debug("LoadBalancer.add_agent(" + str(agent) + ")")
+        logger.debug("Engine.add_agent(" + str(agent) + ")")
         self.agents.add(agent)
 
     def remove_agent(self, agent: str):
-        self.logger.debug("LoadBalancer.remove_agent(" + str(agent) + ")")
+        logger.debug("Engine.remove_agent(" + str(agent) + ")")
         if agent in self.agents:
             self.agents.remove(agent)
 
-    def push_trial(self, trial: Trial):
+    def push_trial(self, trial: Trial) -> str:
+        logger.debug("Engine.push_trial()")
+        if trial.is_valid() is False:
+            return "INVALID"
         trial_uuid = str(uuid.uuid4())
         self.active_trials[trial_uuid] = deepcopy(trial)
         return trial_uuid
 
+    def wait_for_trial(self, trial_uuid: str, max_wait_time: float) -> Trial:
+        logger.debug("Engine.wait_for_trial(" + trial_uuid + ", " + str(max_wait_time) + ")")
+        t_0 = time.time()
+        while trial_uuid not in self.completed_trials:
+            if time.time() - t_0 > max_wait_time:
+                logger.error("Wait time for trial has been exceeded.")
+                return Trial(dict(), [])
+
+        return self.completed_trials[trial_uuid]
+
     def main_loop(self):
+        logger.debug("Engine.main_loop()")
+        self.keep_running = True
         worker_threads = dict()
         for a in self.agents:
             worker_threads[a] = None
 
         while self.keep_running is True:
-            for uuid, trial in self.active_trials.items():
+            for trial_uuid, trial in self.active_trials.items():
+                logger.debug("Engine.main_loop.for1: For trial_uuid: " + trial_uuid)
                 if trial.assigned is True:
                     continue
                 thread_started = False
                 while self.keep_running is True and thread_started is False:
                     for a in self.agents:
                         if a not in self.free_agents:
+                            logger.debug("Agent " + a + " not in self.free_agents")
                             continue
-                        if worker_threads[a].is_alive() is True:
+                        if worker_threads[a] is not None and worker_threads[a].is_alive() is True:
+                            logger.debug("Thread of agent " + a + " is alive")
                             continue
 
+                        logger.debug("Engine.main_loop().is_busy(" + a + ")")
                         response = call_method(a, 12002, "is_busy")
                         if response is None:
+                            logger.debug("is_busy on agent " + a + ": response is None")
                             continue
                         if response["result"]["busy"] is True:
+                            logger.debug("is_busy on agent " + a + ": is busy")
                             continue
 
                         trial.assigned = True
                         self.free_agents.remove(a)
-                        worker_threads[a] = Thread(target=self._worker_loop, args=(a, uuid, trial,))
+                        worker_threads[a] = Thread(target=self._worker_loop, args=(a, trial_uuid, trial,))
                         worker_threads[a].start()
                         thread_started = True
                         break
@@ -105,13 +132,14 @@ class Engine:
             if worker_threads[a] is not None:
                 worker_threads[a].join(1000)
 
-    def _worker_loop(self, agent, trial_uuid: str, trial: Trial):
+    def _worker_loop(self, agent: str, trial_uuid: str, trial: Trial):
+        logger.debug("Engine._worker_loop(" + agent + ", " + trial_uuid + ")")
         if trial.is_valid() is False:
             raise ProblemDefinitionError
 
         result = self._execute_task(agent, trial)
         if result is False:
-            self.logger.warning("Could not execute task for agent " + agent + ". Trial will be re-inserted into queue.")
+            logger.warning("Could not execute task for agent " + agent + ". Trial will be re-inserted into queue.")
         else:
             self.active_trials.pop(trial_uuid)
             self.completed_trials[trial_uuid] = trial
@@ -123,6 +151,7 @@ class Engine:
         self.free_agents.add(agent)
 
     def _execute_task(self, agent: str, trial: Trial) -> bool:
+        logger.debug("Engine._execute_task(" + agent + ")")
         cnt_repeat = -1
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
             cnt_repeat += 1
@@ -136,8 +165,7 @@ class Engine:
             if result is False:
                 return False
 
-            errors = trial.task_result["error"]
-            if "realtime_error" in errors:
+            if "realtime_error" in trial.task_result.errors:
                 time.sleep(1)
                 continue
 
@@ -163,20 +191,21 @@ class Engine:
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
             cnt_repeat += 1
             task_name = task_context["name"]
-            self.logger.info("Executing task " + task_name + " on agent " + agent + ".")
+            logger.info("Executing task " + task_name + " on agent " + agent + ".")
+            logger.debug("Task context: " + str(task_context))
             response = start_task(agent, task_name, task_context, True)
             if response is None:
-                self.logger.warning("Agent " + agent + " is not responding.")
+                logger.warning("Agent " + agent + " is not responding.")
                 time.sleep(1)
                 continue
             if "result" not in response or "result" not in response["result"]:
-                self.logger.warning("I received no proper response from agent " + agent + ".")
-                self.logger.debug("Response was: " + str(response))
+                logger.warning("I received no proper response from agent " + agent + ".")
+                logger.debug("Response was: " + str(response))
                 time.sleep(1)
                 continue
             if response["result"]["result"] is False:
-                self.logger.warning("The task " + task_name + " could not be started on agent " + agent + ".")
-                self.logger.warning("Received message: " + response["result"]["error"])
+                logger.warning("The task " + task_name + " could not be started on agent " + agent + ".")
+                logger.warning("Received message: " + response["result"]["error"])
                 time.sleep(1)
                 continue
             if "task_uuid" not in response["result"] or response["result"]["task_uuid"] == "INVALID":
@@ -195,18 +224,19 @@ class Engine:
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
             cnt_repeat += 1
             response = wait_for_task(agent, task_uuid)
+            logger.debug("Engine._wait_for_task.response: " + str(response))
             if response is None:
-                self.logger.warning("Agent " + agent + " is not responding.")
+                logger.warning("Agent " + agent + " is not responding.")
                 time.sleep(1)
                 continue
             if "result" not in response or "result" not in response["result"] or "task_result" not in response["result"]:
-                self.logger.warning("I received no proper response from agent " + agent + ".")
-                self.logger.debug("Response was: " + str(response))
+                logger.warning("I received no proper response from agent " + agent + ".")
+                logger.debug("Response was: " + str(response))
                 time.sleep(1)
                 continue
             if response["result"]["result"] is False:
-                self.logger.warning("The task " + task_uuid + " was not properly executed on " + agent + ".")
-                self.logger.warning("Received message: " + response["result"]["error"])
+                logger.warning("The task " + task_uuid + " was not properly executed on " + agent + ".")
+                logger.warning("Received message: " + response["result"]["error"])
                 time.sleep(1)
                 continue
             if task_result.from_dict(response["result"]["task_result"]) is False:
@@ -214,4 +244,4 @@ class Engine:
                 continue
             break
 
-        return cnt_repeat < self.max_trial_repeats
+        return cnt_repeat < self.max_trial_repeats, task_result
