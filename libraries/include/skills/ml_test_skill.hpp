@@ -6,7 +6,6 @@ namespace mios{
 class SkillParametersMLTestSkill: public SkillParameters{
 public:
     bool from_json(const nlohmann::json &parameters) override;
-    std::string skill;
     Eigen::Matrix<double,6,1> x;
     double A;
     double selector;

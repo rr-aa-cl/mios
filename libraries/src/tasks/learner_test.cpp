@@ -8,6 +8,7 @@ LearnerTest::LearnerTest(Core *core):Task("LearnerTest",core){
 
 void LearnerTest::initialize_context(){
     reserve_skill("ml_test");
+    overwrite_context("ml_test","skill","x",msrm_utils::from_eigen<double,6,1>(m_x));
 }
 
 void LearnerTest::execute(){
