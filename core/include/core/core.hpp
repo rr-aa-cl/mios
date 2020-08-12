@@ -45,10 +45,10 @@ public:
     // Gripper
     bool grasp_object(const std::string& name, double speed=1);
     bool release_object(double speed=1);
-    bool grasp(double width, double speed, double force, double epsilon_inner, double epsilon_outer) const;
-    bool move_gripper(double width,double speed) const;
+    bool grasp(double width, double speed, double force, double epsilon_inner, double epsilon_outer);
+    bool move_gripper(double width,double speed);
     bool is_grasping();
-    bool home_gripper() const;
+    bool home_gripper();
     bool set_grasped_object(const std::string& name);
 
     bool lock_body();

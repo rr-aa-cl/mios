@@ -370,6 +370,7 @@ bool LTMemory::upload_environment_element(const Object& element){
 }
 
 bool LTMemory::update_database(){
+    spdlog::debug("LTMemory::update_database()");
     if(!m_mongodb_client.write_document("system","parameters",m_st_memory->read_parameters()->system.to_json(),true)){
         return false;
     }
@@ -384,6 +385,12 @@ bool LTMemory::update_database(){
     }
     if(!m_mongodb_client.write_document("safety","parameters",m_st_memory->read_parameters()->safety.to_json(),true)){
         return false;
+    }
+    for(const auto& env : *m_st_memory->get_environment()){
+        spdlog::debug("Updating object: " + env.first);
+        if(!m_mongodb_client.write_document(env.first,"environment",env.second.to_json(),true)){
+            return false;
+        }
     }
     return true;
 }

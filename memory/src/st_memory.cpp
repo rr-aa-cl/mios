@@ -81,6 +81,10 @@ void STMemory::remove_event(const std::string &name){
     }
 }
 
+const std::map<std::string,Object>* STMemory::get_environment() const{
+    return &m_environment;
+}
+
 std::optional<nlohmann::json> STMemory::get_live_parameter(const std::string &parameter) {
     if(!m_mtx_live_context.try_lock()){
         return {};
@@ -210,12 +214,15 @@ bool STMemory::update_object(const std::string &name, const nlohmann::json &desc
 
 void STMemory::internal_update(const Percept &p){
     // Update special objects
+    spdlog::debug("STMemory::internal_update()");
     if(m_environment.find("EndEffector")==m_environment.end()){
         m_environment.insert(std::make_pair("EndEffector",Object("EndEffector")));
     }
     m_environment.at("EndEffector").O_T_OB=p.proprioception.O_T_EE;
+    m_environment.at("EndEffector").q=p.proprioception.q;
 
     m_environment.at(m_live_context.grasped_object->name).O_T_OB=p.proprioception.O_T_EE*msrm_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp);
+    m_environment.at(m_live_context.grasped_object->name).q=p.proprioception.q;
 }
 
 Object* STMemory::get_object(const std::string &name){

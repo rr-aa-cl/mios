@@ -172,6 +172,9 @@ bool Core::execute_skill(){
     }
     m_safety_stage_1.clear();
     m_safety_stage_2.clear();
+    if(!m_memory.update_database()){
+        spdlog::warn("Could not update datebase.");
+    }
     return result;
 }
 
@@ -228,8 +231,17 @@ bool Core::grasp_object(const std::string &name,double speed){
         spdlog::error("Cannot find object "+name+" in knowledge base.");
         return false;
     }
+    if(!refresh_percept({})){
+        spdlog::error("Could not refresh my perception. Discrepancy between real world and believe state is possible.");
+        return false;
+    }
+    if(m_percept.robot_mode==franka::RobotMode::kUserStopped){
+        spdlog::error("Action is not permitted while in user mode.");
+        return false;
+    }
     if(m_panda_body.grasp(object->grasp_width,speed,object->grasp_force,0.005,0.005)){
         m_memory.get_live_context()->grasped_object=object;
+        m_memory.internal_update(m_percept);
         m_memory.get_parameters()->user.load_m=object->mass;
         m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
@@ -237,21 +249,48 @@ bool Core::grasp_object(const std::string &name,double speed){
         if(!m_panda_body.set_robot_parameters()){
             return false;
         }
+        if(!m_memory.update_database()){
+            spdlog::warn("Could not update datebase.");
+        }
         return true;
     }else{
         return false;
     }
 }
 
-bool Core::home_gripper() const{
+bool Core::home_gripper(){
+    if(!refresh_percept({})){
+        spdlog::error("Could not refresh my perception. Discrepancy between real world and believe state is possible.");
+        return false;
+    }
+    if(m_percept.robot_mode==franka::RobotMode::kUserStopped){
+        spdlog::error("Action is not permitted while in user mode.");
+        return false;
+    }
     return m_panda_body.home_gripper();
 }
 
-bool Core::grasp(double width, double speed, double force,double epsilon_inner,double epsilon_outer) const{
+bool Core::grasp(double width, double speed, double force,double epsilon_inner,double epsilon_outer){
+    if(!refresh_percept({})){
+        spdlog::error("Could not refresh my perception. Discrepancy between real world and believe state is possible.");
+        return false;
+    }
+    if(m_percept.robot_mode==franka::RobotMode::kUserStopped){
+        spdlog::error("Action is not permitted while in user mode.");
+        return false;
+    }
     return m_panda_body.grasp(width,speed,force,epsilon_inner,epsilon_outer);
 }
 
-bool Core::move_gripper(double width, double speed) const{
+bool Core::move_gripper(double width, double speed){
+    if(!refresh_percept({})){
+        spdlog::error("Could not refresh my perception. Discrepancy between real world and believe state is possible.");
+        return false;
+    }
+    if(m_percept.robot_mode==franka::RobotMode::kUserStopped){
+        spdlog::error("Action is not permitted while in user mode.");
+        return false;
+    }
     return m_panda_body.move_to_finger_position(width,speed);
 }
 
@@ -266,7 +305,18 @@ bool Core::set_grasped_object(const std::string &name){
         spdlog::error("Cannot find object "+name+" in knowledge base.");
         return false;
     }
+    if(!refresh_percept({})){
+        spdlog::warn("Could not refresh my perception. Discrepancy between real world and believe state is possible.");
+    }
+    if(m_percept.robot_mode==franka::RobotMode::kUserStopped){
+        spdlog::error("Action is not permitted while in user mode.");
+        return false;
+    }
     m_memory.get_live_context()->grasped_object=object;
+    m_memory.internal_update(m_percept);
+    if(!m_memory.update_database()){
+        spdlog::warn("Could not update datebase.");
+    }
     m_memory.get_parameters()->user.load_m=object->mass;
     m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
     m_memory.get_parameters()->user.load_I=object->OB_I;
@@ -276,13 +326,25 @@ bool Core::set_grasped_object(const std::string &name){
 
 bool Core::release_object(double speed){
     const Object* object=m_memory.get_live_context()->grasped_object;
-    if(object->name=="NullObject"){
+    if(object->name=="NullObject" && !is_grasping()){
         spdlog::error("I am not grasping anything.");
         return false;
+    }
+    if(!refresh_percept({})){
+        spdlog::error("Could not refresh my perception. Discrepancy between real world and believe state is possible.");
+        return false;
+    }
+    if(m_percept.robot_mode==franka::RobotMode::kUserStopped){
+        spdlog::error("Action is not permitted while in user mode.");
+        return false;
+    }
+    if(!m_memory.update_database()){
+        spdlog::warn("Could not update datebase.");
     }
     object=m_memory.get_object("NullObject");
     if(m_panda_body.move_to_finger_position(m_percept.internal_model.max_finger_width,speed)){
         m_memory.get_live_context()->grasped_object=object;
+        m_memory.internal_update(m_percept);
         m_memory.get_parameters()->user.load_m=object->mass;
         m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
@@ -298,9 +360,11 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF){
     franka::RobotState robot_state;
     franka::GripperState gripper_state;
     if(!m_panda_body.get_robot_state(robot_state)){
+        spdlog::debug("Core::refresh_percept.failed_to_acquire_robot_state");
         return false;
     }
     if(!m_panda_body.get_gripper_state(gripper_state)){
+        spdlog::debug("Core::refresh_percept.failed_to_acquire_gripper_state");
         return false;
     }
     m_percept.update(m_panda_body.get_panda_model(),robot_state,gripper_state,O_R_TF);
