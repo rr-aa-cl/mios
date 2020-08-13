@@ -40,8 +40,7 @@ class Trial:
         self.task_result = TaskResult()
 
         self.task_uuid = "INVALID"
-
-        self.assigned = False
+        self.trial_uuid = "INVALID"
 
     def is_valid(self):
         if "name" not in self.task_context:
@@ -55,7 +54,7 @@ class Engine:
         logger.debug("Engine.__init__(" + str(agents) + ")")
         self.agents = agents
         self.free_agents = agents
-        self.active_trials = dict()
+        self.queued_trials = Queue()
         self.completed_trials = dict()
 
         self.keep_running = False
@@ -74,9 +73,9 @@ class Engine:
         logger.debug("Engine.push_trial()")
         if trial.is_valid() is False:
             return "INVALID"
-        trial_uuid = str(uuid.uuid4())
-        self.active_trials[trial_uuid] = deepcopy(trial)
-        return trial_uuid
+        trial.trial_uuid = str(uuid.uuid4())
+        self.queued_trials.put(deepcopy(trial))
+        return trial.trial_uuid
 
     def wait_for_trial(self, trial_uuid: str, max_wait_time: float) -> Trial:
         logger.debug("Engine.wait_for_trial(" + trial_uuid + ", " + str(max_wait_time) + ")")
@@ -96,35 +95,32 @@ class Engine:
             worker_threads[a] = None
 
         while self.keep_running is True:
-            for trial_uuid, trial in self.active_trials.items():
-                logger.debug("Engine.main_loop.for1: For trial_uuid: " + trial_uuid)
-                if trial.assigned is True:
-                    continue
-                thread_started = False
-                while self.keep_running is True and thread_started is False:
-                    for a in self.agents:
-                        if a not in self.free_agents:
-                            logger.debug("Agent " + a + " not in self.free_agents")
-                            continue
-                        if worker_threads[a] is not None and worker_threads[a].is_alive() is True:
-                            logger.debug("Thread of agent " + a + " is alive")
-                            continue
+            trial = self.queued_trials.get()
+            logger.debug("Engine.main_loop.for1: For trial_uuid: " + trial.trial_uuid)
+            thread_started = False
+            while self.keep_running is True and thread_started is False:
+                for a in self.agents:
+                    if a not in self.free_agents:
+                        logger.debug("Agent " + a + " not in self.free_agents")
+                        continue
+                    if worker_threads[a] is not None and worker_threads[a].is_alive() is True:
+                        logger.debug("Thread of agent " + a + " is alive")
+                        continue
 
-                        logger.debug("Engine.main_loop().is_busy(" + a + ")")
-                        response = call_method(a, 12002, "is_busy")
-                        if response is None:
-                            logger.debug("is_busy on agent " + a + ": response is None")
-                            continue
-                        if response["result"]["busy"] is True:
-                            logger.debug("is_busy on agent " + a + ": is busy")
-                            continue
+                    logger.debug("Engine.main_loop().is_busy(" + a + ")")
+                    response = call_method(a, 12002, "is_busy")
+                    if response is None:
+                        logger.debug("is_busy on agent " + a + ": response is None")
+                        continue
+                    if response["result"]["busy"] is True:
+                        logger.debug("is_busy on agent " + a + ": is busy")
+                        continue
 
-                        trial.assigned = True
-                        self.free_agents.remove(a)
-                        worker_threads[a] = Thread(target=self._worker_loop, args=(a, trial_uuid, trial,))
-                        worker_threads[a].start()
-                        thread_started = True
-                        break
+                    self.free_agents.remove(a)
+                    worker_threads[a] = Thread(target=self._worker_loop, args=(a, trial,))
+                    worker_threads[a].start()
+                    thread_started = True
+                    break
 
             time.sleep(0.1)
 
@@ -132,19 +128,19 @@ class Engine:
             if worker_threads[a] is not None:
                 worker_threads[a].join(1000)
 
-    def _worker_loop(self, agent: str, trial_uuid: str, trial: Trial):
-        logger.debug("Engine._worker_loop(" + agent + ", " + trial_uuid + ")")
+    def _worker_loop(self, agent: str, trial: Trial):
+        logger.debug("Engine._worker_loop(" + agent + ", " + trial.trial_uuid + ")")
         if trial.is_valid() is False:
             raise ProblemDefinitionError
 
         result = self._execute_task(agent, trial)
         if result is False:
             logger.warning("Could not execute task for agent " + agent + ". Trial will be re-inserted into queue.")
+            self.queued_trials.put(trial)
         else:
-            self.active_trials.pop(trial_uuid)
-            self.completed_trials[trial_uuid] = trial
+            self.queued_trials.task_done()
+            self.completed_trials[trial.trial_uuid] = trial
 
-        trial.assigned = False
         if self._reset_task(agent, trial) is False:
             raise Exception
 
