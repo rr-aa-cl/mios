@@ -69,6 +69,9 @@ class Engine:
         if agent in self.agents:
             self.agents.remove(agent)
 
+    def stop(self):
+        self.keep_running = False
+
     def push_trial(self, trial: Trial) -> str:
         logger.debug("Engine.push_trial()")
         if trial.is_valid() is False:
@@ -99,7 +102,7 @@ class Engine:
             logger.debug("Engine.main_loop.for1: For trial_uuid: " + trial.trial_uuid)
             thread_started = False
             while self.keep_running is True and thread_started is False:
-                for a in self.agents:
+                for a in self.agents.copy():
                     if a not in self.free_agents:
                         logger.debug("Agent " + a + " not in self.free_agents")
                         continue
