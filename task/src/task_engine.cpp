@@ -89,6 +89,7 @@ void TaskEngine::life_cycle(){
             }
             if(invalid_mode && mode==franka::RobotMode::kOther){
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
             }
             // Handle automatic error recovery
             if(recovery && mode!=franka::RobotMode::kAutomaticErrorRecovery){
@@ -104,6 +105,7 @@ void TaskEngine::life_cycle(){
             }
             if(recovery && mode==franka::RobotMode::kAutomaticErrorRecovery){
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
             }
             // Handle guiding mode
             if(guiding && mode!=franka::RobotMode::kGuiding){
@@ -119,6 +121,7 @@ void TaskEngine::life_cycle(){
             }
             if(guiding && mode==franka::RobotMode::kGuiding){
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                continue;
             }
             // Handle user stop
             if(user_stop && mode!=franka::RobotMode::kUserStopped){

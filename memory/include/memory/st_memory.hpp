@@ -43,6 +43,7 @@ public:
     std::optional<nlohmann::json> get_live_parameter(const std::string& parameter);
     Object *get_object(const std::string& name);
     const Event* get_event(const std::string& name) const;
+    const std::map<std::string, Object>* get_environment() const;
 
 private:
 
