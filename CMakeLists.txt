@@ -85,7 +85,7 @@ set_target_properties(mios PROPERTIES UNITY_BUILD ON)
 target_precompile_headers(mios PRIVATE ${CMAKE_SOURCE_DIR}/utils/include/utils/pch.hpp)
 
 target_link_libraries(mios general ${PLUGINS} franka mongocxx-static ${LIBMONGOCXX_STATIC_LIBRARIES} stdc++fs ${roscpp_LIBRARIES} pybind11::embed
-                            debug msrm_cpp_utils_dbg httplib ssl crypto pthread boost_system
-                            optimized msrm_cpp_utils httplib ssl crypto pthread boost_system)
+                            debug msrm_cpp_utils_dbg ssl crypto pthread boost_system
+                            optimized msrm_cpp_utils ssl crypto pthread boost_system)
 
 install(TARGETS mios DESTINATION ${CMAKE_SOURCE_DIR}/bin)
