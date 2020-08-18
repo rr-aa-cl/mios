@@ -9,6 +9,7 @@ public:
     double file_amp;
     double file_freq;
     double speed;
+    double distance;
     double t_contactless;
 };
 
@@ -25,5 +26,6 @@ private:
 private:
     bool m_in_contact;
     std::chrono::high_resolution_clock::time_point m_t_contact_loss;
+    Eigen::Matrix<double,4,4> m_T_T_EE_0;
 };
 }

@@ -271,10 +271,6 @@ bool Core::home_gripper(){
 }
 
 bool Core::grasp(double width, double speed, double force,double epsilon_inner,double epsilon_outer){
-    if(!refresh_percept({})){
-        spdlog::error("Could not refresh my perception. Discrepancy between real world and believe state is possible.");
-        return false;
-    }
     if(m_percept.robot_mode==franka::RobotMode::kUserStopped){
         spdlog::error("Action is not permitted while in user mode.");
         return false;
@@ -283,10 +279,6 @@ bool Core::grasp(double width, double speed, double force,double epsilon_inner,d
 }
 
 bool Core::move_gripper(double width, double speed){
-    if(!refresh_percept({})){
-        spdlog::error("Could not refresh my perception. Discrepancy between real world and believe state is possible.");
-        return false;
-    }
     if(m_percept.robot_mode==franka::RobotMode::kUserStopped){
         spdlog::error("Action is not permitted while in user mode.");
         return false;
