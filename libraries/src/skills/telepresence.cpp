@@ -96,6 +96,7 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
 Telepresence::Telepresence(const std::string &name, Memory *memory, Portal *portal, const Percept &p):Skill("Telepresence",{},name,memory,portal,p,
 {ControlMode::mCartTorque,ControlMode::mJointTorque,ControlMode::mCartVelocity,ControlMode::mJointVelocity}),m_handshake_stage(0){
     m_memory->remove_event("sync_done");
+    m_previous_payload.assign(6,0);
 }
 
 Telepresence::~Telepresence(){
