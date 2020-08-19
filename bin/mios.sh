@@ -2,7 +2,7 @@
 
 ARG1="$1"
 ROOT=$(dirname "$(realpath $0)")
-PYTHONPATH=$PYTHONPATH:${ROOT}/../python/desk
+PYTHONPATH=$PYTHONPATH:${ROOT}/../python/desk:${ROOT}/../ml_service
 export PYTHONPATH
 export ROS_MASTER_URI=http://localhost:11311
 source /opt/ros/melodic/setup.bash

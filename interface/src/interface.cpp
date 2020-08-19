@@ -5,6 +5,10 @@
 #include "portal/portal.hpp"
 #include "memory/memory.hpp"
 #include <spdlog/spdlog.h>
+#include "pybind11/pybind11.h"
+#include "pybind11/embed.h"
+
+
 namespace mios {
 
 using msrm_utils::ArgPair;
@@ -55,6 +59,11 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("get_event",std::bind(&CommandInterface::get_event,this,std::placeholders::_1),{ArgPair("name",{})});
 
     m_portal->bind_method_to_all("set_live_parameter",std::bind(&CommandInterface::set_live_parameter,this,std::placeholders::_1),{ArgPair("key",{}),ArgPair("value",{})});
+
+    m_portal->bind_method_to_all("learn_task",std::bind(&CommandInterface::learn_task,this,std::placeholders::_1),{ArgPair("problem_definition",{}),
+                                 ArgPair("service_configuration",nlohmann::json()),ArgPair("agents",{})});
+    m_portal->bind_method_to_all("stop_learning",std::bind(&CommandInterface::stop_learning,this,std::placeholders::_1),{ArgPair("uuid",{})});
+
 }
 
 nlohmann::json CommandInterface::terminate(const nlohmann::json &request){
@@ -460,6 +469,48 @@ nlohmann::json CommandInterface::get_event(const nlohmann::json &request){
     request["name"].get_to(name);
     response["content"]=m_memory->get_event(name)->get_content();
     return response;
+}
+
+nlohmann::json CommandInterface::learn_task(const nlohmann::json &request){
+    spdlog::debug("CommandInterface::learn_task()");
+    nlohmann::json response;
+    pybind11::scoped_interpreter guard{};
+    try{
+        pybind11::dict limits;
+        for(const auto& p : request["problem_definition"]["domain"]["limits"].items()){
+            limits[p.key().c_str()]=pybind11::make_tuple(p.value()[0],p.value()[1]);
+        }
+        pybind11::dict context_mapping;
+        for(const auto& p : request["problem_definition"]["domain"]["context_mapping"].items()){
+            pybind11::list tmp_mappings;
+            for(const auto& m : p.value()){
+                tmp_mappings.append(m);
+            }
+            context_mapping[p.key().c_str()]=tmp_mappings;
+        }
+        pybind11::object domain = pybind11::module::import("problem_definition.domain").attr("Domain")(limits, context_mapping);
+
+        pybind11::dict default_context;
+        default_context["name"]="LearnerTest";
+
+        pybind11::set agents;
+        pybind11::object configuration = pybind11::module::import("services.generic_optimizer").attr("GenericOptimizerConfiguration")();
+        pybind11::object problem_definition = pybind11::module::import("problem_definition.problem_definition").attr("ProblemDefinition")(domain,default_context,pybind11::list(),pybind11::list(),pybind11::list());
+        for(const auto& a : request["agents"].items()){
+            agents.add(a);
+        }
+        pybind11::object ml_service = pybind11::module::import("interface.interface").attr("Interface")();
+//        pybind11::object learn_task = ml_service.attr("learn_task");
+        pybind11::object ml_result = ml_service.attr("learn_task")(problem_definition, configuration,agents);
+        response["result"] = ml_result.cast<bool>();
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+    }
+    return response;
+}
+
+nlohmann::json CommandInterface::stop_learning(const nlohmann::json &request){
+    return nlohmann::json();
 }
 
 }

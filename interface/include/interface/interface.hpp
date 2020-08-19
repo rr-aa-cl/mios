@@ -55,6 +55,9 @@ private:
 
     nlohmann::json terminate(const nlohmann::json& request);
 
+    nlohmann::json learn_task(const nlohmann::json& request);
+    nlohmann::json stop_learning(const nlohmann::json& request);
+
 private:
     Core* m_core;
     TaskEngine* m_task_engine;
