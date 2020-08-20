@@ -475,10 +475,34 @@ nlohmann::json CommandInterface::learn_task(const nlohmann::json &request){
     spdlog::debug("CommandInterface::learn_task()");
     nlohmann::json response;
     pybind11::scoped_interpreter guard{};
+    bool result=true;
+
+    // Problem definition checks
+    if(request["problem_definition"].find("domain")==request["problem_definition"].end()){
+        response["error"]="Problem definition is missing a domain.";
+        result=false;
+    }else if(request["problem_definition"]["domain"].find("limits")==request["problem_definition"]["domain"].end()){
+        response["error"]="Domain is missing limits.";
+        result=false;
+    }else if(request["problem_definition"]["domain"].find("context_mapping")==request["problem_definition"]["domain"].end()){
+        response["error"]="Domain is missing context mapping.";
+        result=false;
+    }
+
+    if(!result){
+        response["result"]=false;
+        response["uuid"]="INVALID";
+        return response;
+    }
+
     try{
         pybind11::dict limits;
+        std::cout<<request["problem_definition"]["domain"]["limits"]<<std::endl;
         for(const auto& p : request["problem_definition"]["domain"]["limits"].items()){
-            limits[p.key().c_str()]=pybind11::make_tuple(p.value()[0],p.value()[1]);
+            double lb,ub;
+            p.value()[0].get_to(lb);
+            p.value()[0].get_to(ub);
+            limits[p.key().c_str()]=pybind11::make_tuple(lb,ub);
         }
         pybind11::dict context_mapping;
         for(const auto& p : request["problem_definition"]["domain"]["context_mapping"].items()){
@@ -495,9 +519,12 @@ nlohmann::json CommandInterface::learn_task(const nlohmann::json &request){
 
         pybind11::set agents;
         pybind11::object configuration = pybind11::module::import("services.generic_optimizer").attr("GenericOptimizerConfiguration")();
+        configuration.attr("tol")=0.1;
         pybind11::object problem_definition = pybind11::module::import("problem_definition.problem_definition").attr("ProblemDefinition")(domain,default_context,pybind11::list(),pybind11::list(),pybind11::list());
-        for(const auto& a : request["agents"].items()){
-            agents.add(a);
+        for(const auto& a : request["agents"]){
+            std::string agent;
+            a.get_to(agent);
+            agents.add(agent);
         }
         pybind11::object ml_service = pybind11::module::import("interface.interface").attr("Interface")();
 //        pybind11::object learn_task = ml_service.attr("learn_task");
