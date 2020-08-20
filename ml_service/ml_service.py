@@ -5,20 +5,17 @@ from services.cmaes import *
 from services.generic_optimizer import *
 from problem_definition.problem_definition import ProblemDefinition
 from problem_definition.domain import Domain
+from utils.udp_client import call_method
 
 
-if __name__ == '__main__':
-
-    logger = logging.getLogger("ml_service")
-    logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.DEBUG)
-    logger.addHandler(handler)
+logger = logging.getLogger("ml_service")
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+logger.addHandler(handler)
 
 
-    agents = set()
-    agents.add("localhost")
-
+def get_problem_definition_rastrigin():
     limits = {
         "x1": (-5.12, 5.12),
         "x2": (-5.12, 5.12),
@@ -40,8 +37,39 @@ if __name__ == '__main__':
         "name": "LearnerTest"
     }
     pd = ProblemDefinition(domain, default_context, [], [], [])
+    return pd
 
+def get_service_configuration():
     configuration = GenericOptimizerConfiguration()
+    return configuration
+
+
+def test_mios(agent: str = "localhost"):
+    agents = set()
+    agents.add(agent)
+
+    pd = get_problem_definition_rastrigin()
+
+    payload = {
+        "problem_definition": {
+            "domain": {
+                "limits": pd.domain.limits,
+                "context_mapping": pd.domain.context_mapping
+            }
+        },
+        "service_configuration": {
+            "tol": 1e-5
+        },
+        "agents": list(agents)
+    }
+
+    response = call_method(agent, 12002, "learn_task", payload)
+    print(response)
+
+
+def test_standalone(agent: str = "localhost"):
+    agents = set()
+    agents.add(agent)
     learner = GenericOptimizerService()
-    learner.initialize(pd, configuration, agents)
+    learner.initialize(get_problem_definition_rastrigin(), get_service_configuration(), agent)
     learner.learn_task()
