@@ -104,6 +104,10 @@ RosNode* Core::get_ros_node(){
     return &m_ros_node;
 }
 
+LearningModule* Core::get_learning_module(){
+    return &m_learning_module;
+}
+
 bool Core::execute_skill(){
     spdlog::debug("CORE: execute_skill");
 
