@@ -492,6 +492,7 @@ nlohmann::json CommandInterface::learn_task(const nlohmann::json &request){
     }
 
     if(result){
+        spdlog::debug("CommandInterface::learn_task.to_learning_module");
         response["problem_uuid"] = m_core->get_learning_module()->learn_task(request["problem_definition"],request["service_configuration"],request["agents"]);
     }else{
         response["uuid"]="INVALID";

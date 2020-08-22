@@ -17,6 +17,7 @@ LearningModule::~LearningModule(){
 }
 
 std::string LearningModule::learn_task(const nlohmann::json &problem_definition, const nlohmann::json &service_configuration, const nlohmann::json &agents){
+    spdlog::debug("LearningModule::learn_task()");
     try{
         pybind11::dict limits;
         for(const auto& p : problem_definition["domain"]["limits"].items()){
@@ -51,6 +52,7 @@ std::string LearningModule::learn_task(const nlohmann::json &problem_definition,
             a.get_to(agent);
             agents_set.add(agent);
         }
+        spdlog::debug("LearningModule::learn_task.start_learning");
         pybind11::object result = m_ml_interface.attr("start_learning")(problem_definition, configuration,agents);
         return result.cast<std::string>();
     }catch(const pybind11::error_already_set& e){

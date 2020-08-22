@@ -40,6 +40,7 @@ def get_problem_definition_rastrigin():
     pd = ProblemDefinition(domain, default_context, [], [], [])
     return pd
 
+
 def get_service_configuration():
     configuration = CMAESConfiguration()
     configuration.n_ind = 5
