@@ -4,7 +4,10 @@ from abc import abstractmethod
 from threading import Thread
 
 from engine.engine import Engine
+from engine.engine import Trial
+from engine.engine import TaskResult
 from problem_definition.problem_definition import ProblemDefinition
+from problem_definition.problem_definition import Domain
 from utils.exception import *
 
 logger = logging.getLogger("ml_service")
@@ -19,7 +22,7 @@ class BaseService(metaclass=ABCMeta):
     def __init__(self):
 
         self.engine = None
-        self.problem_definition = None
+        self.problem_definition = ProblemDefinition("NullTask", Domain(dict(), dict()), dict(), [], [], [])
         self.engine_thread = None
         self.configuration = None
         self.keep_running = False
@@ -46,6 +49,7 @@ class BaseService(metaclass=ABCMeta):
             return False
 
         self.engine = Engine(agents)
+        self.engine.initialize(self.problem_definition)
 
         self._initialize()
 
@@ -64,6 +68,21 @@ class BaseService(metaclass=ABCMeta):
     def stop(self):
         self.keep_running = False
         self.engine.stop()
+
+    def push_trial(self, x) -> str:
+        return self.engine.push_trial(Trial(self.update_default_context(x), self.problem_definition.reset_instructions,
+                                            self.get_theta(x)))
+
+    def wait_for_result(self, uuid: str) -> TaskResult:
+        return self.engine.wait_for_trial(uuid, 50).task_result
+
+    def get_theta(self, x) -> dict:
+        logger.debug("BaseService.get_theta(" + str(x) + ")")
+        theta = dict()
+        for i in range(len(self.problem_definition.domain.vector_mapping)):
+            theta[self.problem_definition.domain.vector_mapping[i]] = x[i]
+
+        return theta
 
     def update_default_context(self, x) -> dict:
         logger.debug("BaseService.update_default_context(" + str(x) + ")")

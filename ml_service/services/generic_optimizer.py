@@ -4,7 +4,7 @@ import logging
 from services.base_service import BaseService
 from services.base_service import ServiceConfiguration
 from services.optimisation_dummies import Sphere
-from engine.engine import Trial
+
 
 logger = logging.getLogger("ml_service")
 
@@ -42,11 +42,9 @@ class GenericOptimizerService(BaseService):
     def trial(self, x: np.array):
         logger.debug("GradientService.trial(" + str(x) + ")")
 
-        t = Trial(self.update_default_context(x), self.problem_definition.reset_instructions)
-        trial_uuid = self.engine.push_trial(t)
-
-        trial = self.engine.wait_for_trial(trial_uuid, 5)
-        if trial.task_result.cost_suc is None:
-            trial.task_result.cost_suc = 0
+        trial_uuid = self.push_trial(x)
+        results = self.wait_for_result(trial_uuid)
+        if results.cost_suc is None:
+            results.cost_suc = 0
             logger.debug("GradientService: Trial result cost = None  --> cost = 0")
-        return trial.task_result.cost_suc
+        return results.cost_suc

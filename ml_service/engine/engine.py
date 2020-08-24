@@ -2,12 +2,12 @@ import time
 import logging
 from threading import Thread
 from queue import Queue
-from multiprocessing.pool import ThreadPool
 from copy import deepcopy
 import uuid
+from mongodb_client.mongodb_client import MongoDBClient
+from problem_definition.problem_definition import ProblemDefinition
 from utils.exception import *
 from utils.ws_client import *
-
 
 logger = logging.getLogger("ml_service")
 
@@ -34,13 +34,16 @@ class TaskResult:
 
 
 class Trial:
-    def __init__(self, task_context: dict, reset_instructions: list):
+    def __init__(self, task_context: dict, reset_instructions: list, theta: dict):
         self.task_context = task_context
         self.reset_instructions = reset_instructions
+        self.theta = theta
         self.task_result = TaskResult()
 
         self.task_uuid = "INVALID"
         self.trial_uuid = "INVALID"
+
+        self.trial_number = 0
 
     def is_valid(self):
         if "name" not in self.task_context:
@@ -50,15 +53,24 @@ class Trial:
 
 
 class Engine:
-    def __init__(self, agents: set=set()):
+    def __init__(self, agents: set = set()):
         logger.debug("Engine.__init__(" + str(agents) + ")")
         self.agents = agents
         self.free_agents = agents
         self.queued_trials = Queue()
         self.completed_trials = dict()
 
+        self.database_client = MongoDBClient()
+        self.database_results_collection = None
+        self.database_results_id = None
+
         self.keep_running = False
         self.max_trial_repeats = 3
+
+        self.cnt_trial = 0
+
+    def initialize(self, problem_definition: ProblemDefinition):
+        self.initialize_results(problem_definition)
 
     def add_agent(self, agent: str):
         logger.debug("Engine.add_agent(" + str(agent) + ")")
@@ -86,13 +98,19 @@ class Engine:
         while trial_uuid not in self.completed_trials:
             if time.time() - t_0 > max_wait_time or self.keep_running is False:
                 logger.error("Wait time for trial has been exceeded.")
-                return Trial(dict(), [])
+                return Trial(dict(), [], dict())
             time.sleep(0.1)
 
         return self.completed_trials[trial_uuid]
 
+    def initialize_results(self, problem_definition: ProblemDefinition):
+        self.database_results_collection = self.database_client.client.ml_results[problem_definition.task_type]
+        self.database_results_id = self.database_results_collection.insert_one(
+            {"meta": problem_definition.to_dict()}).inserted_id
+
     def main_loop(self):
         logger.debug("Engine.main_loop()")
+        self.cnt_trial = 1
         self.keep_running = True
         worker_threads = dict()
         for a in self.agents:
@@ -172,6 +190,9 @@ class Engine:
                 time.sleep(1)
                 continue
 
+            trial.trial_number = self.cnt_trial
+            self.cnt_trial += 1
+            self.write_task_result(trial)
             break
         return cnt_repeat < self.max_trial_repeats
 
@@ -232,7 +253,8 @@ class Engine:
                 logger.warning("Agent " + agent + " is not responding.")
                 time.sleep(1)
                 continue
-            if "result" not in response or "result" not in response["result"] or "task_result" not in response["result"]:
+            if "result" not in response or "result" not in response["result"] or "task_result" not in response[
+                "result"]:
                 logger.warning("I received no proper response from agent " + agent + ".")
                 logger.debug("Response was: " + str(response))
                 time.sleep(1)
@@ -248,3 +270,13 @@ class Engine:
             break
 
         return cnt_repeat < self.max_trial_repeats, task_result
+
+    def write_task_result(self, trial: Trial):
+        data = {
+            "theta": trial.theta,
+            "cost_suc": trial.task_result.cost_suc,
+            "cost_err": trial.task_result.cost_err,
+            "success": trial.task_result.success
+        }
+        self.database_results_collection.update_one({'_id': self.database_results_id},
+                                                    {'$set': {'n' + str(trial.trial_number): data}}, upsert=False)

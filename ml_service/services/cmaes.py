@@ -69,15 +69,14 @@ class CMAESService(BaseService):
         trial_uuids = []
 
         for x in x_set:
-            t = Trial(self.update_default_context(x), self.problem_definition.reset_instructions)
-            trial_uuids.append(self.engine.push_trial(t))
+            trial_uuids.append(self.push_trial(x))
 
         costs = []
         for uuid in trial_uuids:
-            trial = self.engine.wait_for_trial(uuid, 50)
-            if trial.task_result.cost_suc is None:
-                trial.task_result.cost_suc = 0
-            costs.append((trial.task_result.cost_suc,))
+            result = self.wait_for_result(uuid)
+            if result.cost_suc is None:
+                result.cost_suc = 0
+            costs.append((result.cost_suc,))
 
         return costs
 

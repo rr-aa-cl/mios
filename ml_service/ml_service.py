@@ -37,7 +37,7 @@ def get_problem_definition_rastrigin():
     default_context = {
         "name": "LearnerTest"
     }
-    pd = ProblemDefinition(domain, default_context, [], [], [])
+    pd = ProblemDefinition("benchmark_rastrigin", domain, default_context, [], [], [])
     return pd
 
 

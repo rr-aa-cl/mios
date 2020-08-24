@@ -12,6 +12,14 @@ class Domain:
         for p in self.limits.keys():
             self.vector_mapping.append(p)
 
+    def to_dict(self) -> dict:
+        domain = {
+            "limits": self.limits,
+            "vector_mapping": self.vector_mapping,
+            "context_mapping": self.context_mapping
+        }
+        return domain
+
     def get_default_x0(self):
         return np.ones(len(self.limits)) * 0.5
 
