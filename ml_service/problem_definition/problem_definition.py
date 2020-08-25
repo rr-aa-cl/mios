@@ -7,7 +7,9 @@ logger = logging.getLogger("ml_service")
 
 class ProblemDefinition:
     def __init__(self, task_type: str, domain: Domain, default_context: dict, setup_instructions: list, termination_instruction: list,
-                 reset_instruction: list):
+                 reset_instruction: list, tags=None):
+        if tags is None:
+            tags = []
         self.domain = domain
         self.default_context = default_context
         self.setup_instructions = setup_instructions
@@ -15,13 +17,15 @@ class ProblemDefinition:
         self.reset_instructions = reset_instruction
         self.uuid = "INVALID"
         self.task_type = task_type
+        self.tags = tags
 
     def to_dict(self) -> dict:
         problem_definition = {
             "domain": self.domain.to_dict(),
             "default_context": self.default_context,
             "uuid": self.uuid,
-            "task_type": self.task_type
+            "task_type": self.task_type,
+            "tags": self.tags
         }
         return problem_definition
 

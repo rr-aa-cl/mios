@@ -1,4 +1,5 @@
 import time
+import datetime
 import logging
 from threading import Thread
 from queue import Queue
@@ -16,20 +17,28 @@ class TaskResult:
     def __init__(self):
         self.cost_suc = None
         self.cost_err = None
+        self.total_cost = None
         self.success = None
-        self.t_0 = 0
-        self.t_1 = 0
         self.errors = []
 
-    def from_dict(self, result: dict) -> bool:
+    def calculate(self, result: dict) -> bool:
         if "cost_suc" not in result or "cost_err" not in result:
             logger.error("No cost in task result.")
+            return False
+        if "success" not in result:
+            logger.error("No success indicator in result.")
             return False
 
         self.cost_suc = result["cost_suc"]
         self.cost_err = result["cost_err"]
         self.success = result["success"]
         self.errors = result["error"]
+
+        if self.success is True:
+            self.total_cost = self.cost_suc
+        else:
+            self.total_cost = self.cost_err
+
         return True
 
 
@@ -39,6 +48,10 @@ class Trial:
         self.reset_instructions = reset_instructions
         self.theta = theta
         self.task_result = TaskResult()
+
+        self.t_0 = None
+        self.t_1 = None
+        self.t_delta = None
 
         self.task_uuid = "INVALID"
         self.trial_uuid = "INVALID"
@@ -104,9 +117,12 @@ class Engine:
         return self.completed_trials[trial_uuid]
 
     def initialize_results(self, problem_definition: ProblemDefinition):
+        meta_data = problem_definition.to_dict()
+        meta_data["t_0"] = time.time()
+        meta_data["date"] = str(datetime.date.today())
         self.database_results_collection = self.database_client.client.ml_results[problem_definition.task_type]
         self.database_results_id = self.database_results_collection.insert_one(
-            {"meta": problem_definition.to_dict()}).inserted_id
+            {"meta": meta_data}).inserted_id
 
     def main_loop(self):
         logger.debug("Engine.main_loop()")
@@ -177,12 +193,13 @@ class Engine:
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
             cnt_repeat += 1
             result, task_uuid = self._start_task(agent, trial.task_context)
-            trial.task_result.t_0 = time.time()
+            trial.t_0 = time.time()
             if result is False:
                 return False
 
             result, trial.task_result = self._wait_for_task(agent, task_uuid)
-            trial.task_result.t_1 = time.time()
+            trial.t_1 = time.time()
+            trial.t_delta = trial.t_1 - trial.t_0
             if result is False:
                 return False
 
@@ -264,7 +281,7 @@ class Engine:
                 logger.warning("Received message: " + response["result"]["error"])
                 time.sleep(1)
                 continue
-            if task_result.from_dict(response["result"]["task_result"]) is False:
+            if task_result.calculate(response["result"]["task_result"]) is False:
                 time.sleep(1)
                 continue
             break
@@ -276,7 +293,11 @@ class Engine:
             "theta": trial.theta,
             "cost_suc": trial.task_result.cost_suc,
             "cost_err": trial.task_result.cost_err,
-            "success": trial.task_result.success
+            "total_cost": trial.task_result.total_cost,
+            "success": trial.task_result.success,
+            "t_0": trial.t_0,
+            "t_1": trial.t_1,
+            "t_delta": trial.t_delta
         }
         self.database_results_collection.update_one({'_id': self.database_results_id},
                                                     {'$set': {'n' + str(trial.trial_number): data}}, upsert=False)
