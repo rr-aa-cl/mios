@@ -11,6 +11,8 @@
 #include "tasks/generic_task.hpp"
 #include "tasks/test_task_1.hpp"
 #include "tasks/idle_task.hpp"
+#include "tasks/insert_object.hpp"
+#include "tasks/extract_object.hpp"
 namespace mios{
 
 TaskName TaskFactory::get_task_name(const std::string& task){
@@ -33,6 +35,10 @@ case msrm_utils::str_to_int("TestTask1"):
 return TaskNameTestTask1;
 case msrm_utils::str_to_int("IdleTask"):
 return TaskNameIdleTask;
+case msrm_utils::str_to_int("InsertObject"):
+return TaskNameInsertObject;
+case msrm_utils::str_to_int("ExtractObject"):
+return TaskNameExtractObject;
 default:
 spdlog::error("Task with id " + task + " does not exist.");
 return TaskNameNullTask;
@@ -59,6 +65,10 @@ case TaskNameTestTask1:
 return std::make_shared<TestTask1>(core);
 case TaskNameIdleTask:
 return std::make_shared<IdleTask>(core);
+case TaskNameInsertObject:
+return std::make_shared<InsertObject>(core);
+case TaskNameExtractObject:
+return std::make_shared<ExtractObject>(core);
 default:
 return std::make_shared<NullTask>(core);
 }
