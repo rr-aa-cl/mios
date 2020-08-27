@@ -13,10 +13,6 @@ bool SkillParametersExtraction::from_json(const nlohmann::json &parameters){
         spdlog::error("Parameter traj_acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"F_limit",F_limit)){
-        spdlog::error("Parameter F_limit could not be loaded but is mandatory.");
-        return false;
-    }
     if(!msrm_utils::read_json_param(parameters,"stuck_dx_thr",stuck_dx_thr)){
         spdlog::error("Parameter stuck_dx_thr could not be loaded but is mandatory.");
         return false;

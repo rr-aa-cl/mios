@@ -2,7 +2,7 @@
 
 #include "skills/move_to_pose_joint.hpp"
 #include "skills/move_to_pose_cart.hpp"
-#include "skills/insertion.hpp"
+#include "skills/extraction.hpp"
 #include "msrm_utils/json.hpp"
 #include "msrm_utils/math.hpp"
 
@@ -25,12 +25,13 @@ void ExtractObject::execute(){
         spdlog::error("I have not grasped an object or the grasped object is not the extractable");
         return;
     }
+    overwrite_context("extraction","control","control_mode",0);
 
     write_skill_object("extraction","Extractable",m_extractable);
     write_skill_object("extraction","ExtractFrom",m_extract_from);
     write_skill_object("extraction","ExtractTo",m_extract_to);
 
-    execute_skill<Insertion,SkillParametersInsertion>("extraction");
+    execute_skill<Extraction,SkillParametersExtraction>("extraction");
 }
 void ExtractObject::evaluate(){
     write_result(get_result().skill_results["extraction"].success,get_result().skill_results["extraction"].cost_suc,get_result().skill_results["extraction"].cost_err,get_result().skill_results["extraction"].results);

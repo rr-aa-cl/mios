@@ -75,6 +75,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Insertion::graph_transiti
 }
 
 std::shared_ptr<ManipulationPrimitive> Insertion::create_move_mp(const Percept &p){
+    spdlog::debug("Insertion::create_move_mp");
     std::shared_ptr<SkillParametersInsertion> skill_params = get_parameters<SkillParametersInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
     mp->create_strategy<MoveToPoseStrategy>("s_move",1);
@@ -84,6 +85,7 @@ std::shared_ptr<ManipulationPrimitive> Insertion::create_move_mp(const Percept &
 }
 
 std::shared_ptr<ManipulationPrimitive> Insertion::create_wiggle_mp(const Percept &p){
+    spdlog::debug("Insertion::create_wiggle_mp");
     std::shared_ptr<SkillParametersInsertion> skill_params = get_parameters<SkillParametersInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("wiggle",p);
     mp->create_strategy<FFWiggleStrategy>("wiggle_x",1);

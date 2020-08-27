@@ -31,7 +31,7 @@ void InsertObject::execute(){
     }
 
     overwrite_context("coarse_approach","control","control_mode",3);
-    overwrite_context("fine_approach","control","control_mode",2);
+    overwrite_context("fine_approach","control","control_mode",0);
     overwrite_context("insertion","control","control_mode",0);
 
     write_skill_object("coarse_approach","goal_pose",m_insert_approach);
@@ -50,6 +50,7 @@ void InsertObject::execute(){
         write_error("TaskError");
         return;
     }
+    get_percept(p,{});
     execute_skill<MoveToPoseCart,SkillParametersMoveToPoseCart>("fine_approach");
     if(!get_result().skill_results["fine_approach"].success){
         write_error("TaskError");
