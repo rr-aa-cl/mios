@@ -214,7 +214,7 @@ bool STMemory::update_object(const std::string &name, const nlohmann::json &desc
 
 void STMemory::internal_update(const Percept &p){
     // Update special objects
-    spdlog::debug("STMemory::internal_update()");
+//    spdlog::debug("STMemory::internal_update()");
     if(m_environment.find("EndEffector")==m_environment.end()){
         m_environment.insert(std::make_pair("EndEffector",Object("EndEffector")));
     }

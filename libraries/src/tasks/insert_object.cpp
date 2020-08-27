@@ -30,11 +30,16 @@ void InsertObject::execute(){
         return;
     }
 
+    overwrite_context("coarse_approach","control","control_mode",3);
+    overwrite_context("fine_approach","control","control_mode",2);
+    overwrite_context("insertion","control","control_mode",0);
+
     write_skill_object("coarse_approach","goal_pose",m_insert_approach);
     write_skill_object("fine_approach","goal_pose",m_insert_approach);
     Eigen::Matrix<double,4,4> T_T_EE_g_offset;
     T_T_EE_g_offset.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(m_offset(3),m_offset(4),m_offset(5));
     T_T_EE_g_offset.block<3,1>(0,3)=m_offset.block<3,1>(0,0);
+    overwrite_context("fine_approach","skill","T_T_EE_g",msrm_utils::from_eigen<double,4,4>(m_memory->get_object(m_insert_approach)->O_T_OB));
     overwrite_context("fine_approach","skill","T_T_EE_g_offset",msrm_utils::from_eigen<double,4,4>(T_T_EE_g_offset));
     write_skill_object("insertion","Insertable",m_insertable);
     write_skill_object("insertion","InsertInto",m_insert_into);
