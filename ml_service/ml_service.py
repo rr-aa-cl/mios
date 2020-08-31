@@ -110,7 +110,3 @@ def test_standalone(agent: str = "localhost"):
     learner = GenericOptimizerService()
     learner.initialize(get_problem_definition_rastrigin(), get_service_configuration(), agents)
     learner.learn_task()
-
-if __name__ == "__main__":
-    test_interface()
-    
