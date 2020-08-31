@@ -2,6 +2,7 @@
 
 #include "skills/move_to_pose_joint.hpp"
 #include "skills/move_to_pose_cart.hpp"
+#include "skills/move_to_contact.hpp"
 #include "skills/insertion.hpp"
 #include "msrm_utils/json.hpp"
 #include "msrm_utils/math.hpp"
@@ -14,6 +15,7 @@ InsertObject::InsertObject(Core *core):Task("InsertObject",core){
 void InsertObject::initialize_context(){
     reserve_skill("coarse_approach");
     reserve_skill("fine_approach");
+    reserve_skill("contact");
     reserve_skill("insertion");
 }
 
@@ -31,11 +33,13 @@ void InsertObject::execute(){
     }
 
     overwrite_context("coarse_approach","control","control_mode",3);
-    overwrite_context("fine_approach","control","control_mode",0);
+    overwrite_context("fine_approach","control","control_mode",2);
+    overwrite_context("contact","control","control_mode",2);
     overwrite_context("insertion","control","control_mode",0);
 
     write_skill_object("coarse_approach","goal_pose",m_insert_approach);
     write_skill_object("fine_approach","goal_pose",m_insert_approach);
+    write_skill_object("contact","goal_pose",m_insert_into);
     Eigen::Matrix<double,4,4> T_T_EE_g_offset;
     T_T_EE_g_offset.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(m_offset(3),m_offset(4),m_offset(5));
     T_T_EE_g_offset.block<3,1>(0,3)=m_offset.block<3,1>(0,0);
@@ -50,9 +54,13 @@ void InsertObject::execute(){
         write_error("TaskError");
         return;
     }
-    get_percept(p,{});
     execute_skill<MoveToPoseCart,SkillParametersMoveToPoseCart>("fine_approach");
     if(!get_result().skill_results["fine_approach"].success){
+        write_error("TaskError");
+        return;
+    }
+    execute_skill<MoveToContact,SkillParametersMoveToContact>("contact");
+    if(!get_result().skill_results["contact"].success){
         write_error("TaskError");
         return;
     }

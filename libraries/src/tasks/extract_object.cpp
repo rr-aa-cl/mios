@@ -1,6 +1,5 @@
 #include "tasks/extract_object.hpp"
 
-#include "skills/move_to_pose_joint.hpp"
 #include "skills/move_to_pose_cart.hpp"
 #include "skills/extraction.hpp"
 #include "msrm_utils/json.hpp"
