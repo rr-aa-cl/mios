@@ -50,7 +50,6 @@ class BaseService(metaclass=ABCMeta):
             for key in knowledge["parameters"]:
                 self.centroid.append(knowledge["parameters"][key])
             logger.debug("using initial centroid from knowledge: " + str(self.centroid))
-            
 
         if self.problem_definition.is_valid() is False:
             logger.error("Problem definition is not valid.")

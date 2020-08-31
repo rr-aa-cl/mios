@@ -18,11 +18,6 @@ class Interface:
     """Class that provides basic controlling functions for ml_service"""
 
     def __init__(self):
-
-        logger.setLevel(logging.DEBUG)
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setLevel(logging.DEBUG)
-        logger.addHandler(handler)
         self.service = None
         self.learn_thread = None
 
@@ -45,7 +40,8 @@ class Interface:
                    agents: set, knowledge:dict) -> bool:
         """strt to learn a task according to instructions"""
         logger.debug("interface.learn_task: start learning task")
-        self.service.initialize(problem_definition, configuration, agents, knowledge)
+        if self.service.initialize(problem_definition, configuration, agents, knowledge) is False:
+            return False
         logger.debug("Gradient descent initialized ")
         result = self.service.learn_task()
         logger.debug("learning success "+str(result))

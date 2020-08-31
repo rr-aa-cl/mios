@@ -32,6 +32,7 @@ class CMAESService(BaseService):
         deap.creator.create("FitnessMin", deap.base.Fitness, weights=(-1.0,))
         deap.creator.create("Individual", list, fitness=deap.creator.FitnessMin)
         self.toolbox = deap.base.Toolbox()
+        print("TEST")
 
     def _learn_task(self) -> bool:
         self.cnt_gen = 0

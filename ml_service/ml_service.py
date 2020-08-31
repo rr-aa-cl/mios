@@ -9,13 +9,14 @@ from services.generic_optimizer import *
 from problem_definition.problem_definition import ProblemDefinition
 from problem_definition.domain import Domain
 from utils.udp_client import call_method
+from definitions import *
 
 
 logger = logging.getLogger("ml_service")
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
-#logger.addHandler(handler)
+logger.addHandler(handler)
 
 
 def get_problem_definition_rastrigin():
@@ -77,7 +78,7 @@ def test_mios(agent: str = "localhost"):
 def test_interface(agent: str = "localhost"):
     agents = set()
     agents.add(agent)
-    problem_def = get_problem_definition_rastrigin()
+    problem_def = insert_cylinder_30()
   
     knowledge = None
 
@@ -85,6 +86,9 @@ def test_interface(agent: str = "localhost"):
 
     #learning without knowledge
     uuid = interface.start_service(problem_def, get_service_configuration(), agents, knowledge)
+    input("Press enter to stop service.")
+    interface.stop_service()
+    return
     time.sleep(2)
     while interface.is_busy():
         time.sleep(2)

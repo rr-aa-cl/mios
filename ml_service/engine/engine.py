@@ -9,6 +9,8 @@ from mongodb_client.mongodb_client import MongoDBClient
 from problem_definition.problem_definition import ProblemDefinition
 from utils.exception import *
 from utils.ws_client import *
+import sys
+
 
 logger = logging.getLogger("ml_service")
 
@@ -214,17 +216,28 @@ class Engine:
         return cnt_repeat < self.max_trial_repeats
 
     def _reset_task(self, agent: str, trial: Trial) -> bool:
+        logger.debug("Engine::_reset_task()")
         for i in trial.reset_instructions:
             if i["method"] == "start_task":
-                result, task_uuid = self._start_task(agent, trial.task_context)
+                result, task_uuid = self._start_task(agent, i["parameters"])
                 if result is False:
+                    logger.debug("Reset task could not be started.")
+                    logger.debug(result)
                     return False
 
                 result, trial.task_result = self._wait_for_task(agent, task_uuid)
                 if result is False or trial.task_result.success is False:
+                    logger.debug("Could not wait for reset_task")
+                    logger.debug(result)
                     return False
             else:
-                call_method(agent, 12000, i["method"], i["parameters"])
+                response = call_method(agent, 12000, i["method"], i["parameters"])
+                if response is None:
+                    logger.debug(response)
+                    return False
+
+        logger.debug("Engine::_reset_task.end")
+        return True
 
     def _start_task(self, agent: str, task_context: dict) -> (bool, str):
         cnt_repeat = -1

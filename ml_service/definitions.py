@@ -20,7 +20,6 @@ def insert_cylinder_30():
         "wiggle_f_phi": (0, 1),
         "wiggle_f_chi": (0, 1),
         "wiggle_f_psi": (0, 1),
-        "stuck_t_thr": (0, 1),
         "stuck_dx_thr": (0, 0.1),
         "offset_x": (-0.01, 0.01),
         "offset_y": (-0.01, 0.01),
@@ -44,7 +43,6 @@ def insert_cylinder_30():
         "wiggle_f_phi": ["skills.insertion.skill.search_f-4"],
         "wiggle_f_chi": ["skills.insertion.skill.search_f-5"],
         "wiggle_f_psi": ["skills.insertion.skill.search_f-6"],
-        "stuck_t_thr": ["skills.insertion.skill.stuck_t_thr"],
         "stuck_dx_thr": ["skills.insertion.skill.stuck_dx_thr"],
         "offset_x": ["parameters.offset-1"],
         "offset_y": ["parameters.offset-2"],
@@ -56,12 +54,14 @@ def insert_cylinder_30():
     default_context = {
         "name": "InsertObject",
         "parameters": {
-            "Insertable": "cylinder_30",
-            "InsertInto": "hole_30"
+            "insertable": "cylinder_30",
+            "insert_into": "hole_30",
+            "insert_approach": "hole_30_above",
+            "offset": [0, 0, 0, 0, 0, 0]
         }
     }
     reset_instructions = []
-    reset_instructions.append({
+    task_context = {
         "name": "ExtractObject",
         "skills": {
             "extraction": {
@@ -75,9 +75,11 @@ def insert_cylinder_30():
             }
         },
         "parameters": {
-            "Extractable": "cylinder_30",
-            "ExtractFrom": "hole_30"
+            "extractable": "cylinder_30",
+            "extract_from": "hole_30",
+            "extract_to": "hole_30_above"
         }
-    })
+    }
+    reset_instructions.append({"method": "start_task", "parameters": task_context})
     pd = ProblemDefinition("insert_object", domain, default_context, [], [], reset_instructions, ["insertion", "cylinder_30"])
     return pd
