@@ -16,6 +16,8 @@
 #include "skills/extraction.hpp"
 #include "skills/insertion.hpp"
 #include "skills/wipe.hpp"
+#include "skills/spot_wipe.hpp"
+#include "skills/line_wipe.hpp"
 
 namespace mios {
 
@@ -88,6 +90,12 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("Wipe"):
         execute_skill<Wipe,SkillParametersWipe>(name);
+        break;
+    case msrm_utils::str_to_int("SpotWipe"):
+        execute_skill<SpotWipe,SkillParametersSpotWipe>(name);
+        break;
+    case msrm_utils::str_to_int("LineWipe"):
+        execute_skill<LineWipe,SkillParametersLineWipe>(name);
         break;
     default:
         throw TaskException("Skill with type " + type + " not known to GenericTask");
