@@ -19,7 +19,6 @@
 
 namespace mios {
 
-class Memory;
 class Core;
 
 
@@ -69,12 +68,6 @@ public:
     virtual void initialize_context() = 0;
 
     /**
-     * Implements the evaluation routine. The user has to define how the members of the evaluation struct are set. This function is called at the end of a nominal task execution.
-     * @return Return the current evaluation struct (will change to void in future updates).
-     */
-    virtual void evaluate() = 0;
-
-    /**
      * Starts the recovery routine of the task. This function is called at the end of a task execution if it has terminated before the nominal end.
      */
     void start_recovery();
@@ -120,6 +113,8 @@ public:
     TaskResult get_subtask_result(const std::string& subtask_name) const;
     void notify_observers();
     void subscribe(std::shared_ptr<TaskObserver> observer);
+
+    void write_result();
 
 protected:
 
@@ -244,8 +239,9 @@ protected:
      */
     void execute_desk_timeline(const std::string& id);
 
-    void write_result(bool success, double cost_suc, double cost_err, std::optional<nlohmann::json> custom_results);
     void write_error(const std::string& error);
+
+    virtual void write_custom_results(nlohmann::json& custom_results);
 
 private:
     Core* m_core;

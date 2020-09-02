@@ -32,9 +32,6 @@ void ExtractObject::execute(){
 
     execute_skill<Extraction,SkillParametersExtraction>("extraction");
 }
-void ExtractObject::evaluate(){
-    write_result(get_result().skill_results["extraction"].success,get_result().skill_results["extraction"].cost_suc,get_result().skill_results["extraction"].cost_err,get_result().skill_results["extraction"].results);
-}
 
 bool ExtractObject::read_parameters(const nlohmann::json& params){
     if(!msrm_utils::read_json_param(params,"extractable",m_extractable)){

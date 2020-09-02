@@ -186,12 +186,7 @@ void TaskEngine::life_cycle(){
         }
         if(m_task_life_cycle==TaskLifeCycle::Termination){
             spdlog::debug("TaskLifeCycle: termination, task_uuid: "+m_active_task->get_uuid());
-            try{
-                spdlog::info("Terminating task " + m_active_task->get_id() + " with uuid " + m_active_task->get_uuid());
-                m_active_task->evaluate();
-            }catch(const std::exception& e){
-                spdlog::debug(e.what());
-            }
+            m_active_task->write_result();
             m_memory->store_task_data(m_active_task->get_uuid(),m_active_task->get_id(),m_active_task->get_context(),m_active_task->get_result());
             m_task_life_cycle=TaskLifeCycle::Switch;
         }

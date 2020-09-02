@@ -8,7 +8,6 @@ public:
     InsertObject(Core* core);
     void initialize_context() override;
     void execute() override;
-    void evaluate() override;
     bool read_parameters(const nlohmann::json& params) override;
 private:
 

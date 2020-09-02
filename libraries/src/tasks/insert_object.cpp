@@ -66,14 +66,6 @@ void InsertObject::execute(){
     }
     execute_skill<Insertion,SkillParametersInsertion>("insertion");
 }
-void InsertObject::evaluate(){
-    double cost_suc = get_result().skill_results["insertion"].cost_suc + get_result().skill_results["contact"].cost_suc;
-    double time_max_1,time_max_2;
-    get_context()["skills"]["insertion"]["skill"]["time_max"].get_to(time_max_1);
-    get_context()["skills"]["contact"]["skill"]["time_max"].get_to(time_max_2);
-    double cost_err = time_max_1 + time_max_2 + get_result().skill_results["insertion"].cost_err + get_result().skill_results["contact"].cost_err;
-    write_result(get_result().skill_results["insertion"].success,cost_suc,cost_err,get_result().skill_results["insertion"].results);
-}
 
 bool InsertObject::read_parameters(const nlohmann::json& params){
     if(!msrm_utils::read_json_param(params,"insertable",m_insertable)){

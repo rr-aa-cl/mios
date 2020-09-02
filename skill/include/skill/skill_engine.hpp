@@ -8,8 +8,6 @@
 
 namespace mios {
 class Core;
-class Memory;
-class Percept;
 class Actuator;
 
 class SkillEngine{

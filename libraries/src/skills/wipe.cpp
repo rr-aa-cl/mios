@@ -150,5 +150,4 @@ bool Wipe::check_local_ex_conditions(const Percept &p){
     return false;
 }
 
-void Wipe::evaluate(){}
 }

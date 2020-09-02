@@ -128,28 +128,27 @@ void TestSkill1::auxiliaries(const Percept &p){
             throw SkillException("This is a skill exception that has been thrown for test purposes");
         }
     }
-    write_costs(c->cost_suc,c->cost_err);
     m_result_code=-1;
 }
 
-void TestSkill1::evaluate(){
-    spdlog::debug("Evaluate");
-    std::shared_ptr<SkillParametersTestSkill1> c = get_parameters<SkillParametersTestSkill1>();
-    get_custom_results()["exception"]=c->exception;
-    get_custom_results()["run_time"]=c->run_time;
-    get_custom_results()["success"]=c->success;
-    get_custom_results()["t_exception"]=c->t_exception;
-    get_custom_results()["result_code"]=m_result_code;
-    get_custom_results()["result_graph"]=m_result_graph;
-    if(m_memory->get_live_parameter("test_parameter_1").has_value()){
-        get_custom_results()["test_parameter_1"]=m_memory->get_live_parameter("test_parameter_1").value();
-    }
-    if(m_memory->get_live_parameter("test_parameter_2").has_value()){
-        get_custom_results()["test_parameter_2"]=m_memory->get_live_parameter("test_parameter_2").value();
-    }
-    if(m_memory->get_live_parameter("test_parameter_3").has_value()){
-        get_custom_results()["test_parameter_3"]=m_memory->get_live_parameter("test_parameter_3").value();
-    }
+void TestSkill1::write_custom_results(nlohmann::json& custom_results){
+//    spdlog::debug("Evaluate");
+//    std::shared_ptr<SkillParametersTestSkill1> c = get_parameters<SkillParametersTestSkill1>();
+//    get_custom_results()["exception"]=c->exception;
+//    get_custom_results()["run_time"]=c->run_time;
+//    get_custom_results()["success"]=c->success;
+//    get_custom_results()["t_exception"]=c->t_exception;
+//    get_custom_results()["result_code"]=m_result_code;
+//    get_custom_results()["result_graph"]=m_result_graph;
+//    if(m_memory->get_live_parameter("test_parameter_1").has_value()){
+//        get_custom_results()["test_parameter_1"]=m_memory->get_live_parameter("test_parameter_1").value();
+//    }
+//    if(m_memory->get_live_parameter("test_parameter_2").has_value()){
+//        get_custom_results()["test_parameter_2"]=m_memory->get_live_parameter("test_parameter_2").value();
+//    }
+//    if(m_memory->get_live_parameter("test_parameter_3").has_value()){
+//        get_custom_results()["test_parameter_3"]=m_memory->get_live_parameter("test_parameter_3").value();
+//    }
 }
 
 void TestSkill1::parallels(){

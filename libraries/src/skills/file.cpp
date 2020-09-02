@@ -100,5 +100,4 @@ bool File::check_local_err_conditions(const Percept &p){
     return false;
 }
 
-void File::evaluate(){}
 }

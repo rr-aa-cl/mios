@@ -123,20 +123,8 @@ bool Insertion::check_local_err_conditions(const Percept &p){
     return false;
 }
 
-void Insertion::evaluate(){
-
-        double c_err_1=exp((get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3)).norm()*100)-1;
-        double c_suc_1=std::chrono::duration_cast<std::chrono::milliseconds>(get_result().p_1.time-get_result().p_0.time).count()/1000.0;
-
-        double c_err_2=m_memory->read_parameters()->user.F_ext_max(0)+exp((get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3)).norm()*100)-1;
-        double c_suc_2=0;
-        if(m_cf1_cnt==0){
-            c_suc_2=get_result().cost_err;
-        }else{
-            c_suc_2=m_cf1_sum_force/m_cf1_cnt;
-        }
-        write_costs(m_memory->read_parameters()->skill->w_cost_function[0]*c_suc_1+m_memory->read_parameters()->skill->w_cost_function[1]*c_suc_2,
-                m_memory->read_parameters()->skill->w_cost_function[0]*c_err_1+m_memory->read_parameters()->skill->w_cost_function[1]*c_err_2);
+double Insertion::get_goal_heuristic(const Percept &p){
+    return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3)).norm();
 }
 
 void Insertion::auxiliaries(const Percept &p){

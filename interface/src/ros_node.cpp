@@ -90,16 +90,12 @@ bool RosNode::wait_for_task(mios_msg::WaitForTask::Request &request, mios_msg::W
     nlohmann::json task_result_response;
     if(response.result){
         task_result_response["success"]=task_result.success;
-        task_result_response["cost_err"]=task_result.cost_err;
-        task_result_response["cost_suc"]=task_result.cost_suc;
         task_result_response["external_stop"]=task_result.external_stop;
         task_result_response["exception"]=task_result.exception;
         task_result_response["results"]=task_result.custom_results;
         task_result_response["error"]=task_result.errors;
     }else{
         task_result_response["success"]=false;
-        task_result_response["cost_err"]=0;
-        task_result_response["cost_suc"]=0;
         task_result_response["external_stop"]=false;
         task_result_response["exception"]=true;
         task_result_response["results"]=nlohmann::json();

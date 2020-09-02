@@ -46,8 +46,4 @@ bool IdleTask::read_parameters(const nlohmann::json& params){
 return true;
 }
 
-void IdleTask::evaluate(){
-    write_result(true,0,0,{});
-}
-
 }

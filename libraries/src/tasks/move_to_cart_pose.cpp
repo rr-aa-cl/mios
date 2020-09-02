@@ -41,8 +41,4 @@ bool MoveToCartPose::read_parameters(const nlohmann::json &params){
     return true;
 }
 
-void MoveToCartPose::evaluate(){
-    write_result(get_result().skill_results["move"].success,get_result().skill_results["move"].cost_suc,get_result().skill_results["move"].cost_err,get_result().skill_results["move"].results);
-}
-
 }

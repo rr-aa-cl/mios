@@ -43,7 +43,6 @@ void MLTestSkill::evaluate(){
         y2+=pow(params->x(i),2);
     }
     double y=params->w_cost_function[0]*y1+params->w_cost_function[1]*y2;
-    write_costs(y,y);
     spdlog::info("MLTestSkill: Costs are " + std::to_string(y));
 }
 

@@ -15,6 +15,8 @@ Skill::Skill(const std::string &type, const std::unordered_set<std::string> &obj
     m_memory(memory),m_portal(portal),m_active_mp(std::make_shared<ManipulationPrimitive>("NullPrimitive",p,memory)),m_control_modes(control_modes),m_life_cycle(SkillLifeCycle::slInit),
     m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_stop_factor(1.0),m_type(type),m_id(id),m_objects(objects),
     m_msg_local_success(false),m_msg_global_success(false){
+
+    m_costs.insert(std::make_pair("ExecutionTime",0));
 }
 
 Skill::~Skill(){
@@ -220,7 +222,7 @@ void Skill::terminate(const Percept& p){
     for(auto& mp : m_mp_graph){
         mp.second->terminate(p);
     }
-    this->evaluate();
+    write_custom_results(m_result.results);
 }
 
 void Skill::invoke_failure(){
@@ -366,8 +368,13 @@ void Skill::terminate_parallels(){
     }
 }
 
-void Skill::write_custom_results(nlohmann::json results){
-    m_result.results=results;
+void Skill::measure_cost(const Percept &p){
+    m_result.cost = std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()/1000.0;
+    m_result.heuristic = get_goal_heuristic(p);
+}
+
+void Skill::write_custom_results(nlohmann::json &custom_results){
+    m_result.results=nlohmann::json();
 }
 
 nlohmann::json& Skill::get_custom_results(){
@@ -382,21 +389,16 @@ const std::shared_ptr<ManipulationPrimitive> Skill::get_active_mp() const{
     return m_active_mp;
 }
 
-void Skill::write_costs(double cost_suc, double cost_err){
-    m_result.cost_suc=cost_suc;
-    m_result.cost_err=cost_err;
-}
-
-void Skill::evaluate(){
-
-}
-
 void Skill::update_internal_models(const Percept& p){
 
 }
 
 void Skill::update_policies(const Percept &p){
 
+}
+
+double Skill::get_goal_heuristic(const Percept &p){
+    return 0;
 }
 
 }

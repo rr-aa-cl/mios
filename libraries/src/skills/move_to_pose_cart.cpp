@@ -74,8 +74,4 @@ bool MoveToPoseCart::check_local_ex_conditions(const Percept &p){
     }
 }
 
-void MoveToPoseCart::evaluate(){
-    write_costs(0,std::chrono::duration_cast<std::chrono::milliseconds>(get_result().p_1.time-get_result().p_0.time).count()/1000.0);
-}
-
 }

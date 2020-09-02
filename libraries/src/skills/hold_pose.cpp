@@ -30,8 +30,4 @@ bool HoldPose::check_local_ex_conditions(const Percept &p){
     return true;
 }
 
-void HoldPose::evaluate(){
-    write_costs(0,std::chrono::duration_cast<std::chrono::seconds>(get_result().p_1.time-get_result().p_0.time).count());
-}
-
 }

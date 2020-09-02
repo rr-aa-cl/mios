@@ -73,8 +73,4 @@ bool MoveToContact::check_local_err_conditions(const Percept &p){
     return get_active_mp()->get_strategy<MoveToPoseStrategy>("s_0")->finished();
 }
 
-void MoveToContact::evaluate(){
-    write_costs(std::chrono::duration_cast<std::chrono::milliseconds>(get_result().p_1.time-get_result().p_0.time).count()/1000.0,0);
-}
-
 }

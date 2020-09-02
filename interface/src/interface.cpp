@@ -120,8 +120,6 @@ nlohmann::json CommandInterface::wait_for_task(const nlohmann::json &request){
     nlohmann::json task_result_response;
     if(result){
         task_result_response["success"]=task_result.success;
-        task_result_response["cost_err"]=task_result.cost_err;
-        task_result_response["cost_suc"]=task_result.cost_suc;
         task_result_response["external_stop"]=task_result.external_stop;
         task_result_response["exception"]=task_result.exception;
         task_result_response["results"]=task_result.custom_results;

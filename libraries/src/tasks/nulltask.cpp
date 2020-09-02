@@ -14,8 +14,4 @@ void NullTask::execute(){
 
 }
 
-void NullTask::evaluate(){
-
-}
-
 }

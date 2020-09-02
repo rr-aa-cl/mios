@@ -24,8 +24,7 @@ void TestTask3::execute(){
     execute_subtask("TestTask1","t3_t2");
 
 }
-void TestTask3::evaluate(){
-    nlohmann::json custom_results;
+void TestTask3::write_custom_results(nlohmann::json &custom_results){
     custom_results["t3_s1"]=get_result().skill_results["t3_s1"].results;
     custom_results["t3_s2"]=get_result().skill_results["t3_s2"].results;
     custom_results["t3_s3"]=get_result().skill_results["t3_s3"].results;
@@ -35,7 +34,6 @@ void TestTask3::evaluate(){
     custom_results["h"]=m_h;
     custom_results["i"]=m_i;
     custom_results["recovered"]=recovered;
-    write_result(false,0,0,custom_results);
 }
 bool TestTask3::read_parameters(const nlohmann::json& params){
     spdlog::debug("Reading parameters for task "+this->get_id());

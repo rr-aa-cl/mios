@@ -15,7 +15,6 @@ public:
 class Shove : public Skill{
 public:
     Shove(const std::string& name,Memory* memory, Portal* portal, const Percept& p);
-    void evaluate() override;
 
 private:
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept& p_0) override;
