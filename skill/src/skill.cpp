@@ -104,6 +104,7 @@ Actuator* Skill::cycle(const Percept &p){
     if(m_life_cycle==SkillLifeCycle::slInit){
         m_active_mp=get_initial_mp(p);
         m_result.p_0=p;
+        m_time_start=std::chrono::high_resolution_clock::now();
         m_memory->get_live_context()->t_skill=std::chrono::high_resolution_clock::now();
         m_result.percepts.emplace(std::make_pair(m_active_mp->get_name(),p));
         if(!this->check_local_pre_conditions(p)){
@@ -258,8 +259,8 @@ bool Skill::check_global_err_conditions(const Percept& p) const{
             return true;
         }
     }
-    double run_time = std::chrono::duration_cast<std::chrono::seconds>(p.time-m_time_start).count();
-    if(run_time>m_memory->read_parameters()->skill->time_max && m_memory->read_parameters()->skill->time_max>0){
+    double run_time = std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_time_start).count();
+    if(run_time>m_memory->read_parameters()->skill->time_max*1000 && m_memory->read_parameters()->skill->time_max>0){
         spdlog::error("Skill "+m_id+" has violated the maximum time limit of "+std::to_string(m_memory->read_parameters()->skill->time_max)+" s.");
         return true;
     }

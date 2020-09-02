@@ -24,7 +24,7 @@ class Domain:
         return np.ones(len(self.limits)) * 0.5
 
     def normalize(self, x: np.ndarray) -> np.ndarray:
-        x_norm = np.zeros((len(x), 1))
+        x_norm = np.zeros((len(x),))
         for i in range(len(x)):
             x_norm[i] = (x[i] - self.limits[self.vector_mapping[i]][0]) / (
                         self.limits[self.vector_mapping[i]][1] - self.limits[self.vector_mapping[i]][0])
@@ -32,7 +32,7 @@ class Domain:
         return x_norm
 
     def denormalize(self, x_norm: np.ndarray) -> np.ndarray:
-        x = np.zeros((len(x_norm), 1))
+        x = np.zeros((len(x_norm),))
         for i in range(len(x_norm)):
             x[i] = x_norm[i] * (self.limits[self.vector_mapping[i]][1] - self.limits[self.vector_mapping[i]][0]) + \
                    self.limits[self.vector_mapping[i]][0]

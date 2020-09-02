@@ -27,8 +27,8 @@ bool SkillParametersExtraction::from_json(const nlohmann::json &parameters){
     }
 
     if(stuck_dx_thr>traj_speed(0) || stuck_dx_thr<0){
-        spdlog::error("stuck_dx_thr cannot be greater than traj_speed[0] or smaller than 0.");
-        return false;
+        spdlog::warn("stuck_dx_thr cannot be greater than traj_speed[0] or smaller than 0.");
+        stuck_dx_thr=traj_speed(0);
     }
 
     return true;

@@ -77,8 +77,17 @@ class BaseService(metaclass=ABCMeta):
         self.engine.stop()
 
     def push_trial(self, x) -> str:
-        return self.engine.push_trial(Trial(self.update_default_context(x), self.problem_definition.reset_instructions,
-                                            self.get_theta(x)))
+        for i in range(len(x)):
+            if x[i] > 1:
+                x[i] = 1
+                logger.debug("OUT OF BOUNDS")
+            if x[i] < 0:
+                x[i] = 0
+                logger.debug("OUT OF BOUNDS")
+
+        x_real = list(self.problem_definition.domain.denormalize(x))
+        return self.engine.push_trial(Trial(self.update_default_context(x_real), self.problem_definition.reset_instructions,
+                                            self.get_theta(x_real)))
 
     def wait_for_result(self, uuid: str) -> TaskResult:
         return self.engine.wait_for_trial(uuid, 50).task_result
@@ -109,7 +118,7 @@ class BaseService(metaclass=ABCMeta):
         return updated_context
 
     def set_nested_parameter(self, dic, keys, value):
-        logger.debug("BaseService.set_nested_parameter(dic: " + str(dic) + ", " + "keys: " + str(keys) + ")")
+        # logger.debug("BaseService.set_nested_parameter(dic: " + str(dic) + ", " + "keys: " + str(keys) + ")")
         for key in keys[:-1]:
             dic = dic.setdefault(key, {})
         tmp = keys[-1].split("-")

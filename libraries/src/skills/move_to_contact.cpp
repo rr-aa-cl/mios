@@ -35,8 +35,10 @@ std::shared_ptr<ManipulationPrimitive> MoveToContact::get_initial_mp(const Perce
     mp->create_strategy<MoveToPoseStrategy>("s_0",1);
 
     Eigen::Matrix<double,4,4> T_g;
+
     if(this->get_object("goal_pose")->name!="NullObject"){
         T_g=msrm_utils::rotate_matrix(get_object("goal_pose")->O_T_OB,m_memory->read_parameters()->frames.O_R_T.transpose());
+        T_g.block<3,3>(0,0)=p_0.proprioception.T_T_EE.block<3,3>(0,0);
         Eigen::Matrix<double,3,1> goal_dir=T_g.block<3,1>(0,3)-p_0.proprioception.T_T_EE.block<3,1>(0,3);
         goal_dir.normalize();
         T_g.block<3,1>(0,3)+=goal_dir*0.05;
@@ -45,7 +47,7 @@ std::shared_ptr<ManipulationPrimitive> MoveToContact::get_initial_mp(const Perce
     }
     Eigen::Matrix<double,2,1> speed;
     Eigen::Matrix<double,2,1> acc;
-    speed<<skill_params->speed*m_memory->read_parameters()->user.dX_default(0),0.5*m_memory->read_parameters()->user.dX_default(1);
+    speed<<skill_params->speed,m_memory->read_parameters()->user.dX_default(1);
     acc<<m_memory->read_parameters()->user.ddX_default(0),m_memory->read_parameters()->user.ddX_default(1);
     mp->get_strategy<MoveToPoseStrategy>("s_0")->set_goal(T_g,speed,acc);
     Eigen::Matrix<double,2,1> t_scale;
@@ -72,7 +74,7 @@ bool MoveToContact::check_local_err_conditions(const Percept &p){
 }
 
 void MoveToContact::evaluate(){
-    write_costs(0,std::chrono::duration_cast<std::chrono::seconds>(get_result().p_1.time-get_result().p_0.time).count());
+    write_costs(std::chrono::duration_cast<std::chrono::milliseconds>(get_result().p_1.time-get_result().p_0.time).count()/1000.0,0);
 }
 
 }

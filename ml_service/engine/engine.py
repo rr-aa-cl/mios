@@ -185,12 +185,14 @@ class Engine:
             self.completed_trials[trial.trial_uuid] = trial
 
         if self._reset_task(agent, trial) is False:
-            raise Exception
+            logger.error("Could not reset the task, service will stop.")
+            self.stop()
 
         self.free_agents.add(agent)
 
     def _execute_task(self, agent: str, trial: Trial) -> bool:
         logger.debug("Engine._execute_task(" + agent + ")")
+        logger.debug("Engine::_execute_task.task_context: " + str(trial.task_context))
         cnt_repeat = -1
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
             cnt_repeat += 1
@@ -205,6 +207,10 @@ class Engine:
             if result is False:
                 return False
 
+            if "TaskError" in trial.task_result.errors:
+                logger.error("Received an task error, service will terminate.")
+                self.stop()
+
             if "realtime_error" in trial.task_result.errors:
                 time.sleep(1)
                 continue
@@ -218,6 +224,7 @@ class Engine:
     def _reset_task(self, agent: str, trial: Trial) -> bool:
         logger.debug("Engine::_reset_task()")
         for i in trial.reset_instructions:
+            logger.debug("Engine::_reset_task.instructions: " + str(i["parameters"]))
             if i["method"] == "start_task":
                 result, task_uuid = self._start_task(agent, i["parameters"])
                 if result is False:
@@ -312,5 +319,6 @@ class Engine:
             "t_1": trial.t_1,
             "t_delta": trial.t_delta
         }
+        logger.debug("Engine::write_task_result.data: " + str(data))
         self.database_results_collection.update_one({'_id': self.database_results_id},
                                                     {'$set': {'n' + str(trial.trial_number): data}}, upsert=False)

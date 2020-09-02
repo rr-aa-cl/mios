@@ -24,10 +24,16 @@ def insert_cylinder_30():
         "offset_x": (-0.01, 0.01),
         "offset_y": (-0.01, 0.01),
         "offset_phi": (-10, 10),
-        "offset_chi": (-10, 10)
+        "offset_chi": (-10, 10),
+        "K_x": (0, 2000),
+        "K_y": (0, 2000),
+        "K_z": (0, 2000),
+        "K_phi": (0, 200),
+        "K_chi": (0, 200),
+        "K_psi": (0, 200)
     }
     context_mapping = {
-        "speed_t": ["skills.insertion.skill.traj_speed-1"],
+        "speed_t": ["skills.insertion.skill.traj_speed-1", "skills.contact.skill.speed"],
         "speed_r": ["skills.insertion.skill.traj_speed-2"],
         "acc_t": ["skills.insertion.skill.traj_acc-1"],
         "acc_r": ["skills.insertion.skill.traj_acc-2"],
@@ -48,6 +54,12 @@ def insert_cylinder_30():
         "offset_y": ["parameters.offset-2"],
         "offset_phi": ["parameters.offset-4"],
         "offset_chi": ["parameters.offset-5"],
+        "K_x": ["skills.insertion.control.cart_imp.K_x-1"],
+        "K_y": ["skills.insertion.control.cart_imp.K_x-2"],
+        "K_z": ["skills.insertion.control.cart_imp.K_x-3"],
+        "K_phi": ["skills.insertion.control.cart_imp.K_x-4"],
+        "K_chi": ["skills.insertion.control.cart_imp.K_x-5"],
+        "K_psi": ["skills.insertion.control.cart_imp.K_x-6"]
     }
 
     domain = Domain(limits, context_mapping)
@@ -58,6 +70,18 @@ def insert_cylinder_30():
             "insert_into": "hole_30",
             "insert_approach": "hole_30_above",
             "offset": [0, 0, 0, 0, 0, 0]
+        },
+        "skills": {
+            "insertion": {
+                "skill": {
+                    "time_max": 5.0
+                }
+            },
+            "contact": {
+                "skill": {
+                    "time_max": 5.0
+                }
+            }
         }
     }
     reset_instructions = []
@@ -70,7 +94,7 @@ def insert_cylinder_30():
                     "traj_acc": [0.5, 1],
                     "search_a": [3, 3, 0, 2, 2, 1],
                     "search_f": [1, 0.75, 0, 1, 0.75, 0.5],
-                    "stuck_dx_thr": 0.1
+                    "stuck_dx_thr": 0.01
                 }
             }
         },

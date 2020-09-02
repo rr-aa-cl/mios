@@ -62,9 +62,6 @@ class CMAESService(BaseService):
     def _terminate(self):
         pass
 
-    def trial_test(self, x):
-        print(x)
-
     def trial(self, f, x_set):
         pass
 
