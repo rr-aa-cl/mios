@@ -31,7 +31,7 @@ std::shared_ptr<ManipulationPrimitive> MLTestSkill::get_initial_mp(const Percept
 bool MLTestSkill::check_local_suc_conditions(const Percept& p){
     return true;
 }
-void MLTestSkill::evaluate(){
+double MLTestSkill::measure_cost(const Percept &p){
     std::shared_ptr<SkillParametersMLTestSkill> params = get_parameters<SkillParametersMLTestSkill>();
     double y1=0;
     double y2=0;
@@ -44,6 +44,7 @@ void MLTestSkill::evaluate(){
     }
     double y=params->w_cost_function[0]*y1+params->w_cost_function[1]*y2;
     spdlog::info("MLTestSkill: Costs are " + std::to_string(y));
+    return y;
 }
 
 }

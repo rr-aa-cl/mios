@@ -109,6 +109,8 @@ Actuator* Skill::cycle(const Percept &p){
         m_time_start=std::chrono::high_resolution_clock::now();
         m_memory->get_live_context()->t_skill=std::chrono::high_resolution_clock::now();
         m_result.percepts.emplace(std::make_pair(m_active_mp->get_name(),p));
+        m_result.cost=measure_cost(p);
+        m_result.heuristic=get_goal_heuristic(p);
         if(!this->check_local_pre_conditions(p)){
             spdlog::error("Preconditions are not fulfilled.");
             m_stop_factor=0.1;
@@ -189,7 +191,8 @@ Actuator* Skill::cycle(const Percept &p){
         auxiliaries(p);
         update_internal_models(p);
         update_policies(p);
-        measure_cost(p);
+        m_result.cost=measure_cost(p);
+        m_result.heuristic=get_goal_heuristic(p);
         return m_active_mp->step(p);
     }
     spdlog::critical("Skill life cycle is undefined");
@@ -369,9 +372,8 @@ void Skill::terminate_parallels(){
     }
 }
 
-void Skill::measure_cost(const Percept &p){
-    m_result.cost = std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()/1000.0;
-    m_result.heuristic = get_goal_heuristic(p);
+double Skill::measure_cost(const Percept &p){
+    return std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()/1000.0;
 }
 
 void Skill::write_custom_results(nlohmann::json &custom_results){

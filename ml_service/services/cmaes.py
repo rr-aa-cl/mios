@@ -76,9 +76,7 @@ class CMAESService(BaseService):
         costs = []
         for uuid in trial_uuids:
             result = self.wait_for_result(uuid)
-            if result.cost_suc is None:
-                result.cost_suc = 0
-            costs.append((result.cost_suc,))
+            costs.append((result.final_cost,))
 
         return costs
 

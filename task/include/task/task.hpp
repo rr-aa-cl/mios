@@ -221,6 +221,7 @@ protected:
             m_flag_stop = true;
         }
         if(!result){
+            m_result.skill_results[name].success=false;
             throw TaskException("Could not execute skill " + name + ".");
         }
     }

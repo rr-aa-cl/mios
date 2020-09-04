@@ -124,12 +124,21 @@ nlohmann::json CommandInterface::wait_for_task(const nlohmann::json &request){
         task_result_response["exception"]=task_result.exception;
         task_result_response["results"]=task_result.custom_results;
         task_result_response["error"]=task_result.errors;
+        nlohmann::json skill_results;
+        for(const auto& r : task_result.skill_results){
+            nlohmann::json result;
+            result["cost"] = r.second.cost;
+            result["heuristic"] = r.second.heuristic;
+            skill_results[r.first]=result;
+        }
+        task_result_response["skill_results"]=skill_results;
     }else{
         task_result_response["success"]=false;
         task_result_response["external_stop"]=false;
         task_result_response["exception"]=true;
         task_result_response["results"]=nlohmann::json();
         task_result_response["error"]={};
+        task_result_response["skill_results"]=nlohmann::json();
     }
     response["result"]=result;
     response["error"]=error_message;

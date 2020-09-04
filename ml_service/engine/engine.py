@@ -7,41 +7,12 @@ from copy import deepcopy
 import uuid
 from mongodb_client.mongodb_client import MongoDBClient
 from problem_definition.problem_definition import ProblemDefinition
+from engine.task_result import TaskResult
 from utils.exception import *
 from utils.ws_client import *
-import sys
 
 
 logger = logging.getLogger("ml_service")
-
-
-class TaskResult:
-    def __init__(self):
-        self.cost_suc = None
-        self.cost_err = None
-        self.total_cost = None
-        self.success = None
-        self.errors = []
-
-    def calculate(self, result: dict) -> bool:
-        if "cost_suc" not in result or "cost_err" not in result:
-            logger.error("No cost in task result.")
-            return False
-        if "success" not in result:
-            logger.error("No success indicator in result.")
-            return False
-
-        self.cost_suc = result["cost_suc"]
-        self.cost_err = result["cost_err"]
-        self.success = result["success"]
-        self.errors = result["error"]
-
-        if self.success is True:
-            self.total_cost = self.cost_suc
-        else:
-            self.total_cost = self.cost_err
-
-        return True
 
 
 class Trial:
@@ -78,6 +49,8 @@ class Engine:
         self.database_client = MongoDBClient()
         self.database_results_collection = None
         self.database_results_id = None
+
+        self.problem_definition = None
 
         self.keep_running = False
         self.max_trial_repeats = 3
@@ -119,6 +92,7 @@ class Engine:
         return self.completed_trials[trial_uuid]
 
     def initialize_results(self, problem_definition: ProblemDefinition):
+        self.problem_definition = problem_definition
         meta_data = problem_definition.to_dict()
         meta_data["t_0"] = time.time()
         meta_data["date"] = str(datetime.date.today())
@@ -217,6 +191,7 @@ class Engine:
 
             trial.trial_number = self.cnt_trial
             self.cnt_trial += 1
+            trial.task_result.final_cost = self.problem_definition.calculate_cost(trial.task_result)
             self.write_task_result(trial)
             break
         return cnt_repeat < self.max_trial_repeats
@@ -311,9 +286,7 @@ class Engine:
     def write_task_result(self, trial: Trial):
         data = {
             "theta": trial.theta,
-            "cost_suc": trial.task_result.cost_suc,
-            "cost_err": trial.task_result.cost_err,
-            "total_cost": trial.task_result.total_cost,
+            "cost": trial.task_result.final_cost,
             "success": trial.task_result.success,
             "t_0": trial.t_0,
             "t_1": trial.t_1,

@@ -1,4 +1,5 @@
 from problem_definition.domain import Domain
+from engine.task_result import TaskResult
 import logging
 
 
@@ -7,7 +8,7 @@ logger = logging.getLogger("ml_service")
 
 class ProblemDefinition:
     def __init__(self, task_type: str, domain: Domain, default_context: dict, setup_instructions: list, termination_instruction: list,
-                 reset_instruction: list, tags=None):
+                 reset_instruction: list, cost_function, tags=None):
         if tags is None:
             tags = []
         self.domain = domain
@@ -17,6 +18,7 @@ class ProblemDefinition:
         self.reset_instructions = reset_instruction
         self.uuid = "INVALID"
         self.task_type = task_type
+        self.cost_function = cost_function
         self.tags = tags
 
     def to_dict(self) -> dict:
@@ -54,3 +56,6 @@ class ProblemDefinition:
                 valid = False
 
         return valid
+
+    def calculate_cost(self, result: TaskResult) -> float:
+        return self.cost_function(result.cost, result.heuristic, result.success)

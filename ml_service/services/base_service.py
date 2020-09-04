@@ -22,7 +22,7 @@ class BaseService(metaclass=ABCMeta):
     def __init__(self):
 
         self.engine = None
-        self.problem_definition = ProblemDefinition("NullTask", Domain(dict(), dict()), dict(), [], [], [])
+        self.problem_definition = ProblemDefinition("NullTask", Domain(dict(), dict()), dict(), [], [], [], None)
         self.engine_thread = None
         self.configuration = None
         self.keep_running = False

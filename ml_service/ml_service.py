@@ -19,29 +19,7 @@ handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 
-def get_problem_definition_rastrigin():
-    limits = {
-        "x1": (-5.12, 5.12),
-        "x2": (-5.12, 5.12),
-        "x3": (-5.12, 5.12),
-        "x4": (-5.12, 5.12),
-        "x5": (-5.12, 5.12),
-        "x6": (-5.12, 5.12)
-    }
-    context_mapping = {
-        "x1": ["parameters.x-1"],
-        "x2": ["parameters.x-2"],
-        "x3": ["parameters.x-3"],
-        "x4": ["parameters.x-4"],
-        "x5": ["parameters.x-5"],
-        "x6": ["parameters.x-6"]
-    }
-    domain = Domain(limits, context_mapping)
-    default_context = {
-        "name": "LearnerTest"
-    }
-    pd = ProblemDefinition("benchmark_rastrigin", domain, default_context, [], [], [], ["benchmark", "rastrigin"])
-    return pd
+
 
 
 def get_service_configuration():
@@ -55,7 +33,7 @@ def test_mios(agent: str = "localhost"):
     agents = set()
     agents.add(agent)
 
-    pd = get_problem_definition_rastrigin()
+    pd = rastrigin()
 
     payload = {
         "problem_definition": {
@@ -112,5 +90,5 @@ def test_standalone(agent: str = "localhost"):
     agents = set()
     agents.add(agent)
     learner = GenericOptimizerService()
-    learner.initialize(get_problem_definition_rastrigin(), get_service_configuration(), agents)
+    learner.initialize(rastrigin(), get_service_configuration(), agents)
     learner.learn_task()

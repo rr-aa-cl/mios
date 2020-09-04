@@ -2,6 +2,36 @@ from problem_definition.domain import Domain
 from problem_definition.problem_definition import ProblemDefinition
 
 
+def rastrigin():
+    limits = {
+        "x1": (-5.12, 5.12),
+        "x2": (-5.12, 5.12),
+        "x3": (-5.12, 5.12),
+        "x4": (-5.12, 5.12),
+        "x5": (-5.12, 5.12),
+        "x6": (-5.12, 5.12)
+    }
+    context_mapping = {
+        "x1": ["parameters.x-1"],
+        "x2": ["parameters.x-2"],
+        "x3": ["parameters.x-3"],
+        "x4": ["parameters.x-4"],
+        "x5": ["parameters.x-5"],
+        "x6": ["parameters.x-6"]
+    }
+    domain = Domain(limits, context_mapping)
+    default_context = {
+        "name": "LearnerTest"
+    }
+    pd = ProblemDefinition("benchmark_rastrigin", domain, default_context, [], [], [], rastrigin_cost,
+                           ["benchmark", "rastrigin"])
+    return pd
+
+
+def rastrigin_cost(cost, heuristic, success):
+    return cost["ml_test"]
+
+
 def insert_cylinder_30():
     limits = {
         "speed_t": (0, 0.2),
@@ -105,5 +135,20 @@ def insert_cylinder_30():
         }
     }
     reset_instructions.append({"method": "start_task", "parameters": task_context})
-    pd = ProblemDefinition("insert_object", domain, default_context, [], [], reset_instructions, ["insertion", "cylinder_30"])
+    pd = ProblemDefinition("insert_object", domain, default_context, [], [], reset_instructions,
+                           insert_cylinder_30_cost, ["insertion", "cylinder_30"])
     return pd
+
+
+def insert_cylinder_30_cost(cost, heuristic, success):
+    total_cost = 0
+    if "insertion" not in cost or "insertion" not in heuristic or "contact" not in cost:
+        total_cost = 1000
+    else:
+        if success is True:
+            total_cost = cost["contact"] + cost["insertion"]
+    
+        if success is False:
+            total_cost = 10 + heuristic["insertion"]
+
+    return total_cost
