@@ -18,7 +18,7 @@
 namespace mios {
 
 MongodbClient::MongodbClient(const std::string &database, unsigned port){
-    spdlog::debug("[MONGODBCLIENT]: CONSTRUCTOR");
+    spdlog::trace("[MONGODBCLIENT]: CONSTRUCTOR");
     std::scoped_lock<std::mutex> lock(m_mutex_db_access);
     mongocxx::uri uri("mongodb://localhost:"+std::to_string(port));
     m_client = mongocxx::client(uri);
@@ -46,7 +46,7 @@ bool MongodbClient::read_documents(const std::string &collection, std::set<nlohm
             spdlog::error("Database has no "+collection+" collection");
             return false;
         }
-        spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENT.PRE_FIND");
+        spdlog::trace("[MONGODBCLIENT]: READ_DOCUMENT.PRE_FIND");
         for(const auto& d : m_collections[collection].find({})){
             std::string description = bsoncxx::to_json(d);
             docs.insert(nlohmann::json::parse(description));
@@ -76,7 +76,7 @@ bool MongodbClient::read_documents(const std::string &collection, std::set<nlohm
 }
 
 bool MongodbClient::read_document(const std::string& name, const std::string& collection, nlohmann::json &descr){
-    spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENT("+name+","+collection+")");
+    spdlog::trace("[MONGODBCLIENT]: READ_DOCUMENT("+name+","+collection+")");
     std::scoped_lock<std::mutex> lock(m_mutex_db_access);
     try{
         if(!m_mongodb.has_collection(collection)){
@@ -87,7 +87,7 @@ bool MongodbClient::read_document(const std::string& name, const std::string& co
             spdlog::error("Database has no "+collection+" collection");
             return false;
         }
-        spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENT.PRE_COUNT");
+        spdlog::trace("[MONGODBCLIENT]: READ_DOCUMENT.PRE_COUNT");
         unsigned n_doc = m_collections[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize});
         if(n_doc==0){
             spdlog::error("No document with name "+name+" of type "+collection+" present in database.");
@@ -99,11 +99,11 @@ bool MongodbClient::read_document(const std::string& name, const std::string& co
             descr=nlohmann::json();
             return false;
         }
-        spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENT.PRE_FIND");
+        spdlog::trace("[MONGODBCLIENT]: READ_DOCUMENT.PRE_FIND");
         bsoncxx::stdx::optional<bsoncxx::document::value> doc = m_collections[collection].find_one({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize});
         std::string descr_str=bsoncxx::to_json(*doc);
         descr=nlohmann::json::parse(descr_str);
-        spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENT.POST_FIND");
+        spdlog::trace("[MONGODBCLIENT]: READ_DOCUMENT.POST_FIND");
         return true;
     }catch(const mongocxx::logic_error& e){
         spdlog::error("Reading of document with name "+name+" of type "+collection+ " has failed.");
@@ -130,7 +130,7 @@ bool MongodbClient::read_document(const std::string& name, const std::string& co
 }
 
 bool MongodbClient::write_documents(const std::string &collection, const std::set<nlohmann::json> &docs, bool overwrite){
-    spdlog::debug("[MONGODBCLIENT]: READ_DOCUMENTS("+collection+")");
+    spdlog::trace("[MONGODBCLIENT]: READ_DOCUMENTS("+collection+")");
     for(const auto& d : docs){
         if(d.find("name")==d.end()){
             spdlog::error("Cannot upload document to database since it has no field <name>.");
