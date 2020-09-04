@@ -189,6 +189,7 @@ Actuator* Skill::cycle(const Percept &p){
         auxiliaries(p);
         update_internal_models(p);
         update_policies(p);
+        measure_cost(p);
         return m_active_mp->step(p);
     }
     spdlog::critical("Skill life cycle is undefined");
