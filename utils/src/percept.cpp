@@ -35,14 +35,16 @@ void Percept::update(std::unique_ptr<franka::Model> const& model, const franka::
     proprioception.T_T_EE=msrm_utils::rotate_matrix(proprioception.O_T_EE,O_R_T.value_or(O_R_T_id).transpose());
     proprioception.TF_F_ext_K=msrm_utils::rotate_vector(proprioception.O_F_ext_K,O_R_T.value_or(O_R_T_id).transpose());
     proprioception.TF_dX_EE=msrm_utils::rotate_vector(proprioception.O_dX_EE,O_R_T.value_or(O_R_T_id).transpose());
-    controller.O_R_T=O_R_T.value_or(O_R_T_id);
 
     proprioception.finger_width=gripper_state.width;
     proprioception.finger_temperature=gripper_state.temperature;
+    proprioception.is_grasping=gripper_state.is_grasped;
 
     // Others
     robot_mode=robot_state.robot_mode;
     time = std::chrono::high_resolution_clock::now();
+
+    controller.O_R_T=O_R_T.value_or(O_R_T_id);
 }
 
 void Percept::update_controller(){

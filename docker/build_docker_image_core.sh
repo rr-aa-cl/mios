@@ -35,5 +35,6 @@ ldd mios | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' ${ROOT}/dep
 cd ${ROOT}
 
 docker build -t mios -f docker/core/Dockerfile .
+docker tag mios:latest msrm/mios:release
 
 rm -r ${ROOT}/dependencies

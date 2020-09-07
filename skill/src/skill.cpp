@@ -307,6 +307,12 @@ const std::string& Skill::get_id() const{
 
 bool Skill::ground_objects(){
     spdlog::debug("SKILL:GROUND_OBJECTS");
+    for(const auto& o : m_objects){
+        if(m_memory->get_parameters()->skill->objects.find(o)==m_memory->get_parameters()->skill->objects.end()){
+            spdlog::error("No object of type " + o + " has been provided.");
+            return false;
+        }
+    }
     for(const std::pair<std::string,std::string>& m : m_memory->get_parameters()->skill->objects){
         spdlog::debug("object_ungrounded: "+m.first + ", object_grounded: " + m.second);
         if(m_objects.find(m.first)==m_objects.end()){

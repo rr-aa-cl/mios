@@ -53,7 +53,38 @@ void Actuator::blend(const Actuator &cmd, const Percept& p){
     K_theta=cmd.K_theta;
     xi_theta=cmd.xi_theta;
 
-    write_to_buffer();
+    m_TF_T_EE_d_buffer=cmd.m_TF_T_EE_d_buffer;
+    m_TF_dX_d_buffer=cmd.m_TF_dX_d_buffer;
+    m_q_d_nullspace_buffer=cmd.m_q_d_nullspace_buffer;
+    m_TF_F_d_buffer=cmd.m_TF_F_d_buffer;
+    m_TF_F_ff_buffer=cmd.m_TF_F_ff_buffer;
+    m_K_x_buffer=cmd.m_K_x_buffer;
+    m_xi_x_buffer=cmd.m_xi_x_buffer;
+    m_O_R_T_buffer=cmd.m_O_R_T_buffer;
+
+    m_q_d_buffer=cmd.m_q_d_buffer;
+    m_dq_d_buffer=cmd.m_dq_d_buffer;
+    m_tau_d_buffer=cmd.m_tau_d_buffer;
+    m_tau_ff_buffer=cmd.m_tau_ff_buffer;
+    m_K_theta_buffer=cmd.m_K_theta_buffer;
+    m_xi_theta_buffer=cmd.m_xi_theta_buffer;
+
+    m_TF_T_EE_d_limiter=cmd.m_TF_T_EE_d_limiter;
+    m_TF_dX_d_limiter=cmd.m_TF_dX_d_limiter;
+    m_q_d_nullspace_limiter=cmd.m_q_d_nullspace_limiter;
+    m_TF_F_d_limiter=cmd.m_TF_F_d_limiter;
+    m_TF_F_ff_limiter=cmd.m_TF_F_ff_limiter;
+    m_K_x_limiter=cmd.m_K_x_limiter;
+    m_xi_x_limiter=cmd.m_xi_x_limiter;
+    m_O_R_T_limiter=cmd.m_O_R_T_limiter;
+
+    m_q_d_limiter=cmd.m_q_d_limiter;
+    m_dq_d_limiter=cmd.m_dq_d_limiter;
+    m_tau_d_limiter=cmd.m_tau_d_limiter;
+    m_tau_ff_limiter=cmd.m_tau_ff_limiter;
+    m_K_theta_limiter=cmd.m_K_theta_limiter;
+    m_xi_theta_limiter=cmd.m_xi_theta_limiter;
+
 }
 
 void Actuator::stop(){
