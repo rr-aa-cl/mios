@@ -61,10 +61,10 @@ void TaskEngine::life_cycle(){
                 spdlog::warn("Robot has executed a reflex, attempting to recover...");
                 if(!m_core->recover_body()){
                     spdlog::error("Automatic recovery failed, please toggle the user stop...");
+                    m_mtx_task_queue.lock();
+                    m_task_queue.clear();
+                    m_mtx_task_queue.unlock();
                 }
-                m_mtx_task_queue.lock();
-                m_task_queue.clear();
-                m_mtx_task_queue.unlock();
                 reflex=true;
                 continue;
             }
@@ -80,10 +80,10 @@ void TaskEngine::life_cycle(){
                 spdlog::warn("Robot is in invalid mode, attempting to recover...");
                 if(!m_core->recover_body()){
                     spdlog::error("Automatic recovery failed, please toggle the user stop...");
+                    m_mtx_task_queue.lock();
+                    m_task_queue.clear();
+                    m_mtx_task_queue.unlock();
                 }
-                m_mtx_task_queue.lock();
-                m_task_queue.clear();
-                m_mtx_task_queue.unlock();
                 invalid_mode=true;
                 continue;
             }

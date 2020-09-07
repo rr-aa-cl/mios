@@ -353,6 +353,15 @@ nlohmann::json CommandInterface::get_state(const nlohmann::json &request){
     msrm_utils::write_json_array<double,7,1>(response["q"],p->proprioception.q);
     msrm_utils::write_json_array<double,4,4>(response["O_T_EE"],p->proprioception.O_T_EE);
     response["grasped_object"]=m_memory->get_live_context()->grasped_object->name;
+    if(p->robot_mode==franka::RobotMode::kIdle){
+        response["status"]="Idle";
+    }
+    if(p->robot_mode==franka::RobotMode::kReflex){
+        response["status"]="Reflex";
+    }
+    if(p->robot_mode==franka::RobotMode::kUserStopped){
+        response["status"]="UserStopped";
+    }
     response["result"]=result;
     response["error_message"]=error_message;
 
