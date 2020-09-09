@@ -77,10 +77,11 @@ void Task::write_error(const std::string &error){
 bool Task::load_context(const nlohmann::json &user_context){
     try{
         spdlog::info("Loading context for task " + m_id + "...");
-        if(!m_memory->load_default_task_context(m_id,m_context)){
-            spdlog::error("Could not load a valid task context for "+m_id+".");
-            return false;
-        }
+//        if(!m_memory->load_default_task_context(m_id,m_context)){
+//            spdlog::error("Could not load a valid task context for "+m_id+".");
+//            return false;
+//        }
+        get_default_context(m_context);
 
         // merge default task parameters with user task parameters
         if(m_context.find("parameters")!=m_context.end() && user_context.find("parameters")!=user_context.end()){

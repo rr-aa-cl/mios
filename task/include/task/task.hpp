@@ -119,6 +119,7 @@ public:
 protected:
 
     // helper functions
+    virtual void get_default_context(nlohmann::json& context) = 0;
 
     /**
      * Sets the internal state to the specified value.

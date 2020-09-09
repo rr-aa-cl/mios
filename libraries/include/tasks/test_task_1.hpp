@@ -10,6 +10,10 @@ public:
     void recover_task();
     void write_custom_results(nlohmann::json &custom_results) override;
     bool read_parameters(const nlohmann::json& params);
+
+private:
+    void get_default_context(nlohmann::json &context) override;
+
 private:
     bool recovered;
     Eigen::Matrix<double,3,1> m_a;
