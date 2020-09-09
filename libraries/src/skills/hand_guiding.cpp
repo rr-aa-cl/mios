@@ -18,6 +18,10 @@ bool SkillParametersHandGuiding::from_json(const nlohmann::json &parameters){
     return true;
 }
 
+std::map<std::string, std::set<std::string> > SkillParametersHandGuiding::get_parameter_list(){
+    return {{"fix_dim",{}},{"use_walls",{}},{"dist_walls",{}}};
+}
+
 HandGuiding::HandGuiding(const std::string &id, Memory *memory, Portal* portal):Skill("HandGuiding",{},id,memory,portal,{ControlMode::mCartTorque}){
     std::shared_ptr<SkillParametersHandGuiding> skill_params = get_parameters<SkillParametersHandGuiding>();
     m_memory->get_parameters()->safety.virtual_cube.active=skill_params->use_walls;
@@ -72,14 +76,6 @@ std::shared_ptr<ManipulationPrimitive> HandGuiding::get_initial_mp(const Percept
 
 bool HandGuiding::check_local_suc_conditions(const Percept& p){
     return false;
-}
-
-nlohmann::json HandGuiding::get_default_context(){
-    nlohmann::json context;
-    context["fix_dim"]={0,0,0,0,0,0};
-    context["dist_walls"]=nlohmann::json();
-    context["use_walls"]=false;
-    return context;
 }
 
 }

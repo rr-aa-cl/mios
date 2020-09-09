@@ -17,7 +17,11 @@ bool SkillParametersMLTestSkill::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-MLTestSkill::MLTestSkill(const std::string& id, Memory *memory,Portal* portal, const Percept& p):Skill("MLTestSkill",{},id,memory,portal,p,{ControlMode::mJointVelocity}){
+std::map<std::string, std::set<std::string> > SkillParametersMLTestSkill::get_parameter_list(){
+    return {{"x",{}},{"A",{}},{"selector",{}}};
+}
+
+MLTestSkill::MLTestSkill(const std::string& id, Memory *memory,Portal* portal):Skill("MLTestSkill",{},id,memory,portal,{ControlMode::mJointVelocity}){
 
 }
 
@@ -45,12 +49,6 @@ double MLTestSkill::measure_cost(const Percept &p){
     double y=params->w_cost_function[0]*y1+params->w_cost_function[1]*y2;
     spdlog::info("MLTestSkill: Costs are " + std::to_string(y));
     return y;
-}
-
-void MLTestSkill::get_default_context(nlohmann::json& context){
-    context["x"]=nlohmann::json();
-    context["A"]=nlohmann::json();
-    context["selector"]=nlohmann::json();
 }
 
 }

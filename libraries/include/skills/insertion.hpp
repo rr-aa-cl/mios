@@ -7,6 +7,7 @@ namespace mios {
 class SkillParametersInsertion : public SkillParameters{
 public:
     bool from_json(const nlohmann::json &parameters) override;
+    std::map<std::string, std::set<std::string> > get_parameter_list() override;
     Eigen::Matrix<double,2,1> traj_speed;
     Eigen::Matrix<double,2,1> traj_acc;
     Eigen::Matrix<double,6,1> search_a;
@@ -27,8 +28,6 @@ public:
     std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept &p) override;
 
     double get_goal_heuristic(const Percept &p) override;
-
-    nlohmann::json get_default_context() override;
 
 private:
     bool is_stuck(const Percept& p);

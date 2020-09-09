@@ -8,7 +8,7 @@ class SkillParametersNullSkill : public SkillParameters{
 public:
     SkillParametersNullSkill();
     bool from_json(const nlohmann::json &parameters);
-    std::set<std::string> get_parameter_list() override;
+    std::map<std::string, std::set<std::string> > get_parameter_list() override;
 };
 
 class NullSkill : public Skill{

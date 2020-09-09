@@ -42,6 +42,10 @@ bool SkillParametersInsertion::from_json(const nlohmann::json &parameters){
     return true;
 }
 
+std::map<std::string, std::set<std::string> > SkillParametersInsertion::get_parameter_list(){
+    return {{"traj_speed",{}},{"traj_acc",{}},{"stuck_dx_thr",{}},{"search_a",{}},{"search_f",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+}
+
 Insertion::Insertion(const std::string &name, Memory *memory,Portal* portal):Skill("Insertion",{"Insertable","InsertInto"},name,memory,portal,
 {ControlMode::mCartTorque}),m_is_stuck(false),m_dx_avg_last(0){
     m_dx_avg_mem.assign(100,0);
@@ -151,18 +155,6 @@ bool Insertion::is_stuck(const Percept &p){
         return false;
     }
     return m_is_stuck;
-}
-
-nlohmann::json Insertion::get_default_context(){
-    nlohmann::json context;
-    context["traj_speed"]=nlohmann::json();
-    context["traj_acc"]=nlohmann::json();
-    context["search_a"]=nlohmann::json();
-    context["search_f"]=nlohmann::json();
-    context["ROI_x"]=nlohmann::json();
-    context["ROI_phi"]=nlohmann::json();
-    context["stuck_dx_thr"]=nlohmann::json();
-    return context;
 }
 
 }

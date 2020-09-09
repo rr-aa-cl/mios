@@ -35,6 +35,10 @@ bool SkillParametersWipe::from_json(const nlohmann::json& parameters){
     return true;
 }
 
+std::map<std::string, std::set<std::string> > SkillParametersWipe::get_parameter_list(){
+    return {{"f_contact",{}},{"speed",{}},{"wipe_distance",{}},{"t_contactless",{}},{"wipe_dir",{}}};
+}
+
 Wipe::Wipe(const std::string& name, Memory* memory, Portal* portal):Skill("Wipe",{"wipeable"},name,memory,portal,{ControlMode::mCartTorque}){
 
 }

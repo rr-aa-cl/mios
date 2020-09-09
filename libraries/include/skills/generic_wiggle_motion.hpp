@@ -7,7 +7,7 @@ namespace mios {
 class SkillParametersGenericWiggleMotion : public SkillParameters{
 public:
     bool from_json(const nlohmann::json &parameters) override;
-    std::set<std::string> get_parameter_list() override;
+    std::map<std::string, std::set<std::string> > get_parameter_list() override;
     Eigen::Matrix<double,6,1> dX_fourier_a_a;
     Eigen::Matrix<double,6,1> dX_fourier_b_a;
     Eigen::Matrix<double,6,1> dX_fourier_a_f;

@@ -27,7 +27,11 @@ bool SkillParametersMoveToPoseCart::from_json(const nlohmann::json &p){
     return true;
 }
 
-MoveToPoseCart::MoveToPoseCart(const std::string &id, Memory *memory, Portal *portal, const Percept &p):Skill("MoveToPoseCart",{"goal_pose"},id,memory,portal,p,{ControlMode::mCartTorque,ControlMode::mCartVelocity}),
+std::map<std::string, std::set<std::string> > SkillParametersMoveToPoseCart::get_parameter_list(){
+    return {{"t_settle",{}},{"speed",{}},{"acc",{}},{"T_T_EE_g_offset",{}},{"T_T_EE_g",{}}};
+}
+
+MoveToPoseCart::MoveToPoseCart(const std::string &id, Memory *memory, Portal *portal):Skill("MoveToPoseCart",{"goal_pose"},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}),
 m_finished(false){
 }
 
@@ -72,14 +76,6 @@ bool MoveToPoseCart::check_local_ex_conditions(const Percept &p){
     }else{
         return false;
     }
-}
-
-void MoveToPoseCart::get_default_context(nlohmann::json& context){
-    context["t_settle"]=0;
-    context["speed"]=msrm_utils::from_eigen<double,2,1>(m_memory->read_parameters()->user.dX_default);
-    context["acc"]=msrm_utils::from_eigen<double,2,1>(m_memory->read_parameters()->user.ddX_default);
-    context["T_T_EE_g"]=nlohmann::json();
-    context["T_T_EE_g_offset"]=msrm_utils::from_eigen<double,4,4>(Eigen::Matrix<double,4,4>::Identity());
 }
 
 }

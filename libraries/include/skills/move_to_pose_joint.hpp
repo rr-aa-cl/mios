@@ -6,7 +6,7 @@ namespace mios {
 
 struct SkillParametersMoveToPoseJoint : public SkillParameters{
     bool from_json(const nlohmann::json &parameters) override;
-    std::set<std::string> get_parameter_list() override;
+    std::map<std::string, std::set<std::string> > get_parameter_list() override;
     double t_settle;
     double speed;
     double acc;

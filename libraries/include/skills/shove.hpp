@@ -5,6 +5,7 @@ namespace mios{
 class SkillParametersShove : public SkillParameters{
 public:
     bool from_json(const nlohmann::json& parameters) override;
+    std::map<std::string, std::set<std::string> > get_parameter_list() override;
     Eigen::Matrix<double,4,4> O_T_OB_g;
     double speed;
     double acceleration;
@@ -14,13 +15,7 @@ public:
 
 class Shove : public Skill{
 public:
-<<<<<<< HEAD
     Shove(const std::string& name, Memory* memory, Portal* portal);
-    void evaluate() override;
-    nlohmann::json get_default_context() override;
-=======
-    Shove(const std::string& name,Memory* memory, Portal* portal, const Percept& p);
->>>>>>> 6b892e42d63abd2e94cf6893fcff6a2fd452830d
 
 private:
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept& p_0) override;

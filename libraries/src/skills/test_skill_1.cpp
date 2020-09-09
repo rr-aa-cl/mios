@@ -8,7 +8,7 @@ namespace mios{
 bool SkillParametersTestSkill1::from_json(const nlohmann::json& parameters){
     if(!msrm_utils::read_json_param(parameters,"run_time",run_time)){
         spdlog::debug("Could not load parameter: run_time [double]");
-        return false;
+        run_time=0;
     }
     if(!msrm_utils::read_json_param(parameters,"success",success)){
         spdlog::debug("Could not load parameter: success [bool]");
@@ -43,8 +43,8 @@ bool SkillParametersTestSkill1::from_json(const nlohmann::json& parameters){
     return true;
 }
 
-std::set<std::string> SkillParametersTestSkill1::get_parameter_list(){
-    return {"run_time","success","t_exception","exception","cost_err","cost_suc","mp_sequence"};
+std::map<std::string,std::set<std::string> > SkillParametersTestSkill1::get_parameter_list(){
+    return {{"run_time",{}},{"success",{}},{"t_exception",{}},{"exception",{}},{"cost_err",{}},{"cost_suc",{}},{"mp_sequence",{}}};
 }
 
 TestSkill1::TestSkill1(const std::string &name, Memory *memory,Portal* portal):Skill("TestSkill1",{"object"},name,memory,portal,{ControlMode::mCartTorque}),m_result_code(-1),m_sequence_index(0),

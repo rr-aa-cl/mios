@@ -32,6 +32,10 @@ bool SkillParametersFile::from_json(const nlohmann::json& parameters){
     return true;
 }
 
+std::map<std::string, std::set<std::string> > SkillParametersFile::get_parameter_list(){
+    return {{"f_contact",{}},{"speed",{}},{"distance",{}},{"file_amp",{}},{"file_freq",{}},{"t_contactless",{}}};
+}
+
 File::File(const std::string& name, Memory* memory, Portal* portal):Skill("File",{"fileable"},name,memory,portal,{ControlMode::mCartTorque}),m_in_contact(false){
 
 }
@@ -98,17 +102,6 @@ bool File::check_local_err_conditions(const Percept &p){
         return true;
     }
     return false;
-}
-
-nlohmann::json File::get_default_context(){
-    nlohmann::json context;
-    context["f_contact"]=nlohmann::json();
-    context["file_amp"]=nlohmann::json();
-    context["file_freq"]=nlohmann::json();
-    context["distance"]=nlohmann::json();
-    context["speed"]=nlohmann::json();
-    context["t_contactless"]=nlohmann::json();
-    return context;
 }
 
 }

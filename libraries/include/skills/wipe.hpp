@@ -5,6 +5,7 @@ namespace mios{
 class SkillParametersWipe : public SkillParameters{
 public:
     bool from_json(const nlohmann::json& parameters) override;
+    std::map<std::string, std::set<std::string> > get_parameter_list() override;
     double f_contact;
     Eigen::Matrix<double,2,1> wipe_dir;
     double wipe_distance;
@@ -14,13 +15,9 @@ public:
 
 class Wipe : public Skill{
 public:
-<<<<<<< HEAD
     Wipe(const std::string& name, Memory* memory, Portal* portal);
-    void evaluate() override;
-=======
-    Wipe(const std::string& name,Memory* memory, Portal* portal, const Percept& p);
->>>>>>> 6b892e42d63abd2e94cf6893fcff6a2fd452830d
     Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const override;
+
 private:
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept& p_0) override;
     std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept &p) override;

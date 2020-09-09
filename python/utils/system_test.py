@@ -365,7 +365,7 @@ def test_memory(address):
         response = call_method(address, 12000, method="download_skill_context", payload={"skill": "TestSkill1"})
         msg_error(response is not None, "memory_skill_download", "Response is none", response)
         msg_error(response["result"]["result"] is True, "memory_skill_download", "Could not load skill.", response)
-        msg_error(response["result"]["context"]["success"] is False, "memory_skill_download",
+        msg_error(response["result"]["context"]["success"] is None, "memory_skill_download",
                   "Skill description is faulty.", response)
 
     print("Testing object context download...")

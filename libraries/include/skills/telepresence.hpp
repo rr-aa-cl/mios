@@ -9,6 +9,7 @@ enum TelepresenceMode{tmJoystick,tmDirectJoint,tmDirectCart};
 class SkillParametersTelepresence : public SkillParameters{
 public:
     bool from_json(const nlohmann::json &parameters) override;
+    std::map<std::string, std::set<std::string> > get_parameter_list() override;
 
     bool is_master;
     std::string ip_dst;
@@ -38,8 +39,6 @@ public:
 
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept &p) override;
-
-    nlohmann::json get_default_context() override;
 
 private:
     bool check_local_suc_conditions(const Percept &p) override;

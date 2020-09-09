@@ -218,7 +218,7 @@ public:
     void read_skill_objects(const nlohmann::json& p);
     static nlohmann::json get_default_values();
     virtual bool from_json(const nlohmann::json& parameters) = 0;
-    virtual std::set<std::string> get_parameter_list() = 0;
+    virtual std::map<std::string,std::set<std::string> > get_parameter_list() = 0;
     nlohmann::json to_json() const;
 
     /**

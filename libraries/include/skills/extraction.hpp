@@ -6,7 +6,7 @@ namespace mios {
 
 struct SkillParametersExtraction : public SkillParameters{
     bool from_json(const nlohmann::json &parameters) override;
-    std::set<std::string> get_parameter_list() override;
+    std::map<std::string, std::set<std::string> > get_parameter_list() override;
     Eigen::Matrix<double,2,1> traj_speed;
     Eigen::Matrix<double,2,1> traj_acc;
     Eigen::Matrix<double,6,1> search_a;

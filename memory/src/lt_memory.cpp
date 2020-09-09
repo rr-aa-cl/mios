@@ -294,15 +294,20 @@ bool LTMemory::load_default_task_context(const std::string task_id,nlohmann::jso
 }
 
 bool LTMemory::load_default_skill_context(const std::string skill_type,nlohmann::json& skill_context){
-    std::set<std::string> skill_parameters;
+    std::map<std::string, std::set<std::string> > skill_parameters;
     if(m_skill_library->get_skill_parameters()->find(skill_type)==m_skill_library->get_skill_parameters()->end()){
         skill_context=nlohmann::json();
         return false;
     }else{
         skill_parameters=m_skill_library->get_skill_parameters()->at(skill_type)->get_parameter_list();
     }
-    for(const auto& p : skill_parameters){
-        skill_context[p]=nlohmann::json();
+    for(const auto& param : skill_parameters){
+        skill_context[param.first]=nlohmann::json();
+        if(param.second.size()>0){
+            for(const auto& sub_param: param.second){
+                skill_context[param.first]=sub_param;
+            }
+        }
     }
     nlohmann::json parameters = SkillParameters::get_default_values();
     for(const auto& param : parameters.items()){

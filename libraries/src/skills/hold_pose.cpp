@@ -7,12 +7,13 @@ namespace mios {
 bool SkillParametersHoldPose::from_json(const nlohmann::json &parameters){
     if(!msrm_utils::read_json_param(parameters,"t_max",t_max)){
         spdlog::error("Missing parameter: t_max");
+        return false;
     }
     return true;
 }
 
-std::set<std::string> SkillParametersHoldPose::get_parameter_list(){
-    return {"t_max"};
+std::map<std::string, std::set<std::string> > SkillParametersHoldPose::get_parameter_list(){
+    return {{"t_max",{}}};
 }
 
 HoldPose::HoldPose(const std::string &id, Memory *memory, Portal *portal):Skill("HoldPose",{},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mJointTorque}){

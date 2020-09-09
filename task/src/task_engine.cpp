@@ -313,12 +313,12 @@ std::tuple<bool,TaskResult,std::string> TaskEngine::wait_for_task(const std::str
     bool result=false;
     if(this->subscribe(task_uuid,observer)){
         observer->wait_for_finish();
-    }else{
+    }/*else{
         spdlog::error("Could not subscribe to task with uuid " + task_uuid);
         err = "Could not subscribe to task with uuid " + task_uuid;
         result = false;
         return std::make_tuple(result,task_data.result,err);
-    }
+    }*/
     if(m_memory->get_task_data(task_uuid,task_data)){
         spdlog::info("Loaded task result for task with uuid "+task_uuid+" from memory.");
         result=true;

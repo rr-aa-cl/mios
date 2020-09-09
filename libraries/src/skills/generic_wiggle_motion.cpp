@@ -15,8 +15,8 @@ bool SkillParametersGenericWiggleMotion::from_json(const nlohmann::json &paramet
     return true;
 }
 
-std::set<std::string> SkillParametersGenericWiggleMotion::get_parameter_list(){
-    return {"dX_fourier_a_a","dX_fourier_b_a","dX_fourier_a_f","dX_fourier_b_f","dX_fourier_a_phi","dX_fourier_b_phi","use_EE","tap_to_finish"};
+std::map<std::string, std::set<std::string> > SkillParametersGenericWiggleMotion::get_parameter_list(){
+    return {{"dX_fourier_a_a",{}},{"dX_fourier_b_a",{}},{"dX_fourier_a_f",{}},{"dX_fourier_b_f",{}},{"dX_fourier_a_phi",{}},{"dX_fourier_b_phi",{}},{"use_EE",{}},{"tap_to_finish",{}}};
 }
 
 GenericWiggleMotion::GenericWiggleMotion(const std::string &id, Memory *memory,Portal* portal):Skill("GenericWiggleMotion",{},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){

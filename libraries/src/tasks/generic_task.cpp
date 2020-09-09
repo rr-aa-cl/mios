@@ -7,7 +7,7 @@
 #include "skills/move_to_contact.hpp"
 #include "skills/hand_guiding.hpp"
 #include "skills/hold_pose.hpp"
-#include "skills/motions_generic_wiggle.hpp"
+#include "skills/generic_wiggle_motion.hpp"
 #include "skills/telepresence.hpp"
 #include "skills/push.hpp"
 #include "skills/shove.hpp"

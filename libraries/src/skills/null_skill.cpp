@@ -11,7 +11,7 @@ bool SkillParametersNullSkill::from_json(const nlohmann::json &parameters){
     return false;
 }
 
-std::set<std::string> SkillParametersNullSkill::get_parameter_list(){
+std::map<std::string, std::set<std::string> > SkillParametersNullSkill::get_parameter_list(){
     return {};
 }
 

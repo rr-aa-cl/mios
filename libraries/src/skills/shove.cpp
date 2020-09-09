@@ -24,6 +24,11 @@ bool SkillParametersShove::from_json(const nlohmann::json& parameters){
     }
     return true;
 }
+
+std::map<std::string, std::set<std::string> > SkillParametersShove::get_parameter_list(){
+    return {{"O_T_OB_g",{}},{"speed",{}},{"acceleration",{}},{"t_contactless",{}},{"delta_x",{}}};
+}
+
 Shove::Shove(const std::string& name, Memory* memory, Portal* portal):Skill("Shove",{"shovable","location"},name,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}),
 m_in_contact(false){
 
@@ -113,16 +118,6 @@ bool Shove::check_local_suc_conditions(const Percept &p){
     }
 
     return false;
-}
-
-nlohmann::json Shove::get_default_context(){
-    nlohmann::json context;
-    context["O_T_OB_g"]=nlohmann::json();
-    context["speed"]=m_memory->read_parameters()->user.dX_default(0);
-    context["acceleration"]=m_memory->read_parameters()->user.ddX_default(0);
-    context["t_contactless"]=0;
-    context["delta_x"]=0;
-    return context;
 }
 
 }

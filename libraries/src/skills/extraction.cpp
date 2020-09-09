@@ -34,8 +34,8 @@ bool SkillParametersExtraction::from_json(const nlohmann::json &parameters){
     return true;
 }
 
-std::set<std::string> SkillParametersExtraction::get_parameter_list(){
-    return {"traj_speed","traj_acc","stuck_dx_thr","search_a","search_f"};
+std::map<std::string, std::set<std::string> > SkillParametersExtraction::get_parameter_list(){
+    return {{"traj_speed",{}},{"traj_acc",{}},{"stuck_dx_thr",{}},{"search_a",{}},{"search_f",{}}};
 }
 
 Extraction::Extraction(const std::string &name, Memory *memory, Portal* portal):Skill("Extraction",{"Extractable","ExtractFrom","ExtractTo"},name,memory,portal,
@@ -142,16 +142,6 @@ bool Extraction::is_stuck(const Percept &p){
         return false;
     }
     return m_is_stuck;
-}
-
-nlohmann::json Extraction::get_default_context(){
-    nlohmann::json context;
-    context["traj_speed"]=msrm_utils::from_eigen<double,2,1>(m_memory->read_parameters()->user.dX_default);
-    context["traj_acc"]=msrm_utils::from_eigen<double,2,1>(m_memory->read_parameters()->user.ddX_default);
-    context["search_a"]={0,0,0,0,0,0};
-    context["search_f"]={0,0,0,0,0,0};
-    context["struck_dx_thr"]=0;
-    return context;
 }
 
 }

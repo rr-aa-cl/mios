@@ -12,6 +12,10 @@ bool SkillParametersMoveToContact::from_json(const nlohmann::json &p){
     return true;
 }
 
+std::map<std::string, std::set<std::string> > SkillParametersMoveToContact::get_parameter_list(){
+    return {{"speed",{}}};
+}
+
 MoveToContact::MoveToContact(const std::string &id, Memory *memory, Portal* portal):Skill("MoveToContact",{"goal_pose"},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
 }
 
@@ -71,10 +75,6 @@ bool MoveToContact::check_local_ex_conditions(const Percept &p){
 
 bool MoveToContact::check_local_err_conditions(const Percept &p){
     return get_active_mp()->get_strategy<MoveToPoseStrategy>("s_0")->finished();
-}
-
-void MoveToContact::get_default_context(nlohmann::json &context){
-    context["speed"]=nlohmann::json();
 }
 
 }
