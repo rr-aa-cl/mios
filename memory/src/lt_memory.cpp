@@ -294,11 +294,15 @@ bool LTMemory::load_default_task_context(const std::string task_id,nlohmann::jso
 }
 
 bool LTMemory::load_default_skill_context(const std::string skill_type,nlohmann::json& skill_context){
-    if(m_skill_library->get_skills()->find(skill_type)==m_skill_library->get_skills()->end()){
+    std::set<std::string> skill_parameters;
+    if(m_skill_library->get_skill_parameters()->find(skill_type)==m_skill_library->get_skill_parameters()->end()){
         skill_context=nlohmann::json();
         return false;
     }else{
-        skill_context=m_skill_library->get_skills()->at(skill_type)->get_default_context();
+        skill_parameters=m_skill_library->get_skill_parameters()->at(skill_type)->get_parameter_list();
+    }
+    for(const auto& p : skill_parameters){
+        skill_context[p]=nlohmann::json();
     }
     nlohmann::json parameters = SkillParameters::get_default_values();
     for(const auto& param : parameters.items()){
@@ -332,18 +336,18 @@ bool LTMemory::update_database(){
     if(!m_mongodb_client.write_document("system","parameters",m_st_memory->read_parameters()->system.to_json(),true)){
         return false;
     }
-    if(!m_mongodb_client.write_document("user","parameters",m_st_memory->read_parameters()->user.to_json(),true)){
-        return false;
-    }
-    if(!m_mongodb_client.write_document("frames","parameters",m_st_memory->read_parameters()->frames.to_json(),true)){
-        return false;
-    }
-    if(!m_mongodb_client.write_document("control","parameters",m_st_memory->read_parameters()->control.to_json(),true)){
-        return false;
-    }
-    if(!m_mongodb_client.write_document("safety","parameters",m_st_memory->read_parameters()->safety.to_json(),true)){
-        return false;
-    }
+//    if(!m_mongodb_client.write_document("user","parameters",m_st_memory->read_parameters()->user.to_json(),true)){
+//        return false;
+//    }
+//    if(!m_mongodb_client.write_document("frames","parameters",m_st_memory->read_parameters()->frames.to_json(),true)){
+//        return false;
+//    }
+//    if(!m_mongodb_client.write_document("control","parameters",m_st_memory->read_parameters()->control.to_json(),true)){
+//        return false;
+//    }
+//    if(!m_mongodb_client.write_document("safety","parameters",m_st_memory->read_parameters()->safety.to_json(),true)){
+//        return false;
+//    }
     for(const auto& env : *m_st_memory->get_environment()){
         spdlog::debug("Updating object: " + env.first);
         if(!m_mongodb_client.write_document(env.first,"environment",env.second.to_json(),true)){

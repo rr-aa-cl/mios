@@ -15,9 +15,9 @@ public:
 
 class File : public Skill{
 public:
-    File(const std::string& name, Memory* memory, Portal* portal);
-    void evaluate() override;
+    File(const std::string& name,Memory* memory, Portal* portal, const Percept& p);
     Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const override;
+    nlohmann::json get_default_context() override;
 private:
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept& p_0) override;
     bool check_local_suc_conditions(const Percept& p) override;

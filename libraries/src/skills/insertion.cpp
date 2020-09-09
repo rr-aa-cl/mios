@@ -35,8 +35,8 @@ bool SkillParametersInsertion::from_json(const nlohmann::json &parameters){
     }
 
     if(stuck_dx_thr>traj_speed(0) || stuck_dx_thr<0){
-        spdlog::error("stuck_dx_thr cannot be greater than traj_speed[0] or smaller than 0.");
-        return false;
+        spdlog::warn("stuck_dx_thr cannot be greater than traj_speed[0] or smaller than 0.");
+        stuck_dx_thr=traj_speed(0);
     }
 
     return true;
@@ -75,6 +75,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Insertion::graph_transiti
 }
 
 std::shared_ptr<ManipulationPrimitive> Insertion::create_move_mp(const Percept &p){
+    spdlog::debug("Insertion::create_move_mp");
     std::shared_ptr<SkillParametersInsertion> skill_params = get_parameters<SkillParametersInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
     mp->create_strategy<MoveToPoseStrategy>("s_move",1);
@@ -84,6 +85,7 @@ std::shared_ptr<ManipulationPrimitive> Insertion::create_move_mp(const Percept &
 }
 
 std::shared_ptr<ManipulationPrimitive> Insertion::create_wiggle_mp(const Percept &p){
+    spdlog::debug("Insertion::create_wiggle_mp");
     std::shared_ptr<SkillParametersInsertion> skill_params = get_parameters<SkillParametersInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("wiggle",p);
     mp->create_strategy<FFWiggleStrategy>("wiggle_x",1);
@@ -121,22 +123,8 @@ bool Insertion::check_local_err_conditions(const Percept &p){
     return false;
 }
 
-void Insertion::evaluate(){
-
-        double c_err_1=m_memory->read_parameters()->skill->time_max+exp((get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3)).norm()*100)-1;
-        double c_suc_1=std::chrono::duration_cast<std::chrono::seconds>(get_result().p_1.time-get_result().p_0.time).count();
-
-        double c_err_2=m_memory->read_parameters()->user.F_ext_max(0)+exp((get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3)).norm()*100)-1;
-        double c_suc_2=0;
-        if(m_cf1_cnt==0){
-            c_suc_2=get_result().cost_err;
-        }else{
-            c_suc_2=m_cf1_sum_force/m_cf1_cnt;
-        }
-        msrm_utils::print_critical_error("COST_ERR: " + std::to_string(c_err_1));
-        msrm_utils::print_critical_error("COST_SUC: " + std::to_string(c_suc_1));
-        write_costs(m_memory->read_parameters()->skill->w_cost_function[0]*c_suc_1+m_memory->read_parameters()->skill->w_cost_function[1]*c_suc_2,
-                m_memory->read_parameters()->skill->w_cost_function[0]*c_err_1+m_memory->read_parameters()->skill->w_cost_function[1]*c_err_2);
+double Insertion::get_goal_heuristic(const Percept &p){
+    return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3)).norm();
 }
 
 void Insertion::auxiliaries(const Percept &p){
@@ -163,6 +151,18 @@ bool Insertion::is_stuck(const Percept &p){
         return false;
     }
     return m_is_stuck;
+}
+
+nlohmann::json Insertion::get_default_context(){
+    nlohmann::json context;
+    context["traj_speed"]=nlohmann::json();
+    context["traj_acc"]=nlohmann::json();
+    context["search_a"]=nlohmann::json();
+    context["search_f"]=nlohmann::json();
+    context["ROI_x"]=nlohmann::json();
+    context["ROI_phi"]=nlohmann::json();
+    context["stuck_dx_thr"]=nlohmann::json();
+    return context;
 }
 
 }

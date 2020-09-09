@@ -22,7 +22,7 @@
 namespace mios {
 
 SkillLibrary::SkillLibrary(Memory* memory, Portal* portal){
-    m_skills.insert(std::make_pair("TestSkill1",std::make_shared<TestSkill1>("TestSkill1",memory,portal)));
+    m_skill_parameters.insert(std::make_pair("TestSkill1",std::make_shared<SkillParametersTestSkill1>()));
     m_skills.insert(std::make_pair("GenericWiggleMotion",std::make_shared<GenericWiggleMotion>("GenericWiggleMotion",memory,portal)));
     m_skills.insert(std::make_pair("MoveToPoseJoint",std::make_shared<MoveToPoseJoint>("MoveToPoseJoint",memory,portal)));
     m_skills.insert(std::make_pair("HoldPose",std::make_shared<HoldPose>("HoldPose",memory,portal)));
@@ -41,6 +41,10 @@ SkillLibrary::SkillLibrary(Memory* memory, Portal* portal){
 
 const std::map<std::string,std::shared_ptr<Skill> >* SkillLibrary::get_skills() const{
     return &m_skills;
+}
+
+const std::map<std::string,std::shared_ptr<SkillParameters> >* SkillLibrary::get_skill_parameters() const{
+    return &m_skill_parameters;
 }
 
 }

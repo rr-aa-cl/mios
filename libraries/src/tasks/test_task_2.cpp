@@ -21,8 +21,7 @@ void TestTask2::execute(){
     }
     execute_skill<TestSkill1,SkillParametersTestSkill1>("t2_s2");
 }
-void TestTask2::evaluate(){
-    nlohmann::json custom_results;
+void TestTask2::write_custom_results(nlohmann::json &custom_results){
     custom_results["t2_s1"]=get_result().skill_results["t2_s1"].results;
     custom_results["t2_s2"]=get_result().skill_results["t2_s1"].results;
     custom_results["t2_t1"]=get_subtask_result("t2_t1").custom_results;
@@ -30,7 +29,6 @@ void TestTask2::evaluate(){
     msrm_utils::write_json_array<double,2,1>(custom_results["d"],m_d);
     custom_results["e"]=m_e;
     custom_results["f"]=m_f;
-    write_result(false,0,0,custom_results);
 }
 bool TestTask2::read_parameters(const nlohmann::json& params){
 

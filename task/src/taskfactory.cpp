@@ -7,10 +7,13 @@
 #include "tasks/test_task_1.hpp"
 #include "tasks/test_task_2.hpp"
 #include "tasks/test_task_3.hpp"
-//#include "tasks/learner_test.hpp"
-//#include "tasks/move_to_cart_pose.hpp"
-//#include "tasks/move_to_joint_pose.hpp"
-//#include "tasks/generic_task.hpp"
+#include "tasks/learner_test.hpp"
+#include "tasks/move_to_cart_pose.hpp"
+#include "tasks/move_to_joint_pose.hpp"
+#include "tasks/generic_task.hpp"
+#include "tasks/insert_object.hpp"
+#include "tasks/extract_object.hpp"
+
 namespace mios{
 
 TaskName TaskFactory::get_task_name(const std::string& task){
@@ -33,6 +36,10 @@ case msrm_utils::str_to_int("TestTask1"):
 return TaskNameTestTask1;
 case msrm_utils::str_to_int("IdleTask"):
 return TaskNameIdleTask;
+case msrm_utils::str_to_int("InsertObject"):
+return TaskNameInsertObject;
+case msrm_utils::str_to_int("ExtractObject"):
+return TaskNameExtractObject;
 default:
 spdlog::error("Task with id " + task + " does not exist.");
 return TaskNameNullTask;
@@ -51,14 +58,17 @@ case TaskNameTestTask2:
 return std::make_shared<TestTask2>(core);
 case TaskNameTestTask3:
 return std::make_shared<TestTask3>(core);
-//case TaskNameLearnerTest:
-//return std::make_shared<LearnerTest>(core);
-//case TaskNameMoveToCartPose:
-//return std::make_shared<MoveToCartPose>(core);
-//case TaskNameMoveToJointPose:
-//return std::make_shared<MoveToJointPose>(core);
-//case TaskNameGenericTask:
-//return std::make_shared<GenericTask>(core);
+case TaskNameLearnerTest:
+return std::make_shared<LearnerTest>(core);
+case TaskNameMoveToCartPose:
+return std::make_shared<MoveToCartPose>(core);
+case TaskNameMoveToJointPose:
+return std::make_shared<MoveToJointPose>(core);
+case TaskNameGenericTask:
+return std::make_shared<GenericTask>(core);
+return std::make_shared<InsertObject>(core);
+case TaskNameExtractObject:
+return std::make_shared<ExtractObject>(core);
 default:
 return std::make_shared<NullTask>(core);
 }

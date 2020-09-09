@@ -6,7 +6,6 @@ namespace mios{
 class SkillParametersMLTestSkill: public SkillParameters{
 public:
     bool from_json(const nlohmann::json &parameters) override;
-    std::string skill;
     Eigen::Matrix<double,6,1> x;
     double A;
     double selector;
@@ -14,10 +13,11 @@ public:
 
 class MLTestSkill : public Skill{
 public:
-    MLTestSkill(const std::string& id, Memory *memory, Portal *portal);
-    void evaluate();
+    MLTestSkill(const std::string& id, Memory *memory, Portal *portal, const Percept& p);
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
+    void get_default_context(nlohmann::json &context) override;
 private:
+    double measure_cost(const Percept &p) override;
     bool check_local_suc_conditions(const Percept& p);
 };
 }

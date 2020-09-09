@@ -11,7 +11,6 @@ public:
     void initialize_context() override;
     void execute() override;
     bool read_parameters(const nlohmann::json &params) override;
-    void evaluate() override;
 
 private:
     std::optional<std::string> m_pose;

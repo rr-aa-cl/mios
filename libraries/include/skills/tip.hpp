@@ -12,8 +12,12 @@ public:
 
 class Tip : public Skill{
 public:
+<<<<<<< HEAD
     Tip(const std::string& name, Memory* memory, Portal* portal);
     void evaluate() override;
+=======
+    Tip(const std::string& name,Memory* memory, Portal* portal, const Percept& p);
+>>>>>>> 6b892e42d63abd2e94cf6893fcff6a2fd452830d
     Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const override;
 private:
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept& p_0) override;

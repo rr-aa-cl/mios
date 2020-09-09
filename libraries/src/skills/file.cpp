@@ -100,5 +100,15 @@ bool File::check_local_err_conditions(const Percept &p){
     return false;
 }
 
-void File::evaluate(){}
+nlohmann::json File::get_default_context(){
+    nlohmann::json context;
+    context["f_contact"]=nlohmann::json();
+    context["file_amp"]=nlohmann::json();
+    context["file_freq"]=nlohmann::json();
+    context["distance"]=nlohmann::json();
+    context["speed"]=nlohmann::json();
+    context["t_contactless"]=nlohmann::json();
+    return context;
+}
+
 }

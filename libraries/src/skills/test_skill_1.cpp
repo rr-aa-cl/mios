@@ -43,6 +43,10 @@ bool SkillParametersTestSkill1::from_json(const nlohmann::json& parameters){
     return true;
 }
 
+std::set<std::string> SkillParametersTestSkill1::get_parameter_list(){
+    return {"run_time","success","t_exception","exception","cost_err","cost_suc","mp_sequence"};
+}
+
 TestSkill1::TestSkill1(const std::string &name, Memory *memory,Portal* portal):Skill("TestSkill1",{"object"},name,memory,portal,{ControlMode::mCartTorque}),m_result_code(-1),m_sequence_index(0),
     m_mp_graph({"mp_0","mp_1","mp_2","mp_3","mp_4","mp_5","mp_6"}),m_result_graph({}){}
 
@@ -128,27 +132,26 @@ void TestSkill1::auxiliaries(const Percept &p){
             throw SkillException("This is a skill exception that has been thrown for test purposes");
         }
     }
-    write_costs(c->cost_suc,c->cost_err);
     m_result_code=-1;
 }
 
-void TestSkill1::evaluate(){
+void TestSkill1::write_custom_results(nlohmann::json& custom_results){
     spdlog::debug("Evaluate");
     std::shared_ptr<SkillParametersTestSkill1> c = get_parameters<SkillParametersTestSkill1>();
-    get_custom_results()["exception"]=c->exception;
-    get_custom_results()["run_time"]=c->run_time;
-    get_custom_results()["success"]=c->success;
-    get_custom_results()["t_exception"]=c->t_exception;
-    get_custom_results()["result_code"]=m_result_code;
-    get_custom_results()["result_graph"]=m_result_graph;
+    custom_results["exception"]=c->exception;
+    custom_results["run_time"]=c->run_time;
+    custom_results["success"]=c->success;
+    custom_results["t_exception"]=c->t_exception;
+    custom_results["result_code"]=m_result_code;
+    custom_results["result_graph"]=m_result_graph;
     if(m_memory->get_live_parameter("test_parameter_1").has_value()){
-        get_custom_results()["test_parameter_1"]=m_memory->get_live_parameter("test_parameter_1").value();
+        custom_results["test_parameter_1"]=m_memory->get_live_parameter("test_parameter_1").value();
     }
     if(m_memory->get_live_parameter("test_parameter_2").has_value()){
-        get_custom_results()["test_parameter_2"]=m_memory->get_live_parameter("test_parameter_2").value();
+        custom_results["test_parameter_2"]=m_memory->get_live_parameter("test_parameter_2").value();
     }
     if(m_memory->get_live_parameter("test_parameter_3").has_value()){
-        get_custom_results()["test_parameter_3"]=m_memory->get_live_parameter("test_parameter_3").value();
+        custom_results["test_parameter_3"]=m_memory->get_live_parameter("test_parameter_3").value();
     }
 }
 
@@ -156,18 +159,6 @@ void TestSkill1::parallels(){
     double cnt;
     msrm_utils::read_json_param(get_custom_results(),"parallels_cnt",cnt);
     get_custom_results()["parallels_cnt"]=cnt+1;
-}
-
-nlohmann::json TestSkill1::get_default_context(){
-    nlohmann::json context;
-    context["run_time"]=0;
-    context["success"]=false;
-    context["t_exception"]=0;
-    context["exception"]="none";
-    context["cost_err"]=0;
-    context["cost_suc"]=0;
-    context["mp_sequence"]={};
-    return context;
 }
 
 }

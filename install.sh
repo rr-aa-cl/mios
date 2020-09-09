@@ -5,7 +5,12 @@ user="panda"
 ROOT=$(dirname "$(realpath $0)")
 cd ${ROOT}
 
+### make ros components ###
+cd ${ROOT}/ros_workspace
+catkin_make
+
 ### make ###
+cd ${ROOT}
 mkdir -p ${ROOT}/build/release
 
 cd ${ROOT}/build/release

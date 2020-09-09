@@ -10,8 +10,8 @@ namespace mios {
 struct SkillResult{
 public:
     SkillResult(){
-        this->cost_suc=0;
-        this->cost_err=0;
+        this->cost=0;
+        this->heuristic=0;
         this->success=false;
         this->last_errors.resize(0);
         this->results=nlohmann::json();
@@ -36,12 +36,12 @@ public:
     /**
      * Cost of skill execution in case of success.
      */
-    double cost_suc;
+    double cost;
 
     /**
      * Cost of skill execution in case of failure.
      */
-    double cost_err;
+    double heuristic;
 
     /**
      * Additional inquality constraints. The key is the constraint's identifier, the value the constraint in implicit form.
@@ -70,8 +70,6 @@ struct TaskResult{
      * @param nominal
      */
     TaskResult(){
-        cost_suc=0;
-        cost_err=0;
         success=false;
         external_stop=false;
         exception=false;
@@ -82,8 +80,6 @@ struct TaskResult{
 
     std::unordered_map<std::string,SkillResult> skill_results;
 
-    double cost_suc;
-    double cost_err;
     bool success;
     bool external_stop;
     bool exception;

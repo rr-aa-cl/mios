@@ -8,7 +8,7 @@ public:
     void initialize_context();
     void execute();
     void recover_task();
-    void evaluate();
+    void write_custom_results(nlohmann::json &custom_results) override;
     bool read_parameters(const nlohmann::json& params);
 private:
     bool recovered;

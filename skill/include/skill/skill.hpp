@@ -56,8 +56,6 @@ public:
      */
     virtual Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const;
 
-    virtual nlohmann::json get_default_context() = 0;
-
     /**
      * Main execution loop of the skill. Manages all manipulation primitives, local and global conditions.
      * @param[in] p Percept struct.
@@ -144,12 +142,7 @@ public:
     Eigen::Matrix<double,4,4> get_object_grasp_pose_T(const std::string& object_name) const;
     Eigen::Matrix<double,4,4> get_object_grasp_pose_O(const std::string& object_name) const;
 
-    /**
-     * To be defined by developer. This function sets up the evaluation struct based on the skill execution.
-     */
-    virtual void evaluate();
-
-    void write_custom_results(nlohmann::json results);
+    virtual void write_custom_results(nlohmann::json& custom_results);
     nlohmann::json& get_custom_results();
 
     const std::set<ControlMode>* get_valid_control_modes() const;
@@ -258,6 +251,7 @@ protected:
 
     virtual void update_internal_models(const Percept &p);
     virtual void update_policies(const Percept& p);
+    virtual double get_goal_heuristic(const Percept& p);
 
 private:
     std::shared_ptr<ManipulationPrimitive> m_active_mp;
@@ -267,6 +261,7 @@ private:
     void stop_parallels();
     void terminate_parallels();
     bool has_settled();
+    virtual double measure_cost(const Percept& p);
 
     std::unordered_map<std::string,std::shared_ptr<ManipulationPrimitive> > m_mp_graph;
     std::string m_init_mp;
@@ -274,6 +269,8 @@ private:
     std::unordered_map<std::string,Object*> m_grounded_objects;
     const std::set<ControlMode> m_control_modes;
     std::chrono::high_resolution_clock::time_point m_time_start;
+
+    std::unordered_map<std::string,double> m_costs;
 
 private:
     SkillLifeCycle m_life_cycle;

@@ -33,7 +33,7 @@ find_package(roscpp REQUIRED
     message_generation REQUIRED)
 
 
-option(MINIMAL_BUILD "Build with minimal set of skills, tasks and strategies" ON)
+option(MINIMAL_BUILD "Build with minimal set of skills, tasks and strategies" OFF)
 
 
 include_directories(${roscpp_INCLUDE_DIRS})
@@ -56,6 +56,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/safety/include
     ${CMAKE_SOURCE_DIR}/memory/include
     ${CMAKE_SOURCE_DIR}/portal/include
+    ${CMAKE_SOURCE_DIR}/learning_module/include
     ${CMAKE_SOURCE_DIR}/libraries/include
     ${CMAKE_SOURCE_DIR}/ros_workspace/devel/include)
 
@@ -66,13 +67,17 @@ set(PLUGINS mogen_p2p mogen_p2p_joint cntr_aic cntr_force cntr_joint_imp cntr_jo
 link_directories(${CMAKE_SOURCE_DIR}/lib/plugins)
 
 set(SOURCES core/src/core.cpp interface/src/interface.cpp manipulation_primitive/src/manipulation_primitive.cpp manipulation_primitive/src/primitive_strategy.cpp
-    skill/src/skill.cpp task/src/task.cpp task/src/task_engine.cpp panda/src/softhand2.cpp panda/src/qbmove_communications.cpp
+    skill/src/skill.cpp task/src/task.cpp task/src/task_engine.cpp panda/src/softhand2.cpp panda/src/qbmove_communications.cpp learning_module/src/learning_module.cpp
     task/src/taskfactory.cpp task/src/taskobserver.cpp skill/src/skill_library.cpp skill/src/skill_engine.cpp portal/src/portal.cpp panda/src/panda_body.cpp interface/src/ros_node.cpp)
+
 set(UTILS_SRC utils/src/actuator.cpp utils/src/percept.cpp utils/src/object.cpp utils/src/exceptions.cpp utils/src/results.cpp utils/src/event.cpp)
+
 set(MEMORY_SRC memory/src/memory.cpp memory/src/lt_memory.cpp memory/src/st_memory.cpp memory/src/mongodb_client.cpp memory/src/parameters.cpp)
+
 set(CONTROLLER_SRC controller_pipeline/src/cart_torque_pipeline.cpp controller_pipeline/src/joint_torque_pipeline.cpp controller_pipeline/src/cart_velocity_pipeline.cpp
     controller_pipeline/src/joint_velocity_pipeline.cpp controller_pipeline/src/null_pipeline.cpp)
-set(SAFETY_SRC safety/src/velocity_walls.cpp safety/src/virtual_cube.cpp safety/src/virtual_joint_walls.cpp)
+
+set(SAFETY_SRC safety/src/velocity_walls.cpp safety/src/virtual_cube.cpp safety/src/virtual_joint_walls.cpp safety/src/cartesian_velocity_damping.cpp)
 
 #set(SOURCES_PRIMITIVES manipulation_primitive/src/primitives/mp_basic.cpp manipulation_primitive/src/primitives/mp_basic_joint.cpp manipulation_primitive/src/primitives/nullprimitive.cpp)
 

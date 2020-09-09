@@ -8,7 +8,7 @@ TestTask3(Core* core);
 void initialize_context();
 void execute();
 void recover_task();
-void evaluate();
+void write_custom_results(nlohmann::json &custom_results) override;
 bool read_parameters(const nlohmann::json& params);
 private:
 Eigen::Matrix<double,4,1> m_g;

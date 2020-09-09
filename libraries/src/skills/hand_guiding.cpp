@@ -11,8 +11,9 @@ bool SkillParametersHandGuiding::from_json(const nlohmann::json &parameters){
     if(!msrm_utils::read_json_param(parameters,"use_walls",use_walls)){
         use_walls=false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"dist_walls",dist_walls)){
-        dist_walls<<-1000,1000,-1000,1000,-1000,1000;
+    if(use_walls && !msrm_utils::read_json_param<double,6,1>(parameters,"dist_walls",dist_walls)){
+        spdlog::error("Parameter dist_walls could not be loaded but is mandatory when walls are used.");
+        return false;
     }
     return true;
 }
@@ -71,6 +72,14 @@ std::shared_ptr<ManipulationPrimitive> HandGuiding::get_initial_mp(const Percept
 
 bool HandGuiding::check_local_suc_conditions(const Percept& p){
     return false;
+}
+
+nlohmann::json HandGuiding::get_default_context(){
+    nlohmann::json context;
+    context["fix_dim"]={0,0,0,0,0,0};
+    context["dist_walls"]=nlohmann::json();
+    context["use_walls"]=false;
+    return context;
 }
 
 }

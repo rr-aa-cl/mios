@@ -6,6 +6,7 @@ namespace mios {
 
 struct SkillParametersExtraction : public SkillParameters{
     bool from_json(const nlohmann::json &parameters) override;
+    std::set<std::string> get_parameter_list() override;
     Eigen::Matrix<double,2,1> traj_speed;
     Eigen::Matrix<double,2,1> traj_acc;
     Eigen::Matrix<double,6,1> search_a;
@@ -21,8 +22,8 @@ public:
     Eigen::Matrix<double, 3, 3> get_O_R_T_0(const Percept &p) const override;
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept &p) override;
-    void evaluate() override;
-    nlohmann::json get_default_context() override;
+
+    double get_goal_heuristic(const Percept &p) override;
 
 private:
     bool is_stuck(const Percept& p);

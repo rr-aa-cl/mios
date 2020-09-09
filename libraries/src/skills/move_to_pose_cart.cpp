@@ -74,18 +74,12 @@ bool MoveToPoseCart::check_local_ex_conditions(const Percept &p){
     }
 }
 
-void MoveToPoseCart::evaluate(){
-    write_costs(0,std::chrono::duration_cast<std::chrono::milliseconds>(get_result().p_1.time-get_result().p_0.time).count()/1000.0);
-}
-
-nlohmann::json MoveToPoseCart::get_default_context(){
-    nlohmann::json context;
+void MoveToPoseCart::get_default_context(nlohmann::json& context){
     context["t_settle"]=0;
     context["speed"]=msrm_utils::from_eigen<double,2,1>(m_memory->read_parameters()->user.dX_default);
     context["acc"]=msrm_utils::from_eigen<double,2,1>(m_memory->read_parameters()->user.ddX_default);
     context["T_T_EE_g"]=nlohmann::json();
     context["T_T_EE_g_offset"]=msrm_utils::from_eigen<double,4,4>(Eigen::Matrix<double,4,4>::Identity());
-    return context;
 }
 
 }

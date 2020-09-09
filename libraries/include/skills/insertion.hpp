@@ -15,7 +15,6 @@ public:
     Eigen::Matrix<double,6,1> ROI_x;
     Eigen::Matrix<double,6,1> ROI_phi;
 
-    double stuck_t_thr;
     double stuck_dx_thr;
 };
 
@@ -26,7 +25,10 @@ public:
     Eigen::Matrix<double, 3, 3> get_O_R_T_0(const Percept &p) const override;
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
     std::optional<std::shared_ptr<ManipulationPrimitive> > graph_transition(const Percept &p) override;
-    void evaluate() override;
+
+    double get_goal_heuristic(const Percept &p) override;
+
+    nlohmann::json get_default_context() override;
 
 private:
     bool is_stuck(const Percept& p);

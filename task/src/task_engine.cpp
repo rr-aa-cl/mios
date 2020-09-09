@@ -61,10 +61,10 @@ void TaskEngine::life_cycle(){
                 spdlog::warn("Robot has executed a reflex, attempting to recover...");
                 if(!m_core->recover_body()){
                     spdlog::error("Automatic recovery failed, please toggle the user stop...");
+                    m_mtx_task_queue.lock();
+                    m_task_queue.clear();
+                    m_mtx_task_queue.unlock();
                 }
-                m_mtx_task_queue.lock();
-                m_task_queue.clear();
-                m_mtx_task_queue.unlock();
                 reflex=true;
                 continue;
             }
@@ -80,10 +80,10 @@ void TaskEngine::life_cycle(){
                 spdlog::warn("Robot is in invalid mode, attempting to recover...");
                 if(!m_core->recover_body()){
                     spdlog::error("Automatic recovery failed, please toggle the user stop...");
+                    m_mtx_task_queue.lock();
+                    m_task_queue.clear();
+                    m_mtx_task_queue.unlock();
                 }
-                m_mtx_task_queue.lock();
-                m_task_queue.clear();
-                m_mtx_task_queue.unlock();
                 invalid_mode=true;
                 continue;
             }
@@ -186,12 +186,7 @@ void TaskEngine::life_cycle(){
         }
         if(m_task_life_cycle==TaskLifeCycle::Termination){
             spdlog::debug("TaskLifeCycle: termination, task_uuid: "+m_active_task->get_uuid());
-            try{
-                spdlog::info("Terminating task " + m_active_task->get_id() + " with uuid " + m_active_task->get_uuid());
-                m_active_task->evaluate();
-            }catch(const std::exception& e){
-                spdlog::debug(e.what());
-            }
+            m_active_task->write_result();
             m_memory->store_task_data(m_active_task->get_uuid(),m_active_task->get_id(),m_active_task->get_context(),m_active_task->get_result());
             m_task_life_cycle=TaskLifeCycle::Switch;
         }
@@ -318,6 +313,11 @@ std::tuple<bool,TaskResult,std::string> TaskEngine::wait_for_task(const std::str
     bool result=false;
     if(this->subscribe(task_uuid,observer)){
         observer->wait_for_finish();
+    }else{
+        spdlog::error("Could not subscribe to task with uuid " + task_uuid);
+        err = "Could not subscribe to task with uuid " + task_uuid;
+        result = false;
+        return std::make_tuple(result,task_data.result,err);
     }
     if(m_memory->get_task_data(task_uuid,task_data)){
         spdlog::info("Loaded task result for task with uuid "+task_uuid+" from memory.");

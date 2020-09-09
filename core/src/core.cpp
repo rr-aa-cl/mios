@@ -16,6 +16,7 @@
 #include "safety_stage_1/velocity_walls.hpp"
 #include "safety_stage_2/virtual_cube.hpp"
 #include "safety_stage_2/virtual_joint_walls.hpp"
+#include "safety_stage_2/cartesian_velocity_damping.hpp"
 
 #include <iostream>
 #include <chrono>
@@ -103,6 +104,10 @@ RosNode* Core::get_ros_node(){
     return &m_ros_node;
 }
 
+LearningModule* Core::get_learning_module(){
+    return &m_learning_module;
+}
+
 bool Core::execute_skill(){
     spdlog::debug("CORE: execute_skill");
 
@@ -124,6 +129,7 @@ bool Core::execute_skill(){
         m_safety_stage_1.insert(std::make_unique<VelocityWallsSafetyModule>());
         m_safety_stage_2.insert(std::make_unique<VirtualCubeSafetyModule>());
         m_safety_stage_2.insert(std::make_unique<VirtualJointWallsSafetyModule>());
+        m_safety_stage_2.insert(std::make_unique<CartesianVelocityDampingSafetyModule>());
         m_controller_pipeline->initialize(m_percept,&m_memory);
         for(auto& m : m_safety_stage_1){
             m->initialize(m_percept,&m_memory);

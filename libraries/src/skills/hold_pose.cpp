@@ -11,6 +11,10 @@ bool SkillParametersHoldPose::from_json(const nlohmann::json &parameters){
     return true;
 }
 
+std::set<std::string> SkillParametersHoldPose::get_parameter_list(){
+    return {"t_max"};
+}
+
 HoldPose::HoldPose(const std::string &id, Memory *memory, Portal *portal):Skill("HoldPose",{},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mJointTorque}){
 }
 
@@ -28,16 +32,6 @@ bool HoldPose::check_local_suc_conditions(const Percept &p){
 
 bool HoldPose::check_local_ex_conditions(const Percept &p){
     return true;
-}
-
-void HoldPose::evaluate(){
-    write_costs(0,std::chrono::duration_cast<std::chrono::seconds>(get_result().p_1.time-get_result().p_0.time).count());
-}
-
-nlohmann::json HoldPose::get_default_context(){
-    nlohmann::json context;
-    context["t_max"]=nlohmann::json();
-    return context;
 }
 
 }

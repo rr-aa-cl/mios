@@ -5,6 +5,8 @@
 #include "portal/portal.hpp"
 #include "memory/memory.hpp"
 #include <spdlog/spdlog.h>
+
+
 namespace mios {
 
 using msrm_utils::ArgPair;
@@ -55,6 +57,11 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("get_event",std::bind(&CommandInterface::get_event,this,std::placeholders::_1),{ArgPair("name",{})});
 
     m_portal->bind_method_to_all("set_live_parameter",std::bind(&CommandInterface::set_live_parameter,this,std::placeholders::_1),{ArgPair("key",{}),ArgPair("value",{})});
+
+    m_portal->bind_method_to_all("learn_task",std::bind(&CommandInterface::learn_task,this,std::placeholders::_1),{ArgPair("problem_definition",{}),
+                                 ArgPair("service_configuration",nlohmann::json()),ArgPair("agents",{})});
+    m_portal->bind_method_to_all("stop_learning",std::bind(&CommandInterface::stop_learning,this,std::placeholders::_1),{ArgPair("uuid",{})});
+
 }
 
 nlohmann::json CommandInterface::terminate(const nlohmann::json &request){
@@ -113,20 +120,25 @@ nlohmann::json CommandInterface::wait_for_task(const nlohmann::json &request){
     nlohmann::json task_result_response;
     if(result){
         task_result_response["success"]=task_result.success;
-        task_result_response["cost_err"]=task_result.cost_err;
-        task_result_response["cost_suc"]=task_result.cost_suc;
         task_result_response["external_stop"]=task_result.external_stop;
         task_result_response["exception"]=task_result.exception;
         task_result_response["results"]=task_result.custom_results;
         task_result_response["error"]=task_result.errors;
+        nlohmann::json skill_results;
+        for(const auto& r : task_result.skill_results){
+            nlohmann::json result;
+            result["cost"] = r.second.cost;
+            result["heuristic"] = r.second.heuristic;
+            skill_results[r.first]=result;
+        }
+        task_result_response["skill_results"]=skill_results;
     }else{
         task_result_response["success"]=false;
-        task_result_response["cost_err"]=0;
-        task_result_response["cost_suc"]=0;
         task_result_response["external_stop"]=false;
         task_result_response["exception"]=true;
         task_result_response["results"]=nlohmann::json();
         task_result_response["error"]={};
+        task_result_response["skill_results"]=nlohmann::json();
     }
     response["result"]=result;
     response["error"]=error_message;
@@ -341,6 +353,15 @@ nlohmann::json CommandInterface::get_state(const nlohmann::json &request){
     msrm_utils::write_json_array<double,7,1>(response["q"],p->proprioception.q);
     msrm_utils::write_json_array<double,4,4>(response["O_T_EE"],p->proprioception.O_T_EE);
     response["grasped_object"]=m_memory->get_live_context()->grasped_object->name;
+    if(p->robot_mode==franka::RobotMode::kIdle){
+        response["status"]="Idle";
+    }
+    if(p->robot_mode==franka::RobotMode::kReflex){
+        response["status"]="Reflex";
+    }
+    if(p->robot_mode==franka::RobotMode::kUserStopped){
+        response["status"]="UserStopped";
+    }
     response["result"]=result;
     response["error_message"]=error_message;
 
@@ -460,6 +481,42 @@ nlohmann::json CommandInterface::get_event(const nlohmann::json &request){
     request["name"].get_to(name);
     response["content"]=m_memory->get_event(name)->get_content();
     return response;
+}
+
+nlohmann::json CommandInterface::learn_task(const nlohmann::json &request){
+    spdlog::debug("CommandInterface::learn_task()");
+    nlohmann::json response;
+    bool result=true;
+
+    // Problem definition checks
+    if(request["problem_definition"].find("domain")==request["problem_definition"].end()){
+        response["error"]="Problem definition is missing a domain.";
+        result=false;
+    }else if(request["problem_definition"]["domain"].find("limits")==request["problem_definition"]["domain"].end()){
+        response["error"]="Domain is missing limits.";
+        result=false;
+    }else if(request["problem_definition"]["domain"].find("context_mapping")==request["problem_definition"]["domain"].end()){
+        response["error"]="Domain is missing context mapping.";
+        result=false;
+    }
+
+    if(request["service_configuration"].find("service_name")==request["service_configuration"].end()){
+        response["error"]="Configuration is missing a service name.";
+        result=false;
+    }
+
+    if(result){
+        spdlog::debug("CommandInterface::learn_task.to_learning_module");
+        response["problem_uuid"] = m_core->get_learning_module()->learn_task(request["problem_definition"],request["service_configuration"],request["agents"]);
+    }else{
+        response["uuid"]="INVALID";
+    }
+    response["result"]=result;
+    return response;
+}
+
+nlohmann::json CommandInterface::stop_learning(const nlohmann::json &request){
+    return nlohmann::json();
 }
 
 }

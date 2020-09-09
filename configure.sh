@@ -91,7 +91,7 @@ cd pybind11
 git checkout v2.5.0
 mkdir -p build
 cd build
-cmake -DPYBIND11_TEST=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} ..
+cmake -DPYBIND11_PYTHON_VERSION=3.6 -DPYBIND11_TEST=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} cmake -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3.6 ..
 make -j$(nproc --all)
 make install
 

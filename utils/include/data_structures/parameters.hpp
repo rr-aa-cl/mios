@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 #include <eigen3/Eigen/Core>
 #include <chrono>
+#include <set>
 
 
 namespace mios {
@@ -149,6 +150,12 @@ public:
         Eigen::Matrix<double,14,1> walls;
         bool active;
     }virtual_joint_walls;
+
+    struct CartesianVelocityDamping{
+        bool active;
+        Eigen::Matrix<double,6,1> dX_thr;
+        Eigen::Matrix<double,6,1> D_x;
+    }cartesian_velocity_damping;
 };
 
 enum ControlMode{mCartTorque,mJointTorque,mCartVelocity,mJointVelocity,mNoControl};
@@ -211,6 +218,7 @@ public:
     void read_skill_objects(const nlohmann::json& p);
     static nlohmann::json get_default_values();
     virtual bool from_json(const nlohmann::json& parameters) = 0;
+    virtual std::set<std::string> get_parameter_list() = 0;
     nlohmann::json to_json() const;
 
     /**

@@ -11,6 +11,10 @@ bool SkillParametersNullSkill::from_json(const nlohmann::json &parameters){
     return false;
 }
 
+std::set<std::string> SkillParametersNullSkill::get_parameter_list(){
+    return {};
+}
+
 NullSkill::NullSkill(const std::string& id, Memory *memory, Portal* portal):Skill("NullSkill",{},id,memory,portal,{ControlMode::mNoControl}){
 
 }
@@ -27,10 +31,6 @@ bool NullSkill::check_local_suc_conditions(const Percept &p){
 
 bool NullSkill::check_local_err_conditions(const Percept &p){
     return true;
-}
-
-nlohmann::json NullSkill::get_default_context(){
-    return nlohmann::json();
 }
 
 }

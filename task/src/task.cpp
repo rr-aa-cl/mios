@@ -56,15 +56,22 @@ void Task::execute_desk_timeline(const std::string &id){
     //    m_core->start_desk_task(id);
 }
 
-void Task::write_result(bool success, double cost_suc, double cost_err, std::optional<nlohmann::json> custom_results){
-    m_result.success=success;
-    m_result.cost_suc=cost_suc;
-    m_result.cost_err=cost_err;
-    if(custom_results.has_value()){
-        m_result.custom_results=custom_results.value();
-    }else{
-        m_result.custom_results=nlohmann::json();
+void Task::write_result(){
+    m_result.success=true;
+    for(const auto& r : m_result.skill_results){
+        if(!r.second.success){
+            m_result.success=false;
+        }
     }
+    write_custom_results(m_result.custom_results);
+}
+
+void Task::write_custom_results(nlohmann::json &custom_results){
+    custom_results=nlohmann::json();
+}
+
+void Task::write_error(const std::string &error){
+    m_result.errors.push_back(error);
 }
 
 bool Task::load_context(const nlohmann::json &user_context){
@@ -305,7 +312,7 @@ void Task::execute_subtask(const std::string& task_id,const std::string task_nam
     spdlog::info("Executing subtask "+task_name+"...");
     m_active_subtask->execute();
     spdlog::info("Subtask "+task_name+" has terminated.");
-    m_active_subtask->evaluate();
+    m_active_subtask->write_result();
     if(m_active_subtask->do_recovery()){
         m_active_subtask->start_recovery();
         spdlog::info("Subtask "+task_name+" is attempting recovery.");

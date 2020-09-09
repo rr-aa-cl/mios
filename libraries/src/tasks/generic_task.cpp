@@ -36,10 +36,6 @@ void GenericTask::execute(){
     }
 }
 
-void GenericTask::evaluate(){
-
-}
-
 void GenericTask::execute_any_skill(unsigned index){
     std::string name = m_skills[index].first;
     std::string type = m_skills[index].second;

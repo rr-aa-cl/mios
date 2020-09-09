@@ -12,8 +12,12 @@ public:
 
 class Push : public Skill{
 public:
+<<<<<<< HEAD
     Push(const std::string& name, Memory* memory, Portal* portal);
     void evaluate() override;
+=======
+    Push(const std::string& name,Memory* memory, Portal* portal, const Percept& p);
+>>>>>>> 6b892e42d63abd2e94cf6893fcff6a2fd452830d
     Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const override;
     nlohmann::json get_default_context() override;
 

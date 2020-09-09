@@ -388,6 +388,10 @@ SafetyParameters::SafetyParameters(){
     virtual_joint_walls.damping.setZero();
     virtual_joint_walls.rho_min.setZero();
     virtual_joint_walls.damping_dist.setZero();
+
+    cartesian_velocity_damping.active=false;
+    cartesian_velocity_damping.dX_thr.setZero();
+    cartesian_velocity_damping.D_x.setZero();
 }
 
 bool SafetyParameters::from_json(const nlohmann::json &parameters){
@@ -473,6 +477,19 @@ bool SafetyParameters::from_json(const nlohmann::json &parameters){
         spdlog::error("Could not read virtual_joint_walls.active.");
         return false;
     }
+
+    if(!msrm_utils::read_json_param(parameters["cartesian_velocity_damping"],"active",cartesian_velocity_damping.active)){
+        spdlog::error("Could not read cartesian_velocity_damping.active.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param<double,6,1>(parameters["cartesian_velocity_damping"],"dX_thr",cartesian_velocity_damping.dX_thr)){
+        spdlog::error("Could not read cartesian_velocity_damping.dX_thr.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param<double,6,1>(parameters["cartesian_velocity_damping"],"D_x",cartesian_velocity_damping.D_x)){
+        spdlog::error("Could not read cartesian_velocity_damping.D_x.");
+        return false;
+    }
     return true;
 }
 
@@ -482,11 +499,11 @@ nlohmann::json SafetyParameters::to_json() const{
     nlohmann::json json_velocity_walls;
     nlohmann::json json_virtual_cube;
     nlohmann::json json_virtual_joint_walls;
+    nlohmann::json json_cartesian_velocity_damping;
 
     json_velocity_walls["walls"]=msrm_utils::from_eigen<double,6,1>(velocity_walls.walls);
     json_velocity_walls["brake_distance"]=velocity_walls.brake_distance;
     json_velocity_walls["active"]=velocity_walls.active;
-
 
     json_virtual_cube["damping"]=virtual_cube.damping;
     json_virtual_cube["damping_dist"]=virtual_cube.damping_dist;
@@ -504,9 +521,14 @@ nlohmann::json SafetyParameters::to_json() const{
     json_virtual_joint_walls["tau_max"]=msrm_utils::from_eigen<double,7,1>(virtual_joint_walls.tau_max);
     json_virtual_joint_walls["active"]=virtual_joint_walls.active;
 
+    json_cartesian_velocity_damping["active"]=cartesian_velocity_damping.active;
+    json_cartesian_velocity_damping["dX_thr"]=msrm_utils::from_eigen<double,6,1>(cartesian_velocity_damping.dX_thr);
+    json_cartesian_velocity_damping["D_x"]=msrm_utils::from_eigen<double,6,1>(cartesian_velocity_damping.D_x);
+
     json_object["velocity_walls"]=json_velocity_walls;
     json_object["virtual_cube"]=json_virtual_cube;
     json_object["virtual_joint_walls"]=json_virtual_joint_walls;
+    json_object["cartesian_velocity_damping"]=json_cartesian_velocity_damping;
 
     return json_object;
 }

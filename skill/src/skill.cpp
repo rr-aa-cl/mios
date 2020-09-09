@@ -14,6 +14,8 @@ Skill::Skill(const std::string &type, const std::unordered_set<std::string> &obj
     m_memory(memory),m_portal(portal),m_active_mp(std::make_shared<ManipulationPrimitive>("NullPrimitive",Percept(),memory)),m_control_modes(control_modes),m_life_cycle(SkillLifeCycle::slInit),
     m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_stop_factor(1.0),m_type(type),m_id(id),m_objects(objects),
     m_msg_local_success(false),m_msg_global_success(false){
+
+    m_costs.insert(std::make_pair("ExecutionTime",0));
 }
 
 Skill::~Skill(){
@@ -103,8 +105,11 @@ Actuator* Skill::cycle(const Percept &p){
     if(m_life_cycle==SkillLifeCycle::slInit){
         m_active_mp=get_initial_mp(p);
         m_result.p_0=p;
+        m_time_start=std::chrono::high_resolution_clock::now();
         m_memory->get_live_context()->t_skill=std::chrono::high_resolution_clock::now();
         m_result.percepts.emplace(std::make_pair(m_active_mp->get_name(),p));
+        m_result.cost=measure_cost(p);
+        m_result.heuristic=get_goal_heuristic(p);
         if(!this->check_local_pre_conditions(p)){
             spdlog::error("Preconditions are not fulfilled.");
             m_stop_factor=0.1;
@@ -185,6 +190,8 @@ Actuator* Skill::cycle(const Percept &p){
         auxiliaries(p);
         update_internal_models(p);
         update_policies(p);
+        m_result.cost=measure_cost(p);
+        m_result.heuristic=get_goal_heuristic(p);
         return m_active_mp->step(p);
     }
     spdlog::critical("Skill life cycle is undefined");
@@ -218,7 +225,7 @@ void Skill::terminate(const Percept& p){
     for(auto& mp : m_mp_graph){
         mp.second->terminate(p);
     }
-    this->evaluate();
+    write_custom_results(m_result.results);
 }
 
 void Skill::invoke_failure(){
@@ -257,8 +264,8 @@ bool Skill::check_global_err_conditions(const Percept& p) const{
             return true;
         }
     }
-    double run_time = std::chrono::duration_cast<std::chrono::seconds>(p.time-m_time_start).count();
-    if(run_time>m_memory->read_parameters()->skill->time_max && m_memory->read_parameters()->skill->time_max>0){
+    double run_time = std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_time_start).count();
+    if(run_time>m_memory->read_parameters()->skill->time_max*1000 && m_memory->read_parameters()->skill->time_max>0){
         spdlog::error("Skill "+m_id+" has violated the maximum time limit of "+std::to_string(m_memory->read_parameters()->skill->time_max)+" s.");
         return true;
     }
@@ -364,8 +371,12 @@ void Skill::terminate_parallels(){
     }
 }
 
-void Skill::write_custom_results(nlohmann::json results){
-    m_result.results=results;
+double Skill::measure_cost(const Percept &p){
+    return std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()/1000.0;
+}
+
+void Skill::write_custom_results(nlohmann::json &custom_results){
+    m_result.results=nlohmann::json();
 }
 
 nlohmann::json& Skill::get_custom_results(){
@@ -380,21 +391,16 @@ const std::shared_ptr<ManipulationPrimitive> Skill::get_active_mp() const{
     return m_active_mp;
 }
 
-void Skill::write_costs(double cost_suc, double cost_err){
-    m_result.cost_suc=cost_suc;
-    m_result.cost_err=cost_err;
-}
-
-void Skill::evaluate(){
-
-}
-
 void Skill::update_internal_models(const Percept& p){
 
 }
 
 void Skill::update_policies(const Percept &p){
 
+}
+
+double Skill::get_goal_heuristic(const Percept &p){
+    return 0;
 }
 
 }

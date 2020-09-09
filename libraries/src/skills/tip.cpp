@@ -78,8 +78,4 @@ bool Tip::check_local_ex_conditions(const Percept &p){
     return false;
 }
 
-void Tip::evaluate(){
-
-}
-
 }

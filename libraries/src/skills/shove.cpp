@@ -71,8 +71,6 @@ void Shove::update_internal_models(const Percept &p){
     update_object("shovable")->O_T_OB=p.proprioception.O_T_EE;
 }
 
-void Shove::evaluate(){}
-
 bool Shove::check_local_pre_conditions(const Percept &p){
     Eigen::Matrix<double,4,4> O_T_OB = get_object("shovable")->O_T_OB;
     Eigen::Matrix<double,4,4> O_T_OB_g;

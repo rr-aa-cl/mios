@@ -15,6 +15,10 @@ bool SkillParametersGenericWiggleMotion::from_json(const nlohmann::json &paramet
     return true;
 }
 
+std::set<std::string> SkillParametersGenericWiggleMotion::get_parameter_list(){
+    return {"dX_fourier_a_a","dX_fourier_b_a","dX_fourier_a_f","dX_fourier_b_f","dX_fourier_a_phi","dX_fourier_b_phi","use_EE","tap_to_finish"};
+}
+
 GenericWiggleMotion::GenericWiggleMotion(const std::string &id, Memory *memory,Portal* portal):Skill("GenericWiggleMotion",{},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
 }
 
@@ -50,19 +54,6 @@ bool GenericWiggleMotion::check_local_suc_conditions(const Percept &p){
 
 bool GenericWiggleMotion::check_local_ex_conditions(const Percept &p){
     return true;
-}
-
-nlohmann::json GenericWiggleMotion::get_default_context(){
-    nlohmann::json context;
-    context["dX_fourier_a_a"]={0,0,0,0,0,0};
-    context["dX_fourier_b_a"]={0,0,0,0,0,0};
-    context["dX_fourier_a_f"]={0,0,0,0,0,0};
-    context["dX_fourier_b_f"]={0,0,0,0,0,0};
-    context["dX_fourier_a_phi"]={0,0,0,0,0,0};
-    context["dX_fourier_b_phi"]={0,0,0,0,0,0};
-    context["use_EE"]=nlohmann::json();
-    context["tap_to_finish"]=nlohmann::json();
-    return context;
 }
 
 }

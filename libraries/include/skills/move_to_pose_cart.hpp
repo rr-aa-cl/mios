@@ -19,8 +19,7 @@ public:
 
     std::shared_ptr<ManipulationPrimitive> get_initial_mp(const Percept &p_0) override;
 
-    void evaluate() override;
-    nlohmann::json get_default_context() override;
+    void get_default_context(nlohmann::json &context) override;
 
 private:
     bool check_local_suc_conditions(const Percept &p) override;
