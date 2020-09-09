@@ -95,7 +95,7 @@ class Engine:
         self.problem_definition = problem_definition
         meta_data = problem_definition.to_dict()
         meta_data["t_0"] = time.time()
-        meta_data["date"] = str(datetime.date.today())
+        meta_data["date"] = str(datetime.datetime.now())
         self.database_results_collection = self.database_client.client.ml_results[problem_definition.task_type]
         self.database_results_id = self.database_results_collection.insert_one(
             {"meta": meta_data}).inserted_id
@@ -158,10 +158,7 @@ class Engine:
             self.queued_trials.task_done()
             self.completed_trials[trial.trial_uuid] = trial
 
-        if self._reset_task(agent, trial) is False:
-            logger.error("Could not reset the task, service will stop.")
-            self.stop()
-
+        self._reset_task(agent, trial)
         self.free_agents.add(agent)
 
     def _execute_task(self, agent: str, trial: Trial) -> bool:
@@ -169,119 +166,122 @@ class Engine:
         logger.debug("Engine::_execute_task.task_context: " + str(trial.task_context))
         cnt_repeat = -1
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
+            logger.debug("Engine::_execute_task.loop")
             cnt_repeat += 1
             result, task_uuid = self._start_task(agent, trial.task_context)
+            if result is False:
+                return False
+
             trial.t_0 = time.time()
-            if result is False:
-                return False
-
             result, trial.task_result = self._wait_for_task(agent, task_uuid)
-            trial.t_1 = time.time()
-            trial.t_delta = trial.t_1 - trial.t_0
             if result is False:
                 return False
-
             if "TaskError" in trial.task_result.errors:
                 logger.error("Received an task error, service will terminate.")
                 self.stop()
-
-            if "realtime_error" in trial.task_result.errors:
+                return False
+            if "RealTimeError" in trial.task_result.errors:
                 time.sleep(1)
                 continue
 
+            trial.t_1 = time.time()
+            trial.t_delta = trial.t_1 - trial.t_0
             trial.trial_number = self.cnt_trial
             self.cnt_trial += 1
             trial.task_result.final_cost = self.problem_definition.calculate_cost(trial.task_result)
             self.write_task_result(trial)
             break
-        return cnt_repeat < self.max_trial_repeats
+        return cnt_repeat < self.max_trial_repeats and self.keep_running is True
 
-    def _reset_task(self, agent: str, trial: Trial) -> bool:
+    def _reset_task(self, agent: str, trial: Trial):
         logger.debug("Engine::_reset_task()")
         for i in trial.reset_instructions:
             logger.debug("Engine::_reset_task.instructions: " + str(i["parameters"]))
-            if i["method"] == "start_task":
-                result, task_uuid = self._start_task(agent, i["parameters"])
-                if result is False:
-                    logger.debug("Reset task could not be started.")
-                    logger.debug(result)
-                    return False
+            instruction_done = False
+            while self.keep_running is True and instruction_done is False:
+                logger.debug("Engine::_reset_task.loop")
+                if i["method"] == "start_task":
+                    result, task_uuid = self._start_task(agent, i["parameters"])
+                    if result is False:
+                        logger.debug("Reset task could not be started.")
+                        logger.debug(result)
+                        time.sleep(1)
+                        continue
 
-                result, trial.task_result = self._wait_for_task(agent, task_uuid)
-                if result is False or trial.task_result.success is False:
-                    logger.debug("Could not wait for reset_task")
-                    logger.debug(result)
-                    return False
-            else:
-                response = call_method(agent, 12000, i["method"], i["parameters"])
-                if response is None:
-                    logger.debug(response)
-                    return False
+                    result, trial.task_result = self._wait_for_task(agent, task_uuid)
+                    if result is False or trial.task_result.success is False:
+                        logger.debug("Could not wait for reset_task")
+                        logger.debug(result)
+                        time.sleep(1)
+                        continue
+                else:
+                    response = call_method(agent, 12000, i["method"], i["parameters"])
+                    if response is None:
+                        logger.debug(response)
+                        time.sleep(1)
+                        continue
+
+                instruction_done = True
 
         logger.debug("Engine::_reset_task.end")
-        return True
 
     def _start_task(self, agent: str, task_context: dict) -> (bool, str):
-        cnt_repeat = -1
         task_uuid = "INVALID"
-        while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
-            cnt_repeat += 1
-            task_name = task_context["name"]
-            logger.info("Executing task " + task_name + " on agent " + agent + ".")
-            logger.debug("Task context: " + str(task_context))
-            response = start_task(agent, task_name, task_context, True)
-            if response is None:
-                logger.warning("Agent " + agent + " is not responding.")
-                time.sleep(1)
-                continue
-            if "result" not in response or "result" not in response["result"]:
-                logger.warning("I received no proper response from agent " + agent + ".")
-                logger.debug("Response was: " + str(response))
-                time.sleep(1)
-                continue
-            if response["result"]["result"] is False:
-                logger.warning("The task " + task_name + " could not be started on agent " + agent + ".")
-                logger.warning("Received message: " + response["result"]["error"])
-                time.sleep(1)
-                continue
-            if "task_uuid" not in response["result"] or response["result"]["task_uuid"] == "INVALID":
-                print("Response from agent " + agent + " did not contain a valid task uuid.")
-                time.sleep(1)
-                continue
+        task_name = task_context["name"]
+        logger.info("Executing task " + task_name + " on agent " + agent + ".")
+        logger.debug("Task context: " + str(task_context))
+        response = start_task(agent, task_name, task_context, True)
+        if response is None:
+            logger.warning("Agent " + agent + " is not responding.")
+            time.sleep(1)
+            return False, task_uuid
 
-            task_uuid = response["result"]["task_uuid"]
-            break
+        if "result" not in response or "result" not in response["result"]:
+            logger.warning("I received no proper response from agent " + agent + ".")
+            logger.debug("Response was: " + str(response))
+            time.sleep(1)
+            return False, task_uuid
 
-        return cnt_repeat < self.max_trial_repeats, task_uuid
+        if response["result"]["result"] is False:
+            logger.warning("The task " + task_name + " could not be started on agent " + agent + ".")
+            logger.warning("Received message: " + response["result"]["error"])
+            time.sleep(1)
+            return False, task_uuid
+
+        if "task_uuid" not in response["result"] or response["result"]["task_uuid"] == "INVALID":
+            print("Response from agent " + agent + " did not contain a valid task uuid.")
+            time.sleep(1)
+            return False, task_uuid
+
+        task_uuid = response["result"]["task_uuid"]
+        return True, task_uuid
 
     def _wait_for_task(self, agent: str, task_uuid: str) -> (bool, TaskResult):
-        cnt_repeat = -1
         task_result = TaskResult()
-        while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
-            cnt_repeat += 1
-            response = wait_for_task(agent, task_uuid)
-            logger.debug("Engine._wait_for_task.response: " + str(response))
-            if response is None:
-                logger.warning("Agent " + agent + " is not responding.")
-                time.sleep(1)
-                continue
-            if "result" not in response or "result" not in response["result"] or "task_result" not in response[
-                "result"]:
-                logger.warning("I received no proper response from agent " + agent + ".")
-                logger.debug("Response was: " + str(response))
-                time.sleep(1)
-                continue
-            if response["result"]["result"] is False:
-                logger.warning("The task " + task_uuid + " was not properly executed on " + agent + ".")
-                logger.warning("Received message: " + response["result"]["error"])
-                time.sleep(1)
-                continue
-            if task_result.calculate(response["result"]["task_result"]) is False:
-                time.sleep(1)
-                continue
-            break
+        response = wait_for_task(agent, task_uuid)
+        logger.debug("Engine._wait_for_task.response: " + str(response))
+        if response is None:
+            logger.warning("Agent " + agent + " is not responding.")
+            time.sleep(1)
+            return False, task_result
 
-        return cnt_repeat < self.max_trial_repeats, task_result
+        if "result" not in response or "result" not in response["result"] or "task_result" not in response["result"]:
+            logger.warning("I received no proper response from agent " + agent + ".")
+            logger.debug("Response was: " + str(response))
+            time.sleep(1)
+            return False, task_result
+
+        if response["result"]["result"] is False:
+            logger.warning("The task " + task_uuid + " was not properly executed on " + agent + ".")
+            logger.warning("Received message: " + response["result"]["error"])
+            time.sleep(1)
+            return False, task_result
+
+        if task_result.calculate(response["result"]["task_result"]) is False:
+            time.sleep(1)
+            return False, task_result
+
+        return True, task_result
 
     def write_task_result(self, trial: Trial):
         data = {
