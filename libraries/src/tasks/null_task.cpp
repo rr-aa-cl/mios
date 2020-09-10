@@ -14,4 +14,8 @@ void NullTask::execute(){
 
 }
 
+void NullTask::get_default_context(nlohmann::json &context){
+
+}
+
 }

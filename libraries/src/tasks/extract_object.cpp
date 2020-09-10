@@ -49,4 +49,20 @@ bool ExtractObject::read_parameters(const nlohmann::json& params){
     return true;
 }
 
+void ExtractObject::get_default_context(nlohmann::json &context){
+    context["parameters"] = nlohmann::json();
+    context["parameters"]["extractable"]=nlohmann::json();
+    context["parameters"]["extract_from"]=nlohmann::json();
+    context["parameters"]["extract_to"]=nlohmann::json();
+
+    context["skills"]["extraction"]=nlohmann::json();
+    context["skills"]["extraction"]["control"]={{"control_mode",0}};
+    context["skills"]["extraction"]["skill"]={{"traj_speed",{0.05,0.2}}};
+    context["skills"]["extraction"]["skill"]={{"traj_acc",{0.5,1}}};
+    context["skills"]["extraction"]["skill"]={{"stuck_dx_thr",0.01}};
+    context["skills"]["extraction"]["skill"]={{"search_a",{5,5,0,0,0,0}}};
+    context["skills"]["extraction"]["skill"]={{"search_f",{0.5,0.5,0,0,0,0}}};
+    context["skills"]["extraction"]["type"]="Extraction";
+}
+
 }

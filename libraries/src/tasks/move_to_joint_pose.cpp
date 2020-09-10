@@ -42,4 +42,17 @@ bool MoveToJointPose::read_parameters(const nlohmann::json &params){
     return true;
 }
 
+void MoveToJointPose::get_default_context(nlohmann::json &context){
+    context["parameters"] = nlohmann::json();
+    context["parameters"]["pose"]=nlohmann::json();
+    context["parameters"]["q_g"]=nlohmann::json();
+    context["parameters"]["speed"]=0.5;
+    context["parameters"]["acc"]=0.7;
+
+    context["skills"]=nlohmann::json();
+    context["skills"]["move"]=nlohmann::json();
+    context["skills"]["move"]["control"]={{"control_mode",3}};
+    context["skills"]["move"]["type"]="MoveToPoseJoint";
+}
+
 }

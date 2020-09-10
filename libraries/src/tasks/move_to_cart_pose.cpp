@@ -41,4 +41,17 @@ bool MoveToCartPose::read_parameters(const nlohmann::json &params){
     return true;
 }
 
+void MoveToCartPose::get_default_context(nlohmann::json &context){
+    context["parameters"] = nlohmann::json();
+    context["parameters"]["pose"]=nlohmann::json();
+    context["parameters"]["T_EE_g"]=nlohmann::json();
+    context["parameters"]["speed"]={0.1,0.5};
+    context["parameters"]["acc"]={0.5,1};
+
+    context["skills"]=nlohmann::json();
+    context["skills"]["move"]=nlohmann::json();
+    context["skills"]["move"]["control"]={{"control_mode",2}};
+    context["skills"]["move"]["type"]="MoveToPoseCart";
+}
+
 }

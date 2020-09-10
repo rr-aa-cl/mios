@@ -87,4 +87,37 @@ bool InsertObject::read_parameters(const nlohmann::json& params){
     return true;
 }
 
+void InsertObject::get_default_context(nlohmann::json &context){
+    context["parameters"] = nlohmann::json();
+    context["parameters"]["insertable"]=nlohmann::json();
+    context["parameters"]["insert_into"]=nlohmann::json();
+    context["parameters"]["insert_approach"]=nlohmann::json();
+    context["parameters"]["offset"]={0,0,0,0,0,0};
+
+    context["skills"]=nlohmann::json();
+    context["skills"]["coarse_approach"]=nlohmann::json();
+    context["skills"]["coarse_approach"]["control"]={{"control_mode",3}};
+    context["skills"]["coarse_approach"]["skill"]={{"speed",0.5},{"acc",1}};
+    context["skills"]["coarse_approach"]["type"]="MoveToPoseJoint";
+    context["skills"]["fine_approach"]=nlohmann::json();
+    context["skills"]["fine_approach"]["control"]={{"control_mode",2}};
+    context["skills"]["fine_approach"]["skill"]={{"speed",{0.05,0.3}},{"acc",{0.5,1}}};
+    context["skills"]["fine_approach"]["type"]="MoveToPoseCart";
+    context["skills"]["contact"]=nlohmann::json();
+    context["skills"]["contact"]["control"]={{"control_mode",2}};
+    context["skills"]["contact"]["skill"]={{"speed",0.05}};
+    context["skills"]["contact"]["type"]="MoveToContact";
+
+    context["skills"]["insertion"]=nlohmann::json();
+    context["skills"]["insertion"]["control"]={{"control_mode",0}};
+    context["skills"]["insertion"]["skill"]={{"traj_speed",{0.05,0.2}}};
+    context["skills"]["insertion"]["skill"]={{"traj_acc",{0.5,1}}};
+    context["skills"]["insertion"]["skill"]={{"stuck_dx_thr",0.01}};
+    context["skills"]["insertion"]["skill"]={{"search_a",{5,5,0,0,0,0}}};
+    context["skills"]["insertion"]["skill"]={{"search_f",{0.5,0.5,0,0,0,0}}};
+    context["skills"]["insertion"]["skill"]={{"ROI_x",{-1,1,-1,1,-1,1}}};
+    context["skills"]["insertion"]["skill"]={{"ROI_phi",{0,0,0,0,0,0}}};
+    context["skills"]["insertion"]["type"]="Insertion";
+}
+
 }

@@ -23,4 +23,14 @@ bool LearnerTest::read_parameters(const nlohmann::json& params){
     return true;
 }
 
+void LearnerTest::get_default_context(nlohmann::json &context){
+    context["parameters"] = nlohmann::json();
+    context["parameters"]["x"]=nlohmann::json();
+
+    context["skills"]=nlohmann::json();
+    context["skills"]["ml_test"]=nlohmann::json();
+    context["skills"]["ml_test"]["control"]={{"control_mode",3}};
+    context["skills"]["ml_test"]["type"]="MLTestSkill";
+}
+
 }

@@ -56,7 +56,29 @@ bool TestTask2::read_parameters(const nlohmann::json& params){
 
     return true;
 }
+
 void TestTask2::recover_task(){
     spdlog::debug("RECOVERY OF TEST TASK 2");
 }
+
+void TestTask2::get_default_context(nlohmann::json &context){
+    context["parameters"] = nlohmann::json();
+    context["parameters"]["d"]={0,0};
+    context["parameters"]["e"]=0;
+    context["parameters"]["f"]=false;
+    context["parameters"]["stop_level"]=0;
+    context["parameters"]["success"]=false;
+
+    context["skills"]=nlohmann::json();
+    context["skills"]["t2_s1"]=nlohmann::json();
+    context["skills"]["t2_s1"]["control"]={{"control_mode",0}};
+    context["skills"]["t2_s1"]["skill"]={{"objects",{{"object","TestObject1"}}}};
+    context["skills"]["t2_s1"]["type"]="TestSkill1";
+    context["skills"]["t2_s2"]=nlohmann::json();
+    context["skills"]["t2_s2"]["control"]={{"control_mode",0}};
+    context["skills"]["t2_s2"]["skill"]={{"objects",{{"object","TestObject1"}}}};
+    context["skills"]["t2_s2"]["type"]="TestSkill1";
+}
+
+
 }

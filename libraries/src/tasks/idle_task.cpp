@@ -46,4 +46,20 @@ bool IdleTask::read_parameters(const nlohmann::json& params){
 return true;
 }
 
+void IdleTask::get_default_context(nlohmann::json &context){
+    context["parameters"] = nlohmann::json();
+    context["parameters"]["idle_mode"]="none";
+
+    context["skills"]=nlohmann::json();
+    context["skills"]["hold"]=nlohmann::json();
+    context["skills"]["hold"]["control"]={{"control_mode",0}};
+    context["skills"]["hold"]["type"]="HoldPose";
+    context["skills"]["move"]=nlohmann::json();
+    context["skills"]["move"]["control"]={{"control_mode",3}};
+    context["skills"]["move"]["type"]="MoveToPoseJoint";
+    context["skills"]["sleep"]=nlohmann::json();
+    context["skills"]["sleep"]["control"]={{"control_mode",2}};
+    context["skills"]["sleep"]["type"]="GenericWiggleMotion";
+}
+
 }

@@ -73,4 +73,28 @@ void TestTask3::recover_task(){
     spdlog::debug("RECOVERY OF TEST TASK 3");
 }
 
+void TestTask3::get_default_context(nlohmann::json &context){
+    context["parameters"] = nlohmann::json();
+    context["parameters"]["g"]={0,0,0,0};
+    context["parameters"]["h"]=false;
+    context["parameters"]["i"]=0;
+    context["parameters"]["j"]="";
+    context["parameters"]["stop_level"]=0;
+    context["parameters"]["success"]=false;
+
+    context["skills"]=nlohmann::json();
+    context["skills"]["t3_s1"]=nlohmann::json();
+    context["skills"]["t3_s1"]["control"]={{"control_mode",0}};
+    context["skills"]["t3_s1"]["skill"]={{"objects",{{"object","TestObject1"}}}};
+    context["skills"]["t3_s1"]["type"]="TestSkill1";
+    context["skills"]["t3_s2"]=nlohmann::json();
+    context["skills"]["t3_s2"]["control"]={{"control_mode",0}};
+    context["skills"]["t3_s2"]["skill"]={{"objects",{{"object","TestObject1"}}}};
+    context["skills"]["t3_s2"]["type"]="TestSkill1";
+    context["skills"]["t3_s3"]=nlohmann::json();
+    context["skills"]["t3_s3"]["control"]={{"control_mode",0}};
+    context["skills"]["t3_s3"]["skill"]={{"objects",{{"object","TestObject1"}}}};
+    context["skills"]["t3_s3"]["type"]="TestSkill1";
+}
+
 }

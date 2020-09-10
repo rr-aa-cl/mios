@@ -117,4 +117,10 @@ bool GenericTask::read_parameters(const nlohmann::json &params){
     return true;
 }
 
+void GenericTask::get_default_context(nlohmann::json &context){
+    context["parameters"] = nlohmann::json();
+    context["parameters"]["skill_names"]=nlohmann::json();
+    context["parameters"]["skill_types"]=nlohmann::json();
+}
+
 }

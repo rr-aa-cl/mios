@@ -115,11 +115,11 @@ void TestTask1::get_default_context(nlohmann::json &context){
     context["skills"]=nlohmann::json();
     context["skills"]["t1_s1"]=nlohmann::json();
     context["skills"]["t1_s1"]["control"]={{"control_mode",0}};
-    context["skills"]["t1_s1"]["skill"]={{"objects",{"object","TestObject1"}}};
+    context["skills"]["t1_s1"]["skill"]={{"objects",{{"object","TestObject1"}}}};
     context["skills"]["t1_s1"]["type"]="TestSkill1";
     context["skills"]["t1_s2"]=nlohmann::json();
     context["skills"]["t1_s2"]["control"]={{"control_mode",0}};
-    context["skills"]["t1_s2"]["skill"]={{"objects",{"object","TestObject1"}}};
+    context["skills"]["t1_s2"]["skill"]={{"objects",{{"object","TestObject1"}}}};
     context["skills"]["t1_s2"]["type"]="TestSkill1";
 }
 
