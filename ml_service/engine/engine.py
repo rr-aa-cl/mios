@@ -181,6 +181,11 @@ class Engine:
                 self.stop()
                 return False
             if "RealTimeError" in trial.task_result.errors:
+                logger.warning("Received a realtime error, trial will be repeated.")
+                time.sleep(1)
+                continue
+            if "UserStopped" in trial.task_result.errors:
+                logger.warning("Received a user stop error, trial will be repeated.")
                 time.sleep(1)
                 continue
 

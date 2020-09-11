@@ -57,11 +57,11 @@ void ExtractObject::get_default_context(nlohmann::json &context){
 
     context["skills"]["extraction"]=nlohmann::json();
     context["skills"]["extraction"]["control"]={{"control_mode",0}};
-    context["skills"]["extraction"]["skill"]={{"traj_speed",{0.05,0.2}}};
-    context["skills"]["extraction"]["skill"]={{"traj_acc",{0.5,1}}};
-    context["skills"]["extraction"]["skill"]={{"stuck_dx_thr",0.01}};
-    context["skills"]["extraction"]["skill"]={{"search_a",{5,5,0,0,0,0}}};
-    context["skills"]["extraction"]["skill"]={{"search_f",{0.5,0.5,0,0,0,0}}};
+    context["skills"]["extraction"]["skill"].update({{"traj_speed",{0.05,0.2}}});
+    context["skills"]["extraction"]["skill"].update({{"traj_acc",{0.5,1}}});
+    context["skills"]["extraction"]["skill"].update({{"stuck_dx_thr",0.01}});
+    context["skills"]["extraction"]["skill"].update({{"search_a",{5,5,0,0,0,0}}});
+    context["skills"]["extraction"]["skill"].update({{"search_f",{0.5,0.5,0,0,0,0}}});
     context["skills"]["extraction"]["type"]="Extraction";
 }
 

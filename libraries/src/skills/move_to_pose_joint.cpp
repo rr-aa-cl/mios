@@ -19,8 +19,14 @@ bool SkillParametersMoveToPoseJoint::from_json(const nlohmann::json &p){
     if(!msrm_utils::read_json_param<double,7,1>(p,"q_g_offset",q_g_offset)){
         q_g_offset.setZero();
     }
+    bool object_set=false;
+    if(!p["objects"].is_null()){
+        if(p["objects"].find("goal_pose")!=p["objects"].end()){
+            object_set=true;
+        }
+    }
 
-    if(!msrm_utils::read_json_param<double,7,1>(p,"q_g",q_g)){
+    if(!msrm_utils::read_json_param<double,7,1>(p,"q_g",q_g) && !object_set){
         spdlog::error("Parameter q_g could not be loaded but is mandatory.");
         return false;
     }

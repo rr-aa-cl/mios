@@ -78,6 +78,7 @@ class CMAESService(BaseService):
             result = self.wait_for_result(uuid)
             costs.append((result.final_cost,))
 
+        logger.debug("CMAES costs: " + str(costs))
         return costs
 
     def eaGenerateUpdate(self, toolbox, ngen, halloffame=None, stats=None,

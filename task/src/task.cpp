@@ -64,6 +64,13 @@ void Task::write_result(){
         }
     }
     write_custom_results(m_result.custom_results);
+    if(!m_core->refresh_percept({})){
+        spdlog::warn("Could not refresh perception, final checks may be invalid.");
+    }
+    const Percept* p_final = m_core->get_percept();
+    if(p_final->robot_mode==franka::RobotMode::kUserStopped){
+        write_error("UserStopped");
+    }
 }
 
 void Task::write_custom_results(nlohmann::json &custom_results){
@@ -81,6 +88,7 @@ bool Task::load_context(const nlohmann::json &user_context){
 //            spdlog::error("Could not load a valid task context for "+m_id+".");
 //            return false;
 //        }
+        m_context.clear();
         get_default_context(m_context);
 
         // merge default task parameters with user task parameters

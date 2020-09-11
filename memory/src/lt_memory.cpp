@@ -67,9 +67,9 @@ bool LTMemory::make_database_consistent(){
     if(!m_mongodb_client.make_document_consistent("user","parameters",default_values)){
         return false;
     }
-    if(!make_default_tasks_consistent()){
-        return false;
-    }
+//    if(!make_default_tasks_consistent()){
+//        return false;
+//    }
     if(!make_default_environment_consistent()){
         return false;
     }

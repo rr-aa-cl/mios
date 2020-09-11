@@ -352,13 +352,14 @@ def test_subtask_start_stop(address):
 
 def test_memory(address):
     url = "http://" + address + ":8383"
-    print("Testing task context download...")
-    for i in range(100):
-        response = call_method(address, 12000, method="download_task_context", payload={"task": "TestTask1"})
-        msg_error(response is not None, "memory_task_download", "Response is none", response)
-        msg_error(response["result"]["result"] is True, "memory_task_download", "Could not load task.", response)
-        msg_error(response["result"]["context"]["parameters"]["a"] == [0, 0, 0], "memory_task_download",
-                  "Task description is faulty.", response)
+    # print("Testing task context download...")
+    # for i in range(100):
+    #     response = call_method(address, 12000, method="download_task_context", payload={"task": "TestTask1"})
+    #     print(response)
+    #     msg_error(response is not None, "memory_task_download", "Response is none", response)
+    #     msg_error(response["result"]["result"] is True, "memory_task_download", "Could not load task.", response)
+    #     msg_error(response["result"]["context"]["parameters"]["a"] == [0, 0, 0], "memory_task_download",
+    #               "Task description is faulty.", response)
 
     print("Testing skill context download...")
     for i in range(100):

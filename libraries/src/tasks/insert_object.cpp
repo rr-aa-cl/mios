@@ -110,13 +110,13 @@ void InsertObject::get_default_context(nlohmann::json &context){
 
     context["skills"]["insertion"]=nlohmann::json();
     context["skills"]["insertion"]["control"]={{"control_mode",0}};
-    context["skills"]["insertion"]["skill"]={{"traj_speed",{0.05,0.2}}};
-    context["skills"]["insertion"]["skill"]={{"traj_acc",{0.5,1}}};
-    context["skills"]["insertion"]["skill"]={{"stuck_dx_thr",0.01}};
-    context["skills"]["insertion"]["skill"]={{"search_a",{5,5,0,0,0,0}}};
-    context["skills"]["insertion"]["skill"]={{"search_f",{0.5,0.5,0,0,0,0}}};
-    context["skills"]["insertion"]["skill"]={{"ROI_x",{-1,1,-1,1,-1,1}}};
-    context["skills"]["insertion"]["skill"]={{"ROI_phi",{0,0,0,0,0,0}}};
+    context["skills"]["insertion"]["skill"].update({{"traj_speed",{0.05,0.2}}});
+    context["skills"]["insertion"]["skill"].update({{"traj_acc",{0.5,1}}});
+    context["skills"]["insertion"]["skill"].update({{"stuck_dx_thr",0.01}});
+    context["skills"]["insertion"]["skill"].update({{"search_a",{5,5,0,0,0,0}}});
+    context["skills"]["insertion"]["skill"].update({{"search_f",{0.5,0.5,0,0,0,0}}});
+    context["skills"]["insertion"]["skill"].update({{"ROI_x",{-1,1,-1,1,-1,1}}});
+    context["skills"]["insertion"]["skill"].update({{"ROI_phi",{0,0,0,0,0,0}}});
     context["skills"]["insertion"]["type"]="Insertion";
 }
 

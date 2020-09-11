@@ -25,7 +25,6 @@ MongodbClient::MongodbClient(const std::string &database, unsigned port){
     try{
         m_mongodb=m_client.database(database);
         m_collections.clear();
-        m_collections.insert(std::pair<const char*,mongocxx::collection>("tasks",m_mongodb["tasks"]));
         m_collections.insert(std::pair<const char*,mongocxx::collection>("frames",m_mongodb["frames"]));
         m_collections.insert(std::pair<const char*,mongocxx::collection>("environment",m_mongodb["environment"]));
         m_collections.insert(std::pair<const char*,mongocxx::collection>("parameters",m_mongodb["parameters"]));
@@ -260,10 +259,6 @@ bool MongodbClient::health_check() const{
         unsigned n_doc_parameters=6;
         if(!m_mongodb.has_collection("parameters")){
             spdlog::error("Database has no parameters collection.");
-            return false;
-        }
-        if(!m_mongodb.has_collection("tasks")){
-            spdlog::error("Database has no tasks collection.");
             return false;
         }
         if(!m_mongodb.has_collection("environment")){
