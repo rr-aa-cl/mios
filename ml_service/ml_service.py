@@ -64,9 +64,9 @@ def test_interface(agent: str = "localhost"):
 
     #learning without knowledge
     uuid = interface.start_service(problem_def, get_service_configuration(), agents, knowledge)
-    input("Press enter to stop service.")
-    interface.stop_service()
-    return
+    #input("Press enter to stop service.")
+    #interface.stop_service()
+
     time.sleep(2)
     while interface.is_busy():
         time.sleep(2)
@@ -77,7 +77,7 @@ def test_interface(agent: str = "localhost"):
     k = KnowledgeProcessor()
     k.process_knowledge({"meta.uuid":uuid},"ml_results",problem_def.task_type,"test_knowledge",problem_def.task_type)
     print("knowledge processed.")
-    time.sleep(3)
+    time.sleep(10)
     knowledge = k.get_knowledge({"meta.task_type":problem_def.task_type},"test_knowledge",problem_def.task_type)
     print("knowledge:  ",knowledge)
     #learning with knowledge
@@ -92,3 +92,13 @@ def test_standalone(agent: str = "localhost"):
     learner = GenericOptimizerService()
     learner.initialize(rastrigin(), get_service_configuration(), agents)
     learner.learn_task()
+
+def test_knowledgeprocessor():
+    problem_def = rastrigin()
+
+    uuid = "bc7b9ac6-9084-4984-bc98-8c6f4d34a8e2"
+
+    k = KnowledgeProcessor()
+    id = k.process_knowledge({"meta.uuid":uuid},"ml_results",problem_def.task_type,"test_knowledge",problem_def.task_type)
+    print(k.get_knowledge({"_id":id},"test_knowledge",problem_def.task_type))
+
