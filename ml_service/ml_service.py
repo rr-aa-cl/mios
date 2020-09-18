@@ -19,9 +19,6 @@ handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 
-
-
-
 def get_service_configuration():
     configuration = CMAESConfiguration()
     configuration.n_ind = 5
