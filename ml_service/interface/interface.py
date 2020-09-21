@@ -2,6 +2,7 @@ import logging
 import sys
 from threading import Thread
 import uuid
+import time
 
 from services.generic_optimizer import GenericOptimizerConfiguration
 from services.generic_optimizer import GenericOptimizerService
@@ -56,6 +57,9 @@ class Interface:
             return False
         return self.learn_thread.is_alive()
 
+    def wait_for_service(self):
+        while self.is_busy():
+            time.sleep(1)
 
     def get_status(self) -> str:
         """returns a detailed status for debugging purposes"""
