@@ -71,6 +71,9 @@ class KnowledgeProcessor():
         '''process raw data from trials to knowledge; working from and on the database'''
         #allocate data:
         doc = self.DBclient.read(data_db, data_col, filter)
+        if doc is None or len(doc) == 0:
+            logger.error("Could not find any results for filter " + str(filter) + " on database " + data_db + " in collection " + data_col + ".")
+            return False
         #save knowledge source
         uuids = []
         for d in doc:
@@ -92,7 +95,7 @@ class KnowledgeProcessor():
             doc = doc[0]
             # get raw ml data:
             successful_trials = self.get_raw_data(doc)
-        
+
         for m in metainfo:
             if m["domain"]["vector_mapping"] != metainfo[0]["domain"]["vector_mapping"]:
                 logger.error("knowledge_processor: got trials from different domains. Cant process them together")
