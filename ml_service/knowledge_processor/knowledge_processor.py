@@ -101,11 +101,13 @@ class KnowledgeProcessor():
             if m["domain"]["vector_mapping"] != metainfo[0]["domain"]["vector_mapping"]:
                 logger.error("knowledge_processor: got trials from different domains. Cant process them together")
         #find clusters:
-        #clusters = self.cluster_processor.find_cluster(successful_trials)
+        clusters = self.cluster_processor.find_cluster(successful_trials)
         #use best cluster:
-        #successful_trials = clusters[0]
+        successful_trials = clusters[0]
         #use top 10 trials:
-        successful_trials = successful_trials[:10]
+        #sort for cost
+        #successful_trials = sorted(successful_trials, key= lambda t: (t["cost"]))  #lowest cost first
+        #successful_trials = successful_trials[:10]
 
         #combine ml data -> knowledge (centroid):
         weights = np.log(len(successful_trials) + 0.5) - np.log(np.arange(1, len(successful_trials) + 1))
@@ -129,6 +131,7 @@ class KnowledgeProcessor():
         meta.pop("date", None)
         meta["confidence"] = None
         meta["knowledge_source"] = uuids
+        meta["expected_cost"] = successful_trials[0]["cost"]
         meta["tags"] = knowledge_tags
 
         knowledge = {"parameters":parameter_dict, 
