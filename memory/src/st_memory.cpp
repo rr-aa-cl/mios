@@ -225,21 +225,32 @@ bool STMemory::update_partial_object(const std::string &name, const nlohmann::js
     std::optional<double> x,y,z={};
     std::optional<Eigen::Matrix<double,3,3> > R={};
     if(description.find("x")!=description.end()){
-        description.get_to(x.value());
+        double x_tmp;
+        description["x"].get_to(x_tmp);
+        x=x_tmp;
     }
     if(description.find("y")!=description.end()){
-        description.get_to(y.value());
+        double y_tmp;
+        description["y"].get_to(y_tmp);
+        y=y_tmp;
     }
     if(description.find("z")!=description.end()){
-        description.get_to(z.value());
+        double z_tmp;
+        description["z"].get_to(z_tmp);
+        z=z_tmp;
     }
     if(description.find("R")!=description.end()){
-        if(!msrm_utils::read_json_param<double,3,3>(description,"R",R.value())){
+        Eigen::Matrix<double,3,3> R_tmp;
+        if(!msrm_utils::read_json_param<double,3,3>(description,"R",R_tmp)){
             spdlog::error("Partial object data update: Rotation matrix is invalid.");
             return false;
         }
+        R=R_tmp;
     }
     m_environment.at(name).set_pose(x,y,z,R);
+    if(!m_lt_memory->upload_environment_element(m_environment.at(name))){
+        return false;
+    }
     return true;
 }
 
