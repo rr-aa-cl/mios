@@ -28,6 +28,7 @@ public:
     static Object from_json(const nlohmann::json& p);
 
     void update(const nlohmann::json& p);
+    void set_pose(std::optional<double> x, std::optional<double> y, std::optional<double> z, std::optional<Eigen::Matrix<double,3,3> > R);
 
     /**
      * The object id in both internal representation as well as the mongodb database.

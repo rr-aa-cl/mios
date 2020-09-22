@@ -33,6 +33,7 @@ private:
 
     // knowledge base level
     nlohmann::json teach_object(const nlohmann::json& request);
+    nlohmann::json set_partial_object_data(const nlohmann::json& request);
     nlohmann::json set_object(const nlohmann::json& request);
     nlohmann::json apply_reference_frame(const nlohmann::json& request);
     nlohmann::json download_task_context(const nlohmann::json& request);
