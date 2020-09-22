@@ -80,6 +80,21 @@ Object Object::from_json(const nlohmann::json& p){
     }
 }
 
+void Object::set_pose(std::optional<double> x, std::optional<double> y, std::optional<double> z, std::optional<Eigen::Matrix<double,3,3> > R){
+    if(x.has_value()){
+        O_T_OB(0,3)=x.value();
+    }
+    if(y.has_value()){
+        O_T_OB(1,3)=y.value();
+    }
+    if(z.has_value()){
+        O_T_OB(2,3)=z.value();
+    }
+    if(R.has_value()){
+        O_T_OB.block<3,3>(0,0)=R.value();
+    }
+}
+
 void Object::update(const nlohmann::json &p){
     msrm_utils::read_json_param<double,7,1>(p,"q",q);
     msrm_utils::read_json_param<double,4,4>(p,"O_T_OB",O_T_OB);

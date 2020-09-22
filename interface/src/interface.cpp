@@ -31,6 +31,7 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("home_gripper",std::bind(&CommandInterface::home_gripper,this,std::placeholders::_1),{});
 
     m_portal->bind_method_to_all("teach_object",std::bind(&CommandInterface::teach_object,this,std::placeholders::_1),{ArgPair("object",{}),ArgPair("teach_width",false)});
+    m_portal->bind_method_to_all("set_partial_object_data",std::bind(&CommandInterface::set_partial_object_data,this,std::placeholders::_1),{ArgPair("object",{}),ArgPair("data",{})});
     m_portal->bind_method_to_all("set_object",std::bind(&CommandInterface::set_object,this,std::placeholders::_1),{ArgPair("object",{}),ArgPair("O_T_OB",nlohmann::json()),
                                                                                                                    ArgPair("OB_T_TCP",nlohmann::json()),ArgPair("OB_T_gp",nlohmann::json()),
                                                                                                                    ArgPair("geometry",nlohmann::json()),ArgPair("grasp_force",nlohmann::json()),
@@ -246,7 +247,27 @@ nlohmann::json CommandInterface::teach_object(const nlohmann::json &request){
         result=false;
     }
     if(!m_memory->update_object(object_name,teach_width,*m_core->get_percept())){
-        error_message="Could not teach the object because the memory returned an error.";
+        error_message="Could not teach object because memory returned an error.";
+        result=false;
+    }
+    response["result"]=result;
+    response["error"]=error_message;
+    return response;
+}
+
+nlohmann::json CommandInterface::set_partial_object_data(const nlohmann::json &request){
+    spdlog::trace("CommandInterface: set_partial_object_data");
+    nlohmann::json response;
+    std::string object_name;
+    request["object"].get_to(object_name);
+    bool result=true;
+    std::string error_message="";
+    if(!m_core->refresh_percept({})){
+        error_message="Could not teach the object because no current percept is available.";
+        result=false;
+    }
+    if(!m_memory->update_partial_object(object_name,request["data"])){
+        error_message="Could not update object because memory returned an error.";
         result=false;
     }
     response["result"]=result;
@@ -255,7 +276,7 @@ nlohmann::json CommandInterface::teach_object(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::set_object(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: set_object");
+    spdlog::trace("CommandInterface: set_object");
     nlohmann::json response;
     std::string name;
     request["object"].get_to(name);

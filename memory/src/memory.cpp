@@ -103,6 +103,10 @@ bool Memory::update_object(const std::string &name, const nlohmann::json &descri
     return m_st_memory.update_object(name, description);
 }
 
+bool Memory::update_partial_object(const std::string &name, const nlohmann::json &description){
+    return m_st_memory.update_partial_object(name,description);
+}
+
 Object* Memory::get_object(const std::string& name){
     return m_st_memory.get_object(name);
 }
