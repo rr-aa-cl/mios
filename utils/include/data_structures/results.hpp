@@ -7,14 +7,32 @@
 
 namespace mios {
 
+struct SkillCost{
+    SkillCost(){
+        time=0;
+        contact_forces=0;
+        custom=0;
+    }
+    nlohmann::json to_json() const{
+        nlohmann::json cost;
+        cost["time"]=time;
+        cost["contact_forces"]=contact_forces;
+        cost["custom"]=custom;
+        return cost;
+    }
+    double time;
+    double contact_forces;
+    double custom;
+};
+
 struct SkillResult{
 public:
     SkillResult(){
-        this->cost=0;
-        this->heuristic=0;
-        this->success=false;
-        this->last_errors.resize(0);
-        this->results=nlohmann::json();
+        cost=SkillCost();
+        heuristic=0;
+        success=false;
+        last_errors.resize(0);
+        results=nlohmann::json();
         exception=false;
     }
     /**
@@ -36,7 +54,7 @@ public:
     /**
      * Cost of skill execution in case of success.
      */
-    double cost;
+    SkillCost cost;
 
     /**
      * Cost of skill execution in case of failure.

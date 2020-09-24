@@ -29,7 +29,7 @@ def rastrigin():
 
 
 def rastrigin_cost(cost, heuristic, success):
-    return cost["ml_test"]
+    return cost["ml_test"]["custom"]
 
 
 def insert_cylinder_30():

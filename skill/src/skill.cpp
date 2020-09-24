@@ -371,8 +371,15 @@ void Skill::terminate_parallels(){
     }
 }
 
-double Skill::measure_cost(const Percept &p){
-    return std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()/1000.0;
+SkillCost Skill::measure_cost(const Percept &p){
+    SkillCost cost;
+    cost.time = std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()/1000.0;
+    cost.custom = get_custom_cost(p);
+    return cost;
+}
+
+double Skill::get_custom_cost(const Percept &p){
+    return 0;
 }
 
 void Skill::write_custom_results(nlohmann::json &custom_results){

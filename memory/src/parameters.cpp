@@ -747,18 +747,12 @@ nlohmann::json ControlParameters::to_json() const{
 
 SkillParameters::SkillParameters(){
     time_max=0;
-    w_cost_function.resize(1);
-    w_cost_function[0]=1;
     parallels_frequency=1;
 }
 
 bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
     if(!msrm_utils::read_json_param(p,"time_max",time_max)){
         spdlog::error("Could not read time_max.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param(p,"w_cost_function",w_cost_function)){
-        spdlog::error("Could not read cost_function.");
         return false;
     }
     if(!msrm_utils::read_json_param(p,"parallels_frequency",parallels_frequency)){
@@ -781,7 +775,6 @@ void SkillParameters::read_skill_objects(const nlohmann::json &p){
 nlohmann::json SkillParameters::get_default_values(){
     nlohmann::json default_values;
     default_values["time_max"]=0;;
-    default_values["w_cost_function"]={1};
     default_values["parallels_frequency"]=1;
     default_values["objects"]={};
     return default_values;
@@ -790,7 +783,6 @@ nlohmann::json SkillParameters::get_default_values(){
 nlohmann::json SkillParameters::to_json() const{
     nlohmann::json json_object;
     json_object["time_max"]=time_max;
-    json_object["w_cost_function"]=w_cost_function;
     json_object["parallels_frequency"]=parallels_frequency;
     json_object["objects"]={};
     return json_object;

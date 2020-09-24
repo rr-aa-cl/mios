@@ -128,7 +128,7 @@ nlohmann::json CommandInterface::wait_for_task(const nlohmann::json &request){
         nlohmann::json skill_results;
         for(const auto& r : task_result.skill_results){
             nlohmann::json result;
-            result["cost"] = r.second.cost;
+            result["cost"] = r.second.cost.to_json();
             result["heuristic"] = r.second.heuristic;
             skill_results[r.first]=result;
         }

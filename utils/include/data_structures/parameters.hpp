@@ -232,11 +232,6 @@ public:
     double time_max;
 
     /**
-         * Id to select a custom cost function.
-         */
-    std::vector<double> w_cost_function;
-
-    /**
          * Frequency of parallel thread
          */
     unsigned parallels_frequency;

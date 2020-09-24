@@ -53,7 +53,7 @@ def test_mios(agent: str = "localhost"):
 def test_interface(agent: str = "localhost"):
     agents = set()
     agents.add(agent)
-    problem_def = insert_cylinder_30()
+    problem_def = rastrigin()
   
     knowledge = None
 

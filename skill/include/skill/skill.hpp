@@ -261,7 +261,8 @@ private:
     void stop_parallels();
     void terminate_parallels();
     bool has_settled();
-    virtual double measure_cost(const Percept& p);
+    SkillCost measure_cost(const Percept& p);
+    virtual double get_custom_cost(const Percept& p);
 
     std::unordered_map<std::string,std::shared_ptr<ManipulationPrimitive> > m_mp_graph;
     std::string m_init_mp;
