@@ -19,12 +19,16 @@ class ProblemDefinition:
         self.uuid = "INVALID"
         self.task_type = task_type
         self.cost_function = cost_function
+        self.cost_function_weights = []
         self.tags = tags
 
     def to_dict(self) -> dict:
         problem_definition = {
             "domain": self.domain.to_dict(),
             "default_context": self.default_context,
+            "setup_instructions": self.setup_instructions,
+            "termination_instructions": self.termination_instructions,
+            "reset_instructions": self.reset_instructions,
             "uuid": self.uuid,
             "task_type": self.task_type,
             "tags": self.tags
@@ -58,4 +62,4 @@ class ProblemDefinition:
         return valid
 
     def calculate_cost(self, result: TaskResult) -> float:
-        return self.cost_function(result.cost, result.heuristic, result.success)
+        return self.cost_function(result.cost, result.heuristic, result.success, self.cost_function_weights)
