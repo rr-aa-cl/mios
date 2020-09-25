@@ -9,6 +9,7 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
+#include "pybind11/pybind11.h"
 #include "core/core.hpp"
 
 #include <msrm_utils/network.hpp>
@@ -46,7 +47,7 @@ int main(int argc, char** argv){
 
     spdlog::info("############################################################");
     spdlog::info("MIOS");
-    spdlog::info("Version: 0.6.6.2");
+    spdlog::info("Version: 0.6.6.3");
 
     unsigned port=12000;
     if(!msrm_utils::is_port_available("localhost",port)){
@@ -57,6 +58,7 @@ int main(int argc, char** argv){
 
     ros::init(argc, argv, "mios", ros::init_options::NoSigintHandler);
 
+    pybind11::scoped_interpreter guard{};
     mios::Core core;
     spdlog::info("Initializing MIOS core...");
     if(!core.initialize()){

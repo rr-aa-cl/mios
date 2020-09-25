@@ -609,7 +609,7 @@ bool PandaBody::start_desk_task(const std::string &task,const std::optional<std:
 bool PandaBody::stop_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string& password){
     nlohmann::json response;
     bool result;
-    pybind11::scoped_interpreter guard{};
+//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object py_result = desk_client.attr("stop_task")(ip.value(), user, password);
@@ -624,7 +624,7 @@ bool PandaBody::stop_desk_task(const std::optional<std::string> &ip, const std::
 
 void PandaBody::wait_for_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string& password){
     bool result;
-    pybind11::scoped_interpreter guard{};
+//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         while(true){
@@ -649,7 +649,7 @@ bool PandaBody::shutdown_robot(const std::optional<std::string> &ip, const std::
     disconnect_from_robot();
 
     bool result;
-    pybind11::scoped_interpreter guard{};
+//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object py_result = desk_client.attr("shutdown")(ip.value(), user, password);
@@ -667,7 +667,7 @@ bool PandaBody::unlock_brakes(const std::optional<std::string> &ip, const std::s
     disconnect_from_robot();
 
     bool result;
-    pybind11::scoped_interpreter guard{};
+//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object py_result = desk_client.attr("unlock_brakes")(ip.value(), user, password);
@@ -693,7 +693,7 @@ bool PandaBody::lock_brakes(const std::optional<std::string> &ip, const std::str
     disconnect_from_robot();
 
     bool result;
-    pybind11::scoped_interpreter guard{};
+//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object py_result = desk_client.attr("lock_brakes")(ip.value(), user, password);
@@ -717,7 +717,7 @@ bool PandaBody::move_to_pack_pose(const std::optional<std::string> &ip, const st
     disconnect_from_robot();
 
     bool result;
-    pybind11::scoped_interpreter guard{};
+//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object py_result = desk_client.attr("pack_pose")(ip.value(), user, password);
@@ -843,7 +843,7 @@ void PandaBody::get_default_gripper_state(franka::GripperState &state) const{
 }
 
 void PandaBody::call_desk(const std::string& function, const std::string &ip, const std::string &user, const std::string &password){
-    pybind11::scoped_interpreter guard{};
+//    pybind11::scoped_interpreter guard{};
     pybind11::module desk_client = pybind11::module::import("desk_client.py");
     pybind11::object py_result = desk_client.attr(function.c_str())(ip, user, password);
     bool result = py_result.cast<bool>();

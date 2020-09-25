@@ -4,7 +4,6 @@
 namespace mios {
 
 LearningModule::LearningModule(){
-    pybind11::initialize_interpreter();
     try{
         m_ml_interface=pybind11::module::import("interface.interface").attr("Interface")();
     }catch(const pybind11::error_already_set& e){
@@ -13,7 +12,6 @@ LearningModule::LearningModule(){
 }
 
 LearningModule::~LearningModule(){
-    pybind11::finalize_interpreter();
 }
 
 std::string LearningModule::learn_task(const nlohmann::json &problem_definition, const nlohmann::json &service_configuration, const nlohmann::json &agents){
