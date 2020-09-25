@@ -6,11 +6,11 @@ from services.basinhopping import BasinhoppingService
 from services.cmaes import *
 from interface.interface import Interface
 from services.generic_optimizer import *
-from problem_definition.problem_definition import ProblemDefinition
-from problem_definition.domain import Domain
 from utils.udp_client import call_method
 from definitions import *
 from xmlrpc.client import ServerProxy
+from task_scheduler.creation_pipeline import CreationPipeline
+from definitions import *
 
 
 logger = logging.getLogger("ml_service")

@@ -13,8 +13,7 @@ class CostFunction:
         self.optimum_weights = []
         self.optimum_expressions = []
         self.heuristic_skills = []
-        self.heuristic_weights = []
-        self.heuristic_expressions = []
+        self.heuristic_expressions = "var"
         self.max_cost = 0
 
     def to_dict(self):
@@ -23,7 +22,6 @@ class CostFunction:
             "optimum_weights": self.optimum_weights,
             "optimum_expressions": self.optimum_expressions,
             "heuristic_skills": self.heuristic_skills,
-            "heuristic_weights": self.heuristic_weights,
             "heuristic_expressions": self.heuristic_expressions,
             "max_cost": self.max_cost
         }
@@ -36,7 +34,6 @@ class CostFunction:
         c.optimum_weights = cf_dict["optimum_weights"]
         c.optimum_expressions = cf_dict["optimum_expressions"]
         c.heuristic_skills = cf_dict["heuristic_skills"]
-        c.heuristic_weights = cf_dict["heuristic_weights"]
         c.heuristic_expressions = cf_dict["heuristic_expressions"]
         c.max_cost = cf_dict["max_cost"]
         return c
@@ -111,9 +108,6 @@ class ProblemDefinition:
         if len(self.cost_function.optimum_expressions) != 3 or len(self.cost_function.optimum_weights) != 3:
             raise CostFunctionError
 
-        if len(self.cost_function.heuristic_expressions) != 3 or len(self.cost_function.heuristic_weights) != 3:
-            raise CostFunctionError
-
         cost_per_weight = [0, 0, 0]
         for s in self.cost_function.optimum_skills:
             cost_per_weight[0] += result.cost[s]["time"]
@@ -125,14 +119,10 @@ class ProblemDefinition:
             var = cost_per_weight[i]
             cost += self.cost_function.optimum_weights[i] * eval(self.cost_function.optimum_expressions[i])
 
-        heuristic_per_weight = [0, 0, 0]
-        for s in self.cost_function.heuristic_skills:
-            heuristic_per_weight[0] += result.heuristic[s]
-
         heuristic = 0
-        for i in range(3):
-            var = heuristic_per_weight[i]
-            heuristic += self.cost_function.heuristic_weights[i] * eval(self.cost_function.heuristic_expressions[i])
+        for s in self.cost_function.heuristic_skills:
+            var = result.heuristic[s]
+            heuristic += eval(self.cost_function.heuristic_expressions)
 
         if result.success is True:
             return cost
