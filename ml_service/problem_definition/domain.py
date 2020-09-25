@@ -20,6 +20,11 @@ class Domain:
         }
         return domain
 
+    @staticmethod
+    def from_dict(domain_dict):
+        d = Domain(domain_dict["limits"], domain_dict["context_mapping"])
+        return d
+
     def get_default_x0(self):
         return np.ones(len(self.limits)) * 0.5
 

@@ -1,26 +1,6 @@
 from problem_definition.domain import Domain
 from problem_definition.problem_definition import ProblemDefinition
-from services.cmaes import *
-
-
-class ServiceConfigurationLibrary:
-    def __init__(self):
-        self.configurations = dict()
-
-        self.configurations["cmaes"] = CMAESConfiguration()
-
-    def get_service_configuration(self, name: str) -> ServiceConfiguration:
-        return self.configurations[name]
-
-
-class ProblemLibrary:
-    def __init__(self):
-        self.problems = dict()
-        self.problems["rastrigin"] = rastrigin()
-        self.problems["insert_cylinder_30"] = insert_cylinder_30()
-
-    def get_problem_definition(self, name: str) -> ProblemDefinition:
-        return self.problems[name]
+from problem_definition.problem_definition import CostFunction
 
 
 def rastrigin():
@@ -44,15 +24,21 @@ def rastrigin():
     default_context = {
         "name": "LearnerTest"
     }
-    pd = ProblemDefinition("benchmark_rastrigin", domain, default_context, [], [], [], rastrigin_cost,
+    pd = ProblemDefinition("benchmark_rastrigin", domain, default_context, [], [], [], rastrigin_cost(),
                            ["benchmark", "rastrigin"])
-    pd.cost_function_weights = [42, 50, 100]
     return pd
 
 
-def rastrigin_cost(cost, heuristic, success, weights):
-    print(weights)
-    return cost["ml_test"]["custom"]
+def rastrigin_cost():
+    c = CostFunction()
+    c.optimum_skills.append("ml_test")
+    c.optimum_weights = [0, 0, 1]
+    c.optimum_expressions = ["var", "var", "var"]
+
+    c.heuristic_expressions = ["var", "var", "var"]
+    c.heuristic_weights = [0, 0, 0]
+    c.heuristic_skills = []
+    return c
 
 
 def insert_cylinder_30():

@@ -17,6 +17,14 @@ class ServiceConfiguration(metaclass=ABCMeta):
     def __init__(self, service_name: str = "none"):
         self.service_name = service_name
 
+    @abstractmethod
+    def to_dict(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def from_dict(self, config_dict):
+        raise NotImplementedError
+
 
 class BaseService(metaclass=ABCMeta):
     def __init__(self):

@@ -11,8 +11,6 @@ from services.base_service import ServiceConfiguration
 from problem_definition.problem_definition import ProblemDefinition
 from problem_definition.domain import Domain
 from utils.udp_client import call_method
-from definitions import ProblemLibrary
-from definitions import ServiceConfigurationLibrary
 
 from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.server import SimpleXMLRPCRequestHandler
@@ -28,8 +26,6 @@ class Interface:
         self.service = None
         self.learn_thread = None
         self.rpc_server = None
-        self.problem_library = ProblemLibrary()
-        self.service_library = ServiceConfigurationLibrary()
 
     def start_rpc_server(self, port: int = 8000):
         self.rpc_server = SimpleXMLRPCServer(("localhost", port), allow_none=True)
@@ -39,9 +35,11 @@ class Interface:
         self.rpc_server.register_function(self.wait_for_service, "wait_for_service")
         self.rpc_server.serve_forever()
 
-    def start_service_wrapper(self, problem_definition: str, configuration: str, agents, knowledge: dict = None):
-        self.start_service(self.problem_library.get_problem_definition(problem_definition),
-                           self.service_library.get_service_configuration(configuration), set(agents), knowledge)
+    def start_service_wrapper(self, problem_definition: dict, configuration: dict, agents, knowledge: dict = None):
+        service_configuration = CMAESConfiguration()
+        service_configuration.from_dict(configuration)
+        self.start_service(ProblemDefinition.from_dict(problem_definition), service_configuration, set(agents),
+                           knowledge)
 
     def start_service(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
                    agents: set, knowledge: dict = None) -> str:

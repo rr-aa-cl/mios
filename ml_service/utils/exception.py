@@ -4,3 +4,7 @@ class ProblemDefinitionError(Exception):
 
 class StopService(Exception):
     pass
+
+
+class CostFunctionError(Exception):
+    pass

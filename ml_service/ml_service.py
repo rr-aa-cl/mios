@@ -60,15 +60,8 @@ def test_interface(agent: str = "localhost"):
 
     interface = Interface()
 
-    #learning without knowledge
     uuid = interface.start_service(problem_def, get_service_configuration(), agents, knowledge)
-    #input("Press enter to stop service.")
-    #interface.stop_service()
-
-    time.sleep(2)
-    while interface.is_busy():
-        time.sleep(2)
-        print("wainting for 1st task to finish...")
+    input("Press enter to stop service.")
     interface.stop_service()
 
 
@@ -80,10 +73,10 @@ def test_with_rpc_server():
 def test_with_rpc_client(agent: str = "localhost"):
     agents = []
     agents.append(agent)
-    problem_def = "rastrigin"
+    problem_def = rastrigin()
 
     s = ServerProxy('http://localhost:8000', allow_none=True)
-    s.start_service("rastrigin", "cmaes", agents, None)
+    s.start_service(problem_def.to_dict(), CMAESConfiguration().to_dict(), agents, None)
 
 
 def test_standalone(agent: str = "localhost"):
