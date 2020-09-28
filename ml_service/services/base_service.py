@@ -35,6 +35,7 @@ class BaseService(metaclass=ABCMeta):
         self.configuration = None
         self.keep_running = False
         self.centroid = None
+        self.result = False
 
     @abstractmethod
     def _initialize(self):
@@ -52,12 +53,6 @@ class BaseService(metaclass=ABCMeta):
                    agents: set, knowledge: dict = None) -> (bool, str):
         self.problem_definition = problem_definition
         self.configuration = configuration
-
-        if knowledge is not None:
-            self.centroid = []
-            for key in knowledge["parameters"]:
-                self.centroid.append(knowledge["parameters"][key])
-            logger.debug("using initial centroid from knowledge: " + str(self.centroid))
 
         if self.problem_definition.is_valid() is False:
             logger.error("Problem definition is not valid.")
@@ -78,6 +73,7 @@ class BaseService(metaclass=ABCMeta):
         except StopService:
             result = False
         self.keep_running = False
+        self.result = result
         return result
 
     def stop(self):

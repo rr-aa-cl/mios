@@ -1,6 +1,7 @@
 import logging
 import sys
 from threading import Thread
+from threading import Lock
 import uuid
 import time
 
@@ -26,6 +27,7 @@ class Interface:
         self.service = None
         self.learn_thread = None
         self.rpc_server = None
+        self.service_lock = Lock()
 
     def start_rpc_server(self, port: int = 8000):
         self.rpc_server = SimpleXMLRPCServer(("localhost", port), allow_none=True)
@@ -33,6 +35,7 @@ class Interface:
         self.rpc_server.register_function(self.start_service_wrapper, "start_service")
         self.rpc_server.register_function(self.is_busy, "is_busy")
         self.rpc_server.register_function(self.wait_for_service, "wait_for_service")
+        self.rpc_server.register_function(self.is_ready, "is_ready")
         self.rpc_server.serve_forever()
 
     def start_service_wrapper(self, problem_definition: dict, configuration: dict, agents, knowledge: dict = None):
@@ -43,6 +46,8 @@ class Interface:
 
     def start_service(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
                    agents: set, knowledge: dict = None) -> str:
+        if self.service_lock.acquire() is False:
+            return "INVALID"
         problem_definition.uuid = str(uuid.uuid4())
         if configuration.service_name == "cmaes":
             self.service = CMAESService()
@@ -59,36 +64,43 @@ class Interface:
     def learn_task(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
                    agents: set, knowledge:dict) -> bool:
         """strt to learn a task according to instructions"""
-        logger.debug("interface.learn_task: start learning task")
-        if self.service.initialize(problem_definition, configuration, agents, knowledge) is False:
-            return False
-        logger.debug("Gradient descent initialized ")
-        result = self.service.learn_task()
-        logger.debug("learning success "+str(result))
-        return result
+        try:
+            logger.debug("interface.learn_task: start learning task")
+            if self.service.initialize(problem_definition, configuration, agents, knowledge) is False:
+                return False
+            logger.debug("Gradient descent initialized ")
+            result = self.service.learn_task()
+            logger.debug("learning success "+str(result))
+            return result
+        finally:
+            self.service_lock.release()
 
     def stop_service(self):
         """Stop the learning process, if possible save all results and stop the robot"""
         self.service.stop()
 
     def is_ready(self, agents) -> bool:
-        if self.learn_thread is not None:
+        if self.service_lock.locked() is True:
+            logger.debug("Interface::is_ready.locked")
             return False
         for a in agents:
             response = call_method(a, 12002, "is_busy")
             if response["result"]["busy"] is True:
+                logger.debug("Interface::is_ready.agent_busy")
                 return False
 
         return True
 
     def is_busy(self) -> bool:
-        if self.learn_thread is None:
-            return False
-        return self.learn_thread.is_alive()
+        logger.debug("Interface::is_busy.locked: " + str(self.service_lock.locked()))
+        return self.service_lock.locked()
 
     def wait_for_service(self):
+        logger.debug("Interface::wait_for_service")
         while self.is_busy():
             time.sleep(1)
+
+        return self.service.result
 
     def get_status(self) -> str:
         """returns a detailed status for debugging purposes"""

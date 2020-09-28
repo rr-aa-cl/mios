@@ -5,13 +5,10 @@ from queue import Queue
 from problem_definition.problem_definition import ProblemDefinition
 from services.base_service import ServiceConfiguration
 from xmlrpc.client import ServerProxy
+import time
 
 
 logger = logging.getLogger("ml_service")
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
-logger.addHandler(handler)
 
 
 class Task:
@@ -30,36 +27,46 @@ class TaskScheduler:
         self.assigned_tasks = set()
         self.services = set()
         self.keep_running = False
-        self.kb_location = "localhost"
+        self.kb_location = "http://localhost:8000"
 
     def add_task(self, task: Task):
         self.unassigned_tasks.put(task)
 
     def solve_tasks(self):
-        while self.keep_running is True and (
-                self.unassigned_tasks.empty() is False or len(self.assigned_tasks) == 0):
+        logger.debug("TaskScheduler::solve_tasks.1")
+        self.keep_running = True
+        while self.keep_running is True:
+            logger.debug("TaskScheduler::solve_tasks.loop")
             if self.unassigned_tasks.empty() is False:
+                logger.debug("TaskScheduler::solve_tasks.queue_size1: " + str(self.unassigned_tasks.qsize()))
                 task = self.unassigned_tasks.get()  # get next task
                 self.unassigned_tasks.task_done()
 
                 if self.is_service_ready(task.service_url, task.agents) is False:  # if task can not be started...
+                    logger.debug("Could not assign task.")
                     self.unassigned_tasks.put(task)  # put it back
+                    time.sleep(1)
                     continue
                 else:  # if task can be started
                     self.assigned_tasks.add(task)
                     task_thread = Thread(target=self.solve_task, args=(task,))
                     task_thread.start()
+            time.sleep(1)
+            logger.debug("TaskScheduler::solve_tasks.after_pause")
 
     def is_service_ready(self, service_url: str, agents: list) -> bool:
         s = ServerProxy(service_url, allow_none=True)
         return s.is_ready(agents)
 
     def solve_task(self, task: Task):
+        logger.debug("TaskScheduler::solve_task.starting")
         s = ServerProxy(task.service_url, allow_none=True)
         knowledge_info = {
             "mode": task.knowledge_mode,
             "kb_location": self.kb_location
         }
         s.start_service(task.problem_definition, task.service_configuration, task.agents, knowledge_info)
-        s.wait_for_service()
+        if s.wait_for_service() is False:
+            self.unassigned_tasks.put(task)  # put task back into queue
+        logger.debug("TaskScheduler::solve_task.finished")
         # if successful all fine, else put back to unassigned tasks

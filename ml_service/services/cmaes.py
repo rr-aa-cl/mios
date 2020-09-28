@@ -73,6 +73,8 @@ class CMAESService(BaseService):
         stats.register("max", np.max)
 
         self.eaGenerateUpdate(self.toolbox, ngen=self.configuration.n_gen, stats=stats, halloffame=hof)
+        self.stop()
+        logger.debug("CMAESService::_learn_task.end")
         return True
 
     def _terminate(self):
