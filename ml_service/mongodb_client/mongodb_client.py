@@ -17,11 +17,15 @@ class MongoDBClient():
         db_connection = self.client[db]
         col = db_connection[collection]
         findings = []
-        #if search params are in list, not search for this list but indead for 
+        #if search params are in list, search for all the contend (not the list itself...)
         for key in search_param:
             value = search_param[key]
             if isinstance(value, list):
                 search_param[key] = {"$all": value}
+            
+            if key == "_id":  # if _id is given as string  ->  ObjectId
+                if isinstance(search_param[key],str):
+                    search_param[key] = objectid.ObjectId(search_param[key])
 
         for f in col.find(filter=search_param):
             findings.append(f)
@@ -37,7 +41,7 @@ class MongoDBClient():
                 single_id = self._write_single(db, collection, doc)
                 document_ids.append(single_id)
         elif isinstance(document, dict):
-            document_ids = col.insert_one(document).inserted_id
+            document_ids = self._write_single(db, collection, document)
         else:
             logger.error("Document type is not dict or list, but " + str(type(document)))
             logger.info("Cannot insert document into Database.")
@@ -48,7 +52,7 @@ class MongoDBClient():
         db_connection = self.client[db]
         col = db_connection[collection]
         if isinstance(document, dict):
-            return col.insert_one(document).inserted_id
+            return str(col.insert_one(document).inserted_id)
         else:
             logger.error("Document type is not dict, but " + str(type(document)))
             logger.info("Cannot insert document into Database.")
