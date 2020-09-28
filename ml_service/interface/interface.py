@@ -12,10 +12,11 @@ from services.base_service import ServiceConfiguration
 from problem_definition.problem_definition import ProblemDefinition
 from problem_definition.domain import Domain
 from utils.udp_client import call_method
+from database.database import Database
 
 from xmlrpc.server import SimpleXMLRPCServer
 from xmlrpc.server import SimpleXMLRPCRequestHandler
-
+from xmlrpc.client import ServerProxy
 
 logger = logging.getLogger("ml_service")
 
@@ -101,6 +102,20 @@ class Interface:
             time.sleep(1)
 
         return self.service.result
+
+    def start_global_database(self,port):
+        self.global_db_port = port
+        self.global_db = Database()
+        self.global_db_thread = Thread(target=self.global_db.start_server, args=(port,),daemon=False)
+        self.global_db_thread.start()
+        return True
+    
+    def stop_global_database(self):
+        addr = "http://localhost:"+str(self.global_db_port)+"/"
+        with ServerProxy(addr) as proxy:
+            i = proxy.stop_server()
+        self.global_db_thread.join(10)
+        return not self.global_db_thread.is_alive()
 
     def get_status(self) -> str:
         """returns a detailed status for debugging purposes"""
