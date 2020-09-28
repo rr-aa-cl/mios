@@ -106,6 +106,7 @@ class Interface:
         return self.service.result
 
     def start_global_database(self,port):
+        logger.debug("interface.start_global_database")
         self.global_db_port = port
         self.global_db = Database()
         self.global_db_thread = Thread(target=self.global_db.start_server, args=(port,),daemon=False)
@@ -113,10 +114,12 @@ class Interface:
         return True
     
     def stop_global_database(self):
+        logger.debug("interface.stop_global_database")
         addr = "http://localhost:"+str(self.global_db_port)+"/"
         with ServerProxy(addr) as proxy:
             i = proxy.stop_server()
         self.global_db_thread.join(3)
+        logger.debug("interface.stop_global_database: global Database hase been stoped, "+str(not self.global_db_thread.is_alive()))
         return not self.global_db_thread.is_alive()
 
     def get_status(self) -> str:
