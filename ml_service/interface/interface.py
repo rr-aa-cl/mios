@@ -37,6 +37,8 @@ class Interface:
         self.rpc_server.register_function(self.is_busy, "is_busy")
         self.rpc_server.register_function(self.wait_for_service, "wait_for_service")
         self.rpc_server.register_function(self.is_ready, "is_ready")
+        self.rpc_server.register_function(self.start_global_database, "start_global_database")
+        self.rpc_server.register_function(self.stop_global_database, "stop_global_database")
         self.rpc_server.serve_forever()
 
     def start_service_wrapper(self, problem_definition: dict, configuration: dict, agents, knowledge: dict = None):
@@ -114,7 +116,7 @@ class Interface:
         addr = "http://localhost:"+str(self.global_db_port)+"/"
         with ServerProxy(addr) as proxy:
             i = proxy.stop_server()
-        self.global_db_thread.join(10)
+        self.global_db_thread.join(3)
         return not self.global_db_thread.is_alive()
 
     def get_status(self) -> str:
