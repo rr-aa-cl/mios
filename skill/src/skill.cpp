@@ -13,7 +13,7 @@ namespace mios {
 Skill::Skill(const std::string &type, const std::unordered_set<std::string> &objects, const std::string& id, Memory *memory, Portal* portal,std::set<ControlMode> control_modes):
     m_memory(memory),m_portal(portal),m_active_mp(std::make_shared<ManipulationPrimitive>("NullPrimitive",Percept(),memory)),m_control_modes(control_modes),m_life_cycle(SkillLifeCycle::slInit),
     m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_stop_factor(1.0),m_type(type),m_id(id),m_objects(objects),
-    m_msg_local_success(false),m_msg_global_success(false){
+    m_msg_local_success(false),m_msg_global_success(false),m_cost_contact_forces_sum(0),m_cost_effort_avg_sum(0){
 
     m_costs.insert(std::make_pair("ExecutionTime",0));
 }
@@ -372,8 +372,14 @@ void Skill::terminate_parallels(){
 }
 
 SkillCost Skill::measure_cost(const Percept &p){
+    m_cost_contact_forces_sum += p.proprioception.K_F_ext_K.norm();
+    m_cost_effort_avg_sum += p.proprioception.tau_j.norm();
+
     SkillCost cost;
     cost.time = std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()/1000.0;
+    cost.contact_forces = m_cost_contact_forces_sum / std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count();
+    cost.effort_avg = m_cost_effort_avg_sum / std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count();
+    cost.effort_total += p.proprioception.tau_j.norm();
     cost.custom = get_custom_cost(p);
     return cost;
 }

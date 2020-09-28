@@ -12,16 +12,22 @@ struct SkillCost{
         time=0;
         contact_forces=0;
         custom=0;
+        effort_avg=0;
+        effort_total=0;
     }
     nlohmann::json to_json() const{
         nlohmann::json cost;
         cost["time"]=time;
         cost["contact_forces"]=contact_forces;
+        cost["effort_avg"]=effort_avg;
+        cost["effort_total"]=effort_total;
         cost["custom"]=custom;
         return cost;
     }
     double time;
     double contact_forces;
+    double effort_avg;
+    double effort_total;
     double custom;
 };
 

@@ -292,6 +292,10 @@ private:
     bool m_msg_local_success;
     bool m_msg_global_success;
 
+private:
+    double m_cost_contact_forces_sum;
+    double m_cost_effort_avg_sum;
+
 };
 
 }
