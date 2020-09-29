@@ -8,13 +8,21 @@ logger = logging.getLogger("ml_service")
 
 
 class CostFunction:
+    """
+    cost functions:
+    1 - time
+    2 - contact forces
+    3 - average effort
+    4 - total effort
+    5 - custom
+    """
     def __init__(self):
         self.optimum_skills = []
-        self.optimum_weights = []
-        self.optimum_expressions = []
+        self.optimum_weights = [0] * 5
+        self.optimum_expressions = ["var"] * 5
         self.heuristic_skills = []
         self.heuristic_expressions = "var"
-        self.max_cost = 0
+        self.max_cost = [1] * 5
 
     def to_dict(self):
         c = {
@@ -105,19 +113,30 @@ class ProblemDefinition:
         return valid
 
     def calculate_cost(self, result: TaskResult) -> float:
-        if len(self.cost_function.optimum_expressions) != 3 or len(self.cost_function.optimum_weights) != 3:
+        if len(self.cost_function.optimum_expressions) != 5:
+            raise CostFunctionError
+        if len(self.cost_function.optimum_weights) != 5:
+            raise CostFunctionError
+        if sum(self.cost_function.optimum_weights) != 1:
             raise CostFunctionError
 
-        cost_per_weight = [0, 0, 0]
+        cost_per_weight = [0] * len(self.cost_function.optimum_weights)
         for s in self.cost_function.optimum_skills:
+            print(result.cost[s])
             cost_per_weight[0] += result.cost[s]["time"]
             cost_per_weight[1] += result.cost[s]["contact_forces"]
-            cost_per_weight[2] += result.cost[s]["custom"]
+            cost_per_weight[2] += result.cost[s]["effort_avg"]
+            cost_per_weight[3] += result.cost[s]["effort_total"]
+            cost_per_weight[4] += result.cost[s]["custom"]
 
         cost = 0
-        for i in range(3):
+        for i in range(len(cost_per_weight)):
             var = cost_per_weight[i]
-            cost += self.cost_function.optimum_weights[i] * eval(self.cost_function.optimum_expressions[i])
+            cost += self.cost_function.optimum_weights[i] * (eval(self.cost_function.optimum_expressions[i]) / self.cost_function.max_cost[i])
+
+            if eval(self.cost_function.optimum_expressions[i]) > self.cost_function.max_cost[i]:
+                logger.debug("Exceeded maximum cost!")
+                result.success = False
 
         heuristic = 0
         for s in self.cost_function.heuristic_skills:
@@ -127,4 +146,4 @@ class ProblemDefinition:
         if result.success is True:
             return cost
         else:
-            return heuristic + self.cost_function.max_cost
+            return heuristic + 1

@@ -36,16 +36,8 @@ def test_mios(agent: str = "localhost"):
     pd = rastrigin()
 
     payload = {
-        "problem_definition": {
-            "domain": {
-                "limits": pd.domain.limits,
-                "context_mapping": pd.domain.context_mapping
-            }
-        },
-        "service_configuration": {
-            "service_name": "cmaes",
-            "tol": 1e-5
-        },
+        "problem_definition": pd.to_dict(),
+        "service_configuration": get_service_configuration().to_dict(),
         "agents": list(agents)
     }
 
@@ -57,12 +49,9 @@ def test_interface(agent: str = "localhost"):
     agents = set()
     agents.add(agent)
     problem_def = rastrigin()
-  
-    knowledge = None
-
     interface = Interface()
 
-    uuid = interface.start_service(problem_def, get_service_configuration(), agents, knowledge)
+    uuid = interface.start_service(problem_def, get_service_configuration(), agents)
     input("Press enter to stop service.")
     interface.stop_service()
 
@@ -109,3 +98,8 @@ def test_task_scheduler():
         t.add_task(task)
 
     t.solve_tasks()
+
+
+def test_server_connection(host):
+    s = ServerProxy(host)
+    print(s.is_busy())

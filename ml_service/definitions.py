@@ -22,7 +22,10 @@ def rastrigin():
     }
     domain = Domain(limits, context_mapping)
     default_context = {
-        "name": "LearnerTest"
+        "name": "LearnerTest",
+        "parameters": {
+            "weights": [1, 0]
+        }
     }
     pd = ProblemDefinition("benchmark_rastrigin", domain, default_context, [], [], [], rastrigin_cost(),
                            ["benchmark", "rastrigin"])
@@ -32,13 +35,8 @@ def rastrigin():
 def rastrigin_cost():
     c = CostFunction()
     c.optimum_skills.append("ml_test")
-    c.optimum_weights = [0, 0, 1]
-    c.optimum_expressions = ["var", "var", "var"]
-
-    c.heuristic_expressions = ["var", "var", "var"]
-    c.heuristic_weights = [0, 0, 0]
-    c.heuristic_skills = []
-    c.max_cost = 0
+    c.optimum_weights[4] = 1
+    c.max_cost[4] = 100
     return c
 
 
@@ -147,19 +145,17 @@ def insert_cylinder_30():
     }
     reset_instructions.append({"method": "start_task", "parameters": task_context})
     pd = ProblemDefinition("insert_object", domain, default_context, [], [], reset_instructions,
-                           insert_cylinder_30_cost(), ["insertion", "cylinder_30"])
+                           insertion_cost(), ["insertion", "cylinder_30"])
     return pd
 
 
-def insert_cylinder_30_cost():
+def insertion_cost():
     c = CostFunction()
     c.optimum_skills.append("contact")
     c.optimum_skills.append("insertion")
-    c.optimum_weights = [1, 0, 0]
-    c.optimum_expressions = ["var", "var", "var"]
+    c.optimum_weights[0] = 1
 
-    c.heuristic_expressions = ["var", "var", "var"]
-    c.heuristic_weights = [1, 0, 0]
+    c.heuristic_weights[0] = 1
     c.heuristic_skills = ["insertion"]
-    c.max_cost = 10
+    c.max_cost[0] = 10
     return c

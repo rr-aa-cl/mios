@@ -4,7 +4,7 @@ from problem_definition.problem_definition import CostFunction
 from task_scheduler.creation_pipeline import CreationPipeline
 from services.cmaes import CMAESConfiguration
 from definitions import insert_cylinder_30
-from definitions import insert_cylinder_30_cost
+from definitions import insertion_cost
 
 
 def insert_cylinder_10():

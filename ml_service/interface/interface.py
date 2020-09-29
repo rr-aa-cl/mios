@@ -11,14 +11,18 @@ from services.cmaes import *
 from services.base_service import ServiceConfiguration
 from problem_definition.problem_definition import ProblemDefinition
 from problem_definition.domain import Domain
-from utils.udp_client import call_method
+from utils.ws_client import call_method
 
 from xmlrpc.server import SimpleXMLRPCServer
+from socketserver import ThreadingMixIn
 from xmlrpc.server import SimpleXMLRPCRequestHandler
 
 
 logger = logging.getLogger("ml_service")
 
+
+class InterfaceServer(ThreadingMixIn, SimpleXMLRPCServer):
+    pass
 
 class Interface:
     """Class that provides basic controlling functions for ml_service"""
@@ -30,7 +34,7 @@ class Interface:
         self.service_lock = Lock()
 
     def start_rpc_server(self, port: int = 8000):
-        self.rpc_server = SimpleXMLRPCServer(("localhost", port), allow_none=True)
+        self.rpc_server = InterfaceServer(("0.0.0.0", port), allow_none=True)
         self.rpc_server.register_introspection_functions()
         self.rpc_server.register_function(self.start_service_wrapper, "start_service")
         self.rpc_server.register_function(self.is_busy, "is_busy")
@@ -46,7 +50,7 @@ class Interface:
 
     def start_service(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
                    agents: set, knowledge: dict = None) -> str:
-        if self.service_lock.acquire() is False:
+        if self.service_lock.acquire(blocking=False) is False:
             return "INVALID"
         problem_definition.uuid = str(uuid.uuid4())
         if configuration.service_name == "cmaes":
@@ -84,7 +88,11 @@ class Interface:
             logger.debug("Interface::is_ready.locked")
             return False
         for a in agents:
-            response = call_method(a, 12002, "is_busy")
+            logger.debug("Interface::is_ready.before_call")
+            print("############################################################################")
+            response = call_method(a, 12000, "is_busy")
+            print("############################################################################2")
+            logger.debug("Interface::is_ready.after_call")
             if response["result"]["busy"] is True:
                 logger.debug("Interface::is_ready.agent_busy")
                 return False

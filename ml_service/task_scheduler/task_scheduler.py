@@ -29,6 +29,9 @@ class TaskScheduler:
         self.keep_running = False
         self.kb_location = "http://localhost:8000"
 
+    def stop(self):
+        self.keep_running = False
+
     def add_task(self, task: Task):
         self.unassigned_tasks.put(task)
 
@@ -55,8 +58,15 @@ class TaskScheduler:
             logger.debug("TaskScheduler::solve_tasks.after_pause")
 
     def is_service_ready(self, service_url: str, agents: list) -> bool:
+        logger.debug("TaskScheduler::is_service_ready(" + service_url + ", " + str(agents) + ")")
         s = ServerProxy(service_url, allow_none=True)
-        return s.is_ready(agents)
+        try:
+            ready = s.is_ready(agents)
+            logger.debug("TaskScheduler::is_service_ready.after_call")
+            return ready
+        except ConnectionRefusedError:
+            logger.debug("TaskScheduler::is_service_ready.ConnectionRefusedError")
+            return False
 
     def solve_task(self, task: Task):
         logger.debug("TaskScheduler::solve_task.starting")
@@ -65,8 +75,10 @@ class TaskScheduler:
             "mode": task.knowledge_mode,
             "kb_location": self.kb_location
         }
-        s.start_service(task.problem_definition, task.service_configuration, task.agents, knowledge_info)
-        if s.wait_for_service() is False:
-            self.unassigned_tasks.put(task)  # put task back into queue
-        logger.debug("TaskScheduler::solve_task.finished")
-        # if successful all fine, else put back to unassigned tasks
+        try:
+            s.start_service(task.problem_definition, task.service_configuration, task.agents, knowledge_info)
+            if s.wait_for_service() is False:
+                self.unassigned_tasks.put(task)  # put task back into queue
+            logger.debug("TaskScheduler::solve_task.finished")
+        except ConnectionRefusedError:
+            pass
