@@ -12,7 +12,7 @@ bool SkillParametersMLTestSkill::from_json(const nlohmann::json &parameters){
         A=10;
     }
     if(!msrm_utils::read_json_param<double,2,1>(parameters,"weights",weights)){
-        weights<<0.5,0.5;
+        weights<<1,0;
     }
     return true;
 }

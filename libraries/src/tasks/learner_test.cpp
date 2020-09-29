@@ -9,6 +9,7 @@ LearnerTest::LearnerTest(Core *core):Task("LearnerTest",core){
 void LearnerTest::initialize_context(){
     reserve_skill("ml_test");
     overwrite_context("ml_test","skill","x",msrm_utils::from_eigen<double,6,1>(m_x));
+    overwrite_context("ml_test","skill","weights",msrm_utils::from_eigen<double,2,1>(m_weights));
 }
 
 void LearnerTest::execute(){
@@ -20,12 +21,17 @@ bool LearnerTest::read_parameters(const nlohmann::json& params){
         spdlog::error("Missing parameter: x [6x1]");
         return false;
     }
+    if(!msrm_utils::read_json_param<double,2,1>(params,"weights",m_weights)){
+        m_weights<<1,0;
+        return false;
+    }
     return true;
 }
 
 void LearnerTest::get_default_context(nlohmann::json &context){
     context["parameters"] = nlohmann::json();
     context["parameters"]["x"]=nlohmann::json();
+    context["parameters"]["weights"]=nlohmann::json();
 
     context["skills"]=nlohmann::json();
     context["skills"]["ml_test"]=nlohmann::json();

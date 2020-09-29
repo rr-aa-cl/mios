@@ -12,5 +12,6 @@ public:
 
 private:
     Eigen::Matrix<double,6,1> m_x;
+    Eigen::Matrix<double,2,1> m_weights;
 };
 }
