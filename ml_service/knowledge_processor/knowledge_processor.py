@@ -222,14 +222,15 @@ class KnowledgeProcessor():
 
         return knowledge
 
-    def get_local_knowledge(self, filter: dict, knowledge_col: str, knowledge_db: str = "local_knowledge"):
+    def get_local_knowledge(self, filter: dict, knowledge_col: str, knowledge_db: str = "local_knowledge", data_db:str = "ml_results"):
+        print("\n get_local_knowledge at ",knowledge_db,"\n")
         docs = self.DBclient.read(knowledge_db, knowledge_col, filter)
         if len(docs) >= 1:
             logger.debug("knowledge_processor.get_local_knowledge(): found knowledge " + str(docs[0]))
             return docs[0]
         else:
             logger.debug("knowledge_processor.get_local_knowledge(): found none! -> create local knowledge from ml data")
-            knowledge = self.process_knowledge_local(filter, knowledge_col,knowledge_db)
+            knowledge = self.process_knowledge_local(filter, knowledge_col, data_db)
             return knowledge
 
 

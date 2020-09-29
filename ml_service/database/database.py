@@ -54,11 +54,8 @@ class Database():
 
     def get_knowledge(self, filter: dict, task_type: str):
         """return knowledge from single task found on database"""
-        knowledge = self.db_client.read(self.task_knowledge_db_name, task_type, filter)
-        if len(knowledge) >= 1:
-            knowledge = knowledge[0]
-        elif len(knowledge) == 0:
-            logger.error("Database.get_knowledge: Cant find knowledge with filter"+str(filter))
+        # use knowledge processor to look up/generate global knowledge:
+        knowledge = self.knowledge_processor.get_local_knowledge(filter,task_type,knowledge_db=self.task_knowledge_db_name,data_db=self.results_db_name)
         return knowledge
 
     def process_knowledge(self, filter: dict, task_type: str, knowledge_tags: dict):
