@@ -58,7 +58,7 @@ class Engine:
         self.cnt_trial = 0
 
     def initialize(self, problem_definition: ProblemDefinition):
-        self.initialize_results(problem_definition)
+        return self.initialize_results(problem_definition)
 
     def add_agent(self, agent: str):
         logger.debug("Engine.add_agent(" + str(agent) + ")")
@@ -102,6 +102,7 @@ class Engine:
         self.database_results_collection = self.database_client.client.ml_results[problem_definition.task_type]
         self.database_results_id = self.database_results_collection.insert_one(
             {"meta": meta_data}).inserted_id
+        return self.database_results_id
 
     def main_loop(self):
         logger.debug("Engine.main_loop()")

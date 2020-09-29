@@ -39,6 +39,8 @@ class BaseService(metaclass=ABCMeta):
         self.keep_running = False
         self.centroid = None
         self.result = False
+        self.database_results_id = None
+        self.knowledge_source = 'none'
 
     @abstractmethod
     def _initialize(self):
@@ -56,6 +58,7 @@ class BaseService(metaclass=ABCMeta):
                    agents: set, knowledge_source: dict = None) -> (bool, str):
         self.problem_definition = problem_definition
         self.configuration = configuration
+        self.knowledge_source = knowledge_source
 
         if self.problem_definition.is_valid() is False:
             logger.error("Problem definition is not valid.")
@@ -85,7 +88,7 @@ class BaseService(metaclass=ABCMeta):
 
 
         self.engine = Engine(agents)
-        self.engine.initialize(self.problem_definition)
+        self.database_results_id = self.engine.initialize(self.problem_definition)
 
         self._initialize()
 
@@ -100,6 +103,9 @@ class BaseService(metaclass=ABCMeta):
             result = False
         self.keep_running = False
         self.result = result
+        ml_data = self.knowledge_processor.get_ml_results({"_id":self.database_results_id}, self.problem_definition.task_type)
+        with ServerProxy(self.knowledge_source["kb_location"]) as kb:
+            kb.store_result(ml_data[0])
         return result
 
     def stop(self):

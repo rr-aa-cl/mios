@@ -133,6 +133,7 @@ class KnowledgeProcessor():
 
         # save knoweldge_tags together tags from used data
         knowledge_tags.extend(list(tags))
+        knowledge_tags = list(set(knowledge_tags))
 
         meta = metainfo[0]
         meta.pop("uuid", None)
@@ -233,7 +234,8 @@ class KnowledgeProcessor():
             knowledge = self.process_knowledge_local(filter, knowledge_col, data_db)
             return knowledge
 
-
+    def get_ml_results(self, filter, data_col, data_db="ml_results"):
+        return self.DBclient.read(data_db,data_col,filter)
 
     def get_raw_data(self, d):
         successful_trials = []

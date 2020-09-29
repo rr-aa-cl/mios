@@ -2,6 +2,7 @@ import pymongo
 from bson import objectid
 from pymongo import MongoClient
 import logging
+import time
 
 logger = logging.getLogger("ml_service")
 
@@ -26,10 +27,16 @@ class MongoDBClient():
             if key == "_id":  # if _id is given as string  ->  ObjectId
                 if isinstance(search_param[key],str):
                     search_param[key] = objectid.ObjectId(search_param[key])
-
-        for f in col.find(filter=search_param):
-            f["_id"] = str(f["_id"])
-            findings.append(f)
+        retry_count = 0
+        while not findings:
+            for f in col.find(filter=search_param):
+                f["_id"] = str(f["_id"])
+                findings.append(f)
+            if retry_count > 2:
+                break
+            else:
+                retry_count += 1
+                time.sleep(1)
         return findings
 
     def write(self, db: str, collection: str, document: dict or list) -> objectid.ObjectId or list:
@@ -53,6 +60,9 @@ class MongoDBClient():
         db_connection = self.client[db]
         col = db_connection[collection]
         if isinstance(document, dict):
+            if "_id" in document.keys():  # if _id is given as string  ->  ObjectId
+                if isinstance(document["_id"],str):
+                    document["_id"] = objectid.ObjectId(document["_id"])
             return str(col.insert_one(document).inserted_id)
         else:
             logger.error("Document type is not dict, but " + str(type(document)))
