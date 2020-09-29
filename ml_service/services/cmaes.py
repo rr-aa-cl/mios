@@ -57,6 +57,7 @@ class CMAESService(BaseService):
             self.centroid = self.problem_definition.domain.get_default_x0()
         else:
             self.centroid = self.problem_definition.domain.normalize(self.centroid)
+            logger.debug("CMAESService._initialize(): use initial centroid "+str(self.centroid))
 
 
         self.strategy = deap.cma.Strategy(centroid=self.centroid,

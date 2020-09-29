@@ -12,11 +12,12 @@ from services.base_service import ServiceConfiguration
 from problem_definition.problem_definition import ProblemDefinition
 from problem_definition.domain import Domain
 from utils.ws_client import call_method
+from database.database import Database
 
 from xmlrpc.server import SimpleXMLRPCServer
 from socketserver import ThreadingMixIn
 from xmlrpc.server import SimpleXMLRPCRequestHandler
-
+from xmlrpc.client import ServerProxy
 
 logger = logging.getLogger("ml_service")
 
@@ -40,6 +41,8 @@ class Interface:
         self.rpc_server.register_function(self.is_busy, "is_busy")
         self.rpc_server.register_function(self.wait_for_service, "wait_for_service")
         self.rpc_server.register_function(self.is_ready, "is_ready")
+        self.rpc_server.register_function(self.start_global_database, "start_global_database")
+        self.rpc_server.register_function(self.stop_global_database, "stop_global_database")
         self.rpc_server.serve_forever()
 
     def start_service_wrapper(self, problem_definition: dict, configuration: dict, agents, knowledge: dict = None):
@@ -109,6 +112,23 @@ class Interface:
             time.sleep(1)
 
         return self.service.result
+
+    def start_global_database(self,port):
+        logger.debug("interface.start_global_database")
+        self.global_db_port = port
+        self.global_db = Database()
+        self.global_db_thread = Thread(target=self.global_db.start_server, args=(port,),daemon=False)
+        self.global_db_thread.start()
+        return True
+    
+    def stop_global_database(self):
+        logger.debug("interface.stop_global_database")
+        addr = "http://localhost:"+str(self.global_db_port)+"/"
+        with ServerProxy(addr) as proxy:
+            i = proxy.stop_server()
+        self.global_db_thread.join(3)
+        logger.debug("interface.stop_global_database: global Database hase been stoped, "+str(not self.global_db_thread.is_alive()))
+        return not self.global_db_thread.is_alive()
 
     def get_status(self) -> str:
         """returns a detailed status for debugging purposes"""

@@ -2,12 +2,14 @@ import logging
 from abc import ABCMeta
 from abc import abstractmethod
 from threading import Thread
+from xmlrpc.client import ServerProxy
 
 from engine.engine import Engine
 from engine.engine import Trial
 from engine.engine import TaskResult
 from problem_definition.problem_definition import ProblemDefinition
 from problem_definition.problem_definition import Domain
+from knowledge_processor.knowledge_processor import KnowledgeProcessor
 from utils.exception import *
 
 logger = logging.getLogger("ml_service")
@@ -31,6 +33,7 @@ class BaseService(metaclass=ABCMeta):
 
         self.engine = None
         self.problem_definition = ProblemDefinition("NullTask", Domain(dict(), dict()), dict(), [], [], [], None)
+        self.knowledge_processor = KnowledgeProcessor()
         self.engine_thread = None
         self.configuration = None
         self.keep_running = False
@@ -50,13 +53,36 @@ class BaseService(metaclass=ABCMeta):
         raise NotImplementedError
 
     def initialize(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
-                   agents: set, knowledge: dict = None) -> (bool, str):
+                   agents: set, knowledge_source: dict = None) -> (bool, str):
         self.problem_definition = problem_definition
         self.configuration = configuration
 
         if self.problem_definition.is_valid() is False:
             logger.error("Problem definition is not valid.")
             return False
+
+        if knowledge_source is not None:
+            if knowledge_source["mode"] == 'none':
+                self.centroid = None
+            elif knowledge_source["mode"] == 'local':
+                logger.debug("base_service.initialize(): get local knowlege")
+                knowledge = self.knowledge_processor.get_local_knowledge({"meta.tags":self.problem_definition.tags},self.problem_definition.task_type)
+                if knowledge:
+                    self.centroid = []
+                    for key in knowledge["parameters"]:
+                        self.centroid.append(knowledge["parameters"][key])   
+                    logger.debug("base_service.initialize(): Use local knowledge "+str(self.centroid))
+            elif knowledge_source["mode"] == 'global':
+                logger.debug("base_service.initialize(): get global knowlege")
+                with ServerProxy(knowledge_source["kb_location"]) as kb:
+                    knowledge = kb.get_knowledge({"meta.tags":self.problem_definition.tags},self.problem_definition.task_type)
+                if knowledge:
+                    self.centroid = []
+                    for key in knowledge["parameters"]:
+                        self.centroid.append(knowledge["parameters"][key])
+                    logger.debug("base_service.initialize(): Use global knowledge "+str(self.centroid))
+
+
 
         self.engine = Engine(agents)
         self.engine.initialize(self.problem_definition)
