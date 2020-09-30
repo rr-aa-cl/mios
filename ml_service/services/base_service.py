@@ -103,9 +103,11 @@ class BaseService(metaclass=ABCMeta):
             result = False
         self.keep_running = False
         self.result = result
-        ml_data = self.knowledge_processor.get_ml_results({"_id":self.database_results_id}, self.problem_definition.task_type)
-        with ServerProxy(self.knowledge_source["kb_location"]) as kb:
-            kb.store_result(ml_data[0])
+        # store result on global database:
+        if self.knowledge_source["mode"] == "global":
+            ml_data = self.knowledge_processor.get_ml_results({"_id":self.database_results_id}, self.problem_definition.task_type)
+            with ServerProxy(self.knowledge_source["kb_location"]) as kb:
+                kb.store_result(ml_data[0])
         return result
 
     def stop(self):

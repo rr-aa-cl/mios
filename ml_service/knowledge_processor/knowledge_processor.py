@@ -257,3 +257,15 @@ class KnowledgeProcessor():
         for key in d.keys():
             l.append(d[key])
         return l
+
+    def get_most_similar_task(self, optimum_weights, tasks):
+        '''find most similar task according to cost optimum_weights'''
+        most_similar_task = None
+        smallest_dist = float('inf')
+        for task in tasks:
+            # use euclidean distance as similarity measure:  sqrt(sum( (a-b)**2 ))
+            dist = np.linalg.norm(np.array(optimum_weights)-np.array(task["meta"]["cost_function"]["optimum_weights"]))
+            if dist < smallest_dist:
+                smallest_dist = dist
+                most_similar_task = task
+        return most_similar_task
