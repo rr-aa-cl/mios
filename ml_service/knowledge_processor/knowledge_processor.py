@@ -223,12 +223,17 @@ class KnowledgeProcessor():
 
         return knowledge
 
-    def get_local_knowledge(self, filter: dict, knowledge_col: str, knowledge_db: str = "local_knowledge", data_db:str = "ml_results"):
-        print("\n get_local_knowledge at ",knowledge_db,"\n")
+    def get_local_knowledge(self, task_identity:dict, knowledge_db: str = "local_knowledge", data_db:str = "ml_results"):
+        '''searches for most similar knowledge / creates knowledge from similar results'''
+        knowledge_col = task_identity["task_type"]
+        filter = {"meta.tags":task_identity["tags"]}
+        optimum_weights = task_identity["optimum_weights"]
+        # search for knowldge from the same context (task_type, tags)
         docs = self.DBclient.read(knowledge_db, knowledge_col, filter)
         if len(docs) >= 1:
             logger.debug("knowledge_processor.get_local_knowledge(): found knowledge " + str(docs[0]))
-            return docs[0]
+            # take most similar knowledge:
+            return self.get_most_similar_task(optimum_weights,docs)
         else:
             logger.debug("knowledge_processor.get_local_knowledge(): found none! -> create local knowledge from ml data")
             knowledge = self.process_knowledge_local(filter, knowledge_col, data_db)

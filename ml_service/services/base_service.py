@@ -59,6 +59,8 @@ class BaseService(metaclass=ABCMeta):
         self.problem_definition = problem_definition
         self.configuration = configuration
         self.knowledge_source = knowledge_source
+        #task_identity used for searching similar tasks:
+        task_identity = {"tags":problem_definition.tags,"task_type":problem_definition.task_type,"optimum_weights":problem_definition.cost_function.optimum_weights}
 
         if self.problem_definition.is_valid() is False:
             logger.error("Problem definition is not valid.")
@@ -69,7 +71,7 @@ class BaseService(metaclass=ABCMeta):
                 self.centroid = None
             elif knowledge_source["mode"] == 'local':
                 logger.debug("base_service.initialize(): get local knowlege")
-                knowledge = self.knowledge_processor.get_local_knowledge({"meta.tags":self.problem_definition.tags},self.problem_definition.task_type)
+                knowledge = self.knowledge_processor.get_local_knowledge(task_identity)
                 if knowledge:
                     self.centroid = []
                     for key in knowledge["parameters"]:
@@ -78,7 +80,7 @@ class BaseService(metaclass=ABCMeta):
             elif knowledge_source["mode"] == 'global':
                 logger.debug("base_service.initialize(): get global knowlege")
                 with ServerProxy(knowledge_source["kb_location"]) as kb:
-                    knowledge = kb.get_knowledge({"meta.tags":self.problem_definition.tags},self.problem_definition.task_type)
+                    knowledge = kb.get_knowledge(task_identity)
                 if knowledge:
                     self.centroid = []
                     for key in knowledge["parameters"]:
