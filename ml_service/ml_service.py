@@ -82,16 +82,6 @@ def test_standalone(agent: str = "localhost"):
     learner.learn_task()
 
 
-def test_knowledgeprocessor():
-    problem_def = rastrigin()
-
-    uuid = "bc7b9ac6-9084-4984-bc98-8c6f4d34a8e2"
-
-    k = KnowledgeProcessor()
-    id = k.process_knowledge({"meta.uuid":uuid},"ml_results",problem_def.task_type,"test_knowledge",problem_def.task_type)
-    print(k.get_knowledge({"_id":id},"test_knowledge",problem_def.task_type))
-
-
 def test_task_scheduler():
     t = TaskScheduler()
     c = CreationPipeline()
@@ -107,36 +97,13 @@ def test_server_connection(host):
     print(s.is_busy())
 
 
-def test_database():
-    #take old task for demo..
-    db_client = MongoDBClient()
-    task = db_client.read("ml_results","benchmark_rastrigin",{})
-    task = task[0]
-    task_type = task["meta"]["task_type"]
-
-    #test database:
-    interface = Interface()
-    interface.start_global_database(8001)
-    time.sleep(1)
-
-    task.pop("_id")
-    with xmlrpc.client.ServerProxy("http://localhost:8001/") as proxy:
-        i = proxy.store_result(task)
-
-    time.sleep(1)
-    with xmlrpc.client.ServerProxy("http://localhost:8001/") as proxy:
-        knowledge = proxy.process_knowledge_local({"_id":i},task_type)
-    print(knowledge)
-
-
 def test_knowledge_use(knowledge_mode = "local"):  
     #create knowledge from old task:
     k = KnowledgeProcessor()
-    k.process_knowledge({"meta.tags":["test_sequence_1","test_sequence_2","test_sequence_3"]},"ml_results","benchmark_rastrigin","local_knowledge","benchmark_rastrigin",["test_knowledge","some_tag"])
+    #k.process_knowledge({"meta.tags":["test_sequence_1","test_sequence_2","test_sequence_3"]},"ml_results","benchmark_rastrigin","local_knowledge","benchmark_rastrigin",["test_knowledge","some_tag"])
 
     #start global database:
     interface = Interface()
-    interface.start_global_database(8001)
 
     import time 
     time.sleep(1)
@@ -146,7 +113,6 @@ def test_knowledge_use(knowledge_mode = "local"):
     agents.add(agent)
     problem_def = rastrigin()
 
-    interface = Interface()
     knowledge_info = {
             "mode": knowledge_mode,
             "kb_location": "http://localhost:8001/"
@@ -155,3 +121,4 @@ def test_knowledge_use(knowledge_mode = "local"):
     uuid = interface.start_service(problem_def, get_service_configuration(), agents, knowledge_info)
     input("Press enter to stop service.")
     interface.stop_service()
+

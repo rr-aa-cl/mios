@@ -62,6 +62,9 @@ class ProblemDefinition:
         self.cost_function = cost_function
         self.tags = tags
 
+    def get_task_identity(self) -> dict:
+        return {"task_type":self.task_type,"optimum_weights":self.cost_function.optimum_weights,"tags":self.tags}
+
     def to_dict(self) -> dict:
         problem_definition = {
             "domain": self.domain.to_dict(),

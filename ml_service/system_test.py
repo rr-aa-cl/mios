@@ -20,15 +20,7 @@ def get_service_configuration():
     configuration.n_ind = 5
     configuration.n_gen = 5
     return configuration
-
-
-def get_knowledge(result_tags, task_type, knowledge_tags):
-    k = KnowledgeProcessor()
-    k.process_knowledge({"meta.tags": result_tags}, "ml_results", task_type, "test_knowledge", task_type,
-                        knowledge_tags)
-    print("knowledge processed.")
-    return k.get_knowledge({"meta.tags": knowledge_tags}, "test_knowledge", task_type)
-
+    
 
 def start_learning(agent, problem_definition, knowledge=None, tags=None):
     if tags is None:
