@@ -74,11 +74,12 @@ class Interface:
             logger.debug("interface.learn_task: start learning task")
             if self.service.initialize(problem_definition, configuration, agents, knowledge) is False:
                 return False
-            logger.debug("Gradient descent initialized ")
+            logger.debug("Service initialized ")
             result = self.service.learn_task()
             logger.debug("learning success "+str(result))
             return result
         finally:
+            logger.debug("Interface::learn_task.finally: Releasing service lock")
             self.service_lock.release()
 
     def stop_service(self):

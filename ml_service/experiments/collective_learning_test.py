@@ -17,6 +17,7 @@ class TestCreationPipeline(CreationPipeline):
             t = Task(copy.deepcopy(template), service_configuration, agents, service_url, knowledge_mode)
             t.problem_definition.default_context["parameters"]["weights"][0] = float(i+1)/float(n_tasks)
             t.problem_definition.default_context["parameters"]["weights"][1] = 1 - t.problem_definition.default_context["parameters"]["weights"][0]
+            t.problem_definition.tags.append("collective_learning_test")
             self.tasks.append(t)
 
 

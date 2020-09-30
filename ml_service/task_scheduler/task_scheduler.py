@@ -27,7 +27,7 @@ class TaskScheduler:
         self.assigned_tasks = set()
         self.services = set()
         self.keep_running = False
-        self.kb_location = "http://192.168.5.11:8001"
+        self.kb_location = "http://192.168.5.8:8001"
 
     def stop(self):
         self.keep_running = False
