@@ -85,8 +85,6 @@ class BaseService(metaclass=ABCMeta):
                         self.centroid.append(knowledge["parameters"][key])
                     logger.debug("base_service.initialize(): Use global knowledge "+str(self.centroid))
 
-
-
         self.engine = Engine(agents)
         self.database_results_id = self.engine.initialize(self.problem_definition)
 

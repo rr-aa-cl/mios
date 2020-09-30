@@ -1,15 +1,20 @@
 from knowledge_processor.knowledge_processor import KnowledgeProcessor
 from mongodb_client.mongodb_client import MongoDBClient
+from socketserver import ThreadingMixIn
 
 import logging
 from xmlrpc.server import SimpleXMLRPCServer
-import xmlrpc.client
 
 
 logger = logging.getLogger("ml_service")
 
+
+class DatabaseServer(ThreadingMixIn, SimpleXMLRPCServer):
+    pass
+
+
 class Database():
-    def __init__(self):
+    def __init__(self, port):
         # Database names:
         self.task_knowledge_db_name = "global_knowledge"            # knowledge of single tasks
         self.general_knowledge_db_name = "global_general_knowledge" # generalized knowledge of multiple tasks
@@ -18,19 +23,20 @@ class Database():
         self.rpc_server = None
         self.db_client = MongoDBClient()
         self.knowledge_processor = KnowledgeProcessor()
+        self.port = port
 
         self.stop = False
     
-    def start_server(self, port=8001):
+    def start_server(self):
         """makes all functions available over rpc"""
-        self.rpc_server = SimpleXMLRPCServer(("localhost", port), allow_none=True, logRequests=False)
+        self.rpc_server = DatabaseServer(("0.0.0.0", self.port), allow_none=True, logRequests=False)
         self.rpc_server.register_introspection_functions()
         self.rpc_server.register_function(self.store_result, "store_result")
         self.rpc_server.register_function(self.get_knowledge, "get_knowledge")
         self.rpc_server.register_function(self.process_knowledge, "process_knowledge")
         self.rpc_server.register_function(self.process_knowledge_local, "process_knowledge_local")
         self.rpc_server.register_function(self.stop_server, "stop_server")
-        logger.debug("databse.start_server: starting rpc server with global database at port "+str(port))
+        logger.debug("databse.start_server: starting rpc server with global database at port "+str(self.port))
         #self.rpc_server.serve_forever()
         self.stop = False
         while not self.stop:

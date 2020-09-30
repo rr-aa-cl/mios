@@ -23,10 +23,10 @@ class TestCreationPipeline(CreationPipeline):
 def test_collective_learning():
     config = CMAESConfiguration()
     c = TestCreationPipeline()
-    c.create_tasks_from_template(rastrigin(), config, 10, "http://localhost:8000", ["localhost"], "none")
-    c.create_tasks_from_template(rastrigin(), config, 10, "http://collective-panda-002.local:8000", ["collective-panda-002.local"], "none")
+    c.create_tasks_from_template(rastrigin(), config, 10, "http://localhost:8000", ["localhost"], "local")
+    c.create_tasks_from_template(rastrigin(), config, 10, "http://collective-panda-002.local:8000", ["collective-panda-002.local"], "local")
     c.create_tasks_from_template(rastrigin(), config, 10, "http://collective-panda-007.local:8000",
-                                 ["collective-panda-007.local"], "none")
+                                 ["collective-panda-007.local"], "local")
 
     t = TaskScheduler()
     for task in c.tasks:
