@@ -22,12 +22,13 @@ void MoveToJointPose::execute(){
 }
 
 bool MoveToJointPose::read_parameters(const nlohmann::json &params){
+    std::cout<<params<<std::endl;
     m_pose = msrm_utils::from_json<std::string>(params,"pose");
 //    msrm_utils::read_json_param(params,"pose",m_p);
     if(!msrm_utils::read_json_param<double,7,1>(params,"q_g",m_q_g)){
         m_q_g.setZero();
     }
-    if(!m_q_g.isZero() && !m_pose.has_value()){
+    if(m_q_g.isZero() && !m_pose.has_value()){
         spdlog::error("MoveToJointPose task requires either a location that exists in memory or an explicit joint pose.");
         return false;
     }

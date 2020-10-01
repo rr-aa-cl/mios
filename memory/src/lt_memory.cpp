@@ -306,7 +306,7 @@ bool LTMemory::load_default_skill_context(const std::string skill_type,nlohmann:
         skill_context[param.first]=nlohmann::json();
         if(param.second.size()>0){
             for(const auto& sub_param: param.second){
-                skill_context[param.first]=sub_param;
+                skill_context[param.first][sub_param]=nlohmann::json();
             }
         }
     }

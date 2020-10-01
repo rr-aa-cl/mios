@@ -237,16 +237,14 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 spdlog::debug("Telepresence: Received handshake (slave)");
                 std::shared_ptr<ManipulationPrimitive> mp = create_mp("sync",p);
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
-                    Eigen::Matrix<double,4,4> O_T_EE_master;
-                    msrm_utils::read_json_param<double,4,4>(m_memory->get_event("handshake")->get_content(),"O_T_EE_master",O_T_EE_master);
+                    msrm_utils::read_json_param<double,4,4>(m_memory->get_event("handshake")->get_content(),"O_T_EE_master",m_O_T_EE_master);
                     mp->create_strategy<MoveToPoseStrategy>("move",1);
-                    mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(O_T_EE_master,m_memory->read_parameters()->user.dX_default,m_memory->read_parameters()->user.ddX_default);
+                    mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(m_O_T_EE_master,m_memory->read_parameters()->user.dX_default,m_memory->read_parameters()->user.ddX_default);
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
-                    Eigen::Matrix<double,7,1> q_master;
-                    msrm_utils::read_json_param<double,7,1>(m_memory->get_event("handshake")->get_content(),"q_master",q_master);
+                    msrm_utils::read_json_param<double,7,1>(m_memory->get_event("handshake")->get_content(),"q_master",m_q_master);
                     mp->create_strategy<MoveToJointPoseStrategy>("move",1);
-                    mp->get_strategy<MoveToJointPoseStrategy>("move")->set_goal(q_master,0.5,2);
+                    mp->get_strategy<MoveToJointPoseStrategy>("move")->set_goal(m_q_master,0.5,2);
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
                     mp->create_strategy<NullStrategy>("move",1);
@@ -260,6 +258,16 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
         }
         if(get_active_mp()->get_name()=="sync"){
             if(get_active_mp()->get_strategy_interface("move")->finished()){
+                if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint && (m_q_master-p.proprioception.q).norm()>0.1){
+                    spdlog::error("The master pose and my own pose do not match after syncing.");
+                    invoke_failure();
+                    return {};
+                }
+                if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart && (m_O_T_EE_master.block<3,1>(0,3)-p.proprioception.O_T_EE.block<3,1>(0,3)).norm()>0.01){
+                    spdlog::error("The master pose and my own pose do not match after syncing.");
+                    invoke_failure();
+                    return {};
+                }
                 nlohmann::json response;
                 if(m_handshake_stage==0){
                     spdlog::debug("Telepresence: Sending sync_done (slave)");

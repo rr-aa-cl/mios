@@ -85,6 +85,10 @@ void Actuator::blend(const Actuator &cmd, const Percept& p){
     m_K_theta_limiter=cmd.m_K_theta_limiter;
     m_xi_theta_limiter=cmd.m_xi_theta_limiter;
 
+    if(m_command_pattern!=*cmd.get_command_pattern()){
+        refresh_limiter();
+    }
+
 }
 
 void Actuator::stop(){
@@ -300,7 +304,6 @@ void Actuator::limit_output_rate(const LimitParameters &parameters){
             xi_theta(i)=m_xi_theta_limiter(i)+msrm_utils::sgn(diff_xi_theta)*parameters.joint_space.dxi_theta_max(i)*0.001;
         }
     }
-
     refresh_limiter();
 }
 
