@@ -16,6 +16,9 @@ from task_scheduler.task_scheduler import TaskScheduler
 from task_scheduler.creation_pipeline import CreationPipeline
 from mongodb_client.mongodb_client import MongoDBClient
 
+from plotting.data_acquisition import *
+from plotting.data_processor import DataProcessor
+
 
 logger = logging.getLogger("ml_service")
 logger.setLevel(logging.DEBUG)
@@ -155,3 +158,10 @@ def test_knowledge_use(knowledge_mode = "local"):
     uuid = interface.start_service(problem_def, get_service_configuration(), agents, knowledge_info)
     input("Press enter to stop service.")
     interface.stop_service()
+
+
+def test_plotting():
+    p = DataProcessor()
+    results = get_multiple_experiment_data("localhost", "benchmark_rastrigin", "global")
+    cost = p.get_average_cost(results)
+    print(cost)
