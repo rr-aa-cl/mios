@@ -72,6 +72,9 @@ class MongoDBClient():
     def remove(self, db: str, collection: str, search_param: dict) -> bool:
         db_connection = self.client[db]
         col = db_connection[collection]
+        if "_id" in search_param.keys():  # if _id is given as string  ->  ObjectId
+                if isinstance(search_param["_id"],str):
+                    search_param["_id"] = objectid.ObjectId(search_param["_id"])
         result = col.delete_one(search_param, collation=None, session=None)
         if result.deleted_count > 0:
             return True

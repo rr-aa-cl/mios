@@ -171,7 +171,11 @@ class KnowledgeProcessor():
             return self.DBclient.write(knowledge_db, task_identity["task_type"], knowledge)
         elif len(available_knowledge) == 1:
             logger.debug("knowlege_processor.process_knowledge: update knowledge entry for task identity "+str(task_identity)+" on database "+str(knowledge_db))
-            self.DBclient.update(knowledge_db,task_identity["task_type"],{"_id":available_knowledge[0]["_id"]},knowledge)
+            #self.DBclient.update(knowledge_db,task_identity["task_type"],{"_id":available_knowledge[0]["_id"]},knowledge)
+            id = available_knowledge[0]["_id"]
+            knowledge["_id"] = id
+            self.DBclient.remove(knowledge_db,task_identity["task_type"],{"_id":id})
+            self.DBclient.write(knowledge_db,task_identity["task_type"],knowledge)
             return available_knowledge[0]["_id"]
         else:
             logger.error("knowlege_processor.process_knowledge: Multiple knowledge entries found! Cannot decide which one to update")
