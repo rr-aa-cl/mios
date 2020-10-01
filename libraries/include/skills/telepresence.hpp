@@ -53,6 +53,10 @@ private:
     std::string m_handshake_message_uuid;
     std::vector<double> m_previous_payload;
 
+private:
+    Eigen::Matrix<double,4,4> m_O_T_EE_master;
+    Eigen::Matrix<double,7,1> m_q_master;
+
 };
 
 }
