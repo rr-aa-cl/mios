@@ -3,6 +3,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 from threading import Thread
 from xmlrpc.client import ServerProxy
+import socket
 
 from engine.engine import Engine
 from engine.engine import Trial
@@ -42,6 +43,10 @@ class BaseService(metaclass=ABCMeta):
         self.database_results_id = None
         self.knowledge_source = 'none'
 
+        # 15s timeout for xmlrpc clinet:
+        socket.setdefaulttimeout(15)
+
+
     @abstractmethod
     def _initialize(self):
         raise NotImplementedError
@@ -60,7 +65,7 @@ class BaseService(metaclass=ABCMeta):
         self.configuration = configuration
         self.knowledge_source = knowledge_source
         #task_identity used for searching similar tasks:
-        task_identity = {"tags":problem_definition.tags,"task_type":problem_definition.task_type,"optimum_weights":problem_definition.cost_function.optimum_weights}
+        self.task_identity = {"tags":problem_definition.tags,"task_type":problem_definition.task_type,"optimum_weights":problem_definition.cost_function.optimum_weights}
 
         if self.problem_definition.is_valid() is False:
             logger.error("Problem definition is not valid.")
@@ -71,7 +76,7 @@ class BaseService(metaclass=ABCMeta):
                 self.centroid = None
             elif knowledge_source["mode"] == 'local':
                 logger.debug("base_service.initialize(): get local knowlege")
-                knowledge = self.knowledge_processor.get_local_knowledge(task_identity)
+                knowledge = self.knowledge_processor.get_local_knowledge(self.problem_definition.get_task_identity())
                 if knowledge:
                     self.centroid = []
                     for key in knowledge["parameters"]:
@@ -80,7 +85,11 @@ class BaseService(metaclass=ABCMeta):
             elif knowledge_source["mode"] == 'global':
                 logger.debug("base_service.initialize(): get global knowlege")
                 with ServerProxy(knowledge_source["kb_location"]) as kb:
-                    knowledge = kb.get_knowledge(task_identity)
+                    try:
+                        knowledge = kb.get_knowledge(self.problem_definition.get_task_identity())
+                    except socket.timeout:
+                        logger.error("base_service: global Database is not reachable!")
+
                 if knowledge:
                     self.centroid = []
                     for key in knowledge["parameters"]:
@@ -103,9 +112,19 @@ class BaseService(metaclass=ABCMeta):
             result = False
         self.keep_running = False
         self.result = result
-        ml_data = self.knowledge_processor.get_ml_results({"_id":self.database_results_id}, self.problem_definition.task_type)
-        with ServerProxy(self.knowledge_source["kb_location"]) as kb:
-            kb.store_result(ml_data[0])
+        # update knowledge bases:
+        self.knowledge_processor.process_knowledge(self.problem_definition.get_task_identity())  # process knowledge and stores it to local db
+        if self.knowledge_source["mode"] == "global":
+            ml_data = self.knowledge_processor.get_ml_results({"_id":self.database_results_id}, self.problem_definition.task_type)
+            if len(ml_data) == 1:
+                logger.debug("base_service.learn_task: store ml_results to global database at "+str(self.knowledge_source["kb_location"]))
+                with ServerProxy(self.knowledge_source["kb_location"]) as kb:
+                    try:
+                        kb.store_result(ml_data[0])
+                    except socket.timeout:
+                        logger.error("base_service: global Database is not reachable!")
+            else: 
+                logger.error("base_service.learn_task: cannot find ml_results on local database to copy them to global database")
         return result
 
     def stop(self):
