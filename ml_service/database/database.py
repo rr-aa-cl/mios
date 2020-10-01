@@ -54,7 +54,7 @@ class Database():
         else:
             logger.error("Database.store_result: Received result is not of type dict or list! "+str(type(result)))
             return False
-        task_identity = {"task_type":result["task_type"], \
+        task_identity = {"task_type":result["meta"]["task_type"], \
                          "tags":result["meta"]["tags"], \
                          "optimum_weights":result["meta"]["cost_function"]["optimum_weights"]}
         self.process_knowledge(task_identity)

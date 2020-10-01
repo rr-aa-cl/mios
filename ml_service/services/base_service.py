@@ -3,6 +3,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 from threading import Thread
 from xmlrpc.client import ServerProxy
+import socket
 
 from engine.engine import Engine
 from engine.engine import Trial
@@ -41,6 +42,9 @@ class BaseService(metaclass=ABCMeta):
         self.result = False
         self.database_results_id = None
         self.knowledge_source = 'none'
+
+        # 15s timeout for xmlrpc clinet:
+        socket.setdefaulttimeout(15)
 
 
     @abstractmethod
@@ -81,7 +85,11 @@ class BaseService(metaclass=ABCMeta):
             elif knowledge_source["mode"] == 'global':
                 logger.debug("base_service.initialize(): get global knowlege")
                 with ServerProxy(knowledge_source["kb_location"]) as kb:
-                    knowledge = kb.get_knowledge(self.problem_definition.get_task_identity())
+                    try:
+                        knowledge = kb.get_knowledge(self.problem_definition.get_task_identity())
+                    except socket.timeout:
+                        logger.error("base_service: global Database is not reachable!")
+
                 if knowledge:
                     self.centroid = []
                     for key in knowledge["parameters"]:
@@ -111,7 +119,10 @@ class BaseService(metaclass=ABCMeta):
             if len(ml_data) == 1:
                 logger.debug("base_service.learn_task: store ml_results to global database at "+str(self.knowledge_source["kb_location"]))
                 with ServerProxy(self.knowledge_source["kb_location"]) as kb:
-                    kb.store_result(ml_data[0])
+                    try:
+                        kb.store_result(ml_data[0])
+                    except socket.timeout:
+                        logger.error("base_service: global Database is not reachable!")
             else: 
                 logger.error("base_service.learn_task: cannot find ml_results on local database to copy them to global database")
         return result

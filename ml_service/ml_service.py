@@ -97,15 +97,17 @@ def test_server_connection(host):
     print(s.is_busy())
 
 
-def test_knowledge_use(knowledge_mode = "local"):  
+def test_knowledge_use(knowledge_mode = "global"):  
+    import time 
     #create knowledge from old task:
     k = KnowledgeProcessor()
     #k.process_knowledge({"meta.tags":["test_sequence_1","test_sequence_2","test_sequence_3"]},"ml_results","benchmark_rastrigin","local_knowledge","benchmark_rastrigin",["test_knowledge","some_tag"])
 
     #start global database:
     interface = Interface()
+    time.sleep(1)
+    interface.stop_global_database()
 
-    import time 
     time.sleep(1)
 
     agents = set()

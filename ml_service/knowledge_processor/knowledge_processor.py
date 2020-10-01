@@ -133,7 +133,7 @@ class KnowledgeProcessor():
             data.append(trial_params)
             costs.append(trial["cost"])
         centroid = np.dot(weights,data)
-        expected_cost = np.dot(weights,costs)
+        expected_cost = float(np.dot(weights,costs))
 
         logger.debug("knowledge_processor: knowledge successful processed")
         #set up knowledge dict
@@ -187,7 +187,7 @@ class KnowledgeProcessor():
 
         doc = self.DBclient.read(data_db, task_identity["task_type"], result_filter)
         if doc is None or len(doc) == 0:
-            logger.error("Could not find any results for filter " + str(result_filter) + " on database " + data_db + " in collection " + data_col + ".")
+            logger.error("Could not find any results for filter " + str(result_filter) + " on database " + data_db + " in collection " + task_identity["task_type"] + ".")
             return False
         #save knowledge source
         uuids = []
@@ -197,22 +197,18 @@ class KnowledgeProcessor():
 
         logger.debug("knowledge_processor: read raw data")
         metainfo = []
-        if len(doc) > 1:
+        if len(doc) >= 1:
             logger.info("WARNING: process knowledge for more tasks")
 
             alltrials = []
             for d in doc:
                 metainfo.append(d["meta"])
                 # get raw ml data:
-                trials = self.get_raw_data(d)
-                for t in trials:
-                    alltrials.append(t)
+                alltrials.extend(self.get_raw_data(d))
             successful_trials = alltrials
-        else:
-            doc = doc[0]
-            # get raw ml data:
-            successful_trials = self.get_raw_data(doc)
-            metainfo.append(doc["meta"])
+        if len(successful_trials) < 1:
+            logger.error("knowledge_processor.proccess_knowledge_local(): No successful trials foud for knowledge generation!")
+            return False
 
         for m in metainfo:
             if m["domain"]["vector_mapping"] != metainfo[0]["domain"]["vector_mapping"]:
@@ -232,7 +228,7 @@ class KnowledgeProcessor():
             data.append(trial_params)
             costs.append(trial["cost"])
         centroid = np.dot(weights,data)
-        expected_cost = np.dot(weights,costs)
+        expected_cost = float(np.dot(weights,costs))
 
         logger.debug("knowledge_processor: knowledge successful processed")
         #set up knowledge dict
@@ -260,24 +256,35 @@ class KnowledgeProcessor():
 
     def get_local_knowledge(self, task_identity:dict, knowledge_db: str = "local_knowledge", data_db:str = "ml_results"):
         '''searches for most similar knowledge / creates knowledge from similar results'''
-        knowledge_col = task_identity["task_type"]
+        collection = task_identity["task_type"]
         optimum_weights = task_identity["optimum_weights"]
 
-        filter = {  "meta.tags":task_identity["tags"],\
-                    "meta.optimum_weights":task_identity["optimum_weights"],\
+        knowledge_filter = {  "meta.tags":task_identity["tags"],\
                     "meta.task_type":task_identity["task_type"]
                  }
         
         # search for knowldge from the same context (task_type, tags)
-        docs = self.DBclient.read(knowledge_db, knowledge_col, filter)
+        docs = self.DBclient.read(knowledge_db, collection, knowledge_filter)
         if len(docs) >= 1:
-            logger.debug("knowledge_processor.get_local_knowledge(): found knowledge on task identity" + str(task_identity))
-            # take most similar knowledge:
+            logger.debug("knowledge_processor.get_local_knowledge(): found knowledge on task identity" + str(task_identity) +" at "+str(knowledge_db)+"."+str(collection))
+            # take most similar knowledge according to cost function ("optimum_weights"):
             return self.get_most_similar_task(optimum_weights,docs)
-        else:
-            logger.debug("knowledge_processor.get_local_knowledge(): found none! -> create local knowledge from ml data")
-            knowledge = self.process_knowledge_local(task_identity, data_db)
+
+        logger.debug("knowledge_processor.get_local_knowledge(): found none! -> create local knowledge from ml data for task_identity"+str(task_identity))
+        knowledge = self.process_knowledge_local(task_identity, data_db) 
+        if knowledge:
             return knowledge
+
+        logger.debug("knowledge_processor.get_local_knowledge(): found none! -> create knowledge from most similar ml data")
+        docs = self.DBclient.read(data_db, collection, knowledge_filter)
+        if len(docs) >= 1:
+            return self.get_most_similar_task(optimum_weights,docs)
+
+        logger.debug("knowledge_processor.get_local_knowledge(): no knowledge or ml data are available for task_type "+str(collection)+" with tags "+str(task_identity["tags"]))
+        return False
+                
+
+
 
     def get_ml_results(self, filter, data_col, data_db="ml_results"):
         ml_results = []
