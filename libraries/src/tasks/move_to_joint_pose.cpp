@@ -22,7 +22,6 @@ void MoveToJointPose::execute(){
 }
 
 bool MoveToJointPose::read_parameters(const nlohmann::json &params){
-    std::cout<<params<<std::endl;
     m_pose = msrm_utils::from_json<std::string>(params,"pose");
 //    msrm_utils::read_json_param(params,"pose",m_p);
     if(!msrm_utils::read_json_param<double,7,1>(params,"q_g",m_q_g)){

@@ -5,7 +5,6 @@
 namespace mios {
 
 bool SkillParametersMoveToPoseCart::from_json(const nlohmann::json &p){
-    std::cout<<p<<std::endl;
     if(!msrm_utils::read_json_param(p,"t_settle",t_settle)){
         t_settle=0;
     }

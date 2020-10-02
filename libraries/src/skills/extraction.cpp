@@ -71,7 +71,6 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Extraction::graph_transit
 }
 
 std::shared_ptr<ManipulationPrimitive> Extraction::create_move_mp(const Percept &p){
-    std::cout<<"MOVE"<<std::endl;
     std::shared_ptr<SkillParametersExtraction> skill_params = get_parameters<SkillParametersExtraction>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
     mp->create_strategy<MoveToPoseStrategy>("s_move",1);
@@ -85,7 +84,6 @@ std::shared_ptr<ManipulationPrimitive> Extraction::create_move_mp(const Percept 
 }
 
 std::shared_ptr<ManipulationPrimitive> Extraction::create_wiggle_mp(const Percept &p){
-    std::cout<<"WIGGLE"<<std::endl;
     std::shared_ptr<SkillParametersExtraction> skill_params = get_parameters<SkillParametersExtraction>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("wiggle",p);
     mp->create_strategy<FFWiggleStrategy>("wiggle_x",1);
