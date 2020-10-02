@@ -21,8 +21,9 @@ class MongoDBClient():
         #if search params are in list, search for all the contend (not the list itself...)
         for key in search_param:
             value = search_param[key]
-            if isinstance(value, list):
-                search_param[key] = {"$all": value}
+            if key == "tags":
+                if isinstance(value, list):
+                    search_param[key] = {"$all": value}
             
             if key == "_id":  # if _id is given as string  ->  ObjectId
                 if isinstance(search_param[key],str):
