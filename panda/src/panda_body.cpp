@@ -754,6 +754,7 @@ bool PandaBody::grasp(double width, double speed, double force, double epsilon_i
             }
             if(width>=current_width){
                 spdlog::error("Grasping to a width larger than the current width is not possible.");
+                spdlog::debug("Current width is " + std::to_string(current_width) + ", desired width is " + std::to_string(width));
                 return false;
             }
 
