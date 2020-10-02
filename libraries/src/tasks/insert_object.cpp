@@ -60,10 +60,6 @@ void InsertObject::execute(){
         return;
     }
     execute_skill<MoveToContact,SkillParametersMoveToContact>("contact");
-    if(!get_result().skill_results["contact"].success){
-        write_error("TaskError");
-        return;
-    }
     execute_skill<Insertion,SkillParametersInsertion>("insertion");
 }
 
