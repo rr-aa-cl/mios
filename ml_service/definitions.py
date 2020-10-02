@@ -104,9 +104,9 @@ def insert_cylinder_30():
     default_context = {
         "name": "InsertObject",
         "parameters": {
-            "insertable": "key_abus_e30",
-            "insert_into": "lock_abus_e30",
-            "insert_approach": "lock_abus_e30_above",
+            "insertable": "cylinder_30",
+            "insert_into": "hole_30",
+            "insert_approach": "hole_30_above",
             "offset": [0, 0, 0, 0, 0, 0]
         },
         "skills": {
@@ -129,18 +129,18 @@ def insert_cylinder_30():
         "skills": {
             "extraction": {
                 "skill": {
-                    "traj_speed": [0.05, 0.5],
+                    "traj_speed": [0.075, 0.5],
                     "traj_acc": [0.5, 1],
-                    "search_a": [3, 3, 0, 2, 2, 1],
+                    "search_a": [5, 5, 0, 3, 3, 1],
                     "search_f": [1, 0.75, 0, 1, 0.75, 0.5],
                     "stuck_dx_thr": 0.01
                 }
             }
         },
         "parameters": {
-            "extractable": "key_abus_e30",
-            "extract_from": "lock_abus_e30",
-            "extract_to": "lock_abus_e30_above"
+            "extractable": "cylinder_30",
+            "extract_from": "hole_30",
+            "extract_to": "hole_30_above"
         }
     }
     reset_instructions.append({"method": "start_task", "parameters": task_context})
@@ -157,4 +157,5 @@ def insertion_cost():
 
     c.heuristic_skills = ["insertion"]
     c.max_cost[0] = 10
+    c.max_cost[1] = 50
     return c

@@ -53,10 +53,10 @@ def test_mios(agent: str = "localhost"):
 def test_interface(agent: str = "localhost"):
     agents = set()
     agents.add(agent)
-    problem_def = insert_cylinder_30()
+    problem_def = rastrigin()
     interface = Interface()
 
-    call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
+    #call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
 
     uuid = interface.start_service(problem_def, get_service_configuration(), agents)
     input("Press enter to stop service.")
