@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import copy
 import time
+from datetime import datetime
 from mongodb_client.mongodb_client import MongoDBClient
 from sklearn.cluster import DBSCAN
 
@@ -149,16 +150,14 @@ class KnowledgeProcessor():
         knowledge_tags.extend(list(tags))
         knowledge_tags = list(set(knowledge_tags))
 
-        meta = metainfo[0]
-        meta.pop("uuid", None)
-        meta.pop("t_0", None)
-        meta.pop("date", None)
+        meta = dict()
         meta["confidence"] = None
         meta["knowledge_source"] = uuids
         meta["expected_cost"] = expected_cost
         meta["optimum_weights"] = task_identity["optimum_weights"]
         meta["task_type"] = task_identity["task_type"]
         meta["tags"] = task_identity["tags"]
+        meta["time"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
         knowledge = {"parameters":parameter_dict, 
                      "meta": meta
@@ -244,17 +243,14 @@ class KnowledgeProcessor():
         for key_name, parameter in zip(metainfo[0]["domain"]["vector_mapping"], centroid):
             parameter_dict[key_name] = float(parameter)  # use python float because of rpc restrictions
 
-        meta = metainfo[0]
-        meta.pop("uuid", None)
-        meta.pop("t_0", None)
-        meta.pop("date", None)
+        meta = dict()
         meta["confidence"] = None
         meta["knowledge_source"] = uuids
         meta["expected_cost"] = expected_cost
         meta["optimum_weights"] = task_identity["optimum_weights"]
         meta["task_type"] = task_identity["task_type"]
         meta["tags"] = task_identity["tags"]
-
+        meta["time"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         knowledge = {"parameters":parameter_dict, 
                      "meta": meta
                      }
