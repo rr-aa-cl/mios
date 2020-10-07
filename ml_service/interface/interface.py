@@ -33,16 +33,26 @@ class Interface:
         self.service_lock = Lock()
         self.global_db = Database(8001)
         self.global_db_thread = None
+        self.rpc_server = InterfaceServer(("0.0.0.0", 8000), allow_none=True)
         self.start_global_database()
 
-    def start_rpc_server(self, port: int = 8000):
-        self.rpc_server = InterfaceServer(("0.0.0.0", port), allow_none=True)
+    def start_rpc_server(self):
+        logger.debug("Interface::start_rpc_server()")
         self.rpc_server.register_introspection_functions()
         self.rpc_server.register_function(self.start_service_wrapper, "start_service")
         self.rpc_server.register_function(self.is_busy, "is_busy")
         self.rpc_server.register_function(self.wait_for_service, "wait_for_service")
         self.rpc_server.register_function(self.is_ready, "is_ready")
         self.rpc_server.serve_forever()
+        logger.debug("Interface::start_rpc_server.server_stopped")
+
+    def stop_rpc_server(self):
+        logger.debug("Interface::stop_rpc_server()")
+        #t = Thread(target=self.rpc_server.shutdown())
+        #t.start()
+        self.rpc_server.server_close()
+        self.rpc_server.shutdown()
+        logger.debug("Interface::stop_rpc_server.end")
 
     def start_service_wrapper(self, problem_definition: dict, configuration: dict, agents, knowledge: dict = None):
         service_configuration = CMAESConfiguration()
@@ -84,7 +94,8 @@ class Interface:
 
     def stop_service(self):
         """Stop the learning process, if possible save all results and stop the robot"""
-        self.service.stop()
+        if self.service is not None:
+            self.service.stop()
 
     def is_ready(self, agents) -> bool:
         if self.service_lock.locked() is True:

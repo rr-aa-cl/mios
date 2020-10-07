@@ -26,6 +26,7 @@ int main(int argc, char** argv){
             info_level=spdlog::level::debug;
         }
     }
+    info_level=spdlog::level::debug;
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(info_level);
     console_sink->set_pattern("[mios] [%^%l%$] %v");

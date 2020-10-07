@@ -36,5 +36,6 @@ cd ${ROOT}
 
 docker build -t mios -f docker/core/Dockerfile .
 docker tag mios:latest msrm/mios:release
+docker tag mios:latest collective-control-001.local:5000/mios
 
 rm -r ${ROOT}/dependencies

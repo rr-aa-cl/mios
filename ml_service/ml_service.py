@@ -70,8 +70,8 @@ def test_with_rpc_server():
 
 def test_with_rpc_client(agent: str = "localhost"):
     agents = []
-    agents.append(agent)
-    problem_def = insert_cylinder_30()
+    agents.append("collective-panda-003")
+    problem_def = rastrigin()
 
     print(problem_def.to_dict())
 
