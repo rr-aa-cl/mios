@@ -37,6 +37,8 @@ def rastrigin_cost():
     c.optimum_skills.append("ml_test")
     c.optimum_weights[4] = 1
     c.max_cost[4] = 100
+    c.min_cost[4] = 50
+    c.finish_thr = 3
     return c
 
 

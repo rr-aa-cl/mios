@@ -29,8 +29,8 @@ logger.addHandler(handler)
 
 def get_service_configuration():
     configuration = CMAESConfiguration()
-    configuration.n_ind = 3
-    configuration.n_gen = 2
+    configuration.n_ind = 5
+    configuration.n_gen = 10
     return configuration
 
 
