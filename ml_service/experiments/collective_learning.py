@@ -108,7 +108,7 @@ class TestCreationPipeline(CreationPipeline):
             t = Task(copy.deepcopy(template), service_configuration, agents, service_url, knowledge_mode)
             t.problem_definition.cost_function.optimum_weights[0] = float(i+1)/float(n_tasks)
             t.problem_definition.cost_function.optimum_weights[1] = 1 - t.problem_definition.cost_function.optimum_weights[0]
-            t.problem_definition.tags.append("collective_learning_test")
+            t.problem_definition.tags.append("collective_learning_exp_001")
             self.tasks.append(t)
 
 
@@ -116,10 +116,10 @@ def test_collective_learning():
     config = CMAESConfiguration()
     c = TestCreationPipeline()
 
-    config.n_gen = 6
+    config.n_gen = 10
     config.n_ind = 10
 
-    knowledge_mode = "global"
+    knowledge_mode = "local"
     n_tasks = 10
 
     call_method("collective-panda-001.local", 12002, "set_grasped_object", {"object": "cylinder_40"})
@@ -130,15 +130,15 @@ def test_collective_learning():
 
     c = TestCreationPipeline()
     c.create_tasks_from_template(insert_cylinder_10(), config, n_tasks, "http://collective-panda-007.local:8000",
-                                 ["collective-panda-007.local"], knowledge_mode)
+                                 ["collective-panda-007"], knowledge_mode)
     c.create_tasks_from_template(insert_cylinder_40(), config, n_tasks, "http://collective-panda-001.local:8000",
-                                 ["collective-panda-001.local"], knowledge_mode)
+                                 ["collective-panda-001"], knowledge_mode)
     c.create_tasks_from_template(insert_cylinder_60(), config, n_tasks, "http://collective-panda-008.local:8000",
-                                 ["collective-panda-008.local"], knowledge_mode)
+                                 ["collective-panda-008"], knowledge_mode)
     c.create_tasks_from_template(insert_key_abus(), config, n_tasks, "http://collective-panda-002.local:8000",
-                                 ["collective-panda-002.local"], knowledge_mode)
+                                 ["collective-panda-002"], knowledge_mode)
     c.create_tasks_from_template(insert_plug_usb_c(), config, n_tasks, "http://collective-panda-009.local:8000",
-                                 ["collective-panda-009.local"], knowledge_mode)
+                                 ["collective-panda-009"], knowledge_mode)
 
     t = TaskScheduler()
     for task in c.tasks:
