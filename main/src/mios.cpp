@@ -10,17 +10,34 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "pybind11/pybind11.h"
-#include <boost/program_options.hpp>
 #include "core/core.hpp"
 #include "msrm_utils/network.hpp"
+#include "cxxopts.hpp"
 
 void exit_handler(int s);
 
 
 int main(int argc, char** argv){
 
-    unsigned database_port=27005;
-    spdlog::level::level_enum info_level=spdlog::level::debug;
+    cxxopts::Options options("MIOS", "Machine Intelligence Operating System");
+    options.add_options()
+            ("v,verbosity","Set level of verbosity.",cxxopts::value<std::string>()->default_value("info"))
+            ("p,database_port","Port of mongodb database.",cxxopts::value<unsigned>()->default_value("27017"));
+
+    auto result = options.parse(argc, argv);
+    std::string verbosity=result["v"].as<std::string>();
+    unsigned database_port=result["p"].as<unsigned>();
+
+    spdlog::level::level_enum info_level;
+    if(verbosity=="trace"){
+        info_level=spdlog::level::trace;
+    }else if(verbosity=="debug"){
+        info_level=spdlog::level::debug;
+    }else if(verbosity=="info"){
+        info_level=spdlog::level::info;
+    }else{
+        info_level=spdlog::level::info;
+    }
 
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(info_level);
