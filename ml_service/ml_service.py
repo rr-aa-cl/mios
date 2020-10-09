@@ -146,10 +146,13 @@ def test_plotting():
         results.extend(get_multiple_experiment_data(host, task_type, knowledge_mode,filter= filter))
 
     results = p.sort_over_time(results)  # not really needed results are stored in order
-
+    #all_times = p.get_cumulative_time(results)
+    #plot.plot_learning_over_task(all_times, "global")
     agent_results = p.get_agent_results(results)  # seperate results for every agent
     for agent, agent_results in agent_results.items():
         agent_times_cum = p.get_cumulative_time(agent_results)  
-        plot.plot_time_per_task(agent_times_cum, agent)
+        plot.plot_learning_over_task(agent_times_cum, agent)
+
+    
 
 
