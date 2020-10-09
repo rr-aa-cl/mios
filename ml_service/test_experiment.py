@@ -13,6 +13,6 @@ logger.addHandler(handler)
 
 if __name__ == "__main__":
     e = CollectiveLearningBase()
-    e.start(["test_mode"], "none")
+    e.start(["collective_learning_exp003"], "global")
     input("Press key to stop.")
     e.stop()
