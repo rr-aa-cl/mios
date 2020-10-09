@@ -44,6 +44,44 @@ class DataProcessor:
                 c_0 = cost_monotone[i]
         return cost
 
+    def get_total_times(self, results: list) -> np.ndarray:
+        times = []
+        for r in results:
+            times.append(r.get_total_time())
+        return times
+
+    def get_agent_results(self, results: list) -> dict:
+        agents = []
+        ordered_results = {}
+        for r in results:
+            tags = set(r.meta_data["tags"])
+            if tags not in agents:
+                agents.append(tags)
+                ordered_results[str(tags)] = []
+                ordered_results[str(tags)].append(r)
+            else:
+                ordered_results[str(tags)].append(r)
+        return ordered_results
+            
+    
+    def get_cumulative_time(self, results: list) -> np.ndarray:
+        times_cum = []
+        for r in results:
+            if len(times_cum) == 0:
+                times_cum.append(r.get_total_time())
+            else:
+                times_cum.append(times_cum[-1] + r.get_total_time())
+        return times_cum
+
+    def get_total_trials(self, results: list) -> np.ndarray:
+        trials_per_task = []
+        for r in results:
+            trials_per_task.append(r.get_total_trials())
+        return trials_per_task
+    
+    def sort_over_time(self, results:list) -> list:
+        return sorted(results, key= lambda r: (r.starting_time))
+
     def get_average_theta(self):
         pass
 
