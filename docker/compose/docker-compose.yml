@@ -8,13 +8,14 @@ services:
     network_mode: "host"
     cap_add:
       - SYS_NICE
-    ports:
-      - "12000:12000"
-      - "12001:12001"
-      - "12002:12002"
-      - "8888:8888"
-      - "8889:8889"
+    depends_on:
+      - "ros"
+      - "mongo"
   ros:
     image: "ros:melodic-ros-core"
     network_mode: "host"
     command: roscore
+  mongo:
+    image: "mongo:4.0.20-xenial"
+    ports:
+      - "27005:27017"

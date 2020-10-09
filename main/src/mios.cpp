@@ -19,38 +19,8 @@ void exit_handler(int s);
 
 int main(int argc, char** argv){
 
-    unsigned database_port=27017;
-    spdlog::level::level_enum info_level;
-
-    try
-    {
-      boost::program_options::options_description desc{"Options"};
-      desc.add_options()
-        ("help,h", "Help screen")
-        ("output", boost::program_options::value<std::string>()->default_value("info"), "Output level, possible options: [trace, debug, info]")
-        ("database_port", boost::program_options::value<unsigned>()->default_value(27017), "Port of mongodb database");
-
-      boost::program_options::variables_map vm;
-      store(parse_command_line(argc, argv, desc), vm);
-      notify(vm);
-
-      if(vm["output"].as<std::string>()=="trace"){
-          info_level=spdlog::level::trace;
-      }else if(vm["output"].as<std::string>()=="debug"){
-          info_level=spdlog::level::debug;
-      }else if(vm["output"].as<std::string>()=="info"){
-          info_level=spdlog::level::info;
-      }else{
-          info_level=spdlog::level::info;
-      }
-
-      database_port=vm["database_port"].as<unsigned>();
-    }
-    catch (const boost::program_options::error &ex)
-    {
-      std::cerr << ex.what() << '\n';
-      return -1;
-    }
+    unsigned database_port=27005;
+    spdlog::level::level_enum info_level=spdlog::level::debug;
 
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(info_level);
