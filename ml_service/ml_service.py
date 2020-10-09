@@ -1,6 +1,7 @@
 import logging
 import time
 import sys
+import numpy as np
 from knowledge_processor.knowledge_processor import KnowledgeProcessor
 from services.basinhopping import BasinhoppingService
 from services.cmaes import *
@@ -18,6 +19,7 @@ from mongodb_client.mongodb_client import MongoDBClient
 
 from plotting.data_acquisition import *
 from plotting.data_processor import DataProcessor
+from plotting.plotter import Plotter
 
 
 logger = logging.getLogger("ml_service")
@@ -131,7 +133,23 @@ def test_knowledge_use(knowledge_mode = "global"):
 
 
 def test_plotting():
+
+    hosts = ["collective-panda-001.local"]  #,"collective-panda-002.local","collective-panda-007.local","collective-panda-008.local","collective-panda-009.local"]
+    filter = {"meta.tags": ["collective_learning_exp003"]}
+    knowledge_mode = "global"
+    task_type = "insert_object"
+
     p = DataProcessor()
-    results = get_multiple_experiment_data("localhost", "benchmark_rastrigin", "global")
-    cost = p.get_average_cost(results)
-    print(cost)
+    plot = Plotter()
+    results = []
+    for host in hosts:
+        results.extend(get_multiple_experiment_data(host, task_type, knowledge_mode,filter= filter))
+
+    results = p.sort_over_time(results)  # not really needed results are stored in order
+
+    agent_results = p.get_agent_results(results)  # seperate results for every agent
+    for agent, agent_results in agent_results.items():
+        agent_times_cum = p.get_cumulative_time(agent_results)  
+        plot.plot_time_per_task(agent_times_cum, agent)
+
+
