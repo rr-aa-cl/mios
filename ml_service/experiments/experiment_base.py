@@ -25,7 +25,7 @@ class Experiment(metaclass=ABCMeta):
             logger.error("No creation pipeline was provided.")
 
         for t in self.creation_pipeline.tasks:
-            t.tags = tags
+            t.problem_definition.tags.extend(tags)
             self.task_scheduler.add_task(t)
 
         thr = Thread(target=self.task_scheduler.solve_tasks)
