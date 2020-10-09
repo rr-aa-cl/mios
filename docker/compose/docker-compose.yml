@@ -3,7 +3,7 @@ services:
   mios:
     image: "msrm/mios:release"
     environment:
-      - output=debug
+      - verbosity=info
       - database_port=27005
     network_mode: "host"
     cap_add:
