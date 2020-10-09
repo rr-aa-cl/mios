@@ -27,13 +27,14 @@ class TaskScheduler:
         self.assigned_tasks = set()
         self.services = set()
         self.keep_running = False
-        self.kb_location = "http://192.168.5.8:8001"
+        self.kb_location = "http://192.168.5.26:8001"
 
     def stop(self):
         self.keep_running = False
 
     def add_task(self, task: Task):
         self.unassigned_tasks.put(task)
+        self.services.add(task.service_url)
 
     def solve_tasks(self):
         logger.debug("TaskScheduler::solve_tasks.1")
@@ -59,7 +60,7 @@ class TaskScheduler:
 
     def is_service_ready(self, service_url: str, agents: list) -> bool:
         logger.debug("TaskScheduler::is_service_ready(" + service_url + ", " + str(agents) + ")")
-        s = ServerProxy(service_url, allow_none=True)
+        s = ServerProxy("http://" + service_url + ":8000", allow_none=True)
         try:
             ready = s.is_ready(agents)
             logger.debug("TaskScheduler::is_service_ready.after_call")
@@ -70,7 +71,7 @@ class TaskScheduler:
 
     def solve_task(self, task: Task):
         logger.debug("TaskScheduler::solve_task.starting at" +str(task.service_url)+" with task mode "+str(task.knowledge_mode))
-        s = ServerProxy(task.service_url, allow_none=True)
+        s = ServerProxy("http://" + task.service_url + ":8000", allow_none=True)
         knowledge_info = {
             "mode": task.knowledge_mode,
             "kb_location": self.kb_location

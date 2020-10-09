@@ -160,4 +160,6 @@ def insertion_cost():
     c.heuristic_skills = ["insertion"]
     c.max_cost[0] = 10
     c.max_cost[1] = 50
+    c.min_cost[0] = 1
+    c.min_cost[1] = 20
     return c
