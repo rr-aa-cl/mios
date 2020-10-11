@@ -7,6 +7,7 @@ from definitions import insert_cylinder_30
 from utils.udp_client import call_method
 from experiments.experiment_base import Experiment
 import copy
+import random
 
 
 def insert_cylinder_10():
@@ -113,6 +114,8 @@ class TestCreationPipeline(CreationPipeline):
                                                                     t.problem_definition.cost_function.optimum_weights[
                                                                         0]
             self.tasks.append(t)
+
+        random.shuffle(self.tasks)
 
 
 class CollectiveLearningBase(Experiment):

@@ -1,5 +1,4 @@
 import logging
-import sys
 from threading import Thread
 from queue import Queue
 from problem_definition.problem_definition import ProblemDefinition

@@ -161,5 +161,5 @@ def insertion_cost():
     c.max_cost[0] = 10
     c.max_cost[1] = 50
     c.min_cost[0] = 1
-    c.min_cost[1] = 20
+    c.min_cost[1] = 30
     return c
