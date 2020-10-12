@@ -16,7 +16,7 @@ def get_experiment_data(host: str, task_type: str, type: str = "local", filter: 
     elif type == "global":
         results_db = "global_ml_results"
     else:
-        results_db = "none"
+        results_db = "ml_results"
 
     if filter is not None:
         docs = db_client.read(results_db, task_type, filter)
@@ -41,7 +41,7 @@ def get_multiple_experiment_data(host: str, task_type: str, type: str = "local",
     elif type == "global":
         results_db = "global_ml_results"
     else:
-        results_db = "none"
+        results_db = "ml_results"
 
     if filter is None:
         filter = {}

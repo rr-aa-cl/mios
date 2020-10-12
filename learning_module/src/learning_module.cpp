@@ -4,11 +4,11 @@
 namespace mios {
 
 LearningModule::LearningModule(){
-    try{
-        m_ml_interface=pybind11::module::import("interface.interface").attr("Interface")();
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-    }
+//    try{
+//        m_ml_interface=pybind11::module::import("interface.interface").attr("Interface")();
+//    }catch(const pybind11::error_already_set& e){
+//        spdlog::debug(e.what());
+//    }
 }
 
 LearningModule::~LearningModule(){

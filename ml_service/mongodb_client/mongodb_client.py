@@ -21,10 +21,11 @@ class MongoDBClient():
         #if search params are in list, search for all the contend (not the list itself...)
         for key in search_param:
             value = search_param[key]
-            if key == "tags":
+            if key == "tags" or "meta.tags":
                 if isinstance(value, list):
                     search_param[key] = {"$all": value}
-            
+            if not value:  # check if key exists if no value is given
+                search_param[key] = {"$exists": True} 
             if key == "_id":  # if _id is given as string  ->  ObjectId
                 if isinstance(search_param[key],str):
                     search_param[key] = objectid.ObjectId(search_param[key])
@@ -37,7 +38,7 @@ class MongoDBClient():
                 break
             else:
                 retry_count += 1
-                time.sleep(1)
+                time.sleep(0.5)
         return findings
 
     def write(self, db: str, collection: str, document: dict or list) -> objectid.ObjectId or list:

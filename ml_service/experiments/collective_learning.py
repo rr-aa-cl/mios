@@ -7,6 +7,7 @@ from definitions import insert_cylinder_30
 from utils.udp_client import call_method
 from experiments.experiment_base import Experiment
 import copy
+import random
 
 
 def insert_cylinder_10():
@@ -114,11 +115,13 @@ class TestCreationPipeline(CreationPipeline):
                                                                         0]
             self.tasks.append(t)
 
+        random.shuffle(self.tasks)
+
 
 class CollectiveLearningBase(Experiment):
     def initialize(self, knowledge_mode: str):
         config = CMAESConfiguration()
-        config.n_gen = 6
+        config.n_gen = 10
         config.n_ind = 10
 
         call_method("collective-panda-001.local", 12002, "set_grasped_object", {"object": "cylinder_40"})

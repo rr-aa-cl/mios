@@ -91,7 +91,21 @@ cd pybind11
 git checkout v2.5.0
 mkdir -p build
 cd build
-cmake -DPYBIND11_PYTHON_VERSION=3.6 -DPYBIND11_TEST=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} cmake -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3.6 ..
+cmake -DPYBIND11_PYTHON_VERSION=3.6 -DPYBIND11_TEST=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3.6 ..
+make -j$(nproc --all)
+make install
+
+# install cxxopts
+cd ${ROOT}
+if [ ! -d "cxxopts" ]
+then
+git clone https://github.com/jarro2783/cxxopts.git
+fi
+cd cxxopts
+git checkout v2.2.1
+mkdir -p build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=${ROOT} -DCXXOPTS_BUILD_EXAMPLES=OFF -DCXXOPTS_BUILD_TESTS=OFF ..
 make -j$(nproc --all)
 make install
 

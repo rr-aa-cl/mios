@@ -3,7 +3,7 @@
 
 namespace mios {
 
-Memory::Memory(){
+Memory::Memory(unsigned database_port):m_lt_memory(database_port){
     m_st_memory.link_to_lt_memory(&m_lt_memory);
     m_lt_memory.link_to_st_memory(&m_st_memory);
 }

@@ -43,6 +43,7 @@ private:
     // info level
     nlohmann::json get_state(const nlohmann::json& request);
     nlohmann::json get_model(const nlohmann::json& request);
+    nlohmann::json reload_database(const nlohmann::json& request);
 
     // robot level
     nlohmann::json start_desk_task(const nlohmann::json& request);

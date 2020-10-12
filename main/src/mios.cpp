@@ -11,22 +11,34 @@
 
 #include "pybind11/pybind11.h"
 #include "core/core.hpp"
-
-#include <msrm_utils/network.hpp>
+#include "msrm_utils/network.hpp"
+#include "cxxopts.hpp"
 
 void exit_handler(int s);
 
 
 int main(int argc, char** argv){
 
+    cxxopts::Options options("MIOS", "Machine Intelligence Operating System");
+    options.add_options()
+            ("v,verbosity","Set level of verbosity.",cxxopts::value<std::string>()->default_value("info"))
+            ("p,database_port","Port of mongodb database.",cxxopts::value<unsigned>()->default_value("27017"));
+
+    auto result = options.parse(argc, argv);
+    std::string verbosity=result["v"].as<std::string>();
+    unsigned database_port=result["p"].as<unsigned>();
+
     spdlog::level::level_enum info_level;
-    info_level=spdlog::level::info;
-    if(argc==2){
-        if(strcmp(argv[1],"debug")==0){
-            info_level=spdlog::level::debug;
-        }
+    if(verbosity=="trace"){
+        info_level=spdlog::level::trace;
+    }else if(verbosity=="debug"){
+        info_level=spdlog::level::debug;
+    }else if(verbosity=="info"){
+        info_level=spdlog::level::info;
+    }else{
+        info_level=spdlog::level::info;
     }
-    info_level=spdlog::level::debug;
+
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(info_level);
     console_sink->set_pattern("[mios] [%^%l%$] %v");
@@ -60,7 +72,7 @@ int main(int argc, char** argv){
     ros::init(argc, argv, "mios", ros::init_options::NoSigintHandler);
 
     pybind11::scoped_interpreter guard{};
-    mios::Core core;
+    mios::Core core(database_port);
     spdlog::info("Initializing MIOS core...");
     if(!core.initialize()){
         spdlog::error("MIOS core could not be initialized, shutting down...");

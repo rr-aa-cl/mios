@@ -20,6 +20,7 @@ namespace mios {
 MongodbClient::MongodbClient(const std::string &database, unsigned port){
     spdlog::trace("[MONGODBCLIENT]: CONSTRUCTOR");
     std::scoped_lock<std::mutex> lock(m_mutex_db_access);
+    spdlog::debug("Connecting to database " + database + " on localhost:" + std::to_string(port));
     mongocxx::uri uri("mongodb://localhost:"+std::to_string(port));
     m_client = mongocxx::client(uri);
     try{

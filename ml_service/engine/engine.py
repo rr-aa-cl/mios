@@ -232,7 +232,7 @@ class Engine:
         for i in trial.reset_instructions:
             logger.debug("Engine::_reset_task.instructions: " + str(i["parameters"]))
             instruction_done = False
-            while self.keep_running is True and instruction_done is False:
+            while instruction_done is False:
                 logger.debug("Engine::_reset_task.loop")
                 if i["method"] == "start_task":
                     result, task_uuid = self._start_task(agent, i["parameters"])

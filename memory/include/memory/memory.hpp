@@ -10,7 +10,7 @@ class Core;
 
 class Memory{
 public:
-    Memory();
+    Memory(unsigned database_port);
     Memory(const Memory&) = delete;
     void operator=(Memory const&) = delete;
     bool is_ok() const;

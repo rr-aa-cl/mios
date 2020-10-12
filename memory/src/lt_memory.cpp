@@ -8,7 +8,7 @@
 
 namespace mios {
 
-LTMemory::LTMemory():m_mongodb_client("mios"){
+LTMemory::LTMemory(unsigned database_port):m_mongodb_client("mios",database_port){
 }
 
 bool LTMemory::is_ok() const{

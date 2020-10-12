@@ -32,7 +32,7 @@ class Skill;
 
 class Core{
 public:
-    Core();
+    Core(unsigned database_port);
     ~Core();
 
     bool initialize();

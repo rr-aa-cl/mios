@@ -44,6 +44,7 @@ void CommandInterface::bind_methods(){
 
     m_portal->bind_method_to_all("get_state",std::bind(&CommandInterface::get_state,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("get_model",std::bind(&CommandInterface::get_model,this,std::placeholders::_1),{});
+    m_portal->bind_method_to_all("reload_database",std::bind(&CommandInterface::reload_database,this,std::placeholders::_1),{});
 
     m_portal->bind_method_to_all("unlock_brakes",std::bind(&CommandInterface::unlock_brakes,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("lock_brakes",std::bind(&CommandInterface::lock_brakes,this,std::placeholders::_1),{});
@@ -406,6 +407,16 @@ nlohmann::json CommandInterface::get_model(const nlohmann::json &request){
     response["result"]=result;
     response["error_message"]=error_message;
 
+    return response;
+}
+
+nlohmann::json CommandInterface::reload_database(const nlohmann::json &request){
+    nlohmann::json response;
+    response["result"]=true;
+    if(!m_memory->set_default_parameters()){
+        response["result"]=false;
+        response["error_message"]="Could not load from database.";
+    }
     return response;
 }
 

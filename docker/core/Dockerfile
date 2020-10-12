@@ -16,5 +16,8 @@ COPY dependencies/ /dependencies/
 
 EXPOSE 12000 12001 12002 8888 8889
 
+ENV verbosity default_verbosity_value
+ENV database_port default_database_port_value
+
 WORKDIR mios/bin
-CMD ["./mios.sh"]
+CMD ["sh", "-c", "./mios.sh --verbosity=${verbosity} --database_port=${database_port}"]
