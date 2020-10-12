@@ -103,6 +103,7 @@ Actuator* Skill::cycle(const Percept &p){
     std::optional<std::shared_ptr<ManipulationPrimitive> > next_mp;
 
     if(m_life_cycle==SkillLifeCycle::slInit){
+        spdlog::trace("Skill::cycle.init");
         m_active_mp=get_initial_mp(p);
         m_result.p_0=p;
         m_time_start=std::chrono::high_resolution_clock::now();
@@ -124,12 +125,14 @@ Actuator* Skill::cycle(const Percept &p){
         return cmd;
     }
     if(m_life_cycle==SkillLifeCycle::slSettle){
+        spdlog::trace("Skill::cycle.settle");
         if(m_active_mp->is_settled()){
             m_life_cycle=SkillLifeCycle::slTerminate;
         }
         return m_active_mp->stop(p,m_stop_factor);
     }
     if(m_life_cycle==SkillLifeCycle::slTerminate){
+        spdlog::trace("Skill::cycle.terminate");
         stop_parallels();
         m_active_mp->terminate(p);
         cmd=m_active_mp->stop(p,m_stop_factor);
@@ -178,6 +181,7 @@ Actuator* Skill::cycle(const Percept &p){
     }
 
     if(m_life_cycle==SkillLifeCycle::slTransition){
+        spdlog::trace("Skill::cycle.transition");
         Actuator blend_cmd=*(m_active_mp->cmd_from_buffer());
         m_active_mp->terminate(p);
         m_active_mp=next_mp.value();
@@ -229,10 +233,12 @@ void Skill::terminate(const Percept& p){
 }
 
 void Skill::invoke_failure(){
+    spdlog::debug("Skill::invoke_failure()");
     m_flag_invoke_failure=true;
 }
 
 void Skill::invoke_success(){
+    spdlog::debug("Skill::invoke_success()");
     m_flag_invoke_success=true;
 }
 

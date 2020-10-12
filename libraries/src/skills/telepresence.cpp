@@ -89,6 +89,7 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
         return false;
     }else if(parameters.find("direct_joint")!=parameters.end() && mode==TelepresenceMode::tmDirectJoint){
         if(!msrm_utils::read_json_param<double,7,1>(parameters["direct_joint"],"alpha",direct_joint.alpha)){
+            spdlog::warn("Could not load direct_joint.alpha");
             direct_joint.alpha.setZero();
         }
     }
@@ -162,7 +163,9 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
             if(m_handshake_stage==0){
                 spdlog::debug("Telepresence: Starting handshake (master)");
                 if(read_parameters<Params>()->multicast){
-                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->ip_dst,12000,"post_event",request);
+                    for(const auto& ip : read_parameters<Params>()->multicast_group){
+                        m_handshake_message_uuid=m_portal->send_message(ip,12000,"post_event",request);
+                    }
                     m_handshake_stage=2;
                     m_memory->post_event("sync_done",nlohmann::json());
                 }else{
@@ -238,9 +241,9 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
             }
         }
         if(get_active_mp()->get_name()=="telepresence"){
-            if(get_active_mp()->get_strategy_interface("telepresence")->finished()){
+            if(!read_parameters<Params>()->multicast && get_active_mp()->get_strategy_interface("telepresence")->finished()){
                 m_handshake_stage=0;
-                spdlog::debug("Telepresence: Terminating telepresence (master)");
+                spdlog::trace("Telepresence: Terminating telepresence (master)");
                 std::shared_ptr<ManipulationPrimitive> mp = create_mp("handshake",p);
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
                     m_portal->close_udp_outstream("remote_cart_pose_out");
@@ -255,6 +258,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     m_portal->close_udp_instream("remote_wrench_in");
                 }
                 nlohmann::json response;
+                spdlog::trace("Telepresence:graph_transition.master.finished");
                 mp->create_strategy<NullStrategy>("idle",1);
                 return mp;
             }

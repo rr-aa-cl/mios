@@ -201,6 +201,7 @@ franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
     }
     franka::Finishable* panda_cmd=m_controller_pipeline->step(m_percept,*cmd);
     if(!m_controller_pipeline->is_valid_command(panda_cmd)){
+        spdlog::error("Invalid command from controller pipeline.");
         cmd->stop();
     }
     m_percept.update_controller();
@@ -209,6 +210,7 @@ franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
         m->step(m_percept,panda_cmd);
     }
     if(cmd->is_stopped()){
+        spdlog::trace("Core::control_base_cycle.stopped");
         panda_cmd->motion_finished=true;
     }
     return panda_cmd;
