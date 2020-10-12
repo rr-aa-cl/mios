@@ -52,16 +52,19 @@ class CMAESService(BaseService):
 
         self.toolbox.register("evaluate", self.trial)
         self.toolbox.register("map", self.map)
-        
+
+        sigma_init = self.configuration.sigma_init
+
         if self.centroid == None:
             self.centroid = self.problem_definition.domain.get_default_x0()
         else:
             self.centroid = self.problem_definition.domain.normalize(self.centroid)
+            sigma_init = self.configuration.sigma_init / 4
             logger.debug("CMAESService._initialize(): use initial centroid "+str(self.centroid))
 
 
         self.strategy = deap.cma.Strategy(centroid=self.centroid,
-                                          sigma=self.configuration.sigma_init, lambda_=self.configuration.n_ind)
+                                          sigma=sigma_init, lambda_=self.configuration.n_ind)
         self.toolbox.register("generate", self.strategy.generate, deap.creator.Individual)
         self.toolbox.register("update", self.strategy.update)
 

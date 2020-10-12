@@ -1,5 +1,4 @@
 import logging
-import sys
 from threading import Thread
 from queue import Queue
 from problem_definition.problem_definition import ProblemDefinition
@@ -27,7 +26,7 @@ class TaskScheduler:
         self.assigned_tasks = set()
         self.services = set()
         self.keep_running = False
-        self.kb_location = "http://192.168.5.26:8001"
+        self.kb_location = "http://192.168.5.18:8001"
 
     def stop(self):
         self.keep_running = False
