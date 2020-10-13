@@ -11,6 +11,7 @@ from engine.engine import TaskResult
 from problem_definition.problem_definition import ProblemDefinition
 from problem_definition.problem_definition import Domain
 from knowledge_processor.knowledge_processor import KnowledgeProcessor
+from mongodb_client.mongodb_client import MongoDBClient
 from utils.exception import *
 
 logger = logging.getLogger("ml_service")
@@ -35,6 +36,7 @@ class BaseService(metaclass=ABCMeta):
         self.engine = None
         self.problem_definition = ProblemDefinition("NullTask", Domain(dict(), dict()), dict(), [], [], [], None)
         self.knowledge_processor = KnowledgeProcessor()
+        self.DBclient = MongoDBClient()  # for local ml_data
         self.engine_thread = None
         self.configuration = None
         self.keep_running = False
@@ -42,6 +44,7 @@ class BaseService(metaclass=ABCMeta):
         self.result = False
         self.database_results_id = None
         self.knowledge_source = 'none'
+        self.knowledge = False
 
         # 15s timeout for xmlrpc clinet:
         socket.setdefaulttimeout(15)
@@ -76,25 +79,24 @@ class BaseService(metaclass=ABCMeta):
                 self.centroid = None
             elif knowledge_source["mode"] == 'local':
                 logger.debug("base_service.initialize(): get local knowlege")
-                knowledge = self.knowledge_processor.get_local_knowledge(self.problem_definition.get_task_identity())
-                if knowledge:
+                self.knowledge = self.knowledge_processor.get_local_knowledge(self.problem_definition.get_task_identity())
+                if self.knowledge:
                     self.centroid = []
-                    for key in knowledge["parameters"]:
-                        self.centroid.append(knowledge["parameters"][key])   
+                    for key in self.knowledge["parameters"]:
+                        self.centroid.append(self.knowledge["parameters"][key])   
                     logger.debug("base_service.initialize(): Use local knowledge "+str(self.centroid))
             elif knowledge_source["mode"] == 'global':
                 logger.debug("base_service.initialize(): get global knowlege")
-                knowledge = False
                 with ServerProxy(knowledge_source["kb_location"]) as kb:
                     try:
-                        knowledge = kb.get_knowledge(self.problem_definition.get_task_identity())
+                        self.knowledge = kb.get_knowledge(self.problem_definition.get_task_identity())
                     except socket.timeout:
                         logger.error("base_service: global Database is not reachable!")
 
-                if knowledge:
+                if self.knowledge:
                     self.centroid = []
-                    for key in knowledge["parameters"]:
-                        self.centroid.append(knowledge["parameters"][key])
+                    for key in self.knowledge["parameters"]:
+                        self.centroid.append(self.knowledge["parameters"][key])
                     logger.debug("base_service.initialize(): Use global knowledge "+str(self.centroid))
 
         self.engine = Engine(agents)
@@ -113,20 +115,29 @@ class BaseService(metaclass=ABCMeta):
             result = False
         self.keep_running = False
         self.result = result
+
         # update knowledge bases:
         self.knowledge_processor.process_knowledge(self.problem_definition.get_task_identity())  # process knowledge and stores it to local db
+        ml_data = self.DBclient.read("ml_results",self.problem_definition.task_type,{"_id":self.database_results_id})
+        if len(ml_data) != 1:
+            logger.error("base_service.learn_task: cannot find ml_results on local database to copy them to global database")
+            return False
+        ml_data[0]["meta"]["init_knowledge"] = dict()
+        ml_data[0]["meta"]["init_knowledge"]["content"] = self.knowledge
+        ml_data[0]["meta"]["init_knowledge"]["source"] = self.knowledge_source
         if self.knowledge_source is not None:
             if self.knowledge_source["mode"] == "global":
-                ml_data = self.knowledge_processor.get_ml_results({"_id":self.database_results_id}, self.problem_definition.task_type)
-                if len(ml_data) == 1:
-                    logger.debug("base_service.learn_task: store ml_results to global database at "+str(self.knowledge_source["kb_location"]))
-                    with ServerProxy(self.knowledge_source["kb_location"]) as kb:
-                        try:
-                            kb.store_result(ml_data[0])
-                        except socket.timeout:
-                            logger.error("base_service: global Database is not reachable!")
-                else:
-                    logger.error("base_service.learn_task: cannot find ml_results on local database to copy them to global database")
+                logger.debug("base_service.learn_task: store ml_results to global database at "+str(self.knowledge_source["kb_location"]))
+                with ServerProxy(self.knowledge_source["kb_location"], allow_none=True) as kb:
+                    try:
+                        kb.store_result(ml_data[0])
+                    except socket.timeout:
+                        logger.error("base_service: global Database is not reachable!")
+                self.DBclient.update("ml_results",self.problem_definition.task_type,{"_id":self.database_results_id},ml_data[0])
+            else: # mode = "local" or "none"
+                self.DBclient.update("ml_results",self.problem_definition.task_type,{"_id":self.database_results_id},ml_data[0])
+        else: # update ml_results anyway
+            self.DBclient.update("ml_results",self.problem_definition.task_type,{"_id":self.database_results_id},ml_data[0])
         return result
 
     def stop(self):

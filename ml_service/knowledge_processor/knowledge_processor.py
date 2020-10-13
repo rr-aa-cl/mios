@@ -6,8 +6,6 @@ from datetime import datetime
 from mongodb_client.mongodb_client import MongoDBClient
 from sklearn.cluster import DBSCAN
 
-import pprint
-
 logger = logging.getLogger("ml_service")
 
 class ClusterProcessor():
@@ -51,12 +49,6 @@ class ClusterProcessor():
                 
             clusters.append(cluster)
 
-
-        #for i,cluster in enumerate(clusters):
-        #    print("cluster",i," length:",len(cluster))
-        #    for trial in cluster:
-        #        print(trial["cost"])
-        #    print("\n")
         return clusters
 
     def rank_cluster(self, clusters):
@@ -250,7 +242,7 @@ class KnowledgeProcessor():
         meta["optimum_weights"] = task_identity["optimum_weights"]
         meta["task_type"] = task_identity["task_type"]
         meta["tags"] = task_identity["tags"]
-        meta["time"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        meta["time"] = datetime.now().strftime("%d/%m/%Y %H:%M")
         knowledge = {"parameters":parameter_dict, 
                      "meta": meta
                      }
@@ -321,13 +313,24 @@ class KnowledgeProcessor():
         most_similar_task = None
         smallest_dist = float('inf')
         for task in tasks:
-            if "cost_function" not in task.keys():
-                logger.debug("knowledge_processor.get_most_similar_task: skipping old task format")
+            temp_optimum_weights = None
+            if "cost_function" in task["meta"].keys():
+                temp_optimum_weights = task["meta"]["cost_function"]["optimum_weights"]
+            elif "optimum_weights" in task["meta"].keys():
+                temp_optimum_weights = task["meta"]["optimum_weights"]
+            else:
+                logger.debug("knowledge_processor.get_most_similar_task: skipping faulty task format")
                 continue
+
             # use euclidean distance as similarity measure:  sqrt(sum( (a-b)**2 ))
-            dist = np.linalg.norm(np.array(optimum_weights)-np.array(task["meta"]["cost_function"]["optimum_weights"]))
+            dist = np.linalg.norm(np.array(optimum_weights)-np.array(temp_optimum_weights))
+
             if dist < smallest_dist:
                 smallest_dist = dist
                 most_similar_task = task
-        logger.debug("knowledge_processor.get_most_similar_task: found most similar task under "+str(len(tasks))+" tasks")
+
+        if most_similar_task is not None:
+            logger.debug("knowledge_processor.get_most_similar_task: found most similar task under "+str(len(tasks))+" tasks")
+        else:
+            logger.debug("knowledge_processor.get_most_similar_task: Cant find similar task!")
         return most_similar_task
