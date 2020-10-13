@@ -5,6 +5,7 @@ import numpy as np
 
 class KGLinearRegressor(KnowledgeGeneralizerBase):
     def __init__(self):
+        super().__init__()
         self.linear_regressor = linear_model.LinearRegression()
 
     def fit_data(self, x: np.ndarray, y: np.ndarray):
