@@ -88,6 +88,8 @@ class MongoDBClient():
         col = db_connection[collection]
         if isinstance(search_param, dict):
             if isinstance(new_param, dict):
+                if new_param.get("_id",False):
+                    new_param.pop("_id")
                 new_param_set = {"$set": new_param}
                 col.update_one(search_param, new_param_set)
             else:

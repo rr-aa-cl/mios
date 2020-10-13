@@ -53,6 +53,7 @@ class Plotter:
         ax.plot(time,np.linspace(1,len(time),len(time)),label=legend)
         ax.set_ylabel("task [1]")
         ax.set_xlabel("time [s]")
+        ax.grid()
         if legend is not None:
             ax.legend()
         
