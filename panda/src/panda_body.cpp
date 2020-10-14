@@ -17,6 +17,7 @@ m_memory(memory){
 }
 
 bool PandaBody::initialize(){
+    spdlog::trace("PandaBody::initialize()");
     m_has_arm=m_memory->read_parameters()->system.has_robot;
     m_hand=m_memory->read_parameters()->system.gripper;
     m_memory->get_parameters()->system.robot_ip = get_robot_ip(m_memory->read_parameters()->system.robot_ip).value_or("127.0.0.1");
@@ -35,6 +36,7 @@ bool PandaBody::initialize(){
 }
 
 std::optional<std::string> PandaBody::get_robot_ip(const std::optional<std::string>& last_ip){
+    spdlog::trace("PandaBody::get_robot_ip()");
     if(!m_has_arm && m_hand!=PandaHandDefault){
         return {};
     }
@@ -58,6 +60,7 @@ std::optional<std::string> PandaBody::get_robot_ip(const std::optional<std::stri
 }
 
 void PandaBody::load_gripper_configuration(){
+    spdlog::trace("PandaBody::load_gripper_configuration()");
     if(m_hand==PandaHandDefault){
         m_memory->get_parameters()->frames.F_T_EE<<0.7071,-0.7071,0,0,0.7071,0.7071,0,0,0,0,1,0,0,0,0.1034,1;
         m_memory->get_parameters()->frames.F_T_EE.transposeInPlace();
@@ -68,6 +71,7 @@ void PandaBody::load_gripper_configuration(){
 }
 
 bool PandaBody::connect_to_robot(const std::optional<std::string> &ip){
+    spdlog::trace("PandaBody::connect_to_robot()");
     if(!m_has_arm){
         m_arm_connected=false;
         return true;
@@ -97,6 +101,7 @@ bool PandaBody::connect_to_robot(const std::optional<std::string> &ip){
 }
 
 bool PandaBody::connect_to_gripper(const std::optional<std::string> &ip){
+    spdlog::trace("PandaBody::connect_to_gripper()");
     if(m_hand==PandaHandNone){
         m_hand_connected=false;
         return true;
@@ -133,12 +138,14 @@ bool PandaBody::connect_to_gripper(const std::optional<std::string> &ip){
 }
 
 void PandaBody::disconnect_from_robot(){
+    spdlog::trace("PandaBody::disconnect_from_robot()");
     m_arm_connected=false;
     m_panda_model.release();
     m_panda_arm.release();
 }
 
 void PandaBody::disconnect_from_gripper(){
+    spdlog::trace("PandaBody::disconnect_from_gripper()");
     m_hand_connected=false;
     if(m_hand==PandaHandDefault){
         m_panda_hand.release();
@@ -149,6 +156,7 @@ void PandaBody::disconnect_from_gripper(){
 }
 
 bool PandaBody::recover(){
+    spdlog::trace("PandaBody::recover()");
     if(!m_arm_connected){
         return true;
     }
@@ -165,6 +173,7 @@ bool PandaBody::recover(){
 }
 
 bool PandaBody::pre_run_checks() const{
+    spdlog::trace("PandaBody::pre_run_checks()");
     franka::RobotState state;
     if(!get_robot_state(state)){
         return false;
@@ -176,8 +185,8 @@ bool PandaBody::pre_run_checks() const{
 }
 
 bool PandaBody::is_robot(const std::string &ip){
+    spdlog::trace("PandaBody::is_robot()");
     try{
-        spdlog::debug("panda_body: is_robot("+ip+")");
         std::unique_ptr<franka::Robot> robot =  std::make_unique<franka::Robot>(ip);
         return true;
     }catch(const franka::NetworkException& e){
@@ -192,11 +201,11 @@ bool PandaBody::is_robot(const std::string &ip){
 }
 
 std::optional<std::string> PandaBody::find_robot(){
+    spdlog::trace("PandaBody::find_robot()");
     std::optional<std::string> robot_address={};
     std::string robot_iface="none";
 
     std::map<std::string,std::string> ifaces = msrm_utils::get_subnets();
-    spdlog::debug("panda_body: find_robot");
     for(const auto& i : ifaces){
         if(i.first=="lo" || i.first=="docker0" || i.first=="tap0"){
             continue;
