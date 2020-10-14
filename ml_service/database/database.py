@@ -1,4 +1,4 @@
-from knowledge_processor.knowledge_processor import KnowledgeProcessor
+from knowledge_processor.knowledge_manager import KnowledgeManager
 from mongodb_client.mongodb_client import MongoDBClient
 from socketserver import ThreadingMixIn
 
@@ -22,7 +22,7 @@ class Database():
 
         self.rpc_server = None
         self.db_client = MongoDBClient()
-        self.knowledge_processor = KnowledgeProcessor()
+        self.knowledge_manager = KnowledgeManager()
         self.port = port
 
         self.stop = False
@@ -34,7 +34,6 @@ class Database():
         self.rpc_server.register_function(self.store_result, "store_result")
         self.rpc_server.register_function(self.get_knowledge, "get_knowledge")
         self.rpc_server.register_function(self.process_knowledge, "process_knowledge")
-        self.rpc_server.register_function(self.process_knowledge_local, "process_knowledge_local")
         self.rpc_server.register_function(self.stop_server, "stop_server")
         logger.debug("databse.start_server: starting rpc server with global database at port "+str(self.port))
         #self.rpc_server.serve_forever()
@@ -63,22 +62,15 @@ class Database():
     def get_knowledge(self, task_identity:dict):
         """return knowledge from single task found on database"""
         # use knowledge processor to look up/generate global knowledge:
-        knowledge = self.knowledge_processor.get_local_knowledge(task_identity,knowledge_db=self.task_knowledge_db_name,data_db=self.results_db_name)
+        knowledge = self.knowledge_manager.get_local_knowledge(task_identity,knowledge_db=self.task_knowledge_db_name,data_db=self.results_db_name)
         return knowledge
 
     def process_knowledge(self, task_identity: dict):
         """process raw ml data on the database to knowledge and saves it on the database"""
-        id = self.knowledge_processor.process_knowledge(task_identity, self.results_db_name, self.task_knowledge_db_name)
+        id = self.knowledge_manager.process_knowledge(task_identity, self.results_db_name, self.task_knowledge_db_name)
         if id is False:
             logger.error("Database.process_knowledge: Cant process knowledge!")
         return id
-
-    def process_knowledge_local(self, filter: dict, task_type: str):
-        """process raw ml data on the database to knowledge and return it without saving it to the database"""
-        knowledge = self.knowledge_processor.process_knowledge_local(filter,self.results_db_name, task_type)
-        if knowledge is False:
-            logger.error("Database.process_knowledge: Cant process knowledge!")
-        return knowledge
 
     def stop_server(self):
         logger.debug("database.stop_server")

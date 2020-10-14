@@ -10,7 +10,7 @@ from engine.engine import Trial
 from engine.engine import TaskResult
 from problem_definition.problem_definition import ProblemDefinition
 from problem_definition.problem_definition import Domain
-from knowledge_processor.knowledge_processor import KnowledgeProcessor
+from knowledge_processor.knowledge_manager import KnowledgeManager
 from mongodb_client.mongodb_client import MongoDBClient
 from utils.exception import *
 
@@ -35,7 +35,7 @@ class BaseService(metaclass=ABCMeta):
 
         self.engine = None
         self.problem_definition = ProblemDefinition("NullTask", Domain(dict(), dict()), dict(), [], [], [], None)
-        self.knowledge_processor = KnowledgeProcessor()
+        self.knowledge_manager = KnowledgeManager()
         self.DBclient = MongoDBClient()  # for local ml_data
         self.engine_thread = None
         self.configuration = None
@@ -47,7 +47,7 @@ class BaseService(metaclass=ABCMeta):
         self.knowledge = False
 
         # 15s timeout for xmlrpc clinet:
-        socket.setdefaulttimeout(15)
+        socket.setdefaulttimeout(3)
 
 
     @abstractmethod
@@ -79,7 +79,7 @@ class BaseService(metaclass=ABCMeta):
                 self.centroid = None
             elif knowledge_source["mode"] == 'local':
                 logger.debug("base_service.initialize(): get local knowlege")
-                self.knowledge = self.knowledge_processor.get_local_knowledge(self.problem_definition.get_task_identity())
+                self.knowledge = self.knowledge_manager.get_local_knowledge(self.problem_definition.get_task_identity())
                 if self.knowledge:
                     self.centroid = []
                     for key in self.knowledge["parameters"]:
@@ -117,7 +117,7 @@ class BaseService(metaclass=ABCMeta):
         self.result = result
 
         # update knowledge bases:
-        self.knowledge_processor.process_knowledge(self.problem_definition.get_task_identity())  # process knowledge and stores it to local db
+        self.knowledge_manager.process_knowledge(self.problem_definition.get_task_identity())  # process knowledge and stores it to local db
         ml_data = self.DBclient.read("ml_results",self.problem_definition.task_type,{"_id":self.database_results_id})
         if len(ml_data) != 1:
             logger.error("base_service.learn_task: cannot find ml_results on local database to copy them to global database")

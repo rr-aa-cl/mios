@@ -104,3 +104,7 @@ class MongoDBClient():
         db_connection = self.client[db]
         col = db_connection[collection]
         col.drop()
+
+    def get_collections(self, db:str) -> list:
+        db_connection = self.client[db]
+        return db_connection.list_collection_names(filter={})

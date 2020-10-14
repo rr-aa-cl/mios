@@ -61,7 +61,7 @@ class KnowledgeProcessor():
         self.DBclient = MongoDBClient(host, port)
         self.cluster_processor = ClusterProcessor()
         self.data_db = "ml_results"
-        self.knowledge_db = "knowledge"
+        self.knowledge_db = "local_knowledge"
 
     def process_knowledge(self, task_identity: dict, data_db:str = "ml_results", knowledge_db:str = "local_knowledge", knowledge_tags:list = []) -> str("_id"):
         '''process raw data from trials to knowledge; working from and on the database'''
@@ -87,7 +87,7 @@ class KnowledgeProcessor():
         logger.debug("knowledge_processor: read raw data")
         metainfo = []
         if len(doc) > 1:
-            logger.info("WARNING: process knowledge for more tasks")
+            logger.info("WARNING: process knowledge from more tasks")
 
             alltrials = []
             for d in doc:
@@ -270,8 +270,16 @@ class KnowledgeProcessor():
         if knowledge:
             return knowledge
 
-        logger.debug("knowledge_processor.get_local_knowledge(): found none! -> create knowledge from most similar ml data")
+        logger.debug("knowledge_processor.get_local_knowledge(): found none! -> create knowledge from most similar ml data of task type " + str(collection))
         docs = self.DBclient.read(data_db, collection, knowledge_filter)
+        if len(docs) >= 1:
+            return self.get_most_similar_task(optimum_weights,docs)
+        
+        logger.debug("knowledge_processor.get_local_knowledge(): found no ml data of task type " + str(collection) +" -> search for different task types")
+        knowledge_filter = {  "meta.tags":task_identity["tags"]}   
+        docs = []  
+        for col in self.DBclient.get_collections(self.knowledge_db):
+            docs.extend(self.DBclient.read(data_db, col, knowledge_filter))
         if len(docs) >= 1:
             return self.get_most_similar_task(optimum_weights,docs)
 

@@ -2,7 +2,7 @@ import logging
 import time
 import sys
 import numpy as np
-from knowledge_processor.knowledge_processor import KnowledgeProcessor
+from knowledge_processor.knowledge_manager import KnowledgeManager
 from services.basinhopping import BasinhoppingService
 from services.cmaes import *
 from interface.interface import Interface
@@ -107,13 +107,13 @@ def test_server_connection(host):
 def test_knowledge_use(knowledge_mode = "global"):  
     import time 
     #create knowledge from old task:
-    k = KnowledgeProcessor()
+    k = KnowledgeManager()
     #k.process_knowledge({"meta.tags":["test_sequence_1","test_sequence_2","test_sequence_3"]},"ml_results","benchmark_rastrigin","local_knowledge","benchmark_rastrigin",["test_knowledge","some_tag"])
 
     #start global database:
     interface = Interface()
     time.sleep(1)
-    interface.stop_global_database()
+    #interface.stop_global_database()
 
     time.sleep(1)
 
