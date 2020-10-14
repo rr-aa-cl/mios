@@ -17,6 +17,7 @@ m_memory(memory){
 }
 
 bool PandaBody::initialize(){
+    spdlog::trace("PandaBody::initialize()");
     m_has_arm=m_memory->read_parameters()->system.has_robot;
     m_hand=m_memory->read_parameters()->system.gripper;
     m_memory->get_parameters()->system.robot_ip = get_robot_ip(m_memory->read_parameters()->system.robot_ip).value_or("127.0.0.1");
@@ -35,6 +36,7 @@ bool PandaBody::initialize(){
 }
 
 std::optional<std::string> PandaBody::get_robot_ip(const std::optional<std::string>& last_ip){
+    spdlog::trace("PandaBody::get_robot_ip()");
     if(!m_has_arm && m_hand!=PandaHandDefault){
         return {};
     }
@@ -58,6 +60,7 @@ std::optional<std::string> PandaBody::get_robot_ip(const std::optional<std::stri
 }
 
 void PandaBody::load_gripper_configuration(){
+    spdlog::trace("PandaBody::load_gripper_configuration()");
     if(m_hand==PandaHandDefault){
         m_memory->get_parameters()->frames.F_T_EE<<0.7071,-0.7071,0,0,0.7071,0.7071,0,0,0,0,1,0,0,0,0.1034,1;
         m_memory->get_parameters()->frames.F_T_EE.transposeInPlace();
@@ -68,6 +71,7 @@ void PandaBody::load_gripper_configuration(){
 }
 
 bool PandaBody::connect_to_robot(const std::optional<std::string> &ip){
+    spdlog::trace("PandaBody::connect_to_robot()");
     if(!m_has_arm){
         m_arm_connected=false;
         return true;
@@ -97,6 +101,7 @@ bool PandaBody::connect_to_robot(const std::optional<std::string> &ip){
 }
 
 bool PandaBody::connect_to_gripper(const std::optional<std::string> &ip){
+    spdlog::trace("PandaBody::connect_to_gripper()");
     if(m_hand==PandaHandNone){
         m_hand_connected=false;
         return true;
@@ -133,12 +138,14 @@ bool PandaBody::connect_to_gripper(const std::optional<std::string> &ip){
 }
 
 void PandaBody::disconnect_from_robot(){
+    spdlog::trace("PandaBody::disconnect_from_robot()");
     m_arm_connected=false;
     m_panda_model.release();
     m_panda_arm.release();
 }
 
 void PandaBody::disconnect_from_gripper(){
+    spdlog::trace("PandaBody::disconnect_from_gripper()");
     m_hand_connected=false;
     if(m_hand==PandaHandDefault){
         m_panda_hand.release();
@@ -149,6 +156,7 @@ void PandaBody::disconnect_from_gripper(){
 }
 
 bool PandaBody::recover(){
+    spdlog::trace("PandaBody::recover()");
     if(!m_arm_connected){
         return true;
     }
@@ -165,6 +173,7 @@ bool PandaBody::recover(){
 }
 
 bool PandaBody::pre_run_checks() const{
+    spdlog::trace("PandaBody::pre_run_checks()");
     franka::RobotState state;
     if(!get_robot_state(state)){
         return false;
@@ -176,8 +185,8 @@ bool PandaBody::pre_run_checks() const{
 }
 
 bool PandaBody::is_robot(const std::string &ip){
+    spdlog::trace("PandaBody::is_robot()");
     try{
-        spdlog::debug("panda_body: is_robot("+ip+")");
         std::unique_ptr<franka::Robot> robot =  std::make_unique<franka::Robot>(ip);
         return true;
     }catch(const franka::NetworkException& e){
@@ -192,11 +201,11 @@ bool PandaBody::is_robot(const std::string &ip){
 }
 
 std::optional<std::string> PandaBody::find_robot(){
+    spdlog::trace("PandaBody::find_robot()");
     std::optional<std::string> robot_address={};
     std::string robot_iface="none";
 
     std::map<std::string,std::string> ifaces = msrm_utils::get_subnets();
-    spdlog::debug("panda_body: find_robot");
     for(const auto& i : ifaces){
         if(i.first=="lo" || i.first=="docker0" || i.first=="tap0"){
             continue;
@@ -581,7 +590,6 @@ bool PandaBody::start_desk_task(const std::string &task,const std::optional<std:
     disconnect_from_robot();
 
     bool result;
-    pybind11::initialize_interpreter();
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object py_result = desk_client.attr("start_task")(ip.value(), user, password, task);
@@ -591,7 +599,6 @@ bool PandaBody::start_desk_task(const std::string &task,const std::optional<std:
         spdlog::warn("Cannot start desk task, error when calling the python desk client.");
         result=false;
     }
-    pybind11::finalize_interpreter();
 
     if(result){
         wait_for_desk_task(ip,user,password);
@@ -609,7 +616,6 @@ bool PandaBody::start_desk_task(const std::string &task,const std::optional<std:
 bool PandaBody::stop_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string& password){
     nlohmann::json response;
     bool result;
-//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object py_result = desk_client.attr("stop_task")(ip.value(), user, password);
@@ -624,7 +630,6 @@ bool PandaBody::stop_desk_task(const std::optional<std::string> &ip, const std::
 
 void PandaBody::wait_for_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string& password){
     bool result;
-//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         while(true){
@@ -649,7 +654,6 @@ bool PandaBody::shutdown_robot(const std::optional<std::string> &ip, const std::
     disconnect_from_robot();
 
     bool result;
-//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object py_result = desk_client.attr("shutdown")(ip.value(), user, password);
@@ -663,11 +667,8 @@ bool PandaBody::shutdown_robot(const std::optional<std::string> &ip, const std::
 }
 
 bool PandaBody::unlock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password){
-    disconnect_from_gripper();
-    disconnect_from_robot();
 
     bool result;
-//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object py_result = desk_client.attr("unlock_brakes")(ip.value(), user, password);
@@ -678,22 +679,12 @@ bool PandaBody::unlock_brakes(const std::optional<std::string> &ip, const std::s
         result=false;
     }
 
-    if(!this->connect_to_robot(get_robot_ip(ip))){
-        return false;
-    }
-    if(!this->connect_to_gripper(get_robot_ip(ip))){
-        return false;
-    }
     return result;
 }
 
 bool PandaBody::lock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password){
 
-    disconnect_from_gripper();
-    disconnect_from_robot();
-
     bool result;
-//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object py_result = desk_client.attr("lock_brakes")(ip.value(), user, password);
@@ -703,12 +694,6 @@ bool PandaBody::lock_brakes(const std::optional<std::string> &ip, const std::str
         spdlog::warn("Cannot lock brakes, error when calling the python desk client.");
         result=false;
     }
-    if(!this->connect_to_robot(get_robot_ip(ip))){
-        return false;
-    }
-    if(!this->connect_to_gripper(get_robot_ip(ip))){
-        return false;
-    }
     return result;
 }
 
@@ -717,7 +702,6 @@ bool PandaBody::move_to_pack_pose(const std::optional<std::string> &ip, const st
     disconnect_from_robot();
 
     bool result;
-//    pybind11::scoped_interpreter guard{};
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object py_result = desk_client.attr("pack_pose")(ip.value(), user, password);
@@ -841,26 +825,6 @@ void PandaBody::get_default_robot_state(franka::RobotState &state) const{
 
 void PandaBody::get_default_gripper_state(franka::GripperState &state) const{
     state=m_gripper_state;
-}
-
-void PandaBody::call_desk(const std::string& function, const std::string &ip, const std::string &user, const std::string &password){
-//    pybind11::scoped_interpreter guard{};
-    pybind11::module desk_client = pybind11::module::import("desk_client.py");
-    pybind11::object py_result = desk_client.attr(function.c_str())(ip, user, password);
-    bool result = py_result.cast<bool>();
-    //    FILE* file;
-    //    int argc;
-    //    char * argv[5];
-
-    //    argc = 5;
-    //    argv[0] = "desk_client.py";
-    //    argv[1] = "-f";
-    //    Py_SetProgramName("desk_client");
-    //    Py_Initialize();
-    //    file = fopen("../python/desk/desk_client.py","r");
-    //    PyRun_SimpleFile(file, "../python/desk/desk_client.py");
-    //    Py_Finalize();
-    //    fclose(file);
 }
 
 }

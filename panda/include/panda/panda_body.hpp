@@ -71,7 +71,6 @@ private:
     std::optional<std::string> find_robot();
     void get_default_robot_state(franka::RobotState& state) const;
     void get_default_gripper_state(franka::GripperState& state) const;
-    void call_desk(const std::string& function,const std::string &ip, const std::string &user, const std::string &password);
 
 private:
     std::unique_ptr<franka::Robot> m_panda_arm;
