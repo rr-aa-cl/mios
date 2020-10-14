@@ -11,14 +11,11 @@ bool SkillParametersMLTestSkill::from_json(const nlohmann::json &parameters){
     if(!msrm_utils::read_json_param(parameters,"A",A)){
         A=10;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"weights",weights)){
-        weights<<1,0;
-    }
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersMLTestSkill::get_parameter_list(){
-    return {{"x",{}},{"A",{}},{"weights",{}}};
+    return {{"x",{}},{"A",{}}};
 }
 
 MLTestSkill::MLTestSkill(const std::string& id, Memory *memory,Portal* portal):Skill("MLTestSkill",{},id,memory,portal,{ControlMode::mJointVelocity}){
@@ -35,20 +32,24 @@ std::shared_ptr<ManipulationPrimitive> MLTestSkill::get_initial_mp(const Percept
 bool MLTestSkill::check_local_suc_conditions(const Percept& p){
     return true;
 }
-double MLTestSkill::get_custom_cost(const Percept &p){
+
+SkillCost MLTestSkill::measure_cost(const Percept &p){
     std::shared_ptr<SkillParametersMLTestSkill> params = get_parameters<SkillParametersMLTestSkill>();
     double y1=0;
     double y2=0;
+    // Rastrigin benchmark function
     for(unsigned i=0;i<params->x.rows();i++){
         y1+=pow(params->x(i),2)-params->A*cos(2*M_PI*params->x(i));
     }
     y1+=params->A*params->x.rows();
+    // Sphere benchmark function
     for(unsigned i=0;i<params->x.rows();i++){
         y2+=pow(params->x(i),2);
     }
-    double y=params->weights(0)*y1+params->weights(1)*y2;
-    spdlog::info("MLTestSkill: Costs are " + std::to_string(y));
-    return y;
+    SkillCost cost;
+    cost.time=y1;
+    cost.contact_forces=y2;
+    return cost;
 }
 
 }

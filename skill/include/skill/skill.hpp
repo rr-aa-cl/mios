@@ -252,6 +252,8 @@ protected:
     virtual void update_internal_models(const Percept &p);
     virtual void update_policies(const Percept& p);
     virtual double get_goal_heuristic(const Percept& p);
+    virtual SkillCost measure_cost(const Percept& p);
+    virtual double get_custom_cost(const Percept& p);
 
 private:
     std::shared_ptr<ManipulationPrimitive> m_active_mp;
@@ -261,8 +263,6 @@ private:
     void stop_parallels();
     void terminate_parallels();
     bool has_settled();
-    SkillCost measure_cost(const Percept& p);
-    virtual double get_custom_cost(const Percept& p);
 
     std::unordered_map<std::string,std::shared_ptr<ManipulationPrimitive> > m_mp_graph;
     std::string m_init_mp;
