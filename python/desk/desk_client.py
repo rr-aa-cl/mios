@@ -43,10 +43,6 @@ class FrankaAPI:
         return self._client.getresponse().read()
 
     def unlock_brakes(self):
-        print('Unlock brakes')
-        print(self._hostname)
-        print(self._user)
-        print(self._password)
         self._client.request('POST', '/desk/api/robot/open-brakes',
                              headers={'content-type': 'application/x-www-form-urlencoded',
                                       'Cookie': 'authorization=%s' % self._token})
