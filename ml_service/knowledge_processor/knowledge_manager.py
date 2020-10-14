@@ -5,6 +5,8 @@ import time
 from mongodb_client.mongodb_client import MongoDBClient
 from knowledge_processor.knowledge_processor_v2 import KnowledgeProcessor
 from knowledge_processor.kg_linear_regression import KGLinearRegressor
+from knowledge_processor.kg_svm import KGSVM
+from knowledge_processor.kg_random_forest import KGRandomForest
 from sklearn.cluster import DBSCAN
 
 logger = logging.getLogger("ml_service")
@@ -14,7 +16,7 @@ class KnowledgeManager():
         self.DBclient = MongoDBClient(host, port)
         self.data_db = "ml_results"
         self.knowledge_db = "local_knowledge"
-        self.predictor = KGLinearRegressor()
+        self.predictor = KGRandomForest() # KGSVM() # KGLinearRegressor()
 
     def collect_data(self, task_identity, data_db:str = "ml_results") -> list:
         if data_db.find("knowledge") == -1:  #  if collecting raw data (no knowledge)
@@ -104,8 +106,9 @@ class KnowledgeManager():
         training_data_x = []
         training_data_y = []
         for doc in docs:
-            if doc["meta"].get("optimum_weights", True):
+            if not doc["meta"].get("optimum_weights", False):
                 logger.error("KnowledgeManager: found invalid knowledge (no key \"optimum_weights\" in meta)")
+                continue
             training_data_x.append(np.array(doc["meta"]["optimum_weights"]))
             training_data_y.append(np.array(self.dict_to_list(doc["parameters"])))
         return np.array(training_data_x), np.array(training_data_y)
@@ -132,7 +135,7 @@ class KnowledgeManager():
             if vector_mapping != d["parameters"].keys():
                 logger.error("KnowledgeManager.predict_knowledge: found knowledge doesnt fit together: different vector mappings!")
                 return False
-        # traun
+        # train
         training_data = self.get_training_data(doc)
         self.predictor.fit_data(training_data[0], training_data[1])
         # predict

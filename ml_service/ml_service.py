@@ -132,12 +132,12 @@ def test_knowledge_use(knowledge_mode = "global"):
     interface.stop_service()
 
 
-def test_plotting():
-
+def test_plotting(tags):
     hosts = ["collective-panda-001.local"]  #,"collective-panda-002.local","collective-panda-007.local","collective-panda-008.local","collective-panda-009.local"]
-    filter = {"meta.tags": ["collective_learning_exp003"]}
+    filter = {"meta.tags": tags}
     knowledge_mode = "global"
-    task_type = "insert_object"
+    #task_type = "insert_object"
+    task_type = "benchmark_rastrigin"
 
     p = DataProcessor()
     plot = Plotter()
@@ -153,6 +153,30 @@ def test_plotting():
         agent_times_cum = p.get_cumulative_time(agent_results)  
         plot.plot_learning_over_task(agent_times_cum, agent)
 
-    
+def test_generalizer():
 
+    task_name = "rastrigin_8"
+    task_identity = {
+        "tags": ["collective_learning_benchmark_003", task_name],
+        "task_type": "benchmark_rastrigin",
+        "optimum_weights":[1,0,0,0,0]
+    }
+    
+    manager = KnowledgeManager(host = "192.168.5.19")
+    prediction = manager.predict_knowledge(task_identity,"global_knowledge")
+    ground_truth = {
+    "x1" : 0.66452131435048,
+    "x2" : 1.52888118354614,
+    "x3" : 0.0722310931933499,
+    "x4" : -3.08640408410583,
+    "x5" : 0.922661770332197,
+    "x6" : -1.05747043156139
+    }
+    print(prediction["parameters"])
+    print("vs")
+    print(ground_truth)
+    e=0
+    for key in prediction["parameters"].keys():
+        e = e+ abs(prediction["parameters"][key] - ground_truth[key])
+    print("error: ",e)
 
