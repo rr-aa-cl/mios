@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import logging
 import sys
-from experiments.collective_learning import CollectiveLearningBase
+#from experiments.collective_learning import CollectiveLearningBase
+from experiments.collective_learning_test import CollectiveLearningBase
 
 
 logger = logging.getLogger("ml_service")
@@ -13,6 +14,6 @@ logger.addHandler(handler)
 
 if __name__ == "__main__":
     e = CollectiveLearningBase()
-    e.start(["collective_learning_exp_005"], "global")
+    e.start(["collective_learning_benchmark_003"], "global")
     input("Press key to stop.")
     e.stop()

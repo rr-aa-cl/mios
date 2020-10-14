@@ -23,8 +23,12 @@ def rastrigin():
     domain = Domain(limits, context_mapping)
     default_context = {
         "name": "LearnerTest",
-        "parameters": {
-            "weights": [1, 0]
+        "skills": {
+            "ml_test": {
+                "skill": {
+                    "A": 10
+                }
+            }
         }
     }
     pd = ProblemDefinition("benchmark_rastrigin", domain, default_context, [], [], [], rastrigin_cost(),
@@ -35,9 +39,11 @@ def rastrigin():
 def rastrigin_cost():
     c = CostFunction()
     c.optimum_skills.append("ml_test")
-    c.optimum_weights[4] = 1
-    c.max_cost[4] = 100
-    c.min_cost[4] = 50
+    c.optimum_weights[0] = 1
+    c.max_cost[0] = 100
+    c.min_cost[0] = 20
+    c.max_cost[1] = 100
+    c.min_cost[1] = 20
     c.finish_thr = 3
     return c
 

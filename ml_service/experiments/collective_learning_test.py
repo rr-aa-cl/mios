@@ -5,7 +5,17 @@ from task_scheduler.task_scheduler import Task
 from problem_definition.problem_definition import ProblemDefinition
 from services.base_service import ServiceConfiguration
 from definitions import rastrigin
+from experiments.experiment_base import Experiment
+from utils.udp_client import *
 import copy
+import random
+
+
+def rastrigin_a(a: float):
+    pd = rastrigin()
+    pd.default_context["skills"]["ml_test"]["skill"]["A"] = a
+    pd.tags = ["rastrigin_" + str(int(a))]
+    return pd
 
 
 class TestCreationPipeline(CreationPipeline):
@@ -15,22 +25,32 @@ class TestCreationPipeline(CreationPipeline):
     def create_tasks_from_template(self, template: ProblemDefinition, service_configuration: ServiceConfiguration, n_tasks, service_url, agents, knowledge_mode: str):
         for i in range(n_tasks):
             t = Task(copy.deepcopy(template), service_configuration, agents, service_url, knowledge_mode)
-            t.problem_definition.default_context["parameters"]["weights"][0] = float(i+1)/float(n_tasks)
-            t.problem_definition.default_context["parameters"]["weights"][1] = 1 - t.problem_definition.default_context["parameters"]["weights"][0]
-            t.problem_definition.tags.append("collective_learning_test")
+            t.problem_definition.cost_function.optimum_weights[0] = float(i + 1) / float(n_tasks)
+            t.problem_definition.cost_function.optimum_weights[1] = 1 - \
+                                                                    t.problem_definition.cost_function.optimum_weights[
+                                                                        0]
             self.tasks.append(t)
 
+        random.shuffle(self.tasks)
 
-def test_collective_learning():
-    config = CMAESConfiguration()
-    c = TestCreationPipeline()
-    c.create_tasks_from_template(rastrigin(), config, 10, "http://localhost:8000", ["localhost"], "local")
-    c.create_tasks_from_template(rastrigin(), config, 10, "http://collective-panda-002.local:8000", ["collective-panda-002.local"], "local")
-    c.create_tasks_from_template(rastrigin(), config, 10, "http://collective-panda-007.local:8000",
-                                 ["collective-panda-007.local"], "local")
 
-    t = TaskScheduler()
-    for task in c.tasks:
-        t.add_task(task)
+class CollectiveLearningBase(Experiment):
+    def initialize(self, knowledge_mode: str):
+        config = CMAESConfiguration()
+        config.n_gen = 10
+        config.n_ind = 10
 
-    t.solve_tasks()
+        c = TestCreationPipeline()
+        n_tasks = 10
+        c.create_tasks_from_template(rastrigin_a(2), config, n_tasks, "collective-panda-007.local",
+                                     ["collective-panda-007"], knowledge_mode)
+        c.create_tasks_from_template(rastrigin_a(4), config, n_tasks, "collective-panda-001.local",
+                                     ["collective-panda-001"], knowledge_mode)
+        c.create_tasks_from_template(rastrigin_a(6), config, n_tasks, "collective-panda-008.local",
+                                     ["collective-panda-008"], knowledge_mode)
+        c.create_tasks_from_template(rastrigin_a(8), config, n_tasks, "collective-panda-002.local",
+                                     ["collective-panda-002"], knowledge_mode)
+        c.create_tasks_from_template(rastrigin_a(10), config, n_tasks, "collective-panda-009.local",
+                                     ["collective-panda-009"], knowledge_mode)
+
+        self.insert_creation_pipeline(c)
