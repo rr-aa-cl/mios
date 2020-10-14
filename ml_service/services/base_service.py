@@ -79,7 +79,7 @@ class BaseService(metaclass=ABCMeta):
                 self.centroid = None
             elif knowledge_source["mode"] == 'local':
                 logger.debug("base_service.initialize(): get local knowlege")
-                self.knowledge = self.knowledge_manager.get_local_knowledge(self.problem_definition.get_task_identity())
+                self.knowledge = self.knowledge_manager.predict_knowledge(self.problem_definition.get_task_identity())
                 if self.knowledge:
                     self.centroid = []
                     for key in self.knowledge["parameters"]:

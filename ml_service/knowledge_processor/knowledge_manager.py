@@ -17,10 +17,19 @@ class KnowledgeManager():
         self.predictor = KGLinearRegressor()
 
     def collect_data(self, task_identity, data_db:str = "ml_results") -> list:
-        result_filter = {   "meta.tags":task_identity["tags"],\
-                            "meta.cost_function.optimum_weights":task_identity["optimum_weights"],\
-                            "meta.task_type":task_identity["task_type"]
-                        }
+        if data_db.find("knowledge") == -1:  #  if collecting raw data (no knowledge)
+            result_filter = {   "meta.tags":task_identity["tags"],\
+                                "meta.cost_function.optimum_weights":task_identity["optimum_weights"],\
+                                "meta.task_type":task_identity["task_type"]}
+        else:  # if collecting knowledge:
+            if "optimum_weights" in task_identity:  
+                result_filter = {   "meta.tags":task_identity["tags"],\
+                                    "meta.optimum_weights":task_identity["optimum_weights"],\
+                                    "meta.task_type":task_identity["task_type"]}    
+            else:
+                result_filter = {   "meta.tags":task_identity["tags"],\
+                                    "meta.task_type":task_identity["task_type"]}  
+
 
         doc = self.DBclient.read(data_db, task_identity["task_type"], result_filter)
         if doc is None or len(doc) == 0:
@@ -66,6 +75,7 @@ class KnowledgeManager():
         knowledge = self.knowledge_processor.process_knowledge(successful_trials)
 
         knowledge["meta"]["knowledge_source"] = uuids
+        knowledge["meta"]["prediction"] = False
 
         return self.store_knowledge(knowledge,knowledge_db)
 
@@ -86,7 +96,54 @@ class KnowledgeManager():
         knowledge = self.knowledge_processor.process_knowledge(successful_trials)
 
         knowledge["meta"]["knowledge_source"] = uuids
+        knowledge["meta"]["prediction"] = False
 
+        return knowledge
+
+    def get_training_data(self,docs):
+        training_data_x = []
+        training_data_y = []
+        for doc in docs:
+            if doc["meta"].get("optimum_weights", True):
+                logger.error("KnowledgeManager: found invalid knowledge (no key \"optimum_weights\" in meta)")
+            training_data_x.append(np.array(doc["meta"]["optimum_weights"]))
+            training_data_y.append(np.array(self.dict_to_list(doc["parameters"])))
+        return np.array(training_data_x), np.array(training_data_y)
+
+    def predict_knowledge(self, task_identity:dict, knowledge_db: str = "local_knowledge"):
+        '''trains and uses model to predict knolwedge'''
+        #search for all tasks of same tasktype
+        task_filter = copy.deepcopy(task_identity)
+        task_filter.pop("optimum_weights")
+        doc = self.collect_data(task_filter, knowledge_db)
+
+        # check if knowledge fits together:
+        vector_mapping = doc[0]["parameters"].keys()
+        for d in doc:
+            if vector_mapping != d["parameters"].keys():
+                logger.error("KnowledgeManager.predict_knowledge: found knowledge doesnt fit together: different vector mappings!")
+                return False
+        # traun
+        training_data = self.get_training_data(doc)
+        self.predictor.fit_data(training_data[0], training_data[1])
+        # predict
+        predict_x = np.array(task_identity["optimum_weights"])
+        prediction = self.predictor.predict_data(predict_x)[0]
+        # pack information together
+        parameter_dict = {}
+        for key_name, parameter in zip(vector_mapping, prediction):
+            print(parameter)
+            parameter_dict[key_name] = float(parameter)  # use python float because of rpc restrictions
+        meta = dict()
+        meta["expected_cost"] = False
+        meta["optimum_weights"] = task_identity["optimum_weights"]
+        meta["task_type"] = task_identity["task_type"]
+        meta["tags"] = task_identity["tags"]
+        meta["time"] = time.ctime()
+        meta["prediction"] = True
+
+        knowledge = {"parameters":parameter_dict, 
+                     "meta": meta}
         return knowledge
 
     def get_local_knowledge(self, task_identity:dict, knowledge_db: str = "local_knowledge", data_db:str = "ml_results"):
@@ -180,3 +237,10 @@ class KnowledgeManager():
                 if(d[key]["success"]==True):  # if trial was successfull
                     successful_trials.append(d[key])
         return successful_trials
+    
+    def dict_to_list(self, d):
+        '''returns a list with dict contents'''
+        l = []
+        for key in d.keys():
+            l.append(d[key])
+        return l

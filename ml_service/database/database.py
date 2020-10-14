@@ -17,7 +17,6 @@ class Database():
     def __init__(self, port):
         # Database names:
         self.task_knowledge_db_name = "global_knowledge"            # knowledge of single tasks
-        self.general_knowledge_db_name = "global_general_knowledge" # generalized knowledge of multiple tasks
         self.results_db_name = "global_ml_results"                  # raw result data
 
         self.rpc_server = None
@@ -62,7 +61,8 @@ class Database():
     def get_knowledge(self, task_identity:dict):
         """return knowledge from single task found on database"""
         # use knowledge processor to look up/generate global knowledge:
-        knowledge = self.knowledge_manager.get_local_knowledge(task_identity,knowledge_db=self.task_knowledge_db_name,data_db=self.results_db_name)
+        #knowledge = self.knowledge_manager.get_local_knowledge(task_identity,knowledge_db=self.task_knowledge_db_name,data_db=self.results_db_name)
+        knowledge = self.knowledge_manager.predict_knowledge(task_identity,self.task_knowledge_db_name)
         return knowledge
 
     def process_knowledge(self, task_identity: dict):
