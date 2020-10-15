@@ -21,7 +21,6 @@ from plotting.data_acquisition import *
 from plotting.data_processor import DataProcessor
 from plotting.plotter import Plotter
 
-
 logger = logging.getLogger("ml_service")
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
@@ -58,7 +57,7 @@ def test_interface(agent: str = "localhost"):
     problem_def = rastrigin()
     interface = Interface()
 
-    #call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
+    # call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
 
     uuid = interface.start_service(problem_def, get_service_configuration(), agents)
     input("Press enter to stop service.")
@@ -92,7 +91,8 @@ def test_standalone(agent: str = "localhost"):
 def test_task_scheduler():
     t = TaskScheduler()
     c = CreationPipeline()
-    c.create_tasks_from_template(rastrigin(), get_service_configuration(), 10, "http://localhost:8000", ["localhost"], "none")
+    c.create_tasks_from_template(rastrigin(), get_service_configuration(), 10, "http://localhost:8000", ["localhost"],
+                                 "none")
     for task in c.tasks:
         t.add_task(task)
 
@@ -104,16 +104,16 @@ def test_server_connection(host):
     print(s.is_busy())
 
 
-def test_knowledge_use(knowledge_mode = "global"):  
-    import time 
-    #create knowledge from old task:
+def test_knowledge_use(knowledge_mode="global"):
+    import time
+    # create knowledge from old task:
     k = KnowledgeManager()
-    #k.process_knowledge({"meta.tags":["test_sequence_1","test_sequence_2","test_sequence_3"]},"ml_results","benchmark_rastrigin","local_knowledge","benchmark_rastrigin",["test_knowledge","some_tag"])
+    # k.process_knowledge({"meta.tags":["test_sequence_1","test_sequence_2","test_sequence_3"]},"ml_results","benchmark_rastrigin","local_knowledge","benchmark_rastrigin",["test_knowledge","some_tag"])
 
-    #start global database:
+    # start global database:
     interface = Interface()
     time.sleep(1)
-    #interface.stop_global_database()
+    # interface.stop_global_database()
 
     time.sleep(1)
 
@@ -123,9 +123,9 @@ def test_knowledge_use(knowledge_mode = "global"):
     problem_def = rastrigin()
 
     knowledge_info = {
-            "mode": knowledge_mode,
-            "kb_location": "http://localhost:8001/"
-        }
+        "mode": knowledge_mode,
+        "kb_location": "http://localhost:8001/"
+    }
 
     uuid = interface.start_service(problem_def, get_service_configuration(), agents, knowledge_info)
     input("Press enter to stop service.")
@@ -133,50 +133,63 @@ def test_knowledge_use(knowledge_mode = "global"):
 
 
 def test_plotting(tags):
-    hosts = ["collective-panda-001.local"]  #,"collective-panda-002.local","collective-panda-007.local","collective-panda-008.local","collective-panda-009.local"]
+    hosts = [
+        "collective-panda-001.local"]  # ,"collective-panda-002.local","collective-panda-007.local","collective-panda-008.local","collective-panda-009.local"]
     filter = {"meta.tags": tags}
     knowledge_mode = "global"
-    #task_type = "insert_object"
+    # task_type = "insert_object"
     task_type = "benchmark_rastrigin"
 
     p = DataProcessor()
     plot = Plotter()
     results = []
     for host in hosts:
-        results.extend(get_multiple_experiment_data(host, task_type, knowledge_mode,filter= filter))
+        results.extend(get_multiple_experiment_data(host, task_type, knowledge_mode, filter=filter))
 
     results = p.sort_over_time(results)  # not really needed results are stored in order
-    #all_times = p.get_cumulative_time(results)
-    #plot.plot_learning_over_task(all_times, "global")
+    # all_times = p.get_cumulative_time(results)
+    # plot.plot_learning_over_task(all_times, "global")
     agent_results = p.get_agent_results(results)  # seperate results for every agent
     for agent, agent_results in agent_results.items():
-        agent_times_cum = p.get_cumulative_time(agent_results)  
+        agent_times_cum = p.get_cumulative_time(agent_results)
         plot.plot_learning_over_task(agent_times_cum, agent)
 
-def test_generalizer():
 
+from knowledge_processor.kg_linear_regression import KGLinearRegressor
+from knowledge_processor.kg_random_forest import KGRandomForest
+
+
+def test_generalizer():
     task_name = "rastrigin_8"
     task_identity = {
         "tags": ["collective_learning_benchmark_003", task_name],
         "task_type": "benchmark_rastrigin",
-        "optimum_weights":[1,0,0,0,0]
+        "optimum_weights": [1, 0, 0, 0, 0]
     }
-    
-    manager = KnowledgeManager(host = "192.168.5.19")
-    prediction = manager.predict_knowledge(task_identity,"global_knowledge")
-    ground_truth = {
-    "x1" : 0.66452131435048,
-    "x2" : 1.52888118354614,
-    "x3" : 0.0722310931933499,
-    "x4" : -3.08640408410583,
-    "x5" : 0.922661770332197,
-    "x6" : -1.05747043156139
-    }
-    print(prediction["parameters"])
-    print("vs")
-    print(ground_truth)
-    e=0
-    for key in prediction["parameters"].keys():
-        e = e+ abs(prediction["parameters"][key] - ground_truth[key])
-    print("error: ",e)
 
+    manager = KnowledgeManager(host="collective-panda-001.local")
+
+    regressors = {
+        "lr": KGLinearRegressor(),
+        "rf": KGRandomForest()
+    }
+
+    ground_truth = {
+        "x1": 0.66452131435048,
+        "x2": 1.52888118354614,
+        "x3": 0.0722310931933499,
+        "x4": -3.08640408410583,
+        "x5": 0.922661770332197,
+        "x6": -1.05747043156139
+    }
+
+    for name, regr in regressors.items():
+        prediction = manager.predict_knowledge(regr, task_identity, "global_knowledge")
+
+        e = 0
+        for key in prediction["parameters"].keys():
+            e = e + pow(prediction["parameters"][key] - ground_truth[key], 2)
+        e = np.sqrt(e)
+        print("Estimate: " + str(prediction["parameters"]))
+        print("Ground truth: " + str(ground_truth))
+        print("error: " + str(e))

@@ -7,6 +7,7 @@ from knowledge_processor.knowledge_processor_v2 import KnowledgeProcessor
 from knowledge_processor.kg_linear_regression import KGLinearRegressor
 from knowledge_processor.kg_svm import KGSVM
 from knowledge_processor.kg_random_forest import KGRandomForest
+from knowledge_processor.knowledge_generalizer_base import KnowledgeGeneralizerBase
 from sklearn.cluster import DBSCAN
 
 logger = logging.getLogger("ml_service")
@@ -16,7 +17,6 @@ class KnowledgeManager():
         self.DBclient = MongoDBClient(host, port)
         self.data_db = "ml_results"
         self.knowledge_db = "local_knowledge"
-        self.predictor = KGRandomForest() # KGSVM() # KGLinearRegressor()
 
     def collect_data(self, task_identity, data_db:str = "ml_results") -> list:
         if data_db.find("knowledge") == -1:  #  if collecting raw data (no knowledge)
@@ -94,7 +94,7 @@ class KnowledgeManager():
             
         successful_trials, vector_mapping = self.get_successful_trials(doc)
         #process knowledge:
-        self.knowledge_processor = KnowledgeProcessor(ector_mapping,task_identity)
+        self.knowledge_processor = KnowledgeProcessor(vector_mapping,task_identity)
         knowledge = self.knowledge_processor.process_knowledge(successful_trials)
 
         knowledge["meta"]["knowledge_source"] = uuids
@@ -113,7 +113,7 @@ class KnowledgeManager():
             training_data_y.append(np.array(self.dict_to_list(doc["parameters"])))
         return np.array(training_data_x), np.array(training_data_y)
 
-    def predict_knowledge(self, task_identity:dict, knowledge_db: str = "local_knowledge"):
+    def predict_knowledge(self, predictor: KnowledgeGeneralizerBase, task_identity:dict, knowledge_db: str = "local_knowledge"):
         '''trains and uses model to predict knolwedge'''
         #search for all tasks of same tasktype
         task_filter = copy.deepcopy(task_identity)
@@ -137,10 +137,10 @@ class KnowledgeManager():
                 return False
         # train
         training_data = self.get_training_data(doc)
-        self.predictor.fit_data(training_data[0], training_data[1])
+        predictor.fit_data(training_data[0], training_data[1])
         # predict
         predict_x = np.array(task_identity["optimum_weights"])
-        prediction = self.predictor.predict_data(predict_x)[0]
+        prediction = predictor.predict_data(predict_x)[0]
         # pack information together
         parameter_dict = {}
         for key_name, parameter in zip(vector_mapping, prediction):
