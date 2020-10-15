@@ -186,16 +186,7 @@ def test_generalizer():
     }
 
     for name, regr in regressors.items():
-        print("Regressor: ", name)
+        print("--------------------------------------")
+        print("Regressor: " + name)
         prediction = manager.predict_knowledge(regr, task_identity, "global_knowledge")
-        print("error in context: ",prediction["meta"]["prediction_error"])
-
-        e = 0
-        for key in prediction["parameters"].keys():
-            e = e + pow(prediction["parameters"][key] - ground_truth[key], 2)
-        e = np.sqrt(e)
-        print("Estimate: " + str(prediction["parameters"]))
-        print("Ground truth: " + str(ground_truth))
-        print("error: " + str(e))
-        print("#########################################################")
-
+        print("error: " + str(prediction["meta"]["prediction_error"]))

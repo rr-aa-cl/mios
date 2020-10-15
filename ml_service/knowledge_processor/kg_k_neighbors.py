@@ -6,7 +6,7 @@ import numpy as np
 class KGKNeighbors(KnowledgeGeneralizerBase):
     def __init__(self):
         super().__init__()
-        self.regr = KNeighborsRegressor(n_neighbors=1)
+        self.regr = KNeighborsRegressor(n_neighbors=4)
 
     def fit_data(self, x: np.ndarray, y: np.ndarray):
         self.regr.fit(x, y)
