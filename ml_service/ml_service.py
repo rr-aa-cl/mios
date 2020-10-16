@@ -158,6 +158,7 @@ def test_plotting(tags):
 from knowledge_processor.kg_linear_regression import KGLinearRegressor
 from knowledge_processor.kg_random_forest import KGRandomForest
 from knowledge_processor.kg_k_neighbors import KGKNeighbors
+from knowledge_processor.kg_mlp import KGMLP
 
 
 def test_generalizer():
@@ -173,7 +174,8 @@ def test_generalizer():
     regressors = {
         "lr": KGLinearRegressor(),
         "rf": KGRandomForest(),
-        "kn": KGKNeighbors()
+        "kn": KGKNeighbors(),
+        "mlp": KGMLP()
     }
 
     ground_truth = {
