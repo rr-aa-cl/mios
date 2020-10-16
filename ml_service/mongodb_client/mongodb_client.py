@@ -77,7 +77,12 @@ class MongoDBClient():
         if "_id" in search_param.keys():  # if _id is given as string  ->  ObjectId
                 if isinstance(search_param["_id"],str):
                     search_param["_id"] = objectid.ObjectId(search_param["_id"])
-        result = col.delete_one(search_param, collation=None, session=None)
+        for key in search_param:
+            value = search_param[key]
+            if key == "tags" or "meta.tags":
+                if isinstance(value, list):
+                    search_param[key] = {"$all": value}
+        result = col.delete_many(search_param, collation=None, session=None)
         if result.deleted_count > 0:
             return True
         else:
