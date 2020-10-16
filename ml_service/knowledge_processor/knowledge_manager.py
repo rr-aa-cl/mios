@@ -66,7 +66,8 @@ class KnowledgeManager():
         '''process raw data from trials to knowledge; working from and on the database'''
         #allocate all ml_data with same task identity:
         doc = self.collect_data(task_identity, data_db)
-
+        if not doc:
+            return False
         #save knowledge source
         uuids = []
         tags = set()
@@ -87,7 +88,8 @@ class KnowledgeManager():
         '''process raw data from trials to knowledge; working from and on the database'''
         #allocate all ml_data with same task identity:
         doc = self.collect_data(task_identity, data_db)
-
+        if not doc:
+            return False
         #save knowledge source
         uuids = []
         tags = set()
@@ -121,8 +123,16 @@ class KnowledgeManager():
         task_filter = copy.deepcopy(task_identity)
         task_filter.pop("optimum_weights")
         doc = self.collect_data(task_filter, knowledge_db)
+        if not doc:
+            logger.error("KnowledgeManager: Cant find knowledge for predictions ("+str(task_filter)+" on "+str(knowledge_db)+")")
+            logger.debug("KnowledgeManager: Using similar Knowledge")
+            if knowledge_db.find("global") == -1:
+                data_db = "ml_results"
+            else:
+                data_db = "global_ml_results"
+            return self.get_local_knowledge(task_identity, knowledge_db, data_db)
 
-        if not doc:  # if no predictions can be made: use similar knowledge
+        if len(doc) < 2:  # if no predictions can be made: use similar knowledge
             logger.error("KnowledgeManager: Cant find knowledge for predictions ("+str(task_filter)+" on "+str(knowledge_db)+")")
             logger.debug("KnowledgeManager: Using similar Knowledge")
             if knowledge_db.find("global") == -1:
@@ -145,25 +155,39 @@ class KnowledgeManager():
         for i in range(0,validation_size):
             random_pic = random.randint(0,len(doc)-1)
             validation_set.append(doc.pop(random_pic))
+
+        # get learning data
+        training_data = self.get_learning_data(doc)
+        validation_data = self.get_learning_data(validation_set)
+
+        # stadardize learning data
+        std_deviation_data_y = np.std(validation_data[1]+training_data[1],axis=0)
+        std_deviation_data_y = np.array([1 if n == 0 else n for n in std_deviation_data_y])  # remove zeros from standard deviation
+        std_deviation_data_x = np.std(validation_data[0]+training_data[0],axis=0)
+        std_deviation_data_x = np.array([1 if n == 0 else n for n in std_deviation_data_x])  # remove zeros from standard deviation
+        mean_data_y = np.mean(validation_data[1]+training_data[1],axis=0)
+        mean_data_x = np.mean(validation_data[0]+training_data[0],axis=0)
+        training_data_y_normalized = (training_data[1] - mean_data_y) / std_deviation_data_y
+        validation_data_y_normalized = (validation_data[1] - mean_data_y) / std_deviation_data_y
+        training_data_x_normalized = (training_data[0] - mean_data_x) / std_deviation_data_x
+        validation_data_x_normalized = (validation_data[0] - mean_data_x) / std_deviation_data_x
         
         # train
-        training_data = self.get_learning_data(doc)
-        predictor.fit_data(training_data[0], training_data[1])
+        predictor.fit_data(training_data_x_normalized, training_data_y_normalized)
         #validate
-        if len(validation_set) > 0:
-            validation_data = self.get_learning_data(validation_set)
+        if len(validation_data) > 0:
             distances = []
-            std_validation_data = np.std(validation_data[1],axis=0)
-            std_validation_data = np.array([1 if n == 0 else n for n in std_validation_data])  # remove zeros from standard deviation
             for i in range(0,validation_size):
-                prediction = predictor.predict_data(validation_data[0][i])
-                distances.append(np.linalg.norm(prediction-validation_data[1][i]))
-            error_in_context = np.mean(distances/std_validation_data)  # devide throu the standard deviation to set the error into context
+                prediction = predictor.predict_data(validation_data_x_normalized[i])
+                distances.append(np.linalg.norm(prediction-validation_data_y_normalized[i]))
+            error_in_context = float(np.mean(distances))  # devide throu the standard deviation to set the error into context
         else:
             error_in_context = False
         # predict
         predict_x = np.array(task_identity["optimum_weights"])
-        prediction = predictor.predict_data(predict_x)[0]
+        predict_x_normalized = (predict_x - mean_data_x)/ std_deviation_data_x
+        prediction_normalized = predictor.predict_data(predict_x_normalized)[0]
+        prediction = (prediction_normalized * std_deviation_data_y) + mean_data_y 
         # pack information together
         parameter_dict = {}
         for key_name, parameter in zip(vector_mapping, prediction):

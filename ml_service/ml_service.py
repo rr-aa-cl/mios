@@ -107,7 +107,7 @@ def test_server_connection(host):
 def test_knowledge_use(knowledge_mode="global"):
     import time
     # create knowledge from old task:
-    k = KnowledgeManager()
+    k = KnowledgeManager(host = "collective-panda-001.local")
     # k.process_knowledge({"meta.tags":["test_sequence_1","test_sequence_2","test_sequence_3"]},"ml_results","benchmark_rastrigin","local_knowledge","benchmark_rastrigin",["test_knowledge","some_tag"])
 
     # start global database:
@@ -121,6 +121,7 @@ def test_knowledge_use(knowledge_mode="global"):
     agent = 'localhost'
     agents.add(agent)
     problem_def = rastrigin()
+    problem_def.tags = ["collective_learning_benchmark_003", "rastrigin_8"]
 
     knowledge_info = {
         "mode": knowledge_mode,
