@@ -167,7 +167,7 @@ def test_generalizer():
     task_identity = {
         "tags": ["collective_learning_benchmark_005", task_name],
         "task_type": "benchmark_rastrigin",
-        "optimum_weights": [0.99, 0.01, 0, 0, 0]
+        "optimum_weights": [0.08, 0.92, 0, 0, 0]
     }
 
     manager = KnowledgeManager(host="collective-panda-001.local")
