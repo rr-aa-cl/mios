@@ -25,6 +25,14 @@ class Result:
             cost.append(t["cost"])
         return cost
 
+    def get_parameters(self) -> set:
+        theta = self.trials[0]["theta"]
+        parameters = set()
+        for key, val in theta.items():
+            parameters.add(key)
+
+        return parameters
+
     def get_cost_per_time(self) -> Tuple[list, list]:
         cost = []
         time = []

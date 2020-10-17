@@ -1,5 +1,6 @@
 from plotting.result import Result
 import numpy as np
+from typing import Tuple
 
 
 class DataError(Exception):
@@ -48,7 +49,17 @@ class DataProcessor:
         times = []
         for r in results:
             times.append(r.get_total_time())
-        return times
+        return np.asarray(times)
+
+    def get_parameter_over_cost(self, result: Result, parameter: str) -> Tuple[list, list]:
+        cost = result.get_cost_per_trial()
+        parameters = result.get_theta_per_trial()
+        p = []
+        for i in range(len(parameters)):
+            p.append(parameters[i][parameter])
+
+        cost_sorted = [x for _, x in sorted(zip(p, cost))]
+        return cost_sorted, sorted(p)
 
     def get_agent_results(self, results: list) -> dict:
         agents = []
@@ -62,8 +73,7 @@ class DataProcessor:
             else:
                 ordered_results[str(tags)].append(r)
         return ordered_results
-            
-    
+
     def get_cumulative_time(self, results: list) -> np.ndarray:
         times_cum = []
         for r in results:
@@ -71,13 +81,13 @@ class DataProcessor:
                 times_cum.append(r.get_total_time())
             else:
                 times_cum.append(times_cum[-1] + r.get_total_time())
-        return times_cum
+        return np.asarray(times_cum)
 
     def get_total_trials(self, results: list) -> np.ndarray:
         trials_per_task = []
         for r in results:
             trials_per_task.append(r.get_total_trials())
-        return trials_per_task
+        return np.asarray(trials_per_task)
     
     def sort_over_time(self, results:list) -> list:
         return sorted(results, key= lambda r: (r.starting_time))

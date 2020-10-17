@@ -19,7 +19,8 @@ class Experiment(metaclass=ABCMeta):
     def insert_creation_pipeline(self, pipeline: CreationPipeline):
         self.creation_pipeline = pipeline
 
-    def start(self, tags: [], knowledge_mode: str):
+    def start(self, tags: [], knowledge_mode: str, global_database: str):
+        self.task_scheduler.kb_location = global_database
         self.initialize(knowledge_mode)
         if self.creation_pipeline is None:
             logger.error("No creation pipeline was provided.")

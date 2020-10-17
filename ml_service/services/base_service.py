@@ -87,7 +87,7 @@ class BaseService(metaclass=ABCMeta):
                     logger.debug("base_service.initialize(): Use local knowledge "+str(self.centroid))
             elif knowledge_source["mode"] == 'global':
                 logger.debug("base_service.initialize(): get global knowlege")
-                with ServerProxy(knowledge_source["kb_location"]) as kb:
+                with ServerProxy("http://" + knowledge_source["kb_location"] + ":8001") as kb:
                     try:
                         self.knowledge = kb.get_knowledge(self.problem_definition.get_task_identity())
                     except socket.timeout:
@@ -127,8 +127,8 @@ class BaseService(metaclass=ABCMeta):
         ml_data[0]["meta"]["init_knowledge"]["source"] = self.knowledge_source
         if self.knowledge_source is not None:
             if self.knowledge_source["mode"] == "global":
-                logger.debug("base_service.learn_task: store ml_results to global database at "+str(self.knowledge_source["kb_location"]))
-                with ServerProxy(self.knowledge_source["kb_location"], allow_none=True) as kb:
+                logger.debug("base_service.learn_task: store ml_results to global database at "+str("http://" + self.knowledge_source["kb_location"] + ":8001"))
+                with ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001", allow_none=True) as kb:
                     try:
                         kb.store_result(ml_data[0])
                     except socket.timeout:
