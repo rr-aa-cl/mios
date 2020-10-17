@@ -5,11 +5,9 @@ import time
 import random
 from mongodb_client.mongodb_client import MongoDBClient
 from knowledge_processor.knowledge_processor_v2 import KnowledgeProcessor
-from knowledge_processor.kg_linear_regression import KGLinearRegressor
-from knowledge_processor.kg_svm import KGSVM
 from knowledge_processor.kg_random_forest import KGRandomForest
 from knowledge_processor.knowledge_generalizer_base import KnowledgeGeneralizerBase
-from sklearn.cluster import DBSCAN
+
 
 logger = logging.getLogger("ml_service")
 
@@ -24,16 +22,17 @@ class KnowledgeManager():
 
     def collect_data(self, task_identity, data_db: str = "ml_results") -> list:
         if data_db.find("knowledge") == -1:  # if collecting raw data (no knowledge)
-            result_filter = {"meta.tags": task_identity["tags"], \
-                             "meta.cost_function.optimum_weights": task_identity["optimum_weights"], \
+            print(task_identity)
+            result_filter = {"meta.tags": task_identity["tags"],
+                             "meta.cost_function.optimum_weights": task_identity["optimum_weights"],
                              "meta.task_type": task_identity["task_type"]}
         else:  # if collecting knowledge:
             if "optimum_weights" in task_identity:
-                result_filter = {"meta.tags": task_identity["tags"], \
-                                 "meta.optimum_weights": task_identity["optimum_weights"], \
+                result_filter = {"meta.tags": task_identity["tags"],
+                                 "meta.optimum_weights": task_identity["optimum_weights"],
                                  "meta.task_type": task_identity["task_type"]}
             else:
-                result_filter = {"meta.tags": task_identity["tags"], \
+                result_filter = {"meta.tags": task_identity["tags"],
                                  "meta.task_type": task_identity["task_type"]}
 
         doc = self.DBclient.read(data_db, task_identity["task_type"], result_filter)
@@ -44,8 +43,8 @@ class KnowledgeManager():
         return doc
 
     def store_knowledge(self, knowledge, knowledge_db="local_knowledge") -> str:
-        knowledge_filter = {"meta.tags": knowledge["meta"]["tags"], \
-                            "meta.task_type": knowledge["meta"]["task_type"], \
+        knowledge_filter = {"meta.tags": knowledge["meta"]["tags"],
+                            "meta.task_type": knowledge["meta"]["task_type"],
                             "meta.optimum_weights": knowledge["meta"]["optimum_weights"]}
         available_knowledge = self.DBclient.read(knowledge_db, knowledge["meta"]["task_type"], knowledge_filter)
         if len(available_knowledge) == 0:
@@ -136,7 +135,7 @@ class KnowledgeManager():
         '''trains and uses model to predict knolwedge'''
         # search for all tasks of same tasktype
         task_filter = copy.deepcopy(task_identity)
-        task_filter.pop("optimum_weights")
+        # task_filter.pop("optimum_weights")
         doc = self.collect_data(task_filter, knowledge_db)
         if not doc:
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(

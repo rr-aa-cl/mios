@@ -165,9 +165,9 @@ from knowledge_processor.kg_mlp import KGMLP
 def test_generalizer():
     task_name = "rastrigin_8"
     task_identity = {
-        "tags": ["collective_learning_benchmark_003", task_name],
+        "tags": ["collective_learning_benchmark_005", task_name],
         "task_type": "benchmark_rastrigin",
-        "optimum_weights": [1, 0, 0, 0, 0]
+        "optimum_weights": [0.99, 0.01, 0, 0, 0]
     }
 
     manager = KnowledgeManager(host="collective-panda-001.local")
@@ -179,17 +179,8 @@ def test_generalizer():
         "mlp": KGMLP()
     }
 
-    ground_truth = {
-        "x1": 0.66452131435048,
-        "x2": 1.52888118354614,
-        "x3": 0.0722310931933499,
-        "x4": -3.08640408410583,
-        "x5": 0.922661770332197,
-        "x6": -1.05747043156139
-    }
-
     for name, regr in regressors.items():
         print("--------------------------------------")
         print("Regressor: " + name)
-        prediction = manager.predict_knowledge(regr, task_identity, "global_knowledge")
+        prediction = manager.predict_knowledge(task_identity, "global", regr)
         print("error: " + str(prediction["meta"]["prediction_error"]))
