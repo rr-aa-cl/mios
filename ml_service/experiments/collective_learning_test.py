@@ -40,6 +40,10 @@ class CollectiveLearningBase(Experiment):
         config.n_gen = 10
         config.n_ind = 10
 
+        self.agents = ["collective-panda-007.local", "collective-panda-001.local", "collective-panda-008.local",
+                       "collective-panda-002.local", "collective-panda-009.local"]
+        self.task_type = "benchmark_rastrigin"
+
         c = TestCreationPipeline()
         n_tasks = 10
         c.create_tasks_from_template(rastrigin_a(2), config, n_tasks, "collective-panda-007.local",

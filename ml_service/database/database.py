@@ -58,7 +58,7 @@ class Database():
         self.process_knowledge(task_identity)
         return task_id
 
-    def get_knowledge(self, task_identity:dict):
+    def get_knowledge(self, task_identity: dict):
         """return knowledge from single task found on database"""
         # use knowledge processor to look up/generate global knowledge:
         #knowledge = self.knowledge_manager.get_local_knowledge(task_identity,knowledge_db=self.task_knowledge_db_name,data_db=self.results_db_name)

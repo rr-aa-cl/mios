@@ -43,7 +43,7 @@ class BaseService(metaclass=ABCMeta):
         self.centroid = None
         self.result = False
         self.database_results_id = None
-        self.knowledge_source = 'none'
+        self.knowledge_source = None
         self.knowledge = False
 
         # 15s timeout for xmlrpc clinet:

@@ -109,7 +109,7 @@ class KnowledgeManager():
 
         return knowledge
 
-    def get_learning_data(self, docs):
+    def get_theta_from_data(self, docs):
         training_data_x = []
         training_data_y = []
         for doc in docs:
@@ -123,6 +123,19 @@ class KnowledgeManager():
                 "KnowledgeManager.predict_knowledge: Training or Validation data is too small (smaller than 1)")
             return False
         return np.array(training_data_x), np.array(training_data_y)
+    
+    def get_cost_from_data(self, docs):
+        cost_data = []
+        for doc in docs:
+            if not doc["meta"].get("optimum_weights", False):
+                logger.error("KnowledgeManager: found invalid knowledge (no key \"optimum_weights\" in meta)")
+                continue
+            cost_data.append(np.array(doc["meta"]["expected_cost"]))
+        if len(cost_data) < 1:
+            logger.error(
+                "KnowledgeManager.predict_knowledge: Training or Validation data is too small (smaller than 1)")
+            return False
+        return np.array(cost_data)
 
     def get_predictor(self):
         if self.predictor is not None:
@@ -178,8 +191,8 @@ class KnowledgeManager():
             validation_set.append(doc.pop(random_pic))
 
         # get learning data
-        training_data = self.get_learning_data(doc)
-        validation_data = self.get_learning_data(validation_set)
+        training_data = self.get_theta_from_data(doc)
+        validation_data = self.get_theta_from_data(validation_set)
 
         # stadardize learning data
         std_deviation_data_y = np.std(np.append(validation_data[1], training_data[1], axis=0), axis=0)
@@ -204,21 +217,33 @@ class KnowledgeManager():
                 prediction = predictor.predict_data(validation_data_x_normalized[i])
                 distances.append(np.linalg.norm(prediction - validation_data_y_normalized[i]))
             error_in_context = float(
-                np.mean(distances))  # devide throu the standard deviation to set the error into context
+                np.mean(distances))  # devide by the standard deviation to set the error into context
         else:
             error_in_context = False
         # predict
         predict_x = np.array(task_identity["optimum_weights"])
+        print("predict_x: " + str(predict_x))
         predict_x_normalized = (predict_x - mean_data_x) / std_deviation_data_x
+        print("mean_data_x: " + str(mean_data_x))
+        print("std_deviation_data_x: " + str(std_deviation_data_x))
+        print("predict_x_normalized: " + str(predict_x_normalized))
         prediction_normalized = predictor.predict_data(predict_x_normalized)[0]
         prediction = (prediction_normalized * std_deviation_data_y) + mean_data_y
+
+        # predict expected cost
+        predictor.fit_data(training_data_x_normalized, self.get_cost_from_data(doc))
+        print("##############################")
+        print(predict_x_normalized)
+        expected_cost = predictor.predict_data(predict_x_normalized)
+        print(expected_cost)
+        print(expected_cost[0])
+
         # pack information together
         parameter_dict = {}
         for key_name, parameter in zip(vector_mapping, prediction):
-            print(parameter)
             parameter_dict[key_name] = float(parameter)  # use python float because of rpc restrictions
         meta = dict()
-        meta["expected_cost"] = False
+        meta["expected_cost"] = float(expected_cost[0])
         meta["prediction_error"] = error_in_context
         meta["optimum_weights"] = task_identity["optimum_weights"]
         meta["task_type"] = task_identity["task_type"]
@@ -228,6 +253,7 @@ class KnowledgeManager():
 
         knowledge = {"parameters": parameter_dict,
                      "meta": meta}
+
         return knowledge
 
     def get_local_knowledge(self, task_identity: dict, knowledge_db: str = "local_knowledge",

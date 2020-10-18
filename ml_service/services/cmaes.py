@@ -57,14 +57,18 @@ class CMAESService(BaseService):
 
         if self.centroid == None:
             self.centroid = self.problem_definition.domain.get_default_x0()
+            self.strategy = deap.cma.Strategy(centroid=self.centroid,
+                                              sigma=sigma_init, lambda_=self.configuration.n_ind)
         else:
             self.centroid = self.problem_definition.domain.normalize(self.centroid)
             sigma_init = self.configuration.sigma_init / 4
             logger.debug("CMAESService._initialize(): use initial centroid "+str(self.centroid))
+            parent = deap.creator.Individual(self.centroid)
+            parent.fitness.values = (self.knowledge["meta"]["expected_cost"],)
+            ptarg = 1.0 / (5 + np.sqrt(self.configuration.n_ind) / 2.0)
+            cp = ptarg * self.configuration.n_ind / (2.0 + ptarg * self.configuration.n_ind) * 0.5
+            self.strategy = deap.cma.StrategyOnePlusLambda(parent=parent, sigma=sigma_init, lambda_=self.configuration.n_ind, cp=cp)
 
-
-        self.strategy = deap.cma.Strategy(centroid=self.centroid,
-                                          sigma=sigma_init, lambda_=self.configuration.n_ind)
         self.toolbox.register("generate", self.strategy.generate, deap.creator.Individual)
         self.toolbox.register("update", self.strategy.update)
 

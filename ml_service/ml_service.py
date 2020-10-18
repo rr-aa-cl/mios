@@ -55,11 +55,12 @@ def test_interface(agent: str = "localhost"):
     agents = set()
     agents.add(agent)
     problem_def = rastrigin()
+    problem_def.tags = ["rastrigin_8", "collective_learning_benchmark_009"]
     interface = Interface()
 
     # call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
 
-    uuid = interface.start_service(problem_def, get_service_configuration(), agents)
+    uuid = interface.start_service(problem_def, get_service_configuration(), agents, {"mode": "global", "kb_location": "collective-panda-002.local"})
     input("Press enter to stop service.")
     interface.stop_service()
 
