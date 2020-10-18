@@ -5,6 +5,9 @@ def delete_local_results(agents: list, task_type: str, tags: list):
     for a in agents:
         client = MongoDBClient(a)
         client.remove("ml_results", task_type, {"meta.tags": {"$all": tags }})
+        print(task_type)
+        print(tags)
+        print("#################################################")
 
 
 def delete_local_knowledge(agents: list, task_type: str, tags: list):

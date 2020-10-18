@@ -39,8 +39,6 @@ class Experiment(metaclass=ABCMeta):
         delete_global_results(global_database, self.task_type, self.tags)
         delete_global_knowledge(global_database, self.task_type, self.tags)
 
-        exit(-1)
-
         thr = Thread(target=self.task_scheduler.solve_tasks)
         thr.start()
 
