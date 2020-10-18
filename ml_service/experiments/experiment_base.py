@@ -23,19 +23,23 @@ class Experiment(metaclass=ABCMeta):
         self.creation_pipeline = pipeline
 
     def start(self, tags: [], knowledge_mode: str, global_database: str):
+        self.tags = tags
         self.task_scheduler.kb_location = global_database
         self.initialize(knowledge_mode)
         if self.creation_pipeline is None:
             logger.error("No creation pipeline was provided.")
+
+
+        for t in self.creation_pipeline.tasks:
+            t.problem_definition.tags.extend(self.tags)
+            self.task_scheduler.add_task(t)
 
         delete_local_results(self.agents, self.task_type, self.tags)
         delete_local_knowledge(self.agents, self.task_type, self.tags)
         delete_global_results(global_database, self.task_type, self.tags)
         delete_global_knowledge(global_database, self.task_type, self.tags)
 
-        for t in self.creation_pipeline.tasks:
-            t.problem_definition.tags.extend(tags)
-            self.task_scheduler.add_task(t)
+        exit(-1)
 
         thr = Thread(target=self.task_scheduler.solve_tasks)
         thr.start()
