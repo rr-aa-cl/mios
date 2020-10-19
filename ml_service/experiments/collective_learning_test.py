@@ -51,7 +51,7 @@ class CollectiveLearningBase(Experiment):
                                      ["collective-panda-007"], knowledge_mode)
         c.create_tasks_from_template(rastrigin_a(0.4), config, n_tasks, "collective-panda-001.local",
                                      ["collective-panda-001"], knowledge_mode)
-        c.create_tasks_from_template(rastrigin_a(0.6), config, n_tasks, "collectxive-panda-008.local",
+        c.create_tasks_from_template(rastrigin_a(0.6), config, n_tasks, "collective-panda-008.local",
                                      ["collective-panda-008"], knowledge_mode)
         c.create_tasks_from_template(rastrigin_a(0.8), config, n_tasks, "collective-panda-002.local",
                                      ["collective-panda-002"], knowledge_mode)
