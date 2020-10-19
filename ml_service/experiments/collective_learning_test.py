@@ -13,7 +13,7 @@ import random
 
 def rastrigin_a(a: float):
     pd = rastrigin()
-    pd.default_context["skills"]["ml_test"]["skill"]["A"] = a
+    pd.default_context["skills"]["ml_test"]["skill"]["x_0"] = [a, a, a, a, a, a]
     pd.tags = ["rastrigin_" + str(int(a))]
     return pd
 
@@ -46,15 +46,15 @@ class CollectiveLearningBase(Experiment):
 
         c = TestCreationPipeline()
         n_tasks = 10
-        c.create_tasks_from_template(rastrigin_a(2), config, n_tasks, "collective-panda-007.local",
+        c.create_tasks_from_template(rastrigin_a(0.2), config, n_tasks, "collective-panda-007.local",
                                      ["collective-panda-007"], knowledge_mode)
-        c.create_tasks_from_template(rastrigin_a(4), config, n_tasks, "collective-panda-001.local",
+        c.create_tasks_from_template(rastrigin_a(0.4), config, n_tasks, "collective-panda-001.local",
                                      ["collective-panda-001"], knowledge_mode)
-        c.create_tasks_from_template(rastrigin_a(6), config, n_tasks, "collective-panda-008.local",
+        c.create_tasks_from_template(rastrigin_a(0.6), config, n_tasks, "collective-panda-008.local",
                                      ["collective-panda-008"], knowledge_mode)
-        c.create_tasks_from_template(rastrigin_a(8), config, n_tasks, "collective-panda-002.local",
+        c.create_tasks_from_template(rastrigin_a(0.8), config, n_tasks, "collective-panda-002.local",
                                      ["collective-panda-002"], knowledge_mode)
-        c.create_tasks_from_template(rastrigin_a(10), config, n_tasks, "collective-panda-009.local",
+        c.create_tasks_from_template(rastrigin_a(1), config, n_tasks, "collective-panda-009.local",
                                      ["collective-panda-009"], knowledge_mode)
 
         self.insert_creation_pipeline(c)
