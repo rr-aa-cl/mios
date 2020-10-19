@@ -23,7 +23,7 @@ class TestCreationPipeline(CreationPipeline):
         super().__init__()
 
     def create_tasks_from_template(self, template: ProblemDefinition, service_configuration: ServiceConfiguration, n_tasks, service_url, agents, knowledge_mode: str):
-        for i in range(n_tasks + 1):
+        for i in range(n_tasks):
             t = Task(copy.deepcopy(template), service_configuration, agents, service_url, knowledge_mode)
             t.problem_definition.cost_function.optimum_weights[0] = 0
             t.problem_definition.cost_function.optimum_weights[1] = float(i) / float(n_tasks)
@@ -46,7 +46,7 @@ class CollectiveLearningBase(Experiment):
         self.task_type = "benchmark_rastrigin"
 
         c = TestCreationPipeline()
-        n_tasks = 10
+        n_tasks = 11
         c.create_tasks_from_template(rastrigin_a(0.2), config, n_tasks, "collective-panda-007.local",
                                      ["collective-panda-007"], knowledge_mode)
         c.create_tasks_from_template(rastrigin_a(0.4), config, n_tasks, "collective-panda-001.local",

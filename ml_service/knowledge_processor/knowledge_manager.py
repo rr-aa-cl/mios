@@ -43,6 +43,8 @@ class KnowledgeManager():
         return doc
 
     def store_knowledge(self, knowledge, knowledge_db="local_knowledge") -> str:
+        if knowledge is None:
+            return False
         knowledge_filter = {"meta.tags": knowledge["meta"]["tags"],
                             "meta.task_type": knowledge["meta"]["task_type"],
                             "meta.optimum_weights": knowledge["meta"]["optimum_weights"]}
@@ -81,6 +83,8 @@ class KnowledgeManager():
         # process knowledge:
         self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity)
         knowledge = self.knowledge_processor.process_knowledge(successful_trials)
+        if knowledge is False:
+            return None
 
         knowledge["meta"]["knowledge_source"] = uuids
         knowledge["meta"]["prediction"] = False
@@ -103,6 +107,8 @@ class KnowledgeManager():
         # process knowledge:
         self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity)
         knowledge = self.knowledge_processor.process_knowledge(successful_trials)
+        if knowledge is False:
+            return None
 
         knowledge["meta"]["knowledge_source"] = uuids
         knowledge["meta"]["prediction"] = False
