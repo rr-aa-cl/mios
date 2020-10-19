@@ -86,6 +86,10 @@ class KnowledgeManager():
         if knowledge is False:
             return None
 
+        if not knowledge:
+            logger.error("KnowledgeManager.process_knowledge: Knowledge cant be processed!")
+            return False
+
         knowledge["meta"]["knowledge_source"] = uuids
         knowledge["meta"]["prediction"] = False
 
