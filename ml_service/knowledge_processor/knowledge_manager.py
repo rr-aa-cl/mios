@@ -83,8 +83,6 @@ class KnowledgeManager():
         # process knowledge:
         self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity)
         knowledge = self.knowledge_processor.process_knowledge(successful_trials)
-        if knowledge is False:
-            return None
 
         if not knowledge:
             logger.error("KnowledgeManager.process_knowledge: Knowledge cant be processed!")
@@ -111,8 +109,6 @@ class KnowledgeManager():
         # process knowledge:
         self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity)
         knowledge = self.knowledge_processor.process_knowledge(successful_trials)
-        if knowledge is False:
-            return None
 
         knowledge["meta"]["knowledge_source"] = uuids
         knowledge["meta"]["prediction"] = False

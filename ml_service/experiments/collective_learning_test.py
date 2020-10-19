@@ -29,7 +29,7 @@ class TestCreationPipeline(CreationPipeline):
             t.problem_definition.cost_function.optimum_weights[1] = float(i) / float(n_tasks)
             t.problem_definition.cost_function.optimum_weights[2] = 1 - \
                                                                     t.problem_definition.cost_function.optimum_weights[
-                                                                        0]
+                                                                        1]
             self.tasks.append(t)
 
         random.shuffle(self.tasks)
@@ -46,7 +46,7 @@ class CollectiveLearningBase(Experiment):
         self.task_type = "benchmark_rastrigin"
 
         c = TestCreationPipeline()
-        n_tasks = 11
+        n_tasks = 10
         c.create_tasks_from_template(rastrigin_a(0.2), config, n_tasks, "collective-panda-007.local",
                                      ["collective-panda-007"], knowledge_mode)
         c.create_tasks_from_template(rastrigin_a(0.4), config, n_tasks, "collective-panda-001.local",
