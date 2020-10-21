@@ -19,6 +19,7 @@ class KnowledgeProcessor(KnowledgeProcessorBase):
         clusters = self.find_cluster(successful_trials)
         #use best cluster:
         if len(clusters) == 0:
+            logger.error("KnowledgeProcessor.process_knowledge: No clusters found in data. Cant process knowledge.")
             return False
 
         successful_trials = clusters[0]

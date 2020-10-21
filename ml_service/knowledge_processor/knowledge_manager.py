@@ -115,7 +115,7 @@ class KnowledgeManager():
 
         return knowledge
 
-    def get_theta_from_data(self, docs):
+    def get_learning_data(self, docs):
         training_data_x = []
         training_data_y = []
         for doc in docs:
@@ -156,24 +156,22 @@ class KnowledgeManager():
         task_filter = copy.deepcopy(task_identity)
         if "optimum_weights" in task_filter:  # search for all task, independend of optimum weights
             task_filter.pop("optimum_weights")
+        if knowledge_db.find("global") == -1:  # if ml_results are needed, which one to use
+            data_db = "ml_results"
+        else:    
+            data_db = "global_ml_results"
+
         doc = self.collect_data(task_filter, knowledge_db)
+        
         if not doc:
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
                 knowledge_db) + ")")
             logger.debug("KnowledgeManager: Using similar Knowledge")
-            if knowledge_db.find("global") == -1:
-                data_db = "ml_results"
-            else:
-                data_db = "global_ml_results"
             return self.get_local_knowledge(task_identity, knowledge_db, data_db)
         if len(doc) < 2:  # if no predictions can be made: use similar knowledge
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
                 knowledge_db) + ")")
             logger.debug("KnowledgeManager: Using similar Knowledge")
-            if knowledge_db.find("global") == -1:
-                data_db = "ml_results"
-            else:
-                data_db = "global_ml_results"
             return self.get_local_knowledge(task_identity, knowledge_db, data_db)
 
         # check if knowledge fits together:
@@ -197,8 +195,11 @@ class KnowledgeManager():
             validation_set.append(doc.pop(random_pic))
 
         # get learning data
-        training_data = self.get_theta_from_data(doc)
-        validation_data = self.get_theta_from_data(validation_set)
+        training_data = self.get_learning_data(doc)
+        validation_data = self.get_learning_data(validation_set)
+        if not (training_data and validation_data):  # sth went wrong, sets too small
+            logger.debug("KnowledgeManager.predict_knowledge: Error in training or validation set -> use similar knowledge")
+            return self.get_local_knowledge(task_identity,knowledge_db)
 
         # stadardize learning data
         std_deviation_data_y = np.std(np.append(validation_data[1], training_data[1], axis=0), axis=0)
@@ -335,7 +336,7 @@ class KnowledgeManager():
 
     def get_most_similar_task(self, optimum_weights, tasks):
         '''find most similar task according to cost optimum_weights'''
-        most_similar_task = None
+        most_similar_task = tasks[0]
         smallest_dist = float('inf')
         for task in tasks:
             temp_optimum_weights = None
@@ -344,7 +345,7 @@ class KnowledgeManager():
             elif "optimum_weights" in task["meta"].keys():
                 temp_optimum_weights = task["meta"]["optimum_weights"]
             else:
-                logger.debug("knowledge_processor.get_most_similar_task: skipping faulty task format")
+                logger.debug("knowledge_processor.get_most_similar_task: skipping faulty task format (cant find optimum_weights in task)")
                 continue
 
             # use euclidean distance as similarity measure:  sqrt(sum( (a-b)**2 ))
@@ -353,6 +354,7 @@ class KnowledgeManager():
             if dist < smallest_dist:
                 smallest_dist = dist
                 most_similar_task = task
+        return most_similar_task
 
     def get_raw_data(self, d):
         successful_trials = []
