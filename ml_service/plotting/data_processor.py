@@ -30,6 +30,13 @@ class DataProcessor:
                 c.extend([c[-1]] * (n_trials - len(c)))
         return costs
 
+    def get_optima_by_cost_function(self, results: list) -> np.ndarray:
+        arr = np.zeros((len(results), 6))
+        for i in range(len(results)):
+            arr[i, :-1] = results[i].meta_data["cost_function"]["optimum_weights"]
+            arr[i, -1] = results[i].get_lowest_cost()
+        return arr
+
     def get_average_cost(self, results: list) -> np.ndarray:
         return np.average(np.asarray(self.get_collection_of_costs(results)), 0)
 

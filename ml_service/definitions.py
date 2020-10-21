@@ -1,6 +1,7 @@
 from problem_definition.domain import Domain
 from problem_definition.problem_definition import ProblemDefinition
 from problem_definition.problem_definition import CostFunction
+import numpy as np
 
 
 def rastrigin():
@@ -42,12 +43,12 @@ def rastrigin_cost():
     c.optimum_skills.append("ml_test")
     c.optimum_weights[1] = 1
     c.max_cost[0] = 100
-    c.min_cost[0] = 5
     c.max_cost[1] = 100
-    c.min_cost[1] = 5
     c.max_cost[2] = 100
-    c.min_cost[2] = 5
     c.finish_thr = 3
+    c.prepare_cost_grid(10)
+    c.add_to_cost_grid(np.array([0, 1, 0, 0, 0]), 5)
+    c.add_to_cost_grid(np.array([0, 0, 1, 0, 0]), 5)
     return c
 
 

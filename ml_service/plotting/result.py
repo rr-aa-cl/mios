@@ -62,3 +62,7 @@ class Result:
     
     def get_total_trials(self) -> int:
         return self.total_trials
+
+    def get_lowest_cost(self):
+        costs = self.get_cost_per_trial()
+        return min(costs)

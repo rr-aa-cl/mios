@@ -61,6 +61,7 @@ def test_interface(agent: str = "localhost"):
     # call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
     config = get_service_configuration()
     config.n_gen = 100
+    config.exploration_mode = True
 
     uuid = interface.start_service(problem_def, config, agents, {"mode": "global", "kb_location": "collective-panda-002.local"})
     input("Press enter to stop service.")
@@ -187,3 +188,12 @@ def test_generalizer():
         print("Regressor: " + name)
         prediction = manager.predict_knowledge(task_identity, "global_knowledge", regr)
         print("error: " + str(prediction["meta"]["prediction_error"]))
+
+
+def test_cost_function():
+    pd = rastrigin()
+    pd.cost_function.optimum_weights = [0, 0.5, 0.5, 0, 0]
+    print(pd.cost_function.min_cost_weights)
+    pd_dict = pd.to_dict()
+    pd = ProblemDefinition.from_dict(pd_dict)
+    print(pd.cost_function.min_cost_weights)

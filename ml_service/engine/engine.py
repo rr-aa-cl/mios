@@ -74,6 +74,7 @@ class Engine:
 
     def initialize(self, problem_definition: ProblemDefinition, exploration_mode: bool = False):
         self.x = np.empty((0, len(problem_definition.domain.limits)))
+        self.exploration_mode = exploration_mode
         return self.initialize_results(problem_definition)
 
     def register_stop_condition(self, stop_condition):
@@ -125,10 +126,10 @@ class Engine:
         return self.database_results_id
 
     def is_learned(self) -> bool:
-        if self.stop_condition is None:
-            return self.cnt_optimal > self.problem_definition.cost_function.finish_thr
-        elif self.exploration_mode is True:
+        if self.exploration_mode is True:
             return False
+        elif self.stop_condition is None:
+            return self.cnt_optimal > self.problem_definition.cost_function.finish_thr
         else:
             return self.stop_condition()
 

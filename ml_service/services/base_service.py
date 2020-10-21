@@ -111,6 +111,8 @@ class BaseService(metaclass=ABCMeta):
                         self.knowledge = kb.get_knowledge(self.problem_definition.get_task_identity())
                     except socket.timeout:
                         logger.error("base_service: global Database is not reachable!")
+                    except ConnectionRefusedError:
+                        pass
 
                 if self.knowledge:
                     self.centroid = []

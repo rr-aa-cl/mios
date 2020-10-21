@@ -3,6 +3,9 @@ from engine.task_result import TaskResult
 from utils.exception import CostFunctionError
 import logging
 from typing import Tuple
+import numpy as np
+from scipy.interpolate import griddata
+
 
 logger = logging.getLogger("ml_service")
 
@@ -24,8 +27,27 @@ class CostFunction:
         self.heuristic_skills = []
         self.heuristic_expressions = "var"
         self.max_cost = [1] * 5
-        self.min_cost = [0] * 5
+        self.min_cost_weights = np.zeros((2, 6))
+        self.min_cost_val = np.zeros((2,1))
         self.finish_thr = 0
+
+    def prepare_cost_grid(self, n_steps):
+        self.min_cost_weights = np.zeros((pow(n_steps, 5), 5))
+        self.min_cost_val = np.zeros((pow(n_steps, 5), 1))
+        cnt = 0
+        for i in range(n_steps):
+            for j in range(n_steps):
+                for k in range(n_steps):
+                    for l in range(n_steps):
+                        for m in range(n_steps):
+                            self.min_cost_weights[cnt] = np.array([i/n_steps, j/n_steps, k/n_steps, l/n_steps, m/n_steps]).reshape(1, -1)
+                            cnt += 1
+
+    def add_to_cost_grid(self, cost_weights: np.ndarray, cost):
+        for i in range(len(self.min_cost_weights)):
+            if np.array_equal(self.min_cost_weights[i], cost_weights):
+                self.min_cost_val[i] = cost
+                print("Added cost")
 
     def to_dict(self):
         c = {
@@ -35,7 +57,8 @@ class CostFunction:
             "heuristic_skills": self.heuristic_skills,
             "heuristic_expressions": self.heuristic_expressions,
             "max_cost": self.max_cost,
-            "min_cost": self.min_cost,
+            "min_cost_weights": self.min_cost_weights.tolist(),
+            "min_cost_val": self.min_cost_val.tolist(),
             "finish_thr": self.finish_thr
         }
         return c
@@ -49,7 +72,8 @@ class CostFunction:
         c.heuristic_skills = cf_dict["heuristic_skills"]
         c.heuristic_expressions = cf_dict["heuristic_expressions"]
         c.max_cost = cf_dict["max_cost"]
-        c.min_cost = cf_dict["min_cost"]
+        c.min_cost_weights = np.asarray(cf_dict["min_cost_weights"])
+        c.min_cost_val = np.asarray(cf_dict["min_cost_val"])
         c.finish_thr = cf_dict["finish_thr"]
         return c
 
@@ -69,6 +93,13 @@ class ProblemDefinition:
         self.task_type = task_type
         self.cost_function = cost_function
         self.tags = tags
+        self.optimum_thr = 0
+
+    def calc_optimum_thr(self):
+        self.optimum_thr = griddata(self.cost_function.min_cost_weights, self.cost_function.min_cost_val,
+                 self.cost_function.optimum_weights, method="nearest")
+
+        print("THR: " + str(self.optimum_thr))
 
     def get_task_identity(self) -> dict:
         return {"task_type": self.task_type, "optimum_weights": self.cost_function.optimum_weights, "tags": self.tags}
@@ -154,22 +185,16 @@ class ProblemDefinition:
                         self.cost_function.max_cost[i]))
                     result.success = False
 
-                var = self.cost_function.min_cost[i]
-                min_cost += self.cost_function.optimum_weights[i] * (
-                        eval(self.cost_function.optimum_expressions[i]) / self.cost_function.max_cost[i])
+                # var = self.cost_function.min_cost[i]
+                # min_cost += self.cost_function.optimum_weights[i] * (
+                #         eval(self.cost_function.optimum_expressions[i]) / self.cost_function.max_cost[i])
 
         heuristic = 0
         for s in self.cost_function.heuristic_skills:
             var = result.heuristic[s]
             heuristic += eval(self.cost_function.heuristic_expressions)
 
-        if cost > 1 and result.success is True:
-            print("####################################################################################")
-            print(self.cost_function.max_cost)
-            print(self.cost_function.optimum_weights)
-            print(cost_per_weight)
-
         if result.success is True:
-            return cost, cost < min_cost
+            return cost, cost < self.optimum_thr
         else:
             return heuristic + 1, False
