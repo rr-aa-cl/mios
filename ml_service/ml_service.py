@@ -59,8 +59,10 @@ def test_interface(agent: str = "localhost"):
     interface = Interface()
 
     # call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
+    config = get_service_configuration()
+    config.n_gen = 100
 
-    uuid = interface.start_service(problem_def, get_service_configuration(), agents, {"mode": "global", "kb_location": "collective-panda-002.local"})
+    uuid = interface.start_service(problem_def, config, agents, {"mode": "global", "kb_location": "collective-panda-002.local"})
     input("Press enter to stop service.")
     interface.stop_service()
 
@@ -164,14 +166,14 @@ from knowledge_processor.kg_mlp import KGMLP
 
 
 def test_generalizer():
-    task_name = "rastrigin_8"
+    task_name = "rastrigin_0"
     task_identity = {
-        "tags": ["collective_learning_benchmark_005", task_name],
+        "tags": ["collective_learning_benchmark_001", task_name],
         "task_type": "benchmark_rastrigin",
-        "optimum_weights": [0.08, 0.92, 0, 0, 0]
+        "optimum_weights": [0, 0.3, 0.7, 0, 0]
     }
 
-    manager = KnowledgeManager(host="collective-panda-001.local")
+    manager = KnowledgeManager(host="collective-panda-002.local")
 
     regressors = {
         "lr": KGLinearRegressor(),

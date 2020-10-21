@@ -41,11 +41,13 @@ class CMAESService(BaseService):
     def __init__(self):
         super().__init__()
 
+        self.success_ratio = 0
+
     def _initialize(self):
         deap.creator.create("FitnessMin", deap.base.Fitness, weights=(-1.0,))
         deap.creator.create("Individual", list, fitness=deap.creator.FitnessMin)
         self.toolbox = deap.base.Toolbox()
-        print("TEST")
+        self.engine.register_stop_condition(self._is_learned)
 
     def _learn_task(self) -> bool:
         self.cnt_gen = 0
@@ -88,6 +90,11 @@ class CMAESService(BaseService):
     def _terminate(self):
         pass
 
+    def _is_learned(self) -> bool:
+        if self.strategy.sigma < 0.02:
+            return True
+        return False
+
     def trial(self, f, x_set):
         pass
 
@@ -100,6 +107,7 @@ class CMAESService(BaseService):
             trial_uuids.append(self.push_trial(x))
 
         costs = []
+        self.success_ratio = 0
         for uuid in trial_uuids:
             result = self.wait_for_result(uuid)
             if result.final_cost is None:
@@ -107,7 +115,10 @@ class CMAESService(BaseService):
                 self.stop()
                 costs.append((0,))
             else:
+                self.success_ratio += result.success
                 costs.append((result.final_cost,))
+
+        self.success_ratio /= float(len(trial_uuids))
 
         logger.debug("CMAES costs: " + str(costs))
         return costs
@@ -130,6 +141,9 @@ class CMAESService(BaseService):
 
             # Update the strategy with the evaluated individuals
             toolbox.update(self.population)
+
+            print("ratio: " + str(self.success_ratio))
+            print("sigma:" + str(self.strategy.sigma))
 
             record = stats.compile(self.population) if stats is not None else {}
             logbook.record(gen=gen, nevals=len(self.population), **record)

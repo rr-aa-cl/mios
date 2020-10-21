@@ -2,10 +2,13 @@ import time
 import datetime
 import logging
 from threading import Thread
+from threading import Lock
 from queue import Queue
 from queue import Empty
 from copy import deepcopy
 import uuid
+import numpy as np
+from sklearn.neural_network import MLPRegressor
 from mongodb_client.mongodb_client import MongoDBClient
 from problem_definition.problem_definition import ProblemDefinition
 from engine.task_result import TaskResult
@@ -60,9 +63,19 @@ class Engine:
 
         self.cnt_trial = 0
         self.cnt_optimal = 0
+        self.stop_condition = None
+
+        self.x = np.empty((0,0))
+        self.y = np.empty((0,))
+
+        self.lock_data = Lock()
 
     def initialize(self, problem_definition: ProblemDefinition):
+        self.x = np.empty((0, len(problem_definition.domain.limits)))
         return self.initialize_results(problem_definition)
+
+    def register_stop_condition(self, stop_condition):
+        self.stop_condition = stop_condition
 
     def add_agent(self, agent: str):
         logger.debug("Engine.add_agent(" + str(agent) + ")")
@@ -110,7 +123,27 @@ class Engine:
         return self.database_results_id
 
     def is_learned(self) -> bool:
-        return self.cnt_optimal > self.problem_definition.cost_function.finish_thr
+        if self.stop_condition is None:
+            return self.cnt_optimal > self.problem_definition.cost_function.finish_thr
+        else:
+            return self.stop_condition()
+
+        # regressor = MLPRegressor(hidden_layer_sizes=(10,), activation="relu", solver="adam", max_iter=4000)
+        # self.lock_data.acquire()
+        #
+        # XY = np.append(self.x, self.y.reshape(-1,1), axis=1)
+        # XY = XY[np.argsort(XY[:,-1],)]
+        # # np.random.shuffle(XY)
+        # size_lower = int(np.ceil(XY.shape[0]*0.1))
+        # size_upper = int(np.ceil(XY.shape[0] * 0.5))
+        # print(XY)
+        #
+        # if XY.shape[0] > 6:
+        #     regressor.fit(XY[size_lower:size_upper,0:-1],XY[size_lower:size_upper,-1].flatten())
+        #     print("Score: " + str(regressor.score(XY[0:size_lower,0:-1],XY[0:size_lower,-1].flatten())))
+        # self.lock_data.release()
+        # time.sleep(1)
+        # return False
 
     def main_loop(self):
         logger.debug("Engine.main_loop()")
@@ -222,6 +255,16 @@ class Engine:
             trial.trial_number = self.cnt_trial
             self.cnt_trial += 1
             trial.task_result.final_cost, trial.task_result.optimal = self.problem_definition.calculate_cost(trial.task_result)
+
+            theta = np.zeros((1,(len(self.problem_definition.domain.limits))))
+            for j in range(len(self.problem_definition.domain.limits)):
+                theta[0][j] = trial.theta[self.problem_definition.domain.vector_mapping[j]]
+            self.lock_data.acquire()
+            if trial.task_result.final_cost < 1:
+                self.x = np.append(self.x, theta, axis=0)
+                self.y = np.append(self.y, trial.task_result.final_cost)
+            self.lock_data.release()
+
             if trial.log is True:
                 self.write_task_result(trial)
             break

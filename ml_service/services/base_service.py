@@ -62,6 +62,10 @@ class BaseService(metaclass=ABCMeta):
     def _terminate(self):
         raise NotImplementedError
 
+    @abstractmethod
+    def _is_learned(self) -> bool:
+        raise NotImplementedError
+
     def initialize(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
                    agents: set, knowledge_source: dict = None) -> (bool, str):
         self.problem_definition = problem_definition
