@@ -162,18 +162,12 @@ class KnowledgeManager():
             data_db = "global_ml_results"
 
         doc = self.collect_data(task_filter, knowledge_db)
-        
+
         if not doc:
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
                 knowledge_db) + ")")
             logger.debug("KnowledgeManager: Using similar Knowledge")
             return self.get_local_knowledge(task_identity, knowledge_db, data_db)
-        if len(doc) < 2:  # if no predictions can be made: use similar knowledge
-            logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
-                knowledge_db) + ")")
-            logger.debug("KnowledgeManager: Using similar Knowledge")
-            return self.get_local_knowledge(task_identity, knowledge_db, data_db)
-
         # check if knowledge fits together:
         vector_mapping = doc[0]["parameters"].keys()
         for d in doc:
@@ -181,6 +175,12 @@ class KnowledgeManager():
                 logger.error(
                     "KnowledgeManager.predict_knowledge: found knowledge doesnt fit together: different vector mappings!")
                 return False
+        if len(doc) < 2:  # if no predictions can be made: use similar knowledge
+            logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
+                knowledge_db) + ")")
+            logger.debug("KnowledgeManager: Using similar Knowledge")
+            return self.get_local_knowledge(task_identity, knowledge_db, data_db)
+
         # get best predictor:
         if predictor is None:
             predictor = self.get_predictor()
