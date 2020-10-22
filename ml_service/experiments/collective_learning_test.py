@@ -39,7 +39,7 @@ class CollectiveLearningBase(Experiment):
     def initialize(self, knowledge_mode: str):
         config = CMAESConfiguration()
         config.exploration_mode = True
-        config.n_gen = 100
+        config.n_gen = 30
         config.n_ind = 10
 
         self.agents = ["collective-panda-007.local", "collective-panda-001.local", "collective-panda-008.local",
