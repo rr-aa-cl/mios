@@ -40,6 +40,7 @@ class CollectiveLearningBase(Experiment):
     def initialize(self, knowledge_mode: str):
         config = CMAESConfiguration()
         config.exploration_mode = False
+
         config.n_gen = 30
         config.n_ind = 10
 
