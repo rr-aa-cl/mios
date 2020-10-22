@@ -27,27 +27,20 @@ class CostFunction:
         self.heuristic_skills = []
         self.heuristic_expressions = "var"
         self.max_cost = [1] * 5
-        self.min_cost_weights = np.zeros((2, 6))
-        self.min_cost_val = np.zeros((2,1))
         self.finish_thr = 0
-
-    def prepare_cost_grid(self, n_steps):
-        self.min_cost_weights = np.zeros((pow(n_steps, 5), 5))
-        self.min_cost_val = np.zeros((pow(n_steps, 5), 1))
-        cnt = 0
-        for i in range(n_steps):
-            for j in range(n_steps):
-                for k in range(n_steps):
-                    for l in range(n_steps):
-                        for m in range(n_steps):
-                            self.min_cost_weights[cnt] = np.array([i/n_steps, j/n_steps, k/n_steps, l/n_steps, m/n_steps]).reshape(1, -1)
-                            cnt += 1
+        self.cost_grid_weights = np.array([[]])
+        self.cost_grid_val = np.array([[]])
 
     def add_to_cost_grid(self, cost_weights: np.ndarray, cost):
-        for i in range(len(self.min_cost_weights)):
-            if np.array_equal(self.min_cost_weights[i], cost_weights):
-                self.min_cost_val[i] = cost
-                print("Added cost")
+        contains = False
+        for i in range(len(self.cost_grid_weights)):
+            if np.array_equal(self.cost_grid_weights[i], cost_weights):
+                self.cost_grid_val[i] = cost
+                contains = True
+                break
+        if contains is False:
+            self.cost_grid_weights = np.append(self.cost_grid_weights, cost_weights.reshape(1, -1))
+            self.cost_grid_val = np.append(self.cost_grid_val, np.array([cost]).reshape(1, -1))
 
     def to_dict(self):
         c = {
@@ -57,8 +50,8 @@ class CostFunction:
             "heuristic_skills": self.heuristic_skills,
             "heuristic_expressions": self.heuristic_expressions,
             "max_cost": self.max_cost,
-            "min_cost_weights": self.min_cost_weights.tolist(),
-            "min_cost_val": self.min_cost_val.tolist(),
+            "cost_grid_weights": self.cost_grid_weights.tolist(),
+            "cost_grid_val": self.cost_grid_val.tolist(),
             "finish_thr": self.finish_thr
         }
         return c
@@ -72,8 +65,8 @@ class CostFunction:
         c.heuristic_skills = cf_dict["heuristic_skills"]
         c.heuristic_expressions = cf_dict["heuristic_expressions"]
         c.max_cost = cf_dict["max_cost"]
-        c.min_cost_weights = np.asarray(cf_dict["min_cost_weights"])
-        c.min_cost_val = np.asarray(cf_dict["min_cost_val"])
+        c.cost_grid_weights = np.asarray(cf_dict["cost_grid_weights"])
+        c.cost_grid_val = np.asarray(cf_dict["cost_grid_val"])
         c.finish_thr = cf_dict["finish_thr"]
         return c
 
@@ -96,8 +89,9 @@ class ProblemDefinition:
         self.optimum_thr = 0
 
     def calc_optimum_thr(self):
-        self.optimum_thr = griddata(self.cost_function.min_cost_weights, self.cost_function.min_cost_val,
+        self.optimum_thr = griddata(self.cost_function.cost_grid_weights, self.cost_function.cost_grid_val,
                  self.cost_function.optimum_weights, method="nearest")
+        print(self.cost_function.cost_grid_weights)
 
         print("THR: " + str(self.optimum_thr))
 

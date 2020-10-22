@@ -6,6 +6,8 @@ from task_scheduler.task_scheduler import TaskScheduler
 from task_scheduler.creation_pipeline import CreationPipeline
 from utils.cluster_control import *
 from utils.database import *
+from plotting.data_acquisition import get_multiple_experiment_data
+from plotting.data_processor import DataProcessor
 
 
 logger = logging.getLogger("ml_service")
@@ -22,16 +24,21 @@ class Experiment(metaclass=ABCMeta):
     def insert_creation_pipeline(self, pipeline: CreationPipeline):
         self.creation_pipeline = pipeline
 
-    def start(self, tags: [], knowledge_mode: str, global_database: str):
+    def start(self, tags: [], knowledge_mode: str, global_database: str, use_cost_grid: str = None):
         self.tags = tags
         self.task_scheduler.kb_location = global_database
         self.initialize(knowledge_mode)
         if self.creation_pipeline is None:
             logger.error("No creation pipeline was provided.")
 
+        if use_cost_grid is not None:
+            cost_grid = self.get_cost_grid(use_cost_grid)
 
         for t in self.creation_pipeline.tasks:
             t.problem_definition.tags.extend(self.tags)
+            if use_cost_grid is not None:
+                for p in cost_grid:
+                    t.problem_definition.cost_function.add_to_cost_grid(p)
             self.task_scheduler.add_task(t)
 
         delete_local_results(self.agents, self.task_type, self.tags)
@@ -41,6 +48,12 @@ class Experiment(metaclass=ABCMeta):
 
         thr = Thread(target=self.task_scheduler.solve_tasks)
         thr.start()
+
+    def get_cost_grid(self, tag) -> list:
+        results = get_multiple_experiment_data(self.task_scheduler.kb_location, self.task_type, "global",  {"meta.tags": {"$all": [tag] }})
+        processor = DataProcessor()
+        return processor.get_optima_by_cost_function(results)
+
 
     def stop(self):
         self.task_scheduler.stop()

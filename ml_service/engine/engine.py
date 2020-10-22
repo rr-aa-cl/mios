@@ -117,6 +117,7 @@ class Engine:
 
     def initialize_results(self, problem_definition: ProblemDefinition):
         self.problem_definition = problem_definition
+        self.problem_definition.calc_optimum_thr()
         self.meta_data = problem_definition.to_dict()
         self.meta_data["t_0"] = time.time()
         self.meta_data["date"] = str(datetime.datetime.now())
