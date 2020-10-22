@@ -35,16 +35,13 @@ class Experiment(metaclass=ABCMeta):
         if use_cost_grid is not None:
             cost_grid = self.get_cost_grid(use_cost_grid)
 
-        print(cost_grid)
-        exit(-1)
-
         for t in self.creation_pipeline.tasks:
             t.problem_definition.tags.extend(self.tags)
             if use_cost_grid is not None:
-                t.problem_definition.cost_function.cost_grid_weights = np.array([[]])
-                t.problem_definition.cost_function.cost_grid_val = np.array([[]])
-                for i in range(len(cost_grid)):
-                    t.problem_definition.cost_function.add_to_cost_grid(cost_grid[i,:-1], cost_grid[i, -1])
+                t.problem_definition.cost_function.cost_grid_weights = cost_grid[0, :-1]
+                t.problem_definition.cost_function.cost_grid_val = cost_grid[0, -1]
+                for i in range(1, cost_grid.shape[0]):
+                    t.problem_definition.cost_function.add_to_cost_grid(cost_grid[i, 0], cost_grid[i, 1:-1], cost_grid[i, -1])
             self.task_scheduler.add_task(t)
 
         delete_local_results(self.agents, self.task_type, self.tags)
@@ -58,7 +55,7 @@ class Experiment(metaclass=ABCMeta):
     def get_cost_grid(self, tag) -> np.ndarray:
         results = get_multiple_experiment_data(self.task_scheduler.kb_location, self.task_type, "global",  {"meta.tags": {"$all": [tag] }})
         processor = DataProcessor()
-        return processor.get_optima_by_cost_function(results)
+        return processor.get_optima_by_task_identity(results, 0.1)
 
 
     def stop(self):

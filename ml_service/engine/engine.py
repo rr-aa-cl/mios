@@ -129,10 +129,9 @@ class Engine:
     def is_learned(self) -> bool:
         if self.exploration_mode is True:
             return False
-        elif self.stop_condition is None:
-            return self.cnt_optimal > self.problem_definition.cost_function.finish_thr
         else:
-            return self.stop_condition()
+            #print(str(self.cnt_optimal) + " > " + str(self.problem_definition.cost_function.finish_thr) + "?")
+            return self.cnt_optimal > self.problem_definition.cost_function.finish_thr
 
         # regressor = MLPRegressor(hidden_layer_sizes=(10,), activation="relu", solver="adam", max_iter=4000)
         # self.lock_data.acquire()

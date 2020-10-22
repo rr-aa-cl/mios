@@ -30,17 +30,19 @@ class DataProcessor:
                 c.extend([c[-1]] * (n_trials - len(c)))
         return costs
 
-    def get_optima_by_cost_function(self, results: list) -> np.ndarray:
-        arr = np.zeros((len(results), 6))
+    def get_optima_by_task_identity(self, results: list, percentage: float) -> np.ndarray:
+        arr = np.zeros((len(results), 7))
         for i in range(len(results)):
-            arr[i, :-1] = results[i].meta_data["cost_function"]["optimum_weights"]
-            arr[i, -1] = results[i].get_lowest_cost()
+            arr[i, 0] = results[i].meta_data["cost_function"]["geometry_factor"]
+            arr[i, 1:-1] = results[i].meta_data["cost_function"]["optimum_weights"]
+            cost = self.get_monotonically_decreasing_cost(results[i].get_cost_per_trial())
+            arr[i, -1] = (cost[0] - cost[-1]) * percentage + cost[-1]
         return arr
 
     def get_average_cost(self, results: list) -> np.ndarray:
         return np.average(np.asarray(self.get_collection_of_costs(results)), 0)
 
-    def get_monotonically_decreasing_cost(self, cost: np.ndarray):
+    def get_monotonically_decreasing_cost(self, cost: np.ndarray) -> np.ndarray:
         cost_monotone = cost
         if len(cost_monotone) == 0:
             raise DataError
@@ -50,7 +52,7 @@ class DataProcessor:
                 cost_monotone[i] = c_0
             if cost_monotone[i] < c_0:
                 c_0 = cost_monotone[i]
-        return cost
+        return cost_monotone
 
     def get_total_times(self, results: list) -> np.ndarray:
         times = []

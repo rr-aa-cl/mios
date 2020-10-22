@@ -32,7 +32,7 @@ class CostFunction:
         self.cost_grid_weights = np.array([[]])
         self.cost_grid_val = np.array([[]])
 
-    def add_to_cost_grid(self, geometry_factor:float, cost_weights: np.ndarray, cost):
+    def add_to_cost_grid(self, geometry_factor: float, cost_weights: np.ndarray, cost):
         contains = False
         task_identity = np.append(np.array([geometry_factor]), cost_weights)
         for i in range(len(self.cost_grid_weights)):
@@ -41,8 +41,8 @@ class CostFunction:
                 contains = True
                 break
         if contains is False:
-            self.cost_grid_weights = np.append(self.cost_grid_weights, task_identity.reshape(1, -1))
-            self.cost_grid_val = np.append(self.cost_grid_val, np.array([cost]).reshape(1, -1))
+            self.cost_grid_weights = np.append(self.cost_grid_weights, task_identity.reshape(1, -1), axis=0)
+            self.cost_grid_val = np.append(self.cost_grid_val, np.array([cost]).reshape(1, -1), axis=0)
 
     def to_dict(self):
         c = {
@@ -93,10 +93,10 @@ class ProblemDefinition:
         self.optimum_thr = 0
 
     def calc_optimum_thr(self):
-        self.optimum_thr = griddata(self.cost_function.cost_grid_weights, self.cost_function.cost_grid_val,
+        self.optimum_thr = 1.1 * griddata(self.cost_function.cost_grid_weights, self.cost_function.cost_grid_val,
                  np.append(np.array([self.cost_function.geometry_factor]), self.cost_function.optimum_weights),
                                     method="nearest")
-        print(self.cost_function.cost_grid_weights)
+        self.optimum_thr = float(self.optimum_thr)
 
         print("THR: " + str(self.optimum_thr))
 

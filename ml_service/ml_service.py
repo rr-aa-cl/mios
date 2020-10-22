@@ -56,12 +56,28 @@ def test_interface(agent: str = "localhost"):
     agents.add(agent)
     problem_def = rastrigin()
     problem_def.tags = ["rastrigin_8", "collective_learning_benchmark_001"]
+
+    results = get_multiple_experiment_data("collective-panda-002.local", "benchmark_rastrigin", "global",
+                                           {"meta.tags": {"$all": ["collective_learning_benchmark_004"]}})
+    processor = DataProcessor()
+    grid = processor.get_optima_by_task_identity(results, 0.3)
+    problem_def.cost_function.cost_grid_weights = grid[0, :-1]
+    problem_def.cost_function.cost_grid_val = grid[0, -1]
+    problem_def.cost_function.cost_grid_weights = problem_def.cost_function.cost_grid_weights.reshape(1, -1)
+    problem_def.cost_function.cost_grid_val = problem_def.cost_function.cost_grid_val.reshape(1, -1)
+    for i in range(1, grid.shape[0]):
+        problem_def.cost_function.add_to_cost_grid(grid[i, 0], grid[i, 1:-1], grid[i, -1])
+
+    for i in range(problem_def.cost_function.cost_grid_weights.shape[0]):
+        if np.array_equal(problem_def.cost_function.cost_grid_weights[i], np.append(np.array(problem_def.cost_function.geometry_factor), problem_def.cost_function.optimum_weights)):
+            print("Expected optimum is: " + str(problem_def.cost_function.cost_grid_val[i]))
+
     interface = Interface()
 
     # call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
     config = get_service_configuration()
     config.n_gen = 100
-    config.exploration_mode = True
+    config.exploration_mode = False
 
     uuid = interface.start_service(problem_def, config, agents, {"mode": "global", "kb_location": "collective-panda-002.local"})
     input("Press enter to stop service.")
@@ -194,12 +210,8 @@ def test_generalizer():
         print("error: " + str(prediction["meta"]["prediction_error"]))
 
 
-from plotting.data_acquisition import get_multiple_experiment_data
-from plotting.data_processor import DataProcessor
-
-
 def test_cost_function():
     results = get_multiple_experiment_data("collective-panda-002.local", "benchmark_rastrigin", "global",
                                            {"meta.tags": {"$all": ["collective_learning_benchmark_004"]}})
     processor = DataProcessor()
-    print(processor.get_optima_by_cost_function(results))
+    print(processor.get_optima_by_task_identity(results))
