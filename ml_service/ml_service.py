@@ -159,7 +159,7 @@ def test_knowledge_use(knowledge_mode="global"):
 
 def test_plotting(tags):
     hosts = [
-        "collective-panda-001.local"]  # ,"collective-panda-002.local","collective-panda-007.local","collective-panda-008.local","collective-panda-009.local"]
+        "collective-panda-002.local"]  # ,"collective-panda-002.local","collective-panda-007.local","collective-panda-008.local","collective-panda-009.local"]
     filter = {"meta.tags": tags}
     knowledge_mode = "global"
     # task_type = "insert_object"
