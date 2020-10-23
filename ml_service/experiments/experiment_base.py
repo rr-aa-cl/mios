@@ -40,6 +40,8 @@ class Experiment(metaclass=ABCMeta):
             if use_cost_grid is not None:
                 t.problem_definition.cost_function.cost_grid_weights = cost_grid[0, :-1]
                 t.problem_definition.cost_function.cost_grid_val = cost_grid[0, -1]
+                t.problem_definition.cost_function.cost_grid_weights = t.problem_definition.cost_function.cost_grid_weights.reshape(1, -1)
+                t.problem_definition.cost_function.cost_grid_val = t.problem_definition.cost_function.cost_grid_val.reshape(1, -1)
                 for i in range(1, cost_grid.shape[0]):
                     t.problem_definition.cost_function.add_to_cost_grid(cost_grid[i, 0], cost_grid[i, 1:-1], cost_grid[i, -1])
             self.task_scheduler.add_task(t)
