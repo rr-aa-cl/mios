@@ -16,6 +16,7 @@ def rastrigin_a(a: float):
     pd.default_context["skills"]["ml_test"]["skill"]["x_0"] = [a, a, a, a, a, a]
     pd.tags = ["rastrigin_" + str(int(a))]
     pd.cost_function.geometry_factor = a
+    pd.cost_function.max_cost[2] = pow(a + 5.12, 2) * 6
     return pd
 
 
