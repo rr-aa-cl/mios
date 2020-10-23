@@ -157,29 +157,6 @@ def test_knowledge_use(knowledge_mode="global"):
     interface.stop_service()
 
 
-def test_plotting(tags):
-    hosts = [
-        "collective-panda-002.local"]  # ,"collective-panda-002.local","collective-panda-007.local","collective-panda-008.local","collective-panda-009.local"]
-    filter = {"meta.tags": tags}
-    knowledge_mode = "global"
-    # task_type = "insert_object"
-    task_type = "benchmark_rastrigin"
-
-    p = DataProcessor()
-    plot = Plotter()
-    results = []
-    for host in hosts:
-        results.extend(get_multiple_experiment_data(host, task_type, knowledge_mode, filter=filter))
-
-    results = p.sort_over_time(results)  # not really needed results are stored in order
-    # all_times = p.get_cumulative_time(results)
-    # plot.plot_learning_over_task(all_times, "global")
-    agent_results = p.get_agent_results(results)  # seperate results for every agent
-    for agent, agent_results in agent_results.items():
-        agent_times_cum = p.get_cumulative_time(agent_results)
-        plot.plot_learning_over_task(agent_times_cum, agent)
-
-
 from knowledge_processor.kg_linear_regression import KGLinearRegressor
 from knowledge_processor.kg_random_forest import KGRandomForest
 from knowledge_processor.kg_k_neighbors import KGKNeighbors

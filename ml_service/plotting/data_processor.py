@@ -101,8 +101,8 @@ class DataProcessor:
             trials_per_task.append(r.get_total_trials())
         return np.asarray(trials_per_task)
 
-    def sort_over_time(self, results: list) -> list:
-        return sorted(results, key=lambda r: (r.starting_time))
+    def sort_over_time(self, results: list) -> list:  # sort over end-time
+        return sorted(results, key=lambda r: (r.starting_time + r.total_time))
 
     def get_average_theta(self):
         pass
