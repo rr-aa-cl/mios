@@ -93,12 +93,15 @@ class ProblemDefinition:
         self.optimum_thr = 0
 
     def calc_optimum_thr(self):
-        self.optimum_thr = 1.1 * griddata(self.cost_function.cost_grid_weights, self.cost_function.cost_grid_val,
-                 np.append(np.array([self.cost_function.geometry_factor]), self.cost_function.optimum_weights),
-                                    method="nearest")
-        self.optimum_thr = float(self.optimum_thr)
+        if self.cost_function.cost_grid_weights.shape[0] > 2:
+            self.optimum_thr = 1.1 * griddata(self.cost_function.cost_grid_weights, self.cost_function.cost_grid_val,
+                                              np.append(np.array([self.cost_function.geometry_factor]), self.cost_function.optimum_weights),
+                                              method="nearest")
+            self.optimum_thr = float(self.optimum_thr)
+            print("THR: " + str(self.optimum_thr))
+        else:
+            self.optimum_thr = 0
 
-        print("THR: " + str(self.optimum_thr))
 
     def get_task_identity(self) -> dict:
         return {"task_type": self.task_type, "optimum_weights": self.cost_function.optimum_weights, "tags": self.tags}

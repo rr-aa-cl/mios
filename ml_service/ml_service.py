@@ -57,21 +57,21 @@ def test_interface(agent: str = "localhost"):
     problem_def = rastrigin()
     problem_def.tags = ["rastrigin_8", "collective_learning_benchmark_001"]
 
-    results = get_multiple_experiment_data("collective-panda-002.local", "benchmark_rastrigin", "global",
-                                           {"meta.tags": {"$all": ["collective_learning_benchmark_screen_001"]}})
-    processor = DataProcessor()
-    grid = processor.get_optima_by_task_identity(results, 0.01)
-    problem_def.cost_function.cost_grid_weights = grid[0, :-1]
-    problem_def.cost_function.cost_grid_val = grid[0, -1]
-    problem_def.cost_function.cost_grid_weights = problem_def.cost_function.cost_grid_weights.reshape(1, -1)
-    problem_def.cost_function.cost_grid_val = problem_def.cost_function.cost_grid_val.reshape(1, -1)
-    for i in range(1, grid.shape[0]):
-        problem_def.cost_function.add_to_cost_grid(grid[i, 0], grid[i, 1:-1], grid[i, -1])
-
-    task_identity = np.append(np.array([problem_def.cost_function.geometry_factor]), problem_def.cost_function.optimum_weights)
-    for i in range(problem_def.cost_function.cost_grid_weights.shape[0]):
-        if np.allclose(problem_def.cost_function.cost_grid_weights[i], task_identity):
-            print("Expected optimum is: " + str(problem_def.cost_function.cost_grid_val[i]))
+    # results = get_multiple_experiment_data("collective-panda-002.local", "benchmark_rastrigin", "global",
+    #                                        {"meta.tags": {"$all": ["collective_learning_benchmark_screen_001"]}})
+    # processor = DataProcessor()
+    # grid = processor.get_optima_by_task_identity(results, 0.01)
+    # problem_def.cost_function.cost_grid_weights = grid[0, :-1]
+    # problem_def.cost_function.cost_grid_val = grid[0, -1]
+    # problem_def.cost_function.cost_grid_weights = problem_def.cost_function.cost_grid_weights.reshape(1, -1)
+    # problem_def.cost_function.cost_grid_val = problem_def.cost_function.cost_grid_val.reshape(1, -1)
+    # for i in range(1, grid.shape[0]):
+    #     problem_def.cost_function.add_to_cost_grid(grid[i, 0], grid[i, 1:-1], grid[i, -1])
+    #
+    # task_identity = np.append(np.array([problem_def.cost_function.geometry_factor]), problem_def.cost_function.optimum_weights)
+    # for i in range(problem_def.cost_function.cost_grid_weights.shape[0]):
+    #     if np.allclose(problem_def.cost_function.cost_grid_weights[i], task_identity):
+    #         print("Expected optimum is: " + str(problem_def.cost_function.cost_grid_val[i]))
 
     interface = Interface()
 
