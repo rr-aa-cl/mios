@@ -25,7 +25,8 @@ class Experiment(metaclass=ABCMeta):
     def insert_creation_pipeline(self, pipeline: CreationPipeline):
         self.creation_pipeline = pipeline
 
-    def start(self, tags: [], knowledge_mode: str, global_database: str, use_cost_grid: str = None):
+    def start(self, tags: [], knowledge_mode: str, global_database: str, use_cost_grid: str = None,
+              optima_percentage: float = 0.01):
         self.tags = tags
         self.task_scheduler.kb_location = global_database
         self.initialize(knowledge_mode)
@@ -33,7 +34,7 @@ class Experiment(metaclass=ABCMeta):
             logger.error("No creation pipeline was provided.")
 
         if use_cost_grid is not None:
-            cost_grid = self.get_cost_grid(use_cost_grid)
+            cost_grid = self.get_cost_grid(use_cost_grid, optima_percentage)
 
         for t in self.creation_pipeline.tasks:
             t.problem_definition.tags.extend(self.tags)
@@ -54,10 +55,10 @@ class Experiment(metaclass=ABCMeta):
         thr = Thread(target=self.task_scheduler.solve_tasks)
         thr.start()
 
-    def get_cost_grid(self, tag) -> np.ndarray:
+    def get_cost_grid(self, tag: str, percentage: float) -> np.ndarray:
         results = get_multiple_experiment_data(self.task_scheduler.kb_location, self.task_type, "global",  {"meta.tags": {"$all": [tag] }})
         processor = DataProcessor()
-        return processor.get_optima_by_task_identity(results, 0.1)
+        return processor.get_optima_by_task_identity(results, percentage)
 
 
     def stop(self):

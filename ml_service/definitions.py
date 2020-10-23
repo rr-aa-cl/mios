@@ -43,9 +43,9 @@ def rastrigin_cost():
     c.optimum_skills.append("ml_test")
     c.optimum_weights[1] = 0.6
     c.optimum_weights[2] = 0.4
-    c.max_cost[0] = 1000
-    c.max_cost[1] = 1000
-    c.max_cost[2] = 1000
+    c.max_cost[0] = 0
+    c.max_cost[1] = 157
+    c.max_cost[2] = 157
     c.finish_thr = 3
     c.geometry_factor = 1
     #c.cost_grid_weights = np.array([[0, 0, 1, 0, 0, 0],

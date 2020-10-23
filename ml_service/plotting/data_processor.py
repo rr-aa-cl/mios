@@ -35,8 +35,11 @@ class DataProcessor:
         for i in range(len(results)):
             arr[i, 0] = results[i].meta_data["cost_function"]["geometry_factor"]
             arr[i, 1:-1] = results[i].meta_data["cost_function"]["optimum_weights"]
+            cost_grid_max = np.asarray(results[i].meta_data["cost_function"]["max_cost"])
+            max_cost = cost_grid_max[0] * arr[i, 1] + cost_grid_max[1] * arr[i, 2] + cost_grid_max[2] * arr[i, 3] + \
+                       cost_grid_max[3] * arr[i, 4] + cost_grid_max[4] * arr[i, 5]
             cost = self.get_monotonically_decreasing_cost(results[i].get_cost_per_trial())
-            arr[i, -1] = (cost[0] - cost[-1]) * percentage + cost[-1]
+            arr[i, -1] = (max_cost - cost[-1]) * percentage + cost[-1]
         return arr
 
     def get_average_cost(self, results: list) -> np.ndarray:
@@ -47,7 +50,7 @@ class DataProcessor:
         if len(cost_monotone) == 0:
             raise DataError
         c_0 = cost_monotone[0]
-        for i in range(1,len(cost_monotone)):
+        for i in range(1, len(cost_monotone)):
             if cost[i] > c_0:
                 cost_monotone[i] = c_0
             if cost_monotone[i] < c_0:
@@ -97,9 +100,9 @@ class DataProcessor:
         for r in results:
             trials_per_task.append(r.get_total_trials())
         return np.asarray(trials_per_task)
-    
-    def sort_over_time(self, results:list) -> list:
-        return sorted(results, key= lambda r: (r.starting_time))
+
+    def sort_over_time(self, results: list) -> list:
+        return sorted(results, key=lambda r: (r.starting_time))
 
     def get_average_theta(self):
         pass
