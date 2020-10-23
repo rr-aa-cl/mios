@@ -78,6 +78,7 @@ def test_interface(agent: str = "localhost"):
     # call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
     config = get_service_configuration()
     config.n_gen = 100
+    config.n_ind = 10
     config.exploration_mode = True
 
     uuid = interface.start_service(problem_def, config, agents, {"mode": "none", "kb_location": "collective-panda-002.local"})

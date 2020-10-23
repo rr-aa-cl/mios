@@ -147,18 +147,15 @@ class BaseService(metaclass=ABCMeta):
         ml_data[0]["meta"]["init_knowledge"]["content"] = self.knowledge
         ml_data[0]["meta"]["init_knowledge"]["source"] = self.knowledge_source
         if self.knowledge_source is not None:
-            if self.knowledge_source["mode"] == "global":
+            if self.knowledge_source["always_upload"] == True:
                 logger.debug("base_service.learn_task: store ml_results to global database at "+str("http://" + self.knowledge_source["kb_location"] + ":8001"))
                 with ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001", allow_none=True) as kb:
                     try:
                         kb.store_result(ml_data[0])
                     except socket.timeout:
                         logger.error("base_service: global Database is not reachable!")
-                self.DBclient.update("ml_results",self.problem_definition.task_type,{"_id":self.database_results_id},ml_data[0])
-            else: # mode = "local" or "none"
-                self.DBclient.update("ml_results",self.problem_definition.task_type,{"_id":self.database_results_id},ml_data[0])
-        else: # update ml_results anyway
-            self.DBclient.update("ml_results",self.problem_definition.task_type,{"_id":self.database_results_id},ml_data[0])
+
+        self.DBclient.update("ml_results",self.problem_definition.task_type,{"_id":self.database_results_id},ml_data[0])
         return result
 
     def stop(self):

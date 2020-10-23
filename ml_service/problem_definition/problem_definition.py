@@ -31,6 +31,7 @@ class CostFunction:
         self.finish_thr = 0
         self.cost_grid_weights = np.array([[]])
         self.cost_grid_val = np.array([[]])
+        self.normal_cost = 1
 
     def add_to_cost_grid(self, geometry_factor: float, cost_weights: np.ndarray, cost):
         contains = False
@@ -101,7 +102,6 @@ class ProblemDefinition:
             print("THR: " + str(self.optimum_thr))
         else:
             self.optimum_thr = 0
-
 
     def get_task_identity(self) -> dict:
         return {"task_type": self.task_type, "optimum_weights": self.cost_function.optimum_weights, "tags": self.tags}
@@ -179,7 +179,7 @@ class ProblemDefinition:
             if self.cost_function.optimum_weights[i] > 0:
                 var = cost_per_weight[i]
                 cost += self.cost_function.optimum_weights[i] * (
-                            eval(self.cost_function.optimum_expressions[i]) / self.cost_function.max_cost[i])
+                            eval(self.cost_function.optimum_expressions[i]) / self.cost_function.max_cost[i]) * self.cost_function.normal_cost
 
                 if eval(self.cost_function.optimum_expressions[i]) > self.cost_function.max_cost[i]:
                     logger.debug("Exceeded maximum cost! Cost is " + str(
@@ -199,4 +199,4 @@ class ProblemDefinition:
         if result.success is True:
             return cost, cost < self.optimum_thr
         else:
-            return heuristic + 1, False
+            return heuristic + self.cost_function.normal_cost, False

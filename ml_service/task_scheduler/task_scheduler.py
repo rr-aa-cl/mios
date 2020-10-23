@@ -73,7 +73,8 @@ class TaskScheduler:
         s = ServerProxy("http://" + task.service_url + ":8000", allow_none=True)
         knowledge_info = {
             "mode": task.knowledge_mode,
-            "kb_location": self.kb_location
+            "kb_location": self.kb_location,
+            "always_upload": True
         }
         try:
             s.start_service(task.problem_definition.to_dict(), task.service_configuration.to_dict(), task.agents, knowledge_info)
