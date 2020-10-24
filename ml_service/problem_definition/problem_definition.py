@@ -95,7 +95,7 @@ class ProblemDefinition:
 
     def calc_optimum_thr(self):
         if self.cost_function.cost_grid_weights.shape[0] > 2:
-            self.optimum_thr = 1.1 * griddata(self.cost_function.cost_grid_weights, self.cost_function.cost_grid_val,
+            self.optimum_thr = 1.0 * griddata(self.cost_function.cost_grid_weights, self.cost_function.cost_grid_val,
                                               np.append(np.array([self.cost_function.geometry_factor]), self.cost_function.optimum_weights),
                                               method="nearest")
             self.optimum_thr = float(self.optimum_thr)
