@@ -151,7 +151,13 @@ def test_knowledge_use(knowledge_mode="global"):
     import time
     # create knowledge from old task:
     k = KnowledgeManager(host = "collective-panda-001.local")
-    # k.process_knowledge({"meta.tags":["test_sequence_1","test_sequence_2","test_sequence_3"]},"ml_results","benchmark_rastrigin","local_knowledge","benchmark_rastrigin",["test_knowledge","some_tag"])
+    task_identity = {
+        "tags": ["collective_learning_benchmark_screen_001"],
+        "task_type": "benchmark_rastrigin"
+    }
+    k.process_knowledge(task_identity,"global_ml_results","benchmark_rastrigin")
+
+    return
 
     # start global database:
     interface = Interface()
@@ -183,12 +189,15 @@ from knowledge_processor.kg_mlp import KGMLP
 
 
 def test_generalizer():
-    task_name = "rastrigin_0"
+    task_name = "rastrigin_1"
     task_identity = {
-        "tags": ["collective_learning_benchmark_001", task_name],
+        "tags": ["collective_learning_benchmark_screen_001", task_name],
         "task_type": "benchmark_rastrigin",
+        "geometry_factor": 1,
         "optimum_weights": [0, 0.3, 0.7, 0, 0]
     }
+
+    # data = get_experiment_data("collective-panda-002.local", "benchmark_rastrigin", "global", task_identity)
 
     manager = KnowledgeManager(host="collective-panda-002.local")
 
@@ -208,6 +217,6 @@ def test_generalizer():
 
 def test_cost_function():
     results = get_multiple_experiment_data("collective-panda-002.local", "benchmark_rastrigin", "global",
-                                           {"meta.tags": {"$all": ["collective_learning_benchmark_004"]}})
+                                           {"meta.tags": {"$all": ["collective_learning_benchmark_screen_001"]}})
     processor = DataProcessor()
     print(processor.get_optima_by_task_identity(results))

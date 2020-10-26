@@ -47,7 +47,8 @@ class KnowledgeManager():
             return False
         knowledge_filter = {"meta.tags": knowledge["meta"]["tags"],
                             "meta.task_type": knowledge["meta"]["task_type"],
-                            "meta.optimum_weights": knowledge["meta"]["optimum_weights"]}
+                            "meta.optimum_weights": knowledge["meta"]["optimum_weights"],
+                            "meta.geometry_factor": knowledge["meta"]["geometry_factor"]}
         available_knowledge = self.DBclient.read(knowledge_db, knowledge["meta"]["task_type"], knowledge_filter)
         if len(available_knowledge) == 0:
             logger.debug("KnowledgeManager.store_knowledge: create new knowledge entry")
@@ -122,7 +123,7 @@ class KnowledgeManager():
             if not doc["meta"].get("optimum_weights", False):
                 logger.error("KnowledgeManager: found invalid knowledge (no key \"optimum_weights\" in meta)")
                 continue
-            training_data_x.append(np.array(doc["meta"]["optimum_weights"]))
+            training_data_x.append(np.append(np.array(doc["meta"]["geometry_factor"]), np.array(doc["meta"]["optimum_weights"])))
             training_data_y.append(np.array(self.dict_to_list(doc["parameters"])))
         if len(training_data_x) < 1 or len(training_data_y) < 1:
             logger.error(
@@ -156,6 +157,8 @@ class KnowledgeManager():
         task_filter = copy.deepcopy(task_identity)
         if "optimum_weights" in task_filter:  # search for all task, independend of optimum weights
             task_filter.pop("optimum_weights")
+        if "geometry_factor" in task_filter:
+            task_filter.pop("geometry_factor")
         if knowledge_db.find("global") == -1:  # if ml_results are needed, which one to use
             data_db = "ml_results"
         else:    
@@ -181,8 +184,7 @@ class KnowledgeManager():
             logger.debug("KnowledgeManager: Using similar Knowledge")
             return self.get_local_knowledge(task_identity, knowledge_db, data_db)
 
-
-        return self.get_local_knowledge(task_identity, knowledge_db, data_db)
+        # return self.get_local_knowledge(task_identity, knowledge_db, data_db)
 
 
         # get best predictor:
@@ -232,7 +234,7 @@ class KnowledgeManager():
         else:
             error_in_context = False
         # predict
-        predict_x = np.array(task_identity["optimum_weights"])
+        predict_x = np.append(np.array(task_identity["geometry_factor"]), np.array(task_identity["optimum_weights"]))
         print("predict_x: " + str(predict_x))
         predict_x_normalized = (predict_x - mean_data_x) / std_deviation_data_x
         print("mean_data_x: " + str(mean_data_x))
@@ -257,6 +259,7 @@ class KnowledgeManager():
         meta["expected_cost"] = float(expected_cost[0])
         meta["prediction_error"] = error_in_context
         meta["optimum_weights"] = task_identity["optimum_weights"]
+        meta["geometry_factor"] = task_identity["geometry_factor"]
         meta["task_type"] = task_identity["task_type"]
         meta["tags"] = task_identity["tags"]
         meta["time"] = time.ctime()
