@@ -23,9 +23,13 @@ class KnowledgeManager():
     def collect_data(self, task_identity, data_db: str = "ml_results") -> list:
         if data_db.find("knowledge") == -1:  # if collecting raw data (no knowledge)
             print(task_identity)
-            result_filter = {"meta.tags": task_identity["tags"],
-                             "meta.cost_function.optimum_weights": task_identity["optimum_weights"],
-                             "meta.task_type": task_identity["task_type"]}
+            if "optimum_weights" in task_identity:
+                result_filter = {"meta.tags": task_identity["tags"],
+                                "meta.cost_function.optimum_weights": task_identity["optimum_weights"],
+                                "meta.task_type": task_identity["task_type"]}
+            else:
+                result_filter = {"meta.tags": task_identity["tags"],
+                                "meta.task_type": task_identity["task_type"]}
         else:  # if collecting knowledge:
             if "optimum_weights" in task_identity:
                 result_filter = {"meta.tags": task_identity["tags"],
