@@ -83,9 +83,9 @@ class KnowledgeManager():
         for d in doc:
             uuids.append(d["meta"]["uuid"])
 
-        successful_trials, vector_mapping, mean_optimum_weights = self.get_successful_trials(doc)
+        successful_trials, vector_mapping, mean_optimum_weights, sources = self.get_successful_trials(doc)
         # process knowledge:
-        self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, mean_optimum_weights)
+        self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, mean_optimum_weights, sources)
         knowledge = self.knowledge_processor.process_knowledge(successful_trials)
 
         if not knowledge:
@@ -315,7 +315,8 @@ class KnowledgeManager():
 
     def get_successful_trials(self, doc):
         metainfo = []
-        optimum_weights = []
+        optimum_weights = None
+        sources = []
         if len(doc) > 1:
             logger.info("WARNING: process knowledge from more tasks")
             alltrials = []
@@ -325,22 +326,23 @@ class KnowledgeManager():
                 trials = self.get_raw_data(d)
                 if len(trials) > 0:
                     optimum_weights.append(d["meta"]["cost_function"]["optimum_weights"])
+                    sources.append(d["_id"])
                 for t in trials:
                     alltrials.append(t)
             successful_trials = alltrials
+            optimum_weights = list(np.mean(optimum_weights, axis=0))
         else:
             doc = doc[0]
             # get raw ml data:
             successful_trials = self.get_raw_data(doc)
             metainfo.append(doc["meta"])
-
-        mean_optimum_weights = list(np.mean(optimum_weights, axis=0))
+            sources.append(doc["_id"])
 
         for m in metainfo:
             if m["domain"]["vector_mapping"] != metainfo[0]["domain"]["vector_mapping"]:
                 logger.error("knowledge_processor: got trials from different domains. Cant process them together")
         vector_mapping = metainfo[0]["domain"]["vector_mapping"]
-        return successful_trials, vector_mapping, mean_optimum_weights
+        return successful_trials, vector_mapping, optimum_weights, sources
 
     def get_most_similar_task(self, optimum_weights, tasks):
         '''find most similar task according to cost optimum_weights'''
