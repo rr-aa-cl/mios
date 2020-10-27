@@ -55,7 +55,8 @@ class Database():
             return False
         task_identity = {"task_type":result["meta"]["task_type"], \
                          "tags":result["meta"]["tags"], \
-                         "optimum_weights":result["meta"]["cost_function"]["optimum_weights"]}
+                         "optimum_weights":result["meta"]["cost_function"]["optimum_weights"],
+                         "geometry_factor": result["meta"]["cost_function"]["geometry_factor"]}
         self.process_knowledge(task_identity)
         return task_id
 

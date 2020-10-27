@@ -104,7 +104,7 @@ class ProblemDefinition:
             self.optimum_thr = 0
 
     def get_task_identity(self) -> dict:
-        return {"task_type": self.task_type, "optimum_weights": self.cost_function.optimum_weights, "tags": self.tags}
+        return {"task_type": self.task_type, "optimum_weights": self.cost_function.optimum_weights, "tags": self.tags, "geometry_factor": self.cost_function.geometry_factor}
 
     def to_dict(self) -> dict:
         problem_definition = {

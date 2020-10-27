@@ -56,6 +56,8 @@ class CMAESService(BaseService):
         self.toolbox.register("map", self.map)
 
         sigma_init = self.configuration.sigma_init
+        if self.confidence:
+            sigma_init = self.confidence
 
         # if self.centroid == None:
         self.centroid = self.problem_definition.domain.get_default_x0()
@@ -141,7 +143,8 @@ class CMAESService(BaseService):
 
             # Update the strategy with the evaluated individuals
             toolbox.update(self.population)
-
+            self.confidence = float(self.strategy.sigma)
+            
             print("ratio: " + str(self.success_ratio))
             print("sigma:" + str(self.strategy.sigma))
 

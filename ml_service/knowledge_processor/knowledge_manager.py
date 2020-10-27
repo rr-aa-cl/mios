@@ -196,18 +196,21 @@ class KnowledgeManager():
         # retrain the knowledge generalizer and take the best one
         best_predictor = predictor
         best_error = float("inf")
+        
         for i in range(0, self.n_retrain):
+            training_set = copy.deepcopy(doc)
+            
             # divide into training-data and validation-data
-            validation_size = int(len(doc) * self.validation_per)
-            if validation_size < 1 and len(doc) > 1:
+            validation_size = int(len(training_set) * self.validation_per)
+            if validation_size < 1 and len(training_set) > 1:
                 validation_size = 1
             validation_set = []
             for i in range(0, validation_size):
-                random_pic = random.randint(0, len(doc) - 1)
-                validation_set.append(doc.pop(random_pic))
+                random_pic = random.randint(0, len(training_set) - 1)
+                validation_set.append(training_set.pop(random_pic))
 
             # get learning data
-            training_data = self.get_learning_data(doc)
+            training_data = self.get_learning_data(training_set)
             validation_data = self.get_learning_data(validation_set)
             if not (training_data and validation_data):  # sth went wrong, sets too small
                 logger.debug("KnowledgeManager.predict_knowledge: Error in training or validation set -> use similar knowledge")
@@ -256,7 +259,7 @@ class KnowledgeManager():
         prediction = (prediction_normalized * std_deviation_data_y) + mean_data_y
 
         # predict expected cost
-        predictor.fit_data(training_data_x_normalized, self.get_cost_from_data(doc))
+        predictor.fit_data(training_data_x_normalized, self.get_cost_from_data(training_set))
         print("##############################")
         print(predict_x_normalized)
         expected_cost = predictor.predict_data(predict_x_normalized)

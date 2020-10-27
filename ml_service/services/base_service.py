@@ -58,9 +58,10 @@ class BaseService(metaclass=ABCMeta):
         self.database_results_id = None
         self.knowledge_source = None
         self.knowledge = False
+        self.confidence = None
 
-        # 15s timeout for xmlrpc clinet:
-        socket.setdefaulttimeout(3)
+        # 10s timeout for xmlrpc clinet:
+        socket.setdefaulttimeout(10)
 
 
     @abstractmethod
@@ -104,11 +105,6 @@ class BaseService(metaclass=ABCMeta):
                     self.knowledge = self.knowledge_manager.predict_knowledge(self.problem_definition.get_task_identity())
                 else:
                     self.knowledge = False
-                if self.knowledge:
-                    self.centroid = []
-                    for key in self.knowledge["parameters"]:
-                        self.centroid.append(self.knowledge["parameters"][key])
-                    logger.debug("base_service.initialize(): Use local knowledge "+str(self.centroid))
             elif knowledge_source["mode"] == 'global':
                 logger.debug("base_service::initialize(): get global knowlege")
                 logger.debug("base_service::initialize(): contacting database at http://" + knowledge_source["kb_location"] + ":8001")
@@ -124,12 +120,15 @@ class BaseService(metaclass=ABCMeta):
                         logger.error("base_service: global Database is not reachable!")
                     except ConnectionRefusedError:
                         pass
+            else:
+                logger.error("base_service::initialize(): Unknown knowledge mode "+str(knowledge_source["mode"]))
 
-                if self.knowledge:
-                    self.centroid = []
-                    for key in self.knowledge["parameters"]:
-                        self.centroid.append(self.knowledge["parameters"][key])
-                    logger.debug("base_service.initialize(): Use global knowledge "+str(self.centroid))
+            if self.knowledge:
+                self.centroid = []
+                for key in self.knowledge["parameters"]:
+                    self.centroid.append(self.knowledge["parameters"][key])
+                logger.debug("base_service.initialize(): Use global knowledge "+str(self.centroid))
+                self.confidence = self.knowledge["meta"].get("confidence")
 
         self.engine = Engine(agents)
         self.database_results_id = self.engine.initialize(self.problem_definition, configuration.exploration_mode)
@@ -148,8 +147,8 @@ class BaseService(metaclass=ABCMeta):
         self.keep_running = False
         self.result = result
 
-        # update knowledge bases:
-        self.knowledge_manager.process_knowledge(self.problem_definition.get_task_identity())  # process knowledge and stores it to local db
+        self.engine_thread.join() # wait for engine to write final results
+
         ml_data = self.DBclient.read("ml_results",self.problem_definition.task_type,{"_id":self.database_results_id})
         if len(ml_data) != 1:
             logger.error("base_service.learn_task: cannot find ml_results on local database to copy them to global database")
@@ -157,8 +156,9 @@ class BaseService(metaclass=ABCMeta):
         ml_data[0]["meta"]["init_knowledge"] = dict()
         ml_data[0]["meta"]["init_knowledge"]["content"] = self.knowledge
         ml_data[0]["meta"]["init_knowledge"]["source"] = self.knowledge_source
+        ml_data[0]["final_results"]["confidence"] = self.confidence
         if self.knowledge_source is not None:
-            if self.knowledge_source["always_upload"] == True:
+            if self.knowledge_source["mode"] == "global":
                 logger.debug("base_service.learn_task: store ml_results to global database at "+str("http://" + self.knowledge_source["kb_location"] + ":8001"))
                 with ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001", allow_none=True) as kb:
                     try:
@@ -167,6 +167,8 @@ class BaseService(metaclass=ABCMeta):
                         logger.error("base_service: global Database is not reachable!")
 
         self.DBclient.update("ml_results", self.problem_definition.task_type, {"_id": self.database_results_id}, ml_data[0])
+        # update knowledge bases:
+        self.knowledge_manager.process_knowledge(self.problem_definition.get_task_identity())  # process knowledge and stores it to local db
         return result
 
     def stop(self):
