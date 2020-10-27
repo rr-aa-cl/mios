@@ -7,7 +7,7 @@ class Domain:
         self.limits = limits
         self.x_0 = dict()
         for p in self.limits.keys():
-            self.x_0[p] = 0.2
+            self.x_0[p] = 0
 
         if x_0 is not None:
             for key, val in x_0.items():
