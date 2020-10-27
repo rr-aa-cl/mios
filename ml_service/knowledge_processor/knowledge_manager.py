@@ -330,7 +330,7 @@ class KnowledgeManager():
 
     def get_successful_trials(self, doc):
         metainfo = []
-        optimum_weights = None
+        optimum_weights = []
         confidence = None
         if len(doc) > 1:
             logger.info("WARNING: process knowledge from more tasks")
