@@ -7,11 +7,11 @@ import time
 from mongodb_client.mongodb_client import MongoDBClient
 
 class KnowledgeProcessorBase(metaclass=ABCMeta):
-    def __init__(self, vector_mapping, task_identity, mean_optimum_weights = None, sources = []):
+    def __init__(self, vector_mapping, task_identity, mean_optimum_weights = None, confidence = None):
         self.vector_mapping = vector_mapping
         self.task_identity = task_identity
         self.mean_optimum_weights = mean_optimum_weights
-        self.sources = sources
+        self.confidence = confidence
 
     @abstractmethod
     def process_knowledge(self, successful_trials) -> list:
@@ -36,7 +36,7 @@ class KnowledgeProcessorBase(metaclass=ABCMeta):
         meta["task_type"] = self.task_identity["task_type"]
         meta["tags"] = self.task_identity["tags"]
         meta["time"] = time.ctime()
-        meta["sources"] = self.sources
+        meta["confidence"] = self.confidence
 
         knowledge = {"parameters":parameter_dict, 
                      "meta": meta

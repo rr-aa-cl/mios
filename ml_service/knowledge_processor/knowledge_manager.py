@@ -19,6 +19,7 @@ class KnowledgeManager():
         self.knowledge_db = "local_knowledge"
         self.predictor = None
         self.validation_per = 0.2
+        self.n_retrain = 10  # how many times the generalizer is retrained bevor prediction
 
     def collect_data(self, task_identity, data_db: str = "ml_results") -> list:
         if data_db.find("knowledge") == -1:  # if collecting raw data (no knowledge)
@@ -84,9 +85,9 @@ class KnowledgeManager():
         for d in doc:
             uuids.append(d["meta"]["uuid"])
 
-        successful_trials, vector_mapping, mean_optimum_weights, sources = self.get_successful_trials(doc)
+        successful_trials, vector_mapping, mean_optimum_weights, confidence = self.get_successful_trials(doc)
         # process knowledge:
-        self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, mean_optimum_weights, sources)
+        self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, mean_optimum_weights, confidence)
         knowledge = self.knowledge_processor.process_knowledge(successful_trials)
 
         if not knowledge:
@@ -192,48 +193,58 @@ class KnowledgeManager():
         if predictor is None:
             predictor = self.get_predictor()
 
-        # divide into training-data and validation-data
-        validation_size = int(len(doc) * self.validation_per)
-        if validation_size < 1 and len(doc) > 1:
-            validation_size = 1
-        validation_set = []
-        for i in range(0, validation_size):
-            random_pic = random.randint(0, len(doc) - 1)
-            validation_set.append(doc.pop(random_pic))
-
-        # get learning data
-        training_data = self.get_learning_data(doc)
-        validation_data = self.get_learning_data(validation_set)
-        if not (training_data and validation_data):  # sth went wrong, sets too small
-            logger.debug("KnowledgeManager.predict_knowledge: Error in training or validation set -> use similar knowledge")
-            return self.get_local_knowledge(task_identity,knowledge_db)
-
-        # stadardize learning data
-        std_deviation_data_y = np.std(np.append(validation_data[1], training_data[1], axis=0), axis=0)
-        std_deviation_data_y = np.array(
-            [1 if n == 0 else n for n in std_deviation_data_y])  # remove zeros from standard deviation
-        std_deviation_data_x = np.std(np.append(validation_data[0], training_data[0], axis=0), axis=0)
-        std_deviation_data_x = np.array(
-            [1 if n == 0 else n for n in std_deviation_data_x])  # remove zeros from standard deviation
-        mean_data_y = np.mean(np.append(validation_data[1], training_data[1], axis=0), axis=0)
-        mean_data_x = np.mean(np.append(validation_data[0], training_data[0], axis=0), axis=0)
-        training_data_y_normalized = (training_data[1] - mean_data_y) / std_deviation_data_y
-        validation_data_y_normalized = (validation_data[1] - mean_data_y) / std_deviation_data_y
-        training_data_x_normalized = (training_data[0] - mean_data_x) / std_deviation_data_x
-        validation_data_x_normalized = (validation_data[0] - mean_data_x) / std_deviation_data_x
-
-        # train
-        predictor.fit_data(training_data_x_normalized, training_data_y_normalized)
-        # validate
-        if len(validation_data) > 0:
-            distances = []
+        # retrain the knowledge generalizer and take the best one
+        best_predictor = predictor
+        best_error = float("inf")
+        for i in range(0, self.n_retrain):
+            # divide into training-data and validation-data
+            validation_size = int(len(doc) * self.validation_per)
+            if validation_size < 1 and len(doc) > 1:
+                validation_size = 1
+            validation_set = []
             for i in range(0, validation_size):
-                prediction = predictor.predict_data(validation_data_x_normalized[i])
-                distances.append(np.linalg.norm(prediction - validation_data_y_normalized[i]))
-            error_in_context = float(
-                np.mean(distances))  # devide by the standard deviation to set the error into context
-        else:
-            error_in_context = False
+                random_pic = random.randint(0, len(doc) - 1)
+                validation_set.append(doc.pop(random_pic))
+
+            # get learning data
+            training_data = self.get_learning_data(doc)
+            validation_data = self.get_learning_data(validation_set)
+            if not (training_data and validation_data):  # sth went wrong, sets too small
+                logger.debug("KnowledgeManager.predict_knowledge: Error in training or validation set -> use similar knowledge")
+                return self.get_local_knowledge(task_identity,knowledge_db)
+
+            # stadardize learning data
+            std_deviation_data_y = np.std(np.append(validation_data[1], training_data[1], axis=0), axis=0)
+            std_deviation_data_y = np.array(
+                [1 if n == 0 else n for n in std_deviation_data_y])  # remove zeros from standard deviation
+            std_deviation_data_x = np.std(np.append(validation_data[0], training_data[0], axis=0), axis=0)
+            std_deviation_data_x = np.array(
+                [1 if n == 0 else n for n in std_deviation_data_x])  # remove zeros from standard deviation
+            mean_data_y = np.mean(np.append(validation_data[1], training_data[1], axis=0), axis=0)
+            mean_data_x = np.mean(np.append(validation_data[0], training_data[0], axis=0), axis=0)
+            training_data_y_normalized = (training_data[1] - mean_data_y) / std_deviation_data_y
+            validation_data_y_normalized = (validation_data[1] - mean_data_y) / std_deviation_data_y
+            training_data_x_normalized = (training_data[0] - mean_data_x) / std_deviation_data_x
+            validation_data_x_normalized = (validation_data[0] - mean_data_x) / std_deviation_data_x
+
+            # train
+            predictor.fit_data(training_data_x_normalized, training_data_y_normalized)
+            # validate
+            if len(validation_data) > 0:
+                distances = []
+                for i in range(0, validation_size):
+                    prediction = predictor.predict_data(validation_data_x_normalized[i])
+                    distances.append(np.linalg.norm(prediction - validation_data_y_normalized[i]))
+                error_in_context = float(
+                    np.mean(distances))  # devide by the standard deviation to set the error into context
+            else:
+                error_in_context = False
+            
+            if error_in_context < best_error:
+                best_predictor = copy.deepcopy(predictor)
+                best_error = error_in_context
+        predictor = best_predictor
+
         # predict
         predict_x = np.append(np.array(task_identity["geometry_factor"]), np.array(task_identity["optimum_weights"]))
         print("predict_x: " + str(predict_x))
@@ -320,7 +331,7 @@ class KnowledgeManager():
     def get_successful_trials(self, doc):
         metainfo = []
         optimum_weights = None
-        sources = []
+        confidence = None
         if len(doc) > 1:
             logger.info("WARNING: process knowledge from more tasks")
             alltrials = []
@@ -330,7 +341,6 @@ class KnowledgeManager():
                 trials = self.get_raw_data(d)
                 if len(trials) > 0:
                     optimum_weights.append(d["meta"]["cost_function"]["optimum_weights"])
-                    sources.append(d["_id"])
                 for t in trials:
                     alltrials.append(t)
             successful_trials = alltrials
@@ -340,13 +350,13 @@ class KnowledgeManager():
             # get raw ml data:
             successful_trials = self.get_raw_data(doc)
             metainfo.append(doc["meta"])
-            sources.append(doc["_id"])
+            confidence = doc["final_results"].get("confidence")
 
         for m in metainfo:
             if m["domain"]["vector_mapping"] != metainfo[0]["domain"]["vector_mapping"]:
                 logger.error("knowledge_processor: got trials from different domains. Cant process them together")
         vector_mapping = metainfo[0]["domain"]["vector_mapping"]
-        return successful_trials, vector_mapping, optimum_weights, sources
+        return successful_trials, vector_mapping, optimum_weights, confidence
 
     def get_most_similar_task(self, optimum_weights, tasks):
         '''find most similar task according to cost optimum_weights'''
