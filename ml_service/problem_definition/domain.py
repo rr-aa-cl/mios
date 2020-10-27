@@ -2,9 +2,16 @@ import numpy as np
 
 
 class Domain:
-    def __init__(self, limits: dict, context_mapping: dict):
+    def __init__(self, limits: dict, context_mapping: dict, x_0: dict = None):
         # keys: parameters (string), values: limits (tuples)
         self.limits = limits
+        self.x_0 = dict()
+        for p in self.limits.keys():
+            self.x_0[p] = 0.2
+
+        if x_0 is not None:
+            for key, val in x_0.items():
+                self.x_0[key] = val
         # shows index of parameter
         self.vector_mapping = list()
         # keys: parameters (string), values: mapped to (list of dot-separated strings, dimensions by dash)
@@ -16,17 +23,21 @@ class Domain:
         domain = {
             "limits": self.limits,
             "vector_mapping": self.vector_mapping,
-            "context_mapping": self.context_mapping
+            "context_mapping": self.context_mapping,
+            "x_0": self.x_0
         }
         return domain
 
     @staticmethod
     def from_dict(domain_dict):
-        d = Domain(domain_dict["limits"], domain_dict["context_mapping"])
+        d = Domain(domain_dict["limits"], domain_dict["context_mapping"], domain_dict["x_0"])
         return d
 
     def get_default_x0(self):
-        return np.ones(len(self.limits)) * 0.0
+        x_0 = np.empty((len(self.x_0,)))
+        for i in range(len(self.x_0)):
+            x_0[i] = self.x_0[self.vector_mapping[i]]
+        return x_0
 
     def normalize(self, x: np.ndarray) -> np.ndarray:
         x_norm = np.zeros((len(x),))

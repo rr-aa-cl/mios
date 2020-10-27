@@ -76,8 +76,8 @@ def insert_cylinder_30():
         "wiggle_f_chi": (0, 1),
         "wiggle_f_psi": (0, 1),
         "stuck_dx_thr": (0, 0.1),
-        "offset_x": (-0.01, 0.01),
-        "offset_y": (-0.01, 0.01),
+        "offset_x": (-0.003, 0.00),
+        "offset_y": (-0.003, 0.00),
         "offset_phi": (-10, 10),
         "offset_chi": (-10, 10),
         "K_x": (0, 2000),
@@ -117,7 +117,14 @@ def insert_cylinder_30():
         "K_psi": ["skills.insertion.control.cart_imp.K_x-6"]
     }
 
-    domain = Domain(limits, context_mapping)
+    x_0 = {
+        "offset_x": 0.5,
+        "offset_y": 0.5,
+        "offset_phi": 0.5,
+        "offset_chi": 0.5
+    }
+
+    domain = Domain(limits, context_mapping, x_0)
     default_context = {
         "name": "InsertObject",
         "parameters": {
@@ -175,7 +182,6 @@ def insertion_cost():
     c.heuristic_skills = ["insertion"]
     c.max_cost[0] = 10
     c.max_cost[1] = 50
-    c.min_cost[0] = 1
-    c.min_cost[1] = 30
     c.finish_thr = 5
+    c.geometry_factor = 0.002
     return c

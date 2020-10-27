@@ -98,7 +98,7 @@ def test_interface(agent: str = "localhost"):
     config.n_ind = 10
     config.exploration_mode = True
 
-    uuid = interface.start_service(problem_def, config, agents, {"mode": "none", "kb_location": "collective-panda-002.local", "type": "similar"})
+    uuid = interface.start_service(problem_def, config, agents, None)
     input("Press enter to stop service.")
     interface.stop_service()
 
@@ -108,19 +108,33 @@ def test_with_rpc_server():
     i.start_rpc_server(8000)
 
 
+def insert_key_abus():
+    pd = insert_cylinder_30()
+    pd.default_context["parameters"]["insertable"] = "key_abus_e30"
+    pd.default_context["parameters"]["insert_into"] = "lock_abus_e30"
+    pd.default_context["parameters"]["insert_approach"] = "lock_abus_e30_above"
+    pd.default_context["skills"]["insertion"]["skill"]["ROI_x"] = [-0.01, 0.01, -0.01, 0.01, -1, 1]
+    pd.reset_instructions[0]["parameters"]["parameters"]["extractable"] = "key_abus_e30"
+    pd.reset_instructions[0]["parameters"]["parameters"]["extract_from"] = "lock_abus_e30"
+    pd.reset_instructions[0]["parameters"]["parameters"]["extract_to"] = "lock_abus_e30_above"
+    pd.tags = ["key_abus_e30"]
+    return pd
+
+
 def test_with_rpc_client(agent: str = "localhost"):
     agents = []
     agents.append(agent)
-    problem_def = rastrigin()
-    problem_def.tags = ["rastrigin_8", "collective_learning_benchmark_001"]
+    problem_def = insert_key_abus()
+    problem_def.tags = ["key_recording"]
 
     # call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
     config = get_service_configuration()
     config.n_gen = 100
+    config.n_ind = 10
     config.exploration_mode = True
 
     s = ServerProxy("http://" + agent + ":8000", allow_none=True)
-    s.start_service(problem_def.to_dict(), config.to_dict(), agents, {"mode": "global", "type": "similar", "kb_location": "collective-panda-002.local"})
+    s.start_service(problem_def.to_dict(), config.to_dict(), agents, None)
 
 
 def test_standalone(agent: str = "localhost"):
@@ -152,15 +166,16 @@ def test_knowledge_use(knowledge_mode="global"):
     # create knowledge from old task:
     k = KnowledgeManager(host = "collective-panda-002.local")
     for i in range(5):
-        for j in range(10):
+        for j in range(200):
             task_identity = {
-                "tags": ["collective_learning_benchmark_screen_001"],
+                "tags": ["collective_learning_benchmark_screen_006"],
                 "task_type": "benchmark_rastrigin",
-                "optimum_weights": [0, j / 10.0, 1 - (j / 10.0), 0, 0],
+                "optimum_weights": [0, j / 200.0, 1 - (j / 200.0), 0, 0],
                 "geometry_factor": i + 1
             }
 
             k.process_knowledge(task_identity, "global_ml_results", "global_knowledge")
+            print(j + i * 200)
 
     return
 
@@ -197,7 +212,7 @@ from knowledge_processor.kg_mlp import KGMLP
 def test_generalizer():
     task_name = "rastrigin_1"
     task_identity = {
-        "tags": ["collective_learning_benchmark_screen_001"],
+        "tags": ["collective_learning_benchmark_screen_006"],
         "task_type": "benchmark_rastrigin",
         "geometry_factor": 1,
         "optimum_weights": [0, 0.3, 0.7, 0, 0]

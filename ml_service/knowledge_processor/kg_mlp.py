@@ -6,10 +6,10 @@ import numpy as np
 class KGMLP(KnowledgeGeneralizerBase):
     def __init__(self):
         super().__init__()
-        self.regr = MLPRegressor(hidden_layer_sizes=(1, 10, 1,), activation="relu", solver="adam", max_iter=4000)
+        self.regr = MLPRegressor(hidden_layer_sizes=(100, 10), activation="relu", solver="adam", max_iter=4000)
 
     def fit_data(self, x: np.ndarray, y: np.ndarray):
-        self.regr.fit(x, y)
+        self.regr.fit(np.delete(x, [1, 4, 5], 1), y)
 
     def predict_data(self, x: np.ndarray):
-        return self.regr.predict(x.reshape(1, -1))
+        return self.regr.predict(np.delete(x.reshape(1, -1), [1, 4, 5], 1))

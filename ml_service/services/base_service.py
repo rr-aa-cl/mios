@@ -86,13 +86,13 @@ class BaseService(metaclass=ABCMeta):
         self.knowledge_source = knowledge_source
         #task_identity used for searching similar tasks:
         self.task_identity = {"tags":problem_definition.tags,"task_type":problem_definition.task_type,"optimum_weights":problem_definition.cost_function.optimum_weights}
-        logger.debug("BaseService::initialize: Contacting database at " + "http://" + knowledge_source["kb_location"] + ":8001")
 
         if self.problem_definition.is_valid() is False:
             logger.error("Problem definition is not valid.")
             return False
 
         if knowledge_source is not None:
+            logger.debug("BaseService::initialize: Contacting database at " + "http://" + knowledge_source["kb_location"] + ":8001")
             knowledge_type = knowledge_source.get("type","similar")
             if knowledge_source["mode"] == 'none':
                 self.centroid = None
@@ -107,7 +107,7 @@ class BaseService(metaclass=ABCMeta):
                 if self.knowledge:
                     self.centroid = []
                     for key in self.knowledge["parameters"]:
-                        self.centroid.append(self.knowledge["parameters"][key])   
+                        self.centroid.append(self.knowledge["parameters"][key])
                     logger.debug("base_service.initialize(): Use local knowledge "+str(self.centroid))
             elif knowledge_source["mode"] == 'global':
                 logger.debug("base_service::initialize(): get global knowlege")
