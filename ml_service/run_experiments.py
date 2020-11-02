@@ -45,13 +45,13 @@ def transfer_learning_30():
 
 
 def transfer_learning_40():
-    call_method("collective-panda-007.local", 12002, "set_grasped_object", {"object": "cylinder_40"})
+    call_method("collective-panda-001.local", 12002, "set_grasped_object", {"object": "cylinder_40"})
     pd = insert_cylinder(40)
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 10
     service_config.n_gen = 10
-    start_experiment("collective-panda-007.local", pd, service_config, 10, tags=["transfer_learning"])
+    start_experiment("collective-panda-001.local", pd, service_config, 10, tags=["transfer_learning"])
 
 
 def transfer_learning_50():
@@ -65,10 +65,10 @@ def transfer_learning_50():
 
 
 def transfer_learning_60():
-    call_method("collective-panda-007.local", 12002, "set_grasped_object", {"object": "cylinder_60"})
+    call_method("collective-panda-008.local", 12002, "set_grasped_object", {"object": "cylinder_60"})
     pd = insert_cylinder(60)
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 10
     service_config.n_gen = 10
-    start_experiment("collective-panda-007.local", pd, service_config, 10, tags=["transfer_learning"])
+    start_experiment("collective-panda-008.local", pd, service_config, 10, tags=["transfer_learning"])
