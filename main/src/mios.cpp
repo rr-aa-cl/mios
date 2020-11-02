@@ -23,7 +23,7 @@ int main(int argc, char** argv){
     options.add_options()
             ("v,verbosity","Set level of verbosity.",cxxopts::value<std::string>()->default_value("info"))
             ("p,database_port","Port of mongodb database.",cxxopts::value<unsigned>()->default_value("27017"))
-            ("c,robot_config","Initial configuration of robot: 0 - no robot, 1 - arm and Franka Hand, 2 - Only arm.",cxxopts::value<unsigned>()->default_value("0"));
+            ("c,robot_config","Initial configuration of robot: 0 - arm and Franka Hand, 1 - only arm, 2 - arm and Softhand2, 3 - no arm and gripper.",cxxopts::value<unsigned>()->default_value("0"));
 
     auto result = options.parse(argc, argv);
     std::string verbosity=result["v"].as<std::string>();
