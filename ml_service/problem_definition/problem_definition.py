@@ -174,7 +174,6 @@ class ProblemDefinition:
             cost_per_weight[4] += result.cost[s]["custom"]
 
         cost = 0
-        min_cost = 0
         for i in range(len(cost_per_weight)):
             if self.cost_function.optimum_weights[i] > 0:
                 var = cost_per_weight[i]
@@ -186,10 +185,6 @@ class ProblemDefinition:
                         eval(self.cost_function.optimum_expressions[i])) + ", maximum cost is " + str(
                         self.cost_function.max_cost[i]))
                     result.success = False
-
-                # var = self.cost_function.min_cost[i]
-                # min_cost += self.cost_function.optimum_weights[i] * (
-                #         eval(self.cost_function.optimum_expressions[i]) / self.cost_function.max_cost[i])
 
         heuristic = 0
         for s in self.cost_function.heuristic_skills:
