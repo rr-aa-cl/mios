@@ -36,13 +36,13 @@ def transfer_learning_20():
 
 
 def transfer_learning_30():
-    call_method("collective-panda-007.local", 12002, "set_grasped_object", {"object": "cylinder_30"})
+    call_method("collective-panda-008.local", 12002, "set_grasped_object", {"object": "cylinder_30"})
     pd = insert_cylinder(30)
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 10
     service_config.n_gen = 10
-    start_experiment("collective-panda-007", pd, service_config, 10, tags=["transfer_learning"])
+    start_experiment("collective-panda-008", pd, service_config, 10, tags=["transfer_learning"])
 
 
 def transfer_learning_40():
@@ -56,13 +56,13 @@ def transfer_learning_40():
 
 
 def transfer_learning_50():
-    call_method("collective-panda-007.local", 12002, "set_grasped_object", {"object": "cylinder_50"})
+    call_method("collective-panda-001.local", 12002, "set_grasped_object", {"object": "cylinder_50"})
     pd = insert_cylinder(50)
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 10
     service_config.n_gen = 10
-    start_experiment("collective-panda-007", pd, service_config, 10, tags=["transfer_learning"])
+    start_experiment("collective-panda-001", pd, service_config, 10, tags=["transfer_learning"])
 
 
 def transfer_learning_60():
@@ -103,3 +103,13 @@ def transfer_learning_old_key():
     service_config.n_ind = 10
     service_config.n_gen = 10
     start_experiment("collective-panda-009", pd, service_config, 10, tags=["transfer_learning"])
+
+
+def transfer_learning_hatch_key():
+    call_method("collective-panda-002.local", 12002, "set_grasped_object", {"object": "key_hatch"})
+    pd = insert_key("hatch")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 10
+    service_config.n_gen = 10
+    start_experiment("collective-panda-002", pd, service_config, 10, tags=["transfer_learning"])
