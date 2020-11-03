@@ -18,4 +18,6 @@ def insert_key(key_type: str):
     pd.cost_function.geometry_factor = 0.005
     pd.domain.limits["offset_x"] = (-0.002, 0.002)
     pd.domain.limits["offset_y"] = (-0.002, 0.002)
+    pd.domain.limits["wiggle_a_psi"] = (-0.01, 0.01)
+    pd.domain.limits["wiggle_f_psi"] = (-0.01, 0.01)
     return pd
