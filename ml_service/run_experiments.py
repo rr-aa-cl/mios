@@ -22,7 +22,7 @@ def transfer_learning_10():
     service_config.exploration_mode = True
     service_config.n_ind = 10
     service_config.n_gen = 10
-    start_experiment("collective-panda-007.local", pd, service_config, 10, tags=["transfer_learning"])
+    start_experiment("collective-panda-007", pd, service_config, 10, tags=["transfer_learning"])
 
 
 def transfer_learning_20():
