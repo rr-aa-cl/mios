@@ -18,10 +18,13 @@ class DataProcessor:
                 length = len(l)
         return length
 
-    def get_collection_of_costs(self, results: list) -> list:
+    def get_collection_of_costs(self, results: list, decreasing: bool = False) -> list:
         costs = []
         for r in results:
-            costs.append(r.get_cost_per_trial())
+            if decreasing is True:
+                costs.append(self.get_monotonically_decreasing_cost(r.get_cost_per_trial()))
+            else:
+                costs.append(r.get_cost_per_trial())
 
         n_trials = self.find_maximum_length(costs)
 
@@ -43,8 +46,8 @@ class DataProcessor:
             arr[i, -1] = (max_cost - cost[-1]) * percentage + cost[-1]
         return arr
 
-    def get_average_cost(self, results: list) -> np.ndarray:
-        return np.average(np.asarray(self.get_collection_of_costs(results)), 0)
+    def get_average_cost(self, results: list, decreasing: bool = False) -> np.ndarray:
+        return np.average(np.asarray(self.get_collection_of_costs(results, decreasing)), 0)
 
     def get_monotonically_decreasing_cost(self, cost: np.ndarray) -> np.ndarray:
         cost_monotone = cost

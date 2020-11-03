@@ -15,8 +15,8 @@ def average_experiment(host: str, task_type: str, tags):
     p = DataProcessor()
     plot = Plotter()
     results = get_multiple_experiment_data(host, task_type, filter={"meta.tags": {"$all": tags}})
-    cost = p.get_average_cost(results)
-    plot.plot_cost_over_trials(p.get_monotonically_decreasing_cost(cost))
+    cost = p.get_average_cost(results, True)
+    plot.plot_cost_over_trials(cost)
 
 
 def agent_learning(tags, hosts = ["collective-panda-002.local"]):

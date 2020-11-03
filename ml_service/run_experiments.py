@@ -1,5 +1,6 @@
 from utils.experiment_wizard import start_experiment
 from definitions.insertion_definitions import insert_cylinder
+from definitions.insertion_definitions import insert_key
 from definitions.benchmark_definitions import mios_ml_benchmark
 from services.cmaes import CMAESConfiguration
 from utils.udp_client import call_method
@@ -72,3 +73,33 @@ def transfer_learning_60():
     service_config.n_ind = 10
     service_config.n_gen = 10
     start_experiment("collective-panda-008", pd, service_config, 10, tags=["transfer_learning"])
+
+
+def transfer_learning_abus_e30():
+    call_method("collective-panda-002.local", 12002, "set_grasped_object", {"object": "key_abus_e30"})
+    pd = insert_key("abus_e30")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 10
+    service_config.n_gen = 10
+    start_experiment("collective-panda-002", pd, service_config, 10, tags=["transfer_learning"])
+
+
+def transfer_learning_pad_lock():
+    call_method("collective-panda-009.local", 12002, "set_grasped_object", {"object": "key_pad"})
+    pd = insert_key("pad")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 10
+    service_config.n_gen = 10
+    start_experiment("collective-panda-009", pd, service_config, 10, tags=["transfer_learning"])
+
+
+def transfer_learning_old_key():
+    call_method("collective-panda-009.local", 12002, "set_grasped_object", {"object": "key_old"})
+    pd = insert_key("old")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 10
+    service_config.n_gen = 10
+    start_experiment("collective-panda-009", pd, service_config, 10, tags=["transfer_learning"])

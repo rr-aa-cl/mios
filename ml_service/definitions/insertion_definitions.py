@@ -8,3 +8,14 @@ def insert_cylinder(d: float):
     pd = insertion(insertable, insert_into, approach)
     pd.cost_function.geometry_factor = d / 1000
     return pd
+
+
+def insert_key(key_type: str):
+    insertable = "key_" + key_type
+    insert_into = "lock_" + key_type
+    approach = "lock_" + key_type + "_above"
+    pd = insertion(insertable, insert_into, approach)
+    pd.cost_function.geometry_factor = 0.005
+    pd.domain.limits["offset_x"] = (-0.002, 0.002)
+    pd.domain.limits["offset_y"] = (-0.002, 0.002)
+    return pd
