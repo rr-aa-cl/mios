@@ -27,12 +27,40 @@ void LTMemory::link_to_skill_library(SkillLibrary *skill_library){
     m_skill_library=skill_library;
 }
 
-bool LTMemory::initialize(){
+bool LTMemory::initialize(unsigned robot_configuration){
     if(!make_database_consistent()){
         return false;
-    }else{
-        return true;
     }
+
+    nlohmann::json system_parameters;
+    m_mongodb_client.read_document("system","parameters",system_parameters);
+    switch(robot_configuration){
+    case 0:
+        system_parameters["has_robot"]=true;
+        system_parameters["gripper"]="Default";
+        m_mongodb_client.write_document("system","parameters",system_parameters,true);
+        break;
+    case 1:
+        system_parameters["has_robot"]=true;
+        system_parameters["gripper"]="None";
+        m_mongodb_client.write_document("system","parameters",system_parameters,true);
+        break;
+    case 2:
+        system_parameters["has_robot"]=true;
+        system_parameters["gripper"]="Softhand2";
+        m_mongodb_client.write_document("system","parameters",system_parameters,true);
+        break;
+    case 3:
+        system_parameters["has_robot"]=false;
+        system_parameters["gripper"]="None";
+        m_mongodb_client.write_document("system","parameters",system_parameters,true);
+        break;
+    default:
+        spdlog::error("Robot configuration " + std::to_string(robot_configuration) + " does not exist.");
+        return false;
+    }
+
+    return true;
 }
 
 bool LTMemory::make_database_consistent(){
@@ -67,9 +95,9 @@ bool LTMemory::make_database_consistent(){
     if(!m_mongodb_client.make_document_consistent("user","parameters",default_values)){
         return false;
     }
-//    if(!make_default_tasks_consistent()){
-//        return false;
-//    }
+    //    if(!make_default_tasks_consistent()){
+    //        return false;
+    //    }
     if(!make_default_environment_consistent()){
         return false;
     }
@@ -238,12 +266,12 @@ bool LTMemory::get_task_data(const std::string uuid, TaskData &data) const{
 
 std::shared_ptr<Task> LTMemory::load_task(const std::string& task_id, const nlohmann::json& user_context,Core* core){
     std::shared_ptr<Task> task = TaskFactory::create_task(TaskFactory::get_task_name(task_id),core);
-//    if(task->get_context().find("parameters")!=task->get_context().end()){
-//        if(!task->read_parameters(task->get_context()["parameters"])){
-//            spdlog::error("Could not read parameters for task " + task->get_id());
-//            return TaskFactory::create_task(TaskName::TaskNameNullTask,core);
-//        }
-//    }
+    //    if(task->get_context().find("parameters")!=task->get_context().end()){
+    //        if(!task->read_parameters(task->get_context()["parameters"])){
+    //            spdlog::error("Could not read parameters for task " + task->get_id());
+    //            return TaskFactory::create_task(TaskName::TaskNameNullTask,core);
+    //        }
+    //    }
     if(!task->load_context(user_context)){
         spdlog::error("Could not load context for task " + task->get_id());
         return TaskFactory::create_task(TaskName::TaskNameNullTask,core);
@@ -342,18 +370,18 @@ bool LTMemory::update_database(){
     if(!m_mongodb_client.write_document("system","parameters",m_st_memory->read_parameters()->system.to_json(),true)){
         return false;
     }
-//    if(!m_mongodb_client.write_document("user","parameters",m_st_memory->read_parameters()->user.to_json(),true)){
-//        return false;
-//    }
-//    if(!m_mongodb_client.write_document("frames","parameters",m_st_memory->read_parameters()->frames.to_json(),true)){
-//        return false;
-//    }
-//    if(!m_mongodb_client.write_document("control","parameters",m_st_memory->read_parameters()->control.to_json(),true)){
-//        return false;
-//    }
-//    if(!m_mongodb_client.write_document("safety","parameters",m_st_memory->read_parameters()->safety.to_json(),true)){
-//        return false;
-//    }
+    //    if(!m_mongodb_client.write_document("user","parameters",m_st_memory->read_parameters()->user.to_json(),true)){
+    //        return false;
+    //    }
+    //    if(!m_mongodb_client.write_document("frames","parameters",m_st_memory->read_parameters()->frames.to_json(),true)){
+    //        return false;
+    //    }
+    //    if(!m_mongodb_client.write_document("control","parameters",m_st_memory->read_parameters()->control.to_json(),true)){
+    //        return false;
+    //    }
+    //    if(!m_mongodb_client.write_document("safety","parameters",m_st_memory->read_parameters()->safety.to_json(),true)){
+    //        return false;
+    //    }
     for(const auto& env : *m_st_memory->get_environment()){
         spdlog::debug("Updating object: " + env.first);
         if(!m_mongodb_client.write_document(env.first,"environment",env.second.to_json(),true)){

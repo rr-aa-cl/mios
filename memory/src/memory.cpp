@@ -20,10 +20,10 @@ bool Memory::is_ok() const{
     return true;
 }
 
-bool Memory::initialize(SkillLibrary *skill_library){
+bool Memory::initialize(SkillLibrary *skill_library, unsigned robot_configuration){
     spdlog::info("Initializing long-term memory...");
     m_lt_memory.link_to_skill_library(skill_library);
-    if(!m_lt_memory.initialize()){
+    if(!m_lt_memory.initialize(robot_configuration)){
         spdlog::error("Could not initialize long-term memory.");
         return false;
     }

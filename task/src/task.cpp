@@ -13,10 +13,11 @@ namespace mios {
 
 Task::Task(const std::string& id, Core* core):m_core(core),m_memory(core->get_memory()),m_portal(core->get_portal()),m_skill_engine(core->get_skill_engine()),m_flag_stop(false),m_flag_recover(false),m_flag_in_recovery(false),m_id(id),
     m_uuid(msrm_utils::generate_uuid()),m_active_subtask(nullptr){
-
+    spdlog::trace("Task::Task()");
 }
 
 Task::~Task(){
+    spdlog::trace("Task::~Task()");
     spdlog::debug("Task ("+m_uuid+"): destructor");
     notify_observers();
 }

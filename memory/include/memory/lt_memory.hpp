@@ -23,7 +23,7 @@ public:
     bool is_ok() const;
     void link_to_st_memory(STMemory* st_memory);
     void link_to_skill_library(SkillLibrary* skill_library);
-    bool initialize();
+    bool initialize(unsigned robot_configuration);
     bool load_default_parameters(nlohmann::json &parameters);
 
     bool get_task_data(const std::string uuid,TaskData& data) const;

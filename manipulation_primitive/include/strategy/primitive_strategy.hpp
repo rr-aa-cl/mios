@@ -14,6 +14,7 @@ namespace mios {
 class PrimitiveStrategy{
 public:
     PrimitiveStrategy(const std::set<CommandPattern> &command_pattern={});
+    virtual ~PrimitiveStrategy(){}
     /**
      * @brief This method is called once at the beginning of the execution of the embedding manipulation primitive. It can be used to initialize custom members.
      * @param[in] p_0 The percept at initialization.

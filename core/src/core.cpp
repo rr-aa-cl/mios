@@ -28,9 +28,10 @@
 
 namespace mios {
 
-Core::Core(unsigned database_port):m_memory(database_port),m_skill_engine(SkillEngine(this)),m_panda_body(PandaBody(&m_memory)),m_portal(Portal("0.0.0.0",12000,"mios/core","0.0.0.0",12001,12002)),m_skill_library(&m_memory,&m_portal),
+Core::Core(unsigned database_port, unsigned robot_configuration):m_memory(database_port),m_skill_engine(SkillEngine(this)),m_panda_body(PandaBody(&m_memory)),
+    m_portal(Portal("0.0.0.0",12000,"mios/core","0.0.0.0",12001,12002)),m_skill_library(&m_memory,&m_portal),
     m_task_engine(TaskEngine(this)),m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_ros_node(this,&m_task_engine,&m_portal,&m_memory),
-    m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false){
+    m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false),m_robot_configuration(robot_configuration){
 }
 
 Core::~Core(){
@@ -39,7 +40,7 @@ Core::~Core(){
 
 bool Core::initialize(){
     spdlog::info("Initializing memory...");
-    if(!m_memory.initialize(&m_skill_library)){
+    if(!m_memory.initialize(&m_skill_library,m_robot_configuration)){
         spdlog::error("Could not initialize memory.");
         return false;
     }
@@ -123,7 +124,6 @@ ControlReturnType Core::execute_skill(){
     m_panda_body.set_robot_parameters();
 
     ControlReturnType result=ControlReturnType::crtException;
-    spdlog::debug("CORE: EXECUTE_SKILL.control_mode: ");
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mCartTorque){
         m_controller_pipeline=std::make_unique<CartTorqueControllerPipeline>();
         m_safety_stage_1.insert(std::make_unique<VelocityWallsSafetyModule>());
@@ -167,6 +167,11 @@ ControlReturnType Core::execute_skill(){
         spdlog::error("No control mode has been selected.");
     }
 
+    post_execution();
+    return result;
+}
+
+void Core::post_execution(){
     m_controller_pipeline->terminate();
     m_controller_pipeline=std::make_unique<NullControllerPipeline>();
     for(auto& m : m_safety_stage_1){
@@ -180,7 +185,6 @@ ControlReturnType Core::execute_skill(){
     if(!m_memory.update_database()){
         spdlog::warn("Could not update datebase.");
     }
-    return result;
 }
 
 franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
@@ -323,7 +327,7 @@ bool Core::set_grasped_object(const std::string &name){
     return m_panda_body.set_robot_parameters();
 }
 
-bool Core::release_object(double speed){
+bool Core::release_object(std::optional<double> width, double speed){
     const Object* object=m_memory.get_live_context()->grasped_object;
     if(object->name=="NullObject" && !is_grasping()){
         spdlog::error("I am not grasping anything.");
@@ -341,7 +345,7 @@ bool Core::release_object(double speed){
         spdlog::warn("Could not update datebase.");
     }
     object=m_memory.get_object("NullObject");
-    if(m_panda_body.move_to_finger_position(m_percept.internal_model.max_finger_width,speed)){
+    if(m_panda_body.move_to_finger_position(width.value_or(m_percept.internal_model.max_finger_width),speed)){
         m_memory.get_live_context()->grasped_object=object;
         m_memory.internal_update(m_percept);
         m_memory.get_parameters()->user.load_m=object->mass;

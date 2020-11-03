@@ -1,12 +1,16 @@
 #include "controller_pipeline/cart_torque_pipeline.hpp"
+#include "spdlog/spdlog.h"
 #include <iostream>
 
 namespace mios {
 
 CartTorqueControllerPipeline::CartTorqueControllerPipeline():m_panda_cmd({0,0,0,0,0,0,0}),m_nullspace_control_on(false){
-
+    spdlog::trace("CartTorqueControllerPipeline::CartTorqueControllerPipeline()");
 }
 
+CartTorqueControllerPipeline::~CartTorqueControllerPipeline(){
+    spdlog::trace("CartTorqueControllerPipeline::~CartTorqueControllerPipeline()");
+}
 
 void CartTorqueControllerPipeline::initialize(const Percept &p_0, Memory *memory){
     initialize_cntr_aic(p_0,memory);
@@ -77,6 +81,7 @@ void CartTorqueControllerPipeline::update_percept(Percept::Controller &p){
 }
 
 void CartTorqueControllerPipeline::terminate(){
+    spdlog::trace("CartTorqueControllerPipeline::terminate()");
     m_conv_vel2pose.terminate();
     m_cntr_aic.terminate();
     m_cntr_force.terminate();
@@ -122,7 +127,7 @@ void CartTorqueControllerPipeline::initialize_cntr_aic(const Percept &p,Memory* 
 
     m_cntr_aic.initialize();
     m_conv_vel2pose.u.reset<<1;
-    m_conv_vel2pose.initialize(true,2000);
+    m_conv_vel2pose.initialize();
     m_conv_vel2pose.step();
 
 }

@@ -22,11 +22,13 @@ int main(int argc, char** argv){
     cxxopts::Options options("MIOS", "Machine Intelligence Operating System");
     options.add_options()
             ("v,verbosity","Set level of verbosity.",cxxopts::value<std::string>()->default_value("info"))
-            ("p,database_port","Port of mongodb database.",cxxopts::value<unsigned>()->default_value("27017"));
+            ("p,database_port","Port of mongodb database.",cxxopts::value<unsigned>()->default_value("27017"))
+            ("c,robot_config","Initial configuration of robot: 0 - arm and Franka Hand, 1 - only arm, 2 - arm and Softhand2, 3 - no arm and gripper.",cxxopts::value<unsigned>()->default_value("0"));
 
     auto result = options.parse(argc, argv);
     std::string verbosity=result["v"].as<std::string>();
     unsigned database_port=result["p"].as<unsigned>();
+    unsigned robot_configuration=result["c"].as<unsigned>();
 
     spdlog::level::level_enum info_level;
     if(verbosity=="trace"){
@@ -38,6 +40,7 @@ int main(int argc, char** argv){
     }else{
         info_level=spdlog::level::info;
     }
+
 
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(info_level);
@@ -60,19 +63,19 @@ int main(int argc, char** argv){
 
     spdlog::info("############################################################");
     spdlog::info("MIOS");
-    spdlog::info("Version: 0.6.6.5");
+    spdlog::info("Version: 0.6.7.0");
 
     unsigned port=12000;
     if(!msrm_utils::is_port_available("localhost",port)){
         spdlog::error("Port "+std::to_string(port)+" is blocked by another process. You can check which process is blocking the port"
-                         "by typing 'netstat -ntlup | grep "+std::to_string(port)+"' in a terminal. Terminating...");
+                                                   "by typing 'netstat -ntlup | grep "+std::to_string(port)+"' in a terminal. Terminating...");
         return -1;
     }
 
     ros::init(argc, argv, "mios", ros::init_options::NoSigintHandler);
 
     pybind11::scoped_interpreter guard{};
-    mios::Core core(database_port);
+    mios::Core core(database_port,robot_configuration);
     spdlog::info("Initializing MIOS core...");
     if(!core.initialize()){
         spdlog::error("MIOS core could not be initialized, shutting down...");

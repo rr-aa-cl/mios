@@ -8,6 +8,7 @@ namespace mios {
 class TaskObserver{
 public:
     TaskObserver();
+    ~TaskObserver();
 
     void wait_for_finish();
     void finish();

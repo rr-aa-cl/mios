@@ -61,6 +61,7 @@ ControlReturnType SkillEngine::execute_skill(std::shared_ptr<Skill> skill){
         spdlog::debug(e.what());
         result=ControlReturnType::crtException;
         spdlog::warn("A skill exception occured.");
+        m_core->post_execution();
     }
     spdlog::info("Unloading skill...");
     unload_skill();

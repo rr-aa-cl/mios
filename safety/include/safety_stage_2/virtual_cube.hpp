@@ -8,6 +8,7 @@ namespace mios{
 class VirtualCubeSafetyModule : public SafetyModuleStage2{
 public:
     VirtualCubeSafetyModule();
+    ~VirtualCubeSafetyModule();
 
     void initialize(const Percept &p_0, const Memory *memory) override;
     void step(const Percept &p, franka::Finishable* cmd) override;

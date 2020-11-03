@@ -17,7 +17,7 @@ bool Softhand2::initialize(){
     char serial_ports[10][255];
     int serial_ports_count = RS485listPorts(serial_ports);
     if (serial_ports_count <= 0) {
-        spdlog::error("ERROR: no serial port found");
+        spdlog::error("Softhand2: no serial port found");
         return false;
     }
     for (int i=0; i<serial_ports_count; i++) {

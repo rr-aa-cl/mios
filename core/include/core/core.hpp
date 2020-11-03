@@ -32,7 +32,7 @@ class Skill;
 
 class Core{
 public:
-    Core(unsigned database_port);
+    Core(unsigned database_port, unsigned robot_configuration);
     ~Core();
 
     bool initialize();
@@ -40,13 +40,14 @@ public:
     void terminate();
 
     ControlReturnType execute_skill();
+    void post_execution();
     void terminate_control_cycle();
 
     bool refresh_percept(std::optional<Eigen::Matrix<double, 3, 3> > O_R_TF);
 
     // Gripper
     bool grasp_object(const std::string& name, double speed=1);
-    bool release_object(double speed=1);
+    bool release_object(std::optional<double> width, double speed=1);
     bool grasp(double width, double speed, double force, double epsilon_inner, double epsilon_outer);
     bool move_gripper(double width,double speed);
     bool is_grasping();
@@ -99,6 +100,7 @@ private:
 
 private:
     bool m_is_ready;
+    unsigned m_robot_configuration;
 };
 
 }

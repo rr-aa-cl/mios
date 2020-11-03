@@ -1,9 +1,14 @@
 #include "safety_stage_2/virtual_cube.hpp"
+#include "spdlog/spdlog.h"
 
 namespace mios {
 
 VirtualCubeSafetyModule::VirtualCubeSafetyModule():m_virtual_cube_on(false),m_safe_activation(false){
+    spdlog::trace("VirtualCubeSafetyModule::VirtualCubeSafetyModule");
+}
 
+VirtualCubeSafetyModule::~VirtualCubeSafetyModule(){
+    spdlog::trace("VirtualCubeSafetyModule::~VirtualCubeSafetyModule()");
 }
 
 void VirtualCubeSafetyModule::initialize(const Percept &p_0, const Memory *memory){

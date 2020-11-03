@@ -26,7 +26,7 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("set_grasped_object",std::bind(&CommandInterface::set_grasped_object,this,std::placeholders::_1),{ArgPair("object",{})});
     m_portal->bind_method_to_all("grasp_object",std::bind(&CommandInterface::grasp_object,this,std::placeholders::_1),{ArgPair("object",{}),ArgPair("speed",1)});
     m_portal->bind_method_to_all("grasp",std::bind(&CommandInterface::grasp,this,std::placeholders::_1),{ArgPair("width",{}),ArgPair("speed",{}),ArgPair("force",{}),ArgPair("epsilon_inner",0.001),ArgPair("epsilon_outer",0.001)});
-    m_portal->bind_method_to_all("release_object",std::bind(&CommandInterface::release_object,this,std::placeholders::_1),{ArgPair("speed",1)});
+    m_portal->bind_method_to_all("release_object",std::bind(&CommandInterface::release_object,this,std::placeholders::_1),{ArgPair("speed",1),ArgPair("width",{-1})});
     m_portal->bind_method_to_all("move_gripper",std::bind(&CommandInterface::move_gripper,this,std::placeholders::_1),{ArgPair("width",{}),ArgPair("speed",{})});
     m_portal->bind_method_to_all("home_gripper",std::bind(&CommandInterface::home_gripper,this,std::placeholders::_1),{});
 
@@ -199,7 +199,13 @@ nlohmann::json CommandInterface::release_object(const nlohmann::json &request){
     spdlog::debug("CommandInterface: release_object");
     spdlog::info("Releasing object");
     nlohmann::json response;
-    if(!m_core->release_object(request["speed"])){
+    std::optional<double> width;
+    if(request["widht"]==-1){
+        width={};
+    }else{
+        request["width"].get_to(width.value());
+    }
+    if(!m_core->release_object(width,request["speed"])){
         response["result"]=false;
         response["error"]="Releasing has failed.";
     }else{
