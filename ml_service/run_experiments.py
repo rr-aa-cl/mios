@@ -30,9 +30,9 @@ def transfer_learning_10(from_host: str = None, from_db: str = None, task: str =
             "kb_location": from_host,
             "kb_db": from_db,
             "kb_task_type": task,
-            "kb_tags": ["transfer_learning", from_tag],
-            tags: ["transfer_learning", "from_" + from_tag]
+            "kb_tags": ["transfer_learning", from_tag]
         }
+        tags = ["transfer_learning", "from_" + from_tag]
     start_experiment("collective-panda-007", pd, service_config, 10, tags=tags, knowledge=knowledge)
 
 
@@ -81,9 +81,9 @@ def transfer_learning_50(from_host: str = None, from_db: str = None, task: str =
             "kb_location": from_host,
             "kb_db": from_db,
             "kb_task_type": task,
-            "kb_tags": ["transfer_learning", from_tag],
-            tags: ["transfer_learning", "from_" + from_tag]
+            "kb_tags": ["transfer_learning", from_tag]
         }
+        tags = ["transfer_learning", "from_" + from_tag]
     start_experiment("collective-panda-001", pd, service_config, 10, tags=tags, knowledge=knowledge)
 
 
