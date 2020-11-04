@@ -15,14 +15,23 @@ def simple_benchmark():
     start_experiment("collective-panda-007.local", pd, service_config, 3)
 
 
-def transfer_learning_10():
+def transfer_learning_10(from_host: str = None, from_db: str = None, task: str = None, from_tag: str = None):
     call_method("collective-panda-007.local", 12002, "set_grasped_object", {"object": "cylinder_10"})
     pd = insert_cylinder(10)
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 10
     service_config.n_gen = 10
-    start_experiment("collective-panda-007", pd, service_config, 10, tags=["transfer_learning"])
+    knowledge = None
+    if from_host is not None:
+        knowledge = {
+            "mode": "specific",
+            "kb_location": from_host,
+            "kb_db": from_db,
+            "kb_task_type": task,
+            "kb_tags": ["transfer_learning", from_tag]
+        }
+    start_experiment("collective-panda-007", pd, service_config, 10, tags=["transfer_learning", "from_" + from_tag], knowledge=knowledge)
 
 
 def transfer_learning_20():

@@ -1,10 +1,7 @@
-import logging
 from abc import ABCMeta
 from abc import abstractmethod
-import numpy as np
-import copy
 import time
-from mongodb_client.mongodb_client import MongoDBClient
+
 
 class KnowledgeProcessorBase(metaclass=ABCMeta):
     def __init__(self, vector_mapping, task_identity, mean_optimum_weights = None, confidence = None):
@@ -14,11 +11,11 @@ class KnowledgeProcessorBase(metaclass=ABCMeta):
         self.confidence = confidence
 
     @abstractmethod
-    def process_knowledge(self, successful_trials) -> list:
+    def process_knowledge(self, successful_trials) -> dict or None:
         '''process raw data from trials to knowledge; working from and on the database -> returns centroid as list and expected cost as float'''
         raise NotImplementedError
     
-    def wrap_information(self, centroid, expected_cost):
+    def wrap_information(self, centroid, expected_cost) -> dict:
         #set up knowledge dict
         parameter_dict = {}
 

@@ -7,7 +7,7 @@ from services.base_service import ServiceConfiguration
 
 
 def start_experiment(agent: str, pd: ProblemDefinition, service: ServiceConfiguration, n_eval: int = 1,
-                     tags: list = None):
+                     tags: list = None, knowledge: dict = None):
     if tags is None:
         tags = []
 
@@ -20,6 +20,8 @@ def start_experiment(agent: str, pd: ProblemDefinition, service: ServiceConfigur
             problem_def.tags.remove("n" + str(i))
         problem_def.tags.append("n" + str(i+1))
         s = ServerProxy("http://" + agent + ":8000", allow_none=True)
-        uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, None)
+        if knowledge is not None:
+            knowledge["kb_tags"].append("n" + str(i+1))
+        uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge)
         s.wait_for_service()
         # backup_result(agent, "collective-control-001.local", problem_def.task_type, uuid)

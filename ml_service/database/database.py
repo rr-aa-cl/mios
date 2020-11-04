@@ -64,18 +64,18 @@ class Database():
         """return knowledge from single task found on database"""
         # use knowledge processor to look up/generate global knowledge:
         #knowledge = self.knowledge_manager.get_local_knowledge(task_identity,knowledge_db=self.task_knowledge_db_name,data_db=self.results_db_name)
-        knowledge = self.knowledge_manager.predict_knowledge(task_identity,self.task_knowledge_db_name)
+        knowledge = self.knowledge_manager.get_predicted_knowledge(task_identity, self.task_knowledge_db_name)
         return knowledge
 
     def get_similar_knowledge(self, task_identity: dict):
         """return knowledge from single task found on database"""
         # use knowledge processor to look up/generate global knowledge:
-        knowledge = self.knowledge_manager.get_local_knowledge(task_identity,knowledge_db=self.task_knowledge_db_name,data_db=self.results_db_name)
+        knowledge = self.knowledge_manager.get_similar_knowledge(task_identity, knowledge_db=self.task_knowledge_db_name, data_db=self.results_db_name)
         return knowledge
 
     def process_knowledge(self, task_identity: dict):
         """process raw ml data on the database to knowledge and saves it on the database"""
-        id = self.knowledge_manager.process_knowledge(task_identity, self.results_db_name, self.task_knowledge_db_name)
+        id = self.knowledge_manager.process_knowledge_by_identity(task_identity, self.results_db_name, self.task_knowledge_db_name)
         if id is False:
             logger.error("Database.process_knowledge: Cant process knowledge!")
         return id

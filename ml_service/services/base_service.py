@@ -97,12 +97,18 @@ class BaseService(metaclass=ABCMeta):
             knowledge_type = knowledge_source.get("type","similar")
             if knowledge_source["mode"] == 'none':
                 self.centroid = None
+            elif knowledge_source["mode"] == "specific":
+                client = MongoDBClient(knowledge_source["kb_location"])
+                self.knowledge = self.knowledge_manager.get_knowledge_by_filter(client, knowledge_source["kb_db"],
+                                                               knowledge_source["kb_task_type"],
+                                                               {"meta.tags": {"$all": knowledge_source["kb_tags"]}})
+                print(self.knowledge)
             elif knowledge_source["mode"] == 'local':
                 logger.debug("base_service.initialize(): get local knowlege")
                 if knowledge_type == "similar":
-                    self.knowledge = self.knowledge_manager.get_local_knowledge(self.problem_definition.get_task_identity())
+                    self.knowledge = self.knowledge_manager.get_similar_knowledge(self.problem_definition.get_task_identity())
                 elif knowledge_type == "predicted":
-                    self.knowledge = self.knowledge_manager.predict_knowledge(self.problem_definition.get_task_identity())
+                    self.knowledge = self.knowledge_manager.get_predicted_knowledge(self.problem_definition.get_task_identity())
                 else:
                     self.knowledge = False
             elif knowledge_source["mode"] == 'global':
@@ -168,7 +174,7 @@ class BaseService(metaclass=ABCMeta):
 
         self.DBclient.update("ml_results", self.problem_definition.task_type, {"_id": self.database_results_id}, ml_data[0])
         # update knowledge bases:
-        self.knowledge_manager.process_knowledge(self.problem_definition.get_task_identity())  # process knowledge and stores it to local db
+        self.knowledge_manager.process_knowledge_by_identity(self.problem_definition.get_task_identity())  # process knowledge and stores it to local db
         return result
 
     def stop(self):

@@ -8,18 +8,13 @@ from services.cmaes import *
 from interface.interface import Interface
 from services.generic_optimizer import *
 from utils.udp_client import call_method
-from definitions import *
 from xmlrpc.client import ServerProxy
 import xmlrpc
-from task_scheduler.creation_pipeline import CreationPipeline
-from definitions import *
 from task_scheduler.task_scheduler import TaskScheduler
-from task_scheduler.creation_pipeline import CreationPipeline
-from mongodb_client.mongodb_client import MongoDBClient
+from definitions.insertion_definitions import insert_cylinder
 
 from plotting.data_acquisition import *
 from plotting.data_processor import DataProcessor
-from plotting.plotter import Plotter
 
 logger = logging.getLogger("ml_service")
 logger.setLevel(logging.INFO)
@@ -54,42 +49,8 @@ def test_mios(agent: str = "localhost"):
 def test_interface(agent: str = "localhost"):
     agents = set()
     agents.add(agent)
-    problem_def = rastrigin()
-    problem_def.tags = ["rastrigin_8", "collective_learning_benchmark_001"]
+    problem_def = insert_cylinder(50)
 
-    result_names = ["collective_learning_benchmark_screen_001", "collective_learning_benchmark_screen_002",
-                    "collective_learning_benchmark_screen_003", "collective_learning_benchmark_screen_004",
-                    "collective_learning_benchmark_screen_005"]
-    grids = []
-    for i in range(len(result_names)):
-        results = get_multiple_experiment_data("collective-panda-002.local", "benchmark_rastrigin", "global",
-                                               {"meta.tags": {"$all": [result_names[i]]}})
-        processor = DataProcessor()
-        grids.append(processor.get_optima_by_task_identity(results, 0.01))
-        problem_def.cost_function.cost_grid_weights = grids[i][0, :-1]
-        problem_def.cost_function.cost_grid_val = grids[i][0, -1]
-        problem_def.cost_function.cost_grid_weights = problem_def.cost_function.cost_grid_weights.reshape(1, -1)
-        problem_def.cost_function.cost_grid_val = problem_def.cost_function.cost_grid_val.reshape(1, -1)
-        for j in range(1, grids[i].shape[0]):
-            problem_def.cost_function.add_to_cost_grid(grids[i][j, 0], grids[i][j, 1:-1], grids[i][j, -1])
-
-        ind = np.lexsort((grids[i][:, 5], grids[i][:, 4], grids[i][:, 3], grids[i][:, 2], grids[i][:, 1], grids[i][:, 0]))
-        grids[i] = grids[i][ind]
-        print(grids[i])
-
-    for i in range(grids[0].shape[0]):
-        tmp = np.empty((len(result_names)))
-        for j in range(len(tmp)):
-            tmp[j] = grids[j][i, -1]
-
-        print("Costs at " + str(grids[0][i]) + ": " + str(tmp))
-
-    task_identity = np.append(np.array([problem_def.cost_function.geometry_factor]), problem_def.cost_function.optimum_weights)
-    for i in range(problem_def.cost_function.cost_grid_weights.shape[0]):
-        if np.allclose(problem_def.cost_function.cost_grid_weights[i], task_identity):
-            print("Expected optimum is: " + str(problem_def.cost_function.cost_grid_val[i]))
-
-    return
     interface = Interface()
 
     # call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
@@ -98,7 +59,14 @@ def test_interface(agent: str = "localhost"):
     config.n_ind = 10
     config.exploration_mode = True
 
-    uuid = interface.start_service(problem_def, config, agents, None)
+    knowledge = {
+        "mode": "specific",
+        "kb_location": "collective-panda-001.local",
+        "kb_db": "ml_results",
+        "kb_task_type": "insert_object",
+        "kb_tags": ["transfer_learning", "cylinder_50", "n1"]
+    }
+    uuid = interface.start_service(problem_def, config, agents, knowledge)
     input("Press enter to stop service.")
     interface.stop_service()
 
@@ -174,7 +142,7 @@ def test_knowledge_use(knowledge_mode="global"):
                 "geometry_factor": i + 1
             }
 
-            k.process_knowledge(task_identity, "global_ml_results", "global_knowledge")
+            k.process_knowledge_by_identity(task_identity, "global_ml_results", "global_knowledge")
             print(j + i * 200)
 
     return
@@ -232,12 +200,12 @@ def test_generalizer():
     for name, regr in regressors.items():
         print("--------------------------------------")
         print("Regressor: " + name)
-        prediction = manager.predict_knowledge(task_identity, "global_knowledge", regr)
+        prediction = manager.get_predicted_knowledge(task_identity, "global_knowledge", regr)
         print("error: " + str(prediction["meta"]["prediction_error"]))
 
 
-def test_cost_function():
-    results = get_multiple_experiment_data("collective-panda-002.local", "benchmark_rastrigin", "global",
-                                           {"meta.tags": {"$all": ["collective_learning_benchmark_screen_001"]}})
-    processor = DataProcessor()
-    print(processor.get_optima_by_task_identity(results))
+def test_knowledge():
+    km = KnowledgeManager("collective-panda-001.local")
+    client = MongoDBClient("collective-panda-001.local")
+    knowledge = km.get_knowledge_by_filter(client, "ml_results", "insert_object", {"meta.tags": {"$all": ["transfer_learning", "cylinder_50", "n1"]}})
+    print(knowledge)

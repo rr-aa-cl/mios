@@ -8,29 +8,28 @@ from knowledge_processor.knowledge_processor_v2 import KnowledgeProcessor
 from knowledge_processor.kg_random_forest import KGRandomForest
 from knowledge_processor.knowledge_generalizer_base import KnowledgeGeneralizerBase
 
-
 logger = logging.getLogger("ml_service")
 
 
-class KnowledgeManager():
+class KnowledgeManager:
     def __init__(self, host='localhost', port=27017):
         self.DBclient = MongoDBClient(host, port)
         self.data_db = "ml_results"
         self.knowledge_db = "local_knowledge"
         self.predictor = None
         self.validation_per = 0.2
-        self.n_retrain = 10  # how many times the generalizer is retrained bevor prediction
+        self.n_retrain = 10  # how many times the generalizer is retrained before prediction
 
-    def collect_data(self, task_identity, data_db: str = "ml_results") -> list:
+    def collect_data(self, db_client, task_identity, data_db: str = "ml_results") -> list:
         if data_db.find("knowledge") == -1:  # if collecting raw data (no knowledge)
             if "optimum_weights" in task_identity:
                 result_filter = {"meta.tags": task_identity["tags"],
-                                "meta.cost_function.optimum_weights": task_identity["optimum_weights"],
-                                "meta.cost_function.geometry_factor": task_identity["geometry_factor"],
-                                "meta.task_type": task_identity["task_type"]}
+                                 "meta.cost_function.optimum_weights": task_identity["optimum_weights"],
+                                 "meta.cost_function.geometry_factor": task_identity["geometry_factor"],
+                                 "meta.task_type": task_identity["task_type"]}
             else:
                 result_filter = {"meta.tags": task_identity["tags"],
-                                "meta.task_type": task_identity["task_type"]}
+                                 "meta.task_type": task_identity["task_type"]}
         else:  # if collecting knowledge:
             if "optimum_weights" in task_identity:
                 result_filter = {"meta.tags": task_identity["tags"],
@@ -40,45 +39,45 @@ class KnowledgeManager():
                 result_filter = {"meta.tags": task_identity["tags"],
                                  "meta.task_type": task_identity["task_type"]}
 
-        doc = self.DBclient.read(data_db, task_identity["task_type"], result_filter)
+        doc = db_client.read(data_db, task_identity["task_type"], result_filter)
         if doc is None or len(doc) == 0:
             logger.error("Could not find any results for filter " + str(
                 result_filter) + " on database " + data_db + " in collection " + task_identity["task_type"] + ".")
-            return False
+            return []
         return doc
 
-    def store_knowledge(self, knowledge, knowledge_db="local_knowledge") -> str:
+    def store_knowledge(self, db_client: MongoDBClient, knowledge, knowledge_db="local_knowledge") -> str or None:
         if knowledge is None:
-            return False
+            return None
         knowledge_filter = {"meta.tags": knowledge["meta"]["tags"],
                             "meta.task_type": knowledge["meta"]["task_type"],
                             "meta.optimum_weights": knowledge["meta"]["optimum_weights"],
                             "meta.geometry_factor": knowledge["meta"]["geometry_factor"]}
-        available_knowledge = self.DBclient.read(knowledge_db, knowledge["meta"]["task_type"], knowledge_filter)
+        available_knowledge = db_client.read(knowledge_db, knowledge["meta"]["task_type"], knowledge_filter)
         if len(available_knowledge) == 0:
-            logger.debug("KnowledgeManager.store_knowledge: create new knowledge entry")
-            return self.DBclient.write(knowledge_db, knowledge["meta"]["task_type"], knowledge)
+            logger.debug("KnowledgeManager::store_knowledge: create new knowledge entry")
+            return db_client.write(knowledge_db, knowledge["meta"]["task_type"], knowledge)
         elif len(available_knowledge) == 1:
             logger.debug(
-                "KnowledgeManager.store_knowledge: update knowledge entry for task identity on database " + str(
+                "KnowledgeManager::store_knowledge: update knowledge entry for task identity on database " + str(
                     knowledge_db))
             id = available_knowledge[0]["_id"]
             knowledge["_id"] = id
-            self.DBclient.remove(knowledge_db, knowledge["meta"]["task_type"], {"_id": id})
-            self.DBclient.write(knowledge_db, knowledge["meta"]["task_type"], knowledge)
+            db_client.remove(knowledge_db, knowledge["meta"]["task_type"], {"_id": id})
+            db_client.write(knowledge_db, knowledge["meta"]["task_type"], knowledge)
             return available_knowledge[0]["_id"]
         else:
             logger.error(
-                "KnowledgeManager.store_knowledge: Multiple knowledge entries found! Cannot decide which one to update")
-            return False
+                "KnowledgeManager::store_knowledge: Multiple knowledge entries found! Cannot decide which one to update")
+            return None
 
-    def process_knowledge(self, task_identity: dict, data_db: str = "ml_results",
-                          knowledge_db: str = "local_knowledge") -> str("_id"):
+    def get_knowledge_by_identity(self, db_client, task_identity: dict, data_db: str = "ml_results",
+                                      knowledge_db: str = "local_knowledge") -> str or None:
         '''process raw data from trials to knowledge; working from and on the database'''
         # allocate all ml_data with same task identity:
-        doc = self.collect_data(task_identity, data_db)
+        doc = self.collect_data(db_client, task_identity, data_db)
         if not doc:
-            return False
+            return None
         # save knowledge source
         uuids = []
         tags = set()
@@ -87,22 +86,40 @@ class KnowledgeManager():
 
         successful_trials, vector_mapping, mean_optimum_weights, confidence = self.get_successful_trials(doc)
         # process knowledge:
-        self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, mean_optimum_weights, confidence)
-        knowledge = self.knowledge_processor.process_knowledge(successful_trials)
+        knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, mean_optimum_weights, confidence)
+        knowledge = knowledge_processor.process_knowledge(successful_trials)
 
         if not knowledge:
             logger.error("KnowledgeManager.process_knowledge: Knowledge cant be processed!")
-            return False
+            return None
 
         knowledge["meta"]["knowledge_source"] = uuids
         knowledge["meta"]["prediction"] = False
 
-        return self.store_knowledge(knowledge, knowledge_db)
+        return knowledge
 
-    def process_knowledge_local(self, task_identity: dict, data_db: str = "ml_results") -> str("_id"):
+    def get_knowledge_by_filter(self, db_client: MongoDBClient, data_db: str, col: str, filter: dict):
+        doc = db_client.read(data_db, col, filter)
+        if not doc:
+            logger.error("Cannot find data for filter " + str(filter) + " at " + str(data_db) + "." + str(col))
+            return None
+
+        task_identity = {
+            "optimum_weights": doc[0]["meta"]["cost_function"]["optimum_weights"],
+            "geometry_factor": doc[0]["meta"]["cost_function"]["geometry_factor"],
+            "task_type": doc[0]["meta"]["task_type"],
+            "tags": doc[0]["meta"]["tags"]
+        }
+
+        successful_trials, vector_mapping, mean_optimum_weights, confidence = self.get_successful_trials(doc)
+        self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, mean_optimum_weights, confidence)
+        knowledge = self.knowledge_processor.process_knowledge(successful_trials)
+        return knowledge
+
+    def process_knowledge_local(self, db_client, task_identity: dict, data_db: str = "ml_results") -> str("_id"):
         '''process raw data from trials to knowledge; working from and on the database'''
         # allocate all ml_data with same task identity:
-        doc = self.collect_data(task_identity, data_db)
+        doc = self.collect_data(db_client, task_identity, data_db)
         if not doc:
             return False
         # save knowledge source
@@ -128,14 +145,15 @@ class KnowledgeManager():
             if not doc["meta"].get("optimum_weights", False):
                 logger.error("KnowledgeManager: found invalid knowledge (no key \"optimum_weights\" in meta)")
                 continue
-            training_data_x.append(np.append(np.array(doc["meta"]["geometry_factor"]), np.array(doc["meta"]["optimum_weights"])))
+            training_data_x.append(
+                np.append(np.array(doc["meta"]["geometry_factor"]), np.array(doc["meta"]["optimum_weights"])))
             training_data_y.append(np.array(self.dict_to_list(doc["parameters"])))
         if len(training_data_x) < 1 or len(training_data_y) < 1:
             logger.error(
                 "KnowledgeManager.predict_knowledge: Training or Validation data is too small (smaller than 1)")
             return False
         return np.array(training_data_x), np.array(training_data_y)
-    
+
     def get_cost_from_data(self, docs):
         cost_data = []
         for doc in docs:
@@ -155,8 +173,8 @@ class KnowledgeManager():
         else:
             return KGRandomForest()
 
-    def predict_knowledge(self, task_identity: dict, knowledge_db: str = "local_knowledge",
-                          predictor: KnowledgeGeneralizerBase = None):
+    def get_predicted_knowledge(self, task_identity: dict, knowledge_db: str = "local_knowledge",
+                                predictor: KnowledgeGeneralizerBase = None):
         '''trains and uses model to predict knolwedge'''
         # search for all tasks of same tasktype
         task_filter = copy.deepcopy(task_identity)
@@ -166,16 +184,16 @@ class KnowledgeManager():
             task_filter.pop("geometry_factor")
         if knowledge_db.find("global") == -1:  # if ml_results are needed, which one to use
             data_db = "ml_results"
-        else:    
+        else:
             data_db = "global_ml_results"
 
-        doc = self.collect_data(task_filter, knowledge_db)
+        doc = self.collect_data(self.DBclient, task_filter, knowledge_db)
 
         if not doc:
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
                 knowledge_db) + ")")
             logger.debug("KnowledgeManager: Using similar Knowledge")
-            return self.get_local_knowledge(task_identity, knowledge_db, data_db)
+            return self.get_similar_knowledge(task_identity, knowledge_db, data_db)
         # check if knowledge fits together:
         vector_mapping = doc[0]["parameters"].keys()
         for d in doc:
@@ -187,7 +205,7 @@ class KnowledgeManager():
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
                 knowledge_db) + ")")
             logger.debug("KnowledgeManager: Using similar Knowledge")
-            return self.get_local_knowledge(task_identity, knowledge_db, data_db)
+            return self.get_similar_knowledge(task_identity, knowledge_db, data_db)
 
         # get best predictor:
         if predictor is None:
@@ -196,10 +214,10 @@ class KnowledgeManager():
         # retrain the knowledge generalizer and take the best one
         best_predictor = predictor
         best_error = float("inf")
-        
-        for i in range(0, self.n_retrain):
+
+        for i in range(0, int(max(1, self.n_retrain))):
             training_set = copy.deepcopy(doc)
-            
+
             # divide into training-data and validation-data
             validation_size = int(len(training_set) * self.validation_per)
             if validation_size < 1 and len(training_set) > 1:
@@ -213,8 +231,9 @@ class KnowledgeManager():
             training_data = self.get_learning_data(training_set)
             validation_data = self.get_learning_data(validation_set)
             if not (training_data and validation_data):  # sth went wrong, sets too small
-                logger.debug("KnowledgeManager.predict_knowledge: Error in training or validation set -> use similar knowledge")
-                return self.get_local_knowledge(task_identity,knowledge_db)
+                logger.debug(
+                    "KnowledgeManager.predict_knowledge: Error in training or validation set -> use similar knowledge")
+                return self.get_similar_knowledge(task_identity, knowledge_db)
 
             # stadardize learning data
             std_deviation_data_y = np.std(np.append(validation_data[1], training_data[1], axis=0), axis=0)
@@ -242,7 +261,7 @@ class KnowledgeManager():
                     np.mean(distances))  # devide by the standard deviation to set the error into context
             else:
                 error_in_context = False
-            
+
             if error_in_context < best_error:
                 best_predictor = copy.deepcopy(predictor)
                 best_error = error_in_context
@@ -285,39 +304,39 @@ class KnowledgeManager():
 
         return knowledge
 
-    def get_local_knowledge(self, task_identity: dict, knowledge_db: str = "local_knowledge",
-                            data_db: str = "ml_results"):
+    def get_similar_knowledge(self, task_identity: dict, knowledge_db: str = "local_knowledge",
+                              data_db: str = "ml_results"):
         '''searches for most similar knowledge / creates knowledge from similar results'''
         collection = task_identity["task_type"]
         optimum_weights = task_identity["optimum_weights"]
 
-        knowledge_filter = {"meta.tags": task_identity["tags"], \
+        knowledge_filter = {"meta.tags": task_identity["tags"],
                             "meta.task_type": task_identity["task_type"]
                             }
 
         # search for knowldge from the same context (task_type, tags)
         docs = self.DBclient.read(knowledge_db, collection, knowledge_filter)
         if len(docs) >= 1:
-            logger.debug("knowledge_processor.get_local_knowledge(): found knowledge on task identity" + str(
+            logger.debug("knowledge_processor.get_similar_knowledge(): found knowledge on task identity" + str(
                 task_identity) + " at " + str(knowledge_db) + "." + str(collection))
             # take most similar knowledge according to cost function ("optimum_weights"):
             return self.get_most_similar_task(optimum_weights, docs)
 
         logger.debug(
-            "knowledge_processor.get_local_knowledge(): found none! -> create local knowledge from ml data for task_identity" + str(
+            "knowledge_processor.get_similar_knowledge(): found none! -> create local knowledge from ml data for task_identity" + str(
                 task_identity))
-        knowledge = self.process_knowledge_local(task_identity, data_db)
+        knowledge = self.get_knowledge_by_identity(self.DBclient, task_identity, data_db)
         if knowledge:
             return knowledge
 
         logger.debug(
-            "knowledge_processor.get_local_knowledge(): found none! -> create knowledge from most similar ml data of task type " + str(
+            "knowledge_processor.get_similar_knowledge(): found none! -> create knowledge from most similar ml data of task type " + str(
                 collection))
         docs = self.DBclient.read(data_db, collection, knowledge_filter)
         if len(docs) >= 1:
             return self.get_most_similar_task(optimum_weights, docs)
 
-        logger.debug("knowledge_processor.get_local_knowledge(): found no ml data of task type " + str(
+        logger.debug("knowledge_processor.get_similar_knowledge(): found no ml data of task type " + str(
             collection) + " -> search for different task types")
         knowledge_filter = {"meta.tags": task_identity["tags"]}
         docs = []
@@ -327,7 +346,7 @@ class KnowledgeManager():
             return self.get_most_similar_task(optimum_weights, docs)
 
         logger.debug(
-            "knowledge_processor.get_local_knowledge(): no knowledge or ml data are available for task_type " + str(
+            "knowledge_processor.get_similar_knowledge(): no knowledge or ml data are available for task_type " + str(
                 collection) + " with tags " + str(task_identity["tags"]))
         return False
 
@@ -372,7 +391,8 @@ class KnowledgeManager():
             elif "optimum_weights" in task["meta"].keys():
                 temp_optimum_weights = task["meta"]["optimum_weights"]
             else:
-                logger.debug("knowledge_processor.get_most_similar_task: skipping faulty task format (cant find optimum_weights in task)")
+                logger.debug(
+                    "knowledge_processor.get_most_similar_task: skipping faulty task format (cant find optimum_weights in task)")
                 continue
 
             # use euclidean distance as similarity measure:  sqrt(sum( (a-b)**2 ))

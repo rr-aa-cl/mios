@@ -156,7 +156,7 @@ void TestSkill1::write_custom_results(nlohmann::json& custom_results){
 }
 
 void TestSkill1::parallels(){
-    double cnt;
+    double cnt=0;
     msrm_utils::read_json_param(get_custom_results(),"parallels_cnt",cnt);
     get_custom_results()["parallels_cnt"]=cnt+1;
 }
