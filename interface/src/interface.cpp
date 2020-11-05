@@ -200,11 +200,12 @@ nlohmann::json CommandInterface::release_object(const nlohmann::json &request){
     spdlog::info("Releasing object");
     nlohmann::json response;
     std::optional<double> width;
-    if(request["widht"]==-1){
+    if(request["width"]==-1){
         width={};
     }else{
         request["width"].get_to(width.value());
     }
+    spdlog::trace("After read");
     if(!m_core->release_object(width,request["speed"])){
         response["result"]=false;
         response["error"]="Releasing has failed.";
