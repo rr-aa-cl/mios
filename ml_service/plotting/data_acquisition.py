@@ -9,14 +9,8 @@ class DataNotFoundError(Exception):
     pass
 
 
-def get_experiment_data(host: str, task_type: str, type: str = "local", filter: dict = None, uuid: str = None):
+def get_experiment_data(host: str, task_type: str, results_db: str = "ml_results", filter: dict = None, uuid: str = None):
     db_client = MongoDBClient(host)
-    if type == "local":
-        results_db = "ml_results"
-    elif type == "global":
-        results_db = "global_ml_results"
-    else:
-        results_db = "ml_results"
 
     if filter is not None:
         docs = db_client.read(results_db, task_type, filter)
@@ -34,14 +28,8 @@ def get_experiment_data(host: str, task_type: str, type: str = "local", filter: 
     return Result(docs[0])
 
 
-def get_multiple_experiment_data(host: str, task_type: str, type: str = "local", filter: dict = None):
+def get_multiple_experiment_data(host: str, task_type: str, results_db: str = "ml_results", filter: dict = None):
     db_client = MongoDBClient(host)
-    if type == "local":
-        results_db = "ml_results"
-    elif type == "global":
-        results_db = "global_ml_results"
-    else:
-        results_db = "ml_results"
 
     if filter is None:
         filter = {}

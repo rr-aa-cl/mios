@@ -11,10 +11,10 @@ def single_experiment(host: str, task_type: str, uuid: str):
     plot.plot_cost_over_trials(p.get_monotonically_decreasing_cost(result.get_cost_per_trial()))
 
 
-def average_experiment(host: str, task_type: str, tags):
+def average_experiment(host: str, task_type: str, database: str, tags: list):
     p = DataProcessor()
     plot = Plotter()
-    results = get_multiple_experiment_data(host, task_type, filter={"meta.tags": {"$all": tags}})
+    results = get_multiple_experiment_data(host, task_type, results_db=database, filter={"meta.tags": {"$all": tags}})
     cost = p.get_average_cost(results, True)
     plot.plot_cost_over_trials(cost)
 
