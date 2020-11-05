@@ -234,3 +234,66 @@ def transfer_learning_cylinder_10_t():
         if t == "cylinder_10":
             continue
         transfer_learning_10("collective-control-001", "results_tl_base", "insert_object", t)
+
+
+def transfer_learning_cylinder_20_t():
+    for t in tasks:
+        if t == "cylinder_20":
+            continue
+        transfer_learning_20("collective-control-001", "results_tl_base", "insert_object", t)
+
+
+def transfer_learning_cylinder_30_t():
+    for t in tasks:
+        if t == "cylinder_30":
+            continue
+        transfer_learning_30("collective-control-001", "results_tl_base", "insert_object", t)
+
+
+def transfer_learning_cylinder_40_t():
+    for t in tasks:
+        if t == "cylinder_40":
+            continue
+        transfer_learning_40("collective-control-001", "results_tl_base", "insert_object", t)
+
+
+def transfer_learning_cylinder_50_t():
+    for t in tasks:
+        if t == "cylinder_50":
+            continue
+        transfer_learning_50("collective-control-001", "results_tl_base", "insert_object", t)
+
+
+def transfer_learning_cylinder_60_t():
+    for t in tasks:
+        if t == "cylinder_60":
+            continue
+        transfer_learning_60("collective-control-001", "results_tl_base", "insert_object", t)
+
+
+def transfer_learning_key_abus_e30_t():
+    for t in tasks:
+        if t == "key_abus_e30":
+            continue
+        transfer_learning_abus_e30("collective-control-001", "results_tl_base", "insert_object", t)
+
+
+def transfer_learning_key_hatch_t():
+    for t in tasks:
+        if t == "key_hatch":
+            continue
+        transfer_learning_hatch_key("collective-control-001", "results_tl_base", "insert_object", t)
+
+
+def transfer_learning_pad_t():
+    for t in tasks:
+        if t == "key_pad":
+            continue
+        transfer_learning_pad_lock("collective-control-001", "results_tl_base", "insert_object", t)
+
+
+def transfer_learning_key_old_t():
+    for t in tasks:
+        if t == "key_old":
+            continue
+        transfer_learning_old_key("collective-control-001", "results_tl_base", "insert_object", t)
