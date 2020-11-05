@@ -134,6 +134,7 @@ class BaseService(metaclass=ABCMeta):
                 for key in self.knowledge["parameters"]:
                     self.centroid.append(self.knowledge["parameters"][key])
                 logger.debug("base_service.initialize(): Use global knowledge "+str(self.centroid))
+                self.centroid = self.problem_definition.domain.normalize(self.centroid)
                 self.confidence = self.knowledge["meta"].get("confidence")
 
         self.engine = Engine(agents)
@@ -174,7 +175,7 @@ class BaseService(metaclass=ABCMeta):
 
         self.DBclient.update("ml_results", self.problem_definition.task_type, {"_id": self.database_results_id}, ml_data[0])
         # update knowledge bases:
-        self.knowledge_manager.get_knowledge_by_identity(self.problem_definition.get_task_identity())  # process knowledge and stores it to local db
+        self.knowledge_manager.get_knowledge_by_identity(self.DBclient, self.problem_definition.get_task_identity())  # process knowledge and stores it to local db
         return result
 
     def stop(self):

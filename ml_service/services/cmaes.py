@@ -63,8 +63,8 @@ class CMAESService(BaseService):
             self.centroid = self.problem_definition.domain.get_default_x0()
 
         print("CMAES: " + str(self.centroid))
-        self.strategy = deap.cma.Strategy(centroid=self.centroid,
-                                          sigma=sigma_init, _lambda=self.configuration.n_ind)
+        print(self.problem_definition.domain.vector_mapping)
+        self.strategy = deap.cma.Strategy(centroid=self.centroid, sigma=sigma_init)
         # else:
         #     self.centroid = self.problem_definition.domain.normalize(self.centroid)
         #     sigma_init = self.configuration.sigma_init / 4
@@ -103,7 +103,7 @@ class CMAESService(BaseService):
         pass
 
     def map(self, f, x_set: np.ndarray):
-        logger.debug("CMAESService.trial(" + str(x_set) + ")")
+        # logger.debug("CMAESService.trial(" + str(x_set) + ")")
 
         trial_uuids = []
 

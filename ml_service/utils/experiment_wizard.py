@@ -21,6 +21,8 @@ def start_experiment(agent: str, pd: ProblemDefinition, service: ServiceConfigur
         problem_def.tags.append("n" + str(i+1))
         s = ServerProxy("http://" + agent + ":8000", allow_none=True)
         if knowledge is not None:
+            if "n" + str(i) in knowledge["kb_tags"]:
+                knowledge["kb_tags"].remove("n" + str(i))
             knowledge["kb_tags"].append("n" + str(i+1))
         uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge)
         s.wait_for_service()
