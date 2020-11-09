@@ -24,9 +24,6 @@ def start_experiment(agent: str, pd: ProblemDefinition, service: ServiceConfigur
         if len(client.read("ml_results", problem_def.task_type, {"meta.tags": {"$all": problem_def.tags}})) != 0:
             print("Continue at n" + str(i+1))
             continue
-        else:
-            print("Do n" + str(i + 1))
-            continue
         s = ServerProxy("http://" + agent + ":8000", allow_none=True)
         if knowledge is not None:
             if "n" + str(i) in knowledge["kb_tags"]:
