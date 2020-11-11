@@ -116,3 +116,10 @@ class DataProcessor:
 
     def get_std_theta(self):
         pass
+
+    def dict_to_list(self, d: dict) -> list:
+        '''returns a list with dict contents'''
+        l = []
+        for key in d.keys():
+            l.append(d[key])
+        return l

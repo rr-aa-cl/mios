@@ -20,6 +20,13 @@ class Result:
             self.total_time = 0
         self.starting_time = data_tmp["meta"]["t_0"]
 
+        if "init_knowledge" in data_tmp["meta"] and data_tmp["meta"]["init_knowledge"]["content"]:
+            self.knowledge = data_tmp["meta"]["init_knowledge"]["content"]["parameters"]
+        else:
+            self.knowledge = None
+        self.uuid = data_tmp["meta"]["uuid"]
+        self.tags = data_tmp["meta"]["tags"]
+
     def get_cost_per_trial(self, episode_length: int = 1) -> list:
         cost_raw = []
         cost = []
@@ -75,3 +82,54 @@ class Result:
     def get_lowest_cost(self):
         costs = self.get_cost_per_trial()
         return min(costs)
+
+    def get_best_theta(self):
+        best_theta = self.trials[0]["theta"]
+        best_cost = self.trials[0]["cost"]
+        for t in self.trials:
+            if t["cost"] < best_cost:
+                best_cost = t["cost"]
+                best_theta = t["theta"]
+        return best_theta
+
+    def get_best_theta_norm(self):
+        best_theta = self.get_best_theta()
+        best_theta_norm = {}
+        for param in best_theta.keys():
+            min_param = self.meta_data["domain"]["limits"][param][0]
+            max_param = self.meta_data["domain"]["limits"][param][1]
+            best_theta_norm[param] = normalize(best_theta[param], min_param, max_param)
+        return best_theta_norm
+    
+    def get_knowledge_norm(self):
+        if self.knowledge is None:
+            return None
+        knowledge_norm = {}
+        for param in self.knowledge.keys():
+            min_param = self.meta_data["domain"]["limits"][param][0]
+            max_param = self.meta_data["domain"]["limits"][param][1]
+            knowledge_norm[param] = normalize(self.knowledge[param], min_param, max_param)
+        return knowledge_norm
+
+
+class Knowledge:
+    def __init__(self, data: dict):
+        data_tmp = copy.deepcopy(data)
+        del data_tmp["_id"]
+        self.meta_data = data_tmp["meta"]
+        self.sources = data_tmp["meta"]["knowledge_source"]
+        self.parameter_dict = data_tmp["parameters"]
+        self.expected_cost = data_tmp["meta"]["expected_cost"]
+        self.confidence = data_tmp["meta"]["confidence"]
+    
+    def get_theta(self):
+        parameter_list = []
+        for key in self.parameter_dict.keys():
+            parameter_list.append(self.parameter_dict[key])
+        return parameter_list
+        
+def normalize(d, min, max):
+    return (d - min) / (max - min)
+
+def denormalize(d_norm, min, max):
+    return d_norm * (max - min) + min

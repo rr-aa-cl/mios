@@ -5,10 +5,11 @@ from plotting.data_processor import DataError
 from plotting.plotter import Plotter
 import matplotlib.pyplot as plt
 
+plot = Plotter()
 
 def single_experiment(host: str, task_type: str, database: str, tags: list = None, uuid: str = None):
     p = DataProcessor()
-    plot = Plotter()
+
     if tags is not None:
         result = get_experiment_data(host, task_type, results_db=database, filter={"meta.tags": {"$all": tags}})
     elif uuid is not None:
@@ -20,7 +21,7 @@ def single_experiment(host: str, task_type: str, database: str, tags: list = Non
 
 def average_experiment(host: str, task_type: str, database: str, tags: list):
     p = DataProcessor()
-    plot = Plotter()
+
     results = get_multiple_experiment_data(host, task_type, results_db=database, filter={"meta.tags": {"$all": tags}})
     cost = p.get_average_cost(results, True)
     plot.plot_cost_over_trials(cost)
@@ -28,7 +29,7 @@ def average_experiment(host: str, task_type: str, database: str, tags: list):
 
 def plot_experiment(host: str, task_type: str, database: str, tags: list):
     p = DataProcessor()
-    plot = Plotter()
+
     for i in range(10):
         try:
             tags_tmp = tags.copy()
@@ -47,7 +48,7 @@ def agent_learning(tags, hosts = ["collective-panda-002.local"]):
     task_type = "benchmark_rastrigin"
 
     p = DataProcessor()
-    plot = Plotter()
+
     results = []
     for host in hosts:
         results.extend(get_multiple_experiment_data(host, task_type, knowledge_mode, filter=filter))
@@ -165,3 +166,35 @@ def global_learning(tags, hosts = ["collective-panda-002.local"]):
     results = p.sort_over_time(results)
     all_times = p.get_cumulative_time(results)
     plot.plot_learning_over_task(all_times, "global")
+   
+
+def transfer_learning_parameters(filter, host):
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
+    p = DataProcessor()
+    data = {}
+    for task in tasks:
+        data[task] = {}
+        for i in range(len(tasks)):
+            print("\n", task, "   from_", tasks[i])
+            try:
+                tags = ["transfer_learning", task, "from_" + tasks[i]]
+                results = get_multiple_experiment_data(host, "insert_object",
+                                                    results_db="ml_results",
+                                                    filter={"meta.tags":  tags})
+            except (DataNotFoundError, DataError):
+                print("No data found for experiment (" + str(i) + ")")
+                continue
+            distances = []
+            for r in results:
+                init_knowledge = r.get_knowledge_norm()
+                optimum = r.get_best_theta_norm()
+                if init_knowledge is None:
+                    continue
+                dist = np.linalg.norm(np.array(p.dict_to_list(init_knowledge)) - np.array(p.dict_to_list(optimum)))
+                distances.append(dist)
+                print(r.tags)
+            mean_dist = np.mean(distances)
+            std_dist = np.std(distances)
+            data[task]["from_" + tasks[i]] = {"mean_dist": mean_dist, "std_dist": std_dist}
+    plot.plot_parameter_similarity(data)
+
