@@ -372,14 +372,14 @@ def transfer_learning_test_20(from_host: str = None, from_db: str = None, task: 
     service_config.n_ind = 10
     service_config.n_gen = 10
     knowledge = None
-    tags = ["transfer_learning"]
+    tags = ["transfer_learning_test"]
     if from_host is not None:
         knowledge = {
             "mode": "specific",
             "kb_location": from_host,
             "kb_db": from_db,
             "kb_task_type": task,
-            "kb_tags": ["transfer_learning", from_tag]
+            "kb_tags": ["transfer_learning_test", from_tag]
         }
         tags = ["transfer_learning_test", "from_" + from_tag]
     start_experiment("collective-panda-007", pd, service_config, 10, tags=tags, knowledge=knowledge)
@@ -393,7 +393,7 @@ def transfer_learning_test_40(from_host: str = None, from_db: str = None, task: 
     service_config.n_ind = 10
     service_config.n_gen = 10
     knowledge = None
-    tags = ["transfer_learning"]
+    tags = ["transfer_learning_test"]
     if from_host is not None:
         knowledge = {
             "mode": "specific",
@@ -402,7 +402,7 @@ def transfer_learning_test_40(from_host: str = None, from_db: str = None, task: 
             "kb_task_type": task,
             "kb_tags": ["transfer_learning_test", from_tag]
         }
-        tags = ["transfer_learning", "from_" + from_tag]
+        tags = ["transfer_learning_test", "from_" + from_tag]
     start_experiment("collective-panda-001", pd, service_config, 10, tags=tags, knowledge=knowledge)
 
 
