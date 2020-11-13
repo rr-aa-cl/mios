@@ -177,7 +177,7 @@ def insertion_light(insertable: str, insert_into: str, approach: str) -> Problem
         "offset_phi": ["parameters.offset-4"],
         "offset_chi": ["parameters.offset-5"],
         "K_x": ["skills.insertion.control.cart_imp.K_x-1", "skills.insertion.control.cart_imp.K_x-2", "skills.insertion.control.cart_imp.K_x-3"],
-        "K_phi": ["skills.insertion.control.cart_imp.K_x-4", "skills.insertion.control.cart_imp.K_x-2", "skills.insertion.control.cart_imp.K_x-2"]
+        "K_phi": ["skills.insertion.control.cart_imp.K_x-4", "skills.insertion.control.cart_imp.K_x-5", "skills.insertion.control.cart_imp.K_x-6"]
     }
 
     x_0 = {
@@ -214,6 +214,9 @@ def insertion_light(insertable: str, insert_into: str, approach: str) -> Problem
                     "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1],
                     "search_f": [0, 0, 0, 0, 0, 0],
                     "search_a": [0, 0, 0, 0, 0, 0]
+                },
+                "control": {
+                    "K_x": [0, 0, 0, 0, 0, 0]
                 }
             },
             "contact": {
