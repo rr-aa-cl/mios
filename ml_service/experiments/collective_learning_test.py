@@ -4,7 +4,7 @@ from task_scheduler.task_scheduler import TaskScheduler
 from task_scheduler.task_scheduler import Task
 from problem_definition.problem_definition import ProblemDefinition
 from services.base_service import ServiceConfiguration
-from definitions import rastrigin
+from definitions.benchmark_definitions import mios_ml_benchmark
 from experiments.experiment_base import Experiment
 from utils.udp_client import *
 import copy
@@ -12,8 +12,7 @@ import random
 
 
 def rastrigin_a(a: float):
-    pd = rastrigin()
-    pd.default_context["skills"]["ml_test"]["skill"]["x_0"] = [a, a, a, a, a, a]
+    pd = mios_ml_benchmark(a)
     pd.tags = ["rastrigin_" + str(int(a))]
     pd.cost_function.geometry_factor = a
     pd.cost_function.max_cost[2] = pow(a + 5.12, 2) * 6
