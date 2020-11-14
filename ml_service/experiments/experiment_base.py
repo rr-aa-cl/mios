@@ -56,7 +56,7 @@ class Experiment(metaclass=ABCMeta):
         thr.start()
 
     def get_cost_grid(self, tag: str, percentage: float) -> np.ndarray:
-        results = get_multiple_experiment_data(self.task_scheduler.kb_location, self.task_type, "global",  {"meta.tags": {"$all": [tag] }})
+        results = get_multiple_experiment_data(self.task_scheduler.kb_location, self.task_type, "ml_results",  {"meta.tags": {"$all": [tag] }})
         processor = DataProcessor()
         return processor.get_optima_by_task_identity(results, percentage)
 
