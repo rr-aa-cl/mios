@@ -192,6 +192,7 @@ class KnowledgeManager:
         if not doc:
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
                 knowledge_db) + ")")
+            return False
             logger.debug("KnowledgeManager: Using similar Knowledge")
             return self.get_similar_knowledge(task_identity, knowledge_db, data_db)
         # check if knowledge fits together:
@@ -204,6 +205,7 @@ class KnowledgeManager:
         if len(doc) < 2:  # if no predictions can be made: use similar knowledge
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
                 knowledge_db) + ")")
+            return False
             logger.debug("KnowledgeManager: Using similar Knowledge")
             return self.get_similar_knowledge(task_identity, knowledge_db, data_db)
 

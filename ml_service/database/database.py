@@ -53,8 +53,8 @@ class Database():
         else:
             logger.error("Database.store_result: Received result is not of type dict or list! "+str(type(result)))
             return False
-        task_identity = {"task_type":result["meta"]["task_type"], \
-                         "tags":result["meta"]["tags"], \
+        task_identity = {"task_type":result["meta"]["task_type"],
+                         "tags":result["meta"]["tags"],
                          "optimum_weights":result["meta"]["cost_function"]["optimum_weights"],
                          "geometry_factor": result["meta"]["cost_function"]["geometry_factor"]}
         self.process_knowledge(task_identity)
@@ -75,10 +75,13 @@ class Database():
 
     def process_knowledge(self, task_identity: dict):
         """process raw ml data on the database to knowledge and saves it on the database"""
-        id = self.knowledge_manager.process_knowledge_by_identity(task_identity, self.results_db_name, self.task_knowledge_db_name)
-        if id is False:
+        knowledge = self.knowledge_manager.get_knowledge_by_identity(self.db_client, task_identity, self.results_db_name, self.task_knowledge_db_name)
+        if knowledge is False:
             logger.error("Database.process_knowledge: Cant process knowledge!")
-        return id
+        else:
+            self.knowledge_manager.store_knowledge(self.db_client, knowledge, "global_knowledge")
+        del knowledge["_id"]
+        return knowledge
 
     def stop_server(self):
         logger.debug("database.stop_server")

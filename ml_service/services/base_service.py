@@ -102,7 +102,6 @@ class BaseService(metaclass=ABCMeta):
                 self.knowledge = self.knowledge_manager.get_knowledge_by_filter(client, knowledge_source["kb_db"],
                                                                knowledge_source["kb_task_type"],
                                                                {"meta.tags": {"$all": knowledge_source["kb_tags"]}})
-                print(self.knowledge)
             elif knowledge_source["mode"] == 'local':
                 logger.debug("base_service.initialize(): get local knowlege")
                 if knowledge_type == "similar":
@@ -164,18 +163,22 @@ class BaseService(metaclass=ABCMeta):
         ml_data[0]["meta"]["init_knowledge"]["content"] = self.knowledge
         ml_data[0]["meta"]["init_knowledge"]["source"] = self.knowledge_source
         ml_data[0]["final_results"]["confidence"] = self.confidence
+
+        knowledge = self.knowledge_manager.get_knowledge_by_identity(self.DBclient, self.problem_definition.get_task_identity())
+        self.knowledge_manager.store_knowledge(self.DBclient, knowledge)
+
         if self.knowledge_source is not None:
             if self.knowledge_source["mode"] == "global":
                 logger.debug("base_service.learn_task: store ml_results to global database at "+str("http://" + self.knowledge_source["kb_location"] + ":8001"))
                 with ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001", allow_none=True) as kb:
                     try:
                         kb.store_result(ml_data[0])
+                        kb.process_knowledge(self.problem_definition.get_task_identity())
                     except socket.timeout:
                         logger.error("base_service: global Database is not reachable!")
 
         self.DBclient.update("ml_results", self.problem_definition.task_type, {"_id": self.database_results_id}, ml_data[0])
         # update knowledge bases:
-        self.knowledge_manager.get_knowledge_by_identity(self.DBclient, self.problem_definition.get_task_identity())  # process knowledge and stores it to local db
         return result
 
     def stop(self):
@@ -229,7 +232,6 @@ class BaseService(metaclass=ABCMeta):
         for key in keys[:-1]:
             dic = dic.setdefault(key, {})
         tmp = keys[-1].split("-")
-        print(tmp)
         if len(tmp) == 1:
             dic[keys[-1]] = value
         elif len(tmp) == 2:

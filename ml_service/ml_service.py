@@ -12,14 +12,15 @@ from xmlrpc.client import ServerProxy
 import xmlrpc
 from task_scheduler.task_scheduler import TaskScheduler
 from definitions.insertion_definitions import insert_cylinder
+from definitions.benchmark_definitions import mios_ml_benchmark
 
 from plotting.data_acquisition import *
 from plotting.data_processor import DataProcessor
 
 logger = logging.getLogger("ml_service")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.INFO)
+handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 
@@ -49,22 +50,24 @@ def test_mios(agent: str = "localhost"):
 def test_interface(agent: str = "localhost"):
     agents = set()
     agents.add(agent)
-    problem_def = insert_cylinder(50)
+    problem_def = mios_ml_benchmark(0)
+    problem_def.cost_function.optimum_weights[1] = 0.8
+    problem_def.cost_function.optimum_weights[2] = 0.2
 
     interface = Interface()
 
     # call_method(agent, 12002, "set_grasped_object", {"object": "key_abus_e30"})
     config = get_service_configuration()
-    config.n_gen = 100
-    config.n_ind = 10
+    config.n_gen = 2
+    config.n_ind = 5
     config.exploration_mode = True
 
     knowledge = {
-        "mode": "specific",
-        "kb_location": "collective-panda-001.local",
+        "mode": "global",
+        "type": "predicted",
+        "kb_location": "localhost",
         "kb_db": "ml_results",
-        "kb_task_type": "insert_object",
-        "kb_tags": ["transfer_learning", "cylinder_50", "n1"]
+        "kb_task_type": "benchmark_rastrigin"
     }
     uuid = interface.start_service(problem_def, config, agents, knowledge)
     input("Press enter to stop service.")
