@@ -775,7 +775,7 @@ void SkillParameters::read_skill_objects(const nlohmann::json &p){
 nlohmann::json SkillParameters::get_default_values(){
     nlohmann::json default_values;
     default_values["time_max"]=0;;
-    default_values["parallels_frequency"]=1;
+    default_values["parallels_frequency"]=1000;
     default_values["objects"]={};
     return default_values;
 }
