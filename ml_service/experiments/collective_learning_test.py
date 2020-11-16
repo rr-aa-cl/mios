@@ -49,7 +49,7 @@ class CollectiveLearningBase(Experiment):
         self.task_type = "benchmark_rastrigin"
 
         c = TestCreationPipeline()
-        n_tasks = 10
+        n_tasks = 30
         c.create_tasks_from_template(rastrigin_a(1), config, n_tasks, "collective-panda-007.local",
                                      ["collective-panda-007"], knowledge_mode, knowledge_type)
         c.create_tasks_from_template(rastrigin_a(2), config, n_tasks, "collective-panda-001.local",
