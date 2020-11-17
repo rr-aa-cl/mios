@@ -14,7 +14,7 @@ logger.addHandler(handler)
 
 if __name__ == "__main__":
     e = CollectiveLearningBase()
-    e.start(["collective_learning_benchmark_001"], "global", "predicted", "collective-panda-002",
+    e.start(["collective_learning_benchmark_001"], "global", "similar", "collective-panda-002",
             "collective_learning_benchmark_screen_002", 0.05)
     input("Press key to stop.")
     e.stop()

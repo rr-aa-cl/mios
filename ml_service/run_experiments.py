@@ -5,6 +5,8 @@ from definitions.insertion_definitions import insert_key
 from definitions.benchmark_definitions import mios_ml_benchmark
 from services.cmaes import CMAESConfiguration
 from utils.udp_client import call_method
+from utils.database import delete_local_results
+from utils.database import delete_local_knowledge
 
 
 def simple_benchmark():
@@ -44,6 +46,8 @@ def transfer_learning_benchmark_1(from_host: str = None, from_db: str = None, ta
     service_config.n_gen = 20
     pd.cost_function.optimum_weights[1] = 1
     pd.cost_function.optimum_weights[2] = 0
+    delete_local_results(["localhost"], "benchmark_rastrigin", ["transfer_learning", "shift_0"])
+    delete_local_knowledge(["localhost"], "benchmark_rastrigin", ["transfer_learning", "shift_0"])
     knowledge = None
     tags = ["transfer_learning"]
     if from_host is not None:
@@ -55,7 +59,7 @@ def transfer_learning_benchmark_1(from_host: str = None, from_db: str = None, ta
             "kb_tags": ["transfer_learning", from_tag]
         }
         tags = ["transfer_learning", "from_" + from_tag]
-    start_experiment("collective-panda-001.local", pd, service_config, 10, tags=tags, knowledge=knowledge)
+    start_experiment("localhost", pd, service_config, 10, tags=tags, knowledge=knowledge)
 
 
 def transfer_learning_benchmark_2(from_host: str = None, from_db: str = None, task: str = None, from_tag: str = None):
@@ -67,6 +71,8 @@ def transfer_learning_benchmark_2(from_host: str = None, from_db: str = None, ta
     pd.cost_function.optimum_weights[1] = 0
     pd.cost_function.optimum_weights[2] = 1
     knowledge = None
+    delete_local_results(["localhost"], "benchmark_rastrigin", ["transfer_learning", "shift_1"])
+    delete_local_knowledge(["localhost"], "benchmark_rastrigin", ["transfer_learning", "shift_1"])
     tags = ["transfer_learning"]
     if from_host is not None:
         knowledge = {
@@ -76,8 +82,8 @@ def transfer_learning_benchmark_2(from_host: str = None, from_db: str = None, ta
             "kb_task_type": task,
             "kb_tags": ["transfer_learning", from_tag]
         }
-        tags = ["transfer_learning", "benchmark_2", "from_" + from_tag]
-    start_experiment("collective-panda-001.local", pd, service_config, 10, tags=tags, knowledge=knowledge)
+        tags = ["transfer_learning", "from_" + from_tag]
+    start_experiment("localhost", pd, service_config, 10, tags=tags, knowledge=knowledge)
 
 
 def transfer_learning_10(from_host: str = None, from_db: str = None, task: str = None, from_tag: str = None):

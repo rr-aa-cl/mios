@@ -159,7 +159,7 @@ def transfer_learning_benchmark():
     p = DataProcessor()
     plot = Plotter()
     tags = ["transfer_learning", "shift_0"]
-    results = get_multiple_experiment_data("collective-panda-001.local", "benchmark_rastrigin",
+    results = get_multiple_experiment_data("localhost", "benchmark_rastrigin",
                                            results_db="ml_results",
                                            filter={"meta.tags": {"$all": tags}})
     cost = p.get_average_cost(results, True, 6)
@@ -167,7 +167,7 @@ def transfer_learning_benchmark():
     plt.plot(cost)
 
     tags = ["transfer_learning", "shift_1", "from_shift_0"]
-    results = get_multiple_experiment_data("collective-panda-001.local", "benchmark_rastrigin",
+    results = get_multiple_experiment_data("localhost", "benchmark_rastrigin",
                                            results_db="ml_results",
                                            filter={"meta.tags": {"$all": tags}})
     cost = p.get_average_cost(results, True, 6)
