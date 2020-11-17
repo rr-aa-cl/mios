@@ -179,16 +179,16 @@ def transfer_learning_benchmark():
 def transfer_learning_test():
     p = DataProcessor()
     plot = Plotter()
-    tags = ["transfer_learning_test", "cylinder_20"]
-    results = get_multiple_experiment_data("collective-panda-007.local", "insert_object",
+    tags = ["transfer_learning_test", "cylinder_40"]
+    results = get_multiple_experiment_data("collective-panda-001.local", "insert_object",
                                            results_db="ml_results",
                                            filter={"meta.tags": {"$all": tags}})
     cost = p.get_average_cost(results, True, 12)
     cost = np.insert(cost, 0, 1)
     plt.plot(cost)
 
-    tags = ["transfer_learning_test", "cylinder_20", "from_cylinder_40"]
-    results = get_multiple_experiment_data("collective-panda-007.local", "insert_object",
+    tags = ["transfer_learning_test", "cylinder_40", "from_cylinder_20"]
+    results = get_multiple_experiment_data("collective-panda-001.local", "insert_object",
                                            results_db="ml_results",
                                            filter={"meta.tags": {"$all": tags}})
     cost = p.get_average_cost(results, True, 12)

@@ -6,6 +6,7 @@ import random
 from mongodb_client.mongodb_client import MongoDBClient
 from knowledge_processor.knowledge_processor_v2 import KnowledgeProcessor
 from knowledge_processor.kg_random_forest import KGRandomForest
+from knowledge_processor.kg_k_neighbors import KGKNeighbors
 from knowledge_processor.knowledge_generalizer_base import KnowledgeGeneralizerBase
 
 logger = logging.getLogger("ml_service")
@@ -171,7 +172,7 @@ class KnowledgeManager:
         if self.predictor is not None:
             return self.predictor
         else:
-            return KGRandomForest()
+            return KGKNeighbors()
 
     def get_predicted_knowledge(self, task_identity: dict, knowledge_db: str = "local_knowledge",
                                 predictor: KnowledgeGeneralizerBase = None):
@@ -202,7 +203,7 @@ class KnowledgeManager:
                 logger.error(
                     "KnowledgeManager.predict_knowledge: found knowledge doesnt fit together: different vector mappings!")
                 return False
-        if len(doc) < 2:  # if no predictions can be made: use similar knowledge
+        if len(doc) < 6:  # if no predictions can be made: use similar knowledge
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
                 knowledge_db) + ")")
             return False

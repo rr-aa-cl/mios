@@ -181,21 +181,21 @@ def insertion_light(insertable: str, insert_into: str, approach: str) -> Problem
     }
 
     x_0 = {
-        "speed_t": 0.2,
-        "speed_r": 0.2,
-        "acc_t": 0.2,
-        "acc_r": 0.2,
-        "wiggle_a_x": 0.2,
-        "wiggle_a_phi": 0.2,
-        "wiggle_f_x": 0.2,
-        "wiggle_f_phi": 0.2,
-        "stuck_dx_thr": 0.2,
+        "speed_t": 0.0,
+        "speed_r": 0.0,
+        "acc_t": 0.0,
+        "acc_r": 0.0,
+        "wiggle_a_x": 0.0,
+        "wiggle_a_phi": 0.0,
+        "wiggle_f_x": 0.0,
+        "wiggle_f_phi": 0.0,
+        "stuck_dx_thr": 0.0,
         "offset_x": 0.5,
         "offset_y": 0.5,
         "offset_phi": 0.5,
         "offset_chi": 0.5,
-        "K_x": 0.2,
-        "K_phi": 0.2
+        "K_x": 0.0,
+        "K_phi": 0.0
     }
 
     domain = Domain(limits, context_mapping, x_0)
