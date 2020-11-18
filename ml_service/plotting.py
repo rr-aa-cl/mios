@@ -23,7 +23,7 @@ def average_experiment(host: str, task_type: str, database: str, tags: list):
     p = DataProcessor()
 
     results = get_multiple_experiment_data(host, task_type, results_db=database, filter={"meta.tags": {"$all": tags}})
-    cost = p.get_average_cost(results, True)
+    cost = p.get_average_cost(results, True, 13)
     plot.plot_cost_over_trials(cost)
 
 
@@ -141,6 +141,92 @@ def plot_transfer_learning_2(task: str):
     plt.title("Knowledge transfer for task " + task)
     plt.xlim([0, 10])
     plt.ylim([0, 1])
+    plt.show()
+
+
+def plot_transfer_learning_3():
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
+             "key_pad", "key_old", "key_hatch"]
+    success_thr = {
+        "cylinder_10": 0.125,
+        "cylinder_20": 0.125,
+        "cylinder_30": 0.125,
+        "cylinder_40": 0.125,
+        "cylinder_50": 0.125,
+        "cylinder_60": 0.2,
+        "key_pad": 0.05,
+        "key_old": 0.05,
+        "key_hatch": 0.05
+    }
+
+    n_cols = 3
+    n_rows = 3
+
+    speed_ratio_matrix = np.zeros((len(tasks), len(tasks)))
+
+    p = DataProcessor()
+    fig, axes = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0})
+    for i in range(n_rows):
+        for j in range(n_cols):
+            axes[i, j].set_xlim(0, 10)
+            axes[i, j].set_ylim(0, 1)
+            axes[i, j].grid()
+            axes[i, j].tick_params(axis="both", which="both", length=0)
+            legend = []
+            base_speed = 0
+            try:
+                tags = ["transfer_learning", tasks[i * n_rows + j]]
+                results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+                                                       results_db="results_tl_base",
+                                                       filter={"meta.tags": {"$all": tags}})
+                cost = p.get_average_cost(results, True, 13)
+                print(min(cost))
+                base_speed = np.where(cost < success_thr[tasks[i * n_rows + j]])[0][0]
+                np.insert(cost, 0, 1)
+                axes[i, j].plot(cost)
+                legend = [tasks[i * n_rows + j]]
+            except (DataNotFoundError, DataError):
+                pass
+            for t in range(len(tasks)):
+                try:
+                    tags = ["transfer_learning", tasks[i * n_rows +j], "from_" + tasks[t]]
+                    results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+                                                           results_db="ml_results",
+                                                           filter={"meta.tags": {"$all": tags}})
+                    cost = p.get_average_cost(results, True, 13)
+                    axes[i, j].plot(cost)
+                    try:
+                        transfer_speed = np.where(cost < success_thr[tasks[i * n_rows + j]])[0][0]
+                    except IndexError:
+                        transfer_speed = 0
+                    if base_speed > 0:
+                        speed_ratio_matrix[i * n_rows + j][t] = transfer_speed / base_speed
+                    if tasks[t] != tasks[i * n_rows + j]:
+                        legend.append(tasks[t])
+                except (DataNotFoundError, DataError):
+                    pass
+
+            plt.legend(legend)
+            # if i == 0:
+            #     pass
+            #     axes[i, j].annotate("t" + str(j), xy=(0.5, 1), xytext=(0, 5),
+            #                         xycoords='axes fraction', textcoords='offset points',
+            #                         size='large', ha='center', va='baseline')
+            # if j == 0:
+            #     pass
+            #     axes[i, j].annotate("t" + str(i), xy=(0, 0.5), xytext=(-axes[i, j].yaxis.labelpad - 5, 0),
+            #                         xycoords=axes[i, j].yaxis.label, textcoords='offset points',
+            #                         size='large', ha='right', va='center')
+            #     axes[i, j].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1])
+            #     axes[i, j].set_yticklabels([''] * 6)
+            if i == n_rows - 1:
+                axes[i, j].set_xticks([2, 4, 6, 8, 10])
+                axes[i, j].set_xticklabels(["2", "4", "6", "8", "10"])
+    fig.add_subplot(111, frame_on=False)
+    plt.tick_params(labelcolor="none", bottom=False, left=False)
+    plt.xlabel("Trial [1]")
+    plt.ylabel("Normed execution time [s/10]")
+    print(speed_ratio_matrix)
     plt.show()
 
 
