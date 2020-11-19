@@ -181,8 +181,8 @@ def plot_transfer_learning_3():
                                                        filter={"meta.tags": {"$all": tags}})
                 cost = p.get_average_cost(results, True, 13)
                 print(min(cost))
+                cost = np.insert(cost, 0, 1)
                 base_speed = np.where(cost < success_thr[tasks[i * n_rows + j]])[0][0]
-                np.insert(cost, 0, 1)
                 axes[i, j].plot(cost)
                 legend = [tasks[i * n_rows + j]]
             except (DataNotFoundError, DataError):
@@ -194,6 +194,7 @@ def plot_transfer_learning_3():
                                                            results_db="ml_results",
                                                            filter={"meta.tags": {"$all": tags}})
                     cost = p.get_average_cost(results, True, 13)
+                    cost = np.insert(cost, 0, 1)
                     axes[i, j].plot(cost)
                     try:
                         transfer_speed = np.where(cost < success_thr[tasks[i * n_rows + j]])[0][0]
@@ -212,7 +213,9 @@ def plot_transfer_learning_3():
             #     axes[i, j].annotate("t" + str(j), xy=(0.5, 1), xytext=(0, 5),
             #                         xycoords='axes fraction', textcoords='offset points',
             #                         size='large', ha='center', va='baseline')
-            # if j == 0:
+            if j == 0:
+                axes[i, j].set_yticks([0.2, 0.4, 0.6, 0.8, 1])
+                axes[i, j].set_yticklabels(["0.2", "0.4", "0.6", "0.8", "1"])
             #     pass
             #     axes[i, j].annotate("t" + str(i), xy=(0, 0.5), xytext=(-axes[i, j].yaxis.labelpad - 5, 0),
             #                         xycoords=axes[i, j].yaxis.label, textcoords='offset points',
@@ -224,7 +227,7 @@ def plot_transfer_learning_3():
                 axes[i, j].set_xticklabels(["2", "4", "6", "8", "10"])
     fig.add_subplot(111, frame_on=False)
     plt.tick_params(labelcolor="none", bottom=False, left=False)
-    plt.xlabel("Trial [1]")
+    plt.xlabel("Episode [1]")
     plt.ylabel("Normed execution time [s/10]")
     print(speed_ratio_matrix)
     plt.show()
