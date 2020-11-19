@@ -18,7 +18,7 @@ EXPOSE 12000 12001 12002 8888 8889
 
 ARG default_verbosity_value=info
 ARG default_database_port_value=27017
-ARG default_robot_config_value=
+ARG default_robot_config_value=3
 ENV verbosity=$default_verbosity_value
 ENV database_port=$default_database_port_value
 ENV robot_config=$default_robot_config_value
