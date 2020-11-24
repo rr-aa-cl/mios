@@ -1,5 +1,6 @@
 from task_scheduler.creation_pipeline import CreationPipeline
 from services.cmaes import CMAESConfiguration
+from services.svm import SVMConfiguration
 from task_scheduler.task_scheduler import TaskScheduler
 from task_scheduler.task_scheduler import Task
 from problem_definition.problem_definition import ProblemDefinition
@@ -38,11 +39,14 @@ class TestCreationPipeline(CreationPipeline):
 
 class CollectiveLearningBase(Experiment):
     def initialize(self, knowledge_mode: str, knowledge_type: str = "prediction"):
-        config = CMAESConfiguration()
-        config.exploration_mode = False
+        #config = CMAESConfiguration()
+        #config.exploration_mode = False
+        #config.n_gen = 30
+        #config.n_ind = 10
 
-        config.n_gen = 30
-        config.n_ind = 10
+        config = SVMConfiguration()
+        config.n_trials = 200
+        config.exploration_mode = False
 
         self.agents = ["collective-panda-007.local", "collective-panda-001.local", "collective-panda-008.local",
                        "collective-panda-002.local", "collective-panda-009.local"]
