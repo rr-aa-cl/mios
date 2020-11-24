@@ -19,7 +19,7 @@ std::map<std::string, std::set<std::string> > SkillParametersTurn::get_parameter
     return {{"phi",{}},{"dphi",{}}};
 }
 
-Turn::Turn(const std::string& id, Memory* memory, Portal* portal, const Percept& p):Skill("Turn",{"turnable"},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
+Turn::Turn(const std::string& id, Memory* memory, Portal* portal):Skill("Turn",{"turnable"},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
 
 }
 
