@@ -110,11 +110,11 @@ def plot_transfer_learning(db: str):
 
 
 def plot_transfer_learning_2(task: str):
-    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60"]
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_pad", "key_hatch", "key_old"]
     p = DataProcessor()
     plot = Plotter()
     tags = ["transfer_learning", task]
-    results = get_multiple_experiment_data("collective-control-001.local", "insert_object", results_db="results_tl_base",
+    results = get_multiple_experiment_data("collective-control-001.local", "insert_object", results_db="transfer_base_v2",
                                            filter={"meta.tags": {"$all": tags}})
     cost = p.get_average_cost(results, True, 13)
     cost = np.insert(cost, 0, 1)
@@ -124,7 +124,7 @@ def plot_transfer_learning_2(task: str):
         try:
             tags = ["transfer_learning", task, "from_" + tasks[i]]
             results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
-                                                   results_db="ml_results",
+                                                   results_db="transfer_all_v2",
                                                    filter={"meta.tags": {"$all": tags}})
             cost = p.get_average_cost(results, True, 13)
             cost = np.insert(cost, 0, 1)
@@ -147,22 +147,12 @@ def plot_transfer_learning_2(task: str):
 def plot_transfer_learning_3():
     tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
              "key_pad", "key_old", "key_hatch"]
-    success_thr = {
-        "cylinder_10": 0.125,
-        "cylinder_20": 0.125,
-        "cylinder_30": 0.125,
-        "cylinder_40": 0.125,
-        "cylinder_50": 0.125,
-        "cylinder_60": 0.2,
-        "key_pad": 0.05,
-        "key_old": 0.05,
-        "key_hatch": 0.05
-    }
 
     n_cols = 3
     n_rows = 3
 
-    speed_ratio_matrix = np.zeros((len(tasks), len(tasks)))
+    speedup_matrix = np.zeros((len(tasks), len(tasks)))
+    le_ratio_matrix = np.zeros((len(tasks), len(tasks)))
 
     p = DataProcessor()
     fig, axes = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0})
@@ -173,41 +163,52 @@ def plot_transfer_learning_3():
             axes[i, j].grid()
             axes[i, j].tick_params(axis="both", which="both", length=0)
             legend = []
-            base_speed = 0
             try:
                 tags = ["transfer_learning", tasks[i * n_rows + j]]
                 results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
-                                                       results_db="results_tl_base",
+                                                       results_db="transfer_base_v2",
                                                        filter={"meta.tags": {"$all": tags}})
-                cost = p.get_average_cost(results, True, 13)
-                print(min(cost))
-                cost = np.insert(cost, 0, 1)
-                base_speed = np.where(cost < success_thr[tasks[i * n_rows + j]])[0][0]
-                axes[i, j].plot(cost)
+                base_cost = p.get_average_cost(results, True, 13)
+                base_cost = np.insert(base_cost, 0, 1)
+                axes[i, j].plot(base_cost)
                 legend = [tasks[i * n_rows + j]]
             except (DataNotFoundError, DataError):
-                pass
+                print("Base cost for task " + tasks[i] + " not found.")
+                continue
             for t in range(len(tasks)):
                 try:
                     tags = ["transfer_learning", tasks[i * n_rows +j], "from_" + tasks[t]]
                     results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
-                                                           results_db="ml_results",
+                                                           results_db="transfer_all_v2",
                                                            filter={"meta.tags": {"$all": tags}})
                     cost = p.get_average_cost(results, True, 13)
                     cost = np.insert(cost, 0, 1)
+
+                    if base_cost[-1] < cost[-1]:
+                        baseline = base_cost[-1]
+                    else:
+                        baseline = cost[-1]
+
+                    le_base = np.sum(base_cost) - baseline
+                    le_transfer = np.sum(cost) - baseline
+                    le_ratio_matrix[i * n_rows + j][t] = le_transfer / le_base
+
+                    index_thr_base_cost = find_convergence(base_cost, 0.025)
+                    thr_base_cost = base_cost[index_thr_base_cost]
+                    index_thr_transfer_cost = np.where(cost < thr_base_cost)
+                    if index_thr_transfer_cost[0].size == 0:
+                        index_thr_transfer_cost = 1
+                        index_thr_base_cost = 1
+                    else:
+                        index_thr_transfer_cost = index_thr_transfer_cost[0][0]
                     axes[i, j].plot(cost)
-                    try:
-                        transfer_speed = np.where(cost < success_thr[tasks[i * n_rows + j]])[0][0]
-                    except IndexError:
-                        transfer_speed = 0
-                    if base_speed > 0:
-                        speed_ratio_matrix[i * n_rows + j][t] = transfer_speed / base_speed
-                    if tasks[t] != tasks[i * n_rows + j]:
-                        legend.append(tasks[t])
+                    speedup_matrix[i * n_rows + j][t] = index_thr_base_cost / index_thr_transfer_cost
+
+                    legend.append("from_" + tasks[t])
                 except (DataNotFoundError, DataError):
                     pass
 
-            plt.legend(legend)
+            axes[i, j].legend(legend, fontsize='xx-small', loc=1)
             # if i == 0:
             #     pass
             #     axes[i, j].annotate("t" + str(j), xy=(0.5, 1), xytext=(0, 5),
@@ -229,8 +230,45 @@ def plot_transfer_learning_3():
     plt.tick_params(labelcolor="none", bottom=False, left=False)
     plt.xlabel("Episode [1]")
     plt.ylabel("Normed execution time [s/10]")
-    print(speed_ratio_matrix)
+
+    es_matrix = np.zeros(le_ratio_matrix.shape)
+    for i in range(le_ratio_matrix.shape[0]):
+        for j in range(le_ratio_matrix.shape[1]):
+            if le_ratio_matrix[i, j] > 0:
+                es_matrix[i, j] = np.min([le_ratio_matrix[i, i] / le_ratio_matrix[i, j], 1])
+
+    print(es_matrix)
+    print(speedup_matrix)
+
+    header = np.array(["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"])
+
+    es_matrix = es_matrix.astype('|S4')
+    speedup_matrix = speedup_matrix.astype('|S4')
+
+    es_matrix = np.vstack((header, es_matrix))
+    speedup_matrix = np.vstack((header, speedup_matrix))
+
+    header = np.insert(header, 0, "")
+
+    es_matrix = np.hstack((header.reshape(-1,1), es_matrix))
+    speedup_matrix = np.hstack((header.reshape(-1, 1), speedup_matrix))
+
+    np.savetxt("es_matrix.csv", es_matrix, delimiter=",", fmt="%s")
+    np.savetxt("speedup_matrix.csv", speedup_matrix, delimiter=",", fmt="%s")
     plt.show()
+
+
+def find_convergence(cost: np.ndarray, interval: float = 0.05) -> int:
+    for i in range(len(cost) - 1):
+        in_interval = True
+        for j in range(i + 1, len(cost)):
+            if abs(cost[i] - cost[j]) <= interval:
+                continue
+            else:
+                in_interval = False
+        if in_interval is True:
+            return i
+    return len(cost) - 1
 
 
 def count_transfer_learning(host: str, db: str, task_type: str):
