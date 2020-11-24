@@ -4,6 +4,7 @@ from abc import abstractmethod
 from threading import Thread
 from xmlrpc.client import ServerProxy
 import socket
+import time
 
 from engine.engine import Engine
 from engine.engine import Trial
@@ -143,6 +144,10 @@ class BaseService(metaclass=ABCMeta):
 
         self.engine_thread = Thread(target=self.engine.main_loop)
         self.engine_thread.start()
+        
+        while self.engine.keep_running == False:
+            logger.debug("Service_base.initialize(): Wait unitl engine thread is running.")
+            time.sleep(0.1)
 
     def learn_task(self) -> bool:
         self.keep_running = True

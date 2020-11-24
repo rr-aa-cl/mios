@@ -36,6 +36,8 @@ class DataProcessor:
     def get_optima_by_task_identity(self, results: list, percentage: float) -> np.ndarray:
         arr = np.zeros((len(results), 7))
         for i in range(len(results)):
+            if len(results[i].trials) < 1:
+                continue
             arr[i, 0] = results[i].meta_data["cost_function"]["geometry_factor"]
             arr[i, 1:-1] = results[i].meta_data["cost_function"]["optimum_weights"]
             cost_grid_max = np.asarray(results[i].meta_data["cost_function"]["max_cost"])

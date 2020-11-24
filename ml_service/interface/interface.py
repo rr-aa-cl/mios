@@ -7,6 +7,8 @@ import time
 from services.generic_optimizer import GenericOptimizerService
 from services.cmaes import CMAESService
 from services.cmaes import CMAESConfiguration
+from services.svm import SVMService
+from services.svm import SVMConfiguration
 from services.base_service import ServiceConfiguration
 from problem_definition.problem_definition import ProblemDefinition
 from utils.ws_client import call_method
@@ -56,8 +58,13 @@ class Interface:
         logger.debug("Interface::stop_rpc_server.end")
 
     def start_service_wrapper(self, problem_definition: dict, configuration: dict, agents, knowledge: dict = None):
-        service_configuration = CMAESConfiguration()
-        service_configuration.from_dict(configuration)
+        if configuration["service_name"] == "cmaes":
+            service_configuration = CMAESConfiguration()
+            service_configuration.from_dict(configuration)
+        elif configuration["service_name"] == "svm":
+            service_configuration = SVMConfiguration()
+            service_configuration.from_dict(configuration)
+
         self.start_service(ProblemDefinition.from_dict(problem_definition), service_configuration, set(agents),
                            knowledge)
 
@@ -68,6 +75,8 @@ class Interface:
         problem_definition.uuid = str(uuid.uuid4())
         if configuration.service_name == "cmaes":
             self.service = CMAESService()
+        elif configuration.service_name == "svm":
+            self.service = SVMService()
         elif configuration.service_name == "generic":
             self.service = GenericOptimizerService()
         else:

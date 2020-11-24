@@ -3,6 +3,7 @@ from problem_definition.problem_definition import ProblemDefinition
 from services.base_service import ServiceConfiguration
 from task_scheduler.creation_pipeline import CreationPipeline
 from services.cmaes import CMAESConfiguration
+from services.svm import SVMConfiguration
 from definitions import insert_cylinder_30
 from utils.udp_client import call_method
 from experiments.experiment_base import Experiment
@@ -123,6 +124,8 @@ class CollectiveLearningBase(Experiment):
         config = CMAESConfiguration()
         config.n_gen = 10
         config.n_ind = 10
+        config = SVMConfiguration()
+        config.n_trials = 120
 
         call_method("collective-panda-001.local", 12002, "set_grasped_object", {"object": "cylinder_40"})
         call_method("collective-panda-002.local", 12002, "set_grasped_object", {"object": "key_abus_e30"})

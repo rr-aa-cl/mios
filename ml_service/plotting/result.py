@@ -110,7 +110,16 @@ class Result:
             max_param = self.meta_data["domain"]["limits"][param][1]
             knowledge_norm[param] = normalize(self.knowledge[param], min_param, max_param)
         return knowledge_norm
-
+    
+    def get_default_centroid(self):
+        return self.meta_data["domain"]["x_0"]
+    
+    def normalize_result(self, data_dict):
+        for param in data_dict.keys():
+            min_param = self.meta_data["domain"]["limits"][param][0]
+            max_param = self.meta_data["domain"]["limits"][param][1]
+            data_dict[param] = normalize(data_dict[param], min_param, max_param)
+        return data_dict
 
 class Knowledge:
     def __init__(self, data: dict):

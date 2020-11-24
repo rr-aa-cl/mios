@@ -105,6 +105,42 @@ class Plotter:
         plt.tight_layout()
 
     @plotter_management
+    def plot_default_centroid_dist(self, data: dict):
+        ax = plt.gca()
+        data_keys = list(data.keys())
+        mean_distances = []
+        std_distances = []
+        for task_name in data_keys:
+            mean_distances.append(data[task_name]["default centroid"]["mean_dist"])
+            std_distances.append(data[task_name]["default centroid"]["std_dist"])
+        ax.bar(data_keys, mean_distances,width=0.4, yerr=std_distances, label= "parameter distance")
+        ax.set_ylabel("distance [1]")
+        ax.set_title("distances to default centroids")
+        ax.set_xticklabels(data_keys, fontsize='x-small')
+        #ax.set(ylim=(0.5,1.6))
+    
+
+    def plot_table(self, data: list, name: str = None):
+        if name is not None:
+            plt.figure(name)
+        else:
+            plt.figure
+        n_rows = len(data)
+        n_cols = len(data[0])
+        row_labels = ["n"+str(i) for i in range(n_rows)]
+        col_labels = ["n"+str(i) for i in range(n_cols)]
+        cell_text = []
+        for row in range(n_rows):
+            cell_text.append(['%1.2f' %x for x in data[row]])
+        plt.table(cellText=cell_text,
+                    rowLabels=row_labels,
+                    colLabels=col_labels, loc=(0,0), cellLoc='center')
+        plt.title(name)
+        plt.axis('off')
+        plt.show(block=False)
+        plt.pause(0.1)
+
+    @plotter_management
     def plot_theta_changes(self):
         pass
 

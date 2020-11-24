@@ -324,26 +324,44 @@ def transfer_learning_test():
     plt.show()
 
 
-def global_learning(tags, hosts = ["collective-panda-002.local"]):
+def knowledge_quality(tags, hosts = ["localhost"], legend = None):
     filter = {"meta.tags": tags}
     knowledge_mode = "global"
     # task_type = "insert_object"
     task_type = "benchmark_rastrigin"
 
     p = DataProcessor()
-    plot = Plotter()
+
     results = []
     for host in hosts:
-        results.extend(get_multiple_experiment_data(host, task_type, "global_ml_results", filter=filter))
-
+        results.extend(get_multiple_experiment_data(host, task_type, knowledge_mode, filter=filter))
     results = p.sort_over_time(results)
-    all_times = p.get_cumulative_time(results)
-    plot.plot_learning_over_task(all_times, "global")
-   
+
+    print("number of results: ",len(results))
+
+    distances = []
+    for r in results:
+        lowest_cost = r.get_lowest_cost()
+        init_knowledge = r.knowledge
+        if init_knowledge is None:
+            init_knowledge = r.get_theta_per_trial()[0]  # take first trial if no initial knowledge available
+        init_knowledge = p.dict_to_list(init_knowledge)
+        best_theta = p.dict_to_list(r.get_best_theta())
+        created_knowledge = get_multiple_knowledge_data(hosts[0],task_type,knowledge_mode,{"meta.knowledge_source": r.uuid, "meta.tags": tags})[0]
+        created_theta = created_knowledge.get_theta()
+
+        dist = np.linalg.norm(np.array(created_theta) - np.array(init_knowledge))
+        distances.append(dist)
+    plot.plot_knowledge_error(distances, legend)
+        
 
 def transfer_learning_parameters(filter, host):
     tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
     p = DataProcessor()
+    from knowledge_processor.knowledge_manager import KnowledgeManager
+    from mongodb_client.mongodb_client import MongoDBClient
+    manager = KnowledgeManager(host)
+    client = MongoDBClient(host)
     data = {}
     for task in tasks:
         data[task] = {}
@@ -359,8 +377,16 @@ def transfer_learning_parameters(filter, host):
                 continue
             distances = []
             for r in results:
+                task_identity = {
+                    "task_type": r.meta_data["task_type"],
+                    "optimum_weights": r.meta_data["cost_function"]["optimum_weights"],
+                    "geometry_factor": r.meta_data["cost_function"]["geometry_factor"],
+                    "tags": r.tags
+                }
+                optimum = manager.get_knowledge_by_identity(client, task_identity, "ml_results", None)
+                optimum = r.normalize_result(optimum["parameters"])
                 init_knowledge = r.get_knowledge_norm()
-                optimum = r.get_best_theta_norm()
+                #optimum = r.get_best_theta_norm()
                 if init_knowledge is None:
                     continue
                 dist = np.linalg.norm(np.array(p.dict_to_list(init_knowledge)) - np.array(p.dict_to_list(optimum)))
@@ -369,5 +395,87 @@ def transfer_learning_parameters(filter, host):
             mean_dist = np.mean(distances)
             std_dist = np.std(distances)
             data[task]["from_" + tasks[i]] = {"mean_dist": mean_dist, "std_dist": std_dist}
+    import pprint
+    pprint.pprint(data)
     plot.plot_parameter_similarity(data)
 
+def no_transfer_learning_parameters(filter, host):
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
+    p = DataProcessor()
+    data = {}
+    for task in tasks:
+        data[task] = {}
+        try:
+            tags = ["transfer_learning", task]
+            results = get_multiple_experiment_data(host, "insert_object",
+                                                results_db="results_tl_base",
+                                                filter={"meta.tags":  tags})
+        except (DataNotFoundError, DataError):
+            print("No data found for experiment (" + str(i) + ")")
+            continue
+        distances = []
+        for r in results:
+            init_knowledge = r.get_default_centroid()
+            optimum = r.get_best_theta_norm()
+            if init_knowledge is None:
+                continue
+            dist = np.linalg.norm(np.array(p.dict_to_list(init_knowledge)) - np.array(p.dict_to_list(optimum)))
+            distances.append(dist)
+            print(r.tags)
+        mean_dist = np.mean(distances)
+        std_dist = np.std(distances)
+        data[task]["default centroid"] = {"mean_dist": mean_dist, "std_dist": std_dist}
+    plot.plot_default_centroid_dist(data)
+
+def optima_distances(filter, host, results_db):
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
+    p = DataProcessor()
+    from knowledge_processor.knowledge_manager import KnowledgeManager
+    from mongodb_client.mongodb_client import MongoDBClient
+    manager = KnowledgeManager(host)
+    client = MongoDBClient(host)
+    data = {}
+    for task in tasks:
+        data[task] = {}
+        try:
+            tags = ["transfer_learning_test", task]
+            results = get_multiple_experiment_data(host, "insert_object",
+                                                results_db=results_db,
+                                                filter={"meta.tags":  tags})
+        except (DataNotFoundError, DataError):
+            print("No data found for experiment (" + str(task) + ")")
+            continue
+        distances = []
+        optima = []
+        for r in results:
+            if r.meta_data["init_knowledge"]["content"]:
+                continue
+            task_identity = {
+                    "task_type": r.meta_data["task_type"],
+                    "optimum_weights": r.meta_data["cost_function"]["optimum_weights"],
+                    "geometry_factor": r.meta_data["cost_function"]["geometry_factor"],
+                    "tags": r.tags
+                            }
+            optimum = manager.get_knowledge_by_identity(client, task_identity, results_db, None)
+            optimum = r.normalize_result(optimum["parameters"])
+            optimum = p.dict_to_list(r.get_best_theta_norm())
+            optima.append(optimum)
+        optima_matrix = []
+        for optimum_a in optima:
+            dinstances = []
+            for optimum_b in optima:
+                dist = np.linalg.norm(np.array(optimum_a) - np.array(optimum_b))
+                dinstances.append(dist)
+            optima_matrix.append(dinstances)
+        print(task," mean_distance: ",np.mean(optima_matrix))
+        plot.plot_table(optima_matrix, task)
+
+#if __name__ == "__main__":
+    #global_learning(["collective_learning_benchmark_007"],["collective-panda-002.local"])
+    #knowledge_quality(["collective_learning_benchmark_007"],["collective-panda-002.local"])
+    #global_learning(["single_learning_benchmark_007"],["localhost"])
+    #knowledge_quality(["prediction"],["localhost"],legend = "prediction")
+    #knowledge_quality(["no_sharing"],["localhost"],legend = "no sharing")
+    #no_transfer_learning_parameters(None, "collective-control-001.local")
+    #transfer_learning_parameters(None, "collective-control-001.local")
+    #optima_distances(None, "collective-panda-001.local", "ml_results")  # "results_tl_base"

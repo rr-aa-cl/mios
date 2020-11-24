@@ -203,7 +203,7 @@ class KnowledgeManager:
                 logger.error(
                     "KnowledgeManager.predict_knowledge: found knowledge doesnt fit together: different vector mappings!")
                 return False
-        if len(doc) < 6:  # if no predictions can be made: use similar knowledge
+        if len(doc) * (1-self.validation_per) < 5:  # if no predictions can be made: use similar knowledge
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
                 knowledge_db) + ")")
             return False
