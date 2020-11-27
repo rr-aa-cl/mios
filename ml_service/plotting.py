@@ -151,6 +151,12 @@ def plot_transfer_learning_3():
     n_cols = 3
     n_rows = 3
 
+    episode_wise = True
+    if episode_wise is True:
+        episode_size = 13
+    else:
+        episode_size = 1
+
     speedup_matrix = np.zeros((len(tasks), len(tasks)))
     le_ratio_matrix = np.zeros((len(tasks), len(tasks)))
 
@@ -158,7 +164,10 @@ def plot_transfer_learning_3():
     fig, axes = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0})
     for i in range(n_rows):
         for j in range(n_cols):
-            axes[i, j].set_xlim(0, 10)
+            if episode_wise is True:
+                axes[i, j].set_xlim(0, 10)
+            else:
+                axes[i, j].set_xlim(0, 130)
             axes[i, j].set_ylim(0, 1)
             axes[i, j].grid()
             axes[i, j].tick_params(axis="both", which="both", length=0)
@@ -168,7 +177,7 @@ def plot_transfer_learning_3():
                 results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
                                                        results_db="transfer_base_v2",
                                                        filter={"meta.tags": {"$all": tags}})
-                base_cost = p.get_average_cost(results, True, 13)
+                base_cost = p.get_average_cost(results, True, episode_size)
                 base_cost = np.insert(base_cost, 0, 1)
                 axes[i, j].plot(base_cost)
                 legend = [tasks[i * n_rows + j]]
@@ -181,13 +190,13 @@ def plot_transfer_learning_3():
                     results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
                                                            results_db="transfer_all_v2",
                                                            filter={"meta.tags": {"$all": tags}})
-                    cost = p.get_average_cost(results, True, 13)
+                    cost = p.get_average_cost(results, True, episode_size)
                     cost = np.insert(cost, 0, 1)
 
                     if base_cost[-1] < cost[-1]:
-                        baseline = base_cost[-1]
+                        baseline = base_cost[-1] * 10
                     else:
-                        baseline = cost[-1]
+                        baseline = cost[-1] * 10
 
                     le_base = np.sum(base_cost) - baseline
                     le_transfer = np.sum(cost) - baseline
@@ -224,12 +233,22 @@ def plot_transfer_learning_3():
             #     axes[i, j].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1])
             #     axes[i, j].set_yticklabels([''] * 6)
             if i == n_rows - 1:
-                axes[i, j].set_xticks([2, 4, 6, 8, 10])
-                axes[i, j].set_xticklabels(["2", "4", "6", "8", "10"])
+                if episode_wise is True:
+                    axes[i, j].set_xticks([2, 4, 6, 8, 10])
+                    axes[i, j].set_xticklabels(["2", "4", "6", "8", "10"])
+                else:
+                    axes[i, j].set_xticks([25, 50, 75, 100, 130])
+                    axes[i, j].set_xticklabels(["25", "50", "75", "100", "130"])
     fig.add_subplot(111, frame_on=False)
     plt.tick_params(labelcolor="none", bottom=False, left=False)
-    plt.xlabel("Episode [1]")
+    if episode_wise is True:
+        plt.xlabel("Episode [1]")
+    else:
+        plt.xlabel("Trial [1]")
     plt.ylabel("Normed execution time [s/10]")
+
+    fig.set_size_inches(16, 9)
+    plt.savefig("results.png", bbox_inches='tight', dpi=300)
 
     es_matrix = np.zeros(le_ratio_matrix.shape)
     for i in range(le_ratio_matrix.shape[0]):
@@ -239,6 +258,7 @@ def plot_transfer_learning_3():
 
     print(es_matrix)
     print(speedup_matrix)
+    print(le_ratio_matrix)
 
     header = np.array(["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"])
 

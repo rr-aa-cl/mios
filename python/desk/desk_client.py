@@ -64,7 +64,7 @@ class FrankaAPI:
                                       'Cookie': 'authorization=%s' % self._token})
         return self._client.getresponse().read()
 
-    def check_timeline(self):
+    def timeline_has_finished(self):
         self._client.request('GET', '/desk/api/execution',
                              headers={'content-type': 'application/x-www-form-urlencoded',
                                       'Cookie': 'authorization=%s' % self._token})
@@ -72,9 +72,9 @@ class FrankaAPI:
         info = json.loads(str)
         result = dict()
         if info['lastActivePath'] is None:
-            result["finished"] = False
+            return False
         else:
-            result["finished"] = True
+            return True
 
     def encode_password(self, user, password):
         bs = ','.join(
@@ -149,3 +149,13 @@ def start_task(ip, user, pwd, task):
     except socket.error as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
+
+
+def check_task(ip, name, pwd):
+    try:
+        with FrankaAPI(ip, name, pwd) as api:
+            return api.check_timeline()
+    except (socket.error):
+        print(e)
+        print('Socket error, possibly no host with IP: ', ip,', name: ', name,' and password: ', pwd)
+
