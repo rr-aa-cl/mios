@@ -27,7 +27,7 @@ def start_cartesian_mode(ip_master, ip_slave):
                                             "direct_cart": {"alpha": [0, 0, 0, 0, 0, 0]}}, {"control_mode": 0})
     start_skill(ip_slave, "Telepresence", {"is_master": False, "ip_dst": ip_master, "port_dst": 8888, "port_src": 8888,
                                            "telepresence_mode": "DirectCart",
-                                           "direct_cart": {"alpha": [0, 0, 0, 0, 0, 0]}}, {"control_mode": 0})
+                                           "direct_cart": {"alpha": [0, 0, 0, 0, 0, 0], "plane": True, "F_ff": 10}}, {"control_mode": 0})
 
 
 def start_multi_joint_mode(ip_master: str, ip_slaves: list):

@@ -33,6 +33,8 @@ public:
 
     struct DirectCart{
         Eigen::Matrix<double,6,1> alpha;
+        bool plane;
+        double F_ff;
     }direct_cart;
 };
 

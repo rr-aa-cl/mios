@@ -16,6 +16,7 @@
 #include "skills/extraction.hpp"
 #include "skills/insertion.hpp"
 #include "skills/turn.hpp"
+#include "skills/move_trajectory.hpp"
 #include "skills/wipe.hpp"
 
 namespace mios {
@@ -85,6 +86,9 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("Wipe"):
         execute_skill<Wipe,SkillParametersWipe>(name);
+        break;
+    case msrm_utils::str_to_int("MoveTrajectory"):
+        execute_skill<MoveTrajectory,SkillParametersMoveTrajectory>(name);
         break;
     case msrm_utils::str_to_int("Turn"):
         execute_skill<Turn,SkillParametersTurn>(name);

@@ -1,5 +1,7 @@
 #include "skills/hand_guiding.hpp"
 #include "strategies/cart_compliance_strategy.hpp"
+#include "msrm_utils/conversion.hpp"
+#include "msrm_utils/files.hpp"
 
 
 namespace mios{
@@ -15,11 +17,20 @@ bool SkillParametersHandGuiding::from_json(const nlohmann::json &parameters){
         spdlog::error("Parameter dist_walls could not be loaded but is mandatory when walls are used.");
         return false;
     }
+    if(!msrm_utils::read_json_param(parameters,"record_trajectory",record_trajectory)){
+        record_trajectory=false;
+    }
+    if(!msrm_utils::read_json_param(parameters,"recording_length",recording_length)){
+        recording_length=0;
+    }
+    if(!msrm_utils::read_json_param(parameters,"recording_name",recording_name)){
+        recording_name="trajectory.txt";
+    }
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersHandGuiding::get_parameter_list(){
-    return {{"fix_dim",{}},{"use_walls",{}},{"dist_walls",{}}};
+    return {{"fix_dim",{}},{"use_walls",{}},{"dist_walls",{}},{"record_trajectory",{}},{"recording_length",{}},{"recording_name",{}}};
 }
 
 HandGuiding::HandGuiding(const std::string &id, Memory *memory, Portal* portal):Skill("HandGuiding",{},id,memory,portal,{ControlMode::mCartTorque}){
@@ -31,6 +42,18 @@ HandGuiding::HandGuiding(const std::string &id, Memory *memory, Portal* portal):
     m_memory->get_parameters()->safety.virtual_cube.rho_min=0.02;
     m_memory->get_parameters()->safety.virtual_cube.walls=skill_params->dist_walls;
     m_memory->get_parameters()->safety.virtual_cube.f_max=30;
+
+    m_recording.resize(get_parameters<SkillParametersHandGuiding>()->recording_length);
+    m_cnt_recording=0;
+
+}
+
+HandGuiding::~HandGuiding(){
+    std::string file = get_parameters<SkillParametersHandGuiding>()->recording_name;
+    std::remove(file.c_str());
+    for(unsigned long long i=0;i<m_recording.size();i++){
+        msrm_utils::write_data_to_file(m_recording[i],file,true);
+    }
 }
 
 std::shared_ptr<ManipulationPrimitive> HandGuiding::get_initial_mp(const Percept &p_0){
@@ -71,7 +94,19 @@ std::shared_ptr<ManipulationPrimitive> HandGuiding::get_initial_mp(const Percept
     //            }
     //        }
     //    }
+
+
     return mp;
+}
+
+void HandGuiding::auxiliaries(const Percept &p){
+    if(get_parameters<SkillParametersHandGuiding>()->record_trajectory){
+        if(m_cnt_recording<m_recording.size()){
+            m_recording[m_cnt_recording]=msrm_utils::convert_to_array<double,4,4>(p.proprioception.T_T_EE);
+            m_cnt_recording++;
+        }
+    }
+
 }
 
 bool HandGuiding::check_local_suc_conditions(const Percept& p){

@@ -9,6 +9,7 @@
 #include "strategies/remote_wrench_strategy.hpp"
 #include "strategies/remote_joint_pose_strategy.hpp"
 #include "strategies/remote_torque_strategy.hpp"
+#include "strategies/ff_strategy.hpp"
 
 #include <msrm_utils/math.hpp>
 
@@ -101,6 +102,12 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
         if(!msrm_utils::read_json_param<double,6,1>(parameters["direct_cart"],"alpha",direct_cart.alpha)){
             direct_cart.alpha.setZero();
         }
+        if(!msrm_utils::read_json_param(parameters["direct_cart"],"plane",direct_cart.plane)){
+            direct_cart.plane=false;
+        }
+        if(!msrm_utils::read_json_param(parameters["direct_cart"],"F_ff",direct_cart.F_ff)){
+            direct_cart.F_ff=0;
+        }
     }
 
     if(multicast && is_master){
@@ -111,7 +118,8 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
 }
 
 std::map<std::string,std::set<std::string> > SkillParametersTelepresence::get_parameter_list(){
-    return {{"is_master",{}},{"ip_dst",{}},{"port_dst",{}},{"port_src",{}},{"multicast",{}},{"multicast_group",{}},{"telepresence_mode",{}},{"joystick",{"amp","force_thr","static_frame"}},{"direct_joint",{"alpha"}},{"direct_cart",{"alpha"}}};
+    return {{"is_master",{}},{"ip_dst",{}},{"port_dst",{}},{"port_src",{}},{"multicast",{}},{"multicast_group",{}},{"telepresence_mode",{}},
+        {"joystick",{"amp","force_thr","static_frame"}},{"direct_joint",{"alpha"}},{"direct_cart",{"alpha"}},{"direct_cart",{"plane"}}};
 }
 
 Telepresence::Telepresence(const std::string &name, Memory *memory, Portal *portal):Skill("Telepresence",{},name,memory,portal,
@@ -271,6 +279,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
                     msrm_utils::read_json_param<double,4,4>(m_memory->get_event("handshake")->get_content(),"O_T_EE_master",m_O_T_EE_master);
                     mp->create_strategy<MoveToPoseStrategy>("move",1);
+                    std::cout<<"MASTER: "<<m_O_T_EE_master<<std::endl;
                     mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(m_O_T_EE_master,m_memory->read_parameters()->user.dX_default,m_memory->read_parameters()->user.ddX_default);
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
@@ -295,7 +304,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     invoke_failure();
                     return {};
                 }
-                if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart && (m_O_T_EE_master.block<3,1>(0,3)-p.proprioception.O_T_EE.block<3,1>(0,3)).norm()>0.01){
+                if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart && (m_O_T_EE_master.block<3,1>(0,3)-p.proprioception.O_T_EE.block<3,1>(0,3)).norm()>0.02){
                     spdlog::error("The master pose and my own pose do not match after syncing.");
                     invoke_failure();
                     return {};
@@ -324,6 +333,22 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                         throw SkillException("Could not open incoming udp channel.");
                     }
                     m_udp_sender = m_portal->open_udp_outstream("remote_force_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
+                    if(read_parameters<Params>()->direct_cart.plane){
+                        mp->create_strategy<CartComplianceStrategy>("compliance",1);
+                        mp->create_strategy<FFStrategy>("feed_forward",1);
+                        Eigen::Matrix<double,6,1> K_x_0;
+                        Eigen::Matrix<double,6,1> xi_x_0;
+                        K_x_0=m_memory->read_parameters()->control.cart_imp.K_x;
+                        xi_x_0=m_memory->read_parameters()->control.cart_imp.xi_x;
+                        K_x_0(2)=0;
+                        xi_x_0(2)=0;
+                        mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(K_x_0,xi_x_0);
+                        Eigen::Matrix<double,6,1> TF_F_ff;
+                        TF_F_ff<<0,0,read_parameters<Params>()->direct_cart.F_ff,0,0,0;
+                        std::cout<<"F: "<<TF_F_ff<<std::endl;
+                        mp->get_strategy<FFStrategy>("feed_forward")->set_TF_F_ff(TF_F_ff,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+                        mp->get_strategy<FFStrategy>("feed_forward")->set_frame(true);
+                    }
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
                     mp->create_strategy<RemoteJointPoseStrategy>("telepresence",1);
