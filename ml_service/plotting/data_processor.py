@@ -33,6 +33,36 @@ class DataProcessor:
                 c.extend([c[-1]] * (n_trials - len(c)))
         return costs
 
+    def get_collection_of_costs_over_time(self, results: list, min_length: int, decreasing: bool = False) -> list:
+        costs = []
+        times = []
+        max_span = 0
+        for r in results:
+            cost, time = r.get_cost_per_time()
+            if time[-1] - time[0] > max_span:
+                max_span = time[-1] - time[0]
+            times.append(time)
+            if decreasing is True:
+                costs.append(self.get_monotonically_decreasing_cost(cost))
+            else:
+                costs.append(cost)
+
+        max_span = int(np.ceil(max_span))
+        cost_over_time = []
+        for i in range(len(costs)):
+            cost_over_time.append([0] * max_span)
+            current_cost = costs[i][0]
+            cnt_cost = 0
+            for j in range(max_span):
+                if j > times[i][cnt_cost]:
+                    current_cost = costs[i][cnt_cost]
+                    if cnt_cost < len(times[i]) - 1:
+                        cnt_cost += 1
+                cost_over_time[i][j] = current_cost
+            if len(cost_over_time[i]) < min_length:
+                cost_over_time[i].extend([cost_over_time[i][-1]] * (min_length - len(cost_over_time[i])))
+        return cost_over_time
+
     def get_optima_by_task_identity(self, results: list, percentage: float) -> np.ndarray:
         arr = np.zeros((len(results), 7))
         for i in range(len(results)):
@@ -50,6 +80,9 @@ class DataProcessor:
 
     def get_average_cost(self, results: list, decreasing: bool = False, episode_length: int = 1) -> np.ndarray:
         return np.average(np.asarray(self.get_collection_of_costs(results, decreasing, episode_length)), 0)
+
+    def get_average_cost_over_time(self, results: list, min_length: int, decreasing: bool = False) -> np.ndarray:
+        return np.average(np.asarray(self.get_collection_of_costs_over_time(results, min_length, decreasing)), 0)
 
     def get_monotonically_decreasing_cost(self, cost: np.ndarray) -> np.ndarray:
         cost_monotone = cost

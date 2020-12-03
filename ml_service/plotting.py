@@ -151,7 +151,8 @@ def plot_transfer_learning_3():
     n_cols = 3
     n_rows = 3
 
-    episode_wise = True
+    episode_wise = False
+    trial_wise = False
     if episode_wise is True:
         episode_size = 13
     else:
@@ -164,20 +165,28 @@ def plot_transfer_learning_3():
     fig, axes = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0})
     for i in range(n_rows):
         for j in range(n_cols):
-            if episode_wise is True:
-                axes[i, j].set_xlim(0, 10)
+            if trial_wise is True:
+                if episode_wise is True:
+                    axes[i, j].set_xlim(0, 10)
+                else:
+                    axes[i, j].set_xlim(0, 130)
             else:
-                axes[i, j].set_xlim(0, 130)
+                axes[i, j].set_xlim(0, 1500)
             axes[i, j].set_ylim(0, 1)
             axes[i, j].grid()
             axes[i, j].tick_params(axis="both", which="both", length=0)
+            axes[i, j].set_title(tasks[i * n_rows + j], y=1.0, pad=-14)
             legend = []
             try:
                 tags = ["transfer_learning", tasks[i * n_rows + j]]
                 results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
                                                        results_db="transfer_base_v2",
                                                        filter={"meta.tags": {"$all": tags}})
-                base_cost = p.get_average_cost(results, True, episode_size)
+                if trial_wise is True:
+                    base_cost = p.get_average_cost(results, True, episode_size)
+                else:
+                    base_cost = p.get_average_cost_over_time(results, 1500, True)
+                    base_cost = base_cost[0:1500]
                 base_cost = np.insert(base_cost, 0, 1)
                 axes[i, j].plot(base_cost)
                 legend = [tasks[i * n_rows + j]]
@@ -190,28 +199,31 @@ def plot_transfer_learning_3():
                     results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
                                                            results_db="transfer_all_v2",
                                                            filter={"meta.tags": {"$all": tags}})
-                    cost = p.get_average_cost(results, True, episode_size)
+                    if trial_wise is True:
+                        cost = p.get_average_cost(results, True, episode_size)
+                    else:
+                        cost = p.get_average_cost_over_time(results, 1500, True)
+                        cost = cost[0:1500]
                     cost = np.insert(cost, 0, 1)
 
-                    if base_cost[-1] < cost[-1]:
-                        baseline = base_cost[-1] * 10
+                    if trial_wise is False:
+                        baseline_factor = 1500
                     else:
-                        baseline = cost[-1] * 10
+                        if episode_wise is True:
+                            baseline_factor = 10
+                        else:
+                            baseline_factor = 130
+                    if base_cost[-1] < cost[-1]:
+                        baseline = base_cost[-1] * baseline_factor
+                    else:
+                        baseline = cost[-1] * baseline_factor
 
                     le_base = np.sum(base_cost) - baseline
                     le_transfer = np.sum(cost) - baseline
                     le_ratio_matrix[i * n_rows + j][t] = le_transfer / le_base
 
-                    index_thr_base_cost = find_convergence(base_cost, 0.025)
-                    thr_base_cost = base_cost[index_thr_base_cost]
-                    index_thr_transfer_cost = np.where(cost < thr_base_cost)
-                    if index_thr_transfer_cost[0].size == 0:
-                        index_thr_transfer_cost = 1
-                        index_thr_base_cost = 1
-                    else:
-                        index_thr_transfer_cost = index_thr_transfer_cost[0][0]
+                    speedup_matrix[i * n_rows + j][t] = calculate_speedup(base_cost, cost)
                     axes[i, j].plot(cost)
-                    speedup_matrix[i * n_rows + j][t] = index_thr_base_cost / index_thr_transfer_cost
 
                     legend.append("from_" + tasks[t])
                 except (DataNotFoundError, DataError):
@@ -233,18 +245,25 @@ def plot_transfer_learning_3():
             #     axes[i, j].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1])
             #     axes[i, j].set_yticklabels([''] * 6)
             if i == n_rows - 1:
-                if episode_wise is True:
-                    axes[i, j].set_xticks([2, 4, 6, 8, 10])
-                    axes[i, j].set_xticklabels(["2", "4", "6", "8", "10"])
+                if trial_wise is True:
+                    if episode_wise is True:
+                        axes[i, j].set_xticks([2, 4, 6, 8, 10])
+                        axes[i, j].set_xticklabels(["2", "4", "6", "8", "10"])
+                    else:
+                        axes[i, j].set_xticks([25, 50, 75, 100, 130])
+                        axes[i, j].set_xticklabels(["25", "50", "75", "100", "130"])
                 else:
-                    axes[i, j].set_xticks([25, 50, 75, 100, 130])
-                    axes[i, j].set_xticklabels(["25", "50", "75", "100", "130"])
+                    axes[i, j].set_xticks([250, 500, 750, 1000, 1250, 1500])
+                    axes[i, j].set_xticklabels(["250", "500", "750", "1000", "1250", "1500"])
     fig.add_subplot(111, frame_on=False)
     plt.tick_params(labelcolor="none", bottom=False, left=False)
-    if episode_wise is True:
-        plt.xlabel("Episode [1]")
+    if trial_wise is True:
+        if episode_wise is True:
+            plt.xlabel("Episode [1]")
+        else:
+            plt.xlabel("Trial [1]")
     else:
-        plt.xlabel("Trial [1]")
+        plt.xlabel("Time [s]")
     plt.ylabel("Normed execution time [s/10]")
 
     fig.set_size_inches(16, 9)
@@ -264,17 +283,21 @@ def plot_transfer_learning_3():
 
     es_matrix = es_matrix.astype('|S4')
     speedup_matrix = speedup_matrix.astype('|S4')
+    le_ratio_matrix = le_ratio_matrix.astype('|S4')
 
     es_matrix = np.vstack((header, es_matrix))
     speedup_matrix = np.vstack((header, speedup_matrix))
+    le_ratio_matrix = np.vstack((header, le_ratio_matrix))
 
     header = np.insert(header, 0, "")
 
     es_matrix = np.hstack((header.reshape(-1,1), es_matrix))
     speedup_matrix = np.hstack((header.reshape(-1, 1), speedup_matrix))
+    le_ratio_matrix = np.hstack((header.reshape(-1, 1), le_ratio_matrix))
 
     np.savetxt("es_matrix.csv", es_matrix, delimiter=",", fmt="%s")
     np.savetxt("speedup_matrix.csv", speedup_matrix, delimiter=",", fmt="%s")
+    np.savetxt("ler_matrix.csv", le_ratio_matrix, delimiter=",", fmt="%s")
     plt.show()
 
 
@@ -289,6 +312,23 @@ def find_convergence(cost: np.ndarray, interval: float = 0.05) -> int:
         if in_interval is True:
             return i
     return len(cost) - 1
+
+
+def calculate_speedup(base_cost: list, cost: list):
+    confidences = np.linspace(0.02, 0.05, 8)
+    speedup_sum = 0
+    for c in confidences:
+        index_thr_base_cost = find_convergence(base_cost, c)
+        thr_base_cost = base_cost[index_thr_base_cost]
+        index_thr_transfer_cost = np.where(cost < thr_base_cost)
+        if index_thr_transfer_cost[0].size == 0:
+            index_thr_transfer_cost = 1
+            index_thr_base_cost = 1
+        else:
+            index_thr_transfer_cost = index_thr_transfer_cost[0][0]
+        speedup_sum += index_thr_base_cost / index_thr_transfer_cost
+
+    return speedup_sum / len(confidences)
 
 
 def count_transfer_learning(host: str, db: str, task_type: str):
