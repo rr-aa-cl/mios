@@ -47,10 +47,10 @@ class Experiment(metaclass=ABCMeta):
                     t.problem_definition.cost_function.add_to_cost_grid(cost_grid[i, 0], cost_grid[i, 1:-1], cost_grid[i, -1])
             self.task_scheduler.add_task(t)
 
-        delete_local_results(self.agents, self.task_type, self.tags)
-        delete_local_knowledge(self.agents, self.task_type, self.tags)
-        delete_global_results(global_database, self.task_type, self.tags)
-        delete_global_knowledge(global_database, self.task_type, self.tags)
+        delete_local_results(self.agents, "ml_results", self.task_type, self.tags)
+        delete_local_knowledge(self.agents, "local_knowledge", self.task_type, self.tags)
+        delete_global_results(global_database, "global_ml_results", self.task_type, self.tags)
+        delete_global_knowledge(global_database, "global_knowledge", self.task_type, self.tags)
 
         thr = Thread(target=self.task_scheduler.solve_tasks)
         thr.start()
