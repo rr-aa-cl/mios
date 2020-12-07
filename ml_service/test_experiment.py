@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import logging
 import sys
-#from experiments.collective_learning import CollectiveLearningBase
-from experiments.collective_learning_test import CollectiveLearningBase
+from experiments.collective_learning import CollectiveLearningBase
+#from experiments.collective_learning_test import CollectiveLearningBase
 
 
 logger = logging.getLogger("ml_service")

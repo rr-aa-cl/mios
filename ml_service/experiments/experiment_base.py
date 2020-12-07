@@ -51,7 +51,7 @@ class Experiment(metaclass=ABCMeta):
         delete_local_knowledge(self.agents, "local_knowledge", self.task_type, self.tags)
         delete_global_results(global_database, "global_ml_results", self.task_type, self.tags)
         delete_global_knowledge(global_database, "global_knowledge", self.task_type, self.tags)
-
+        exit(-1)
         thr = Thread(target=self.task_scheduler.solve_tasks)
         thr.start()
 

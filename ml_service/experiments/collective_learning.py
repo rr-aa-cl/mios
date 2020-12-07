@@ -41,6 +41,10 @@ class CollectiveLearningBase(Experiment):
         call_method("collective-panda-008.local", 12002, "set_grasped_object", {"object": "cylinder_60"})
         call_method("collective-panda-009.local", 12002, "set_grasped_object", {"object": "key_pad"})
 
+        self.agents = ["collective-panda-007.local", "collective-panda-001.local", "collective-panda-008.local",
+                       "collective-panda-002.local", "collective-panda-009.local"]
+        self.task_type = "insert_object"
+
         c = TestCreationPipeline()
         n_tasks = 10
         c.create_tasks_from_template(insert_cylinder(10), config, n_tasks, "collective-panda-007.local",
