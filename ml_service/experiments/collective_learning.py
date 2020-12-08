@@ -33,7 +33,7 @@ class CollectiveLearningBase(Experiment):
         config = CMAESConfiguration()
         config.n_gen = 10
         config.n_ind = 13
-        config.exploration_mode = True
+        config.exploration_mode = False
 
         call_method("collective-panda-001.local", 12002, "set_grasped_object", {"object": "cylinder_40"})
         call_method("collective-panda-002.local", 12002, "set_grasped_object", {"object": "key_hatch"})

@@ -131,7 +131,7 @@ class BaseService(metaclass=ABCMeta):
 
             if self.knowledge:
                 self.centroid = []
-                if len(self.knowledge["parameters"] != len(self.problem_definition.domain.limits)):
+                if len(self.knowledge["parameters"]) != len(self.problem_definition.domain.limits):
                     logger.error("Domain sizes do not match!")
                     return False
                 for key in self.knowledge["parameters"]:
