@@ -18,7 +18,7 @@ then
 git clone https://github.com/nlohmann/json.git
 fi
 cd json
-git checkout v3.7.3
+git checkout v3.9.1
 mkdir -p build
 cd build
 cmake -DJSON_BuildTests=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} ..
@@ -32,7 +32,7 @@ then
 git clone https://github.com/yhirose/cpp-httplib.git
 fi
 cd cpp-httplib
-git checkout v0.6.6
+git checkout v0.7.17
 mkdir -p build
 cd build
 cmake -DHTTPLIB_COMPILE=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} ..
@@ -46,7 +46,7 @@ then
 git clone https://github.com/jsonrpcx/json-rpc-cxx.git
 fi
 cd json-rpc-cxx
-git checkout v0.1.0
+git checkout v0.2.1
 mkdir -p build
 cd build
 cmake -DCOMPILE_TESTS=OFF -DCOMPILE_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} ..
@@ -60,7 +60,7 @@ then
 git clone https://gitlab.com/eidheim/Simple-WebSocket-Server.git
 fi
 cd Simple-WebSocket-Server
-git checkout v2.0.1
+git checkout v2.0.2
 mkdir -p build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=${ROOT} ..
@@ -74,7 +74,7 @@ then
 git clone https://github.com/gabime/spdlog.git
 fi
 cd spdlog
-git checkout v1.6.1
+git checkout v1.8.1
 mkdir -p build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=${ROOT} ..
@@ -88,7 +88,7 @@ then
 git clone https://github.com/pybind/pybind11.git
 fi
 cd pybind11
-git checkout v2.5.0
+git checkout v2.6.1
 mkdir -p build
 cd build
 cmake -DPYBIND11_PYTHON_VERSION=3.6 -DPYBIND11_TEST=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} -DPYTHON_EXECUTABLE:FILEPATH=/usr/bin/python3.6 ..
@@ -116,6 +116,7 @@ then
 git clone https://gitlab.lrz.de/ge29miq/msrm_utils.git
 fi
 cd msrm_utils
+git checkout v1.0.3
 cd cpp
 mkdir -p build/debug
 mkdir -p build/release
@@ -132,7 +133,7 @@ make install
 cd ${ROOT}
 if [ ! -d "mongo-c-driver" ]
 then
-git clone https://github.com/mongodb/mongo-c-driver.git --branch r1.16
+git clone https://github.com/mongodb/mongo-c-driver.git --branch r1.17
 fi
 cd mongo-c-driver
 mkdir -p cmake-build
@@ -145,9 +146,11 @@ make install
 cd ${ROOT}
 if [ ! -d "mongo-cxx-driver" ]
 then
-git clone https://github.com/mongodb/mongo-cxx-driver.git --branch releases/v3.5
+git clone https://github.com/mongodb/mongo-cxx-driver.git
 fi
-cd mongo-cxx-driver/build
+cd mongo-cxx-driver
+git checkout r3.6.2
+cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_PREFIX_PATH=${ROOT} -DCMAKE_INSTALL_PREFIX=${ROOT} ..
 make EP_mnmlstc_core
 make -j$(nproc --all)
