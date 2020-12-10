@@ -44,8 +44,8 @@ def plot_experiment(host: str, task_type: str, database: str, tags: list):
 def agent_learning(tags, hosts = ["collective-panda-002.local"]):
     filter = {"meta.tags": tags}
     knowledge_mode = "global"
-    # task_type = "insert_object"
-    task_type = "benchmark_rastrigin"
+    task_type = "insert_object"
+    # task_type = "benchmark_rastrigin"
 
     p = DataProcessor()
 
