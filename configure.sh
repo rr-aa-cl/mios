@@ -160,7 +160,9 @@ make install
 cd ${ROOT}
 if [ ! -d "libfranka" ]
 then
-git clone --recurse-submodules https://github.com/frankaemika/libfranka.git --branch 0.7.1
+git clone --recurse-submodules https://github.com/frankaemika/libfranka.git
+checkout 0.8.0
+git submodule update
 fi
 cd libfranka
 mkdir -p build
