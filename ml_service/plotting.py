@@ -643,13 +643,24 @@ def print_cost_grid():
     plt.show()
 
 
+def color_matrix(name = "es_matrix.csv"):
+    from matplotlib import cm
+    from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+    
+    data = np.genfromtxt(name, delimiter=',')
+    data = np.delete(data,0,0)  # deleting names
+    data = np.delete(data,0,1)
+    min_value = min(data.flatten())
+    max_value = max(data.flatten())
+    cmap = cm.get_cmap('turbo', (max_value-min_value)*100)
+    print(data)
+    print(min_value)
+    print(max_value)
+    fig, ax = plt.subplots(1, 1, constrained_layout=True)
+    psm = ax.pcolormesh(data, cmap=cmap, rasterized=True, vmin=min_value, vmax=max_value)
+    ax.set_title(name[:-4])
+    ax.set_xlabel("task learned")
+    ax.set_ylabel("knowledge from task")
+    fig.colorbar(psm, ax=ax)
+    plt.show()
 
-#if __name__ == "__main__":
-    #global_learning(["collective_learning_benchmark_007"],["collective-panda-002.local"])
-    #knowledge_quality(["collective_learning_benchmark_007"],["collective-panda-002.local"])
-    #global_learning(["single_learning_benchmark_007"],["localhost"])
-    #knowledge_quality(["prediction"],["localhost"],legend = "prediction")
-    #knowledge_quality(["no_sharing"],["localhost"],legend = "no sharing")
-    #no_transfer_learning_parameters(None, "collective-control-001.local")
-    #transfer_learning_parameters(None, "collective-control-001.local")
-    #optima_distances(None, "collective-panda-001.local", "ml_results")  # "results_tl_base"
