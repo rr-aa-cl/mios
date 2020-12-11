@@ -314,6 +314,11 @@ class KnowledgeManager:
         '''searches for most similar knowledge / creates knowledge from similar results'''
         collection = task_identity["task_type"]
         optimum_weights = task_identity["optimum_weights"]
+        geometry_factor = task_identity["geometry_factor"]
+        knowledge_pool = []
+        for tag in task_identity["tags"]:
+            if "knowledge_pool: " in tag:
+                knowledge_pool.append(tag)
 
         knowledge_filter = {"meta.tags": task_identity["tags"],
                             "meta.task_type": task_identity["task_type"]
@@ -325,34 +330,24 @@ class KnowledgeManager:
             logger.debug("knowledge_processor.get_similar_knowledge(): found knowledge on task identity" + str(
                 task_identity) + " at " + str(knowledge_db) + "." + str(collection))
             # take most similar knowledge according to cost function ("optimum_weights"):
-            return self.get_most_similar_task(optimum_weights, docs)
+            return self.get_most_similar_task(docs, optimum_weights, geometry_factor)
+        logger.debug("knowledge_manager.get_similar_knowledge(): can\'t find knowledge for " + 
+        str(task_identity)+" in knowledge pool " + str(knowledge_pool) + " at " + str(collection))
 
-        logger.debug(
-            "knowledge_processor.get_similar_knowledge(): found none! -> create local knowledge from ml data for task_identity" + str(
-                task_identity))
-        knowledge = self.get_knowledge_by_identity(self.DBclient, task_identity, data_db)
-        if knowledge:
-            return knowledge
+        # search knowledge from the same knowledge_pool (other tasks)
+        knowledge_filter = {"meta.tags": knowledge_pool,
+                            "meta.task_type": task_identity["task_type"]
+                            }
 
-        logger.debug(
-            "knowledge_processor.get_similar_knowledge(): found none! -> create knowledge from most similar ml data of task type " + str(
-                collection))
-        docs = self.DBclient.read(data_db, collection, knowledge_filter)
+        docs = self.DBclient.read(knowledge_db, collection, knowledge_filter)
         if len(docs) >= 1:
-            return self.get_most_similar_task(optimum_weights, docs)
+            logger.debug("knowledge_processor.get_similar_knowledge(): found knowledge on task identity" + str(
+                task_identity) + " at " + str(knowledge_db) + "." + str(collection))
+            # take most similar knowledge according to cost function ("optimum_weights"):
+            return self.get_most_similar_task(docs, optimum_weights, geometry_factor)
+        logger.debug("knowledge_manager.get_similar_knowledge(): can\'t find knowledge for " + 
+        str(task_identity)+" in knowledge pool " + str(knowledge_pool) + " at " + str(collection))
 
-        logger.debug("knowledge_processor.get_similar_knowledge(): found no ml data of task type " + str(
-            collection) + " -> search for different task types")
-        knowledge_filter = {"meta.tags": task_identity["tags"]}
-        docs = []
-        for col in self.DBclient.get_collections(self.knowledge_db):
-            docs.extend(self.DBclient.read(data_db, col, knowledge_filter))
-        if len(docs) >= 1:
-            return self.get_most_similar_task(optimum_weights, docs)
-
-        logger.debug(
-            "knowledge_processor.get_similar_knowledge(): no knowledge or ml data are available for task_type " + str(
-                collection) + " with tags " + str(task_identity["tags"]))
         return False
 
     def get_successful_trials(self, doc):
@@ -387,23 +382,35 @@ class KnowledgeManager:
         vector_mapping = metainfo[0]["domain"]["vector_mapping"]
         return successful_trials, vector_mapping, optimum_weights, confidence
 
-    def get_most_similar_task(self, optimum_weights, tasks):
-        '''find most similar task according to cost optimum_weights'''
+    def get_most_similar_task(self, tasks, optimum_weights, geometry_factor, weights = [1,1]):
+        '''find most similar task in a list of tasks according to optimum_weights and geometry factor'''
+        # normalize weights:
+        weights = np.array(weights) / sum(weights)
+
         most_similar_task = tasks[0]
         smallest_dist = float('inf')
         for task in tasks:
             temp_optimum_weights = None
+            temp_geometry_factor = None
             if "cost_function" in task["meta"].keys():
                 temp_optimum_weights = task["meta"]["cost_function"]["optimum_weights"]
-            elif "optimum_weights" in task["meta"].keys():
-                temp_optimum_weights = task["meta"]["optimum_weights"]
+                temp_geometry_factor = task["meta"]["cost_function"]["geometry_factor"]
             else:
-                logger.debug(
+                try:
+                    temp_optimum_weights = task["meta"]["optimum_weights"]
+                    temp_geometry_factor = task["meta"]["geometry_factor"]
+                except KeyError:
+                    logger.debug(
                     "knowledge_processor.get_most_similar_task: skipping faulty task format (cant find optimum_weights in task)")
-                continue
+                    continue
 
             # use euclidean distance as similarity measure:  sqrt(sum( (a-b)**2 ))
-            dist = np.linalg.norm(np.array(optimum_weights) - np.array(temp_optimum_weights))
+            # optimum_weights:
+            dist_ow = np.linalg.norm(np.array(optimum_weights) - np.array(temp_optimum_weights))
+            # geometry_factor:
+            dist_gf = np.linalg.norm(np.array(geometry_factor) - np.array(temp_geometry_factor))
+            # weighted distance:
+            dist = weights[0]*dist_ow + weights[1]*dist_gf
 
             if dist < smallest_dist:
                 smallest_dist = dist

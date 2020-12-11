@@ -28,6 +28,8 @@ class Experiment(metaclass=ABCMeta):
     def start(self, tags: [], knowledge_mode: str, knowledge_type: str, global_database: str, use_cost_grid: str = None,
               optima_percentage: float = 0.01):
         self.tags = tags
+        for tag in tags:
+            self.tags.append("knowledge_pool: "+tag)
         self.task_scheduler.kb_location = global_database
         self.initialize(knowledge_mode, knowledge_type)
         if self.creation_pipeline is None:
