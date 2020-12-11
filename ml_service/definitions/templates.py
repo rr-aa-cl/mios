@@ -269,6 +269,6 @@ def insertion_cost() -> CostFunction:
     c.heuristic_skills = ["insertion"]
     c.max_cost[0] = 10
     c.max_cost[1] = 50
-    c.finish_thr = 5
+    c.finish_thr = 2
     c.geometry_factor = 0.002
     return c
