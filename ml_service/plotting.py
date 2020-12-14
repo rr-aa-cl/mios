@@ -6,6 +6,7 @@ from plotting.data_processor import DataError
 from plotting.plotter import Plotter
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import csv
 
 plot = Plotter()
 
@@ -353,6 +354,74 @@ def count_transfer_learning(host: str, db: str, task_type: str):
             docs = client.read(db, task_type, {"meta.tags": {"$all": ["transfer_learning", t1, "from_" + t2]}})
             if len(docs) != 10:
                 print("Experiment with tags [" + t1 + ", " + t2 + "] has " + str(len(docs)) + " documents.")
+
+
+def plot_ler_matrix():
+    ler_matrix_csv = open('ler_matrix.csv', 'r')
+    plots = csv.reader(ler_matrix_csv, delimiter=',')
+    ler_matrx = np.zeros((9, 9))
+    ler_matrix_sorted = np.zeros((9, 9))
+    ler_matrix_tasks = np.zeros((9, 9))
+    bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "pink", "saddlebrown", "lavender"]
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
+             "key_pad", "key_old", "key_hatch"]
+    cnt_row = 0
+    for row in plots:
+        if cnt_row == 0:
+            cnt_row += 1
+            continue
+        for i in range(len(row)):
+            if i == 0:
+                continue
+            ler_matrx[cnt_row-1, i-1] = float(row[i])
+        ler_matrix_sorted[cnt_row-1] = np.sort(ler_matrx[cnt_row-1])
+        ler_matrix_tasks[cnt_row - 1] = np.argsort(ler_matrx[cnt_row - 1])
+        cnt_row += 1
+
+    fig, axes = plt.subplots(1, 9, sharex=True, sharey=False, gridspec_kw={'hspace': 0, 'wspace': 0.5})
+    cnt_row = 0
+    for i in range(len(axes)):
+        colors = []
+        for j in range(len(ler_matrix_tasks[cnt_row])):
+            colors.append(bar_colors[int(ler_matrix_tasks[cnt_row, j])])
+        if i == 0:
+            axes[i].bar(np.arange(9), ler_matrix_sorted[cnt_row], color=colors, label=tasks)
+            plt.legend()
+        axes[i].bar(np.arange(9), ler_matrix_sorted[cnt_row], color=colors)
+        axes[i].set_ylim(0, np.ceil(np.max(ler_matrix_sorted[cnt_row])))
+        axes[i].grid()
+        cnt_row += 1
+
+    plt.show()
+    print(ler_matrix_sorted)
+
+
+def plot_es_matrix():
+    es_matrix_csv = open('es_matrix.csv', 'r')
+    plots = csv.reader(es_matrix_csv, delimiter=',')
+    es_matrx = np.zeros((9, 9))
+    cnt_row = 0
+    for row in plots:
+        if cnt_row == 0:
+            cnt_row += 1
+            continue
+        for i in range(len(row)):
+            if i == 0:
+                continue
+            es_matrx[cnt_row-1, i-1] = float(row[i])
+        cnt_row += 1
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x = np.linspace(1, 9, 9)
+    y = np.linspace(1, 9, 9)
+
+    x, y = np.meshgrid(x, y)
+
+    ax.plot_trisurf(x, y, es_matrx)
+
+    plt.show()
 
 
 def transfer_learning_benchmark():
