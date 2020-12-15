@@ -384,12 +384,17 @@ def plot_ler_matrix():
         colors = []
         for j in range(len(ler_matrix_tasks[cnt_row])):
             colors.append(bar_colors[int(ler_matrix_tasks[cnt_row, j])])
-        if i == 0:
-            axes[i].bar(np.arange(9), ler_matrix_sorted[cnt_row], color=colors, label=tasks)
-            plt.legend()
-        axes[i].bar(np.arange(9), ler_matrix_sorted[cnt_row], color=colors)
+        
+        for n in range(len(tasks)):
+            if i == 0:#len(axes)-1:
+                axes[i].bar(n, ler_matrix_sorted[cnt_row,n], color=colors[n], label=tasks[int(ler_matrix_tasks[cnt_row, n])])
+                handles, labels = axes[i].get_legend_handles_labels()
+                _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[cnt_row],labels, handles), key=lambda t: t[0]))
+                axes[i].legend(handles, labels, loc="upper right",title="knowledge source")
+            axes[i].bar(n, ler_matrix_sorted[cnt_row,n], color=colors[n])
         axes[i].set_ylim(0, np.ceil(np.max(ler_matrix_sorted[cnt_row])))
         axes[i].grid()
+        axes[i].set_title(tasks[cnt_row])
         cnt_row += 1
 
     plt.show()
@@ -419,7 +424,9 @@ def plot_es_matrix():
 
     x, y = np.meshgrid(x, y)
 
-    ax.plot_trisurf(x, y, es_matrx)
+    ax.plot_trisurf(x.flatten(), y.flatten(), es_matrx.flatten())
+
+    ax.set_zlabel('epmirical similarity')
 
     plt.show()
 
@@ -643,13 +650,24 @@ def print_cost_grid():
     plt.show()
 
 
+def color_matrix(name = "es_matrix.csv"):
+    from matplotlib import cm
+    from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+    
+    data = np.genfromtxt(name, delimiter=',')
+    data = np.delete(data,0,0)  # deleting names
+    data = np.delete(data,0,1)
+    min_value = min(data.flatten())
+    max_value = max(data.flatten())
+    cmap = cm.get_cmap('turbo', (max_value-min_value)*100)
+    print(data)
+    print(min_value)
+    print(max_value)
+    fig, ax = plt.subplots(1, 1, constrained_layout=True)
+    psm = ax.pcolormesh(data, cmap=cmap, rasterized=True, vmin=min_value, vmax=max_value)
+    ax.set_title(name[:-4])
+    ax.set_xlabel("task learned")
+    ax.set_ylabel("knowledge from task")
+    fig.colorbar(psm, ax=ax)
+    plt.show()
 
-#if __name__ == "__main__":
-    #global_learning(["collective_learning_benchmark_007"],["collective-panda-002.local"])
-    #knowledge_quality(["collective_learning_benchmark_007"],["collective-panda-002.local"])
-    #global_learning(["single_learning_benchmark_007"],["localhost"])
-    #knowledge_quality(["prediction"],["localhost"],legend = "prediction")
-    #knowledge_quality(["no_sharing"],["localhost"],legend = "no sharing")
-    #no_transfer_learning_parameters(None, "collective-control-001.local")
-    #transfer_learning_parameters(None, "collective-control-001.local")
-    #optima_distances(None, "collective-panda-001.local", "ml_results")  # "results_tl_base"
