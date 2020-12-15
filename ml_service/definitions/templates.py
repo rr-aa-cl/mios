@@ -265,6 +265,7 @@ def insertion_cost() -> CostFunction:
     c.optimum_skills.append("contact")
     c.optimum_skills.append("insertion")
     c.optimum_weights[0] = 1
+    c.heuristic_expressions = ["np.exp(var*100)"]
 
     c.heuristic_skills = ["insertion"]
     c.max_cost[0] = 10

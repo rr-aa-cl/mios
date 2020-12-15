@@ -20,7 +20,7 @@ class TestCreationPipeline(CreationPipeline):
         for i in range(n_tasks):
             t = Task(copy.deepcopy(template), service_configuration, agents, service_url, knowledge_mode, knowledge_type)
             t.problem_definition.cost_function.optimum_weights[0] = float(i + 1) / float(n_tasks)
-            t.problem_definition.cost_function.optimum_weights[1] = 1 - \
+            t.problem_definition.cost_function.optimum_weights[2] = 1 - \
                                                                     t.problem_definition.cost_function.optimum_weights[
                                                                         0]
             self.tasks.append(t)
@@ -33,7 +33,7 @@ class CollectiveLearningBase(Experiment):
         config = CMAESConfiguration()
         config.n_gen = 10
         config.n_ind = 13
-        config.exploration_mode = False
+        config.exploration_mode = True
 
         call_method("collective-panda-001.local", 12002, "set_grasped_object", {"object": "cylinder_40"})
         call_method("collective-panda-002.local", 12002, "set_grasped_object", {"object": "key_hatch"})
