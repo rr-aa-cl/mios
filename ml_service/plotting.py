@@ -363,9 +363,12 @@ def plot_ler_matrix():
     ler_matrix_sorted = np.zeros((9, 9))
     ler_matrix_tasks = np.zeros((9, 9))
     bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "pink", "saddlebrown", "lavender"]
+    bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "black", "dimgrey", "lightgrey"]
     tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
              "key_pad", "key_old", "key_hatch"]
+    tasks_short = ["$t_1$", "$t_2$", "$t_3$", "$t_4$", "$t_5$", "$t_6$", "$t_7$", "$t_8$", "$t_9$"]
     cnt_row = 0
+
     for row in plots:
         if cnt_row == 0:
             cnt_row += 1
@@ -378,7 +381,7 @@ def plot_ler_matrix():
         ler_matrix_tasks[cnt_row - 1] = np.argsort(ler_matrx[cnt_row - 1])
         cnt_row += 1
 
-    fig, axes = plt.subplots(1, 9, sharex=True, sharey=False, gridspec_kw={'hspace': 0, 'wspace': 0.5})
+    fig, axes = plt.subplots(1, 9, sharex=True, sharey=False, gridspec_kw={'hspace': 0, 'wspace': 0.15})
     cnt_row = 0
     for i in range(len(axes)):
         colors = []
@@ -386,17 +389,55 @@ def plot_ler_matrix():
             colors.append(bar_colors[int(ler_matrix_tasks[cnt_row, j])])
         
         for n in range(len(tasks)):
-            if i == 0:#len(axes)-1:
+            if i == 1:
                 axes[i].bar(n, ler_matrix_sorted[cnt_row,n], color=colors[n], label=tasks[int(ler_matrix_tasks[cnt_row, n])])
                 handles, labels = axes[i].get_legend_handles_labels()
                 _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[cnt_row],labels, handles), key=lambda t: t[0]))
-                axes[i].legend(handles, labels, loc="upper right",title="knowledge source")
+                axes[i].legend(handles, labels, loc="upper right",title="knowledge sources")
+            if i > 0:
+                axes[i].set_yticklabels([])
             axes[i].bar(n, ler_matrix_sorted[cnt_row,n], color=colors[n])
-        axes[i].set_ylim(0, np.ceil(np.max(ler_matrix_sorted[cnt_row])))
-        axes[i].grid()
+            #axes[i].set_yscale('log')
+        axes[i].set_xticks([])
+        axes[i].set_ylim(0, 2.1)  # set_ylim(0, max(np.ceil(np.max(ler_matrix_sorted)), 2.0))  # [cnt_row]
+        axes[i].set_xlabel("knowledge \n source")
+        axes[i].grid(axis="y")
         axes[i].set_title(tasks[cnt_row])
         cnt_row += 1
+    fig.suptitle('tasks with their ranked knowledge source')
+    plt.show(block=False)
 
+    # for which task does this knowledge help:
+    ler_matrix_sorted_2 = np.zeros((9, 9))
+    ler_matrix_tasks_2 = np.zeros((9, 9))
+    for col in range(ler_matrx .shape[0]):
+        ler_matrix_sorted_2[:, col] = np.sort(ler_matrx[:, col])
+        ler_matrix_tasks_2[:, col] = np.argsort(ler_matrx[:, col])
+
+    fig, axes = plt.subplots(1, 9, sharex=True, sharey=False, gridspec_kw={'hspace': 0, 'wspace': 0.15})
+    cnt_col = 0
+    for i in range(len(axes)):
+        colors = []
+        for j in range(len(ler_matrix_tasks_2[:, cnt_col])):
+            colors.append(bar_colors[int(ler_matrix_tasks_2[j, cnt_col])])
+
+        for n in range(len(tasks)):
+            if i == 1:
+                axes[i].bar(n, ler_matrix_sorted_2[n, cnt_col], color=colors[n], label=tasks[int(ler_matrix_tasks_2[n, cnt_col])])
+                handles, labels = axes[i].get_legend_handles_labels()
+                _,labels, handles = zip(*sorted(zip(ler_matrix_tasks_2[:, cnt_col],labels, handles), key=lambda t: t[0]))
+                axes[i].legend(handles, labels, loc="upper right",title="tasks")
+            if i > 0:
+                axes[i].set_yticklabels([])
+            axes[i].bar(n, ler_matrix_sorted_2[n, cnt_col], color=colors[n])
+            #axes[i].set_yscale('log')
+            axes[i].set_xlabel('task')
+        axes[i].set_xticks([])
+        axes[i].set_ylim(0, 2.1)  #set_ylim(0, np.ceil(np.max(ler_matrix_sorted_2)))  # [:, cnt_col]
+        axes[i].grid(axis='y')
+        axes[i].set_title("knowledge from \n" + tasks[cnt_col])
+        cnt_col += 1
+    fig.suptitle('knowledge sources with their ranked usages')
     plt.show()
     print(ler_matrix_sorted)
 
