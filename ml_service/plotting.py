@@ -380,72 +380,41 @@ def plot_ler_matrix():
         ler_matrix_sorted[cnt_row-1] = np.sort(ler_matrx[cnt_row-1])
         ler_matrix_tasks[cnt_row - 1] = np.argsort(ler_matrx[cnt_row - 1])
         cnt_row += 1
-
-    fig, axes = plt.subplots(1, 9, sharex=True, sharey=False, gridspec_kw={'hspace': 0, 'wspace': 0.15})
-    cnt_row = 0
-    for i in range(len(axes)):
-        colors = []
-        for j in range(len(ler_matrix_tasks[cnt_row])):
-            colors.append(bar_colors[int(ler_matrix_tasks[cnt_row, j])])
-        
-        for n in range(len(tasks)):
-            if i == 1:
-                axes[i].bar(n, ler_matrix_sorted[cnt_row,n], color=colors[n], label=tasks[int(ler_matrix_tasks[cnt_row, n])])
-                handles, labels = axes[i].get_legend_handles_labels()
-                _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[cnt_row],labels, handles), key=lambda t: t[0]))
-                axes[i].legend(handles, labels, loc="upper right",title="knowledge sources")
-            if i > 0:
-                axes[i].set_yticklabels([])
-            axes[i].bar(n, ler_matrix_sorted[cnt_row,n], color=colors[n])
-            #axes[i].set_yscale('log')
-        axes[i].set_xticks([])
-        axes[i].set_ylim(0, 2.1)  # set_ylim(0, max(np.ceil(np.max(ler_matrix_sorted)), 2.0))  # [cnt_row]
-        axes[i].set_xlabel("knowledge \n source")
-        axes[i].grid(axis="y")
-        axes[i].set_title(tasks[cnt_row])
-        cnt_row += 1
-    fig.suptitle('tasks with their ranked knowledge source')
-    plt.show(block=False)
-
-    # for which task does this knowledge help:
-    ler_matrix_sorted_2 = np.zeros((9, 9))
-    ler_matrix_tasks_2 = np.zeros((9, 9))
-    for col in range(ler_matrx .shape[0]):
-        ler_matrix_sorted_2[:, col] = np.sort(ler_matrx[:, col])
-        ler_matrix_tasks_2[:, col] = np.argsort(ler_matrx[:, col])
-
-    fig, axes = plt.subplots(1, 9, sharex=True, sharey=False, gridspec_kw={'hspace': 0, 'wspace': 0.15})
-    cnt_col = 0
-    for i in range(len(axes)):
-        colors = []
-        for j in range(len(ler_matrix_tasks_2[:, cnt_col])):
-            colors.append(bar_colors[int(ler_matrix_tasks_2[j, cnt_col])])
-
-        for n in range(len(tasks)):
-            if i == 1:
-                axes[i].bar(n, ler_matrix_sorted_2[n, cnt_col], color=colors[n], label=tasks[int(ler_matrix_tasks_2[n, cnt_col])])
-                handles, labels = axes[i].get_legend_handles_labels()
-                _,labels, handles = zip(*sorted(zip(ler_matrix_tasks_2[:, cnt_col],labels, handles), key=lambda t: t[0]))
-                axes[i].legend(handles, labels, loc="upper right",title="tasks")
-            if i > 0:
-                axes[i].set_yticklabels([])
-            axes[i].bar(n, ler_matrix_sorted_2[n, cnt_col], color=colors[n])
-            #axes[i].set_yscale('log')
-            axes[i].set_xlabel('task')
-        axes[i].set_xticks([])
-        axes[i].set_ylim(0, 2.1)  #set_ylim(0, np.ceil(np.max(ler_matrix_sorted_2)))  # [:, cnt_col]
-        axes[i].grid(axis='y')
-        axes[i].set_title("knowledge from \n" + tasks[cnt_col])
-        cnt_col += 1
-    fig.suptitle('knowledge sources with their ranked usages')
+# single axes
+    fig, ax = plt.subplots(num="Learning Effort Ratio")
+    bar_width = 0.6  # standard
+    dimw = bar_width / len(tasks)
+    x = np.arange(len(tasks))
+    for col in range(len(tasks)):
+        colors = [bar_colors[int(j)] for j in ler_matrix_tasks[:, col]]
+        y = [data for data in ler_matrix_sorted[:, col]]
+        legend = [data for data in ler_matrix_tasks[:, col]]
+        for row in range(len(tasks)):
+            if row == 0:
+                legend = tasks[int(ler_matrix_tasks[row, col])]
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row], label = legend)   
+            else:
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row])   
+    handles, labels = ax.get_legend_handles_labels()
+    _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :],labels, handles), key=lambda t: t[0]))
+    ax.set_xticks(x + len(tasks) * dimw / 2) 
+    ax.set_xticklabels(tasks) 
+    ax.set_ylim(0, 2.1)
+    ax.grid(axis="y")
+    ax.set_ylabel("LER []")
+    ax.legend(handles, labels, loc="upper left",title="knowledge sources")
     plt.show()
-    print(ler_matrix_sorted)
 
 
 def plot_es_matrix():
-    es_matrix_csv = open('es_matrix.csv', 'r')
-    plots = csv.reader(es_matrix_csv, delimiter=',')
-    es_matrx = np.zeros((9, 9))
+    ler_matrix_csv = open('es_matrix.csv', 'r')
+    plots = csv.reader(ler_matrix_csv, delimiter=',')
+    ler_matrx = np.zeros((9, 9))
+    ler_matrix_sorted = np.zeros((9, 9))
+    ler_matrix_tasks = np.zeros((9, 9))
+    bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "black", "dimgrey", "lightgrey"]
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
+             "key_pad", "key_old", "key_hatch"]
     cnt_row = 0
     for row in plots:
         if cnt_row == 0:
@@ -454,21 +423,82 @@ def plot_es_matrix():
         for i in range(len(row)):
             if i == 0:
                 continue
-            es_matrx[cnt_row-1, i-1] = float(row[i])
+            ler_matrx[cnt_row-1, i-1] = float(row[i])
+        ler_matrix_sorted[cnt_row-1] = np.sort(ler_matrx[cnt_row-1])
+        ler_matrix_tasks[cnt_row - 1] = np.argsort(ler_matrx[cnt_row - 1])
         cnt_row += 1
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+# single axes
+    fig, ax = plt.subplots(num="Empirical Similarity")
+    bar_width = 0.6  # standard
+    dimw = bar_width / len(tasks)
+    x = np.arange(len(tasks))
+    for col in range(len(tasks)):
+        colors = [bar_colors[int(j)] for j in ler_matrix_tasks[:, col]]
+        y = [data for data in ler_matrix_sorted[:, col]]
+        legend = [data for data in ler_matrix_tasks[:, col]]
+        for row in range(len(tasks)):
+            if row == 0:
+                legend = tasks[int(ler_matrix_tasks[row, col])]
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row], label = legend)   
+            else:
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row])   
+    handles, labels = ax.get_legend_handles_labels()
+    _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :],labels, handles), key=lambda t: t[0]))
+    ax.set_xticks(x + len(tasks) * dimw / 2) 
+    ax.set_xticklabels(tasks) 
+    ax.set_ylim(0, 1.02)
+    ax.grid(axis="y")
+    ax.set_ylabel("ES []")
+    ax.legend(handles, labels, loc="upper left",title="knowledge sources")
+    plt.show()
 
-    x = np.linspace(1, 9, 9)
-    y = np.linspace(1, 9, 9)
 
-    x, y = np.meshgrid(x, y)
+def plot_speedup_matrix():
+    ler_matrix_csv = open('speedup_matrix.csv', 'r')
+    plots = csv.reader(ler_matrix_csv, delimiter=',')
+    ler_matrx = np.zeros((9, 9))
+    ler_matrix_sorted = np.zeros((9, 9))
+    ler_matrix_tasks = np.zeros((9, 9))
+    bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "black", "dimgrey", "lightgrey"]
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
+             "key_pad", "key_old", "key_hatch"]
+    cnt_row = 0
+    for row in plots:
+        if cnt_row == 0:
+            cnt_row += 1
+            continue
+        for i in range(len(row)):
+            if i == 0:
+                continue
+            ler_matrx[cnt_row-1, i-1] = float(row[i])
+        ler_matrix_sorted[cnt_row-1] = np.sort(ler_matrx[cnt_row-1])
+        ler_matrix_tasks[cnt_row - 1] = np.argsort(ler_matrx[cnt_row - 1])
+        cnt_row += 1
 
-    ax.plot_trisurf(x.flatten(), y.flatten(), es_matrx.flatten())
-
-    ax.set_zlabel('epmirical similarity')
-
+# single axes
+    fig, ax = plt.subplots(num="average speedup")
+    bar_width = 0.6  # standard
+    dimw = bar_width / len(tasks)
+    x = np.arange(len(tasks))
+    for col in range(len(tasks)):
+        colors = [bar_colors[int(j)] for j in ler_matrix_tasks[:, col]]
+        y = [data for data in ler_matrix_sorted[:, col]]
+        legend = [data for data in ler_matrix_tasks[:, col]]
+        for row in range(len(tasks)):
+            if row == 0:
+                legend = tasks[int(ler_matrix_tasks[row, col])]
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row], label = legend)   
+            else:
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row])   
+    handles, labels = ax.get_legend_handles_labels()
+    _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :],labels, handles), key=lambda t: t[0]))
+    ax.set_xticks(x + len(tasks) * dimw / 2) 
+    ax.set_xticklabels(tasks) 
+    ax.set_yscale('log') 
+    ax.grid(axis="y")
+    ax.set_ylabel("speedup [s]")
+    ax.legend(handles, labels, loc="upper right",title="knowledge sources")
     plt.show()
 
 
