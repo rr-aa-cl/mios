@@ -150,6 +150,7 @@ def plot_transfer_learning_2(task: str):
 def plot_transfer_learning_3():
     tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
              "key_pad", "key_old", "key_hatch"]
+    task_colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]
 
     n_cols = 3
     n_rows = 3
@@ -167,6 +168,7 @@ def plot_transfer_learning_3():
 
     p = DataProcessor()
     fig, axes = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0})
+    fig.set_size_inches(16, 9)
     for i in range(n_rows):
         for j in range(n_cols):
             if trial_wise is True:
@@ -228,13 +230,13 @@ def plot_transfer_learning_3():
                     kl_matrix[i * n_rows + j][t] = calculate_kl_divence(base_cost, cost)
 
                     speedup_matrix[i * n_rows + j][t] = calculate_speedup(base_cost, cost)
-                    axes[i, j].plot(cost, zorder=1)
+                    axes[i, j].plot(cost, zorder=1, color = task_colors[t])
 
                     legend.append("from_" + tasks[t])
                 except (DataNotFoundError, DataError):
                     pass
 
-            axes[i, j].legend(legend, fontsize='xx-small', loc=1)
+            axes[i, j].legend(legend, fontsize='x-small', loc=1)
             # if i == 0:
             #     pass
             #     axes[i, j].annotate("t" + str(j), xy=(0.5, 1), xytext=(0, 5),
@@ -260,6 +262,7 @@ def plot_transfer_learning_3():
                 else:
                     axes[i, j].set_xticks([250, 500, 750, 1000, 1250, 1500])
                     axes[i, j].set_xticklabels(["250", "500", "750", "1000", "1250", "1500"])
+            axes[i, j].tick_params(axis='both', which='major', labelsize=12)
     fig.add_subplot(111, frame_on=False)
     plt.tick_params(labelcolor="none", bottom=False, left=False)
     if trial_wise is True:
@@ -268,8 +271,8 @@ def plot_transfer_learning_3():
         else:
             plt.xlabel("Trial [1]")
     else:
-        plt.xlabel("Time [s]")
-    plt.ylabel("Normed execution time [s/10]")
+        plt.xlabel("Time [s]", fontsize = 12)
+    plt.ylabel("Normed execution time [s/10]", fontsize = 12)
 
     fig.set_size_inches(16, 9)
     plt.savefig("results.png", bbox_inches='tight', dpi=300)
@@ -355,6 +358,8 @@ def count_transfer_learning(host: str, db: str, task_type: str):
             if len(docs) != 10:
                 print("Experiment with tags [" + t1 + ", " + t2 + "] has " + str(len(docs)) + " documents.")
 
+def cm2inch(value):
+    return value/2.54
 
 def plot_ler_matrix():
     ler_matrix_csv = open('ler_matrix.csv', 'r')
@@ -362,10 +367,9 @@ def plot_ler_matrix():
     ler_matrx = np.zeros((9, 9))
     ler_matrix_sorted = np.zeros((9, 9))
     ler_matrix_tasks = np.zeros((9, 9))
-    bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "pink", "saddlebrown", "lavender"]
-    bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "black", "dimgrey", "lightgrey"]
-    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
-             "key_pad", "key_old", "key_hatch"]
+    #bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "pink", "saddlebrown", "lavender"]
+    bar_colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_pad", "key_old", "key_hatch"]
     tasks_short = ["$t_1$", "$t_2$", "$t_3$", "$t_4$", "$t_5$", "$t_6$", "$t_7$", "$t_8$", "$t_9$"]
     cnt_row = 0
 
@@ -380,8 +384,9 @@ def plot_ler_matrix():
         ler_matrix_sorted[cnt_row-1] = np.sort(ler_matrx[cnt_row-1])
         ler_matrix_tasks[cnt_row - 1] = np.argsort(ler_matrx[cnt_row - 1])
         cnt_row += 1
-# single axes
-    fig, ax = plt.subplots(num="Learning Effort Ratio")
+ # single axes
+    fig, ax = plt.subplots(num="fig_ler")
+    fig.subplots_adjust(left=0,right=1,bottom=0,top=1)
     bar_width = 0.6  # standard
     dimw = bar_width / len(tasks)
     x = np.arange(len(tasks))
@@ -397,14 +402,20 @@ def plot_ler_matrix():
                 bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row])   
     handles, labels = ax.get_legend_handles_labels()
     _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :],labels, handles), key=lambda t: t[0]))
+    fig.set_size_inches(cm2inch(30),cm2inch(10))
+    fontsize = 12
     ax.set_xticks(x + len(tasks) * dimw / 2) 
-    ax.set_xticklabels(tasks) 
+    ax.set_xticklabels(tasks, fontsize=fontsize) 
     ax.set_ylim(0, 2.1)
+    ax.set_yticks([0, 0.4, 0.8, 1.2, 1.6, 2]) 
     ax.grid(axis="y")
-    ax.set_ylabel("LER []")
-    ax.legend(handles, labels, loc="upper left",title="knowledge sources")
-    plt.show()
-
+    ax.set_ylabel("LER [1]", fontsize=fontsize)
+    ax.tick_params(labelsize=fontsize)
+    legend = ax.legend(handles, labels, loc="upper left",title="knowledge sources", fontsize=fontsize-2)
+    plt.setp(legend.get_title(), fontsize = fontsize-2)
+    plt.tight_layout()
+    fig.savefig('fig_ler.png', bbox_inches='tight', dpi=500)
+    plt.show(block=True)
 
 def plot_es_matrix():
     ler_matrix_csv = open('es_matrix.csv', 'r')
@@ -412,7 +423,7 @@ def plot_es_matrix():
     ler_matrx = np.zeros((9, 9))
     ler_matrix_sorted = np.zeros((9, 9))
     ler_matrix_tasks = np.zeros((9, 9))
-    bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "black", "dimgrey", "lightgrey"]
+    bar_colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]
     tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
              "key_pad", "key_old", "key_hatch"]
     cnt_row = 0
@@ -428,8 +439,8 @@ def plot_es_matrix():
         ler_matrix_tasks[cnt_row - 1] = np.argsort(ler_matrx[cnt_row - 1])
         cnt_row += 1
 
-# single axes
-    fig, ax = plt.subplots(num="Empirical Similarity")
+ # single axes
+    fig, ax = plt.subplots(num="fig_es")
     bar_width = 0.6  # standard
     dimw = bar_width / len(tasks)
     x = np.arange(len(tasks))
@@ -445,12 +456,18 @@ def plot_es_matrix():
                 bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row])   
     handles, labels = ax.get_legend_handles_labels()
     _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :],labels, handles), key=lambda t: t[0]))
+    fig.set_size_inches(cm2inch(30),cm2inch(10))
+    fontsize = 12
     ax.set_xticks(x + len(tasks) * dimw / 2) 
-    ax.set_xticklabels(tasks) 
+    ax.set_xticklabels(tasks, fontsize=fontsize)
+    ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1]) 
     ax.set_ylim(0, 1.02)
     ax.grid(axis="y")
-    ax.set_ylabel("ES []")
-    ax.legend(handles, labels, loc="upper left",title="knowledge sources")
+    ax.set_ylabel("ES []", fontsize=fontsize)
+    legend = ax.legend(handles, labels, loc="upper left",title="knowledge sources", fontsize=fontsize-2)
+    plt.setp(legend.get_title(), fontsize = fontsize-2)
+    plt.tight_layout()
+    fig.savefig('fig_es.png',  dpi=500)
     plt.show()
 
 
@@ -460,7 +477,7 @@ def plot_speedup_matrix():
     ler_matrx = np.zeros((9, 9))
     ler_matrix_sorted = np.zeros((9, 9))
     ler_matrix_tasks = np.zeros((9, 9))
-    bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "black", "dimgrey", "lightgrey"]
+    bar_colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]
     tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
              "key_pad", "key_old", "key_hatch"]
     cnt_row = 0
@@ -476,8 +493,8 @@ def plot_speedup_matrix():
         ler_matrix_tasks[cnt_row - 1] = np.argsort(ler_matrx[cnt_row - 1])
         cnt_row += 1
 
-# single axes
-    fig, ax = plt.subplots(num="average speedup")
+ # single axes
+    fig, ax = plt.subplots(num="fig_speedup")
     bar_width = 0.6  # standard
     dimw = bar_width / len(tasks)
     x = np.arange(len(tasks))
@@ -493,12 +510,18 @@ def plot_speedup_matrix():
                 bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row])   
     handles, labels = ax.get_legend_handles_labels()
     _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :],labels, handles), key=lambda t: t[0]))
+    fig.set_size_inches(cm2inch(30),cm2inch(10))
+    fontsize = 12
     ax.set_xticks(x + len(tasks) * dimw / 2) 
-    ax.set_xticklabels(tasks) 
+    ax.set_xticklabels(tasks, fontsize=fontsize) 
     ax.set_yscale('log') 
     ax.grid(axis="y")
-    ax.set_ylabel("speedup [s]")
-    ax.legend(handles, labels, loc="upper right",title="knowledge sources")
+    ax.set_ylabel("speedup [s]", fontsize=fontsize)
+    ax.tick_params(labelsize=fontsize)
+    legend = ax.legend(handles, labels, loc="upper right",title="knowledge sources", fontsize=fontsize-2)
+    plt.setp(legend.get_title(), fontsize = fontsize-2)
+    plt.tight_layout()
+    fig.savefig('fig_speedup.png',  dpi=500)
     plt.show()
 
 
