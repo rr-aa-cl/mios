@@ -75,7 +75,7 @@ class DataProcessor:
                        cost_grid_max[3] * arr[i, 4] + cost_grid_max[4] * arr[i, 5]
             cost = self.get_monotonically_decreasing_cost(results[i].get_cost_per_trial())
             max_cost = 1
-            arr[i, -1] = (max_cost - cost[-1]) * percentage + cost[-1]
+            arr[i, -1] = percentage * cost[-1]
         return arr
 
     def get_average_cost(self, results: list, decreasing: bool = False, episode_length: int = 1) -> np.ndarray:

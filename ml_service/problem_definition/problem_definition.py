@@ -116,7 +116,8 @@ class ProblemDefinition:
             "uuid": self.uuid,
             "task_type": self.task_type,
             "tags": self.tags,
-            "cost_function": self.cost_function.to_dict()
+            "cost_function": self.cost_function.to_dict(),
+            "optimum_thr": self.optimum_thr
         }
         return problem_definition
 

@@ -106,7 +106,7 @@ class BaseService(metaclass=ABCMeta):
             elif knowledge_source["mode"] == 'local':
                 logger.debug("base_service.initialize(): get local knowlege")
                 if knowledge_type == "similar":
-                    self.knowledge = self.knowledge_manager.get_similar_knowledge(self.problem_definition.get_task_identity())
+                    self.knowledge = self.knowledge_manager.get_similar_knowledge(self.problem_definition.get_task_identity(), knowledge_source["kb_tags"])
                 elif knowledge_type == "predicted":
                     self.knowledge = self.knowledge_manager.get_predicted_knowledge(self.problem_definition.get_task_identity())
                 else:
@@ -117,7 +117,7 @@ class BaseService(metaclass=ABCMeta):
                 with ServerProxy("http://" + knowledge_source["kb_location"] + ":8001") as kb:
                     try:
                         if knowledge_type == "similar":
-                            self.knowledge = kb.get_similar_knowledge(self.problem_definition.get_task_identity())
+                            self.knowledge = kb.get_similar_knowledge(self.problem_definition.get_task_identity(), knowledge_source["kb_tags"])
                         elif knowledge_type == "predicted":
                             self.knowledge = kb.get_predicted_knowledge(self.problem_definition.get_task_identity())
                         else:
@@ -131,7 +131,7 @@ class BaseService(metaclass=ABCMeta):
 
             if self.knowledge:
                 self.centroid = []
-                if len(self.knowledge["parameters"] != len(self.problem_definition.domain.limits)):
+                if len(self.knowledge["parameters"]) != len(self.problem_definition.domain.limits):
                     logger.error("Domain sizes do not match!")
                     return False
                 for key in self.knowledge["parameters"]:

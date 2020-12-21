@@ -20,7 +20,7 @@ class TestCreationPipeline(CreationPipeline):
         for i in range(n_tasks):
             t = Task(copy.deepcopy(template), service_configuration, agents, service_url, knowledge_mode, knowledge_type)
             t.problem_definition.cost_function.optimum_weights[0] = float(i + 1) / float(n_tasks)
-            t.problem_definition.cost_function.optimum_weights[1] = 1 - \
+            t.problem_definition.cost_function.optimum_weights[2] = 1 - \
                                                                     t.problem_definition.cost_function.optimum_weights[
                                                                         0]
             self.tasks.append(t)
@@ -47,15 +47,15 @@ class CollectiveLearningBase(Experiment):
 
         c = TestCreationPipeline()
         n_tasks = 10
-        c.create_tasks_from_template(insert_cylinder(10), config, n_tasks, "collective-panda-007.local",
+        c.create_tasks_from_template(insert_cylinder(10, 0.5), config, n_tasks, "collective-panda-007.local",
                                      ["collective-panda-007"], knowledge_mode, knowledge_type)
-        c.create_tasks_from_template(insert_cylinder(40), config, n_tasks, "collective-panda-001.local",
+        c.create_tasks_from_template(insert_cylinder(40, 0.8), config, n_tasks, "collective-panda-001.local",
                                      ["collective-panda-001"], knowledge_mode, knowledge_type)
-        c.create_tasks_from_template(insert_cylinder(60), config, n_tasks, "collective-panda-008.local",
+        c.create_tasks_from_template(insert_cylinder(60, 1), config, n_tasks, "collective-panda-008.local",
                                      ["collective-panda-008"], knowledge_mode, knowledge_type)
-        c.create_tasks_from_template(insert_key("hatch"), config, n_tasks, "collective-panda-002.local",
+        c.create_tasks_from_template(insert_key("hatch", 0.3), config, n_tasks, "collective-panda-002.local",
                                      ["collective-panda-002"], knowledge_mode, knowledge_type)
-        c.create_tasks_from_template(insert_key("pad"), config, n_tasks, "collective-panda-009.local",
+        c.create_tasks_from_template(insert_key("pad", 0.1), config, n_tasks, "collective-panda-009.local",
                                      ["collective-panda-009"], knowledge_mode, knowledge_type)
 
         self.insert_creation_pipeline(c)

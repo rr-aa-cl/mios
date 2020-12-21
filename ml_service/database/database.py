@@ -67,10 +67,10 @@ class Database():
         knowledge = self.knowledge_manager.get_predicted_knowledge(task_identity, self.task_knowledge_db_name)
         return knowledge
 
-    def get_similar_knowledge(self, task_identity: dict):
+    def get_similar_knowledge(self, task_identity: dict, knowledge_tags: dict):
         """return knowledge from single task found on database"""
         # use knowledge processor to look up/generate global knowledge:
-        knowledge = self.knowledge_manager.get_similar_knowledge(task_identity, knowledge_db=self.task_knowledge_db_name, data_db=self.results_db_name)
+        knowledge = self.knowledge_manager.get_similar_knowledge(task_identity, knowledge_tags, knowledge_db=self.task_knowledge_db_name, data_db=self.results_db_name)
         return knowledge
 
     def process_knowledge(self, task_identity: dict):
