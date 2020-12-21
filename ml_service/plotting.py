@@ -63,6 +63,25 @@ def agent_learning(tags, hosts = ["collective-panda-002.local"]):
         plot.plot_learning_over_task(agent_times_cum, agent)
 
 
+def plot_collective_learning(tags, data_src):
+    filter = {"meta.tags": tags}
+    knowledge_mode = "global"
+    task_type = "insert_object"
+    # task_type = "benchmark_rastrigin"
+
+    p = DataProcessor()
+
+    results = []
+    results.extend(get_multiple_experiment_data(data_src, task_type, "global_ml_results", filter=filter))
+    results = p.sort_over_time(results)
+
+    times = p.get_cumulative_time(results)
+    times = np.insert(times, 0, 0)
+    tasks = np.linspace(0, len(times), len(times + 1))
+    plt.plot(times, tasks)
+    plt.show()
+
+
 def plot_transfer_learning(db: str):
     tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_abus_e30",
              "key_pad", "key_old", "key_hatch"]

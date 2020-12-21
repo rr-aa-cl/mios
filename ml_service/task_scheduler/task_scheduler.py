@@ -30,6 +30,7 @@ class TaskScheduler:
         self.keep_running = False
         self.kb_location = "localhost"
         self.done_tasks = 0
+        self.n_tasks = 0
 
     def stop(self):
         self.keep_running = False
@@ -38,13 +39,21 @@ class TaskScheduler:
         self.unassigned_tasks.put(task)
         self.services.add(task.service_url)
 
-    def solve_tasks(self):
+    def solve_tasks(self, infinite: bool = False):
         logger.debug("TaskScheduler::solve_tasks.1")
         self.keep_running = True
         self.done_tasks = 0
+        self.n_tasks = self.unassigned_tasks.qsize()
         t_message = time.time()
         while self.keep_running is True:
             logger.debug("TaskScheduler::solve_tasks.loop")
+            if infinite is False:
+                if self.done_tasks >= self.n_tasks:
+                    self.keep_running = False
+            if time.time() - t_message > 60:
+                logger.info("Number of finished tasks: " + str(self.done_tasks))
+                t_message = time.time()
+
             if self.unassigned_tasks.empty() is False:
                 logger.debug("TaskScheduler::solve_tasks.queue_size1: " + str(self.unassigned_tasks.qsize()))
                 task = self.unassigned_tasks.get()  # get next task
@@ -61,9 +70,6 @@ class TaskScheduler:
                     task_thread.start()
             time.sleep(0.1)
             logger.debug("TaskScheduler::solve_tasks.after_pause")
-            if time.time() - t_message > 10:
-                logger.info("Number of finished tasks: " + str(self.done_tasks))
-                t_message = time.time()
 
     def is_service_ready(self, service_url: str, agents: list) -> bool:
         logger.debug("TaskScheduler::is_service_ready(" + service_url + ", " + str(agents) + ")")

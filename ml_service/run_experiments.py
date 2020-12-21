@@ -8,6 +8,7 @@ from services.cmaes import CMAESConfiguration
 from utils.udp_client import call_method
 from utils.database import delete_local_results
 from utils.database import delete_local_knowledge
+from experiments.collective_learning import CollectiveLearningBase
 
 
 def simple_benchmark():
@@ -412,3 +413,11 @@ def pinakothek(use_prior: bool = False):
         }
         tags = ["transfer_learning", "from_cylinder_10"]
     start_experiment("collective-panda-prime", pd, service_config, 10, tags=tags, knowledge=knowledge)
+
+
+def collective_learning_raw():
+    for i in range(10):
+        e = CollectiveLearningBase()
+        print("Running experiment " + str(i + 1))
+        e.start(["collective_learning_insertion_raw", "n" + str(i + 1)], "none", "similar", "collective-panda-002",
+                "collective_learning_insertion_screen_001", 1.25, blocking=True)
