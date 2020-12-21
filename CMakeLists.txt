@@ -5,6 +5,13 @@ if(CCACHE_PROGRAM)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
 endif()
 
+include(cmake/utils.cmake)
+get_mios_version()
+
+project(mios VERSION ${MIOS_VERSION}
+                 DESCRIPTION "machine intelligence operating system (for panda arms)"
+                 LANGUAGES CXX)
+
 project(mios
     LANGUAGES CXX
     )

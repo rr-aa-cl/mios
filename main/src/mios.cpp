@@ -13,6 +13,7 @@
 #include "core/core.hpp"
 #include "msrm_utils/network.hpp"
 #include "cxxopts.hpp"
+#include "utils/version.hpp"
 
 void exit_handler(int s);
 
@@ -63,7 +64,7 @@ int main(int argc, char** argv){
 
     spdlog::info("############################################################");
     spdlog::info("MIOS");
-    spdlog::info("Version: 0.6.7.0");
+    spdlog::info("Version: " + std::to_string(MIOS_VER_MAJOR) + "." + std::to_string(MIOS_VER_MINOR) + "." + std::to_string(MIOS_VER_PATCH));
 
     unsigned port=12000;
     if(!msrm_utils::is_port_available("localhost",port)){
