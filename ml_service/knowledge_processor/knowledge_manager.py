@@ -6,6 +6,7 @@ import random
 from mongodb_client.mongodb_client import MongoDBClient
 from knowledge_processor.knowledge_processor_v2 import KnowledgeProcessor
 from knowledge_processor.kg_random_forest import KGRandomForest
+from knowledge_processor.kg_k_neighbors import KGKNeighbors
 from knowledge_processor.knowledge_generalizer_base import KnowledgeGeneralizerBase
 
 logger = logging.getLogger("ml_service")
@@ -72,7 +73,7 @@ class KnowledgeManager:
             return None
 
     def get_knowledge_by_identity(self, db_client, task_identity: dict, data_db: str = "ml_results",
-                                      knowledge_db: str = "local_knowledge") -> str or None:
+                                  knowledge_db: str = "local_knowledge") -> str or None:
         '''process raw data from trials to knowledge; working from and on the database'''
         # allocate all ml_data with same task identity:
         doc = self.collect_data(db_client, task_identity, data_db)
@@ -169,9 +170,9 @@ class KnowledgeManager:
 
     def get_predictor(self):
         if self.predictor is not None:
-            return self.get_predictor
+            return self.predictor
         else:
-            return KGRandomForest()
+            return KGKNeighbors()
 
     def get_predicted_knowledge(self, task_identity: dict, knowledge_db: str = "local_knowledge",
                                 predictor: KnowledgeGeneralizerBase = None):
@@ -192,8 +193,9 @@ class KnowledgeManager:
         if not doc:
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
                 knowledge_db) + ")")
+            return False
             logger.debug("KnowledgeManager: Using similar Knowledge")
-            return self.get_similar_knowledge(task_identity, knowledge_db, data_db)
+            return self.get_similar_knowledge(task_identity, task_filter["tags"], knowledge_db, data_db)
         # check if knowledge fits together:
         vector_mapping = doc[0]["parameters"].keys()
         for d in doc:
@@ -201,11 +203,12 @@ class KnowledgeManager:
                 logger.error(
                     "KnowledgeManager.predict_knowledge: found knowledge doesnt fit together: different vector mappings!")
                 return False
-        if len(doc) < 2:  # if no predictions can be made: use similar knowledge
+        if len(doc) * (1 - self.validation_per) < 5:  # if no predictions can be made: use similar knowledge
             logger.error("KnowledgeManager: Cant find knowledge for predictions (" + str(task_filter) + " on " + str(
                 knowledge_db) + ")")
+            return False
             logger.debug("KnowledgeManager: Using similar Knowledge")
-            return self.get_similar_knowledge(task_identity, knowledge_db, data_db)
+            return self.get_similar_knowledge(task_identity, task_filter["tags"], knowledge_db, data_db)
 
         # get best predictor:
         if predictor is None:
@@ -233,7 +236,7 @@ class KnowledgeManager:
             if not (training_data and validation_data):  # sth went wrong, sets too small
                 logger.debug(
                     "KnowledgeManager.predict_knowledge: Error in training or validation set -> use similar knowledge")
-                return self.get_similar_knowledge(task_identity, knowledge_db)
+                return self.get_similar_knowledge(task_identity, task_filter["tags"], knowledge_db)
 
             # stadardize learning data
             std_deviation_data_y = np.std(np.append(validation_data[1], training_data[1], axis=0), axis=0)
@@ -264,7 +267,7 @@ class KnowledgeManager:
 
             if error_in_context < best_error:
                 best_predictor = copy.deepcopy(predictor)
-                best_error = error_in_context
+                best_error = float(error_in_context)
         predictor = best_predictor
 
         # predict
@@ -291,7 +294,9 @@ class KnowledgeManager:
             parameter_dict[key_name] = float(parameter)  # use python float because of rpc restrictions
         meta = dict()
         meta["expected_cost"] = float(expected_cost[0])
-        meta["prediction_error"] = error_in_context
+        meta["prediction_error"] = best_error
+        # confidence gives no good results when predicting
+        # meta["confidence"] = float(best_error / np.sqrt(len(training_data_x_normalized)))  # divided by root of n_parameters because max error is root(n_parameters)
         meta["optimum_weights"] = task_identity["optimum_weights"]
         meta["geometry_factor"] = task_identity["geometry_factor"]
         meta["task_type"] = task_identity["task_type"]
@@ -304,50 +309,27 @@ class KnowledgeManager:
 
         return knowledge
 
-    def get_similar_knowledge(self, task_identity: dict, knowledge_db: str = "local_knowledge",
+    def get_similar_knowledge(self, task_identity: dict, knowledge_tags: dict, knowledge_db: str = "local_knowledge",
                               data_db: str = "ml_results"):
         '''searches for most similar knowledge / creates knowledge from similar results'''
         collection = task_identity["task_type"]
         optimum_weights = task_identity["optimum_weights"]
+        geometry_factor = task_identity["geometry_factor"]
 
-        knowledge_filter = {"meta.tags": task_identity["tags"],
+        # search knowledge from the same knowledge_pool (other tasks)
+        knowledge_filter = {"meta.tags": knowledge_tags,
                             "meta.task_type": task_identity["task_type"]
                             }
 
-        # search for knowldge from the same context (task_type, tags)
         docs = self.DBclient.read(knowledge_db, collection, knowledge_filter)
         if len(docs) >= 1:
             logger.debug("knowledge_processor.get_similar_knowledge(): found knowledge on task identity" + str(
                 task_identity) + " at " + str(knowledge_db) + "." + str(collection))
             # take most similar knowledge according to cost function ("optimum_weights"):
-            return self.get_most_similar_task(optimum_weights, docs)
+            return self.get_most_similar_task(docs, optimum_weights, geometry_factor)
+        logger.debug("knowledge_manager.get_similar_knowledge(): can\'t find knowledge for " +
+                     str(task_identity) + " in knowledge pool " + str(knowledge_tags) + " at " + str(collection))
 
-        logger.debug(
-            "knowledge_processor.get_similar_knowledge(): found none! -> create local knowledge from ml data for task_identity" + str(
-                task_identity))
-        knowledge = self.get_knowledge_by_identity(self.DBclient, task_identity, data_db)
-        if knowledge:
-            return knowledge
-
-        logger.debug(
-            "knowledge_processor.get_similar_knowledge(): found none! -> create knowledge from most similar ml data of task type " + str(
-                collection))
-        docs = self.DBclient.read(data_db, collection, knowledge_filter)
-        if len(docs) >= 1:
-            return self.get_most_similar_task(optimum_weights, docs)
-
-        logger.debug("knowledge_processor.get_similar_knowledge(): found no ml data of task type " + str(
-            collection) + " -> search for different task types")
-        knowledge_filter = {"meta.tags": task_identity["tags"]}
-        docs = []
-        for col in self.DBclient.get_collections(self.knowledge_db):
-            docs.extend(self.DBclient.read(data_db, col, knowledge_filter))
-        if len(docs) >= 1:
-            return self.get_most_similar_task(optimum_weights, docs)
-
-        logger.debug(
-            "knowledge_processor.get_similar_knowledge(): no knowledge or ml data are available for task_type " + str(
-                collection) + " with tags " + str(task_identity["tags"]))
         return False
 
     def get_successful_trials(self, doc):
@@ -372,7 +354,9 @@ class KnowledgeManager:
             # get raw ml data:
             successful_trials = self.get_raw_data(doc)
             metainfo.append(doc["meta"])
-            confidence = doc["final_results"].get("confidence")
+            cofindence = None
+            if "final_results" in doc:
+                confidence = doc["final_results"].get("confidence")
 
         for m in metainfo:
             if m["domain"]["vector_mapping"] != metainfo[0]["domain"]["vector_mapping"]:
@@ -380,23 +364,35 @@ class KnowledgeManager:
         vector_mapping = metainfo[0]["domain"]["vector_mapping"]
         return successful_trials, vector_mapping, optimum_weights, confidence
 
-    def get_most_similar_task(self, optimum_weights, tasks):
-        '''find most similar task according to cost optimum_weights'''
+    def get_most_similar_task(self, tasks, optimum_weights, geometry_factor, weights=[1, 1]):
+        '''find most similar task in a list of tasks according to optimum_weights and geometry factor'''
+        # normalize weights:
+        weights = np.array(weights) / sum(weights)
+
         most_similar_task = tasks[0]
         smallest_dist = float('inf')
         for task in tasks:
             temp_optimum_weights = None
+            temp_geometry_factor = None
             if "cost_function" in task["meta"].keys():
                 temp_optimum_weights = task["meta"]["cost_function"]["optimum_weights"]
-            elif "optimum_weights" in task["meta"].keys():
-                temp_optimum_weights = task["meta"]["optimum_weights"]
+                temp_geometry_factor = task["meta"]["cost_function"]["geometry_factor"]
             else:
-                logger.debug(
-                    "knowledge_processor.get_most_similar_task: skipping faulty task format (cant find optimum_weights in task)")
-                continue
+                try:
+                    temp_optimum_weights = task["meta"]["optimum_weights"]
+                    temp_geometry_factor = task["meta"]["geometry_factor"]
+                except KeyError:
+                    logger.debug(
+                        "knowledge_processor.get_most_similar_task: skipping faulty task format (cant find optimum_weights in task)")
+                    continue
 
             # use euclidean distance as similarity measure:  sqrt(sum( (a-b)**2 ))
-            dist = np.linalg.norm(np.array(optimum_weights) - np.array(temp_optimum_weights))
+            # optimum_weights:
+            dist_ow = np.linalg.norm(np.array(optimum_weights) - np.array(temp_optimum_weights))
+            # geometry_factor:
+            dist_gf = np.linalg.norm(np.array(geometry_factor) - np.array(temp_geometry_factor))
+            # weighted distance:
+            dist = weights[0] * dist_ow + weights[1] * dist_gf
 
             if dist < smallest_dist:
                 smallest_dist = dist

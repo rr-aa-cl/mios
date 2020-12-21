@@ -3,7 +3,7 @@ from problem_definition.problem_definition import ProblemDefinition
 from problem_definition.problem_definition import CostFunction
 
 
-def mios_ml_benchmark() -> ProblemDefinition:
+def mios_ml_benchmark(x0) -> ProblemDefinition:
     limits = {
         "x1": (-5.12, 5.12),
         "x2": (-5.12, 5.12),
@@ -27,21 +27,21 @@ def mios_ml_benchmark() -> ProblemDefinition:
             "ml_test": {
                 "skill": {
                     "A": 10,
-                    "x_0": [1, 1, 1, 1, 1, 1]
+                    "x_0": [x0, x0, x0, x0, x0, x0]
                 }
             }
         }
     }
     pd = ProblemDefinition("benchmark_rastrigin", domain, default_context, [], [], [], mios_ml_benchmark_cost(),
-                           ["benchmark", "rastrigin"])
+                           ["benchmark", "rastrigin", "shift_" + str(x0)])
     return pd
 
 
 def mios_ml_benchmark_cost() -> CostFunction:
     c = CostFunction()
     c.optimum_skills.append("ml_test")
-    c.optimum_weights[1] = 0.9
-    c.optimum_weights[2] = 0.1
+    c.optimum_weights[1] = 1
+    c.optimum_weights[2] = 0
     c.max_cost[0] = 0
     c.max_cost[1] = 157
     c.max_cost[2] = 157

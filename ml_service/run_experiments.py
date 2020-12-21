@@ -1,9 +1,14 @@
 from utils.experiment_wizard import start_experiment
 from definitions.insertion_definitions import insert_cylinder
+from definitions.insertion_definitions import insert_cylinder_light
 from definitions.insertion_definitions import insert_key
+from definitions.insertion_definitions import insert_key_light
 from definitions.benchmark_definitions import mios_ml_benchmark
 from services.cmaes import CMAESConfiguration
 from utils.udp_client import call_method
+from utils.database import delete_local_results
+from utils.database import delete_local_knowledge
+from experiments.collective_learning import CollectiveLearningBase
 
 
 def simple_benchmark():
@@ -22,6 +27,54 @@ def transfer_learning_debug(from_host: str = None, from_db: str = None, task: st
     service_config.n_ind = 10
     service_config.n_gen = 10
     knowledge = None
+    tags = ["transfer_learning"]
+    if from_host is not None:
+        knowledge = {
+            "mode": "specific",
+            "kb_location": from_host,
+            "kb_db": from_db,
+            "kb_task_type": task,
+            "kb_tags": ["transfer_learning", from_tag]
+        }
+        tags = ["transfer_learning", "from_" + from_tag]
+    start_experiment("localhost", pd, service_config, 10, tags=tags, knowledge=knowledge)
+
+
+def transfer_learning_benchmark_1(from_host: str = None, from_db: str = None, task: str = None, from_tag: str = None):
+    pd = mios_ml_benchmark(0)
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 10
+    service_config.n_gen = 20
+    pd.cost_function.optimum_weights[1] = 1
+    pd.cost_function.optimum_weights[2] = 0
+    delete_local_results(["localhost"], "benchmark_rastrigin", ["transfer_learning", "shift_0"])
+    delete_local_knowledge(["localhost"], "benchmark_rastrigin", ["transfer_learning", "shift_0"])
+    knowledge = None
+    tags = ["transfer_learning"]
+    if from_host is not None:
+        knowledge = {
+            "mode": "specific",
+            "kb_location": from_host,
+            "kb_db": from_db,
+            "kb_task_type": task,
+            "kb_tags": ["transfer_learning", from_tag]
+        }
+        tags = ["transfer_learning", "from_" + from_tag]
+    start_experiment("localhost", pd, service_config, 10, tags=tags, knowledge=knowledge)
+
+
+def transfer_learning_benchmark_2(from_host: str = None, from_db: str = None, task: str = None, from_tag: str = None):
+    pd = mios_ml_benchmark(1)
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 10
+    service_config.n_gen = 20
+    pd.cost_function.optimum_weights[1] = 0
+    pd.cost_function.optimum_weights[2] = 1
+    knowledge = None
+    delete_local_results(["localhost"], "benchmark_rastrigin", ["transfer_learning", "shift_1"])
+    delete_local_knowledge(["localhost"], "benchmark_rastrigin", ["transfer_learning", "shift_1"])
     tags = ["transfer_learning"]
     if from_host is not None:
         knowledge = {
@@ -163,7 +216,7 @@ def transfer_learning_60(from_host: str = None, from_db: str = None, task: str =
 
 def transfer_learning_abus_e30(from_host: str = None, from_db: str = None, task: str = None, from_tag: str = None):
     call_method("collective-panda-002.local", 12002, "set_grasped_object", {"object": "key_abus_e30"})
-    pd = insert_key("abus_e30")
+    pd = insert_key_light("abus_e30")
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 10
@@ -296,4 +349,75 @@ def transfer_learning_pad_t():
 
 def transfer_learning_key_old_t():
     for t in tasks:
-        transfer_learning_old_key("collective-control-001", "transfer_base_v2", "insert_object", t)
+        transfer_learning_old_key("collective-control-001", "results_tl_base", "insert_object", t)
+
+
+def transfer_learning_test_20(from_host: str = None, from_db: str = None, task: str = None, from_tag: str = None):
+    call_method("collective-panda-007.local", 12002, "set_grasped_object", {"object": "cylinder_20"})
+    pd = insert_cylinder_light(20)
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 10
+    service_config.n_gen = 10
+    knowledge = None
+    tags = ["transfer_learning_test"]
+    if from_host is not None:
+        knowledge = {
+            "mode": "specific",
+            "kb_location": from_host,
+            "kb_db": from_db,
+            "kb_task_type": task,
+            "kb_tags": ["transfer_learning_test", from_tag]
+        }
+        tags = ["transfer_learning_test", "from_" + from_tag]
+    start_experiment("collective-panda-007", pd, service_config, 10, tags=tags, knowledge=knowledge)
+
+
+def transfer_learning_test_40(from_host: str = None, from_db: str = None, task: str = None, from_tag: str = None):
+    call_method("collective-panda-001.local", 12002, "set_grasped_object", {"object": "cylinder_40"})
+    pd = insert_cylinder_light(40)
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 10
+    service_config.n_gen = 10
+    knowledge = None
+    tags = ["transfer_learning_test"]
+    if from_host is not None:
+        knowledge = {
+            "mode": "specific",
+            "kb_location": from_host,
+            "kb_db": from_db,
+            "kb_task_type": task,
+            "kb_tags": ["transfer_learning_test", from_tag]
+        }
+        tags = ["transfer_learning_test", "from_" + from_tag]
+    start_experiment("collective-panda-001", pd, service_config, 10, tags=tags, knowledge=knowledge)
+
+
+def pinakothek(use_prior: bool = False):
+    call_method("collective-panda-prime.local", 12002, "set_grasped_object", {"object": "key_old"})
+    pd = insert_key("old")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 5
+    service_config.n_gen = 10
+    knowledge = None
+    tags = ["transfer_learning"]
+    if use_prior is True:
+        knowledge = {
+            "mode": "specific",
+            "kb_location": "collective-control-001.local",
+            "kb_db": "results_tl_base",
+            "kb_task_type": "insert_object",
+            "kb_tags": ["transfer_learning", "key_old"]
+        }
+        tags = ["transfer_learning", "from_cylinder_10"]
+    start_experiment("collective-panda-prime", pd, service_config, 10, tags=tags, knowledge=knowledge)
+
+
+def collective_learning_raw():
+    for i in range(10):
+        e = CollectiveLearningBase()
+        print("Running experiment " + str(i + 1))
+        e.start(["collective_learning_insertion_raw", "n" + str(i + 1)], "none", "similar", "collective-panda-002",
+                "collective_learning_insertion_screen_001", 1.25, blocking=True)

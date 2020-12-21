@@ -26,7 +26,7 @@ class Experiment(metaclass=ABCMeta):
         self.creation_pipeline = pipeline
 
     def start(self, tags: [], knowledge_mode: str, knowledge_type: str, global_database: str, use_cost_grid: str = None,
-              optima_percentage: float = 0.01):
+              optima_percentage: float = 0.01, blocking: bool = False):
         self.tags = tags
         self.task_scheduler.kb_location = global_database
         self.initialize(knowledge_mode, knowledge_type)
@@ -38,6 +38,7 @@ class Experiment(metaclass=ABCMeta):
 
         for t in self.creation_pipeline.tasks:
             t.problem_definition.tags.extend(self.tags)
+            t.knowledge_tags = self.tags
             if use_cost_grid is not None:
                 t.problem_definition.cost_function.cost_grid_weights = cost_grid[0, :-1]
                 t.problem_definition.cost_function.cost_grid_val = cost_grid[0, -1]
@@ -47,16 +48,18 @@ class Experiment(metaclass=ABCMeta):
                     t.problem_definition.cost_function.add_to_cost_grid(cost_grid[i, 0], cost_grid[i, 1:-1], cost_grid[i, -1])
             self.task_scheduler.add_task(t)
 
-        #delete_local_results(self.agents, self.task_type, self.tags)
-        #delete_local_knowledge(self.agents, self.task_type, self.tags)
-        #delete_global_results(global_database, self.task_type, self.tags)
-        #delete_global_knowledge(global_database, self.task_type, self.tags)
-
-        thr = Thread(target=self.task_scheduler.solve_tasks)
-        thr.start()
+        delete_local_results(self.agents, "ml_results", self.task_type, self.tags)
+        delete_local_knowledge(self.agents, "local_knowledge", self.task_type, self.tags)
+        delete_global_results(global_database, "global_ml_results", self.task_type, self.tags)
+        delete_global_knowledge(global_database, "global_knowledge", self.task_type, self.tags)
+        if blocking is False:
+            thr = Thread(target=self.task_scheduler.solve_tasks)
+            thr.start()
+        else:
+            self.task_scheduler.solve_tasks()
 
     def get_cost_grid(self, tag: str, percentage: float) -> np.ndarray:
-        results = get_multiple_experiment_data(self.task_scheduler.kb_location, self.task_type, "global",  {"meta.tags": {"$all": [tag] }})
+        results = get_multiple_experiment_data(self.task_scheduler.kb_location, self.task_type, "ml_results",  {"meta.tags": {"$all": [tag] }})
         processor = DataProcessor()
         return processor.get_optima_by_task_identity(results, percentage)
 
