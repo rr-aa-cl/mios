@@ -105,8 +105,8 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
         if(!msrm_utils::read_json_param(parameters["direct_cart"],"plane",direct_cart.plane)){
             direct_cart.plane=false;
         }
-        if(!msrm_utils::read_json_param(parameters["direct_cart"],"F_ff",direct_cart.F_ff)){
-            direct_cart.F_ff=0;
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["direct_cart"],"F_ff",direct_cart.F_ff)){
+            direct_cart.F_ff.setZero();
         }
     }
 
@@ -334,9 +334,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     }
                     m_udp_sender = m_portal->open_udp_outstream("remote_force_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
                     mp->create_strategy<FFStrategy>("feed_forward",1);
-                    Eigen::Matrix<double,6,1> TF_F_ff;
-                    TF_F_ff<<0,0,read_parameters<Params>()->direct_cart.F_ff,0,0,0;
-                    mp->get_strategy<FFStrategy>("feed_forward")->set_TF_F_ff(TF_F_ff,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+                    mp->get_strategy<FFStrategy>("feed_forward")->set_TF_F_ff(read_parameters<Params>()->direct_cart.F_ff,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
                     mp->get_strategy<FFStrategy>("feed_forward")->set_frame(true);
                     if(read_parameters<Params>()->direct_cart.plane){
                         mp->create_strategy<CartComplianceStrategy>("compliance",1);
