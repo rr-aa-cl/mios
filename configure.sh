@@ -161,10 +161,10 @@ cd ${ROOT}
 if [ ! -d "libfranka" ]
 then
 git clone --recurse-submodules https://github.com/frankaemika/libfranka.git
-checkout 0.7.1
-git submodule update
 fi
 cd libfranka
+git checkout 0.7.1
+git submodule update
 mkdir -p build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} ..
