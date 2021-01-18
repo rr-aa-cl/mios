@@ -387,6 +387,7 @@ SkillCost Skill::measure_cost(const Percept &p){
     cost.contact_forces = m_cost_contact_forces_sum / (std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count() + 1);
     cost.effort_avg = m_cost_effort_avg_sum / (std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count() +1);
     cost.effort_total += p.proprioception.tau_j.norm();
+    cost.distance += p.proprioception.dq.norm()*0.001;
     cost.custom = get_custom_cost(p);
     return cost;
 }

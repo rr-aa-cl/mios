@@ -17,7 +17,8 @@ class CostFunction:
     2 - contact forces
     3 - average effort
     4 - total effort
-    5 - custom
+    5 - distance
+    6 - custom
     """
 
     def __init__(self):
@@ -172,7 +173,8 @@ class ProblemDefinition:
             cost_per_weight[1] += result.cost[s]["contact_forces"]
             cost_per_weight[2] += result.cost[s]["effort_avg"]
             cost_per_weight[3] += result.cost[s]["effort_total"]
-            cost_per_weight[4] += result.cost[s]["custom"]
+            cost_per_weight[4] += result.cost[s]["distance"]
+            cost_per_weight[5] += result.cost[s]["custom"]
 
         cost = 0
         for i in range(len(cost_per_weight)):
