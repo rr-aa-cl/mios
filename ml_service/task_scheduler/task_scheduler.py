@@ -5,6 +5,7 @@ from problem_definition.problem_definition import ProblemDefinition
 from services.base_service import ServiceConfiguration
 from xmlrpc.client import ServerProxy
 import time
+from pushover import Client
 
 
 logger = logging.getLogger("ml_service")
@@ -23,7 +24,7 @@ class Task:
 
 class TaskScheduler:
 
-    def __init__(self):
+    def __init__(self, notification_user_token: str = "", notification_api_token: str = ""):
         self.unassigned_tasks = Queue()
         self.assigned_tasks = set()
         self.services = set()
@@ -31,6 +32,8 @@ class TaskScheduler:
         self.kb_location = "localhost"
         self.done_tasks = 0
         self.n_tasks = 0
+        self.pushover_client = Client(notification_user_token, api_token=notification_api_token)
+        self.pushover_fail_cnt = 0
 
     def stop(self):
         self.keep_running = False
@@ -70,6 +73,7 @@ class TaskScheduler:
                     task_thread.start()
             time.sleep(0.1)
             logger.debug("TaskScheduler::solve_tasks.after_pause")
+        self.pushover_client.send_message("Experiment is done.", "Collective")
 
     def is_service_ready(self, service_url: str, agents: list) -> bool:
         logger.debug("TaskScheduler::is_service_ready(" + service_url + ", " + str(agents) + ")")
@@ -94,6 +98,9 @@ class TaskScheduler:
         try:
             s.start_service(task.problem_definition.to_dict(), task.service_configuration.to_dict(), task.agents, knowledge_info)
             if s.wait_for_service() is False:
+                if self.pushover_fail_cnt < 1:
+                    self.pushover_client.send_message("Learning task has failed.", "Collective")
+                    self.pushover_fail_cnt += 1
                 self.unassigned_tasks.put(task)  # put task back into queue
             logger.debug("TaskScheduler::solve_task.finished")
             self.done_tasks += 1

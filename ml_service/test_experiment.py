@@ -13,7 +13,7 @@ logger.addHandler(handler)
 
 
 if __name__ == "__main__":
-    e = CollectiveLearningBase()
+    e = CollectiveLearningBase("umuc2qio38kvg66et89pegfi6gmgb3", "ad1kq223m7rrropsmp9mefiewce193")
     e.start(["collective_learning_insertion_screen_01"], "global", "similar", "collective-panda-002")
     input("Press key to stop.")
     e.stop()
