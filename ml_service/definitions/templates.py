@@ -271,6 +271,6 @@ def insertion_cost() -> CostFunction:
     c.max_cost[0] = 10
     c.max_cost[1] = 50
     c.max_cost[2] = 160
-    c.finish_thr = 2
+    c.finish_thr = 5
     c.geometry_factor = 0.002
     return c
