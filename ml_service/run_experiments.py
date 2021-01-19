@@ -417,11 +417,11 @@ def pinakothek(use_prior: bool = False):
 
 
 def collective_learning_raw():
-    call_method("collective-panda-001", 12002, "set_grasped_object", {"object": "cylinder_40"})
-    call_method("collective-panda-002", 12002, "set_grasped_object", {"object": "key_hatch"})
-    call_method("collective-panda-007", 12002, "set_grasped_object", {"object": "cylinder_10"})
-    call_method("collective-panda-008", 12002, "set_grasped_object", {"object": "cylinder_60"})
-    call_method("collective-panda-009", 12002, "set_grasped_object", {"object": "key_pad"})
+    call_method("collective-panda-001", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-002", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-007", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-008", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-009", 12002, "set_grasped_object", {"object": "generic_insertable"})
     agents = ["collective-panda-001", "collective-panda-002", "collective-panda-007", "collective-panda-008",
               "collective-panda-009"]
 
