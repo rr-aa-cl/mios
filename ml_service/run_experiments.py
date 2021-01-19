@@ -417,11 +417,11 @@ def pinakothek(use_prior: bool = False):
 
 
 def collective_learning_raw():
-    call_method("collective-panda-001", 12002, "set_grasped_object", {"object": "generic_insertable"})
-    call_method("collective-panda-002", 12002, "set_grasped_object", {"object": "generic_insertable"})
-    call_method("collective-panda-007", 12002, "set_grasped_object", {"object": "generic_insertable"})
-    call_method("collective-panda-008", 12002, "set_grasped_object", {"object": "generic_insertable"})
-    call_method("collective-panda-009", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-001.local", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-002.local", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-007.local", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-008.local", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-009.local", 12002, "set_grasped_object", {"object": "generic_insertable"})
     agents = ["collective-panda-001", "collective-panda-002", "collective-panda-007", "collective-panda-008",
               "collective-panda-009"]
 
@@ -432,7 +432,7 @@ def collective_learning_raw():
     service_config.n_gen = 10
     knowledge = None
     tags = ["collective_learning_multi_agent"]
-    start_experiment("collective-panda-001", agents, pd, service_config, 1, tags=tags, knowledge=knowledge)
+    start_experiment("collective-panda-001.local", agents, pd, service_config, 1, tags=tags, knowledge=knowledge)
 
 
 def collective_learning_benchmark():
@@ -446,4 +446,4 @@ def collective_learning_benchmark():
     service_config.n_gen = 10
     knowledge = None
     tags = ["collective_learning_benchmark"]
-    start_experiment("collective-panda-001.local", agents, pd, service_config, 1, tags=tags, knowledge=knowledge)
+    start_experiment("collective-panda-001.local", agents, pd, service_config, 10, tags=tags, knowledge=knowledge)
