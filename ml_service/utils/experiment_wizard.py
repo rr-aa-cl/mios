@@ -8,7 +8,7 @@ from mongodb_client.mongodb_client import MongoDBClient
 
 
 def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service: ServiceConfiguration, n_eval: int = 1,
-                     tags: list = None, knowledge: dict = None):
+                     tags: list = None, knowledge: dict = None, keep_record: bool = True):
     if tags is None:
         tags = []
 
@@ -21,7 +21,8 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
         if "n" + str(i) in problem_def.tags:
             problem_def.tags.remove("n" + str(i))
         problem_def.tags.append("n" + str(i+1))
-        if len(client.read("ml_results", problem_def.task_type, {"meta.tags": {"$all": problem_def.tags}})) != 0:
+        if len(client.read("ml_results", problem_def.task_type, {"meta.tags": {"$all": problem_def.tags}})) != 0\
+                and keep_record is True:
             print("Continue at n" + str(i+1))
             continue
         s = ServerProxy("http://" + learner + ":8000", allow_none=True)

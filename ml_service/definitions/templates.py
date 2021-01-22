@@ -260,6 +260,99 @@ def insertion_light(insertable: str, insert_into: str, approach: str) -> Problem
     return pd
 
 
+def insertion_demo(insertable: str, insert_into: str, approach: str) -> ProblemDefinition:
+    limits = {
+        "speed_t": (0.05, 0.2),
+        "speed_r": (0.05, 0.5),
+        "wiggle_a": (0, 5),
+        "offset_x": (-0.005, 0.005),
+        "offset_y": (-0.005, 0.005),
+        "offset_phi": (-10, 10),
+        "offset_chi": (-10, 10),
+        "K_x": (300, 2000),
+        "K_phi": (30, 200),
+    }
+    context_mapping = {
+        "speed_t": ["skills.insertion.skill.traj_speed-1", "skills.contact.skill.speed"],
+        "speed_r": ["skills.insertion.skill.traj_speed-2"],
+        "wiggle_a": ["skills.insertion.skill.search_a-1", "skills.insertion.skill.search_a-2"],
+        "offset_x": ["parameters.offset-1"],
+        "offset_y": ["parameters.offset-2"],
+        "offset_phi": ["parameters.offset-4"],
+        "offset_chi": ["parameters.offset-5"],
+        "K_x": ["skills.insertion.control.cart_imp.K_x-1", "skills.insertion.control.cart_imp.K_x-2", "skills.insertion.control.cart_imp.K_x-3"],
+        "K_phi": ["skills.insertion.control.cart_imp.K_x-4", "skills.insertion.control.cart_imp.K_x-5", "skills.insertion.control.cart_imp.K_x-6"]
+    }
+
+    x_0 = {
+        "speed_t": 0.0,
+        "speed_r": 0.0,
+        "wiggle_a": 0.0,
+        "offset_x": 0.5,
+        "offset_y": 0.5,
+        "offset_phi": 0.5,
+        "offset_chi": 0.5,
+        "K_x": 0.0,
+        "K_phi": 0.0
+    }
+
+    domain = Domain(limits, context_mapping, x_0)
+    default_context = {
+        "name": "InsertObject",
+        "parameters": {
+            "insertable": insertable,
+            "insert_into": insert_into,
+            "insert_approach": approach,
+            "offset": [0, 0, 0, 0, 0, 0]
+        },
+        "skills": {
+            "insertion": {
+                "skill": {
+                    "time_max": 5.0,
+                    "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1],
+                    "search_f": [1, 0.75, 0, 0, 0, 0],
+                    "search_a": [0, 0, 0, 0, 0, 0],
+                    "traj_acc" : [0.5, 1]
+                },
+                "control": {
+                    "cart_imp": {
+                        "K_x": [0, 0, 0, 0, 0, 0]
+                    }
+                }
+            },
+            "contact": {
+                "skill": {
+                    "time_max": 5.0
+                }
+            }
+        }
+    }
+    reset_instructions = []
+    task_context = {
+        "name": "ExtractObject",
+        "skills": {
+            "extraction": {
+                "skill": {
+                    "traj_speed": [0.075, 0.5],
+                    "traj_acc": [0.5, 1],
+                    "search_a": [10, 10, 0, 5, 5, 1],
+                    "search_f": [2, 1.5, 0, 1, 0.75, 0.5],
+                    "stuck_dx_thr": 0.01
+                }
+            }
+        },
+        "parameters": {
+            "extractable": insertable,
+            "extract_from": insert_into,
+            "extract_to": approach
+        }
+    }
+    reset_instructions.append({"method": "start_task", "parameters": task_context})
+    pd = ProblemDefinition("insert_object", domain, default_context, [], [], reset_instructions,
+                           insertion_cost(), ["insertion", insertable])
+    return pd
+
+
 def insertion_cost() -> CostFunction:
     c = CostFunction()
     c.optimum_skills.append("contact")
