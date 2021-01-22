@@ -26,9 +26,10 @@ def average_experiment(host: str, task_type: str, database: str, tags: list):
     p = DataProcessor()
 
     results = get_multiple_experiment_data(host, task_type, results_db=database, filter={"meta.tags": {"$all": tags}})
-    cost = p.get_average_cost(results, True, 13)
-    plot.plot_cost_over_trials(cost)
-
+    cost = p.get_average_cost_over_time(results, 1500, True)
+    plt.plot(cost)
+    plt.ylim([0,1])
+    plt.show()
 
 def plot_experiment(host: str, task_type: str, database: str, tags: list):
     p = DataProcessor()
