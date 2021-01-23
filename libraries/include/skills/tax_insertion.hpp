@@ -42,11 +42,8 @@ private:
     bool check_local_suc_conditions(const Percept &p) override;
     bool check_local_ex_conditions(const Percept &p) override;
     bool check_local_err_conditions(const Percept &p) override;
-    void auxiliaries(const Percept &p);
 
 private:
-    double m_cf1_sum_force;
-    double m_cf1_cnt;
 
     double m_dx_avg;
     unsigned m_dx_avg_last;

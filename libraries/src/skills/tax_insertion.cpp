@@ -156,6 +156,9 @@ bool TaxInsertion::check_local_pre_conditions(const Percept &p){
         }
     }
     // TODO check for ROI in rotation
+    if(m_memory->get_live_context()->grasped_object->name!=get_object("Extractable")->name){
+        return false;
+    }
     return true;
 }
 
@@ -182,11 +185,6 @@ bool TaxInsertion::check_local_err_conditions(const Percept &p){
 
 double TaxInsertion::get_goal_heuristic(const Percept &p){
     return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm();
-}
-
-void TaxInsertion::auxiliaries(const Percept &p){
-    m_cf1_sum_force+=p.proprioception.K_F_ext_K.block<3,1>(0,0).norm();
-    m_cf1_cnt++;
 }
 
 bool TaxInsertion::is_stuck(const Percept &p){
