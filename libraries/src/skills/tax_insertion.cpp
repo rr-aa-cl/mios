@@ -139,7 +139,7 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_wiggle_mp(const Perc
                                                                    Eigen::Matrix<double,6,1>::Zero(),Eigen::Matrix<double,6,1>::Zero());
     mp->create_strategy<MoveToPoseStrategy>("s_move",1);
     std::shared_ptr<MoveToPoseStrategy> s_move = mp->get_strategy<MoveToPoseStrategy>("s_move");
-    s_move->set_goal(get_object_pose_T("InsertInto"),skill_params->insertion_speed,skill_params->insertion_acc);
+    s_move->set_goal(get_object_pose_T("Container"),skill_params->insertion_speed,skill_params->insertion_acc);
 
     Eigen::Matrix<double,2,1> t_scale;
     t_scale<<1,1;
@@ -160,8 +160,8 @@ bool TaxInsertion::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxInsertion::check_local_suc_conditions(const Percept &p){
-    bool depth = p.proprioception.T_T_EE(2,3)>get_object_pose_T("InsertInto")(2,3)-0.001;
-    bool lateral = (p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3)).norm()<0.002;
+    bool depth = p.proprioception.T_T_EE(2,3)>get_object_pose_T("Container")(2,3)-0.001;
+    bool lateral = (p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm()<0.002;
     return depth && lateral;
 }
 
@@ -172,8 +172,8 @@ bool TaxInsertion::check_local_ex_conditions(const Percept &p){
 bool TaxInsertion::check_local_err_conditions(const Percept &p){
     const Eigen::Matrix<double,6,1>& ROI_x=get_parameters<SkillParametersTaxInsertion>()->ROI_x;
     const Eigen::Matrix<double,6,1>& ROI_phi=get_parameters<SkillParametersTaxInsertion>()->ROI_phi;
-    double error_angle=acos(p.proprioception.T_T_EE.block<3,1>(0,2).dot(get_object_pose_T("InsertInto").block<3,1>(0,2)));
-    Eigen::Matrix<double,3,1> dist = p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3);
+    double error_angle=acos(p.proprioception.T_T_EE.block<3,1>(0,2).dot(get_object_pose_T("Container").block<3,1>(0,2)));
+    Eigen::Matrix<double,3,1> dist = p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3);
     if(dist(0) < ROI_x(0) || dist(0) > ROI_x(1) || dist(1) < ROI_x(2) || dist(1) > ROI_x(3) || dist(2) < ROI_x(4) || dist(2) > ROI_x(5)){
         return true;
     }
@@ -181,7 +181,7 @@ bool TaxInsertion::check_local_err_conditions(const Percept &p){
 }
 
 double TaxInsertion::get_goal_heuristic(const Percept &p){
-    return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("InsertInto").block<3,1>(0,3)).norm();
+    return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm();
 }
 
 void TaxInsertion::auxiliaries(const Percept &p){
