@@ -3,6 +3,7 @@ from utils.experiment_wizard import start_experiment
 from services.cmaes import CMAESConfiguration
 from utils.udp_client import call_method
 from utils.udp_client import start_task
+from utils.udp_client import wait_for_task
 
 
 def learn():
@@ -17,10 +18,10 @@ def learn():
 def learn_2():
     robot = "collective-panda-005.local"
     call_method(robot, 12002, "set_grasped_object", {"object": "key_abus_e30"})
-    start_task(robot, "InsertObject", {
+    response = start_task(robot, "InsertObject", {
         "parameters":{
-            "Insertable": "key_abus_e30",
-            "InsertInto": "lock_abus_e30",
+            "insertable": "key_abus_e30",
+            "insert_into": "lock_abus_e30",
             "approach": "lock_abus_e30_above"
         },
         "skills": {
@@ -32,19 +33,23 @@ def learn_2():
         }
     })
 
-    start_task(robot, "ExtractObject", {
+    wait_for_task(robot, response["result"]["task_uuid"])
+
+    response = start_task(robot, "ExtractObject", {
         "parameters":
             {
-                "Extractable": "key_abus_e30",
+                "extractable": "key_abus_e30",
                 "extract_from": "lock_abus_e30",
                 "extract_to": "lock_abus_e30_above"
             }
     })
 
-    start_task(robot, "InsertObject", {
+    wait_for_task(robot, response["result"]["task_uuid"])
+
+    response = start_task(robot, "InsertObject", {
         "parameters":{
-            "Insertable": "key_abus_e30",
-            "InsertInto": "lock_abus_e30",
+            "insertable": "key_abus_e30",
+            "insert_into": "lock_abus_e30",
             "approach": "lock_abus_e30_above"
         },
         "skills": {
@@ -59,72 +64,90 @@ def learn_2():
         }
     })
 
-    start_task(robot, "ExtractObject", {
+    wait_for_task(robot, response["result"]["task_uuid"])
+
+    response = start_task(robot, "ExtractObject", {
         "parameters":
             {
-                "Extractable": "key_abus_e30",
+                "extractable": "key_abus_e30",
                 "extract_from": "lock_abus_e30",
                 "extract_to": "lock_abus_e30_above"
             }
     })
 
-    start_task(robot, "InsertObject", {
+    wait_for_task(robot, response["result"]["task_uuid"])
+
+    response = start_task(robot, "InsertObject", {
         "parameters":{
-            "Insertable": "key_abus_e30",
-            "InsertInto": "lock_abus_e30",
+            "insertable": "key_abus_e30",
+            "insert_into": "lock_abus_e30",
             "approach": "lock_abus_e30_above"
         },
         "skills": {
             "insertion": {
                 "control": {
                     "K": [200, 200, 10, 10, 10, 10]
+                },
+                "skill": {
+                    "offset": [0.001, -0.002, 0, 5, -10, 0]
                 }
             }
         }
     })
 
-    start_task(robot, "ExtractObject", {
+    wait_for_task(robot, response["result"]["task_uuid"])
+
+    response = start_task(robot, "ExtractObject", {
         "parameters":
             {
-                "Extractable": "key_abus_e30",
+                "extractable": "key_abus_e30",
                 "extract_from": "lock_abus_e30",
                 "extract_to": "lock_abus_e30_above"
             }
     })
 
-    start_task(robot, "InsertObject", {
+    wait_for_task(robot, response["result"]["task_uuid"])
+
+    response = start_task(robot, "InsertObject", {
         "parameters":{
-            "Insertable": "key_abus_e30",
-            "InsertInto": "lock_abus_e30",
+            "insertable": "key_abus_e30",
+            "insert_into": "lock_abus_e30",
             "approach": "lock_abus_e30_above"
         },
         "skills": {
             "insertion": {
                 "control": {
                     "K": [200, 200, 10, 10, 10, 10]
+                },
+                "skill": {
+                    "offset": [0.00, 0.002, 0, 5, 0, 0]
                 }
             }
         }
     })
 
-    start_task(robot, "ExtractObject", {
+    wait_for_task(robot, response["result"]["task_uuid"])
+
+    response = start_task(robot, "ExtractObject", {
         "parameters":
             {
-                "Extractable": "key_abus_e30",
+                "extractable": "key_abus_e30",
                 "extract_from": "lock_abus_e30",
                 "extract_to": "lock_abus_e30_above"
             }
     })
+
+    wait_for_task(robot, response["result"]["task_uuid"])
     trial_successful()
 
 
 def trial_successful():
     robot = "collective-panda-005.local"
     call_method(robot, 12002, "set_grasped_object", {"object": "key_abus_e30"})
-    start_task(robot, "InsertObject", {
+    response = start_task(robot, "InsertObject", {
         "parameters":{
-            "Insertable": "key_abus_e30",
-            "InsertInto": "lock_abus_e30",
+            "insertable": "key_abus_e30",
+            "insert_into": "lock_abus_e30",
             "approach": "lock_abus_e30_above"
         },
         "skills": {
@@ -139,11 +162,15 @@ def trial_successful():
         }
     })
 
-    start_task(robot, "ExtractObject", {
+    wait_for_task(robot, response["result"]["task_uuid"])
+
+    response = start_task(robot, "ExtractObject", {
         "parameters":
             {
-                "Extractable": "key_abus_e30",
+                "extractable": "key_abus_e30",
                 "extract_from": "lock_abus_e30",
                 "extract_to": "lock_abus_e30_above"
             }
     })
+
+    wait_for_task(robot, response["result"]["task_uuid"])
