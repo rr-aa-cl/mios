@@ -32,7 +32,13 @@ def learn_2():
                     }
                 },
                 "skill": {
-                    "traj_speed": [0.005, 0.2]
+                    "traj_speed": [0.005, 0.2],
+                    "time_max": 5.0
+                }
+            },
+            "contact": {
+                "skill": {
+                    "time_max": 5.0
                 }
             }
         }
@@ -66,7 +72,13 @@ def learn_2():
                     }
                 },
                 "skill": {
-                    "traj_speed": [0.02, 0.2]
+                    "traj_speed": [0.02, 0.2],
+                    "time_max": 5.0
+                }
+            },
+            "contact": {
+                "skill": {
+                    "time_max": 5.0
                 }
             }
         }
@@ -100,7 +112,12 @@ def learn_2():
                     }
                 },
                 "skill": {
-
+                    "time_max": 5.0
+                }
+            },
+            "contact": {
+                "skill": {
+                    "time_max": 5.0
                 }
             }
         }
@@ -134,7 +151,12 @@ def learn_2():
                     }
                 },
                 "skill": {
-
+                    "time_max": 5.0
+                }
+            },
+            "contact": {
+                "skill": {
+                    "time_max": 5.0
                 }
             }
         }
@@ -173,7 +195,12 @@ def trial_successful():
                     }
                 },
                 "skill": {
-
+                    "time_max": 5.0
+                }
+            },
+            "contact": {
+                "skill": {
+                    "time_max": 5.0
                 }
             }
         }
