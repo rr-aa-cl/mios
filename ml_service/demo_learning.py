@@ -27,7 +27,9 @@ def learn_2():
         "skills": {
             "insertion": {
                 "control": {
-                    "K": [200, 200, 0, 10, 10, 10]
+                    "cart_imp": {
+                        "K_x": [200, 200, 0, 10, 10, 10]
+                    }
                 },
                 "skill": {
                     "traj_speed": [0.005, 0.2]
@@ -59,7 +61,9 @@ def learn_2():
         "skills": {
             "insertion": {
                 "control": {
-                    "K": [50, 50, 10, 10, 10, 10]
+                    "cart_imp": {
+                        "K_x": [50, 50, 10, 10, 10, 10]
+                    }
                 },
                 "skill": {
                     "traj_speed": [0.02, 0.2]
@@ -91,7 +95,9 @@ def learn_2():
         "skills": {
             "insertion": {
                 "control": {
-                    "K": [200, 200, 10, 10, 10, 10],
+                    "cart_imp":{
+                        "K_x": [200, 200, 10, 10, 10, 10],
+                    }
                 },
                 "skill": {
 
@@ -123,7 +129,9 @@ def learn_2():
         "skills": {
             "insertion": {
                 "control": {
-                    "K": [200, 200, 10, 10, 10, 10]
+                    "cart_imp":{
+                        "K_x": [200, 200, 10, 10, 10, 10]
+                    }
                 },
                 "skill": {
 
@@ -160,7 +168,9 @@ def trial_successful():
         "skills": {
             "insertion": {
                 "control": {
-                    "K": [1000, 1000, 1000, 100, 100, 100]
+                    "cart_imp": {
+                        "K_x": [1000, 1000, 1000, 100, 100, 100]
+                    }
                 },
                 "skill": {
 
