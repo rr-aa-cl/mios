@@ -147,11 +147,12 @@ def learn_2():
             "insertion": {
                 "control": {
                     "cart_imp":{
-                        "K_x": [200, 200, 10, 10, 10, 10]
+                        "K_x": [200, 200, 100, 10, 10, 10]
                     }
                 },
                 "skill": {
-                    "time_max": 5.0
+                    "time_max": 5.0,
+                    "traj_speed": [0.01, 0.2]
                 }
             },
             "contact": {
