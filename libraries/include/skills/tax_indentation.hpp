@@ -2,7 +2,7 @@
 
 #include "skill/skill.hpp"
 namespace mios{
-class SkillParametersTaxPush : public SkillParameters{
+class SkillParametersTaxIndentation : public SkillParameters{
 public:
     bool from_json(const nlohmann::json& parameters) override;
     std::map<std::string, std::set<std::string> > get_parameter_list() override;
@@ -10,15 +10,14 @@ public:
     Eigen::Matrix<double,2,1> approach_acc;
     Eigen::Matrix<double,3,1> F_push;
     double distance;
-    double duration;
 
     Eigen::Matrix<double,6,1> ROI_x;
     Eigen::Matrix<double,6,1> ROI_phi;
 };
 
-class TaxPush : public Skill{
+class TaxIndentation : public Skill{
 public:
-    TaxPush(const std::string& name, Memory* memory, Portal* portal);
+    TaxIndentation(const std::string& name, Memory* memory, Portal* portal);
     Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const override;
 
 private:
@@ -31,9 +30,9 @@ private:
     std::shared_ptr<ManipulationPrimitive> create_approach_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_contact_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_push_mp(const Percept& p);
+    std::shared_ptr<ManipulationPrimitive> create_retract_mp(const Percept& p);
 
 private:
     Eigen::Matrix<double,4,4> m_T_T_EE_contact;
-
 };
 }
