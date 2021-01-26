@@ -187,12 +187,25 @@ void Core::post_execution(){
     }
 }
 
+void Core::handle_gripper(Actuator* cmd){
+    if(!m_panda_body.is_hand_active() && cmd->get_gripper_request()!=GripperRequest::None){
+        cmd->accecpt_gripper_request();
+        if(cmd->get_gripper_request()==GripperRequest::Grasp){
+            std::thread(&Core::grasp,this,cmd->gripper_width,cmd->gripper_speed,cmd->gripper_force,0.1,0.1);
+        }
+        if(cmd->get_gripper_request()==GripperRequest::Move){
+            std::thread(&Core::move_gripper,this,cmd->gripper_width,cmd->gripper_speed);
+        }
+    }
+}
+
 franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
 
     franka::GripperState gripper_state;
     m_percept.update(m_panda_body.get_panda_model(),state,gripper_state,m_memory.read_parameters()->frames.O_R_T);
     m_memory.internal_update(m_percept);
     Actuator* cmd=m_skill_engine.get_next_command(m_percept);
+    handle_gripper(cmd);
 
     m_memory.get_parameters()->frames.O_R_T=cmd->O_R_T;
     for(auto& m : m_safety_stage_1){
@@ -286,7 +299,10 @@ bool Core::grasp(double width, double speed, double force,double epsilon_inner,d
         spdlog::error("Action is not permitted while in user mode.");
         return false;
     }
-    return m_panda_body.grasp(width,speed,force,epsilon_inner,epsilon_outer);
+    m_percept.internal_model.hand_is_active=true;
+    bool result = m_panda_body.grasp(width,speed,force,epsilon_inner,epsilon_outer);
+    m_percept.internal_model.hand_is_active=false;
+    return result;
 }
 
 bool Core::move_gripper(double width, double speed){
@@ -294,7 +310,10 @@ bool Core::move_gripper(double width, double speed){
         spdlog::error("Action is not permitted while in user mode.");
         return false;
     }
-    return m_panda_body.move_to_finger_position(width,speed);
+    m_percept.internal_model.hand_is_active=true;
+    bool result = m_panda_body.move_to_finger_position(width,speed);
+    m_percept.internal_model.hand_is_active=false;
+    return result;
 }
 
 bool Core::is_grasping(){

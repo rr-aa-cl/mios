@@ -11,6 +11,7 @@ namespace mios {
 
 class Percept{
 public:
+    Percept();
     void update(std::unique_ptr<franka::Model> const& model, const franka::RobotState& robot_state, const franka::GripperState &gripper_state, std::optional<Eigen::Matrix<double,3,3> > O_R_T);
     void update_controller();
 
@@ -136,6 +137,7 @@ public:
         Eigen::Matrix<double,6,7> B_J_O;
 
         double max_finger_width;
+        bool hand_is_active;
 
     }internal_model;
 

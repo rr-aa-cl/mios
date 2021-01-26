@@ -33,6 +33,11 @@ void Actuator::initialize(const Percept &p_0, const ControlParameters& controlle
     m_stop_factor=1;
 
     m_new_command=true;
+
+    gripper_width=0;
+    gripper_speed=0;
+    gripper_force=0;
+    gripper_object="NullObject";
 }
 
 void Actuator::blend(const Actuator &cmd, const Percept& p){
@@ -452,6 +457,28 @@ void Actuator::set_command_pattern(const std::set<CommandPattern> &command_patte
 
 const std::set<CommandPattern>* Actuator::get_command_pattern() const{
     return &m_command_pattern;
+}
+
+void Actuator::grasp(double width, double speed, double force, std::string object){
+    gripper_width=width;
+    gripper_speed=speed;
+    gripper_force=force;
+    gripper_object=object;
+    m_gripper_request=GripperRequest::Grasp;
+}
+
+void Actuator::move_fingers(double width, double speed){
+    gripper_width=width;
+    gripper_speed=speed;
+    m_gripper_request=GripperRequest::Move;
+}
+
+void Actuator::accecpt_gripper_request(){
+    m_gripper_request=GripperRequest::None;
+}
+
+GripperRequest Actuator::get_gripper_request(){
+    return m_gripper_request;
 }
 
 }
