@@ -26,10 +26,6 @@ bool SkillParametersTaxPush::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameter approach_acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_phi",ROI_phi)){
-        spdlog::error("Parameter ROI_phi could not be loaded but is mandatory.");
-        return false;
-    }
     if(!msrm_utils::read_json_param(parameters,"distance",distance)){
         spdlog::error("Parameter distance could not be loaded but is mandatory.");
         return false;
