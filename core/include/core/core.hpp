@@ -82,6 +82,8 @@ private:
     franka::CartesianVelocities cart_velocity_controller_pipeline(const franka::RobotState& state);
     franka::JointVelocities joint_velocity_controller_pipeline(const franka::RobotState& state);
 
+    void handle_gripper(Actuator* cmd);
+
 private:
     Percept m_percept;
 
