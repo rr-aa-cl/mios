@@ -2,23 +2,23 @@
 
 #include "skill/skill.hpp"
 namespace mios{
-class SkillParametersTaxGrab : public SkillParameters{
+class SkillParametersTaxPlace : public SkillParameters{
 public:
     bool from_json(const nlohmann::json& parameters) override;
     std::map<std::string, std::set<std::string> > get_parameter_list() override;
+    double f_contact;
     Eigen::Matrix<double,2,1> speed;
     Eigen::Matrix<double,2,1> acc;
-    double grasp_width;
-    double grasp_speed;
-    double grasp_force;
+    double release_width;
+    double release_speed;
 
     Eigen::Matrix<double,6,1> ROI_x;
     Eigen::Matrix<double,6,1> ROI_phi;
 };
 
-class TaxGrab : public Skill{
+class TaxPlace : public Skill{
 public:
-    TaxGrab(const std::string& name, Memory* memory, Portal* portal);
+    TaxPlace(const std::string& name, Memory* memory, Portal* portal);
     Eigen::Matrix<double,3,3> get_O_R_T_0(const Percept& p) const override;
 
 private:
@@ -30,8 +30,8 @@ private:
     bool check_local_pre_conditions(const Percept &p) override;
 
     std::shared_ptr<ManipulationPrimitive> create_approach_mp(const Percept& p);
-    std::shared_ptr<ManipulationPrimitive> create_pre_grasp_mp(const Percept& p);
-    std::shared_ptr<ManipulationPrimitive> create_grasp_mp(const Percept& p);
+    std::shared_ptr<ManipulationPrimitive> create_pre_release_mp(const Percept& p);
+    std::shared_ptr<ManipulationPrimitive> create_release_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_retract_mp(const Percept& p);
 
 private:

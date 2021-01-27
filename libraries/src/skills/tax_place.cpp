@@ -1,0 +1,161 @@
+#include "skills/tax_place.hpp"
+#include "strategies/twist_strategy.hpp"
+#include "strategies/move_to_pose.hpp"
+#include "strategies/gripper_strategy.hpp"
+
+namespace mios{
+
+bool SkillParametersTaxPlace::from_json(const nlohmann::json& parameters){
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"speed",speed)){
+        spdlog::error("Parameter speed could not be loaded but is mandatory.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"acc",acc)){
+        spdlog::error("Parameter acc could not be loaded but is mandatory.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param(parameters,"release_width",release_width)){
+        spdlog::error("Parameter release_width could not be loaded but is mandatory.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param(parameters,"release_speed",release_speed)){
+        spdlog::error("Parameter release_speed could not be loaded but is mandatory.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param(parameters,"f_contact",f_contact)){
+        spdlog::error("Parameter f_contact could not be loaded but is mandatory.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_x",ROI_x)){
+        spdlog::error("Parameter ROI_x could not be loaded but is mandatory.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_phi",ROI_phi)){
+        spdlog::error("Parameter ROI_phi could not be loaded but is mandatory.");
+        return false;
+    }
+    return true;
+}
+
+std::map<std::string, std::set<std::string> > SkillParametersTaxPlace::get_parameter_list(){
+    return {{"speed",{}},{"acc",{}},{"release_width",{}},{"release_speed",{}},{"f_contact",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+}
+
+TaxPlace::TaxPlace(const std::string& name, Memory* memory, Portal* portal):Skill("TaxPlace",{"Placeable","Surface", "Approach", "Retract"},name,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
+
+}
+
+Eigen::Matrix<double,3,3> TaxPlace::get_O_R_T_0(const Percept &p) const{
+    if(get_object("Surface")->name!="NullObject"){
+        return get_object("Surface")->O_T_OB.block<3,3>(0,0);
+    }else{
+        throw SkillException("No valid object has been grounded.");
+    }
+}
+
+std::shared_ptr<ManipulationPrimitive> TaxPlace::get_initial_mp(const Percept& p){
+    return create_approach_mp(p);
+}
+
+std::optional<std::shared_ptr<ManipulationPrimitive> > TaxPlace::graph_transition(const Percept &p){
+    if(get_active_mp()->get_name()=="approach"){
+        if(get_active_mp()->get_strategy_interface("move")->finished()){
+            return create_pre_release_mp(p);
+        }else{
+            return {};
+        }
+    }
+    if(get_active_mp()->get_name()=="pre_release"){
+        if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(2)){
+            return create_release_mp(p);
+        }else{
+            return {};
+        }
+    }
+    if(get_active_mp()->get_name()=="release"){
+        if(get_active_mp()->get_strategy_interface("release")->finished()){
+            return create_retract_mp(p);
+        }else{
+            return {};
+        }
+    }
+    return {};
+}
+
+std::shared_ptr<ManipulationPrimitive> TaxPlace::create_approach_mp(const Percept &p){
+    std::shared_ptr<SkillParametersTaxPlace> skill_params = get_parameters<SkillParametersTaxPlace>();
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
+    mp->create_strategy<MoveToPoseStrategy>("move",1);
+    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
+    move->set_goal(get_object_pose_T("Approach"),skill_params->speed,skill_params->acc);
+    return mp;
+}
+
+std::shared_ptr<ManipulationPrimitive> TaxPlace::create_pre_release_mp(const Percept &p){
+    std::shared_ptr<SkillParametersTaxPlace> skill_params = get_parameters<SkillParametersTaxPlace>();
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("pre_grasp",p);
+    mp->create_strategy<MoveToPoseStrategy>("move",1);
+    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
+    move->set_goal(get_object_pose_T("Surface"),skill_params->speed,skill_params->acc);
+    return mp;
+}
+
+std::shared_ptr<ManipulationPrimitive> TaxPlace::create_release_mp(const Percept &p){
+    std::shared_ptr<SkillParametersTaxPlace> skill_params = get_parameters<SkillParametersTaxPlace>();
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("release",p);
+    mp->create_strategy<GripperStrategy>("release",1);
+    std::shared_ptr<GripperStrategy> release = mp->get_strategy<GripperStrategy>("release");
+    release->move(skill_params->release_width,skill_params->release_speed);
+    return mp;
+}
+
+std::shared_ptr<ManipulationPrimitive> TaxPlace::create_retract_mp(const Percept &p){
+    std::shared_ptr<SkillParametersTaxPlace> skill_params = get_parameters<SkillParametersTaxPlace>();
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("retract",p);
+    mp->create_strategy<MoveToPoseStrategy>("move",1);
+    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
+    move->set_goal(get_object_pose_T("Retract"),skill_params->speed,skill_params->acc);
+    return mp;
+}
+
+bool TaxPlace::check_local_pre_conditions(const Percept &p){
+    Eigen::Matrix<double,4,4> T_container = get_object_pose_T("Surface");
+    std::shared_ptr<SkillParametersTaxPlace> skill_params = get_parameters<SkillParametersTaxPlace>();
+    for(unsigned i=0;i<3;i++){
+        if(p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2+1)){
+            return false;
+        }
+    }
+    if(m_memory->get_live_context()->grasped_object->name!=get_object("Placeable")->name){
+        return false;
+    }
+    return true;
+}
+
+bool TaxPlace::check_local_suc_conditions(const Percept &p){
+    if(m_memory->get_live_context()->grasped_object->name=="NullObject"){
+        return true;
+    }
+    return false;
+}
+
+bool TaxPlace::check_local_ex_conditions(const Percept &p){
+    if(get_active_mp()->get_name()=="retract"){
+        return get_active_mp()->get_strategy_interface("move")->finished();
+    }
+    return false;
+}
+
+
+bool TaxPlace::check_local_err_conditions(const Percept &p){
+    const Eigen::Matrix<double,6,1>& ROI_x=get_parameters<SkillParametersTaxPlace>()->ROI_x;
+    const Eigen::Matrix<double,6,1>& ROI_phi=get_parameters<SkillParametersTaxPlace>()->ROI_phi;
+    double error_angle=acos(p.proprioception.T_T_EE.block<3,1>(0,2).dot(get_object_pose_T("Surface").block<3,1>(0,2)));
+    Eigen::Matrix<double,3,1> dist = p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Surface").block<3,1>(0,3);
+    if(dist(0) < ROI_x(0) || dist(0) > ROI_x(1) || dist(1) < ROI_x(2) || dist(1) > ROI_x(3) || dist(2) < ROI_x(4) || dist(2) > ROI_x(5)){
+        return true;
+    }
+    return false;
+}
+
+}

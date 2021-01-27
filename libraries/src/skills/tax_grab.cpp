@@ -38,7 +38,7 @@ bool SkillParametersTaxGrab::from_json(const nlohmann::json& parameters){
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxGrab::get_parameter_list(){
-    return {{"speed",{}},{"acc",{}},{"grasp_width",{}},{"grasp_speed",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+    return {{"speed",{}},{"acc",{}},{"grasp_width",{}},{"grasp_speed",{}},{"grasp_force",{}},{"ROI_x",{}},{"ROI_phi",{}}};
 }
 
 TaxGrab::TaxGrab(const std::string& name, Memory* memory, Portal* portal):Skill("TaxGrab",{"Grabbable", "Approach", "Retract"},name,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
@@ -130,8 +130,7 @@ bool TaxGrab::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxGrab::check_local_suc_conditions(const Percept &p){
-    std::shared_ptr<SkillParametersTaxGrab> skill_params = get_parameters<SkillParametersTaxGrab>();
-    if(p.proprioception.TF_F_ext_K(2)>skill_params->f_contact){
+    if(m_memory->get_live_context()->grasped_object->name==get_object("Grabbable")->name){
         return true;
     }
     return false;
@@ -139,7 +138,7 @@ bool TaxGrab::check_local_suc_conditions(const Percept &p){
 
 bool TaxGrab::check_local_ex_conditions(const Percept &p){
     if(get_active_mp()->get_name()=="retract"){
-        return get_active_mp()->get_strategy_interface("move")->finished() && m_memory->get_live_context()->grasped_object->name==get_object("Grabbable")->name;
+        return get_active_mp()->get_strategy_interface("move")->finished();
     }
     return false;
 }
