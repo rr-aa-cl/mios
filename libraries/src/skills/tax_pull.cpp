@@ -57,4 +57,11 @@ bool TaxPull::check_local_suc_conditions(const Percept &p){
     return get_active_mp()->get_strategy_interface("move")->finished();
 }
 
+bool TaxPull::check_local_err_conditions(const Percept &p){
+    if(m_memory->get_live_context()->grasped_object->name!=get_object("Pullable")->name){
+        return true;
+    }
+    return false;
+}
+
 }
