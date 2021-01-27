@@ -335,6 +335,16 @@ bool Core::move_gripper(double width, double speed){
     }
     m_percept.internal_model.hand_activity_state=HandActivityState::hsBusy;
     bool result = m_panda_body.move_to_finger_position(width,speed);
+    const Object* object=m_memory.get_object("NullObject");
+    m_memory.get_live_context()->grasped_object=object;
+    m_memory.internal_update(m_percept);
+    if(!m_memory.update_database()){
+        spdlog::warn("Could not update datebase.");
+    }
+    m_memory.get_parameters()->user.load_m=object->mass;
+    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+    m_memory.get_parameters()->user.load_I=object->OB_I;
+    m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
     m_percept.internal_model.hand_activity_state=HandActivityState::hsFinished;
     return result;
 }
