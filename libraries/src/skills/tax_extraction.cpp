@@ -5,37 +5,34 @@
 namespace mios {
 
 bool SkillParametersTaxExtraction::from_json(const nlohmann::json &parameters){
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"traj_speed",traj_speed)){
-        spdlog::error("Parameter traj_speed could not be loaded but is mandatory.");
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"extraction_speed",extraction_speed)){
+        spdlog::error("Parameter extraction_speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"traj_acc",traj_acc)){
-        spdlog::error("Parameter traj_acc could not be loaded but is mandatory.");
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"extraction_acc",extraction_acc)){
+        spdlog::error("Parameter extraction_acc could not be loaded but is mandatory.");
         return false;
     }
     if(!msrm_utils::read_json_param(parameters,"stuck_dx_thr",stuck_dx_thr)){
-        spdlog::error("Parameter stuck_dx_thr could not be loaded but is mandatory.");
-        return false;
+        stuck_dx_thr=0.005;
     }
     if(!msrm_utils::read_json_param<double,6,1>(parameters,"search_a",search_a)){
-        spdlog::error("Parameter search_a could not be loaded but is mandatory.");
-        return false;
+        search_a.setZero();
     }
     if(!msrm_utils::read_json_param<double,6,1>(parameters,"search_f",search_f)){
-        spdlog::error("Parameter search_f could not be loaded but is mandatory.");
-        return false;
+        search_f.setZero();
     }
 
-    if(stuck_dx_thr>traj_speed(0) || stuck_dx_thr<0){
+    if(stuck_dx_thr>extraction_speed(0) || stuck_dx_thr<0){
         spdlog::warn("stuck_dx_thr cannot be greater than traj_speed[0] or smaller than 0.");
-        stuck_dx_thr=traj_speed(0);
+        stuck_dx_thr=extraction_speed(0);
     }
 
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxExtraction::get_parameter_list(){
-    return {{"traj_speed",{}},{"traj_acc",{}},{"stuck_dx_thr",{}},{"search_a",{}},{"search_f",{}}};
+    return {{"extraction_speed",{}},{"extraction_acc",{}},{"stuck_dx_thr",{}},{"search_a",{}},{"search_f",{}}};
 }
 
 TaxExtraction::TaxExtraction(const std::string &name, Memory *memory, Portal* portal):Skill("TaxExtraction",{"Extractable","Container","ExtractTo"},name,memory,portal,
@@ -75,7 +72,7 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_move_mp(const Perce
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
     mp->create_strategy<MoveToPoseStrategy>("s_move",1);
     std::shared_ptr<MoveToPoseStrategy> s_move = mp->get_strategy<MoveToPoseStrategy>("s_move");
-    s_move->set_goal(get_object_pose_T("ExtractTo"),skill_params->traj_speed,skill_params->traj_acc);
+    s_move->set_goal(get_object_pose_T("ExtractTo"),skill_params->extraction_speed,skill_params->extraction_acc);
 
     Eigen::Matrix<double,2,1> t_scale;
     t_scale<<1,1;
@@ -92,7 +89,7 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_wiggle_mp(const Per
                                                                    Eigen::Matrix<double,6,1>::Zero(),Eigen::Matrix<double,6,1>::Zero());
     mp->create_strategy<MoveToPoseStrategy>("s_move",1);
     std::shared_ptr<MoveToPoseStrategy> s_move = mp->get_strategy<MoveToPoseStrategy>("s_move");
-    s_move->set_goal(get_object_pose_T("ExtractTo"),skill_params->traj_speed,skill_params->traj_acc);
+    s_move->set_goal(get_object_pose_T("ExtractTo"),skill_params->extraction_speed,skill_params->extraction_acc);
 
     Eigen::Matrix<double,2,1> t_scale;
     t_scale<<1,1;

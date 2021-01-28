@@ -22,6 +22,9 @@
 #include "skills/move_trajectory.hpp"
 #include "skills/ml_test_skill.hpp"
 
+#include "skills/tax_insertion.hpp"
+#include "skills/tax_extraction.hpp"
+
 namespace mios {
 
 SkillLibrary::SkillLibrary(Memory* memory, Portal* portal){
@@ -43,6 +46,8 @@ SkillLibrary::SkillLibrary(Memory* memory, Portal* portal){
     m_skill_parameters.insert(std::make_pair("Turn",std::make_shared<SkillParametersTurn>()));
     m_skill_parameters.insert(std::make_pair("MoveTrajectory",std::make_shared<SkillParametersMoveTrajectory>()));
     m_skill_parameters.insert(std::make_pair("MLTestSkill",std::make_shared<SkillParametersMLTestSkill>()));
+    m_skill_parameters.insert(std::make_pair("TaxInsertion",std::make_shared<SkillParametersTaxInsertion>()));
+    m_skill_parameters.insert(std::make_pair("TaxExtraction",std::make_shared<SkillParametersTaxExtraction>()));
 }
 
 const std::map<std::string,std::shared_ptr<Skill> >* SkillLibrary::get_skills() const{

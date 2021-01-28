@@ -503,11 +503,11 @@ bool PandaBody::set_robot_parameters(){
     std::array<double,16> EE_T_K = msrm_utils::convert_to_array<double,4,4>(frames.EE_T_K);
     std::array<double,7> K_theta = msrm_utils::convert_to_array<double,7,1>(control.joint_imp.K_theta);
     std::array<double,6> K_x = msrm_utils::convert_to_array<double,6,1>(control.cart_imp.K_x);
-    std::array<double,16> F_T_EE = msrm_utils::convert_to_array<double,4,4>(frames.F_T_EE*frames.EE_T_TCP);
+    std::array<double,16> NE_T_TCP = msrm_utils::convert_to_array<double,4,4>(frames.EE_T_TCP);
 
     try{
         m_panda_arm->setLoad(user.load_m,load_com,load_I);
-        m_panda_arm->setEE(F_T_EE);
+        m_panda_arm->setEE(NE_T_TCP);
         m_panda_arm->setCollisionBehavior(tau_ext_contact,tau_ext_max,F_ext_K_contact,F_ext_K_max);
         m_panda_arm->setK(EE_T_K);
         m_panda_arm->setCartesianImpedance(K_x);

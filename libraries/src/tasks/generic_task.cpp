@@ -19,6 +19,9 @@
 #include "skills/move_trajectory.hpp"
 #include "skills/wipe.hpp"
 
+#include "skills/tax_insertion.hpp"
+#include "skills/tax_extraction.hpp"
+
 namespace mios {
 
 GenericTask::GenericTask(Core* core):Task("GenericTask",core){
@@ -92,6 +95,12 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("Turn"):
         execute_skill<Turn,SkillParametersTurn>(name);
+        break;
+    case msrm_utils::str_to_int("TaxInsertion"):
+        execute_skill<TaxInsertion,SkillParametersTaxInsertion>(name);
+        break;
+    case msrm_utils::str_to_int("TaxExtraction"):
+        execute_skill<TaxExtraction,SkillParametersTaxExtraction>(name);
         break;
     default:
         throw TaskException("Skill with type " + type + " not known to GenericTask");

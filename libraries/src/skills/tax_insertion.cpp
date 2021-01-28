@@ -23,16 +23,13 @@ bool SkillParametersTaxInsertion::from_json(const nlohmann::json &parameters){
         return false;
     }
     if(!msrm_utils::read_json_param(parameters,"stuck_dx_thr",stuck_dx_thr)){
-        spdlog::error("Parameter stuck_dx_thr could not be loaded but is mandatory.");
-        return false;
+        stuck_dx_thr=0.005;
     }
     if(!msrm_utils::read_json_param<double,6,1>(parameters,"search_a",search_a)){
-        spdlog::error("Parameter search_a could not be loaded but is mandatory.");
-        return false;
+        search_a.setZero();
     }
     if(!msrm_utils::read_json_param<double,6,1>(parameters,"search_f",search_f)){
-        spdlog::error("Parameter search_f could not be loaded but is mandatory.");
-        return false;
+        search_f.setZero();
     }
     if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_x",ROI_x)){
         spdlog::error("Parameter ROI_x could not be loaded but is mandatory.");
@@ -78,7 +75,8 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_trans
         }
     }
     if(get_active_mp()->get_name()=="contact"){
-        if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(2)){
+        if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
+            std::cout<<p.proprioception.TF_F_ext_K<<std::endl;
             return create_move_mp(p);
         }else{
             return {};
@@ -151,12 +149,13 @@ bool TaxInsertion::check_local_pre_conditions(const Percept &p){
     Eigen::Matrix<double,4,4> T_container = get_object_pose_T("Container");
     std::shared_ptr<SkillParametersTaxInsertion> skill_params = get_parameters<SkillParametersTaxInsertion>();
     for(unsigned i=0;i<3;i++){
-        if(p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2+1)){
+        if(p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)>T_container(3,i)+skill_params->ROI_x(i*2+1)){
             return false;
         }
     }
     // TODO check for ROI in rotation
-    if(m_memory->get_live_context()->grasped_object->name!=get_object("Extractable")->name){
+    if(m_memory->get_live_context()->grasped_object->name!=get_object("Insertable")->name){
+        spdlog::debug("TaxInsertion::check_local_pre_conditions: Have not grasped Insertable");
         return false;
     }
     return true;
