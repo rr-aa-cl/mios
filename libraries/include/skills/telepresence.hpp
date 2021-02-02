@@ -17,6 +17,7 @@ public:
     std::vector<std::string> multicast_group;
     unsigned port_dst;
     unsigned port_src;
+    unsigned ws_port_dst; // remote websocket port to be used for the handshake
     TelepresenceMode mode;
     bool use_zoh_deadband;
     double deadband_k;
