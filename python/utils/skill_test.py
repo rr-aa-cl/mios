@@ -5,9 +5,9 @@ import numpy as np
 from ws_client import *
 
 
-def start_skill(address: str, skill: str, parameters: dict, control: dict):
+def start_skill(address: str, skill: str, parameters: dict, control: dict, skill_name: str = "skill"):
     response = start_task(address, "GenericTask", parameters={"parameters": {
-        "skill_names": ["skill"],
+        "skill_names": [skill_name],
         "skill_types": [skill]
     },
         "skills": {
