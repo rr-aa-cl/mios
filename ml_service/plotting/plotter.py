@@ -72,7 +72,7 @@ class Plotter:
     @plotter_management
     def plot_knowledge_error(self, errors, legend = None):
         ax = plt.gca()
-        ax.plot(errors,label = legend)
+        ax.plot(errors, label = legend)
         ax.set_xlabel("Task [1]")
         ax.set_ylabel("knowledge error [1]")
         ax.set_title("knowledge error = distance between initial knowledge and generated knowledge")
@@ -92,16 +92,15 @@ class Plotter:
             for source in task_keys:
                 mean_distances.append(task[source]["mean_dist"])
                 std_distances.append(task[source]["std_dist"])
-            mean_distances.insert(i,0)
-            std_distances.insert(i,0)
-            task_keys.insert(i,"no data")
             axs[i].bar(task_keys, mean_distances,width=0.15, yerr=std_distances, label= "parameter distance")  
             axs[i].set_ylabel("distance [1]")
             axs[i].set_title(data_keys[i])
-            axs[i].set_xticklabels(task_keys, fontsize='x-small')
-            #axs[i].set_yticks([0,250,500,750,1000])
+            #no ticks for some axis:
+            axs[i].set_xticklabels([])
             axs[i].set(ylim=(0.5,1.4))
-            
+        axs[-1].bar(task_keys, [0 for task in task_keys]) 
+        axs[-1].set_xticklabels(task_keys, fontsize='x-small', rotation=30) 
+        axs[-2].set_xticklabels(task_keys, fontsize='x-small', rotation=30) 
         plt.tight_layout()
 
     @plotter_management

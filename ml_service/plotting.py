@@ -618,8 +618,9 @@ def knowledge_quality(tags, hosts = ["localhost"], legend = None):
     plot.plot_knowledge_error(distances, legend)
         
 
-def transfer_learning_parameters(filter, host):
-    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
+def transfer_learning_parameters(filter, host, result_db = "transfer_all_v2"):
+    #calculate the mean distance between optimas and their initial knowledges
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_pad", "key_old", "key_hatch"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
     p = DataProcessor()
     from knowledge_processor.knowledge_manager import KnowledgeManager
     from mongodb_client.mongodb_client import MongoDBClient
@@ -633,7 +634,7 @@ def transfer_learning_parameters(filter, host):
             try:
                 tags = ["transfer_learning", task, "from_" + tasks[i]]
                 results = get_multiple_experiment_data(host, "insert_object",
-                                                    results_db="ml_results",
+                                                    results_db=result_db,
                                                     filter={"meta.tags":  tags})
             except (DataNotFoundError, DataError):
                 print("No data found for experiment (" + str(i) + ")")
@@ -646,7 +647,7 @@ def transfer_learning_parameters(filter, host):
                     "geometry_factor": r.meta_data["cost_function"]["geometry_factor"],
                     "tags": r.tags
                 }
-                optimum = manager.get_knowledge_by_identity(client, task_identity, "ml_results", None)
+                optimum = manager.get_knowledge_by_identity(client, task_identity, result_db, None)
                 optimum = r.normalize_result(optimum["parameters"])
                 init_knowledge = r.get_knowledge_norm()
                 #optimum = r.get_best_theta_norm()
@@ -661,6 +662,36 @@ def transfer_learning_parameters(filter, host):
     import pprint
     pprint.pprint(data)
     plot.plot_parameter_similarity(data)
+    header = np.array(tasks)
+
+    # save mean distance as csv matrix:
+    means_mtx = []
+    stds_mtx = []
+    for task_key in data.keys():
+        task_means = []
+        task_stds = []
+        for knowledge_key in data[task_key].keys():
+            task_means.append(data[task_key][knowledge_key]["mean_dist"])
+            task_stds.append(data[task_key][knowledge_key]["mean_dist"])
+        means_mtx.append(task_means)
+        stds_mtx.append(task_stds)
+    means_mtx = np.array(means_mtx)
+    means_mtx = np.transpose(means_mtx)
+    
+    stds_mtx = np.array(stds_mtx)
+    means_mtx = means_mtx.astype('|S4')
+    stds_mtx = stds_mtx.astype('|S4')
+    means_mtx = np.vstack((header, means_mtx))
+    stds_mtx = np.vstack((header, stds_mtx))
+
+    header = np.array(["from_"+task for task in header])
+    header = np.insert(header, 0, "")
+
+    means_mtx = np.hstack((header.reshape(-1,1), means_mtx))
+    stds_mtx = np.hstack((header.reshape(-1,1), stds_mtx))
+
+    np.savetxt("optima_knowledge_distance_mean.csv", means_mtx, delimiter=",", fmt="%s")
+    np.savetxt("optima_knowledge_distance_std.csv", stds_mtx, delimiter=",", fmt="%s")
 
 def no_transfer_learning_parameters(filter, host):
     tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]

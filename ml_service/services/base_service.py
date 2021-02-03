@@ -60,6 +60,7 @@ class BaseService(metaclass=ABCMeta):
         self.knowledge_source = None
         self.knowledge = False
         self.confidence = None
+        self.host_name = socket.gethostname()
 
         # 10s timeout for xmlrpc clinet:
         socket.setdefaulttimeout(10)

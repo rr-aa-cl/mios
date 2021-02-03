@@ -20,6 +20,7 @@ class KnowledgeManager:
         self.predictor = None
         self.validation_per = 0.2
         self.n_retrain = 10  # how many times the generalizer is retrained before prediction
+        self.data_storage = dict()
 
     def collect_data(self, db_client, task_identity, data_db: str = "ml_results") -> list:
         if data_db.find("knowledge") == -1:  # if collecting raw data (no knowledge)
@@ -414,3 +415,40 @@ class KnowledgeManager:
         for key in d.keys():
             l.append(d[key])
         return l
+
+    def push_trial(self, agent: str, theta: list, cost: float, keep_size: int):
+        if agent not in self.data_storage:
+            self.data_storage[agent] = []
+        if len(self.data_storage[agent]) >= keep_size:
+            self.data_storage[agent].pop(0)
+        self.data_storage[agent].append((theta, cost))
+
+    def request_trials(self, n_trials: int):
+        n_available = 0
+        n_per_agent = int(np.floor(n_trials / len(self.data_storage)))
+        for a in self.data_storage.keys():
+            n_available += len(self.data_storage[a])
+            if len(self.data_storage[a]) < n_per_agent:
+                return False
+
+        if n_available < n_trials:
+            logger.error("Number of requested trials is larger than number of available trials.")
+            return False
+
+
+        trials = []
+        n_rest = n_trials % len(self.data_storage)
+        cnt_rest = 0
+        for a in self.data_storage.keys():
+            if cnt_rest < n_rest:
+                mod_rest = 1
+            else:
+                mod_rest = 0
+            cnt_rest += 1
+            trials_per_agent = self.data_storage[a].copy()
+            random.shuffle(trials_per_agent)
+            trials_per_agent = trials_per_agent[:n_per_agent + mod_rest]
+            for t in trials_per_agent:
+                trials.append(t)
+
+        return trials
