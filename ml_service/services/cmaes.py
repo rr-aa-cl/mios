@@ -2,14 +2,13 @@ import logging
 import numpy as np
 import random
 import deap
-from copy import deepcopy
-from deap import algorithms
+import time
 from deap import base
 from deap import cma
 from deap import creator
 from deap import tools
+from xmlrpc.client import ServerProxy
 
-from engine.engine import Trial
 from services.base_service import BaseService
 from services.base_service import ServiceConfiguration
 
@@ -22,12 +21,14 @@ class CMAESConfiguration(ServiceConfiguration):
         self.n_ind = 10
         self.n_gen = 10
         self.sigma_init = 0.2
+        self.n_immigrant = 0
 
     def _to_dict(self):
         config = {
             "n_ind": self.n_ind,
             "n_gen": self.n_gen,
-            "sigma_init": self.sigma_init
+            "sigma_init": self.sigma_init,
+            "n_immigrant": self.n_immigrant
         }
         return config
 
@@ -35,6 +36,7 @@ class CMAESConfiguration(ServiceConfiguration):
         self.n_ind = config_dict["n_ind"]
         self.n_gen = config_dict["n_gen"]
         self.sigma_init = config_dict["sigma_init"]
+        self.n_immigrant = config_dict["n_immigrant"]
 
 
 class CMAESService(BaseService):
@@ -64,7 +66,7 @@ class CMAESService(BaseService):
 
         print("CMAES: " + str(self.centroid))
         print(self.problem_definition.domain.vector_mapping)
-        self.strategy = deap.cma.Strategy(centroid=self.centroid, sigma=sigma_init)
+        self.strategy = deap.cma.Strategy(centroid=self.centroid, sigma=sigma_init, lambda_=self.configuration.n_ind)
         # else:
         #     self.centroid = self.problem_definition.domain.normalize(self.centroid)
         #     sigma_init = self.configuration.sigma_init / 4
@@ -112,6 +114,7 @@ class CMAESService(BaseService):
 
         costs = []
         self.success_ratio = 0
+        kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
         for uuid in trial_uuids:
             result = self.wait_for_result(uuid)
             if result.final_cost is None:
@@ -121,7 +124,7 @@ class CMAESService(BaseService):
             else:
                 self.success_ratio += result.success
                 costs.append((result.final_cost,))
-
+            kb.push_trial(self.host_name, self.engine.completed_trials[uuid].theta, result.final_cost)
         self.success_ratio /= float(len(trial_uuids))
 
         logger.debug("CMAES costs: " + str(costs))
@@ -133,10 +136,25 @@ class CMAESService(BaseService):
         logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
         self.population = None
 
+        kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
+
         for gen in range(ngen):
             # Generate a new population
             self.population = toolbox.generate()
+            random.shuffle(self.population)
+            self.population = self.population[:len(self.population) - self.configuration.n_immigrant]
             fitnesses = toolbox.map(toolbox.evaluate, self.population)
+            while True:
+                new_population = kb.request_trials(self.configuration.n_immigrant)
+                if new_population is False:
+                    time.sleep(1)
+                    continue
+                else:
+                    break
+            for i in new_population:
+                self.population.append(deap.creator.Individual(i[0]))
+                fitnesses.append(i[1])
+
             for ind, fit in zip(self.population, fitnesses):
                 ind.fitness.values = fit
 

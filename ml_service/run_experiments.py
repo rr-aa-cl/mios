@@ -9,16 +9,19 @@ from services.cmaes import CMAESConfiguration
 from utils.udp_client import call_method
 from utils.database import delete_local_results
 from utils.database import delete_local_knowledge
+from utils.database import backup_results
 from experiments.collective_learning import CollectiveLearningBase
 
+from threading import Thread
 
-def simple_benchmark():
-    pd = mios_ml_benchmark()
+
+def simple_benchmark(robot: str):
+    pd = mios_ml_benchmark(0)
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 10
     service_config.n_gen = 10
-    start_experiment("collective-panda-007.local", pd, service_config, 3)
+    start_experiment(robot, [robot], pd, service_config, 3, keep_record=False)
 
 
 def transfer_learning_debug(from_host: str = None, from_db: str = None, task: str = None, from_tag: str = None):
@@ -446,3 +449,37 @@ def collective_learning_benchmark():
     knowledge = None
     tags = ["collective_learning_benchmark"]
     start_experiment("collective-panda-001.local", agents, pd, service_config, 10, tags=tags, knowledge=knowledge)
+
+
+def collective_learning_benchmark_2():
+    agents = ["collective-panda-001", "collective-panda-002", "collective-panda-007", "collective-panda-008",
+              "collective-panda-009"]
+
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 30
+    service_config.n_gen = 10
+    service_config.n_immigrant = 20
+    knowledge = {"mode": "none", "kb_location": agents[0]}
+    threads = []
+    i = 0
+    pd = mios_ml_benchmark(i)
+    delete_local_results(agents, "ml_results", pd.task_type, ["collective_learning_benchmark_2"])
+    for a in agents:
+
+        pd = mios_ml_benchmark(i)
+        i += 1
+        tags = ["collective_learning_benchmark_2", a]
+        start_experiment(a, [a], pd, service_config, 1, tags=tags, knowledge=knowledge, keep_record=False)
+        threads.append(Thread(target=start_experiment, args=(a, [a], pd, service_config, 1, tags, knowledge, False,)))
+        threads[-1].start()
+
+    for t in threads:
+        t.join()
+
+    for a in agents:
+        if a == agents[0]:
+            continue
+        backup_results(a, agents[0], pd.task_type, ["collective_learning_benchmark_2"], "ml_results")
+
+
