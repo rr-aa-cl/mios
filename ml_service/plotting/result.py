@@ -27,7 +27,7 @@ class Result:
         self.uuid = data_tmp["meta"]["uuid"]
         self.tags = data_tmp["meta"]["tags"]
 
-    def get_cost_per_trial(self, episode_length: int = 1) -> list:
+    def get_cost_per_trial(self, episode_length: int = 1, agent: str = None) -> list:
         cost_raw = []
         cost = []
         if len(self.trials) % episode_length != 0:
@@ -35,11 +35,18 @@ class Result:
             return []
         n_episodes = len(self.trials) / episode_length
         for t in self.trials:
-            cost_raw.append(t["cost"])
-        for i in range(int(n_episodes)):
-            cost.append(np.min(np.asarray(cost_raw[i * episode_length : i * episode_length + episode_length])))
+            if agent is not None:
+                if agent == t["agent"]:
+                    cost_raw.append(t["cost"])
+                else:
+                    continue
+            else:
+                cost_raw.append(t["cost"])
+        print(cost_raw)
+        #for i in range(int(n_episodes)):
+        #    cost.append(np.min(np.asarray(cost_raw[i * episode_length : i * episode_length + episode_length])))
 
-        return cost
+        return cost_raw
 
     def get_parameters(self) -> set:
         theta = self.trials[0]["theta"]

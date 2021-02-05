@@ -19,14 +19,15 @@ def single_experiment(host: str, task_type: str, database: str, tags: list = Non
         result = get_experiment_data(host, task_type, results_db=database, uuid=uuid)
     else:
         return
-    plot.plot_cost_over_trials(p.get_monotonically_decreasing_cost(result.get_cost_per_trial()))
+    plot.plot_cost_over_trials(p.get_monotonically_decreasing_cost(result.get_cost_per_trial(agent="collective-panda-009.local")))
 
 
-def average_experiment(host: str, task_type: str, database: str, tags: list):
+def average_experiment(host: str, task_type: str, database: str, tags: list, agent = None):
     p = DataProcessor()
 
     results = get_multiple_experiment_data(host, task_type, results_db=database, filter={"meta.tags": {"$all": tags}})
-    cost = p.get_average_cost_over_time(results, 1500, True)
+    # cost = p.get_average_cost_over_time(results, 1500, True)
+    cost = p.get_average_cost(results, True, 1, agent)
     plt.plot(cost)
     plt.ylim([0,1])
     plt.show()

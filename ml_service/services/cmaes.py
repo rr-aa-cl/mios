@@ -115,7 +115,10 @@ class CMAESService(BaseService):
 
         costs = []
         self.success_ratio = 0
-        kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
+        if self.knowledge_source is None:
+            kb = None
+        else:
+            kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
         for uuid in trial_uuids.keys():
             result = self.wait_for_result(uuid)
             if result.final_cost is None:
@@ -128,7 +131,8 @@ class CMAESService(BaseService):
             theta = []
             for i in range(len(trial_uuids[uuid])):
                 theta.append(float(trial_uuids[uuid][i]))
-            kb.push_trial(self.host_name, theta, float(result.final_cost), self.configuration.n_ind)
+            if kb is not None:
+                kb.push_trial(self.host_name, theta, float(result.final_cost), self.configuration.n_ind)
         self.success_ratio /= float(len(trial_uuids.keys()))
 
         logger.debug("CMAES costs: " + str(costs))
@@ -140,25 +144,30 @@ class CMAESService(BaseService):
         logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
         self.population = None
 
-        kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
+        if self.knowledge_source is None:
+            kb = None
+        else:
+            kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
 
         for gen in range(ngen):
             # Generate a new population
             self.population = toolbox.generate()
-            random.shuffle(self.population)
-            self.population = self.population[:len(self.population) - self.configuration.n_immigrant]
+            # random.shuffle(self.population)
+            if kb is not None:
+                self.population = self.population[:len(self.population) - self.configuration.n_immigrant]
             fitnesses = toolbox.map(toolbox.evaluate, self.population)
-            while True:
-                new_population = kb.request_trials(self.configuration.n_immigrant)
-                if new_population is False:
-                    print("Not enought yet")
-                    time.sleep(1)
-                    continue
-                else:
-                    break
-            for i in new_population:
-                self.population.append(deap.creator.Individual(i[0]))
-                fitnesses.append((i[1],))
+            if kb is not None:
+                while True:
+                    new_population = kb.request_trials(self.configuration.n_immigrant)
+                    if new_population is False:
+                        print("Not enought yet")
+                        time.sleep(1)
+                        continue
+                    else:
+                        break
+                for i in new_population:
+                    self.population.append(deap.creator.Individual(i[0]))
+                    fitnesses.append((i[1],))
 
             for ind, fit in zip(self.population, fitnesses):
                 ind.fitness.values = fit
@@ -169,7 +178,7 @@ class CMAESService(BaseService):
             # Update the strategy with the evaluated individuals
             toolbox.update(self.population)
             self.confidence = float(self.strategy.sigma)
-            
+
             print("ratio: " + str(self.success_ratio))
             print("sigma:" + str(self.strategy.sigma))
 
