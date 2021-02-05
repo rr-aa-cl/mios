@@ -163,7 +163,7 @@ then
 git clone --recurse-submodules https://github.com/frankaemika/libfranka.git
 fi
 cd libfranka
-git checkout 0.7.1
+git checkout 0.8.0
 git submodule update
 mkdir -p build
 cd build
