@@ -462,7 +462,7 @@ def move_cost() -> CostFunction:
     return c
 
 
-def grab(goal_pose: str, init_pose: str):
+def grab(approach_pose: str, grabbable: str, retract_pose: str, surface: str):
     limits = {
         "speed_t": (0, 0.2),
         "speed_r": (0, 0.5),
@@ -502,12 +502,14 @@ def grab(goal_pose: str, init_pose: str):
     }
     domain = Domain(limits, context_mapping, x_0)
     default_context = {
-        "name": "TaxMove",
+        "name": "TaxGrab",
         "parameters": {
-            "GoalPosition": goal_pose
+            "Approach": approach_pose,
+            "Retract": retract_pose,
+            "Grabbable": grabbable
         },
         "skills": {
-            "move": {
+            "grab": {
                 "skill": {
                     "time_max": 5.0
                 },
@@ -521,9 +523,9 @@ def grab(goal_pose: str, init_pose: str):
     }
     reset_instructions = []
     task_context = {
-        "name": "TaxMove",
+        "name": "TaxPlace",
         "skills": {
-            "move": {
+            "place": {
                 "skill": {
                     "speed": [0.075, 0.5],
                     "acc": [0.5, 1]
@@ -531,10 +533,475 @@ def grab(goal_pose: str, init_pose: str):
             }
         },
         "parameters": {
-            "GoalPose": init_pose
+            "Approach": retract_pose,
+            "Retract": approach_pose,
+            "Placeable": grabbable,
+            "Surface": surface
         }
     }
     reset_instructions.append({"method": "start_task", "parameters": task_context})
-    pd = ProblemDefinition("move", domain, default_context, [], [], reset_instructions,
-                           move_cost(), ["move"])
+    pd = ProblemDefinition("grab", domain, default_context, [], [], reset_instructions,
+                           grab_cost(), ["grab"])
     return pd
+
+
+def grab_cost() -> CostFunction:
+    c = CostFunction()
+    c.optimum_skills.append("grab")
+    c.optimum_weights[0] = 1
+    c.heuristic_expressions = "np.exp(var*100)"
+
+    c.heuristic_skills = ["grab"]
+    c.max_cost[0] = 5
+    c.max_cost[1] = 50
+    c.max_cost[2] = 160
+    c.finish_thr = 5
+    c.geometry_factor = 0.002
+    return c
+
+
+def place(approach_pose: str, placeable: str, retract_pose: str, surface: str):
+    limits = {
+        "speed_t": (0, 0.2),
+        "speed_r": (0, 0.5),
+        "acc_t": (0, 0.5),
+        "acc_r": (0, 1),
+        "K_x": (0, 2000),
+        "K_y": (0, 2000),
+        "K_z": (0, 2000),
+        "K_phi": (0, 200),
+        "K_chi": (0, 200),
+        "K_psi": (0, 200)
+    }
+    context_mapping = {
+        "speed_t": ["skills.move.skill.speed-1"],
+        "speed_r": ["skills.move.skill.speed-2"],
+        "acc_t": ["skills.move.skill.acc-1"],
+        "acc_r": ["skills.move.skill.acc-2"],
+        "K_x": ["skills.move.control.cart_imp.K_x-1"],
+        "K_y": ["skills.move.control.cart_imp.K_x-2"],
+        "K_z": ["skills.move.control.cart_imp.K_x-3"],
+        "K_phi": ["skills.move.control.cart_imp.K_x-4"],
+        "K_chi": ["skills.move.control.cart_imp.K_x-5"],
+        "K_psi": ["skills.move.control.cart_imp.K_x-6"]
+    }
+
+    x_0 = {
+        "speed_t": 0.2,
+        "speed_r": 0.2,
+        "acc_t": 0.2,
+        "acc_r": 0.2,
+        "K_x": 0.2,
+        "K_y": 0.2,
+        "K_z": 0.2,
+        "K_phi": 0.2,
+        "K_chi": 0.2,
+        "K_psi": 0.2
+    }
+    domain = Domain(limits, context_mapping, x_0)
+    default_context = {
+        "name": "TaxPlace",
+        "parameters": {
+            "Approach": approach_pose,
+            "Retract": retract_pose,
+            "Placeable": placeable,
+            "Surface": surface
+        },
+        "skills": {
+            "place": {
+                "skill": {
+                    "time_max": 5.0
+                },
+                "control": {
+                    "cart_imp": {
+                        "K_x": [0, 0, 0, 0, 0, 0]
+                    }
+                }
+            }
+        }
+    }
+    reset_instructions = []
+    task_context = {
+        "name": "TaxGrab",
+        "skills": {
+            "grab": {
+                "skill": {
+                    "speed": [0.075, 0.5],
+                    "acc": [0.5, 1]
+                }
+            }
+        },
+        "parameters": {
+            "Approach": retract_pose,
+            "Retract": approach_pose,
+            "Grabbable": placeable
+        }
+    }
+    reset_instructions.append({"method": "start_task", "parameters": task_context})
+    pd = ProblemDefinition("place", domain, default_context, [], [], reset_instructions,
+                           place_cost(), ["place"])
+    return pd
+
+
+def place_cost() -> CostFunction:
+    c = CostFunction()
+    c.optimum_skills.append("place")
+    c.optimum_weights[0] = 1
+    c.heuristic_expressions = "np.exp(var*100)"
+
+    c.heuristic_skills = ["place"]
+    c.max_cost[0] = 5
+    c.max_cost[1] = 50
+    c.max_cost[2] = 160
+    c.finish_thr = 5
+    c.geometry_factor = 0.002
+    return c
+
+
+def press_button(approach_pose: str, button: str):
+    limits = {
+        "apporach_speed_t": (0, 0.2),
+        "approach_speed_r": (0, 0.5),
+        "approach_acc_t": (0, 0.5),
+        "approach_acc_r": (0, 1),
+        "press_speed_t": (0, 0.2),
+        "press_speed_r": (0, 0.5),
+        "press_acc_t": (0, 0.5),
+        "press_acc_r": (0, 1),
+        "K_x": (0, 2000),
+        "K_y": (0, 2000),
+        "K_z": (0, 2000),
+        "K_phi": (0, 200),
+        "K_chi": (0, 200),
+        "K_psi": (0, 200)
+    }
+    context_mapping = {
+        "approach_speed_t": ["skills.move.skill.speed-1"],
+        "approach_speed_r": ["skills.move.skill.speed-2"],
+        "approach_acc_t": ["skills.move.skill.acc-1"],
+        "approach_acc_r": ["skills.move.skill.acc-2"],
+        "press_speed_t": ["skills.move.skill.speed-1"],
+        "press_speed_r": ["skills.move.skill.speed-2"],
+        "press_acc_t": ["skills.move.skill.acc-1"],
+        "press_acc_r": ["skills.move.skill.acc-2"],
+        "K_x": ["skills.move.control.cart_imp.K_x-1"],
+        "K_y": ["skills.move.control.cart_imp.K_x-2"],
+        "K_z": ["skills.move.control.cart_imp.K_x-3"],
+        "K_phi": ["skills.move.control.cart_imp.K_x-4"],
+        "K_chi": ["skills.move.control.cart_imp.K_x-5"],
+        "K_psi": ["skills.move.control.cart_imp.K_x-6"]
+    }
+
+    x_0 = {
+        "approach_speed_t": 0.2,
+        "approach_speed_r": 0.2,
+        "approach_acc_t": 0.2,
+        "approach_acc_r": 0.2,
+        "press_speed_t": 0.2,
+        "press_speed_r": 0.2,
+        "press_acc_t": 0.2,
+        "press_acc_r": 0.2,
+        "K_x": 0.2,
+        "K_y": 0.2,
+        "K_z": 0.2,
+        "K_phi": 0.2,
+        "K_chi": 0.2,
+        "K_psi": 0.2
+    }
+    domain = Domain(limits, context_mapping, x_0)
+    default_context = {
+        "name": "TaxPlace",
+        "parameters": {
+            "Approach": approach_pose,
+            "Button": button
+        },
+        "skills": {
+            "place": {
+                "skill": {
+                    "time_max": 5.0
+                },
+                "control": {
+                    "cart_imp": {
+                        "K_x": [0, 0, 0, 0, 0, 0]
+                    }
+                }
+            }
+        }
+    }
+    reset_instructions = []
+    pd = ProblemDefinition("press_button", domain, default_context, [], [], reset_instructions,
+                           press_button_cost(), ["press_button"])
+    return pd
+
+
+def press_button_cost() -> CostFunction:
+    c = CostFunction()
+    c.optimum_skills.append("press_button")
+    c.optimum_weights[0] = 1
+    c.heuristic_expressions = "np.exp(var*100)"
+
+    c.heuristic_skills = ["press_button"]
+    c.max_cost[0] = 5
+    c.max_cost[1] = 50
+    c.max_cost[2] = 160
+    c.finish_thr = 5
+    c.geometry_factor = 0.002
+    return c
+
+
+def turn(turnable: str, goal_orientation: str):
+    limits = {
+        "speed_t": (0, 0.2),
+        "speed_r": (0, 0.5),
+        "acc_t": (0, 0.5),
+        "acc_r": (0, 1),
+        "K_x": (0, 2000),
+        "K_y": (0, 2000),
+        "K_z": (0, 2000),
+        "K_phi": (0, 200),
+        "K_chi": (0, 200),
+        "K_psi": (0, 200)
+    }
+    context_mapping = {
+        "speed_t": ["skills.turn.skill.speed-1"],
+        "speed_r": ["skills.turn.skill.speed-2"],
+        "acc_t": ["skills.turn.skill.acc-1"],
+        "acc_r": ["skills.turn.skill.acc-2"],
+        "K_x": ["skills.turn.control.cart_imp.K_x-1"],
+        "K_y": ["skills.turn.control.cart_imp.K_x-2"],
+        "K_z": ["skills.turn.control.cart_imp.K_x-3"],
+        "K_phi": ["skills.turn.control.cart_imp.K_x-4"],
+        "K_chi": ["skills.turn.control.cart_imp.K_x-5"],
+        "K_psi": ["skills.turn.control.cart_imp.K_x-6"]
+    }
+
+    x_0 = {
+        "speed_t": 0.2,
+        "speed_r": 0.2,
+        "acc_t": 0.2,
+        "acc_r": 0.2,
+        "K_x": 0.2,
+        "K_y": 0.2,
+        "K_z": 0.2,
+        "K_phi": 0.2,
+        "K_chi": 0.2,
+        "K_psi": 0.2
+    }
+    domain = Domain(limits, context_mapping, x_0)
+    default_context = {
+        "name": "GenericTask",
+        "parameters": {
+            "skill_names": ["turn"],
+            "skill_types": ["TaxTurn"]
+        },
+        "skills": {
+            "turn": {
+                "skill": {
+                    "time_max": 5.0,
+                    "objects": {
+                        "Turnable": turnable,
+                        "GoalOrientation": goal_orientation
+                    }
+                },
+                "control": {
+                    "cart_imp": {
+                        "K_x": [0, 0, 0, 0, 0, 0]
+                    }
+                }
+            }
+        }
+    }
+    reset_instructions = []
+    task_context = {
+        "name": "GenericTask",
+        "skills": {
+            "turn": {
+                "skill": {
+                    "speed": [0.075, 0.5],
+                    "acc": [0.5, 1],
+                    "objects": {
+                        "Turnable": turnable,
+                        "GoalOrientation": goal_orientation
+                    }
+                }
+            }
+        },
+        "parameters": {
+            "skill_names": ["turn"],
+            "skill_types": ["TaxTurn"]
+        }
+    }
+    reset_instructions.append({"method": "start_task", "parameters": task_context})
+    pd = ProblemDefinition("turn", domain, default_context, [], [], reset_instructions,
+                           turn_cost(), ["turn"])
+    return pd
+
+
+def turn_cost() -> CostFunction:
+    c = CostFunction()
+    c.optimum_skills.append("turn")
+    c.optimum_weights[0] = 1
+    c.heuristic_expressions = "np.exp(var*100)"
+
+    c.heuristic_skills = ["turn"]
+    c.max_cost[0] = 5
+    c.max_cost[1] = 50
+    c.max_cost[2] = 160
+    c.finish_thr = 5
+    c.geometry_factor = 0.002
+    return c
+
+
+def extraction(extractable: str, container: str, extract_to: str):
+    limits = {
+        "speed_t": (0, 0.2),
+        "speed_r": (0, 0.5),
+        "acc_t": (0, 0.5),
+        "acc_r": (0, 1),
+        "wiggle_a_x": (0, 5),
+        "wiggle_a_y": (0, 5),
+        "wiggle_a_z": (0, 5),
+        "wiggle_a_phi": (0, 2),
+        "wiggle_a_chi": (0, 2),
+        # "wiggle_a_psi": (0, 2),
+        "wiggle_f_x": (0, 3),
+        "wiggle_f_y": (0, 3),
+        "wiggle_f_z": (0, 3),
+        "wiggle_f_phi": (0, 1),
+        "wiggle_f_chi": (0, 1),
+        # "wiggle_f_psi": (0, 1),
+        "stuck_dx_thr": (0, 0.1),
+        "K_x": (0, 2000),
+        "K_y": (0, 2000),
+        "K_z": (0, 2000),
+        "K_phi": (0, 200),
+        "K_chi": (0, 200),
+        "K_psi": (0, 200)
+    }
+    context_mapping = {
+        "speed_t": ["skills.turn.skill.speed-1"],
+        "speed_r": ["skills.turn.skill.speed-2"],
+        "acc_t": ["skills.turn.skill.acc-1"],
+        "acc_r": ["skills.turn.skill.acc-2"],
+        "wiggle_a_x": ["skills.insertion.skill.search_a-1"],
+        "wiggle_a_y": ["skills.insertion.skill.search_a-2"],
+        "wiggle_a_z": ["skills.insertion.skill.search_a-3"],
+        "wiggle_a_phi": ["skills.insertion.skill.search_a-4"],
+        "wiggle_a_chi": ["skills.insertion.skill.search_a-5"],
+        # "wiggle_a_psi": ["skills.insertion.skill.search_a-6"],
+        "wiggle_f_x": ["skills.insertion.skill.search_f-1"],
+        "wiggle_f_y": ["skills.insertion.skill.search_f-2"],
+        "wiggle_f_z": ["skills.insertion.skill.search_f-3"],
+        "wiggle_f_phi": ["skills.insertion.skill.search_f-4"],
+        "wiggle_f_chi": ["skills.insertion.skill.search_f-5"],
+        # "wiggle_f_psi": ["skills.insertion.skill.search_f-6"],
+        "stuck_dx_thr": ["skills.insertion.skill.stuck_dx_thr"],
+        "K_x": ["skills.turn.control.cart_imp.K_x-1"],
+        "K_y": ["skills.turn.control.cart_imp.K_x-2"],
+        "K_z": ["skills.turn.control.cart_imp.K_x-3"],
+        "K_phi": ["skills.turn.control.cart_imp.K_x-4"],
+        "K_chi": ["skills.turn.control.cart_imp.K_x-5"],
+        "K_psi": ["skills.turn.control.cart_imp.K_x-6"]
+    }
+
+    x_0 = {
+        "speed_t": 0.2,
+        "speed_r": 0.2,
+        "acc_t": 0.2,
+        "acc_r": 0.2,
+        "wiggle_a_x": 0.2,
+        "wiggle_a_y": 0.2,
+        "wiggle_a_z": 0.2,
+        "wiggle_a_phi": 0.2,
+        "wiggle_a_chi": 0.2,
+        # "wiggle_a_psi": 0.2,
+        "wiggle_f_x": 0.2,
+        "wiggle_f_y": 0.2,
+        "wiggle_f_z": 0.2,
+        "wiggle_f_phi": 0.2,
+        "wiggle_f_chi": 0.2,
+        # "wiggle_f_psi": 0.2,
+        "stuck_dx_thr": 0.2,
+        "K_x": 0.2,
+        "K_y": 0.2,
+        "K_z": 0.2,
+        "K_phi": 0.2,
+        "K_chi": 0.2,
+        "K_psi": 0.2
+    }
+    domain = Domain(limits, context_mapping, x_0)
+    default_context = {
+        "name": "GenericTask",
+        "parameters": {
+            "skill_names": ["extract"],
+            "skill_types": ["TaxExtraction"]
+        },
+        "skills": {
+            "extract": {
+                "skill": {
+                    "time_max": 5.0,
+                    "objects": {
+                        "Extractable": extractable,
+                        "Container": container,
+                        "ExtractTo": extract_to
+                    }
+                },
+                "control": {
+                    "cart_imp": {
+                        "K_x": [0, 0, 0, 0, 0, 0]
+                    }
+                }
+            }
+        }
+    }
+    reset_instructions = []
+    task_context = {
+        "name": "GenericTask",
+        "skills": {
+            "extract": {
+                "skill": {
+                    "speed": [0.075, 0.5],
+                    "acc": [0.5, 1],
+                    "objects": {
+                        "Extractable": extractable,
+                        "Container": container,
+                        "ExtractTo": extract_to
+                    }
+                }
+            },
+            "insert": {
+                "skill": {
+                    "speed": [0.075, 0.5],
+                    "acc": [0.5, 1],
+                    "objects": {
+                        "Insertable": extractable,
+                        "Container": container,
+                        "Approach": extract_to
+                    }
+                }
+            }
+        },
+        "parameters": {
+            "skill_names": ["extract", "insert"],
+            "skill_types": ["TaxExtraction", "TaxInsertion"]
+        }
+    }
+    reset_instructions.append({"method": "start_task", "parameters": task_context})
+    pd = ProblemDefinition("extraction", domain, default_context, [], [], reset_instructions,
+                           extraction_cost(), ["extraction"])
+    return pd
+
+
+def extraction_cost() -> CostFunction:
+    c = CostFunction()
+    c.optimum_skills.append("extraction")
+    c.optimum_weights[0] = 1
+    c.heuristic_expressions = "np.exp(var*100)"
+
+    c.heuristic_skills = ["extraction"]
+    c.max_cost[0] = 5
+    c.max_cost[1] = 50
+    c.max_cost[2] = 160
+    c.finish_thr = 5
+    c.geometry_factor = 0.002
+    return c
