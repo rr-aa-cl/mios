@@ -459,9 +459,9 @@ def collective_learning_benchmark_2():
 
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
-    service_config.n_ind = 10
+    service_config.n_ind = 20
     service_config.n_gen = 10
-    service_config.n_immigrant = 5
+    service_config.n_immigrant = 10
     tag = "collective_learning_benchmark_2_share"
     knowledge = {"mode": "none", "kb_location": agents[0], "kb_tags": [tag]}
     threads = []

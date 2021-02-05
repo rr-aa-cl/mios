@@ -8,6 +8,7 @@ from knowledge_processor.knowledge_processor_v2 import KnowledgeProcessor
 from knowledge_processor.kg_random_forest import KGRandomForest
 from knowledge_processor.kg_k_neighbors import KGKNeighbors
 from knowledge_processor.knowledge_generalizer_base import KnowledgeGeneralizerBase
+from sklearn.neighbors import KNeighborsRegressor
 
 logger = logging.getLogger("ml_service")
 
@@ -21,6 +22,9 @@ class KnowledgeManager:
         self.validation_per = 0.2
         self.n_retrain = 10  # how many times the generalizer is retrained before prediction
         self.data_storage = dict()
+        self.k_neighbors = KNeighborsRegressor(n_neighbors=5)
+        self.trial_data_x = []
+        self.trial_data_y = []
 
     def collect_data(self, db_client, task_identity, data_db: str = "ml_results") -> list:
         if data_db.find("knowledge") == -1:  # if collecting raw data (no knowledge)
@@ -452,3 +456,14 @@ class KnowledgeManager:
                 trials.append(t)
 
         return trials
+
+    def push_trial_2(self, theta, cost):
+        self.trial_data_x.append(theta)
+        self.trial_data_y.append(cost)
+        x = np.asarray(self.trial_data_x).reshape(-1, len(theta))
+        y = np.asarray(self.trial_data_y).reshape(-1, 1)
+        self.k_neighbors.fit(x, y)
+
+    def request_online_evaluation(self, theta):
+        x = np.asarray(theta).reshape(1, -1)
+        return float(self.k_neighbors.predict(x))

@@ -817,3 +817,23 @@ def color_matrix(name = "es_matrix.csv"):
     fig.colorbar(psm, ax=ax)
     plt.show()
 
+
+def plot_collective_benchmark():
+    host = "collective-panda-007.local"
+    tags = ["collective_learning_benchmark_2_share"]
+    p = DataProcessor()
+
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    # cost = p.get_average_cost_over_time(results, 1500, True)
+    cost = p.get_average_cost(results, True, 1)
+    plt.plot(cost)
+
+    tags = ["collective_learning_benchmark_single"]
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
+                                           filter={"meta.tags": {"$all": tags}})
+    # cost = p.get_average_cost_over_time(results, 1500, True)
+    cost = p.get_average_cost(results, True, 1)
+    plt.plot(cost)
+
+    plt.ylim([0,1])
+    plt.show()
