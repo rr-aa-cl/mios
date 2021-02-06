@@ -486,7 +486,7 @@ def collective_learning_benchmark_2():
 
 def collective_learning_experiment_2():
     agents = ["collective-panda-007", "collective-panda-008",
-              "collective-panda-009"]
+              "collective-panda-001"]
 
     call_method("collective-panda-001", 12002, "set_grasped_object", {"object": "generic_insertable"})
     #call_method("collective-panda-002", 12002, "set_grasped_object", {"object": "generic_insertable"})
