@@ -486,17 +486,17 @@ def collective_learning_benchmark_2():
 
 def collective_learning_experiment_2():
     agents = ["collective-panda-007", "collective-panda-008",
-              "collective-panda-009", "collective-panda-001", "collective-panda-002"]
+              "collective-panda-009"]
 
     call_method("collective-panda-001", 12002, "set_grasped_object", {"object": "generic_insertable"})
-    call_method("collective-panda-002", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    #call_method("collective-panda-002", 12002, "set_grasped_object", {"object": "generic_insertable"})
     call_method("collective-panda-007", 12002, "set_grasped_object", {"object": "generic_insertable"})
     call_method("collective-panda-008", 12002, "set_grasped_object", {"object": "generic_insertable"})
-    call_method("collective-panda-009", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    #call_method("collective-panda-009", 12002, "set_grasped_object", {"object": "generic_insertable"})
 
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
-    service_config.n_ind = 10
+    service_config.n_ind = 13
     service_config.n_gen = 10
     tag = "collective_learning_experiment_multi"
     knowledge = None
