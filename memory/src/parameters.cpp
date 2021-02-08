@@ -757,6 +757,10 @@ nlohmann::json ControlParameters::to_json() const{
 SkillParameters::SkillParameters(){
     time_max=0;
     parallels_frequency=1;
+    condition_level_pre=SkillConditionLevel::sclModel;
+    condition_level_success=SkillConditionLevel::sclModel;
+    condition_level_error=SkillConditionLevel::sclModel;
+    condition_level_exit=SkillConditionLevel::sclModel;
 }
 
 bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
@@ -771,12 +775,77 @@ bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
     if(p.find("objects")!=p.end()){
         read_skill_objects(p["objects"]);
     }
+    std::string level_pre;
+    if(!msrm_utils::read_json_param(p,"condition_level_pre",level_pre)){
+        spdlog::error("Could not read condition_level_pre.");
+        return false;
+    }
+    std::string level_success;
+    if(!msrm_utils::read_json_param(p,"condition_level_success",level_success)){
+        spdlog::error("Could not read condition_level_success.");
+        return false;
+    }
+    std::string level_error;
+    if(!msrm_utils::read_json_param(p,"condition_level_error",level_error)){
+        spdlog::error("Could not read condition_level_error.");
+        return false;
+    }
+    std::string level_exit;
+    if(!msrm_utils::read_json_param(p,"condition_level_exit",level_exit)){
+        spdlog::error("Could not read condition_level_exit.");
+        return false;
+    }
+
+    if(level_pre=="Model"){
+        condition_level_pre=SkillConditionLevel::sclModel;
+    }else if(level_pre=="Specification"){
+        condition_level_pre=SkillConditionLevel::sclSpecification;
+    }else if(level_pre=="External"){
+        condition_level_pre=SkillConditionLevel::sclExternal;
+    }else{
+        spdlog::error("Skill condition level " + level_pre + " for pre conditions does not exist.");
+        return false;
+    }
+
+    if(level_success=="Model"){
+        condition_level_success=SkillConditionLevel::sclModel;
+    }else if(level_success=="Specification"){
+        condition_level_success=SkillConditionLevel::sclSpecification;
+    }else if(level_success=="External"){
+        condition_level_success=SkillConditionLevel::sclExternal;
+    }else{
+        spdlog::error("Skill condition level " + level_success + " for success conditions does not exist.");
+        return false;
+    }
+
+    if(level_error=="Model"){
+        condition_level_error=SkillConditionLevel::sclModel;
+    }else if(level_error=="Specification"){
+        condition_level_error=SkillConditionLevel::sclSpecification;
+    }else if(level_error=="External"){
+        condition_level_error=SkillConditionLevel::sclExternal;
+    }else{
+        spdlog::error("Skill condition level " + level_error + " for error conditions does not exist.");
+        return false;
+    }
+
+    if(level_exit=="Model"){
+        condition_level_exit=SkillConditionLevel::sclModel;
+    }else if(level_exit=="Specification"){
+        condition_level_exit=SkillConditionLevel::sclSpecification;
+    }else if(level_exit=="External"){
+        condition_level_exit=SkillConditionLevel::sclExternal;
+    }else{
+        spdlog::error("Skill condition level " + level_exit + " for pre conditions does not exist.");
+        return false;
+    }
+
     return true;
 }
 
 void SkillParameters::read_skill_objects(const nlohmann::json &p){
     for(const auto& o : p.items()){
-        spdlog::debug("SKILLPARAMETERS:READ_SKILL_OBJECTS: o.key: " + o.key() + ", o.value: "+o.value().dump());
+        spdlog::debug("SkillParameters:read_skill_objects: o.key: " + o.key() + ", o.value: "+o.value().dump());
         objects.insert(std::make_pair(o.key(),o.value()));
     }
 }

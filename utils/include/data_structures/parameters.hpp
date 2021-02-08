@@ -10,6 +10,7 @@
 namespace mios {
 
 enum PandaHand{PandaHandDefault,PandaHandSofthand2,PandaHandNone};
+enum SkillConditionLevel{sclModel,sclSpecification,sclExternal};
 
 class Object;
 
@@ -237,6 +238,13 @@ public:
          * Frequency of parallel thread
          */
     unsigned parallels_frequency;
+
+    SkillConditionLevel condition_level_pre;
+    SkillConditionLevel condition_level_success;
+    SkillConditionLevel condition_level_error;
+    SkillConditionLevel condition_level_exit;
+
+
 
 };
 

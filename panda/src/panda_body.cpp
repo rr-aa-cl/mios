@@ -780,8 +780,13 @@ bool PandaBody::move_to_finger_position(double width, double speed) const{
             double max_width=state.max_width;
 
             if(width<0 || width>max_width){
-                spdlog::error("Gripper cannot reach width of "+std::to_string(width)+". Must be between 0 and "+std::to_string(max_width)+".");
-                return false;
+                spdlog::warn("Gripper cannot reach width of "+std::to_string(width)+". Must be between 0 and "+std::to_string(max_width)+".");
+                if(width<0){
+                    width=0;
+                }
+                if(width>max_width){
+                    width=max_width;
+                }
             }
             return this->m_panda_hand->move(width,speed);
         }catch(franka::CommandException& e){

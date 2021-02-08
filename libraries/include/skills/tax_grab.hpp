@@ -34,6 +34,8 @@ private:
     std::shared_ptr<ManipulationPrimitive> create_grasp_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_retract_mp(const Percept& p);
 
+    double get_goal_heuristic(const Percept &p) override;
+
 private:
     Eigen::Matrix<double,4,4> m_TF_T_EE_0;
 };

@@ -59,7 +59,7 @@ std::shared_ptr<ManipulationPrimitive> TaxGrab::get_initial_mp(const Percept& p)
 
 std::optional<std::shared_ptr<ManipulationPrimitive> > TaxGrab::graph_transition(const Percept &p){
     if(get_active_mp()->get_name()=="approach"){
-        if(get_active_mp()->get_strategy_interface("move")->finished()){
+        if(get_active_mp()->get_strategy_interface("move")->finished() && get_active_mp()->get_strategy_interface("open_gripper")->finished()){
             return create_pre_grasp_mp(p);
         }else{
             return {};
@@ -88,6 +88,8 @@ std::shared_ptr<ManipulationPrimitive> TaxGrab::create_approach_mp(const Percept
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
     move->set_goal(get_object_pose_T("Approach"),skill_params->speed,skill_params->acc);
+    mp->create_strategy<GripperStrategy>("open_gripper",1);
+    mp->get_strategy<GripperStrategy>("open_gripper")->move(1,2);
     return mp;
 }
 
@@ -138,7 +140,14 @@ bool TaxGrab::check_local_suc_conditions(const Percept &p){
 
 bool TaxGrab::check_local_ex_conditions(const Percept &p){
     if(get_active_mp()->get_name()=="retract"){
-        return get_active_mp()->get_strategy_interface("move")->finished();
+        if(get_active_mp()->get_strategy_interface("move")->finished()){
+            if((p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Retract").block<3,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0)
+               && acos(((get_object_pose_T("Retract").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) < m_memory->read_parameters()->user.env_X(1)){
+                return true;
+            }else{
+                return false;
+            }
+        }
     }
     return false;
 }
@@ -153,6 +162,13 @@ bool TaxGrab::check_local_err_conditions(const Percept &p){
         return true;
     }
     return false;
+}
+
+double TaxGrab::get_goal_heuristic(const Percept &p){
+    bool h = m_memory->get_live_context()->grasped_object->name!=get_object("Grabbable")->name;
+    return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Retract").block<3,1>(0,3)).norm() +
+            acos(((get_object_pose_T("Retract").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) +
+            h * 1;
 }
 
 }

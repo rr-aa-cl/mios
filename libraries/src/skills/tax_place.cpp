@@ -147,7 +147,14 @@ bool TaxPlace::check_local_suc_conditions(const Percept &p){
 
 bool TaxPlace::check_local_ex_conditions(const Percept &p){
     if(get_active_mp()->get_name()=="retract"){
-        return get_active_mp()->get_strategy_interface("move")->finished();
+        if(get_active_mp()->get_strategy_interface("move")->finished()){
+            if((p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Retract").block<3,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0)
+               && acos(((get_object_pose_T("Retract").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) < m_memory->read_parameters()->user.env_X(1)){
+                return true;
+            }else{
+                return false;
+            }
+        }
     }
     return false;
 }
@@ -162,6 +169,13 @@ bool TaxPlace::check_local_err_conditions(const Percept &p){
         return true;
     }
     return false;
+}
+
+double TaxPlace::get_goal_heuristic(const Percept &p){
+    bool h = m_memory->get_live_context()->grasped_object->name!=get_object("NullObject")->name;
+    return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Retract").block<3,1>(0,3)).norm() +
+            acos(((get_object_pose_T("Retract").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) +
+            h * 1;
 }
 
 }
