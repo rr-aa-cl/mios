@@ -1,4 +1,3 @@
-from tkinter.constants import NO
 import numpy as np
 from threading import Thread
 import uuid
@@ -63,30 +62,26 @@ def get_theta(x, problem_definition) -> dict:
 # config.n_gen = 10
 # config.n_ind = 13
 # config.exploration_mode = False
-def optimum_screening(optimum_tags, screening_tags, task, n_samples_pg = 200, sample_range = [0, 0.1]):
-    tags = ["costfunction_screening", "test"]
-    sample_parameters = ["stuck_dx_thr", "offset_x", "offset_y", "offset_phi", "offset_chi", "K_x", "K_y"]
-    sample_parameters = ["X1", "X2", "X3", "X4", "X5", "X6"]
-    n_samples_pg = 200
-    max_generations = 20
-    optimum_weights = [0,1,0,0,0]  # [0,0.5,0.3,0.2,0]
+def optimum_screening(optimum_tags, screening_tags, agent = "collective-panda-001.local", n_samples_pg = 200, max_generations=20, sample_range = [0, 0.1]):
+    agent_client = MongoDBClient(agent)
+    knowledge = agent_client.read("local_knowledge", "insert_object", {"meta.tags": optimum_tags})[0]
+    optimum = knowledge["parameters"]
+    optimum_weights = knowledge["meta"]["optimum_weights"]  #[0,1,0,0,0]  # [0,0.5,0.3,0.2,0]
     if len(optimum_weights) != len(CostFunction().optimum_weights):
         logging.error("invalid optimums_weights length")
 
     problem_definition = insert_cylinder(40, 0.8)
-    problem_definition = rastrigin_a(1)
+    #problem_definition = rastrigin_a(1)
     problem_definition.cost_function.optimum_weights = optimum_weights
-
-    for t in tags:
+    for t in optimum_tags:
+        screening_tags.append(t)
+    for t in screening_tags:
         problem_definition.tags.append(t)
-    agents = ["localhost"]  # "collective-panda-001.local"
 
-    client = MongoDBClient()
+    
+    call_method(agent, 12002, "set_grasped_object", {"object": "cylinder_40"})
 
-
-    #call_method("localhost", 12002, "set_grasped_object", {"object": "cylinder_40"})
-
-    engine = Engine(set(agents))
+    engine = Engine(set([agent]))
     database_results_id = engine.initialize(problem_definition, True)
 
     engine_thread = Thread(target=engine.main_loop)
@@ -94,10 +89,13 @@ def optimum_screening(optimum_tags, screening_tags, task, n_samples_pg = 200, sa
     import time
     time.sleep(0.1)
 
-    optimum = []
+    optimum_params = []
     for param in problem_definition.domain.vector_mapping:
-        optimum.append(np.mean(problem_definition.domain.limits[param]))
-    optimum_norm = problem_definition.domain.normalize(optimum)
+        if param in optimum:    
+            optimum_params.append(optimum[param])
+        else:
+            logger.error("param name not in initial optimum!")
+    optimum_norm = problem_definition.domain.normalize(optimum_params)
     print("optimum = ", optimum)
     print(database_results_id)
 
@@ -105,7 +103,6 @@ def optimum_screening(optimum_tags, screening_tags, task, n_samples_pg = 200, sa
     sample_range = [0, 0.01]   # [starting distance (from optimum), width]
     increase_sample_range = True
     verify = False
-    n_iter = 5
     keep_running = True
     cnt_generation = 0
     current_estimated_optimum_width = 0
@@ -139,11 +136,9 @@ def optimum_screening(optimum_tags, screening_tags, task, n_samples_pg = 200, sa
             for i in range(len(problem_definition.domain.vector_mapping)):
                 #lower limit
                 if rand_params[i] < problem_definition.domain.limits[problem_definition.domain.vector_mapping[i]][0]:
-                    #increase_sample_range = False  # dont continue growing when running into limits
                     rand_params[i] = problem_definition.domain.limits[problem_definition.domain.vector_mapping[i]][0]
                 #upper limit
                 if rand_params[i] > problem_definition.domain.limits[problem_definition.domain.vector_mapping[i]][1]:
-                    #increase_sample_range = False  # dont continue growing when running into limits
                     rand_params[i] = problem_definition.domain.limits[problem_definition.domain.vector_mapping[i]][1]
                 
 
@@ -153,10 +148,10 @@ def optimum_screening(optimum_tags, screening_tags, task, n_samples_pg = 200, sa
         for uuid in uuids:
             result = engine.wait_for_trial(uuid, 50).task_result
             # print("final_cost = ", result.final_cost)
-            #if result.success:
-            #    success_count = success_count + 1
-            if result.final_cost < 0.07:
+            if result.success:
                 success_count = success_count + 1
+            #if result.final_cost < 0.07:  # just because benchmark is always successful
+            #    success_count = success_count + 1
         print("found ",success_count," of ", n_samples_pg, " successful ",  " in sample_range: ", sample_range)
         print("this was verify step: ", verify)
         # if border of optimum is found -> decrease sample_range
@@ -189,7 +184,7 @@ def optimum_screening(optimum_tags, screening_tags, task, n_samples_pg = 200, sa
 
         if cnt_generation > max_generations:
             keep_running = False
-        if cnt_generation == max_generations:
+        if cnt_generation == max_generations:  # final validation
             sample_range[0] = 0
             sample_range[1] = current_estimated_optimum_width
             verify = False
@@ -203,7 +198,8 @@ def optimum_screening(optimum_tags, screening_tags, task, n_samples_pg = 200, sa
     data = {"optimum_width_norm": current_estimated_optimum_width, 
             "n_generations": cnt_generation,
             "inspected_optimum": optimum}
-    client.update("ml_results", problem_definition.task_type, {"_id": database_results_id}, {"final_result": data})
+    local_client = MongoDBClient()
+    local_client.update("ml_results", problem_definition.task_type, {"_id": database_results_id}, {"final_result": data})
     engine.keep_running = False
     time.sleep(3)
     print("Finished :)")
@@ -250,6 +246,7 @@ def cost_variance(n_trials = 20, n_repeat = 100, agents = ['collective-panda-001
         for id in ids:
             result = engine.wait_for_trial(id, 50).task_result
     
+    client = MongoDBClient()
     results = client.read("ml_results", "insert_object",{"_id": database_results_id})[0]#
     results.pop("meta", None)
     final_results = results.pop("final_result", None)
@@ -289,7 +286,8 @@ def cost_variance(n_trials = 20, n_repeat = 100, agents = ['collective-panda-001
     return optimum
 
 if __name__ == "__main__":
-    cost_variance()
+    optimum_screening(["cost_varaince_screening"], ["optimum_screening"], agent="collective-panda-001.local", n_samples_pg=5, max_generations=5,sample_range=[0,0.1])
+    #cost_variance()
     print("finished :)")
 
     

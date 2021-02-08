@@ -75,7 +75,7 @@ class MongoDBClient():
         db_connection = self.client[db]
         col = db_connection[collection]
         if "_id" in search_param.keys():  # if _id is given as string  ->  ObjectId
-                if isinstance(search_param["_id"],str):
+                if isinstance(search_param["_id"], str):
                     search_param["_id"] = objectid.ObjectId(search_param["_id"])
         for key in search_param:
             value = search_param[key]
@@ -92,8 +92,11 @@ class MongoDBClient():
         db_connection = self.client[db]
         col = db_connection[collection]
         if isinstance(search_param, dict):
+            if "_id" in search_param.keys():  # if _id is given as string  ->  ObjectId
+                if isinstance(search_param["_id"], str):
+                    search_param["_id"] = objectid.ObjectId(search_param["_id"])
             if isinstance(new_param, dict):
-                if new_param.get("_id",False):
+                if new_param.get("_id", False):
                     new_param.pop("_id")
                 new_param_set = {"$set": new_param}
                 col.update_one(search_param, new_param_set)

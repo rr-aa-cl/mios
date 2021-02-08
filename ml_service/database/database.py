@@ -39,6 +39,8 @@ class Database():
         self.rpc_server.register_function(self.stop_server, "stop_server")
         self.rpc_server.register_function(self.push_trial, "push_trial")
         self.rpc_server.register_function(self.request_trials, "request_trials")
+        self.rpc_server.register_function(self.push_trial_2, "push_trial_2")
+        self.rpc_server.register_function(self.request_online_evaluation, "request_online_evaluation")
         logger.debug("databse.start_server: starting rpc server with global database at port "+str(self.port))
         #self.rpc_server.serve_forever()
         self.stop = False
@@ -96,5 +98,11 @@ class Database():
 
     def request_trials(self, n_trials: int):
         return self.knowledge_manager.request_trials(n_trials)
+
+    def push_trial_2(self, theta, cost):
+        self.knowledge_manager.push_trial_2(theta, cost)
+
+    def request_online_evaluation(self, theta):
+        return self.knowledge_manager.request_online_evaluation(theta)
 
 

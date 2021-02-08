@@ -18,11 +18,11 @@ class DataProcessor:
                 length = len(l)
         return length
 
-    def get_collection_of_costs(self, results: list, decreasing: bool = False, episode_length: int = 1) -> list:
+    def get_collection_of_costs(self, results: list, decreasing: bool = False, episode_length: int = 1, agent = None) -> list:
         costs = []
         for r in results:
             if decreasing is True:
-                costs.append(self.get_monotonically_decreasing_cost(r.get_cost_per_trial(episode_length)))
+                costs.append(self.get_monotonically_decreasing_cost(r.get_cost_per_trial(episode_length, agent)))
             else:
                 costs.append(r.get_cost_per_trial(episode_length))
 
@@ -78,8 +78,8 @@ class DataProcessor:
             arr[i, -1] = percentage * cost[-1]
         return arr
 
-    def get_average_cost(self, results: list, decreasing: bool = False, episode_length: int = 1) -> np.ndarray:
-        return np.average(np.asarray(self.get_collection_of_costs(results, decreasing, episode_length)), 0)
+    def get_average_cost(self, results: list, decreasing: bool = False, episode_length: int = 1, agent=None) -> np.ndarray:
+        return np.average(np.asarray(self.get_collection_of_costs(results, decreasing, episode_length, agent)), 0)
 
     def get_average_cost_over_time(self, results: list, min_length: int, decreasing: bool = False) -> np.ndarray:
         return np.average(np.asarray(self.get_collection_of_costs_over_time(results, min_length, decreasing)), 0)

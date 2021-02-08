@@ -21,8 +21,7 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
         if "n" + str(i) in problem_def.tags:
             problem_def.tags.remove("n" + str(i))
         problem_def.tags.append("n" + str(i+1))
-        if len(client.read("ml_results", problem_def.task_type, {"meta.tags": {"$all": problem_def.tags}})) != 0\
-                and keep_record is True:
+        if keep_record is True and len(client.read("ml_results", problem_def.task_type, {"meta.tags": {"$all": problem_def.tags}})) != 0:
             print("Continue at n" + str(i+1))
             continue
         s = ServerProxy("http://" + learner + ":8000", allow_none=True)

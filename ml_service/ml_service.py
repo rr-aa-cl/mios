@@ -220,6 +220,6 @@ def test_trial_pushing(host: str):
     agents = ["a1", "a2", "a3"]
     for a in agents:
         for i in range(5):
-            s.push_trial(a, random.sample(range(-30, 30), 6), random.random(), 5)
+            s.push_trial_2(random.sample(range(-30, 30), 6), random.random())
 
-    print(s.request_trials(5))
+    print(s.request_online_evaluation([5,2,5,7,9,10]))

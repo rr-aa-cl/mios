@@ -6,23 +6,23 @@ from pymongo.errors import DuplicateKeyError
 def delete_local_results(agents: list, db: str, task_type: str, tags: list):
     for a in agents:
         client = MongoDBClient(a)
-        client.remove(db, task_type, {"meta.tags": {"$all": tags }})
+        client.remove(db, task_type, {"meta.tags": tags })
 
 
 def delete_local_knowledge(agents: list, db: str, task_type: str, tags: list):
     for a in agents:
         client = MongoDBClient(a)
-        client.remove(db, task_type, {"meta.tags": {"$all": tags }})
+        client.remove(db, task_type, {"meta.tags": tags })
 
 
 def delete_global_results(agent: str, db: str, task_type: str, tags: list):
     client = MongoDBClient(agent)
-    client.remove(db, task_type, {"meta.tags": {"$all": tags }})
+    client.remove(db, task_type, {"meta.tags": tags })
 
 
 def delete_global_knowledge(agent: str, db: str, task_type: str, tags: list):
     client = MongoDBClient(agent)
-    client.remove(db, task_type, {"meta.tags": {"$all": tags }})
+    client.remove(db, task_type, {"meta.tags": tags })
 
 
 def backup_result(from_host: str, to_host: str, task_type: str, uuid: str, dst_col: str):

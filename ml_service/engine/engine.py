@@ -32,6 +32,7 @@ class Trial:
 
         self.task_uuid = "INVALID"
         self.trial_uuid = "INVALID"
+        self.agent = "INVALID"
 
         self.trial_number = 0
         self.log = log
@@ -182,31 +183,32 @@ class Engine:
                 for a in self.agents.copy():
                     if a not in self.free_agents:
                         logger.debug("Agent " + a + " not in self.free_agents")
-                        time.sleep(1)
+                        # time.sleep(1)
                         continue
                     if worker_threads[a] is not None and worker_threads[a].is_alive() is True:
                         logger.debug("Thread of agent " + a + " is alive")
-                        time.sleep(1)
+                        # time.sleep(1)
                         continue
 
                     # logger.debug("Engine.main_loop().is_busy(" + a + ")")
                     response = call_method(a, 12000, "is_busy")
                     if response is None:
                         logger.debug("is_busy on agent " + a + ": response is None")
-                        time.sleep(1)
+                        # time.sleep(1)
                         continue
                     if response["result"]["busy"] is True:
                         logger.debug("is_busy on agent " + a + ": is busy")
-                        time.sleep(1)
+                        # time.sleep(1)
                         continue
 
                     self.free_agents.remove(a)
+                    trial.agent = a
                     worker_threads[a] = Thread(target=self._worker_loop, args=(a, trial,))
                     worker_threads[a].start()
                     thread_started = True
                     break
 
-            time.sleep(0.1)
+            # time.sleep(0.1)
 
         logger.debug("Engine::main_loop.after_loop")
         self.write_final_results()
@@ -397,7 +399,8 @@ class Engine:
             "success": trial.task_result.success,
             "t_0": trial.t_0,
             "t_1": trial.t_1,
-            "t_delta": trial.t_delta
+            "t_delta": trial.t_delta,
+            "agent": trial.agent
         }
         logger.debug("Engine::write_task_result.data: " + str(data))
         self.database_results_collection.update_one({'_id': self.database_results_id},
