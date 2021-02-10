@@ -29,7 +29,7 @@ def average_experiment(host: str, task_type: str, database: str, tags: list, age
     # cost = p.get_average_cost_over_time(results, 1500, True)
     cost = p.get_average_cost(results, True, 1, agent)
     plt.plot(cost)
-    plt.ylim([0,1])
+    plt.ylim([0,2.5])
     plt.show()
 
 def plot_experiment(host: str, task_type: str, database: str, tags: list):
@@ -836,4 +836,28 @@ def plot_collective_benchmark():
     plt.plot(cost)
 
     plt.ylim([0,1])
+    plt.show()
+
+
+def plot_stuff_1():
+    p = DataProcessor()
+
+    tags = ["collective_learning_experiment_multi"]
+    results = get_multiple_experiment_data("collective-panda-007.local", "insert_object", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    agent = "collective-panda-008"
+    cost = p.get_average_cost_over_time(results, 2000, True, agent)
+    # cost = p.get_average_cost(results, True, 1, agent)
+    plt.plot(cost)
+
+    tags = ["transfer_learning", "cylinder_60"]
+    results = get_multiple_experiment_data("collective-control-001.local", "insert_object", results_db="transfer_base_v2", filter={"meta.tags": {"$all": tags}})
+    cost = p.get_average_cost_over_time(results, 2000, True)
+    # cost = p.get_average_cost(results, True, 1)
+    plt.plot(cost)
+
+    plt.legend(("Shared","Single"))
+
+    plt.ylim([0,1])
+    plt.xlabel("Trial [1]")
+    plt.ylabel("Normed Cost [1]")
     plt.show()

@@ -702,7 +702,7 @@ def place_cost() -> CostFunction:
     return c
 
 
-def press_button(approach_pose: str, button: str):
+def press_button(approach_pose: str, button: str, init_pose: str):
     limits = {
         "apporach_speed_t": (0, 0.2),
         "approach_speed_r": (0, 0.5),
@@ -713,11 +713,11 @@ def press_button(approach_pose: str, button: str):
         "press_acc_t": (0, 0.5),
         "press_acc_r": (0, 1),
         "K_x": (0, 2000),
-        "K_y": (0, 2000),
-        "K_z": (0, 2000),
+        # "K_y": (0, 2000),
+        # "K_z": (0, 2000),
         "K_phi": (0, 200),
-        "K_chi": (0, 200),
-        "K_psi": (0, 200)
+        # "K_chi": (0, 200),
+        # "K_psi": (0, 200)
     }
     context_mapping = {
         "approach_speed_t": ["skills.move.skill.speed-1"],
@@ -728,12 +728,12 @@ def press_button(approach_pose: str, button: str):
         "press_speed_r": ["skills.move.skill.speed-2"],
         "press_acc_t": ["skills.move.skill.acc-1"],
         "press_acc_r": ["skills.move.skill.acc-2"],
-        "K_x": ["skills.move.control.cart_imp.K_x-1"],
-        "K_y": ["skills.move.control.cart_imp.K_x-2"],
-        "K_z": ["skills.move.control.cart_imp.K_x-3"],
-        "K_phi": ["skills.move.control.cart_imp.K_x-4"],
-        "K_chi": ["skills.move.control.cart_imp.K_x-5"],
-        "K_psi": ["skills.move.control.cart_imp.K_x-6"]
+        "K_x": ["skills.move.control.cart_imp.K_x-1", "skills.move.control.cart_imp.K_x-2", "skills.move.control.cart_imp.K_x-3"],
+        # "K_y": ["skills.move.control.cart_imp.K_x-2"],
+        # "K_z": ["skills.move.control.cart_imp.K_x-3"],
+        "K_phi": ["skills.move.control.cart_imp.K_x-4", "skills.move.control.cart_imp.K_x-5", "skills.move.control.cart_imp.K_x-6"],
+        # "K_chi": ["skills.move.control.cart_imp.K_x-5"],
+        # "K_psi": ["skills.move.control.cart_imp.K_x-6"]
     }
 
     x_0 = {
@@ -746,25 +746,30 @@ def press_button(approach_pose: str, button: str):
         "press_acc_t": 0.2,
         "press_acc_r": 0.2,
         "K_x": 0.2,
-        "K_y": 0.2,
-        "K_z": 0.2,
+        # "K_y": 0.2,
+        # "K_z": 0.2,
         "K_phi": 0.2,
-        "K_chi": 0.2,
-        "K_psi": 0.2
+        # "K_chi": 0.2,
+        # "K_psi": 0.2
     }
     domain = Domain(limits, context_mapping, x_0)
     default_context = {
-        "name": "TaxPlace",
+        "name": "GenericTask",
         "parameters": {
-            "Approach": approach_pose,
-            "Button": button
+            "skill_types": ["TaxPressButton"],
+            "skill_names": ["press_button"]
         },
         "skills": {
-            "place": {
+            "press_button": {
                 "skill": {
-                    "time_max": 5.0
+                    "time_max": 5.0,
+                    "objects": {
+                        "Approach": approach_pose,
+                        "Button": button
+                    }
                 },
                 "control": {
+                    "control_mode": 0,
                     "cart_imp": {
                         "K_x": [0, 0, 0, 0, 0, 0]
                     }
@@ -773,6 +778,32 @@ def press_button(approach_pose: str, button: str):
         }
     }
     reset_instructions = []
+    task_context = {
+        "name": "GenericTask",
+        "parameters": {
+            "skill_types": ["MoveToPoseJoint"],
+            "skill_names": ["move"]
+        },
+        "skills": {
+            "move": {
+                "skill": {
+                    "speed": 0.5,
+                    "acc": 1,
+                    "q_g": [0, 0, 0, 0, 0, 0, 0],
+                    "objects": {
+                        "goal_pose": init_pose
+                    }
+                },
+                "control": {
+                    "control_mode": 3
+                },
+                "user": {
+                    "env_X": [0.005, 0.0175]
+                }
+            }
+        }
+    }
+    reset_instructions.append({"method": "start_task", "parameters": task_context})
     pd = ProblemDefinition("press_button", domain, default_context, [], [], reset_instructions,
                            press_button_cost(), ["press_button"])
     return pd
@@ -782,7 +813,7 @@ def press_button_cost() -> CostFunction:
     c = CostFunction()
     c.optimum_skills.append("press_button")
     c.optimum_weights[0] = 1
-    c.heuristic_expressions = "np.exp(var*100)"
+    c.heuristic_expressions = "100"
 
     c.heuristic_skills = ["press_button"]
     c.max_cost[0] = 5
@@ -793,30 +824,30 @@ def press_button_cost() -> CostFunction:
     return c
 
 
-def turn(turnable: str, goal_orientation: str):
+def turn(turnable: str, goal_orientation: str, initial_pose: str):
     limits = {
         "speed_t": (0, 0.2),
-        "speed_r": (0, 0.5),
+        "speed_r": (0, 1),
         "acc_t": (0, 0.5),
-        "acc_r": (0, 1),
+        "acc_r": (0, 2),
         "K_x": (0, 2000),
-        "K_y": (0, 2000),
-        "K_z": (0, 2000),
+        # "K_y": (0, 2000),
+        # "K_z": (0, 2000),
         "K_phi": (0, 200),
-        "K_chi": (0, 200),
-        "K_psi": (0, 200)
+        # "K_chi": (0, 200),
+        # "K_psi": (0, 200)
     }
     context_mapping = {
-        "speed_t": ["skills.turn.skill.speed-1"],
-        "speed_r": ["skills.turn.skill.speed-2"],
-        "acc_t": ["skills.turn.skill.acc-1"],
-        "acc_r": ["skills.turn.skill.acc-2"],
-        "K_x": ["skills.turn.control.cart_imp.K_x-1"],
-        "K_y": ["skills.turn.control.cart_imp.K_x-2"],
-        "K_z": ["skills.turn.control.cart_imp.K_x-3"],
-        "K_phi": ["skills.turn.control.cart_imp.K_x-4"],
-        "K_chi": ["skills.turn.control.cart_imp.K_x-5"],
-        "K_psi": ["skills.turn.control.cart_imp.K_x-6"]
+        "speed_t": ["skills.turn.skill.turn_speed-1"],
+        "speed_r": ["skills.turn.skill.turn_speed-2"],
+        "acc_t": ["skills.turn.skill.turn_acc-1"],
+        "acc_r": ["skills.turn.skill.turn_acc-2"],
+        "K_x": ["skills.turn.control.cart_imp.K_x-1", "skills.turn.control.cart_imp.K_x-2", "skills.turn.control.cart_imp.K_x-3"],
+        # "K_y": ["skills.turn.control.cart_imp.K_x-2"],
+        # "K_z": ["skills.turn.control.cart_imp.K_x-3"],
+        "K_phi": ["skills.turn.control.cart_imp.K_x-4", "skills.turn.control.cart_imp.K_x-5", "skills.turn.control.cart_imp.K_x-6"],
+        # "K_chi": ["skills.turn.control.cart_imp.K_x-5"],
+        # "K_psi": ["skills.turn.control.cart_imp.K_x-6"]
     }
 
     x_0 = {
@@ -825,11 +856,11 @@ def turn(turnable: str, goal_orientation: str):
         "acc_t": 0.2,
         "acc_r": 0.2,
         "K_x": 0.2,
-        "K_y": 0.2,
-        "K_z": 0.2,
+        # "K_y": 0.2,
+        # "K_z": 0.2,
         "K_phi": 0.2,
-        "K_chi": 0.2,
-        "K_psi": 0.2
+        # "K_chi": 0.2,
+        # "K_psi": 0.2
     }
     domain = Domain(limits, context_mapping, x_0)
     default_context = {
@@ -848,6 +879,7 @@ def turn(turnable: str, goal_orientation: str):
                     }
                 },
                 "control": {
+                    "control_mode": 0,
                     "cart_imp": {
                         "K_x": [0, 0, 0, 0, 0, 0]
                     }
@@ -861,12 +893,15 @@ def turn(turnable: str, goal_orientation: str):
         "skills": {
             "turn": {
                 "skill": {
-                    "speed": [0.075, 0.5],
-                    "acc": [0.5, 1],
+                    "turn_speed": [0.075, 0.5],
+                    "turn_acc": [0.5, 1],
                     "objects": {
                         "Turnable": turnable,
-                        "GoalOrientation": goal_orientation
+                        "GoalOrientation": initial_pose
                     }
+                },
+                "control": {
+                    "control_mode": 0
                 }
             }
         },
@@ -885,7 +920,7 @@ def turn_cost() -> CostFunction:
     c = CostFunction()
     c.optimum_skills.append("turn")
     c.optimum_weights[0] = 1
-    c.heuristic_expressions = "np.exp(var*100)"
+    c.heuristic_expressions = "var"
 
     c.heuristic_skills = ["turn"]
     c.max_cost[0] = 5

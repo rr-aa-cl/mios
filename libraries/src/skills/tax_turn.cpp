@@ -64,4 +64,8 @@ bool TaxTurn::check_local_suc_conditions(const Percept &p){
     return false;
 }
 
+double TaxTurn::get_goal_heuristic(const Percept &p){
+    return acos(((get_object_pose_T("GoalOrientation").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2);
+}
+
 }

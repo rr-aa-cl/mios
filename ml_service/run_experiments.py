@@ -6,6 +6,7 @@ from definitions.insertion_definitions import insert_key_light
 from definitions.insertion_definitions import insert_generic
 from definitions.benchmark_definitions import mios_ml_benchmark
 from definitions.templates import move
+from definitions.templates import turn
 from services.cmaes import CMAESConfiguration
 from utils.udp_client import call_method
 from utils.database import delete_local_results
@@ -514,4 +515,15 @@ def tax_learn_move(robot: str, agents: list, n_iter: int = 1):
     service_config.n_ind = 9
     service_config.n_gen = 10
     tags = ["iros2021", "move"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
+def tax_learn_turn(robot: str, agents: list, n_iter: int = 1):
+    call_method(robot, 12002, "set_grasped_object", {"object": "iros_key"})
+    pd = turn("iros_key", "iros_turn_2", "iros_turn_1")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 9
+    service_config.n_gen = 10
+    tags = ["iros2021", "turn"]
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)

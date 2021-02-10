@@ -27,11 +27,17 @@ private:
     bool check_local_pre_conditions(const Percept &p) override;
     bool check_local_err_conditions(const Percept &p) override;
     bool check_local_suc_conditions(const Percept& p) override;
+    bool check_local_ex_conditions(const Percept &p) override;
 
     std::shared_ptr<ManipulationPrimitive> create_approach_mp(const Percept& p);
+    std::shared_ptr<ManipulationPrimitive> create_contact_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_push_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_hold_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_retract_mp(const Percept& p);
+
+private:
+    std::chrono::high_resolution_clock::time_point m_press_t_0;
+    bool m_press_started;
 
 };
 }

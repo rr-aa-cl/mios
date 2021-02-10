@@ -61,8 +61,10 @@ void STMemory::set_live_parameter(const std::string &key, const nlohmann::json &
 
 void STMemory::post_event(const std::string &name, const nlohmann::json &content){
     if(m_events.find(name)==m_events.end()){
+        spdlog::debug("STMemory::post_event("+name+","+content.dump()+")");
         m_events.emplace(std::make_pair(name,Event(name,content)));
     }else{
+        spdlog::debug("STMemory::post_event("+name+","+content.dump()+")");
         m_events.erase(m_events.find(name));
         m_events.emplace(std::make_pair(name,Event(name,content)));
     }
