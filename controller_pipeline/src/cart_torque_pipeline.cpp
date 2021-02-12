@@ -53,7 +53,7 @@ franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const A
     m_cntr_nullsp_proj.u.tau_c=m_cntr_nullsp_q.y.tau_J_d;
     m_cntr_nullsp_proj.step();
 
-    Eigen::Matrix<double,7,1> tau_J_d_total=m_cntr_aic.y.tau_J_d+m_cntr_force.y.tau_J_d+cmd.tau_ff;
+    Eigen::Matrix<double,7,1> tau_J_d_total=m_cntr_aic.y.tau_J_d+m_cntr_force.y.tau_J_d+cmd.tau_ff+p.internal_model.C;
     if(m_nullspace_control_on){
         tau_J_d_total+=m_cntr_nullsp_proj.y.tau_n;
     }

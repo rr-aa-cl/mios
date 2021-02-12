@@ -861,3 +861,29 @@ def plot_stuff_1():
     plt.xlabel("Trial [1]")
     plt.ylabel("Normed Cost [1]")
     plt.show()
+
+
+def plot_iros_learning(host="collective-panda-010.local"):
+    p = DataProcessor()
+    skills = ["turn", "turn", "turn", "turn", "turn", "turn"]
+    time = [1000, 1000, 1000, 1000, 1000, 1000]
+
+    fig, axes = plt.subplots(1, len(skills), sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0.2})
+
+    for i in range(len(skills)):
+        tags = [skills[i]]
+        results = get_multiple_experiment_data(host, skills[i], results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+        cost = p.get_average_cost_over_time(results, time[i], True)
+        axes[i].plot(cost)
+        axes[i].set_ylim(0, 1)
+        axes[i].set_xlim(0, time[i])
+        axes[i].grid()
+        axes[i].tick_params(axis="both", which="both", length=0)
+        axes[i].set_title(skills[i], y=1.0, pad=-14)
+        axes[i].set_xlabel("Time [s]")
+        if i == 0:
+            axes[i].set_ylabel("Cost [1]")
+
+    fig.set_size_inches(16, 4)
+    plt.savefig("iros_results.png", bbox_inches='tight', dpi=300)
+    plt.show()

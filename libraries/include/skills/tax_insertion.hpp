@@ -14,6 +14,7 @@ public:
     Eigen::Matrix<double,2,1> approach_acc;
     Eigen::Matrix<double,6,1> search_a;
     Eigen::Matrix<double,6,1> search_f;
+    Eigen::Matrix<double,6,1> DeltaX;
 
     Eigen::Matrix<double,6,1> ROI_x;
     Eigen::Matrix<double,6,1> ROI_phi;

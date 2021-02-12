@@ -7,6 +7,9 @@ from definitions.insertion_definitions import insert_generic
 from definitions.benchmark_definitions import mios_ml_benchmark
 from definitions.templates import move
 from definitions.templates import turn
+from definitions.templates import tax_insertion
+from definitions.templates import press_button
+from definitions.templates import extraction
 from services.cmaes import CMAESConfiguration
 from utils.udp_client import call_method
 from utils.database import delete_local_results
@@ -526,4 +529,37 @@ def tax_learn_turn(robot: str, agents: list, n_iter: int = 1):
     service_config.n_ind = 9
     service_config.n_gen = 10
     tags = ["iros2021", "turn"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
+def tax_learn_insertion(robot: str, agents: list, n_iter: int = 1):
+    call_method(robot, 12002, "set_grasped_object", {"object": "iros_key"})
+    pd = tax_insertion("iros_key", "iros_lock", "iros_lock_approach")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 13
+    service_config.n_gen = 10
+    tags = ["iros2021", "insertion"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
+def tax_learn_extraction(robot: str, agents: list, n_iter: int = 1):
+    call_method(robot, 12002, "set_grasped_object", {"object": "iros_key"})
+    pd = extraction("iros_key", "iros_lock", "iros_lock_approach")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 12
+    service_config.n_gen = 10
+    tags = ["iros2021", "extraction"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
+def tax_learn_press_button(robot: str, agents: list, n_iter: int = 1):
+    call_method(robot, 12002, "set_grasped_object", {"object": "iros_key"})
+    pd = press_button("iros_button_approach", "iros_button", "iros_button_init")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 9
+    service_config.n_gen = 10
+    tags = ["iros2021", "press_button"]
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)

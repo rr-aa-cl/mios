@@ -1,6 +1,7 @@
 #include "skills/tax_insertion.hpp"
 #include "strategies/move_to_pose.hpp"
 #include "strategies/ff_wiggle_strategy.hpp"
+#include "strategies/twist_strategy.hpp"
 #include "msrm_utils/math.hpp"
 
 namespace mios {
@@ -31,6 +32,9 @@ bool SkillParametersTaxInsertion::from_json(const nlohmann::json &parameters){
     if(!msrm_utils::read_json_param<double,6,1>(parameters,"search_f",search_f)){
         search_f.setZero();
     }
+    if(!msrm_utils::read_json_param<double,6,1>(parameters,"DeltaX",DeltaX)){
+        DeltaX.setZero();
+    }
     if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_x",ROI_x)){
         spdlog::error("Parameter ROI_x could not be loaded but is mandatory.");
         return false;
@@ -49,7 +53,7 @@ bool SkillParametersTaxInsertion::from_json(const nlohmann::json &parameters){
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxInsertion::get_parameter_list(){
-    return {{"approach_speed",{}},{"approach_acc",{}},{"insertion_speed",{}},{"insertion_acc",{}},{"stuck_dx_thr",{}},{"search_a",{}},{"search_f",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+    return {{"approach_speed",{}},{"approach_acc",{}},{"insertion_speed",{}},{"insertion_acc",{}},{"stuck_dx_thr",{}},{"search_a",{}},{"search_f",{}},{"DeltaX",{}},{"ROI_x",{}},{"ROI_phi",{}}};
 }
 
 TaxInsertion::TaxInsertion(const std::string &name, Memory *memory,Portal* portal):Skill("TaxInsertion",{"Insertable","Container","Approach"},name,memory,portal,
@@ -104,16 +108,25 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_approach_mp(const Pe
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Approach"),skill_params->approach_speed,skill_params->approach_acc);
+    Eigen::Matrix<double,4,4> T_a_offset = get_object_pose_T("Approach");
+    T_a_offset.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(skill_params->DeltaX(3),skill_params->DeltaX(4),skill_params->DeltaX(5));
+    Eigen::Matrix<double,4,4> T_a = get_object_pose_T("Approach");
+    T_a.block<3,3>(0,0)=T_a_offset.block<3,3>(0,0)*T_a.block<3,3>(0,0);
+    T_a.block<3,1>(0,3)+=skill_params->DeltaX.block<3,1>(0,0);
+    move->set_goal(T_a,skill_params->approach_speed,skill_params->approach_acc);
     return mp;
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_contact_mp(const Percept &p){
     std::shared_ptr<SkillParametersTaxInsertion> skill_params = get_parameters<SkillParametersTaxInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("contact",p);
-    mp->create_strategy<MoveToPoseStrategy>("move",1);
-    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Container"),skill_params->approach_speed,skill_params->approach_acc);
+    mp->create_strategy<TwistStrategy>("move",1);
+    std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
+    Eigen::Matrix<double,6,1> dX_d;
+    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Container").block<3,1>(0,3)+skill_params->DeltaX.block<3,1>(0,0)-p.proprioception.T_T_EE.block<3,1>(0,3);
+    dir/=dir.norm();
+    dX_d<<dir*skill_params->approach_speed(0),0,0,0;
+    move->set_TF_dX_d(dX_d,skill_params->approach_acc);
     return mp;
 }
 

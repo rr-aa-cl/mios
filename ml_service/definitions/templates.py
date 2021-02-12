@@ -958,10 +958,10 @@ def extraction(extractable: str, container: str, extract_to: str):
         "K_psi": (0, 200)
     }
     context_mapping = {
-        "speed_t": ["skills.turn.skill.speed-1"],
-        "speed_r": ["skills.turn.skill.speed-2"],
-        "acc_t": ["skills.turn.skill.acc-1"],
-        "acc_r": ["skills.turn.skill.acc-2"],
+        "speed_t": ["skills.turn.skill.extraction_speed-1"],
+        "speed_r": ["skills.turn.skill.extraction_speed-2"],
+        "acc_t": ["skills.turn.skill.extraction_acc-1"],
+        "acc_r": ["skills.turn.skill.extraction_acc-2"],
         "wiggle_a_x": ["skills.insertion.skill.search_a-1"],
         "wiggle_a_y": ["skills.insertion.skill.search_a-2"],
         "wiggle_a_z": ["skills.insertion.skill.search_a-3"],
@@ -1039,8 +1039,8 @@ def extraction(extractable: str, container: str, extract_to: str):
         "skills": {
             "extract": {
                 "skill": {
-                    "speed": [0.075, 0.5],
-                    "acc": [0.5, 1],
+                    "extraction_speed": [0.075, 0.5],
+                    "extraction_acc": [0.5, 1],
                     "objects": {
                         "Extractable": extractable,
                         "Container": container,
@@ -1050,8 +1050,10 @@ def extraction(extractable: str, container: str, extract_to: str):
             },
             "insert": {
                 "skill": {
-                    "speed": [0.075, 0.5],
-                    "acc": [0.5, 1],
+                    "approach_speed": [0.1, 0.5],
+                    "approach_acc": [0.5, 1],
+                    "insertion_speed": [0.05, 0.5],
+                    "insertion_acc": [0.5, 1],
                     "objects": {
                         "Insertable": extractable,
                         "Container": container,
@@ -1067,7 +1069,7 @@ def extraction(extractable: str, container: str, extract_to: str):
     }
     reset_instructions.append({"method": "start_task", "parameters": task_context})
     pd = ProblemDefinition("extraction", domain, default_context, [], [], reset_instructions,
-                           extraction_cost(), ["extraction"])
+                           extraction_cost(), ["extraction", extractable])
     return pd
 
 
@@ -1084,3 +1086,158 @@ def extraction_cost() -> CostFunction:
     c.finish_thr = 5
     c.geometry_factor = 0.002
     return c
+
+
+def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefinition:
+    limits = {
+        "speed_a_t": (0, 0.2),
+        "speed_a_r": (0, 0.5),
+        "acc_a_t": (0, 0.5),
+        "acc_a_r": (0, 1),
+        "speed_i_t": (0, 0.2),
+        "speed_i_r": (0, 0.5),
+        "acc_i_t": (0, 0.5),
+        "acc_i_r": (0, 1),
+        "wiggle_a_x": (0, 5),
+        "wiggle_a_y": (0, 5),
+        "wiggle_a_z": (0, 5),
+        "wiggle_a_phi": (0, 2),
+        "wiggle_a_chi": (0, 2),
+        # "wiggle_a_psi": (0, 2),
+        "wiggle_f_x": (0, 3),
+        "wiggle_f_y": (0, 3),
+        "wiggle_f_z": (0, 3),
+        "wiggle_f_phi": (0, 1),
+        "wiggle_f_chi": (0, 1),
+        # "wiggle_f_psi": (0, 1),
+        "stuck_dx_thr": (0, 0.1),
+        "offset_x": (-0.005, 0.005),
+        "offset_y": (-0.005, 0.005),
+        "offset_phi": (-10, 10),
+        "offset_chi": (-10, 10),
+        "K_x": (0, 2000),
+        "K_y": (0, 2000),
+        "K_z": (0, 2000),
+        "K_phi": (0, 200),
+        "K_chi": (0, 200),
+        "K_psi": (0, 200)
+    }
+    context_mapping = {
+        "speed_a_t": ["skills.insertion.skill.approach_speed-1"],
+        "speed_a_r": ["skills.insertion.skill.approach_speed-2"],
+        "acc_a_t": ["skills.insertion.skill.approach_acc-1"],
+        "acc_a_r": ["skills.insertion.skill.approach_acc-2"],
+        "speed_i_t": ["skills.insertion.skill.insertion_speed-1"],
+        "speed_i_r": ["skills.insertion.skill.insertion_speed-2"],
+        "acc_i_t": ["skills.insertion.skill.insertion_acc-1"],
+        "acc_i_r": ["skills.insertion.skill.insertion_acc-2"],
+        "wiggle_a_x": ["skills.insertion.skill.search_a-1"],
+        "wiggle_a_y": ["skills.insertion.skill.search_a-2"],
+        "wiggle_a_z": ["skills.insertion.skill.search_a-3"],
+        "wiggle_a_phi": ["skills.insertion.skill.search_a-4"],
+        "wiggle_a_chi": ["skills.insertion.skill.search_a-5"],
+        # "wiggle_a_psi": ["skills.insertion.skill.search_a-6"],
+        "wiggle_f_x": ["skills.insertion.skill.search_f-1"],
+        "wiggle_f_y": ["skills.insertion.skill.search_f-2"],
+        "wiggle_f_z": ["skills.insertion.skill.search_f-3"],
+        "wiggle_f_phi": ["skills.insertion.skill.search_f-4"],
+        "wiggle_f_chi": ["skills.insertion.skill.search_f-5"],
+        # "wiggle_f_psi": ["skills.insertion.skill.search_f-6"],
+        "stuck_dx_thr": ["skills.insertion.skill.stuck_dx_thr"],
+        "offset_x": ["parameters.offset-1"],
+        "offset_y": ["parameters.offset-2"],
+        "offset_phi": ["parameters.offset-4"],
+        "offset_chi": ["parameters.offset-5"],
+        "K_x": ["skills.insertion.control.cart_imp.K_x-1"],
+        "K_y": ["skills.insertion.control.cart_imp.K_x-2"],
+        "K_z": ["skills.insertion.control.cart_imp.K_x-3"],
+        "K_phi": ["skills.insertion.control.cart_imp.K_x-4"],
+        "K_chi": ["skills.insertion.control.cart_imp.K_x-5"],
+        "K_psi": ["skills.insertion.control.cart_imp.K_x-6"]
+    }
+
+    x_0 = {
+        "speed_a_t": 0.2,
+        "speed_a_r": 0.2,
+        "acc_a_t": 0.2,
+        "acc_a_r": 0.2,
+        "speed_i_t": 0.2,
+        "speed_i_r": 0.2,
+        "acc_i_t": 0.2,
+        "acc_i_r": 0.2,
+        "wiggle_a_x": 0.2,
+        "wiggle_a_y": 0.2,
+        "wiggle_a_z": 0.2,
+        "wiggle_a_phi": 0.2,
+        "wiggle_a_chi": 0.2,
+        # "wiggle_a_psi": 0.2,
+        "wiggle_f_x": 0.2,
+        "wiggle_f_y": 0.2,
+        "wiggle_f_z": 0.2,
+        "wiggle_f_phi": 0.2,
+        "wiggle_f_chi": 0.2,
+        # "wiggle_f_psi": 0.2,
+        "stuck_dx_thr": 0.2,
+        "offset_x": 0.5,
+        "offset_y": 0.5,
+        "offset_phi": 0.5,
+        "offset_chi": 0.5,
+        "K_x": 0.2,
+        "K_y": 0.2,
+        "K_z": 0.2,
+        "K_phi": 0.2,
+        "K_chi": 0.2,
+        "K_psi": 0.2
+    }
+
+    domain = Domain(limits, context_mapping, x_0)
+    default_context = {
+        "name": "GenericTask",
+        "parameters": {
+            "skill_types": ["TaxInsertion"],
+            "skill_names": ["insertion"]
+        },
+        "skills": {
+            "insertion": {
+                "skill": {
+                    "time_max": 10.0,
+                    "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1],
+                    "search_f": [0, 0, 0, 0, 0, 0],
+                    "search_a": [0, 0, 0, 0, 0, 0],
+                    "objects": {
+                        "Insertable": insertable,
+                        "Container": container,
+                        "Approach": approach,
+                    }
+                }
+            }
+        }
+    }
+    reset_instructions = []
+    task_context = {
+        "name": "GenericTask",
+        "parameters": {
+            "skill_types": ["TaxExtraction"],
+            "skill_names": ["extraction"]
+        },
+        "skills": {
+            "extraction": {
+                "skill": {
+                    "extraction_speed": [0.075, 0.5],
+                    "extraction_acc": [0.5, 1],
+                    "search_a": [10, 10, 0, 5, 5, 1],
+                    "search_f": [2, 1.5, 0, 1, 0.75, 0.5],
+                    "stuck_dx_thr": 0.01,
+                    "objects": {
+                        "Extractable": insertable,
+                        "Container": container,
+                        "ExtractTo": approach
+                    }
+                }
+            }
+        }
+    }
+    reset_instructions.append({"method": "start_task", "parameters": task_context})
+    pd = ProblemDefinition("insert_object", domain, default_context, [], [], reset_instructions,
+                           insertion_cost(), ["insertion", insertable])
+    return pd
