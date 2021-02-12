@@ -133,7 +133,7 @@ class CMAESService(BaseService):
                 theta.append(float(trial_uuids[uuid][i]))
             if kb is not None:
                 # kb.push_trial(self.host_name, theta, float(result.final_cost), self.configuration.n_ind)
-                kb.push_trial_2(theta, float(result.final_cost))
+                kb.push_trial_2(theta, float(result.final_cost), self.problem_definition.cost_function.geometry_factor)
         self.success_ratio /= float(len(trial_uuids.keys()))
 
         logger.debug("CMAES costs: " + str(costs))
@@ -163,7 +163,7 @@ class CMAESService(BaseService):
                     theta = []
                     for j in range(len(separated_pop[i])):
                         theta.append(float(separated_pop[i][j]))
-                    fitnesses.append((kb.request_online_evaluation(theta),))
+                    fitnesses.append((kb.request_online_evaluation(theta, self.problem_definition.cost_function.geometry_factor),))
                 self.population.extend(separated_pop)
                 # while True:
                 #     new_population = kb.request_trials(self.configuration.n_immigrant)

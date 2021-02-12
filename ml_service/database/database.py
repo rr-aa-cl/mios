@@ -99,10 +99,10 @@ class Database():
     def request_trials(self, n_trials: int):
         return self.knowledge_manager.request_trials(n_trials)
 
-    def push_trial_2(self, theta, cost):
-        self.knowledge_manager.push_trial_2(theta, cost)
+    def push_trial_2(self, theta, cost, task_parameter):
+        self.knowledge_manager.push_trial_2(theta, cost, task_parameter)
 
-    def request_online_evaluation(self, theta):
-        return self.knowledge_manager.request_online_evaluation(theta)
+    def request_online_evaluation(self, theta, task_parameter):
+        return self.knowledge_manager.request_online_evaluation(theta, task_parameter)
 
 

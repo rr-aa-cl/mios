@@ -457,13 +457,15 @@ class KnowledgeManager:
 
         return trials
 
-    def push_trial_2(self, theta, cost):
+    def push_trial_2(self, theta: list, cost: float, task_parameter: float):
+        theta.append(task_parameter)
         self.trial_data_x.append(theta)
         self.trial_data_y.append(cost)
         x = np.asarray(self.trial_data_x).reshape(-1, len(theta))
         y = np.asarray(self.trial_data_y).reshape(-1, 1)
         self.k_neighbors.fit(x, y)
 
-    def request_online_evaluation(self, theta):
+    def request_online_evaluation(self, theta: list, task_parameter: float):
+        theta.append(task_parameter)
         x = np.asarray(theta).reshape(1, -1)
         return float(self.k_neighbors.predict(x))

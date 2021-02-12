@@ -19,7 +19,7 @@ def simple_benchmark(robot: str, agents: list, n_iter: int = 1, tags: list = [])
     pd = mios_ml_benchmark(0)
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
-    service_config.n_ind = 10
+    service_config.n_ind = 5
     service_config.n_gen = 10
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
 
@@ -454,14 +454,14 @@ def collective_learning_benchmark():
 
 
 def collective_learning_benchmark_2():
-    agents = ["collective-panda-007.local", "collective-panda-008.local",
+    agents = ["collective-panda-001.local", "collective-panda-008.local",
               "collective-panda-009.local"]
 
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
-    service_config.n_ind = 20
+    service_config.n_ind = 10
     service_config.n_gen = 10
-    service_config.n_immigrant = 10
+    service_config.n_immigrant = 5
     tag = "collective_learning_benchmark_2_share"
     knowledge = {"mode": "none", "kb_location": agents[0], "kb_tags": [tag]}
     threads = []
