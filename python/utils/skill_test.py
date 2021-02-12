@@ -90,6 +90,57 @@ def test_tax_press_button(robot="collective-panda-008.local"):
                 })
 
 
+def tax_test_move(robot):
+    move1_context = {
+        "skill": {
+            "objects": {
+                "GoalPose": "move_1"
+            },
+            "speed": [0.05, 1],
+            "acc": [0.5, 5]
+        },
+        "control": {
+            "control_mode": 0,
+            "cart_imp": {
+                "K_x": [2000, 2000, 2000, 200, 200, 200]
+            }
+        }
+    }
+    t = Task(robot)
+    t.add_skill("move", "TaxMove", move1_context)
+    t.start()
+
+
+def tax_test_insertion(robot):
+    call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
+    insertion_context = {
+        "skill": {
+            "objects": {
+                "Container": "iros_lock",
+                "Approach": "iros_lock_approach",
+                "Insertable": "iros_key"
+            },
+            "approach_speed": [0.2, 0.5],
+            "approach_acc": [0.5, 1.0],
+            "insertion_speed": [0.02, 0.5],
+            "insertion_acc": [0.5, 1.0],
+            "search_a": [2, 2, 0, 0, 0, 0],
+            "search_f": [1, 0.75, 0, 0, 0, 0],
+            "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
+            "ROI_phi": [0, 0, 0, 0, 0, 0]
+        },
+        "control": {
+            "control_mode": 0,
+            "cart_imp": {
+                "K_x": [2000, 2000, 2000, 200, 200, 200]
+            }
+        }
+    }
+    t = Task(robot)
+    t.add_skill("insertion", "TaxInsertion", insertion_context)
+    t.start()
+
+
 def test_tax_extraction(robot="collective-panda-008.local"):
     start_skill(robot, "TaxExtraction",
                 {"objects": {"Container": "iros_lock", "ExtractTo": "iros_lock_approach",

@@ -958,29 +958,29 @@ def extraction(extractable: str, container: str, extract_to: str):
         "K_psi": (0, 200)
     }
     context_mapping = {
-        "speed_t": ["skills.turn.skill.extraction_speed-1"],
-        "speed_r": ["skills.turn.skill.extraction_speed-2"],
-        "acc_t": ["skills.turn.skill.extraction_acc-1"],
-        "acc_r": ["skills.turn.skill.extraction_acc-2"],
-        "wiggle_a_x": ["skills.insertion.skill.search_a-1"],
-        "wiggle_a_y": ["skills.insertion.skill.search_a-2"],
-        "wiggle_a_z": ["skills.insertion.skill.search_a-3"],
-        "wiggle_a_phi": ["skills.insertion.skill.search_a-4"],
-        "wiggle_a_chi": ["skills.insertion.skill.search_a-5"],
-        # "wiggle_a_psi": ["skills.insertion.skill.search_a-6"],
-        "wiggle_f_x": ["skills.insertion.skill.search_f-1"],
-        "wiggle_f_y": ["skills.insertion.skill.search_f-2"],
-        "wiggle_f_z": ["skills.insertion.skill.search_f-3"],
-        "wiggle_f_phi": ["skills.insertion.skill.search_f-4"],
-        "wiggle_f_chi": ["skills.insertion.skill.search_f-5"],
-        # "wiggle_f_psi": ["skills.insertion.skill.search_f-6"],
-        "stuck_dx_thr": ["skills.insertion.skill.stuck_dx_thr"],
-        "K_x": ["skills.turn.control.cart_imp.K_x-1"],
-        "K_y": ["skills.turn.control.cart_imp.K_x-2"],
-        "K_z": ["skills.turn.control.cart_imp.K_x-3"],
-        "K_phi": ["skills.turn.control.cart_imp.K_x-4"],
-        "K_chi": ["skills.turn.control.cart_imp.K_x-5"],
-        "K_psi": ["skills.turn.control.cart_imp.K_x-6"]
+        "speed_t": ["skills.extract.skill.extraction_speed-1"],
+        "speed_r": ["skills.extract.skill.extraction_speed-2"],
+        "acc_t": ["skills.extract.skill.extraction_acc-1"],
+        "acc_r": ["skills.extract.skill.extraction_acc-2"],
+        "wiggle_a_x": ["skills.extract.skill.search_a-1"],
+        "wiggle_a_y": ["skills.extract.skill.search_a-2"],
+        "wiggle_a_z": ["skills.extract.skill.search_a-3"],
+        "wiggle_a_phi": ["skills.extract.skill.search_a-4"],
+        "wiggle_a_chi": ["skills.extract.skill.search_a-5"],
+        # "wiggle_a_psi": ["skills.extract.skill.search_a-6"],
+        "wiggle_f_x": ["skills.extract.skill.search_f-1"],
+        "wiggle_f_y": ["skills.extract.skill.search_f-2"],
+        "wiggle_f_z": ["skills.extract.skill.search_f-3"],
+        "wiggle_f_phi": ["skills.extract.skill.search_f-4"],
+        "wiggle_f_chi": ["skills.extract.skill.search_f-5"],
+        # "wiggle_f_psi": ["skills.extract.skill.search_f-6"],
+        "stuck_dx_thr": ["skills.extract.skill.stuck_dx_thr"],
+        "K_x": ["skills.extract.control.cart_imp.K_x-1"],
+        "K_y": ["skills.extract.control.cart_imp.K_x-2"],
+        "K_z": ["skills.extract.control.cart_imp.K_x-3"],
+        "K_phi": ["skills.extract.control.cart_imp.K_x-4"],
+        "K_chi": ["skills.extract.control.cart_imp.K_x-5"],
+        "K_psi": ["skills.extract.control.cart_imp.K_x-6"]
     }
 
     x_0 = {
@@ -1026,6 +1026,7 @@ def extraction(extractable: str, container: str, extract_to: str):
                     }
                 },
                 "control": {
+                    "control_mode": 0,
                     "cart_imp": {
                         "K_x": [0, 0, 0, 0, 0, 0]
                     }
@@ -1046,6 +1047,9 @@ def extraction(extractable: str, container: str, extract_to: str):
                         "Container": container,
                         "ExtractTo": extract_to
                     }
+                },
+                "control": {
+                    "control_mode": 0
                 }
             },
             "insert": {
@@ -1054,11 +1058,16 @@ def extraction(extractable: str, container: str, extract_to: str):
                     "approach_acc": [0.5, 1],
                     "insertion_speed": [0.05, 0.5],
                     "insertion_acc": [0.5, 1],
+                    "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1],
+                    "ROI_phi": [-0.03, 0.03, -0.03, 0.03, -1, 1],
                     "objects": {
                         "Insertable": extractable,
                         "Container": container,
                         "Approach": extract_to
                     }
+                },
+                "control": {
+                    "control_mode": 0
                 }
             }
         },
@@ -1075,11 +1084,11 @@ def extraction(extractable: str, container: str, extract_to: str):
 
 def extraction_cost() -> CostFunction:
     c = CostFunction()
-    c.optimum_skills.append("extraction")
+    c.optimum_skills.append("extract")
     c.optimum_weights[0] = 1
     c.heuristic_expressions = "np.exp(var*100)"
 
-    c.heuristic_skills = ["extraction"]
+    c.heuristic_skills = ["extract"]
     c.max_cost[0] = 5
     c.max_cost[1] = 50
     c.max_cost[2] = 160
@@ -1202,6 +1211,7 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
                 "skill": {
                     "time_max": 10.0,
                     "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1],
+                    "ROI_phi": [-0.03, 0.03, -0.03, 0.03, -1, 1],
                     "search_f": [0, 0, 0, 0, 0, 0],
                     "search_a": [0, 0, 0, 0, 0, 0],
                     "objects": {

@@ -544,8 +544,8 @@ def tax_learn_insertion(robot: str, agents: list, n_iter: int = 1):
 
 
 def tax_learn_extraction(robot: str, agents: list, n_iter: int = 1):
-    call_method(robot, 12002, "set_grasped_object", {"object": "iros_key"})
-    pd = extraction("iros_key", "iros_lock", "iros_lock_approach")
+    call_method(robot, 12002, "set_grasped_object", {"object": "key_pad"})
+    pd = extraction("key_pad", "lock_pad", "lock_pad_above")
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 12

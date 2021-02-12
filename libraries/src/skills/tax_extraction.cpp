@@ -114,7 +114,7 @@ bool TaxExtraction::check_local_err_conditions(const Percept &p){
 }
 
 double TaxExtraction::get_goal_heuristic(const Percept &p){
-    return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm();
+    return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("ExtractTo").block<3,1>(0,3)).norm();
 }
 
 bool TaxExtraction::is_stuck(const Percept &p){
