@@ -42,6 +42,7 @@ franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const A
     m_cntr_aic.u.K_x=cmd.K_x;
     m_cntr_aic.u.xi_x=cmd.xi_x;
     m_cntr_aic.u.TF_F_ff=cmd.TF_F_ff;
+//    std::cout<<m_cntr_aic.u.TF_F_ff<<std::endl;
     m_cntr_aic.step();
 
     m_cntr_force.u.TF_F_d_K=cmd.TF_F_d;

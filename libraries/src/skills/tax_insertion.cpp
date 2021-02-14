@@ -57,7 +57,7 @@ bool SkillParametersTaxInsertion::from_json(const nlohmann::json &parameters){
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxInsertion::get_parameter_list(){
-    return {{"approach_speed",{}},{"approach_acc",{}},{"insertion_speed",{}},{"insertion_acc",{}},{"stuck_dx_thr",{}},{"search_a",{}},{"search_f",{}},{"DeltaX",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+    return {{"f_max_push",{}},{"approach_speed",{}},{"approach_acc",{}},{"insertion_speed",{}},{"insertion_acc",{}},{"stuck_dx_thr",{}},{"search_a",{}},{"search_f",{}},{"DeltaX",{}},{"ROI_x",{}},{"ROI_phi",{}}};
 }
 
 TaxInsertion::TaxInsertion(const std::string &name, Memory *memory,Portal* portal):Skill("TaxInsertion",{"Insertable","Container","Approach"},name,memory,portal,
@@ -90,7 +90,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_trans
             return {};
         }
     }
-    if(get_active_mp()->get_name()=="move"){
+    if(get_active_mp()->get_name()=="insert"){
         if(!is_stuck(p)){
             return {};
         }else{

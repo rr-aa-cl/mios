@@ -646,6 +646,10 @@ def place(approach_pose: str, placeable: str, retract_pose: str, surface: str):
             "place": {
                 "skill": {
                     "time_max": 5.0,
+                    "release_width": 0.05,
+                    "release_speed": 2,
+                    "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1],
+                    "ROI_phi": [-0.03, 0.03, -0.03, 0.03, -1, 1],
                     "objects": {
                         "Approach": approach_pose,
                         "Retract": retract_pose,
@@ -680,6 +684,31 @@ def place(approach_pose: str, placeable: str, retract_pose: str, surface: str):
             "Approach": retract_pose,
             "Retract": approach_pose,
             "Grabbable": placeable
+        }
+    }
+    task_context = {
+        "name": "GenericTask",
+        "parameters": {
+            "skill_types": ["MoveToPoseJoint"],
+            "skill_names": ["move"]
+        },
+        "skills": {
+            "move": {
+                "skill": {
+                    "speed": 0.5,
+                    "acc": 1,
+                    "q_g": [0, 0, 0, 0, 0, 0, 0],
+                    "objects": {
+                        "goal_pose": approach_pose
+                    }
+                },
+                "control": {
+                    "control_mode": 3
+                },
+                "user": {
+                    "env_X": [0.005, 0.0175]
+                }
+            }
         }
     }
     reset_instructions.append({"method": "start_task", "parameters": task_context})
@@ -1102,19 +1131,19 @@ def extraction_cost() -> CostFunction:
 
 def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefinition:
     limits = {
-        "speed_a_t": (0, 0.2),
+        "speed_a_t": (0, 0.5),
         "speed_a_r": (0, 0.5),
-        "acc_a_t": (0, 0.5),
-        "acc_a_r": (0, 1),
+        "acc_a_t": (0, 1),
+        "acc_a_r": (0, 2),
         "speed_i_t": (0, 0.2),
         "speed_i_r": (0, 0.5),
         "acc_i_t": (0, 0.5),
         "acc_i_r": (0, 1),
-        "wiggle_a_x": (0, 5),
-        "wiggle_a_y": (0, 5),
+        "wiggle_a_x": (0, 10),
+        "wiggle_a_y": (0, 10),
         "wiggle_a_z": (0, 5),
-        "wiggle_a_phi": (0, 2),
-        "wiggle_a_chi": (0, 2),
+        "wiggle_a_phi": (0, 3),
+        "wiggle_a_chi": (0, 3),
         # "wiggle_a_psi": (0, 2),
         "wiggle_f_x": (0, 3),
         "wiggle_f_y": (0, 3),
@@ -1156,10 +1185,10 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
         "wiggle_f_chi": ["skills.insertion.skill.search_f-5"],
         # "wiggle_f_psi": ["skills.insertion.skill.search_f-6"],
         "stuck_dx_thr": ["skills.insertion.skill.stuck_dx_thr"],
-        "offset_x": ["parameters.offset-1"],
-        "offset_y": ["parameters.offset-2"],
-        "offset_phi": ["parameters.offset-4"],
-        "offset_chi": ["parameters.offset-5"],
+        "offset_x": ["skills.insertion.skill.DeltaX-1"],
+        "offset_y": ["skills.insertion.skill.DeltaX-2"],
+        "offset_phi": ["skills.insertion.skill.DeltaX-4"],
+        "offset_chi": ["skills.insertion.skill.DeltaX-5"],
         "K_x": ["skills.insertion.control.cart_imp.K_x-1"],
         "K_y": ["skills.insertion.control.cart_imp.K_x-2"],
         "K_z": ["skills.insertion.control.cart_imp.K_x-3"],
@@ -1217,10 +1246,18 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
                     "ROI_phi": [-0.03, 0.03, -0.03, 0.03, -1, 1],
                     "search_f": [0, 0, 0, 0, 0, 0],
                     "search_a": [0, 0, 0, 0, 0, 0],
+                    "DeltaX": [0, 0, 0, 0, 0, 0],
+                    "f_max_push": 10,
                     "objects": {
                         "Insertable": insertable,
                         "Container": container,
                         "Approach": approach,
+                    }
+                },
+                "control": {
+                    "control_mode": 0,
+                    "cart_imp": {
+                        "K_x": [0, 0, 0, 0, 0, 0]
                     }
                 }
             }
@@ -1230,8 +1267,8 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
     task_context = {
         "name": "GenericTask",
         "parameters": {
-            "skill_types": ["TaxExtraction"],
-            "skill_names": ["extraction"]
+            "skill_types": ["TaxExtraction", "MoveToPoseJoint"],
+            "skill_names": ["extraction", "move"]
         },
         "skills": {
             "extraction": {
@@ -1246,11 +1283,45 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
                         "Container": container,
                         "ExtractTo": approach
                     }
+                },
+                "control": {
+                    "control_mode": 0
+                }
+            },
+            "move": {
+                "skill": {
+                    "speed": 0.5,
+                    "acc": 1,
+                    "q_g": [0, 0, 0, 0, 0, 0, 0],
+                    "objects": {
+                        "goal_pose": approach
+                    }
+                },
+                "control": {
+                    "control_mode": 3
+                },
+                "user": {
+                    "env_X": [0.005, 0.0175]
                 }
             }
         }
     }
     reset_instructions.append({"method": "start_task", "parameters": task_context})
     pd = ProblemDefinition("insert_object", domain, default_context, [], [], reset_instructions,
-                           insertion_cost(), ["insertion", insertable])
+                           tax_insertion_cost(), ["insertion", insertable])
     return pd
+
+
+def tax_insertion_cost() -> CostFunction:
+    c = CostFunction()
+    c.optimum_skills.append("insertion")
+    c.optimum_weights[0] = 1
+    c.heuristic_expressions = "np.exp(var*100)"
+
+    c.heuristic_skills = ["insertion"]
+    c.max_cost[0] = 10
+    c.max_cost[1] = 50
+    c.max_cost[2] = 160
+    c.finish_thr = 5
+    c.geometry_factor = 0.002
+    return c

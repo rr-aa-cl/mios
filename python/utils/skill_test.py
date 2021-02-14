@@ -59,13 +59,31 @@ def test_tax_grab(robot="collective-panda-008.local"):
 
 def test_tax_place(robot="collective-panda-008.local"):
     call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
-    start_skill(robot, "TaxPlace",
-                {"objects": {"Retract": "iros_key_grab_retract", "Approach": "iros_key_grab_approach",
-                             "Placeable": "iros_key", "Surface": "iros_key_storage"},
-                 "speed": [0.05, 0.5], "acc": [0.5, 1.0],
-                 "release_width": 0.06, "release_speed": 2,
-                 "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
-                 "ROI_phi": [0, 0, 0, 0, 0, 0]}, {"control_mode": 0})
+    place_context = {
+        "skill": {
+            "objects": {
+                "Retract": "iros_key_place_approach",
+                "Approach": "iros_key_place_approach",
+                "Placeable": "iros_key",
+                "Surface": "iros_key_storage"
+            },
+            "speed": [0.1, 0.5],
+            "acc": [0.5, 1.0],
+            "release_width": 0.03,
+            "release_speed": 2,
+            "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
+            "ROI_phi": [0, 0, 0, 0, 0, 0]
+        },
+        "control": {
+            "control_mode": 0
+        },
+        "user": {
+            "env_X": [0.01, 0.02]
+        }
+    }
+    t = Task(robot)
+    t.add_skill("place", "TaxPlace", place_context)
+    t.start()
 
 
 def test_tax_turn(robot="collective-panda-008.local"):
@@ -113,19 +131,20 @@ def tax_test_move(robot):
 
 
 def tax_test_insertion(robot):
-    call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
+    call_method(robot, 12000, "set_grasped_object", {"object": "key_pad"})
     insertion_context = {
         "skill": {
             "objects": {
-                "Container": "iros_lock",
-                "Approach": "iros_lock_approach",
-                "Insertable": "iros_key"
+                "Container": "lock_pad",
+                "Approach": "lock_pad_above",
+                "Insertable": "key_pad"
             },
             "approach_speed": [0.2, 0.5],
             "approach_acc": [0.5, 1.0],
-            "insertion_speed": [0.02, 0.5],
+            "insertion_speed": [0.05, 0.5],
             "insertion_acc": [0.5, 1.0],
-            "search_a": [2, 2, 0, 0, 0, 0],
+            "f_max_push": 10,
+            "search_a": [10, 10, 0, 0, 0, 0],
             "search_f": [1, 0.75, 0, 0, 0, 0],
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0]
@@ -133,7 +152,7 @@ def tax_test_insertion(robot):
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
+                "K_x": [500, 500, 2000, 200, 200, 200]
             }
         }
     }

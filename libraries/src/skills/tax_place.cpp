@@ -71,7 +71,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxPlace::graph_transitio
         }
     }
     if(get_active_mp()->get_name()=="release"){
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_t_sim).count()>0.7){
+        if(get_result().success){
 //        if(get_active_mp()->get_strategy_interface("release")->finished()){
             return create_retract_mp(p);
         }else{
@@ -145,6 +145,9 @@ bool TaxPlace::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxPlace::check_local_suc_conditions(const Percept &p){
+    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_t_sim).count()>7000 && get_active_mp()->get_name()=="release"){
+        return true;
+    }
     if(m_memory->get_live_context()->grasped_object->name=="NullObject"){
         return true;
     }
