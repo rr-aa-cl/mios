@@ -18,6 +18,7 @@ from utils.database import backup_results
 from experiments.collective_learning import CollectiveLearningBase
 
 from threading import Thread
+from xmlrpc.client import ServerProxy
 
 
 def simple_benchmark(robot: str, agents: list, n_iter: int = 1, tags: list = []):
@@ -556,6 +557,8 @@ def tax_learn_extraction(robot: str, agents: list, n_iter: int = 1):
 
 def tax_learn_press_button(robot: str, agents: list, n_iter: int = 1):
     pd = press_button("iros_button_approach", "iros_button", "iros_button_init")
+    s = ServerProxy("http://localhost:8000", allow_none=True)
+    s.subscribe_to_event("button_press", robot, "12000")
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 9
