@@ -704,14 +704,14 @@ def place_cost() -> CostFunction:
 
 def press_button(approach_pose: str, button: str, init_pose: str):
     limits = {
-        "approach_speed_t": (0, 0.2),
-        "approach_speed_r": (0, 0.5),
-        "approach_acc_t": (0, 0.5),
-        "approach_acc_r": (0, 1),
-        "press_speed_t": (0, 0.2),
+        "approach_speed_t": (0, 0.5),
+        "approach_speed_r": (0, 1),
+        "approach_acc_t": (0, 1),
+        "approach_acc_r": (0, 2),
+        "press_speed_t": (0, 0.3),
         "press_speed_r": (0, 0.5),
-        "press_acc_t": (0, 0.5),
-        "press_acc_r": (0, 1),
+        "press_acc_t": (0, 1),
+        "press_acc_r": (0, 2),
         "K_x": (0, 2000),
         # "K_y": (0, 2000),
         # "K_z": (0, 2000),
