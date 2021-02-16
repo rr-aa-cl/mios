@@ -84,6 +84,10 @@ public:
     Eigen::Matrix<double,3,3> load_I;
 
     Eigen::Matrix<double,2,1> env_X;
+    Eigen::Matrix<double,2,1> env_dX;
+
+    double env_q;
+    double env_dq;
 
     bool safe_mode;
 

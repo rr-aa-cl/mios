@@ -12,6 +12,8 @@ struct SkillParametersTaxMove : public SkillParameters{
     Eigen::Matrix<double,2,1> acc;
     Eigen::Matrix<double,4,4> T_T_EE_g;
     Eigen::Matrix<double,4,4> T_T_EE_g_offset;
+    double finger_width;
+    double finger_speed;
 };
 
 class TaxMove : public Skill{

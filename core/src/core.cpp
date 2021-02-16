@@ -31,7 +31,7 @@ namespace mios {
 Core::Core(unsigned database_port, unsigned robot_configuration):m_memory(database_port),m_skill_engine(SkillEngine(this)),m_panda_body(PandaBody(&m_memory)),
     m_portal(Portal("0.0.0.0",12000,"mios/core","0.0.0.0",12001,12002)),m_skill_library(&m_memory,&m_portal),
     m_task_engine(TaskEngine(this)),m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_ros_node(this,&m_task_engine,&m_portal,&m_memory),
-    m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false),m_robot_configuration(robot_configuration),m_hand_grace_period(0){
+    m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false),m_robot_configuration(robot_configuration),m_hand_grace_period(0),m_blend_skill(false){
 }
 
 Core::~Core(){
@@ -168,6 +168,7 @@ ControlReturnType Core::execute_skill(){
     }
 
     post_execution();
+    m_blend_skill=false;
     return result;
 }
 
@@ -211,11 +212,29 @@ void Core::handle_gripper(Actuator* cmd){
 }
 
 franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
-
+    bool exception=false;
+    if(m_skill_engine.is_running_queue() && m_blend_skill){
+        if(!m_skill_engine.blend_skill_stage_1()){
+            spdlog::error("First stage of skill blending failed.");
+            exception=true;
+        }
+    }
     franka::GripperState gripper_state;
     m_percept.update(m_panda_body.get_panda_model(),state,gripper_state,m_memory.read_parameters()->frames.O_R_T);
     m_memory.internal_update(m_percept);
+    if(m_skill_engine.is_running_queue() && m_blend_skill){
+        if(!m_skill_engine.blend_skill_stage_2()){
+            spdlog::error("Second stage of skill blending failed.");
+            exception=true;
+        }
+        m_blend_skill=false;
+    }
+
     Actuator* cmd=m_skill_engine.get_next_command(m_percept);
+    if(exception){
+        cmd->stop();
+    }
+
     handle_gripper(cmd);
 
 
@@ -239,8 +258,16 @@ franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
         m->step(m_percept,panda_cmd);
     }
     if(cmd->is_stopped()){
-        spdlog::trace("Core::control_base_cycle.stopped");
-        panda_cmd->motion_finished=true;
+        if(m_skill_engine.is_running_queue()){
+            m_blend_skill=true;
+            if(m_skill_engine.is_last_skill()){
+                spdlog::trace("Core::control_base_cycle.stopped");
+                panda_cmd->motion_finished=true;
+            }
+        }else{
+            spdlog::trace("Core::control_base_cycle.stopped");
+            panda_cmd->motion_finished=true;
+        }
     }
     return panda_cmd;
 }

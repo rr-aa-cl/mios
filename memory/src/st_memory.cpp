@@ -145,6 +145,63 @@ bool STMemory::apply_skill_context(const nlohmann::json task_context, const std:
     return true;
 }
 
+bool STMemory::apply_reserved_skill_context(const std::string& skill_id){
+    if(m_reserved_parameters.find(skill_id)==m_reserved_parameters.end()){
+        spdlog::error("No parameters reserved for skill with id " + skill_id + ".");
+        return false;
+    }
+    m_parameters=m_reserved_parameters[skill_id];
+    return true;
+}
+
+bool STMemory::reserve_parameters(const nlohmann::json task_context, const std::string &skill_id){
+    if(task_context.find("skills")==task_context.end()){
+        spdlog::error("The current task context contains no skills");
+        return false;
+    }
+    if(task_context["skills"].find(skill_id)==task_context["skills"].end()){
+        spdlog::error("The current task context contains no skill with id " + skill_id);
+        return false;
+    }
+    if(!m_reserved_parameters[skill_id].control.from_json(task_context["skills"][skill_id]["control"])){
+        spdlog::error("Could not apply control parameters from context for skill " + skill_id);
+        return false;
+    }
+    if(!m_reserved_parameters[skill_id].frames.from_json(task_context["skills"][skill_id]["frames"])){
+        spdlog::error("Could not apply frames parameters from context for skill " + skill_id);
+        return false;
+    }
+    if(!m_reserved_parameters[skill_id].limits.from_json(task_context["skills"][skill_id]["limits"])){
+        spdlog::error("Could not apply limits parameters from context for skill " + skill_id);
+        return false;
+    }
+    if(!m_reserved_parameters[skill_id].skill->from_json(task_context["skills"][skill_id]["skill"])){
+        spdlog::error("Could not apply skill parameters from context for skill " + skill_id);
+        return false;
+    }
+    if(!m_reserved_parameters[skill_id].skill->read_global_skill_parameters(task_context["skills"][skill_id]["skill"])){
+        spdlog::error("Could not apply global skill parameters from context for skill " + skill_id);
+        return false;
+    }
+    if(!m_reserved_parameters[skill_id].safety.from_json(task_context["skills"][skill_id]["safety"])){
+        spdlog::error("Could not apply safety parameters from context for skill " + skill_id);
+        return false;
+    }
+    if(!m_reserved_parameters[skill_id].system.from_json(task_context["skills"][skill_id]["system"])){
+        spdlog::error("Could not apply system parameters from context for skill " + skill_id);
+        return false;
+    }
+    if(!m_reserved_parameters[skill_id].user.from_json(task_context["skills"][skill_id]["user"])){
+        spdlog::error("Could not apply user parameters from context for skill " + skill_id);
+        return false;
+    }
+    return true;
+}
+
+void STMemory::clear_reserved_skills(){
+    m_reserved_parameters.clear();
+}
+
 bool STMemory::set_default_parameters(){
     nlohmann::json default_parameters;
     if(!m_lt_memory->load_default_parameters(default_parameters)){

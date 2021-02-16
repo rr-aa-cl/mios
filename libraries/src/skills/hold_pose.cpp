@@ -27,8 +27,8 @@ std::shared_ptr<ManipulationPrimitive> HoldPose::get_initial_mp(const Percept &p
 
 bool HoldPose::check_local_suc_conditions(const Percept &p){
     std::shared_ptr<SkillParametersHoldPose> c = read_parameters<SkillParametersHoldPose>();
-    double t_run=std::chrono::duration_cast<std::chrono::seconds>(p.time-m_memory->get_live_context()->t_skill).count();
-    return t_run>c->t_max;
+    double t_run=std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count();
+    return t_run>c->t_max*1000;
 }
 
 bool HoldPose::check_local_ex_conditions(const Percept &p){

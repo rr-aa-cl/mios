@@ -1,5 +1,6 @@
 #include "skills/tax_move.hpp"
 #include "strategies/move_to_pose.hpp"
+#include "strategies/gripper_strategy.hpp"
 #include <franka/exception.h>
 
 namespace mios {
@@ -29,11 +30,17 @@ bool SkillParametersTaxMove::from_json(const nlohmann::json &p){
     if(!msrm_utils::read_json_param<double,4,4>(p,"T_T_EE_g",T_T_EE_g) && !object_set){
         T_T_EE_g.setIdentity();
     }
+    if(!msrm_utils::read_json_param(p,"finger_width",finger_width)){
+        finger_width=-1;
+    }
+    if(!msrm_utils::read_json_param(p,"finger_speed",finger_speed)){
+        finger_speed=0;
+    }
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxMove::get_parameter_list(){
-    return {{"t_settle",{}},{"speed",{}},{"acc",{}},{"T_T_EE_g_offset",{}},{"T_T_EE_g",{}}};
+    return {{"t_settle",{}},{"speed",{}},{"acc",{}},{"T_T_EE_g_offset",{}},{"T_T_EE_g",{}},{"finger_width",{}},{"finger_speed",{}}};
 }
 
 TaxMove::TaxMove(const std::string &id, Memory *memory, Portal *portal):Skill("TaxMove",{"GoalPose"},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}),
@@ -57,6 +64,11 @@ std::shared_ptr<ManipulationPrimitive> TaxMove::get_initial_mp(const Percept &p_
     Eigen::Matrix<double,2,1> scale;
     scale<<1,1;
     mp->get_strategy<MoveToPoseStrategy>("s_0")->set_scale(scale);
+
+    if(skill_params->finger_width!=-1 && skill_params->finger_speed!=0){
+        mp->create_strategy<GripperStrategy>("gripper",1);
+        mp->get_strategy<GripperStrategy>("gripper")->move(skill_params->finger_width,skill_params->finger_speed);
+    }
     return mp;
 }
 

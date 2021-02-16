@@ -71,8 +71,8 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxPlace::graph_transitio
         }
     }
     if(get_active_mp()->get_name()=="release"){
-        if(get_result().success){
-//        if(get_active_mp()->get_strategy_interface("release")->finished()){
+//        if(get_result().success){
+        if(get_active_mp()->get_strategy_interface("release")->finished()){
             return create_retract_mp(p);
         }else{
             return {};
@@ -111,13 +111,13 @@ std::shared_ptr<ManipulationPrimitive> TaxPlace::create_release_mp(const Percept
 
     std::shared_ptr<SkillParametersTaxPlace> skill_params = get_parameters<SkillParametersTaxPlace>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("release",p);
-    mp->create_strategy<NullStrategy>("sim_release",1);
-    m_t_sim=std::chrono::high_resolution_clock::now();
+//    mp->create_strategy<NullStrategy>("sim_release",1);
+//    m_t_sim=std::chrono::high_resolution_clock::now();
 
 
-//    mp->create_strategy<GripperStrategy>("release",1);
-//    std::shared_ptr<GripperStrategy> release = mp->get_strategy<GripperStrategy>("release");
-//    release->move(skill_params->release_width,skill_params->release_speed);
+    mp->create_strategy<GripperStrategy>("release",1);
+    std::shared_ptr<GripperStrategy> release = mp->get_strategy<GripperStrategy>("release");
+    release->move(skill_params->release_width,skill_params->release_speed);
     return mp;
 }
 
@@ -145,9 +145,9 @@ bool TaxPlace::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxPlace::check_local_suc_conditions(const Percept &p){
-    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_t_sim).count()>7000 && get_active_mp()->get_name()=="release"){
-        return true;
-    }
+//    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_t_sim).count()>700 && get_active_mp()->get_name()=="release"){
+//        return true;
+//    }
     if(m_memory->get_live_context()->grasped_object->name=="NullObject"){
         return true;
     }

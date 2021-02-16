@@ -58,6 +58,11 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
     m_cmd.TF_F_ff.setZero();
     m_cmd.dq_d.setZero();
     m_cmd.tau_ff.setZero();
+    m_cmd.K_x=m_memory->read_parameters()->control.cart_imp.K_x;
+    m_cmd.xi_x=m_memory->read_parameters()->control.cart_imp.xi_x;
+    m_cmd.K_theta=m_memory->read_parameters()->control.joint_imp.K_theta;
+    m_cmd.xi_theta=m_memory->read_parameters()->control.joint_imp.xi_theta;
+    m_cmd.O_R_T=m_memory->read_parameters()->frames.O_R_T;
     if(m_strategies.size()==0){
         spdlog::error("No strategies have been added to the primitive.");
         return false;

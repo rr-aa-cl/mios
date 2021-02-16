@@ -17,9 +17,11 @@ public:
 
 private:
     void execute_any_skill(unsigned index);
+    void add_any_skill(unsigned index);
 
 private:
     std::vector<std::pair<std::string,std::string> > m_skills;
+    bool m_as_queue;
 };
 
 }

@@ -103,6 +103,7 @@ private:
 private:
     bool m_is_ready;
     unsigned m_robot_configuration;
+    bool m_blend_skill;
 
 private:
     unsigned m_hand_grace_period;

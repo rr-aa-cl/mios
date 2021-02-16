@@ -89,7 +89,7 @@ std::shared_ptr<ManipulationPrimitive> TaxGrab::create_approach_mp(const Percept
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
     move->set_goal(get_object_pose_T("Approach"),skill_params->speed,skill_params->acc);
     mp->create_strategy<GripperStrategy>("open_gripper",1);
-    mp->get_strategy<GripperStrategy>("open_gripper")->move(1,2);
+    mp->get_strategy<GripperStrategy>("open_gripper")->move(1,1000);
     return mp;
 }
 

@@ -51,6 +51,14 @@ bool Memory::apply_skill_context(const nlohmann::json& context, const std::strin
     return m_st_memory.apply_skill_context(context, skill_id);
 }
 
+bool Memory::apply_reserved_skill_context(const std::string skill_id){
+    return m_st_memory.apply_reserved_skill_context(skill_id);
+}
+
+void Memory::clear_reserved_skills(){
+    m_st_memory.clear_reserved_skills();
+}
+
 std::shared_ptr<Task> Memory::load_task(const std::string &task_id, const nlohmann::json &parameters,Core* core){
     return m_lt_memory.load_task(task_id,parameters,core);
 }

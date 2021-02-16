@@ -41,8 +41,49 @@ void GenericTask::initialize_context(){
 }
 
 void GenericTask::execute(){
-    for(unsigned i=0;i<m_skills.size();i++){
-        execute_any_skill(i);
+    if(m_as_queue){
+        for(unsigned i=0;i<m_skills.size();i++){
+            add_any_skill(i);
+        }
+        execute_skill_queue();
+    }else{
+        for(unsigned i=0;i<m_skills.size();i++){
+            execute_any_skill(i);
+        }
+    }
+}
+
+void GenericTask::add_any_skill(unsigned int index){
+    std::string name = m_skills[index].first;
+    std::string type = m_skills[index].second;
+    switch(msrm_utils::str_to_int(type.c_str())){
+    case msrm_utils::str_to_int("TestSkill1"):
+        add_skill<TestSkill1,SkillParametersTestSkill1>(name);
+        break;
+    case msrm_utils::str_to_int("HoldPose"):
+        add_skill<HoldPose,SkillParametersHoldPose>(name);
+        break;
+    case msrm_utils::str_to_int("TaxMove"):
+        add_skill<TaxMove,SkillParametersTaxMove>(name);
+        break;
+    case msrm_utils::str_to_int("TaxGrab"):
+        add_skill<TaxGrab,SkillParametersTaxGrab>(name);
+        break;
+    case msrm_utils::str_to_int("TaxPlace"):
+        add_skill<TaxPlace,SkillParametersTaxPlace>(name);
+        break;
+    case msrm_utils::str_to_int("TaxInsertion"):
+        add_skill<TaxInsertion,SkillParametersTaxInsertion>(name);
+        break;
+    case msrm_utils::str_to_int("TaxExtraction"):
+        add_skill<TaxExtraction,SkillParametersTaxExtraction>(name);
+        break;
+    case msrm_utils::str_to_int("TaxTurn"):
+        add_skill<TaxTurn,SkillParametersTaxTurn>(name);
+        break;
+    case msrm_utils::str_to_int("TaxPressButton"):
+        add_skill<TaxPressButton,SkillParametersTaxPressButton>(name);
+        break;
     }
 }
 
@@ -151,6 +192,9 @@ bool GenericTask::read_parameters(const nlohmann::json &params){
     for(unsigned i=0;i<names.size();i++){
         m_skills.emplace_back(std::make_pair(names[i],types[i]));
     }
+    if(!msrm_utils::read_json_param(params,"as_queue",m_as_queue)){
+        m_as_queue=false;
+    }
     return true;
 }
 
@@ -158,6 +202,7 @@ void GenericTask::get_default_context(nlohmann::json &context){
     context["parameters"] = nlohmann::json();
     context["parameters"]["skill_names"]=nlohmann::json();
     context["parameters"]["skill_types"]=nlohmann::json();
+    context["parameters"]["as_queue"]=false;
 }
 
 }

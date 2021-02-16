@@ -127,7 +127,7 @@ Actuator* Skill::cycle(const Percept &p){
     }
     if(m_life_cycle==SkillLifeCycle::slSettle){
         spdlog::trace("Skill::cycle.settle");
-        if(m_active_mp->is_settled()){
+        if(m_active_mp->is_settled() && is_settled(p)){
             m_life_cycle=SkillLifeCycle::slTerminate;
         }
         return m_active_mp->stop(p,m_stop_factor);
@@ -205,6 +205,16 @@ Actuator* Skill::cycle(const Percept &p){
     m_life_cycle=SkillLifeCycle::slSettle;
     m_stop_factor=1;
     return m_active_mp->stop(p);
+}
+
+bool Skill::is_settled(const Percept &p){
+    if(p.proprioception.dq.norm()<m_memory->read_parameters()->user.env_dq &&
+            p.proprioception.TF_dX_EE.block<3,1>(0,0).norm()<m_memory->read_parameters()->user.env_dX(0) &&
+            p.proprioception.TF_dX_EE.block<3,1>(2,0).norm()<m_memory->read_parameters()->user.env_dX(1)){
+        return true;
+    }else{
+        return false;
+    }
 }
 
 void Skill::set_pause(bool pause){

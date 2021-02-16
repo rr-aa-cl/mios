@@ -195,6 +195,9 @@ UserParameters::UserParameters(){
     load_I.setZero();
 
     env_X<<0.005,0.0175;
+    env_dX<<0.001,0.005;
+    env_q=0.0175;
+    env_dq=0.005;
 
     safe_mode=true;
 }
@@ -250,6 +253,18 @@ bool UserParameters::from_json(const nlohmann::json &parameters){
         spdlog::error("Could not read env_X.");
         return false;
     }
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"env_dX",env_dX)){
+        spdlog::error("Could not read env_dX.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param(parameters,"env_q",env_q)){
+        spdlog::error("Could not read env_q.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param(parameters,"env_dq",env_dq)){
+        spdlog::error("Could not read env_dq.");
+        return false;
+    }
 
     if(!msrm_utils::read_json_param(parameters,"safe_mode",safe_mode)){
         spdlog::error("Could not read safe_mode.");
@@ -275,6 +290,9 @@ nlohmann::json UserParameters::to_json() const{
     json_object["load_I"]=msrm_utils::from_eigen<double,3,3>(load_I);
 
     json_object["env_X"]=msrm_utils::from_eigen<double,2,1>(env_X);
+    json_object["env_dX"]=msrm_utils::from_eigen<double,2,1>(env_dX);
+    json_object["env_q"]=env_q;
+    json_object["env_dq"]=env_dq;
 
     json_object["safe_mode"]=safe_mode;
     return json_object;

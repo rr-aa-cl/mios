@@ -59,7 +59,12 @@ bool TaxTurn::check_local_err_conditions(const Percept &p){
 
 bool TaxTurn::check_local_suc_conditions(const Percept &p){
     if(get_active_mp()->get_strategy_interface("move")->finished()){
-        return true;
+        if((p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("GoalOrientation").block<3,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0)
+           && acos(((get_object_pose_T("GoalOrientation").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) < m_memory->read_parameters()->user.env_X(1)){
+            return true;
+        }else{
+            return false;
+        }
     }
     return false;
 }
