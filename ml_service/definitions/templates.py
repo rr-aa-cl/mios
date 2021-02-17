@@ -371,10 +371,10 @@ def insertion_cost() -> CostFunction:
 
 def move(goal_pose: str, init_pose: str, max_time: float):
     limits = {
-        "speed_t": (0, 0.4),
-        "speed_r": (0, 1),
-        "acc_t": (0, 1),
-        "acc_r": (0, 2),
+        "speed_t": (0, 1.7),
+        "speed_r": (0, 2.5),
+        "acc_t": (0, 13),
+        "acc_r": (0, 25),
         "K_x": (0, 2000),
         # "K_y": (0, 2000),
         # "K_z": (0, 2000),
@@ -396,14 +396,14 @@ def move(goal_pose: str, init_pose: str, max_time: float):
     }
 
     x_0 = {
-        "speed_t": 0.2,
-        "speed_r": 0.2,
-        "acc_t": 0.2,
-        "acc_r": 0.2,
-        "K_x": 0.2,
+        "speed_t": 0.1,
+        "speed_r": 0.1,
+        "acc_t": 0.1,
+        "acc_r": 0.1,
+        "K_x": 0.1,
         # "K_y": 0.2,
         # "K_z": 0.2,
-        "K_phi": 0.2,
+        "K_phi": 0.1,
         # "K_chi": 0.2,
         # "K_psi": 0.2
     }
@@ -429,7 +429,7 @@ def move(goal_pose: str, init_pose: str, max_time: float):
                     }
                 },
                 "user": {
-                    "env_X": [0.005, 0.0175]
+                    "env_X": [0.005, 0.025]
                 }
             }
         }
@@ -484,23 +484,23 @@ def move_cost(max_time: float) -> CostFunction:
 
 def grab(approach_pose: str, grabbable: str, retract_pose: str, surface: str):
     limits = {
-        "speed_t": (0, 0.2),
-        "speed_r": (0, 0.5),
-        "acc_t": (0, 0.5),
-        "acc_r": (0, 1),
+        "speed_t": (0, 0.5),
+        "speed_r": (0, 1),
+        "acc_t": (0, 1),
+        "acc_r": (0, 4),
         "K_x": (0, 2000),
         # "K_y": (0, 2000),
         # "K_z": (0, 2000),
         "K_phi": (0, 200),
         # "K_chi": (0, 200),
         # "K_psi": (0, 200),
-        "grasp_speed": (0, 2)
+        "grasp_speed": (0, 10)
     }
     context_mapping = {
-        "speed_t": ["skills.grab.skill.speed-1"],
-        "speed_r": ["skills.grab.skill.speed-2"],
-        "acc_t": ["skills.grab.skill.acc-1"],
-        "acc_r": ["skills.grab.skill.acc-2"],
+        "speed_t": ["skills.grab.skill.grab_speed-1"],
+        "speed_r": ["skills.grab.skill.grab_speed-2"],
+        "acc_t": ["skills.grab.skill.grab_acc-1"],
+        "acc_r": ["skills.grab.skill.grab_acc-2"],
         "K_x": ["skills.grab.control.cart_imp.K_x-1", "skills.grab.control.cart_imp.K_x-2", "skills.grab.control.cart_imp.K_x-3"],
         # "K_y": ["skills.move.control.cart_imp.K_x-2"],
         # "K_z": ["skills.move.control.cart_imp.K_x-3"],
@@ -511,16 +511,17 @@ def grab(approach_pose: str, grabbable: str, retract_pose: str, surface: str):
     }
 
     x_0 = {
-        "speed_t": 0.2,
-        "speed_r": 0.2,
-        "acc_t": 0.2,
-        "acc_r": 0.2,
-        "K_x": 0.2,
+        "speed_t": 0.1,
+        "speed_r": 0.1,
+        "acc_t": 0.1,
+        "acc_r": 0.1,
+        "K_x": 0.1,
         # "K_y": 0.2,
         # "K_z": 0.2,
-        "K_phi": 0.2,
+        "K_phi": 0.1,
         # "K_chi": 0.2,
         # "K_psi": 0.2
+        "grasp_speed": 0.1
     }
     domain = Domain(limits, context_mapping, x_0)
     default_context = {
@@ -599,41 +600,44 @@ def grab_cost() -> CostFunction:
 
 def place(approach_pose: str, placeable: str, retract_pose: str, surface: str):
     limits = {
-        "speed_t": (0, 0.2),
-        "speed_r": (0, 0.5),
-        "acc_t": (0, 0.5),
-        "acc_r": (0, 1),
+        "speed_t": (0, 0.5),
+        "speed_r": (0, 1),
+        "acc_t": (0, 1),
+        "acc_r": (0, 4),
         "K_x": (0, 2000),
         # "K_y": (0, 2000),
         # "K_z": (0, 2000),
         "K_phi": (0, 200),
         # "K_chi": (0, 200),
         # "K_psi": (0, 200)
+        "release_speed": (0, 10)
     }
     context_mapping = {
-        "speed_t": ["skills.place.skill.speed-1"],
-        "speed_r": ["skills.place.skill.speed-2"],
-        "acc_t": ["skills.place.skill.acc-1"],
-        "acc_r": ["skills.place.skill.acc-2"],
+        "speed_t": ["skills.place.skill.place_speed-1"],
+        "speed_r": ["skills.place.skill.place_speed-2"],
+        "acc_t": ["skills.place.skill.place_acc-1"],
+        "acc_r": ["skills.place.skill.place_acc-2"],
         "K_x": ["skills.place.control.cart_imp.K_x-1", "skills.place.control.cart_imp.K_x-2", "skills.place.control.cart_imp.K_x-3"],
         # "K_y": ["skills.move.control.cart_imp.K_x-2"],
         # "K_z": ["skills.move.control.cart_imp.K_x-3"],
         "K_phi": ["skills.place.control.cart_imp.K_x-4", "skills.place.control.cart_imp.K_x-5", "skills.place.control.cart_imp.K_x-6"],
         # "K_chi": ["skills.move.control.cart_imp.K_x-5"],
         # "K_psi": ["skills.move.control.cart_imp.K_x-6"]
+        "release_speed": ["skills.place.skill.release_speed"]
     }
 
     x_0 = {
-        "speed_t": 0.2,
-        "speed_r": 0.2,
-        "acc_t": 0.2,
-        "acc_r": 0.2,
-        "K_x": 0.2,
+        "speed_t": 0.1,
+        "speed_r": 0.1,
+        "acc_t": 0.1,
+        "acc_r": 0.1,
+        "K_x": 0.1,
         # "K_y": 0.2,
         # "K_z": 0.2,
-        "K_phi": 0.2,
+        "K_phi": 0.1,
         # "K_chi": 0.2,
         # "K_psi": 0.2
+        "release_speed": 0.1
     }
     domain = Domain(limits, context_mapping, x_0)
     default_context = {
@@ -686,31 +690,31 @@ def place(approach_pose: str, placeable: str, retract_pose: str, surface: str):
             "Grabbable": placeable
         }
     }
-    task_context = {
-        "name": "GenericTask",
-        "parameters": {
-            "skill_types": ["MoveToPoseJoint"],
-            "skill_names": ["move"]
-        },
-        "skills": {
-            "move": {
-                "skill": {
-                    "speed": 0.5,
-                    "acc": 1,
-                    "q_g": [0, 0, 0, 0, 0, 0, 0],
-                    "objects": {
-                        "goal_pose": approach_pose
-                    }
-                },
-                "control": {
-                    "control_mode": 3
-                },
-                "user": {
-                    "env_X": [0.005, 0.0175]
-                }
-            }
-        }
-    }
+    # task_context = {
+    #     "name": "GenericTask",
+    #     "parameters": {
+    #         "skill_types": ["MoveToPoseJoint"],
+    #         "skill_names": ["move"]
+    #     },
+    #     "skills": {
+    #         "move": {
+    #             "skill": {
+    #                 "speed": 0.5,
+    #                 "acc": 1,
+    #                 "q_g": [0, 0, 0, 0, 0, 0, 0],
+    #                 "objects": {
+    #                     "goal_pose": approach_pose
+    #                 }
+    #             },
+    #             "control": {
+    #                 "control_mode": 3
+    #             },
+    #             "user": {
+    #                 "env_X": [0.005, 0.0175]
+    #             }
+    #         }
+    #     }
+    # }
     reset_instructions.append({"method": "start_task", "parameters": task_context})
     pd = ProblemDefinition("place", domain, default_context, [], [], reset_instructions,
                            place_cost(), ["place"])
@@ -733,14 +737,10 @@ def place_cost() -> CostFunction:
 
 def press_button(approach_pose: str, button: str, init_pose: str):
     limits = {
-        "approach_speed_t": (0, 0.5),
-        "approach_speed_r": (0, 1),
-        "approach_acc_t": (0, 1),
-        "approach_acc_r": (0, 2),
-        "press_speed_t": (0, 0.3),
-        "press_speed_r": (0, 0.5),
+        "press_speed_t": (0, 0.5),
+        "press_speed_r": (0, 1),
         "press_acc_t": (0, 1),
-        "press_acc_r": (0, 2),
+        "press_acc_r": (0, 4),
         "K_x": (0, 2000),
         # "K_y": (0, 2000),
         # "K_z": (0, 2000),
@@ -749,10 +749,6 @@ def press_button(approach_pose: str, button: str, init_pose: str):
         # "K_psi": (0, 200)
     }
     context_mapping = {
-        "approach_speed_t": ["skills.press_button.skill.approach_speed-1"],
-        "approach_speed_r": ["skills.press_button.skill.approach_speed-2"],
-        "approach_acc_t": ["skills.press_button.skill.approach_acc-1"],
-        "approach_acc_r": ["skills.press_button.skill.approach_acc-2"],
         "press_speed_t": ["skills.press_button.skill.press_speed-1"],
         "press_speed_r": ["skills.press_button.skill.press_speed-2"],
         "press_acc_t": ["skills.press_button.skill.press_acc-1"],
@@ -766,18 +762,14 @@ def press_button(approach_pose: str, button: str, init_pose: str):
     }
 
     x_0 = {
-        "approach_speed_t": 0.2,
-        "approach_speed_r": 0.2,
-        "approach_acc_t": 0.2,
-        "approach_acc_r": 0.2,
-        "press_speed_t": 0.2,
-        "press_speed_r": 0.2,
-        "press_acc_t": 0.2,
-        "press_acc_r": 0.2,
-        "K_x": 0.2,
+        "press_speed_t": 0.1,
+        "press_speed_r": 0.1,
+        "press_acc_t": 0.1,
+        "press_acc_r": 0.1,
+        "K_x": 0.1,
         # "K_y": 0.2,
         # "K_z": 0.2,
-        "K_phi": 0.2
+        "K_phi": 0.1
         # "K_chi": 0.2,
         # "K_psi": 0.2
     }
@@ -796,9 +788,11 @@ def press_button(approach_pose: str, button: str, init_pose: str):
                         "Approach": approach_pose,
                         "Button": button
                     },
-                    "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1],
+                    "approach_speed": [0.5, 1],
+                    "approach_acc": [1, 4],
+                    "ROI_x": [-0.3, 0.3, -0.3, 0.3, -1, 1],
                     "ROI_phi": [-0.03, 0.03, -0.03, 0.03, -1, 1],
-                    "duration": 0.1
+                    "duration": 0
                 },
                 "control": {
                     "control_mode": 0,
@@ -858,10 +852,8 @@ def press_button_cost() -> CostFunction:
 
 def turn(turnable: str, goal_orientation: str, initial_pose: str):
     limits = {
-        "speed_t": (0, 0.2),
-        "speed_r": (0, 1),
-        "acc_t": (0, 0.5),
-        "acc_r": (0, 2),
+        "speed_r": (0, 2.5),
+        "acc_r": (0, 25),
         "K_x": (0, 2000),
         # "K_y": (0, 2000),
         # "K_z": (0, 2000),
@@ -870,9 +862,7 @@ def turn(turnable: str, goal_orientation: str, initial_pose: str):
         # "K_psi": (0, 200)
     }
     context_mapping = {
-        "speed_t": ["skills.turn.skill.turn_speed-1"],
         "speed_r": ["skills.turn.skill.turn_speed-2"],
-        "acc_t": ["skills.turn.skill.turn_acc-1"],
         "acc_r": ["skills.turn.skill.turn_acc-2"],
         "K_x": ["skills.turn.control.cart_imp.K_x-1", "skills.turn.control.cart_imp.K_x-2", "skills.turn.control.cart_imp.K_x-3"],
         # "K_y": ["skills.turn.control.cart_imp.K_x-2"],
@@ -883,14 +873,12 @@ def turn(turnable: str, goal_orientation: str, initial_pose: str):
     }
 
     x_0 = {
-        "speed_t": 0.2,
-        "speed_r": 0.2,
-        "acc_t": 0.2,
-        "acc_r": 0.2,
-        "K_x": 0.2,
+        "speed_r": 0.1,
+        "acc_r": 0.1,
+        "K_x": 0.1,
         # "K_y": 0.2,
         # "K_z": 0.2,
-        "K_phi": 0.2,
+        "K_phi": 0.1,
         # "K_chi": 0.2,
         # "K_psi": 0.2
     }
@@ -905,6 +893,8 @@ def turn(turnable: str, goal_orientation: str, initial_pose: str):
             "turn": {
                 "skill": {
                     "time_max": 5.0,
+                    "turn_speed": [0.5, 0],
+                    "turn_acc": [2, 0],
                     "objects": {
                         "Turnable": turnable,
                         "GoalOrientation": goal_orientation
@@ -933,7 +923,13 @@ def turn(turnable: str, goal_orientation: str, initial_pose: str):
                     }
                 },
                 "control": {
-                    "control_mode": 0
+                    "control_mode": 0,
+                    "cart_imp": {
+                        "K_x": [1000, 1000, 1000, 200, 200, 200]
+                    }
+                },
+                "user": {
+                    "env_X": [0.01, 0.04]
                 }
             }
         },
@@ -965,13 +961,13 @@ def turn_cost() -> CostFunction:
 
 def extraction(extractable: str, container: str, extract_to: str):
     limits = {
-        "speed_t": (0, 0.2),
-        "speed_r": (0, 0.5),
-        "acc_t": (0, 0.5),
-        "acc_r": (0, 1),
-        "wiggle_a_x": (0, 5),
-        "wiggle_a_y": (0, 5),
-        "wiggle_a_z": (0, 5),
+        "speed_t": (0, 0.5),
+        "speed_r": (0, 1),
+        "acc_t": (0, 1),
+        "acc_r": (0, 4),
+        "wiggle_a_x": (0, 10),
+        "wiggle_a_y": (0, 10),
+        "wiggle_a_z": (0, 10),
         "wiggle_a_phi": (0, 2),
         "wiggle_a_chi": (0, 2),
         # "wiggle_a_psi": (0, 2),
@@ -1016,29 +1012,29 @@ def extraction(extractable: str, container: str, extract_to: str):
     }
 
     x_0 = {
-        "speed_t": 0.2,
-        "speed_r": 0.2,
-        "acc_t": 0.2,
-        "acc_r": 0.2,
-        "wiggle_a_x": 0.2,
-        "wiggle_a_y": 0.2,
-        "wiggle_a_z": 0.2,
-        "wiggle_a_phi": 0.2,
-        "wiggle_a_chi": 0.2,
+        "speed_t": 0.1,
+        "speed_r": 0.1,
+        "acc_t": 0.1,
+        "acc_r": 0.1,
+        "wiggle_a_x": 0.1,
+        "wiggle_a_y": 0.1,
+        "wiggle_a_z": 0.1,
+        "wiggle_a_phi": 0.1,
+        "wiggle_a_chi": 0.1,
         # "wiggle_a_psi": 0.2,
-        "wiggle_f_x": 0.2,
-        "wiggle_f_y": 0.2,
-        "wiggle_f_z": 0.2,
-        "wiggle_f_phi": 0.2,
-        "wiggle_f_chi": 0.2,
+        "wiggle_f_x": 0.1,
+        "wiggle_f_y": 0.1,
+        "wiggle_f_z": 0.1,
+        "wiggle_f_phi": 0.1,
+        "wiggle_f_chi": 0.1,
         # "wiggle_f_psi": 0.2,
-        "stuck_dx_thr": 0.2,
-        "K_x": 0.2,
-        "K_y": 0.2,
-        "K_z": 0.2,
-        "K_phi": 0.2,
-        "K_chi": 0.2,
-        "K_psi": 0.2
+        "stuck_dx_thr": 0.1,
+        "K_x": 0.1,
+        "K_y": 0.1,
+        "K_z": 0.1,
+        "K_phi": 0.1,
+        "K_chi": 0.1,
+        "K_psi": 0.1
     }
     domain = Domain(limits, context_mapping, x_0)
     default_context = {
@@ -1131,19 +1127,15 @@ def extraction_cost() -> CostFunction:
 
 def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefinition:
     limits = {
-        "speed_a_t": (0, 0.5),
-        "speed_a_r": (0, 0.5),
-        "acc_a_t": (0, 1),
-        "acc_a_r": (0, 2),
-        "speed_i_t": (0, 0.2),
-        "speed_i_r": (0, 0.5),
-        "acc_i_t": (0, 0.5),
-        "acc_i_r": (0, 1),
+        "speed_i_t": (0, 0.5),
+        "speed_i_r": (0, 1),
+        "acc_i_t": (0, 1),
+        "acc_i_r": (0, 4),
         "wiggle_a_x": (0, 10),
         "wiggle_a_y": (0, 10),
-        "wiggle_a_z": (0, 5),
-        "wiggle_a_phi": (0, 3),
-        "wiggle_a_chi": (0, 3),
+        "wiggle_a_z": (0, 10),
+        "wiggle_a_phi": (0, 2),
+        "wiggle_a_chi": (0, 2),
         # "wiggle_a_psi": (0, 2),
         "wiggle_f_x": (0, 3),
         "wiggle_f_y": (0, 3),
@@ -1164,10 +1156,6 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
         "K_psi": (0, 200)
     }
     context_mapping = {
-        "speed_a_t": ["skills.insertion.skill.approach_speed-1"],
-        "speed_a_r": ["skills.insertion.skill.approach_speed-2"],
-        "acc_a_t": ["skills.insertion.skill.approach_acc-1"],
-        "acc_a_r": ["skills.insertion.skill.approach_acc-2"],
         "speed_i_t": ["skills.insertion.skill.insertion_speed-1"],
         "speed_i_r": ["skills.insertion.skill.insertion_speed-2"],
         "acc_i_t": ["skills.insertion.skill.insertion_acc-1"],
@@ -1198,37 +1186,33 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
     }
 
     x_0 = {
-        "speed_a_t": 0.2,
-        "speed_a_r": 0.2,
-        "acc_a_t": 0.2,
-        "acc_a_r": 0.2,
-        "speed_i_t": 0.2,
-        "speed_i_r": 0.2,
-        "acc_i_t": 0.2,
-        "acc_i_r": 0.2,
-        "wiggle_a_x": 0.2,
-        "wiggle_a_y": 0.2,
-        "wiggle_a_z": 0.2,
-        "wiggle_a_phi": 0.2,
-        "wiggle_a_chi": 0.2,
-        # "wiggle_a_psi": 0.2,
-        "wiggle_f_x": 0.2,
-        "wiggle_f_y": 0.2,
-        "wiggle_f_z": 0.2,
-        "wiggle_f_phi": 0.2,
-        "wiggle_f_chi": 0.2,
-        # "wiggle_f_psi": 0.2,
-        "stuck_dx_thr": 0.2,
+        "speed_i_t": 0.1,
+        "speed_i_r": 0.1,
+        "acc_i_t": 0.1,
+        "acc_i_r": 0.1,
+        "wiggle_a_x": 0.1,
+        "wiggle_a_y": 0.1,
+        "wiggle_a_z": 0.1,
+        "wiggle_a_phi": 0.1,
+        "wiggle_a_chi": 0.1,
+        # "wiggle_a_psi": 0.1,
+        "wiggle_f_x": 0.1,
+        "wiggle_f_y": 0.1,
+        "wiggle_f_z": 0.1,
+        "wiggle_f_phi": 0.1,
+        "wiggle_f_chi": 0.1,
+        # "wiggle_f_psi": 0.1,
+        "stuck_dx_thr": 0.1,
         "offset_x": 0.5,
         "offset_y": 0.5,
         "offset_phi": 0.5,
         "offset_chi": 0.5,
-        "K_x": 0.2,
-        "K_y": 0.2,
-        "K_z": 0.2,
-        "K_phi": 0.2,
-        "K_chi": 0.2,
-        "K_psi": 0.2
+        "K_x": 0.1,
+        "K_y": 0.1,
+        "K_z": 0.1,
+        "K_phi": 0.1,
+        "K_chi": 0.1,
+        "K_psi": 0.1
     }
 
     domain = Domain(limits, context_mapping, x_0)
@@ -1241,12 +1225,14 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
         "skills": {
             "insertion": {
                 "skill": {
-                    "time_max": 10.0,
+                    "time_max": 5.0,
                     "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1],
                     "ROI_phi": [-0.03, 0.03, -0.03, 0.03, -1, 1],
                     "search_f": [0, 0, 0, 0, 0, 0],
                     "search_a": [0, 0, 0, 0, 0, 0],
                     "DeltaX": [0, 0, 0, 0, 0, 0],
+                    "approach_speed": [0.5, 1],
+                    "approach_acc": [1, 4],
                     "f_max_push": 10,
                     "objects": {
                         "Insertable": insertable,
@@ -1319,7 +1305,7 @@ def tax_insertion_cost() -> CostFunction:
     c.heuristic_expressions = "np.exp(var*100)"
 
     c.heuristic_skills = ["insertion"]
-    c.max_cost[0] = 10
+    c.max_cost[0] = 5
     c.max_cost[1] = 50
     c.max_cost[2] = 160
     c.finish_thr = 5

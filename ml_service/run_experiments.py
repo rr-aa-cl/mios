@@ -11,6 +11,7 @@ from definitions.templates import tax_insertion
 from definitions.templates import press_button
 from definitions.templates import extraction
 from definitions.templates import place
+from definitions.templates import grab
 from services.cmaes import CMAESConfiguration
 from utils.udp_client import call_method
 from utils.database import delete_local_results
@@ -518,7 +519,7 @@ def tax_learn_move(robot: str, agents: list, n_iter: int = 1):
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 9
-    service_config.n_gen = 10
+    service_config.n_gen = 20
     tags = ["iros2021", "move"]
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
 
@@ -528,8 +529,8 @@ def tax_learn_turn(robot: str, agents: list, n_iter: int = 1):
     pd = turn("iros_key", "iros_turn_2", "iros_turn_1")
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
-    service_config.n_ind = 9
-    service_config.n_gen = 10
+    service_config.n_ind = 8
+    service_config.n_gen = 20
     tags = ["iros2021", "turn"]
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
 
@@ -540,7 +541,7 @@ def tax_learn_insertion(robot: str, agents: list, n_iter: int = 1):
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 13
-    service_config.n_gen = 10
+    service_config.n_gen = 20
     tags = ["iros2021", "insertion"]
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
 
@@ -550,20 +551,20 @@ def tax_learn_extraction(robot: str, agents: list, n_iter: int = 1):
     pd = extraction("key_pad", "lock_pad", "lock_pad_above")
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
-    service_config.n_ind = 12
-    service_config.n_gen = 10
+    service_config.n_ind = 13
+    service_config.n_gen = 20
     tags = ["iros2021", "extraction"]
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
 
 
 def tax_learn_press_button(robot: str, agents: list, n_iter: int = 1):
-    pd = press_button("iros_button_approach", "iros_button", "iros_button_init")
-    s = ServerProxy("http://localhost:8000", allow_none=True)
-    s.subscribe_to_event("button_press", robot, "12000")
+    pd = press_button("iros_button_approach", "iros_button", "iros_button_approach")
+    #s = ServerProxy("http://localhost:8000", allow_none=True)
+    #s.subscribe_to_event("button_press", robot, "12000")
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 9
-    service_config.n_gen = 10
+    service_config.n_gen = 20
     tags = ["iros2021", "press_button"]
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
 
@@ -574,6 +575,16 @@ def tax_learn_place(robot: str, agents: list, n_iter: int = 1):
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 9
-    service_config.n_gen = 10
+    service_config.n_gen = 20
     tags = ["iros2021", "place"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
+def tax_learn_grab(robot: str, agents: list, n_iter: int = 1):
+    pd = grab("iros_key_place_approach", "iros_key", "iros_key_place_approach", "iros_key_storage")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 9
+    service_config.n_gen = 20
+    tags = ["iros2021", "grab"]
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)

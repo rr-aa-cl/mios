@@ -8,12 +8,20 @@
 namespace mios{
 
 bool SkillParametersTaxPlace::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"speed",speed)){
-        spdlog::error("Parameter speed could not be loaded but is mandatory.");
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_speed",approach_speed)){
+        spdlog::error("Parameter approach_speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"acc",acc)){
-        spdlog::error("Parameter acc could not be loaded but is mandatory.");
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_acc",approach_acc)){
+        spdlog::error("Parameter approach_acc could not be loaded but is mandatory.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"place_speed",place_speed)){
+        spdlog::error("Parameter place_speed could not be loaded but is mandatory.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"place_acc",place_acc)){
+        spdlog::error("Parameter place_acc could not be loaded but is mandatory.");
         return false;
     }
     if(!msrm_utils::read_json_param(parameters,"release_width",release_width)){
@@ -36,7 +44,7 @@ bool SkillParametersTaxPlace::from_json(const nlohmann::json& parameters){
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxPlace::get_parameter_list(){
-    return {{"speed",{}},{"acc",{}},{"release_width",{}},{"release_speed",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+    return {{"approach_speed",{}},{"approach_acc",{}},{"place_speed",{}},{"place_acc",{}},{"release_width",{}},{"release_speed",{}},{"ROI_x",{}},{"ROI_phi",{}}};
 }
 
 TaxPlace::TaxPlace(const std::string& name, Memory* memory, Portal* portal):Skill("TaxPlace",{"Placeable","Surface", "Approach", "Retract"},name,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
@@ -86,7 +94,7 @@ std::shared_ptr<ManipulationPrimitive> TaxPlace::create_approach_mp(const Percep
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Approach"),skill_params->speed,skill_params->acc);
+    move->set_goal(get_object_pose_T("Approach"),skill_params->approach_speed,skill_params->approach_acc);
     return mp;
 }
 
@@ -102,7 +110,7 @@ std::shared_ptr<ManipulationPrimitive> TaxPlace::create_pre_release_mp(const Per
     goal_dir.normalize();
     T_g.block<3,1>(0,3)+=goal_dir*0.1;
 
-    move->set_goal(T_g,skill_params->speed,skill_params->acc);
+    move->set_goal(T_g,skill_params->place_speed,skill_params->place_acc);
     return mp;
 }
 
@@ -126,7 +134,7 @@ std::shared_ptr<ManipulationPrimitive> TaxPlace::create_retract_mp(const Percept
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("retract",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Retract"),skill_params->speed,skill_params->acc);
+    move->set_goal(get_object_pose_T("Retract"),skill_params->place_speed,skill_params->place_acc);
     return mp;
 }
 

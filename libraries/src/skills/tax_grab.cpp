@@ -6,12 +6,20 @@
 namespace mios{
 
 bool SkillParametersTaxGrab::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"speed",speed)){
-        spdlog::error("Parameter speed could not be loaded but is mandatory.");
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_speed",approach_speed)){
+        spdlog::error("Parameter approach_speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"acc",acc)){
-        spdlog::error("Parameter acc could not be loaded but is mandatory.");
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_acc",approach_acc)){
+        spdlog::error("Parameter approach_acc could not be loaded but is mandatory.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"grab_speed",grab_speed)){
+        spdlog::error("Parameter grab_speed could not be loaded but is mandatory.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"grab_acc",grab_acc)){
+        spdlog::error("Parameter grab_acc could not be loaded but is mandatory.");
         return false;
     }
     if(!msrm_utils::read_json_param(parameters,"grasp_width",grasp_width)){
@@ -38,7 +46,7 @@ bool SkillParametersTaxGrab::from_json(const nlohmann::json& parameters){
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxGrab::get_parameter_list(){
-    return {{"speed",{}},{"acc",{}},{"grasp_width",{}},{"grasp_speed",{}},{"grasp_force",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+    return {{"approach_speed",{}},{"approach_acc",{}},{"grab_speed",{}},{"grab_acc",{}},{"grasp_width",{}},{"grasp_speed",{}},{"grasp_force",{}},{"ROI_x",{}},{"ROI_phi",{}}};
 }
 
 TaxGrab::TaxGrab(const std::string& name, Memory* memory, Portal* portal):Skill("TaxGrab",{"Grabbable", "Approach", "Retract"},name,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
@@ -87,7 +95,7 @@ std::shared_ptr<ManipulationPrimitive> TaxGrab::create_approach_mp(const Percept
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Approach"),skill_params->speed,skill_params->acc);
+    move->set_goal(get_object_pose_T("Approach"),skill_params->approach_speed,skill_params->approach_acc);
     mp->create_strategy<GripperStrategy>("open_gripper",1);
     mp->get_strategy<GripperStrategy>("open_gripper")->move(1,1000);
     return mp;
@@ -98,7 +106,7 @@ std::shared_ptr<ManipulationPrimitive> TaxGrab::create_pre_grasp_mp(const Percep
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("pre_grasp",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Grabbable"),skill_params->speed,skill_params->acc);
+    move->set_goal(get_object_pose_T("Grabbable"),skill_params->grab_speed,skill_params->grab_acc);
     return mp;
 }
 
@@ -116,7 +124,7 @@ std::shared_ptr<ManipulationPrimitive> TaxGrab::create_retract_mp(const Percept 
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("retract",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Retract"),skill_params->speed,skill_params->acc);
+    move->set_goal(get_object_pose_T("Retract"),skill_params->grab_speed,skill_params->grab_acc);
     return mp;
 }
 

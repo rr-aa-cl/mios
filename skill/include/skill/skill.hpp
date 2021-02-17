@@ -255,6 +255,8 @@ protected:
     virtual SkillCost measure_cost(const Percept& p);
     virtual double get_custom_cost(const Percept& p);
 
+    bool is_in_env(const std::string& pose, const std::string& mp, const Percept& p);
+
 private:
     std::shared_ptr<ManipulationPrimitive> m_active_mp;
     SkillResult m_result;

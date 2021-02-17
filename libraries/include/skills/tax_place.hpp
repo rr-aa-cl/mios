@@ -7,8 +7,10 @@ public:
     bool from_json(const nlohmann::json& parameters) override;
     std::map<std::string, std::set<std::string> > get_parameter_list() override;
     double f_contact;
-    Eigen::Matrix<double,2,1> speed;
-    Eigen::Matrix<double,2,1> acc;
+    Eigen::Matrix<double,2,1> approach_speed;
+    Eigen::Matrix<double,2,1> approach_acc;
+    Eigen::Matrix<double,2,1> place_speed;
+    Eigen::Matrix<double,2,1> place_acc;
     double release_width;
     double release_speed;
 

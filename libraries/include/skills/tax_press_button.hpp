@@ -32,7 +32,6 @@ private:
     std::shared_ptr<ManipulationPrimitive> create_approach_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_contact_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_push_mp(const Percept& p);
-    std::shared_ptr<ManipulationPrimitive> create_hold_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_retract_mp(const Percept& p);
 
     double get_goal_heuristic(const Percept &p) override;

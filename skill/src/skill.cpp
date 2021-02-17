@@ -434,4 +434,17 @@ double Skill::get_goal_heuristic(const Percept &p){
     return 0;
 }
 
+
+bool Skill::is_in_env(const std::string &pose, const std::string &mp, const Percept &p){
+    if(get_active_mp()->get_strategy_interface(mp)->finished()){
+        if((p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T(pose).block<3,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0)
+           && acos(((get_object_pose_T(pose).block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) < m_memory->read_parameters()->user.env_X(1)){
+            return true;
+        }else{
+            return false;
+        }
+    }
+    return false;
+}
+
 }

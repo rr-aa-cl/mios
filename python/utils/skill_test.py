@@ -123,8 +123,8 @@ def tax_test_turn(robot="collective-panda-008.local"):
                 "Turnable": "iros_key",
                 "GoalOrientation": "iros_turn_goal"
             },
-            "turn_speed": [0.2, 2.5],
-            "turn_acc": [0.5, 30.0]},
+            "turn_speed": [0.5, 2.5],
+            "turn_acc": [2, 25.0]},
         "control": {
             "control_mode": 0,
             "cart_imp": {
@@ -207,10 +207,10 @@ def tax_test_insertion(robot):
                 "Approach": "lock_pad_above",
                 "Insertable": "key_pad"
             },
-            "approach_speed": [0.2, 0.5],
-            "approach_acc": [0.5, 1.0],
-            "insertion_speed": [0.2, 0.5],
-            "insertion_acc": [1, 1.0],
+            "approach_speed": [0.5, 1],
+            "approach_acc": [1, 4],
+            "insertion_speed": [0.5, 1],
+            "insertion_acc": [1, 4],
             "f_max_push": 10,
             "search_a": [10, 10, 0, 0, 0, 0],
             "search_f": [1, 0.75, 0, 0, 0, 0],
@@ -220,7 +220,7 @@ def tax_test_insertion(robot):
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [500, 500, 2000, 200, 200, 200]
+                "K_x": [1500, 1500, 1500, 200, 200, 200]
             }
         }
     }
@@ -238,10 +238,10 @@ def tax_test_button_press(robot):
                 "Button": "iros_button",
                 "Approach": "iros_button_approach"
             },
-            "approach_speed": [0.5, 0.5],
-            "approach_acc": [2, 1.0],
+            "approach_speed": [0.5, 1],
+            "approach_acc": [1, 4],
             "press_speed": [0.5, 0.5],
-            "press_acc": [2, 1.0],
+            "press_acc": [1, 4.0],
             "duration": 0,
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0],
@@ -265,6 +265,11 @@ def tax_test_button_press(robot):
     t.start()
     result = t.wait()
     print(result)
+
+
+def subscribe_to_event_server(robot):
+    s = ServerProxy("http://collective-control-001.local:8000", allow_none=True)
+    s.subscribe_to_event("button_press", robot, "12000")
 
 
 def tax_test_extraction(robot="collective-panda-008.local"):
@@ -347,8 +352,8 @@ def test_skill_queue(robot="localhost"):
 def iros_task():
     robot = "collective-panda-010.local"
 
-    response = start_task(robot, "MoveToJointPose", {"pose": "iros_idle_pose"})
-    wait_for_task(robot, response["result"]["task_uuid"])
+    #response = start_task(robot, "MoveToJointPose", {"pose": "iros_idle_pose"})
+    #wait_for_task(robot, response["result"]["task_uuid"])
     t_0 = time.time()
     # move to grab key
     iros1 = Task(robot)
@@ -375,8 +380,10 @@ def iros_task():
                 "Approach": "iros_key_grab_approach",
                 "Grabbable": "iros_key"
             },
-            "speed": [0.5, 2],
-            "acc": [2, 5.0],
+            "approach_speed": [0.5, 2],
+            "approach_acc": [2, 5.0],
+            "grab_speed": [0.3, 2],
+            "grab_acc": [1, 4],
             "grasp_width": 0.03,
             "grasp_speed": 100,
             "grasp_force": 30,
@@ -415,8 +422,8 @@ def iros_task():
                 "Approach": "iros_lock_approach",
                 "Insertable": "iros_key"
             },
-            "approach_speed": [0.2, 0.5],
-            "approach_acc": [0.5, 1.0],
+            "approach_speed": [0.5, 1],
+            "approach_acc": [1, 4],
             "insertion_speed": [0.2, 0.5],
             "insertion_acc": [0.5, 1.0],
             "search_a": [3, 3, 0, 0, 0, 0],
@@ -511,8 +518,10 @@ def iros_task():
                 "Placeable": "iros_key",
                 "Surface": "iros_key_storage"
             },
-            "speed": [0.1, 0.5],
-            "acc": [0.5, 1.0],
+            "approach_speed": [0.5, 1],
+            "approach_acc": [1, 4],
+            "place_speed": [0.1, 0.5],
+            "place_acc": [0.5, 1.0],
             "release_width": 0.03,
             "release_speed": 100,
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],

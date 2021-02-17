@@ -1,6 +1,7 @@
 from plotting.result import Result
 import numpy as np
 from typing import Tuple
+import scipy.stats
 
 
 class DataError(Exception):
@@ -81,8 +82,15 @@ class DataProcessor:
     def get_average_cost(self, results: list, decreasing: bool = False, episode_length: int = 1, agent=None) -> np.ndarray:
         return np.average(np.asarray(self.get_collection_of_costs(results, decreasing, episode_length, agent)), 0)
 
-    def get_average_cost_over_time(self, results: list, min_length: int, decreasing: bool = False, agent=None) -> np.ndarray:
-        return np.average(np.asarray(self.get_collection_of_costs_over_time(results, min_length, decreasing, agent)), 0)
+    def get_average_cost_over_time(self, results: list, min_length: int, decreasing: bool = False, agent=None) -> Tuple[np.ndarray, np.ndarray]:
+        cost = np.asarray(self.get_collection_of_costs_over_time(results, min_length, decreasing, agent))
+        confidence = 0.95
+        interval = []
+        for i in range(cost.shape[1]):
+            se = scipy.stats.sem(cost[:, i])
+            h = se * scipy.stats.t.ppf((1 + confidence) / 2., cost.shape[0] - 1)
+            interval.append(h)
+        return np.average(cost, 0), np.asarray(interval)
 
     def get_monotonically_decreasing_cost(self, cost: np.ndarray) -> np.ndarray:
         cost_monotone = cost

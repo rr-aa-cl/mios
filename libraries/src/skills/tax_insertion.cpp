@@ -76,7 +76,7 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::get_initial_mp(const Percep
 
 std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_transition(const Percept &p){
     if(get_active_mp()->get_name()=="approach"){
-        if(get_active_mp()->get_strategy_interface("move")->finished()){
+        if(is_in_env("Approach","move",p)){
             return create_contact_mp(p);
         }else{
             return {};
@@ -84,7 +84,6 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_trans
     }
     if(get_active_mp()->get_name()=="contact"){
         if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
-            std::cout<<p.proprioception.TF_F_ext_K<<std::endl;
             return create_insert_mp(p);
         }else{
             return {};
@@ -129,8 +128,8 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_contact_mp(const Per
     Eigen::Matrix<double,6,1> dX_d;
     Eigen::Matrix<double,3,1> dir=get_object_pose_T("Container").block<3,1>(0,3)+skill_params->DeltaX.block<3,1>(0,0)-p.proprioception.T_T_EE.block<3,1>(0,3);
     dir/=dir.norm();
-    dX_d<<dir*skill_params->approach_speed(0),0,0,0;
-    move->set_TF_dX_d(dX_d,skill_params->approach_acc);
+    dX_d<<dir*skill_params->insertion_speed(0),0,0,0;
+    move->set_TF_dX_d(dX_d,skill_params->insertion_acc);
     return mp;
 }
 
@@ -179,8 +178,8 @@ void TaxInsertion::update_policies(const Percept &p){
         double force_factor=1;
         if(p.proprioception.TF_F_ext_K(2)<skill_params->f_max_push-1){
             force_factor=1;
-        }else if(p.proprioception.TF_F_ext_K(2)>skill_params->f_max_push+1){
-            force_factor=-1;
+        }else if(p.proprioception.TF_F_ext_K(2)>skill_params->f_max_push){
+            force_factor=0;
         }else{
             force_factor=-p.proprioception.TF_F_ext_K(2)+skill_params->f_max_push;
         }
@@ -207,7 +206,7 @@ bool TaxInsertion::check_local_pre_conditions(const Percept &p){
 
 bool TaxInsertion::check_local_suc_conditions(const Percept &p){
     bool depth = p.proprioception.T_T_EE(2,3)>get_object_pose_T("Container")(2,3)-0.001;
-    bool lateral = (p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm()<0.002;
+    bool lateral = (p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm()<0.004;
     return depth && lateral;
 }
 
@@ -250,5 +249,6 @@ bool TaxInsertion::is_stuck(const Percept &p){
     }
     return m_is_stuck;
 }
+
 
 }
