@@ -3,6 +3,9 @@
 #include <msrm_utils/network.hpp>
 #include <msrm_utils/conversion.hpp>
 
+#include <mutex>
+#include <thread>
+
 #include <franka/exception.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
@@ -722,6 +725,7 @@ bool PandaBody::move_to_pack_pose(const std::optional<std::string> &ip, const st
 }
 
 bool PandaBody::grasp(double width, double speed, double force, double epsilon_inner, double epsilon_outer) const{
+    std::scoped_lock<std::mutex> lock(m_mtx_hand_active);
     if(!m_hand_connected){
         spdlog::error("No gripper connected.");
         return false;
@@ -765,6 +769,7 @@ bool PandaBody::grasp(double width, double speed, double force, double epsilon_i
 }
 
 bool PandaBody::move_to_finger_position(double width, double speed) const{
+    std::scoped_lock<std::mutex> lock(m_mtx_hand_active);
     if(!m_hand_connected){
         return false;
     }
@@ -775,8 +780,13 @@ bool PandaBody::move_to_finger_position(double width, double speed) const{
             double max_width=state.max_width;
 
             if(width<0 || width>max_width){
-                spdlog::error("Gripper cannot reach width of "+std::to_string(width)+". Must be between 0 and "+std::to_string(max_width)+".");
-                return false;
+                spdlog::warn("Gripper cannot reach width of "+std::to_string(width)+". Must be between 0 and "+std::to_string(max_width)+".");
+                if(width<0){
+                    width=0;
+                }
+                if(width>max_width){
+                    width=max_width;
+                }
             }
             return this->m_panda_hand->move(width,speed);
         }catch(franka::CommandException& e){
@@ -797,6 +807,7 @@ bool PandaBody::move_to_finger_position(double width, double speed) const{
 }
 
 bool PandaBody::home_gripper() const{
+    std::scoped_lock<std::mutex> lock(m_mtx_hand_active);
     if(!m_hand_connected){
         return false;
     }
@@ -816,6 +827,15 @@ bool PandaBody::home_gripper() const{
         return true;
     }
     return false;
+}
+
+bool PandaBody::is_hand_active(){
+    if(m_mtx_hand_active.try_lock()){
+        m_mtx_hand_active.unlock();
+        return false;
+    }else{
+        return true;
+    }
 }
 
 void PandaBody::get_default_robot_state(franka::RobotState &state) const{

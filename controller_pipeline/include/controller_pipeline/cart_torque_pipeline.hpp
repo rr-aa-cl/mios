@@ -37,6 +37,7 @@ private:
     franka::Torques m_panda_cmd;
     bool m_nullspace_control_on;
     Eigen::Matrix<double,4,4> m_T_T_EE_0;
+    Eigen::Matrix<double,4,4> m_O_T_EE_d;
 
 private:
     cntr_aic::cntr_aic m_cntr_aic;

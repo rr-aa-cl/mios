@@ -1,5 +1,6 @@
 #include "controller_pipeline/cart_torque_pipeline.hpp"
 #include "spdlog/spdlog.h"
+#include "msrm_utils/math.hpp"
 #include <iostream>
 
 namespace mios {
@@ -19,6 +20,7 @@ void CartTorqueControllerPipeline::initialize(const Percept &p_0, Memory *memory
     initialize_cntr_nullsp(p_0,memory);
 
     m_T_T_EE_0=p_0.proprioception.T_T_EE;
+    m_O_T_EE_d=p_0.proprioception.O_T_EE;
 }
 
 franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const Actuator &cmd){
@@ -37,6 +39,7 @@ franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const A
     else{
         m_cntr_aic.u.TF_T_EE_d=m_T_T_EE_0;
     }
+    m_O_T_EE_d=msrm_utils::rotate_matrix(m_cntr_aic.u.TF_T_EE_d,cmd.O_R_T);
     m_cntr_aic.u.O_R_T=cmd.O_R_T;
 
     m_cntr_aic.u.K_x=cmd.K_x;
@@ -53,7 +56,7 @@ franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const A
     m_cntr_nullsp_proj.u.tau_c=m_cntr_nullsp_q.y.tau_J_d;
     m_cntr_nullsp_proj.step();
 
-    Eigen::Matrix<double,7,1> tau_J_d_total=m_cntr_aic.y.tau_J_d+m_cntr_force.y.tau_J_d+cmd.tau_ff;
+    Eigen::Matrix<double,7,1> tau_J_d_total=m_cntr_aic.y.tau_J_d+m_cntr_force.y.tau_J_d+cmd.tau_ff+p.internal_model.C;
     if(m_nullspace_control_on){
         tau_J_d_total+=m_cntr_nullsp_proj.y.tau_n;
     }
@@ -91,8 +94,9 @@ void CartTorqueControllerPipeline::terminate(){
 }
 
 void CartTorqueControllerPipeline::context_switch(const Percept &p){
+    spdlog::trace("CartTorqueControllerPipeline::context_switch()");
     m_conv_vel2pose.u.TF_dX_d<<0,0,0,0,0,0;
-    m_conv_vel2pose.u.TF_T_EE=m_cntr_aic.u.TF_T_EE_d;
+    m_conv_vel2pose.u.TF_T_EE=msrm_utils::rotate_matrix(m_O_T_EE_d,p.controller.O_R_T.transpose());
     m_conv_vel2pose.u.reset<<1;
     m_conv_vel2pose.step();
     m_conv_vel2pose.u.reset<<0;

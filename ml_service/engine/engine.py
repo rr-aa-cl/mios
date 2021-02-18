@@ -164,6 +164,16 @@ class Engine:
         for a in self.agents:
             worker_threads[a] = None
 
+        logger.info("Setting up experiment.")
+        for a in self.free_agents:
+            worker_threads[a] = Thread(target=self.setup_experiment, args=(a,))
+            worker_threads[a].start()
+
+        for a in self.free_agents:
+            worker_threads[a].join()
+
+        logger.info("Setup procedure done.")
+
         while self.keep_running is True:
             try:
                 # logger.debug("Engine::main_loop.get_trial")
@@ -383,6 +393,38 @@ class Engine:
 
         logger.debug("Engine::_wait_for_task.end")
         return True, task_result
+
+    def setup_experiment(self, agent):
+        logger.debug("Engine::_reset_task()")
+        for i in self.problem_definition.setup_instructions:
+            logger.debug("Engine::setup_experiment.instructions: " + str(i["parameters"]))
+            instruction_done = False
+            while instruction_done is False:
+                logger.debug("Engine::_reset_task.loop")
+                if i["method"] == "start_task":
+                    result, task_uuid = self._start_task(agent, i["parameters"])
+                    if result is False:
+                        logger.debug("Setup experiment could not be started.")
+                        logger.debug(result)
+                        time.sleep(1)
+                        continue
+
+                    result, task_result = self._wait_for_task(agent, task_uuid)
+                    if result is False or task_result.success is False:
+                        logger.debug("Could not wait for setup_experiment")
+                        logger.debug(result)
+                        time.sleep(1)
+                        continue
+                else:
+                    response = call_method(agent, 12000, i["method"], i["parameters"])
+                    if response is None:
+                        logger.debug(response)
+                        time.sleep(1)
+                        continue
+
+                instruction_done = True
+
+        logger.debug("Engine::setup_experiment.end")
 
     def write_final_results(self):
         data = {

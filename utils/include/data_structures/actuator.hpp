@@ -10,7 +10,9 @@ namespace mios {
 
 enum CommandPattern{CommandPatternCartesianPose,CommandPatternJointPose,CommandPatternNullspacePose,CommandPatternDesiredWrench,CommandPatternDesiredTorque,
                    CommandPatternCartesianCompliance,CommandPatternJointCompliance,CommandPatternCartesianTwist,CommandPatternCartesianFFWrench,
-                   CommandPatternJointVelocities,CommandPatternJointFFTorque,CommandPatternO_R_T};
+                   CommandPatternJointVelocities,CommandPatternJointFFTorque,CommandPatternO_R_T,CommandPatternGripper};
+
+enum GripperRequest{None,Grasp,Move};
 
 class Actuator{
 public:
@@ -34,6 +36,11 @@ public:
     void set_command_pattern(const std::set<CommandPattern>& command_pattern);
     const std::set<CommandPattern>* get_command_pattern() const;
 
+    void grasp(double width, double speed, double force, std::string object);
+    void move_fingers(double width, double speed);
+    void accecpt_gripper_request();
+    GripperRequest get_gripper_request();
+
 private:
     void refresh_limiter();
 
@@ -53,6 +60,12 @@ public:
     Eigen::Matrix<double,7,1> tau_ff;
     Eigen::Matrix<double,7,1> K_theta;
     Eigen::Matrix<double,7,1> xi_theta;
+
+    double gripper_width;
+    double gripper_speed;
+    double gripper_force;
+    std::string gripper_object;
+    GripperRequest gripper_request;
 
     double t;
 
@@ -95,6 +108,7 @@ private:
     double m_stop_factor;
 
     bool m_new_command;
+
 };
 
 }

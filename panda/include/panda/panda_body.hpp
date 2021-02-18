@@ -40,6 +40,7 @@ public:
     bool grasp(double width,double speed,double force,double epsilon_inner,double epsilon_outer) const;
     bool move_to_finger_position(double width, double speed) const;
     bool home_gripper() const;
+    bool is_hand_active();
 
 public:
     ControlReturnType control(std::function<franka::Torques(const franka::RobotState &, franka::Duration)> controller_callback);
@@ -85,6 +86,8 @@ private:
 
     std::atomic<bool> m_arm_connected;
     std::atomic<bool> m_hand_connected;
+
+    mutable std::mutex m_mtx_hand_active;
 
 private:
     Memory* m_memory;

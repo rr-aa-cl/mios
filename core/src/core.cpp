@@ -31,7 +31,7 @@ namespace mios {
 Core::Core(unsigned database_port, unsigned robot_configuration):m_memory(database_port),m_skill_engine(SkillEngine(this)),m_panda_body(PandaBody(&m_memory)),
     m_portal(Portal("0.0.0.0",12000,"mios/core","0.0.0.0",12001,12002)),m_skill_library(&m_memory,&m_portal),
     m_task_engine(TaskEngine(this)),m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_ros_node(this,&m_task_engine,&m_portal,&m_memory),
-    m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false),m_robot_configuration(robot_configuration){
+    m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false),m_robot_configuration(robot_configuration),m_hand_grace_period(0),m_blend_skill(false){
 }
 
 Core::~Core(){
@@ -168,6 +168,7 @@ ControlReturnType Core::execute_skill(){
     }
 
     post_execution();
+    m_blend_skill=false;
     return result;
 }
 
@@ -187,12 +188,55 @@ void Core::post_execution(){
     }
 }
 
-franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
+void Core::handle_gripper(Actuator* cmd){
+    if(m_percept.internal_model.hand_activity_state==HandActivityState::hsIdle && cmd->get_gripper_request()!=GripperRequest::None){
+        m_percept.internal_model.hand_activity_state=HandActivityState::hsBusy;
+        if(cmd->get_gripper_request()==GripperRequest::Grasp){
+            std::thread gripper(&Core::grasp,this,cmd->gripper_width,cmd->gripper_speed,cmd->gripper_force,0.1,0.1,cmd->gripper_object);
+            gripper.detach();
+        }
+        if(cmd->get_gripper_request()==GripperRequest::Move){
+            std::thread gripper(&Core::move_gripper,this,cmd->gripper_width,cmd->gripper_speed);
+            gripper.detach();
+        }
+        cmd->accecpt_gripper_request();
+    }
+    if(m_percept.internal_model.hand_activity_state==HandActivityState::hsFinished){
+        if(m_hand_grace_period==0){
+            m_hand_grace_period++;
+        }else{
+            m_hand_grace_period=0;
+            m_percept.internal_model.hand_activity_state=HandActivityState::hsIdle;
+        }
+    }
+}
 
+franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
+    bool exception=false;
+    if(m_skill_engine.is_running_queue() && m_blend_skill){
+        if(!m_skill_engine.blend_skill_stage_1()){
+            spdlog::error("First stage of skill blending failed.");
+            exception=true;
+        }
+    }
     franka::GripperState gripper_state;
     m_percept.update(m_panda_body.get_panda_model(),state,gripper_state,m_memory.read_parameters()->frames.O_R_T);
     m_memory.internal_update(m_percept);
+    if(m_skill_engine.is_running_queue() && m_blend_skill){
+        if(!m_skill_engine.blend_skill_stage_2()){
+            spdlog::error("Second stage of skill blending failed.");
+            exception=true;
+        }
+        m_blend_skill=false;
+    }
+
     Actuator* cmd=m_skill_engine.get_next_command(m_percept);
+    if(exception){
+        cmd->stop();
+    }
+
+    handle_gripper(cmd);
+
 
     m_memory.get_parameters()->frames.O_R_T=cmd->O_R_T;
     for(auto& m : m_safety_stage_1){
@@ -214,8 +258,16 @@ franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
         m->step(m_percept,panda_cmd);
     }
     if(cmd->is_stopped()){
-        spdlog::trace("Core::control_base_cycle.stopped");
-        panda_cmd->motion_finished=true;
+        if(m_skill_engine.is_running_queue()){
+            m_blend_skill=true;
+            if(m_skill_engine.is_last_skill()){
+                spdlog::trace("Core::control_base_cycle.stopped");
+                panda_cmd->motion_finished=true;
+            }
+        }else{
+            spdlog::trace("Core::control_base_cycle.stopped");
+            panda_cmd->motion_finished=true;
+        }
     }
     return panda_cmd;
 }
@@ -281,12 +333,28 @@ bool Core::home_gripper(){
     return m_panda_body.home_gripper();
 }
 
-bool Core::grasp(double width, double speed, double force,double epsilon_inner,double epsilon_outer){
+bool Core::grasp(double width, double speed, double force,double epsilon_inner,double epsilon_outer,std::string object_name){
     if(m_percept.robot_mode==franka::RobotMode::kUserStopped){
         spdlog::error("Action is not permitted while in user mode.");
         return false;
     }
-    return m_panda_body.grasp(width,speed,force,epsilon_inner,epsilon_outer);
+    m_percept.internal_model.hand_activity_state=HandActivityState::hsBusy;
+    bool result = m_panda_body.grasp(width,speed,force,epsilon_inner,epsilon_outer);
+    const Object* object=m_memory.get_object(object_name);
+    if(object->name=="NullObject"){
+        spdlog::warn("Cannot find object "+object_name+" in knowledge base.");
+    }
+    m_memory.get_live_context()->grasped_object=object;
+    m_memory.internal_update(m_percept);
+    if(!m_memory.update_database()){
+        spdlog::warn("Could not update datebase.");
+    }
+    m_memory.get_parameters()->user.load_m=object->mass;
+    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+    m_memory.get_parameters()->user.load_I=object->OB_I;
+    m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+    m_percept.internal_model.hand_activity_state=HandActivityState::hsFinished;
+    return result;
 }
 
 bool Core::move_gripper(double width, double speed){
@@ -294,7 +362,20 @@ bool Core::move_gripper(double width, double speed){
         spdlog::error("Action is not permitted while in user mode.");
         return false;
     }
-    return m_panda_body.move_to_finger_position(width,speed);
+    m_percept.internal_model.hand_activity_state=HandActivityState::hsBusy;
+    bool result = m_panda_body.move_to_finger_position(width,speed);
+    const Object* object=m_memory.get_object("NullObject");
+    m_memory.get_live_context()->grasped_object=object;
+    m_memory.internal_update(m_percept);
+    if(!m_memory.update_database()){
+        spdlog::warn("Could not update datebase.");
+    }
+    m_memory.get_parameters()->user.load_m=object->mass;
+    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+    m_memory.get_parameters()->user.load_I=object->OB_I;
+    m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+    m_percept.internal_model.hand_activity_state=HandActivityState::hsFinished;
+    return result;
 }
 
 bool Core::is_grasping(){

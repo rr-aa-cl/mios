@@ -194,6 +194,11 @@ UserParameters::UserParameters(){
     load_com.setZero();
     load_I.setZero();
 
+    env_X<<0.005,0.0175;
+    env_dX<<0.001,0.005;
+    env_q=0.0175;
+    env_dq=0.005;
+
     safe_mode=true;
 }
 
@@ -244,6 +249,23 @@ bool UserParameters::from_json(const nlohmann::json &parameters){
         return false;
     }
 
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"env_X",env_X)){
+        spdlog::error("Could not read env_X.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param<double,2,1>(parameters,"env_dX",env_dX)){
+        spdlog::error("Could not read env_dX.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param(parameters,"env_q",env_q)){
+        spdlog::error("Could not read env_q.");
+        return false;
+    }
+    if(!msrm_utils::read_json_param(parameters,"env_dq",env_dq)){
+        spdlog::error("Could not read env_dq.");
+        return false;
+    }
+
     if(!msrm_utils::read_json_param(parameters,"safe_mode",safe_mode)){
         spdlog::error("Could not read safe_mode.");
         return false;
@@ -266,6 +288,11 @@ nlohmann::json UserParameters::to_json() const{
     json_object["load_m"]=load_m;
     json_object["load_com"]=msrm_utils::from_eigen<double,3,1>(load_com);
     json_object["load_I"]=msrm_utils::from_eigen<double,3,3>(load_I);
+
+    json_object["env_X"]=msrm_utils::from_eigen<double,2,1>(env_X);
+    json_object["env_dX"]=msrm_utils::from_eigen<double,2,1>(env_dX);
+    json_object["env_q"]=env_q;
+    json_object["env_dq"]=env_dq;
 
     json_object["safe_mode"]=safe_mode;
     return json_object;
@@ -748,6 +775,10 @@ nlohmann::json ControlParameters::to_json() const{
 SkillParameters::SkillParameters(){
     time_max=0;
     parallels_frequency=1;
+    condition_level_pre=SkillConditionLevel::sclModel;
+    condition_level_success=SkillConditionLevel::sclModel;
+    condition_level_error=SkillConditionLevel::sclModel;
+    condition_level_exit=SkillConditionLevel::sclModel;
 }
 
 bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
@@ -762,12 +793,77 @@ bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
     if(p.find("objects")!=p.end()){
         read_skill_objects(p["objects"]);
     }
+    std::string level_pre;
+    if(!msrm_utils::read_json_param(p,"condition_level_pre",level_pre)){
+        spdlog::error("Could not read condition_level_pre.");
+        return false;
+    }
+    std::string level_success;
+    if(!msrm_utils::read_json_param(p,"condition_level_success",level_success)){
+        spdlog::error("Could not read condition_level_success.");
+        return false;
+    }
+    std::string level_error;
+    if(!msrm_utils::read_json_param(p,"condition_level_error",level_error)){
+        spdlog::error("Could not read condition_level_error.");
+        return false;
+    }
+    std::string level_exit;
+    if(!msrm_utils::read_json_param(p,"condition_level_exit",level_exit)){
+        spdlog::error("Could not read condition_level_exit.");
+        return false;
+    }
+
+    if(level_pre=="Model"){
+        condition_level_pre=SkillConditionLevel::sclModel;
+    }else if(level_pre=="Specification"){
+        condition_level_pre=SkillConditionLevel::sclSpecification;
+    }else if(level_pre=="External"){
+        condition_level_pre=SkillConditionLevel::sclExternal;
+    }else{
+        spdlog::error("Skill condition level " + level_pre + " for pre conditions does not exist.");
+        return false;
+    }
+
+    if(level_success=="Model"){
+        condition_level_success=SkillConditionLevel::sclModel;
+    }else if(level_success=="Specification"){
+        condition_level_success=SkillConditionLevel::sclSpecification;
+    }else if(level_success=="External"){
+        condition_level_success=SkillConditionLevel::sclExternal;
+    }else{
+        spdlog::error("Skill condition level " + level_success + " for success conditions does not exist.");
+        return false;
+    }
+
+    if(level_error=="Model"){
+        condition_level_error=SkillConditionLevel::sclModel;
+    }else if(level_error=="Specification"){
+        condition_level_error=SkillConditionLevel::sclSpecification;
+    }else if(level_error=="External"){
+        condition_level_error=SkillConditionLevel::sclExternal;
+    }else{
+        spdlog::error("Skill condition level " + level_error + " for error conditions does not exist.");
+        return false;
+    }
+
+    if(level_exit=="Model"){
+        condition_level_exit=SkillConditionLevel::sclModel;
+    }else if(level_exit=="Specification"){
+        condition_level_exit=SkillConditionLevel::sclSpecification;
+    }else if(level_exit=="External"){
+        condition_level_exit=SkillConditionLevel::sclExternal;
+    }else{
+        spdlog::error("Skill condition level " + level_exit + " for pre conditions does not exist.");
+        return false;
+    }
+
     return true;
 }
 
 void SkillParameters::read_skill_objects(const nlohmann::json &p){
     for(const auto& o : p.items()){
-        spdlog::debug("SKILLPARAMETERS:READ_SKILL_OBJECTS: o.key: " + o.key() + ", o.value: "+o.value().dump());
+        spdlog::debug("SkillParameters:read_skill_objects: o.key: " + o.key() + ", o.value: "+o.value().dump());
         objects.insert(std::make_pair(o.key(),o.value()));
     }
 }
@@ -777,6 +873,10 @@ nlohmann::json SkillParameters::get_default_values(){
     default_values["time_max"]=0;;
     default_values["parallels_frequency"]=1000;
     default_values["objects"]={};
+    default_values["condition_level_pre"]="Model";
+    default_values["condition_level_success"]="Model";
+    default_values["condition_level_error"]="Model";
+    default_values["condition_level_exit"]="Model";
     return default_values;
 }
 
@@ -785,6 +885,47 @@ nlohmann::json SkillParameters::to_json() const{
     json_object["time_max"]=time_max;
     json_object["parallels_frequency"]=parallels_frequency;
     json_object["objects"]={};
+
+    if(condition_level_pre==SkillConditionLevel::sclModel){
+        json_object["condition_level_pre"]="Model";
+    }
+    if(condition_level_pre==SkillConditionLevel::sclSpecification){
+        json_object["condition_level_pre"]="Specification";
+    }
+    if(condition_level_pre==SkillConditionLevel::sclExternal){
+        json_object["condition_level_pre"]="External";
+    }
+
+    if(condition_level_success==SkillConditionLevel::sclModel){
+        json_object["condition_level_success"]="Model";
+    }
+    if(condition_level_success==SkillConditionLevel::sclSpecification){
+        json_object["condition_level_success"]="Specification";
+    }
+    if(condition_level_success==SkillConditionLevel::sclExternal){
+        json_object["condition_level_success"]="External";
+    }
+
+    if(condition_level_error==SkillConditionLevel::sclModel){
+        json_object["condition_level_error"]="Model";
+    }
+    if(condition_level_error==SkillConditionLevel::sclSpecification){
+        json_object["condition_level_error"]="Specification";
+    }
+    if(condition_level_error==SkillConditionLevel::sclExternal){
+        json_object["condition_level_error"]="External";
+    }
+
+    if(condition_level_exit==SkillConditionLevel::sclModel){
+        json_object["condition_level_exit"]="Model";
+    }
+    if(condition_level_exit==SkillConditionLevel::sclSpecification){
+        json_object["condition_level_exit"]="Specification";
+    }
+    if(condition_level_exit==SkillConditionLevel::sclExternal){
+        json_object["condition_level_exit"]="External";
+    }
+
     return json_object;
 }
 

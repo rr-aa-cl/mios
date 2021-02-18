@@ -59,3 +59,26 @@ def remove_duplicate_results(host: str, db: str, col: str):
         if cnt > 1:
             print("Found " + str(cnt-1) + " duplicates for tag: " + tag)
             client[db][col].delete_one({"meta.tags": tag.strip('][').replace("'", "").replace(" ", "").split(',')})
+
+
+def load_results(host: str, database: str, skill: str, result_uuid: str, trial: int):
+    client = MongoDBClient(host)
+    results = client.read(database, skill, {"meta.uuid": result_uuid})[0]
+    task_context = results["meta"]["default_context"]
+    theta = results["n" + str(trial)]["theta"]
+    context_mapping = results["meta"]["domain"]["context_mapping"]
+
+    for t in theta:
+        params = context_mapping[t]
+        for p in params:
+            p_tmp_1 = p.split(".")
+            p_tmp_2 = p_tmp_1[-1].split("-")
+            dim = int(p_tmp_2[-1]) - 1
+            if len(p_tmp_1) == 4:
+                print(task_context)
+                print(p_tmp_1)
+                task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_2[0]][dim] = theta[t]
+            if len(p_tmp_1) == 5:
+                task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_1[3]][p_tmp_2[0]][dim] = theta[t]
+
+    return task_context
