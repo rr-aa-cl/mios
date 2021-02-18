@@ -819,8 +819,8 @@ def color_matrix(name = "es_matrix.csv"):
 
 
 def plot_collective_benchmark():
-    host = "collective-panda-001.local"
-    tags = ["collective_learning_benchmark_2_share"]
+    host = "collective-panda-002.local"
+    tags = ["collective_learning_benchmark_single_2"]
     p = DataProcessor()
 
     results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
