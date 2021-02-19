@@ -5,6 +5,8 @@ import numpy as np
 from ws_client import *
 from xmlrpc.client import ServerProxy
 
+import csv
+
 
 class Task:
     def __init__(self, robot):
@@ -203,18 +205,18 @@ def tax_test_move(robot):
 
 
 def tax_test_insertion(robot):
-    call_method(robot, 12000, "set_grasped_object", {"object": "key_pad"})
+    call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
     insertion_context = {
         "skill": {
             "objects": {
-                "Container": "lock_pad",
-                "Approach": "lock_pad_above",
-                "Insertable": "key_pad"
+                "Container": "iros_lock",
+                "Approach": "iros_lock_approach",
+                "Insertable": "iros_key"
             },
             "approach_speed": [0.5, 1],
             "approach_acc": [1, 4],
-            "insertion_speed": [0.5, 1],
-            "insertion_acc": [1, 4],
+            "insertion_speed": [0.1, 1],
+            "insertion_acc": [0.5, 4],
             "f_max_push": 10,
             "search_a": [10, 10, 0, 0, 0, 0],
             "search_f": [1, 0.75, 0, 0, 0, 0],
@@ -277,13 +279,13 @@ def subscribe_to_event_server(robot):
 
 
 def tax_test_extraction(robot="collective-panda-008.local"):
-    call_method(robot, 12000, "set_grasped_object", {"object": "key_pad"})
+    call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
     extraction_context = {
         "skill": {
             "objects": {
-                "Container": "lock_pad",
-                "ExtractTo": "lock_pad_above",
-                "Extractable": "key_pad"
+                "Container": "iros_lock",
+                "ExtractTo": "iros_lock_approach",
+                "Extractable": "iros_key"
             },
             "extraction_speed": [0.5, 0.5],
             "extraction_acc": [2, 1.0],
@@ -485,15 +487,15 @@ def iros_task():
                 "ExtractTo": "iros_lock_approach",
                 "Extractable": "iros_key"
             },
-            "extraction_speed": [0.5, 0.5],
-            "extraction_acc": [2, 1.0],
+            "extraction_speed": [0.5, 4],
+            "extraction_acc": [1, 1.0],
             "search_a": [0, 0, 0, 0, 0, 0],
             "search_f": [0, 0, 0, 0, 0, 0]
         },
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [2000, 2000,2000, 200,200, 200]
+                "K_x": [2000, 2000, 2000, 200,200, 200]
             }
         }
     }
@@ -609,6 +611,35 @@ def iros_task():
     iros1.add_skill("move_to_idle", "TaxMove", move5_context)
 
     iros1.start(True)
-    iros1.wait()
+    result = iros1.wait()
 
+    print(result)
     print("Execution time: " + str(time.time() - t_0))
+
+    cost = dict()
+
+    for skill, r in result["result"]["task_result"]["skill_results"].items():
+        cost[skill] = r["cost"]["time"]
+
+    return cost
+
+
+def iros_task_loop():
+    cost_avg = dict()
+    for i in range(1):
+        cost = iros_task()
+        for skill, c in cost.items():
+            if skill not in cost_avg:
+                cost_avg[skill] = []
+            cost_avg[skill].append(c)
+
+    with open('iros_data.csv', 'w') as f:
+        write = csv.writer(f)
+        write.writerow(cost_avg.keys())
+        table = []
+        i = 0
+        for skill, c in cost_avg.items():
+            table.append(c)
+            i += 1
+
+        write.writerows(table)

@@ -73,12 +73,33 @@ def load_results(host: str, database: str, skill: str, result_uuid: str, trial: 
         for p in params:
             p_tmp_1 = p.split(".")
             p_tmp_2 = p_tmp_1[-1].split("-")
-            dim = int(p_tmp_2[-1]) - 1
+            if len(p_tmp_2) == 2:
+                dim = int(p_tmp_2[-1]) - 1
+            else:
+                dim = False
             if len(p_tmp_1) == 4:
-                print(task_context)
-                print(p_tmp_1)
-                task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_2[0]][dim] = theta[t]
+                if p_tmp_1[0] not in task_context:
+                    task_context[p_tmp_1[0]] = dict()
+                if p_tmp_1[1] not in task_context[p_tmp_1[0]]:
+                    task_context[p_tmp_1[0]][p_tmp_1[1]] = dict()
+                if p_tmp_1[2] not in task_context[p_tmp_1[0]][p_tmp_1[1]]:
+                    task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]] = dict()
+
+            if len(p_tmp_1) == 4:
+                # if p_tmp_2[0] not in task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]]:
+                #     task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_2[0]] = []
+                if dim is False:
+                    task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_2[0]] = theta[t]
+                else:
+                    task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_2[0]][dim] = theta[t]
             if len(p_tmp_1) == 5:
-                task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_1[3]][p_tmp_2[0]][dim] = theta[t]
+                if p_tmp_1[3] not in task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]]:
+                    task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_1[3]] = dict()
+                # if p_tmp_2[0] not in task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_1[3]]:
+                #     task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_1[3]][p_tmp_2[0]] = []
+                if dim is False:
+                    task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_1[3]][p_tmp_2[0]] = theta[t]
+                else:
+                    task_context[p_tmp_1[0]][p_tmp_1[1]][p_tmp_1[2]][p_tmp_1[3]][p_tmp_2[0]][dim] = theta[t]
 
     return task_context

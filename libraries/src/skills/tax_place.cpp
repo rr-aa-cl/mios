@@ -139,6 +139,7 @@ std::shared_ptr<ManipulationPrimitive> TaxPlace::create_retract_mp(const Percept
 }
 
 bool TaxPlace::check_local_pre_conditions(const Percept &p){
+    return true;
     Eigen::Matrix<double,4,4> T_container = get_object_pose_T("Surface");
     std::shared_ptr<SkillParametersTaxPlace> skill_params = get_parameters<SkillParametersTaxPlace>();
     for(unsigned i=0;i<3;i++){

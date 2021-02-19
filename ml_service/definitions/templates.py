@@ -536,6 +536,10 @@ def grab(approach_pose: str, grabbable: str, retract_pose: str, surface: str):
                     "time_max": 5.0,
                     "grasp_width": 0.032,
                     "grasp_force": 40,
+                    "approach_speed": [0.5, 1],
+                    "approach_acc": [1, 4],
+                    "ROI_x": [-0.3, 0.3, -0.3, 0.3, -1, 1],
+                    "ROI_phi": [-0.03, 0.03, -0.03, 0.03, -1, 1],
                     "objects": {
                         "Approach": approach_pose,
                         "Retract": retract_pose,
@@ -561,10 +565,14 @@ def grab(approach_pose: str, grabbable: str, retract_pose: str, surface: str):
         "skills": {
             "place": {
                 "skill": {
-                    "speed": [0.075, 0.5],
-                    "acc": [0.5, 1],
+                    "approach_speed": [0.075, 0.5],
+                    "approach_acc": [0.5, 1],
+                    "place_speed": [0.075, 0.5],
+                    "place_acc": [0.5, 1],
                     "release_width": 1,
                     "release_speed": 2,
+                    "ROI_x": [-0.3, 0.3, -0.3, 0.3, -1, 1],
+                    "ROI_phi": [-0.03, 0.03, -0.03, 0.03, -1, 1],
                     "objects": {
                         "Approach": retract_pose,
                         "Retract": approach_pose,
