@@ -2,21 +2,20 @@ import logging
 import numpy as np
 import random
 import deap
+import time
 
 from sklearn.svm import SVC
 from sklearn import mixture
 
-from deap import algorithms
-from copy import deepcopy
-from deap import base
 from deap import creator
-from deap import tools
 
 from pyDOE import lhs
 
 from engine.engine import Trial
 from services.base_service import BaseService
 from services.base_service import ServiceConfiguration
+
+from xmlrpc.client import ServerProxy
 
 
 logger = logging.getLogger("ml_service")
@@ -28,13 +27,18 @@ class SVMConfiguration(ServiceConfiguration):
         self.target_cost = None
         self.n_trials = 400    
         self.batch_width = 1 # retrain after every trial
+        self.n_immigrant = 0
+
+    def __del__(self):
+        print("DESTRUCTOR")
 
     def _to_dict(self):
         config = {
             "failure_base_cost": self.failure_base_cost,
             "n_trials": self.n_trials,
             "target_cost": self.target_cost,
-            "batch_width": self.batch_width
+            "batch_width": self.batch_width,
+            "n_immigrant": self.n_immigrant
         }
         return config
 
@@ -43,6 +47,7 @@ class SVMConfiguration(ServiceConfiguration):
         self.n_trials = config_dict["n_trials"]
         self.target_cost = config_dict["target_cost"]
         self.batch_width = config_dict["batch_width"]
+        self.n_immigrant = config_dict["n_immigrant"]
 
 
 
@@ -118,7 +123,7 @@ class SVMService(BaseService):
         else:
             return True
 
-    def _run_trial_par(self, x_set: np.ndarray):
+    def _run_trial_par(self, x_set: list):
         """ create array of rpc params for input """
         self.cnt_trial = 0
         print("Evaluating batch " + str(self.cnt_batch))
@@ -126,10 +131,18 @@ class SVMService(BaseService):
 
         self.cnt_trial += 1
 
-        trial_uuids = []
+        trial_uuids = dict()
+
+        if self.knowledge_source is None:
+            kb = None
+        else:
+            kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
+
+        x_set = x_set[:len(x_set)-self.configuration.n_immigrant]
 
         for x in x_set:
-            trial_uuids.append(self.push_trial(x))
+            uuid = self.push_trial(x)
+            trial_uuids[uuid] = x
 
         costs = []
         self.success_ratio = 0
@@ -142,8 +155,27 @@ class SVMService(BaseService):
             else:
                 self.success_ratio += result.success
                 costs.append((result.final_cost,))
+            if kb is not None:
+                theta = []
+                for i in range(len(trial_uuids[uuid])):
+                    theta.append(float(trial_uuids[uuid][i]))
+                kb.push_trial(self.host_name, theta, float(result.final_cost), self.configuration.batch_width)
 
         self.success_ratio /= float(len(trial_uuids))
+
+        if kb is not None:
+            while True:
+                new_set = kb.request_trials(self.configuration.n_immigrant)
+                if new_set is False:
+                    print("Not enought yet")
+                    time.sleep(1)
+                    continue
+                else:
+                    break
+            for i in new_set:
+                x_set.append(i[0])
+                costs.append((i[1],))
+
         costs_tmp = []
         for c in costs:
             costs_tmp.append(c[0])
@@ -214,54 +246,55 @@ class SVMService(BaseService):
                     self.action_list_norm.append(t)
         else:
             while i < self.configuration.batch_width:
-                    if counter>=1000:
-                        action_norm=np.random.uniform(0,1,self.numberOfParameters)
-                        if self.gmm_active==True:
-                            action_norm=self.getGmmSample()
+                print(i)
+                if counter>=1000:
+                    action_norm=np.random.uniform(0,1,self.numberOfParameters)
+                    if self.gmm_active==True:
+                        action_norm=self.getGmmSample()
 
 
-                        self.action_list_norm.append(action_norm)
-                        i+=1
-                        counter=0
-                        #print "added innovation"
-                        continue
-        
-        
-                    if self.classifierActive==True:
-                        if self.gmm_active==True:
-                            action_norm=self.getGmmSample()
-                            print(action_norm)
-                        else:
-                            action_norm=np.random.uniform(0.0,1.0,self.numberOfParameters)
-        
-                        j=0
-                        #print action_norm
-                        for a in action_norm:
-                            if a<0:
-                                action_norm[j]=0
-                            if a>1:
-                                action_norm[j]=1
-                            j+=1
-                        aa=action_norm
-                        aa=aa.reshape([1,-1])
-                        prediction=self.classifier.predict(aa)
-                        #print prediction
-        
-                        if prediction==1:
-                            #raw_input("es passiert was!")
-                            self.action_list_norm.append(action_norm)
-                            i+=1
-        
-                        else:
-                            #print " rejected"
-                            counter+=1
-                            continue
+                    self.action_list_norm.append(action_norm)
+                    i+=1
+                    counter=0
+                    #print "added innovation"
+                    continue
+
+
+                if self.classifierActive==True:
+                    if self.gmm_active==True:
+                        action_norm=self.getGmmSample()
+                        print(action_norm)
                     else:
                         action_norm=np.random.uniform(0.0,1.0,self.numberOfParameters)
-                        action=self._norms2params(action_norm)
 
+                    j=0
+                    #print action_norm
+                    for a in action_norm:
+                        if a<0:
+                            action_norm[j]=0
+                        if a>1:
+                            action_norm[j]=1
+                        j+=1
+                    aa=action_norm
+                    aa=aa.reshape([1,-1])
+                    prediction=self.classifier.predict(aa)
+                    #print prediction
+
+                    if prediction==1:
+                        #raw_input("es passiert was!")
                         self.action_list_norm.append(action_norm)
                         i+=1
+
+                    else:
+                        #print " rejected"
+                        counter+=1
+                        continue
+                else:
+                    action_norm=np.random.uniform(0.0,1.0,self.numberOfParameters)
+                    action=self._norms2params(action_norm)
+
+                    self.action_list_norm.append(action_norm)
+                    i+=1
                 
 
     def getGmmSample(self):
@@ -307,7 +340,7 @@ class SVMService(BaseService):
 
             self.classifierActive=True
 
-            if self.svmCounter>=15:
+            if self.svmCounter >= 15 and len(self.gmm_samples) > 2:
 
                 for x in self.classifier.support_vectors_:
                     pass

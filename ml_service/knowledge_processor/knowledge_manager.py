@@ -9,6 +9,10 @@ from knowledge_processor.kg_random_forest import KGRandomForest
 from knowledge_processor.kg_k_neighbors import KGKNeighbors
 from knowledge_processor.knowledge_generalizer_base import KnowledgeGeneralizerBase
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.neural_network import MLPRegressor
+from threading import Lock, Thread
+from sklearn.svm import SVR
+from enum import Enum
 
 logger = logging.getLogger("ml_service")
 
@@ -22,7 +26,18 @@ class KnowledgeManager:
         self.validation_per = 0.2
         self.n_retrain = 10  # how many times the generalizer is retrained before prediction
         self.data_storage = dict()
-        self.k_neighbors = KNeighborsRegressor(n_neighbors=5)
+        self.k_neighbors = KNeighborsRegressor(n_neighbors=6)
+        self.mlp1 = MLPRegressor(hidden_layer_sizes=(14,), max_iter=400)
+        self.mlp2 = MLPRegressor(hidden_layer_sizes=(14,), max_iter=400)
+        self.svr = SVR()
+        self.lock_mlp1 = Lock()
+        self.lock_mlp2 = Lock()
+
+        self.training_mlp1 = False
+        self.training_mlp2 = False
+        self.last_trained = "none"
+        self.first_fit = False
+
         self.trial_data_x = []
         self.trial_data_y = []
 
@@ -463,9 +478,72 @@ class KnowledgeManager:
         self.trial_data_y.append(cost)
         x = np.asarray(self.trial_data_x).reshape(-1, len(theta))
         y = np.asarray(self.trial_data_y).reshape(-1, 1)
-        self.k_neighbors.fit(x, y)
+        y = np.ravel(y)
+
+        try:
+            if self.last_trained == "none" and self.training_mlp1 is True:
+                self.svr.fit(x, y)
+                self.first_fit = True
+            if self.last_trained == "none" and self.training_mlp1 is False:
+                t = Thread(target=self.train_mlp1, args=(x, y))
+                t.start()
+            if self.last_trained == "mlp1" and self.training_mlp1 is False:
+                t = Thread(target=self.train_mlp2, args=(x, y))
+                t.start()
+            if self.last_trained == "mlp2" and self.training_mlp2 is False:
+                t = Thread(target=self.train_mlp1, args=(x, y))
+                t.start()
+
+        except IndexError as e:
+            print("IndexError: " + str(e))
+            print(x.shape)
+            print(y.shape)
 
     def request_online_evaluation(self, theta: list, task_parameter: float):
-        theta.append(task_parameter)
-        x = np.asarray(theta).reshape(1, -1)
-        return float(self.k_neighbors.predict(x))
+        cost = []
+        for t in theta:
+            t.append(task_parameter)
+            x = np.asarray(t).reshape(1, -1)
+            #return float(self.k_neighbors.predict(x))
+            cost.append(float(self.svr.predict(x)))
+            if self.last_trained == "none" and self.first_fit is True:
+                cost.append(float(self.svr.predict(x)))
+            elif self.last_trained == "mlp2" and self.training_mlp2 is False:
+                cost.append(float(self.mlp2.predict(x)))
+            elif self.last_trained == "mlp1" and self.training_mlp1 is False:
+                cost.append(float(self.mlp1.predict(x)))
+            else:
+                return False
+
+        return cost
+
+    def clear_memory(self):
+        self.trial_data_x.clear()
+        self.trial_data_y.clear()
+        self.data_storage.clear()
+
+    def train_mlp1(self, x, y):
+        if self.lock_mlp1.acquire(False) is False:
+            return
+        self.training_mlp1 = True
+        try:
+            self.mlp1.fit(x, y)
+            self.last_trained = "mlp1"
+        except IndexError as e:
+            print(e)
+        finally:
+            self.training_mlp1 = False
+            self.lock_mlp1.release()
+
+    def train_mlp2(self, x, y):
+        if self.lock_mlp2.acquire(False) is False:
+            return
+        self.training_mlp2 = True
+        try:
+            self.mlp2.fit(x, y)
+            self.last_trained = "mlp2"
+        except IndexError as e:
+            print(e)
+        finally:
+            self.training_mlp2 = False
+            self.lock_mlp2.release()

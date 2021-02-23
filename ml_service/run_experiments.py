@@ -1,4 +1,4 @@
-from utils.experiment_wizard import start_experiment
+from utils.experiment_wizard import *
 from definitions.insertion_definitions import insert_cylinder
 from definitions.insertion_definitions import insert_cylinder_light
 from definitions.insertion_definitions import insert_key
@@ -25,13 +25,14 @@ from xmlrpc.client import ServerProxy
 
 
 def simple_benchmark(robot: str, agents: list, n_iter: int = 1, tags: list = []):
-    pd = mios_ml_benchmark(0)
+    pd = mios_ml_benchmark(0.2)
+    #service_config = CMAESConfiguration()
     service_config = SVMConfiguration()
-    service_config.n_trials = 50
-    service_config.batch_width = 5
-    #service_config.exploration_mode = True
-    #service_config.n_ind = 2
+    service_config.exploration_mode = True
+    #service_config.n_ind = 10
     #service_config.n_gen = 10
+    service_config.batch_width = 5
+    service_config.n_trials = 50
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
 
 
@@ -469,26 +470,30 @@ def collective_learning_benchmark_2():
               "collective-panda-009.local"]
 
     service_config = CMAESConfiguration()
+    service_config = SVMConfiguration()
     service_config.exploration_mode = True
-    service_config.n_ind = 6
-    service_config.n_gen = 10
-    service_config.n_immigrant = 4
-    tag = "collective_learning_benchmark_share_3"
+    #service_config.n_ind = 10
+    #service_config.n_gen = 10
+    service_config.n_trials = 150
+    service_config.batch_width = 15
+    service_config.n_immigrant = 10
+    tag = "collective_learning_benchmark_share3_10_ind"
     knowledge = {"mode": "none", "kb_location": agents[0], "kb_tags": [tag]}
     threads = []
-    i = 0
-    pd = mios_ml_benchmark(i)
+    pd = mios_ml_benchmark(0)
     delete_local_results(agents, "ml_results", pd.task_type, [tag])
-    for a in agents:
-        pd = mios_ml_benchmark(0)
-        pd.cost_function.geometry_factor = i
-        i += 1
-        tags = [tag, a]
-        threads.append(Thread(target=start_experiment, args=(a, [a], pd, service_config, 10, tags, knowledge, False,)))
-        threads[-1].start()
+    s = ServerProxy("http://" + agents[0] + ":8001", allow_none=True)
+    for i in range(5):
+        s.clear_memory()
+        for a in agents:
+            pd = mios_ml_benchmark(i * 0.1)
+            pd.cost_function.geometry_factor = i * 0.1
+            tags = [tag, a]
+            threads.append(Thread(target=start_single_experiment, args=(a, [a], pd, service_config, i, tags, knowledge, False,)))
+            threads[-1].start()
 
-    for t in threads:
-        t.join()
+        for t in threads:
+            t.join()
 
     for a in agents:
         if a == agents[0]:

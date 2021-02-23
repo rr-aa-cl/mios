@@ -41,6 +41,7 @@ class Database():
         self.rpc_server.register_function(self.request_trials, "request_trials")
         self.rpc_server.register_function(self.push_trial_2, "push_trial_2")
         self.rpc_server.register_function(self.request_online_evaluation, "request_online_evaluation")
+        self.rpc_server.register_function(self.clear_memory, "clear_memory")
         logger.debug("databse.start_server: starting rpc server with global database at port "+str(self.port))
         #self.rpc_server.serve_forever()
         self.stop = False
@@ -104,5 +105,8 @@ class Database():
 
     def request_online_evaluation(self, theta, task_parameter):
         return self.knowledge_manager.request_online_evaluation(theta, task_parameter)
+
+    def clear_memory(self):
+        self.knowledge_manager.clear_memory()
 
 

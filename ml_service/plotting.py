@@ -821,23 +821,96 @@ def color_matrix(name = "es_matrix.csv"):
 
 def plot_collective_benchmark():
     host = "collective-panda-002.local"
-    tags = ["collective_learning_benchmark_single_3"]
+    tags = ["collective_learning_benchmark_single2_5_ind"]
     p = DataProcessor()
 
+    print("Plotting single_ind_5")
     results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
     # cost = p.get_average_cost_over_time(results, 1500, True)
-    cost = p.get_average_cost(results, True, 2)
+    cost = p.get_average_cost(results, True, 5)
     plt.plot(cost)
 
-    tags = ["collective_learning_benchmark_share_3"]
+    tags = ["collective_learning_benchmark_single2_10_ind"]
+    print("Plotting single_ind_10")
     results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
                                            filter={"meta.tags": {"$all": tags}})
     # cost = p.get_average_cost_over_time(results, 1500, True)
-    cost = p.get_average_cost(results, True, 2)
+    cost = p.get_average_cost(results, True, 10)
     plt.plot(cost)
+
+    tags = ["collective_learning_benchmark_share2_5_ind", "collective-panda-002.local"]
+    print("Plotting share_ind_5")
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
+                                           filter={"meta.tags": {"$all": tags}})
+    # cost = p.get_average_cost_over_time(results, 1500, True)
+    cost = p.get_average_cost(results, True, 5)
+    plt.plot(cost)
+
+    tags = ["collective_learning_benchmark_share2_10_ind", "collective-panda-002.local"]
+    print("Plotting share_ind_10")
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
+                                           filter={"meta.tags": {"$all": tags}})
+    # cost = p.get_average_cost_over_time(results, 1500, True)
+    cost = p.get_average_cost(results, True, 5)
+    plt.plot(cost)
+
+    plt.legend(("Single_5", "Single_10", "Shared_10", "Shared_15"))
 
     plt.ylim([0,1])
     plt.show()
+
+
+def plot_collective_benchmark_2():
+    host = "collective-panda-002.local"
+    tags = [["collective_learning_benchmark_single3_0"], ["collective_learning_benchmark_single3_01"],
+            ["collective_learning_benchmark_single3_02"],
+            ["collective_learning_benchmark_share3_10_ind", "collective-panda-002.local"],
+            ["collective_learning_benchmark_share3_10_ind", "collective-panda-008.local"],
+            ["collective_learning_benchmark_share3_10_ind", "collective-panda-009.local"]]
+    episode_length = [1, 1, 1, 1, 1, 1]
+    p = DataProcessor()
+
+    for i in range(len(tags)):
+        add_plot_over_trials(host, tags[i], p, episode_length[i])
+
+    plt.legend(("Task_0", "Task_01", "Task_02", "Task_0_shared", "Task_01_shared", "Task_02_shared"))
+
+    plt.ylim([0, 0.4])
+    plt.xlabel("Trial [1]")
+    plt.ylabel("Cost [1]")
+    plt.show()
+
+
+def plot_collective_benchmark_3():
+    host = "collective-panda-002.local"
+    tags = [["collective_learning_benchmark_single3_0"], ["collective_learning_benchmark_single3_01"],
+            ["collective_learning_benchmark_single3_02"],
+            ["collective_learning_benchmark_share3_10_ind", "collective-panda-002.local"],
+            ["collective_learning_benchmark_share3_10_ind", "collective-panda-008.local"],
+            ["collective_learning_benchmark_share3_10_ind", "collective-panda-009.local"]]
+    p = DataProcessor()
+
+    for i in range(len(tags)):
+        add_plot_over_time(host, tags[i], p)
+
+    plt.legend(("Task_0", "Task_01", "Task_02", "Task_0_shared", "Task_01_shared", "Task_02_shared"))
+
+    plt.ylim([0, 0.4])
+    plt.xlabel("Time [s]")
+    plt.ylabel("Cost [1]")
+    plt.show()
+
+
+def add_plot_over_trials(host: str, tags: list, data_processor: DataProcessor, episode_length: int):
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    cost = data_processor.get_average_cost(results, True, episode_length)
+    plt.plot(cost)
+
+
+def add_plot_over_time(host: str, tags: list, data_processor: DataProcessor):
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    cost = data_processor.get_average_cost_over_time(results, decreasing=True)
+    plt.plot(cost)
 
 
 def plot_stuff_1():
