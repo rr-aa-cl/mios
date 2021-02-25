@@ -12,6 +12,7 @@ from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neural_network import MLPRegressor
 from threading import Lock, Thread
 from sklearn.svm import SVR
+import sklearn.exceptions
 from enum import Enum
 
 logger = logging.getLogger("ml_service")
@@ -504,15 +505,17 @@ class KnowledgeManager:
         for t in theta:
             t.append(task_parameter)
             x = np.asarray(t).reshape(1, -1)
-            #return float(self.k_neighbors.predict(x))
-            cost.append(float(self.svr.predict(x)))
-            if self.last_trained == "none" and self.first_fit is True:
-                cost.append(float(self.svr.predict(x)))
-            elif self.last_trained == "mlp2" and self.training_mlp2 is False:
-                cost.append(float(self.mlp2.predict(x)))
-            elif self.last_trained == "mlp1" and self.training_mlp1 is False:
-                cost.append(float(self.mlp1.predict(x)))
-            else:
+            try:
+                if self.last_trained == "none" and self.first_fit is True:
+                    cost.append(float(self.svr.predict(x)))
+                elif self.last_trained == "mlp2" and self.training_mlp2 is False:
+                    cost.append(float(self.mlp2.predict(x)))
+                elif self.last_trained == "mlp1" and self.training_mlp1 is False:
+                    cost.append(float(self.mlp1.predict(x)))
+                else:
+                    return False
+            except sklearn.exceptions.NotFittedError as e:
+                print(e)
                 return False
 
         return cost

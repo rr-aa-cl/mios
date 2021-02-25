@@ -32,7 +32,7 @@ def simple_benchmark(robot: str, agents: list, n_iter: int = 1, tags: list = [])
     #service_config.n_ind = 10
     #service_config.n_gen = 10
     service_config.batch_width = 5
-    service_config.n_trials = 50
+    service_config.n_trials = 200
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
 
 
@@ -474,10 +474,10 @@ def collective_learning_benchmark_2():
     service_config.exploration_mode = True
     #service_config.n_ind = 10
     #service_config.n_gen = 10
-    service_config.n_trials = 150
+    service_config.n_trials = 300
     service_config.batch_width = 15
     service_config.n_immigrant = 10
-    tag = "collective_learning_benchmark_share3_10_ind"
+    tag = "collective_learning_benchmark_share_t"
     knowledge = {"mode": "none", "kb_location": agents[0], "kb_tags": [tag]}
     threads = []
     pd = mios_ml_benchmark(0)

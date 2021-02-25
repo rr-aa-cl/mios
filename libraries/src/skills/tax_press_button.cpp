@@ -37,11 +37,15 @@ bool SkillParametersTaxPressButton::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameter duration could not be loaded but is mandatory.");
         return false;
     }
+    if(!msrm_utils::read_json_param(parameters,"f_push",f_push)){
+        spdlog::error("Parameter f_push could not be loaded but is mandatory.");
+        return false;
+    }
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxPressButton::get_parameter_list(){
-    return {{"duration",{}},{"approach_speed",{}},{"approach_acc",{}},{"press_speed",{}},{"press_acc",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+    return {{"duration",{}},{"f_push",{}},{"approach_speed",{}},{"approach_acc",{}},{"press_speed",{}},{"press_acc",{}},{"ROI_x",{}},{"ROI_phi",{}}};
 }
 
 TaxPressButton::TaxPressButton(const std::string& name, Memory* memory, Portal *portal):Skill("TaxPressButton",{"Button","Approach"},name,memory,portal,{ControlMode::mCartTorque}),
@@ -120,7 +124,7 @@ std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_push_mp(const Perc
     mp->create_strategy<FFStrategy>("push",1);
     std::shared_ptr<FFStrategy> move = mp->get_strategy<FFStrategy>("push");
     Eigen::Matrix<double,6,1> F_d;
-    F_d<<0,0,10,0,0,0;
+    F_d<<0,0,skill_params->f_push,0,0,0;
     move->set_TF_F_ff(F_d,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
     return mp;
 }

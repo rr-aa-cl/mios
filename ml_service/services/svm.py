@@ -138,7 +138,9 @@ class SVMService(BaseService):
         else:
             kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
 
+        x_set_external = x_set[len(x_set)-self.configuration.n_immigrant:]
         x_set = x_set[:len(x_set)-self.configuration.n_immigrant]
+        print(len(x_set) + len(x_set_external))
 
         for x in x_set:
             uuid = self.push_trial(x)
@@ -160,12 +162,19 @@ class SVMService(BaseService):
                 for i in range(len(trial_uuids[uuid])):
                     theta.append(float(trial_uuids[uuid][i]))
                 kb.push_trial(self.host_name, theta, float(result.final_cost), self.configuration.batch_width)
+                # kb.push_trial_2(theta, float(result.final_cost), self.problem_definition.cost_function.geometry_factor)
 
         self.success_ratio /= float(len(trial_uuids))
 
         if kb is not None:
             while True:
                 new_set = kb.request_trials(self.configuration.n_immigrant)
+                # x_set_external_tmp = []
+                # for i in range(len(x_set_external)):
+                #     x_set_external_tmp.append([])
+                #     for j in range(len(x_set_external[i])):
+                #         x_set_external_tmp[i].append(float(x_set_external[i][j]))
+                # cost_external = kb.request_online_evaluation(x_set_external_tmp, self.problem_definition.cost_function.geometry_factor)
                 if new_set is False:
                     print("Not enought yet")
                     time.sleep(1)
@@ -175,6 +184,9 @@ class SVMService(BaseService):
             for i in new_set:
                 x_set.append(i[0])
                 costs.append((i[1],))
+            # for i in range(len(x_set_external)):
+            #     x_set.append(x_set_external[i])
+            #     costs.append((cost_external[i],))
 
         costs_tmp = []
         for c in costs:
@@ -246,7 +258,6 @@ class SVMService(BaseService):
                     self.action_list_norm.append(t)
         else:
             while i < self.configuration.batch_width:
-                print(i)
                 if counter>=1000:
                     action_norm=np.random.uniform(0,1,self.numberOfParameters)
                     if self.gmm_active==True:
@@ -263,7 +274,6 @@ class SVMService(BaseService):
                 if self.classifierActive==True:
                     if self.gmm_active==True:
                         action_norm=self.getGmmSample()
-                        print(action_norm)
                     else:
                         action_norm=np.random.uniform(0.0,1.0,self.numberOfParameters)
 

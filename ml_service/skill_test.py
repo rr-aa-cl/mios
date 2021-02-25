@@ -64,8 +64,11 @@ def tax_test_grab(robot="collective-panda-008.local"):
                 "Approach": "iros_key_grab_approach",
                 "Grabbable": "iros_key"
             },
-            "speed": [0.5, 0.5],
-            "acc": [2, 1.0],
+            "time_max": 5,
+            "approach_speed": [0.5, 1],
+            "approach_acc": [1, 4],
+            "grab_speed": [0.5, 1.0],
+            "grab_acc": [1.0, 4.0],
             "grasp_width": 0.03,
             "grasp_speed": 100,
             "grasp_force": 30,
@@ -304,8 +307,8 @@ def tax_test_extraction(robot="collective-panda-008.local"):
                 "ExtractTo": "iros_lock_approach",
                 "Extractable": "iros_key"
             },
-            "extraction_speed": [0.5, 0],
-            "extraction_acc": [1, 0.19],
+            "extraction_speed": [0.5, 1],
+            "extraction_acc": [1, 4],
             "search_a": [3, 1.7, 3.6, 0.64, 0.85, 0],
             "search_f": [0.77, 0, 0.8, 0.16, 0.58, 0],
             "stuck_dx_thr": 0.09
@@ -313,7 +316,7 @@ def tax_test_extraction(robot="collective-panda-008.local"):
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [702, 276, 1798, 11, 131, 45]
+                "K_x": [702, 276, 1798, 110, 131, 45]
             }
         },
         "user": {
@@ -410,7 +413,7 @@ def iros_task():
                 "Grabbable": "iros_key"
             },
             "approach_speed": [0.5, 2],
-            "approach_acc": [2, 5.0],
+            "approach_acc": [2, 4.0],
             "grab_speed": [0.3, 2],
             "grab_acc": [1, 4],
             "grasp_width": 0.03,
@@ -515,19 +518,19 @@ def iros_task():
                 "ExtractTo": "iros_lock_approach",
                 "Extractable": "iros_key"
             },
-            "extraction_speed": [0.5, 4],
-            "extraction_acc": [1, 1.0],
+            "extraction_speed": [0.5, 1],
+            "extraction_acc": [1, 4],
             "search_a": [0, 0, 0, 0, 0, 0],
             "search_f": [0, 0, 0, 0, 0, 0]
         },
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200,200, 200]
+                "K_x": [2000, 2000, 2000, 200, 200, 200]
             }
         },
         "user": {
-            "env_X": [0.02, 0.04]
+            "env_X": [0.02, 0.1]
         }
     }
     move3_context = {
@@ -598,6 +601,7 @@ def iros_task():
             "approach_acc": [1, 4],
             "press_speed": [0.24, 1],
             "press_acc": [1, 3.39],
+            "f_push": 5,
             "duration": 0,
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0]
