@@ -690,9 +690,12 @@ def place(approach_pose: str, placeable: str, retract_pose: str, surface: str):
                 "skill": {
                     "time_max": 5.0,
                     "grasp_width": 0.032,
+                    "grasp_speed": 1.6,
                     "grasp_force": 30,
                     "approach_speed": [0.5, 1],
                     "approach_acc": [1, 4],
+                    "grab_speed": [0.17, 0.8],
+                    "grab_acc": [0.35, 0.94],
                     "ROI_x": [-0.3, 0.3, -0.3, 0.3, -1, 1],
                     "ROI_phi": [-0.03, 0.03, -0.03, 0.03, -1, 1],
                     "objects": {
