@@ -658,6 +658,8 @@ def place(approach_pose: str, placeable: str, retract_pose: str, surface: str):
             "place": {
                 "skill": {
                     "time_max": 5.0,
+                    "approach_speed": [0.5, 1],
+                    "approach_acc": [1, 4],
                     "release_width": 0.05,
                     "release_speed": 2,
                     "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1],
@@ -709,6 +711,9 @@ def place(approach_pose: str, placeable: str, retract_pose: str, surface: str):
                     "cart_imp": {
                         "K_x": [2000, 2000, 2000, 200, 200, 200]
                     }
+                },
+                "user":  {
+                    "env_X": [0.01, 0.03]
                 }
             }
         }
