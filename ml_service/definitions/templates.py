@@ -686,7 +686,7 @@ def place(approach_pose: str, placeable: str, retract_pose: str, surface: str):
             "skill_names": ["grab"]
         },
         "skills": {
-            "place": {
+            "grab": {
                 "skill": {
                     "time_max": 5.0,
                     "grasp_width": 0.032,
