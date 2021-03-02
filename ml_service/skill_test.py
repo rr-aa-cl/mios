@@ -103,23 +103,24 @@ def tax_test_place(robot="collective-panda-008.local"):
                 "Placeable": "iros_key",
                 "Surface": "iros_key_storage"
             },
-            "speed": [0.1, 0.5],
-            "acc": [0.5, 1.0],
+            "approach_speed": [0.5, 1],
+            "approach_acc": [1, 4.0],
+            "place_speed": [0.18, 1],
+            "place_acc": [1, 2.2],
             "release_width": 0.06,
-            "release_speed": 100,
+            "release_speed": 4.6,
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0]
         },
         "control": {
-            "control_mode": 0
+            "control_mode": 0,
+            "cart_imp": {
+                "K_x": [2000, 2000, 2000, 150, 150, 150]
+            }
         },
         "user": {
             "env_X": [0.01, 0.02]
         }
-    }
-    place_context = load_results("collective-control-001.local", "iros2021", "place", "b74b2197-5d1c-4049-984c-fc0e118a87ff" , 174)["skills"]["place"]
-    place_context["user"] = {
-        "env_X": [0.02, 0.05]
     }
     t = Task(robot)
     t.add_skill("place", "TaxPlace", place_context)
