@@ -74,7 +74,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxGrab::graph_transition
         }
     }
     if(get_active_mp()->get_name()=="pre_grasp"){
-        if(get_active_mp()->get_strategy_interface("move")->finished()){
+        if(is_in_env("Grabbable","move",p)){
             return create_grasp_mp(p);
         }else{
             return {};

@@ -166,3 +166,20 @@ class DataProcessor:
         for key in d.keys():
             l.append(d[key])
         return l
+
+    def get_cost_difference_curve(self, results_1, results_2):
+        cost1 = self.get_average_cost(results_1, True)
+        cost2 = self.get_average_cost(results_2, True)
+        cost_space = np.linspace(0, np.max([np.max(cost1), np.max(cost2)]), 1000)
+        curve1 = []
+        curve2 = []
+        for inc in cost_space:
+            curve1.append(len(cost1[cost1<inc]))
+        for inc in cost_space:
+            curve2.append(len(cost2[cost2<inc]))
+
+        difference = []
+        for i in range(len(cost_space)):
+            difference.append(abs(curve1[i] - curve2[i]))
+
+        print(difference)

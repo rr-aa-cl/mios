@@ -10,6 +10,7 @@ public:
     Eigen::Matrix<double,2,1> approach_acc;
     Eigen::Matrix<double,2,1> press_speed;
     Eigen::Matrix<double,2,1> press_acc;
+    double f_push;
     double duration;
 
     Eigen::Matrix<double,6,1> ROI_x;

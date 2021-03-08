@@ -806,6 +806,28 @@ bool PandaBody::move_to_finger_position(double width, double speed) const{
     return false;
 }
 
+bool PandaBody::stop_gripper(){
+//    std::scoped_lock<std::mutex> lock(m_mtx_hand_active);
+    if(!m_hand_connected){
+        return false;
+    }
+    if(m_hand==PandaHandDefault){
+        try{
+            return this->m_panda_hand->stop();
+        }catch(franka::CommandException& e){
+            spdlog::debug(e.what());
+            return false;
+        }catch(franka::NetworkException& e){
+            spdlog::debug(e.what());
+            return false;
+        }
+    }
+    if(m_hand==PandaHandSofthand2){
+        return true;
+    }
+    return false;
+}
+
 bool PandaBody::home_gripper() const{
     std::scoped_lock<std::mutex> lock(m_mtx_hand_active);
     if(!m_hand_connected){

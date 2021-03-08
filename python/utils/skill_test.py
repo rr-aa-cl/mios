@@ -65,12 +65,13 @@ def tax_test_grab(robot="collective-panda-008.local"):
                 "Approach": "iros_key_grab_approach",
                 "Grabbable": "iros_key"
             },
+            "time_max": 5,
             "approach_speed": [0.5, 1],
             "approach_acc": [1, 4],
-            "grab_speed": [0.5, 1],
-            "grab_acc": [1, 4],
+            "grab_speed": [0.05, 0.1],
+            "grab_acc": [0.1, 0.4],
             "grasp_width": 0.03,
-            "grasp_speed": 100,
+            "grasp_speed": 0.2,
             "grasp_force": 30,
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0]
@@ -78,7 +79,7 @@ def tax_test_grab(robot="collective-panda-008.local"):
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
+                "K_x": [1900, 1900, 1900, 190, 190, 190]
             }
         }
     }
@@ -86,7 +87,13 @@ def tax_test_grab(robot="collective-panda-008.local"):
     t.add_skill("grab", "TaxGrab", grab_context)
     t.start()
     result = t.wait()
-    print(result)
+    cost = result["result"]["task_result"]["skill_results"]["grab"]["cost"]["time"]
+    heuristic = result["result"]["task_result"]["skill_results"]["grab"]["heuristic"]
+    total_cost = cost + heuristic
+    with open("expert_data_grab.txt", "a") as f:
+        f.write(str(total_cost) + "\n")
+
+    print("Total cost: " + str(total_cost))
 
 
 def tax_test_place(robot="collective-panda-008.local"):
@@ -99,17 +106,21 @@ def tax_test_place(robot="collective-panda-008.local"):
                 "Placeable": "iros_key",
                 "Surface": "iros_key_storage"
             },
-            "approach_speed": [0.1, 0.5],
-            "approach_acc": [0.5, 1.0],
-            "place_speed": [0.15, 1],
-            "place_acc": [1, 4.0],
+            "time_max": 5,
+            "approach_speed": [0.5, 1],
+            "approach_acc": [1, 4],
+            "place_speed": [0.5, 1.0],
+            "place_acc": [1., 4.0],
             "release_width": 0.06,
-            "release_speed": 100,
+            "release_speed": 2.0,
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0]
         },
         "control": {
-            "control_mode": 0
+            "control_mode": 0,
+            "cart_imp": {
+                "K_x": [2000, 2000, 2000, 200, 200, 200]
+            }
         },
         "user": {
             "env_X": [0.015, 0.02]
@@ -119,7 +130,13 @@ def tax_test_place(robot="collective-panda-008.local"):
     t.add_skill("place", "TaxPlace", place_context)
     t.start()
     result = t.wait()
-    print(result)
+    cost = result["result"]["task_result"]["skill_results"]["place"]["cost"]["time"]
+    heuristic = result["result"]["task_result"]["skill_results"]["place"]["heuristic"]
+    total_cost = cost + heuristic
+    with open("expert_data_place.txt", "a") as f:
+        f.write(str(total_cost) + "\n")
+
+    print("Total cost: " + str(total_cost))
 
 
 def tax_test_turn(robot="collective-panda-008.local"):
@@ -131,7 +148,7 @@ def tax_test_turn(robot="collective-panda-008.local"):
                 "GoalOrientation": "iros_turn_goal"
             },
             "turn_speed": [0.5, 2.5],
-            "turn_acc": [2, 25.0]},
+            "turn_acc": [2, 25]},
         "control": {
             "control_mode": 0,
             "cart_imp": {
@@ -162,10 +179,16 @@ def tax_test_turn(robot="collective-panda-008.local"):
     }
     t = Task(robot)
     t.add_skill("turn", "TaxTurn", turn_context)
-    t.add_skill("turn_back", "TaxTurn", turn_back_context)
+    #t.add_skill("turn_back", "TaxTurn", turn_back_context)
     t.start()
     result = t.wait()
-    print(result)
+    cost = result["result"]["task_result"]["skill_results"]["turn"]["cost"]["time"]
+    heuristic = result["result"]["task_result"]["skill_results"]["turn"]["heuristic"]
+    total_cost = cost + heuristic
+    with open("expert_turn_place.txt", "a") as f:
+        f.write(str(total_cost) + "\n")
+
+    print("Total cost: " + str(total_cost))
 
 
 def test_tax_press_button(robot="collective-panda-008.local"):
@@ -188,10 +211,11 @@ def tax_test_move(robot):
     move1_context = {
         "skill": {
             "objects": {
-                "GoalPose": "move_1"
+                "GoalPose": "iros_loc_1"
             },
-            "speed": [0.05, 1],
-            "acc": [0.5, 5]
+            "speed": [1.0, 4.0],
+            "acc": [8.0, 8.0],
+            "time_max": 5
         },
         "control": {
             "control_mode": 0,
@@ -203,6 +227,12 @@ def tax_test_move(robot):
     t = Task(robot)
     t.add_skill("move", "TaxMove", move1_context)
     t.start()
+    result = t.wait()
+    cost = result["result"]["task_result"]["skill_results"]["move"]["cost"]["time"]
+    heuristic = result["result"]["task_result"]["skill_results"]["move"]["heuristic"]
+    total_cost = cost + heuristic
+    with open("expert_data_move.txt", "a") as f:
+        f.write(str(total_cost)+"\n")
 
 
 def tax_test_insertion(robot):
@@ -214,20 +244,23 @@ def tax_test_insertion(robot):
                 "Approach": "iros_lock_approach",
                 "Insertable": "iros_key"
             },
+            "time_max": 5,
             "approach_speed": [0.5, 1],
             "approach_acc": [1, 4],
-            "insertion_speed": [0.1, 1],
-            "insertion_acc": [0.5, 4],
+            "insertion_speed": [0.5, 0.5],
+            "insertion_acc": [0.8, 1],
             "f_max_push": 10,
-            "search_a": [10, 10, 0, 0, 0, 0],
-            "search_f": [1, 0.75, 0, 0, 0, 0],
+            "DeltaX": [0.0005, -0.002, 0, 0, 0, 0],
+            "search_a": [1, 1, 1, 0.3, 0.3, 0],
+            "search_f": [0.8, 0.8, 0.8, 0.8, 0.8, 0],
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
-            "ROI_phi": [0, 0, 0, 0, 0, 0]
+            "ROI_phi": [0, 0, 0, 0, 0, 0],
+            "stuck_dx_thr": 0.05
         },
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [1500, 1500, 1500, 200, 200, 200]
+                "K_x": [2000, 2000, 2000, 200, 200, 200]
             }
         }
     }
@@ -235,7 +268,13 @@ def tax_test_insertion(robot):
     t.add_skill("insertion", "TaxInsertion", insertion_context)
     t.start()
     result = t.wait()
-    print(result)
+    cost = result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["time"]
+    heuristic = result["result"]["task_result"]["skill_results"]["insertion"]["heuristic"]
+    total_cost = cost + heuristic
+    with open("expert_data_insertion.txt", "a") as f:
+        f.write(str(total_cost) + "\n")
+
+    print("Total cost: " + str(total_cost))
 
 
 def tax_test_button_press(robot):
@@ -247,8 +286,9 @@ def tax_test_button_press(robot):
             },
             "approach_speed": [0.5, 1],
             "approach_acc": [1, 4],
-            "press_speed": [0.5, 0.5],
-            "press_acc": [1, 4.0],
+            "press_speed": [0.5, 1],
+            "f_push": 1,
+            "press_acc": [1, 4],
             "duration": 0,
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0],
@@ -271,11 +311,17 @@ def tax_test_button_press(robot):
     t.add_skill("button_press", "TaxPressButton", button_press_context)
     t.start()
     result = t.wait()
-    print(result)
+    cost = result["result"]["task_result"]["skill_results"]["button_press"]["cost"]["time"]
+    heuristic = result["result"]["task_result"]["skill_results"]["button_press"]["heuristic"]
+    total_cost = cost + heuristic
+    with open("expert_data_button_press.txt", "a") as f:
+        f.write(str(total_cost) + "\n")
+
+    print("Total cost: " + str(total_cost))
 
 
 def subscribe_to_event_server(robot):
-    s = ServerProxy("http://collective-control-001.local:8000", allow_none=True)
+    s = ServerProxy("http://collective-control-001.local:8002", allow_none=True)
     s.subscribe_to_event("button_press", robot, "12000")
 
 
@@ -288,10 +334,12 @@ def tax_test_extraction(robot="collective-panda-008.local"):
                 "ExtractTo": "iros_lock_approach",
                 "Extractable": "iros_key"
             },
-            "extraction_speed": [0.5, 0.5],
-            "extraction_acc": [2, 1.0],
-            "search_a": [0, 0, 0, 0, 0, 0],
-            "search_f": [0, 0, 0, 0, 0, 0]
+            "time_max": 5,
+            "extraction_speed": [0.25, 0.15],
+            "extraction_acc": [1, 0.8],
+            "search_a": [1, 1, 1, 0.3, 0.3, 0],
+            "search_f": [0.2, 0.2, 0.2, 0.2, 0.2, 0],
+            "stuck_dx_thr": 0.05
         },
         "control": {
             "control_mode": 0,
@@ -304,7 +352,13 @@ def tax_test_extraction(robot="collective-panda-008.local"):
     t.add_skill("extract", "TaxExtraction", extraction_context)
     t.start()
     result = t.wait()
-    print(result)
+    cost = result["result"]["task_result"]["skill_results"]["extract"]["cost"]["time"]
+    heuristic = result["result"]["task_result"]["skill_results"]["extract"]["heuristic"]
+    total_cost = cost + heuristic
+    with open("expert_data_extraction.txt", "a") as f:
+        f.write(str(total_cost) + "\n")
+
+    print("Total cost: " + str(total_cost))
 
 
 def test_skill_queue(robot="localhost"):

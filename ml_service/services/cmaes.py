@@ -132,8 +132,11 @@ class CMAESService(BaseService):
             for i in range(len(trial_uuids[uuid])):
                 theta.append(float(trial_uuids[uuid][i]))
             if kb is not None:
-                kb.push_trial(self.host_name, theta, float(result.final_cost), self.configuration.n_ind)
-                # kb.push_trial_2(theta, float(result.final_cost), self.problem_definition.cost_function.geometry_factor)
+                #kb.push_trial(self.host_name, theta, float(result.final_cost), self.configuration.n_ind)
+                print(theta)
+                print(result.final_cost)
+                print(self.problem_definition.cost_function.geometry_factor)
+                kb.push_trial_2(theta, float(result.final_cost), self.problem_definition.cost_function.geometry_factor)
         self.success_ratio /= float(len(trial_uuids.keys()))
 
         logger.debug("CMAES costs: " + str(costs))
@@ -159,23 +162,32 @@ class CMAESService(BaseService):
                 self.population = self.population[:len(self.population) - self.configuration.n_immigrant]
             fitnesses = toolbox.map(toolbox.evaluate, self.population)
             if kb is not None:
-                # for i in range(self.configuration.n_immigrant):
-                #     theta = []
-                #     for j in range(len(separated_pop[i])):
-                #         theta.append(float(separated_pop[i][j]))
-                #     fitnesses.append((kb.request_online_evaluation(theta, self.problem_definition.cost_function.geometry_factor),))
-                # self.population.extend(separated_pop)
+                theta = []
+                for i in range(self.configuration.n_immigrant):
+                    theta.append([])
+                    for j in range(len(separated_pop[i])):
+                        theta[i].append(float(separated_pop[i][j]))
                 while True:
-                    new_population = kb.request_trials(self.configuration.n_immigrant)
-                    if new_population is False:
-                        print("Not enought yet")
+                    cost = kb.request_online_evaluation(theta, self.problem_definition.cost_function.geometry_factor)
+                    if cost is not False:
+                        for i in range(self.configuration.n_immigrant):
+                            fitnesses.append((cost[i],))
+                        self.population.extend(separated_pop)
+                        break
+                    else:
                         time.sleep(1)
                         continue
-                    else:
-                        break
-                for i in new_population:
-                    self.population.append(deap.creator.Individual(i[0]))
-                    fitnesses.append((i[1],))
+                # while True:
+                #     new_population = kb.request_trials(self.configuration.n_immigrant)
+                #     if new_population is False:
+                #         print("Not enought yet")
+                #         time.sleep(1)
+                #         continue
+                #     else:
+                #         break
+                # for i in new_population:
+                #     self.population.append(deap.creator.Individual(i[0]))
+                #     fitnesses.append((i[1],))
             for ind, fit in zip(self.population, fitnesses):
                 ind.fitness.values = fit
 

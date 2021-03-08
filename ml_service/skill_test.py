@@ -64,10 +64,13 @@ def tax_test_grab(robot="collective-panda-008.local"):
                 "Approach": "iros_key_grab_approach",
                 "Grabbable": "iros_key"
             },
-            "speed": [0.5, 0.5],
-            "acc": [2, 1.0],
-            "grasp_width": 0.03,
-            "grasp_speed": 100,
+            "time_max": 5,
+            "approach_speed": [0.5, 1],
+            "approach_acc": [1, 4],
+            "grab_speed": [0.17, 0.8],
+            "grab_acc": [0.35, 0.94],
+            "grasp_width": 0.032,
+            "grasp_speed": 1.6,
             "grasp_force": 30,
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0]
@@ -75,8 +78,11 @@ def tax_test_grab(robot="collective-panda-008.local"):
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
+                "K_x": [1138, 1138, 1338, 167, 167, 167]
             }
+        },
+        "user": {
+            "env_X": [0.005, 0.02]
         }
     }
 
@@ -97,23 +103,24 @@ def tax_test_place(robot="collective-panda-008.local"):
                 "Placeable": "iros_key",
                 "Surface": "iros_key_storage"
             },
-            "speed": [0.1, 0.5],
-            "acc": [0.5, 1.0],
+            "approach_speed": [0.5, 1],
+            "approach_acc": [1, 4.0],
+            "place_speed": [0.18, 1],
+            "place_acc": [1, 2.2],
             "release_width": 0.06,
-            "release_speed": 100,
+            "release_speed": 4.6,
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0]
         },
         "control": {
-            "control_mode": 0
+            "control_mode": 0,
+            "cart_imp": {
+                "K_x": [2000, 2000, 2000, 150, 150, 150]
+            }
         },
         "user": {
             "env_X": [0.01, 0.02]
         }
-    }
-    place_context = load_results("collective-control-001.local", "iros2021", "place", "b74b2197-5d1c-4049-984c-fc0e118a87ff" , 174)["skills"]["place"]
-    place_context["user"] = {
-        "env_X": [0.02, 0.05]
     }
     t = Task(robot)
     t.add_skill("place", "TaxPlace", place_context)
@@ -304,8 +311,8 @@ def tax_test_extraction(robot="collective-panda-008.local"):
                 "ExtractTo": "iros_lock_approach",
                 "Extractable": "iros_key"
             },
-            "extraction_speed": [0.5, 0],
-            "extraction_acc": [1, 0.19],
+            "extraction_speed": [0.5, 1],
+            "extraction_acc": [1, 4],
             "search_a": [3, 1.7, 3.6, 0.64, 0.85, 0],
             "search_f": [0.77, 0, 0.8, 0.16, 0.58, 0],
             "stuck_dx_thr": 0.09
@@ -313,7 +320,7 @@ def tax_test_extraction(robot="collective-panda-008.local"):
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [702, 276, 1798, 11, 131, 45]
+                "K_x": [702, 276, 1798, 110, 131, 45]
             }
         },
         "user": {
@@ -410,7 +417,7 @@ def iros_task():
                 "Grabbable": "iros_key"
             },
             "approach_speed": [0.5, 2],
-            "approach_acc": [2, 5.0],
+            "approach_acc": [2, 4.0],
             "grab_speed": [0.3, 2],
             "grab_acc": [1, 4],
             "grasp_width": 0.03,
@@ -515,19 +522,19 @@ def iros_task():
                 "ExtractTo": "iros_lock_approach",
                 "Extractable": "iros_key"
             },
-            "extraction_speed": [0.5, 4],
-            "extraction_acc": [1, 1.0],
+            "extraction_speed": [0.5, 1],
+            "extraction_acc": [1, 4],
             "search_a": [0, 0, 0, 0, 0, 0],
             "search_f": [0, 0, 0, 0, 0, 0]
         },
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200,200, 200]
+                "K_x": [2000, 2000, 2000, 200, 200, 200]
             }
         },
         "user": {
-            "env_X": [0.02, 0.04]
+            "env_X": [0.02, 0.1]
         }
     }
     move3_context = {
@@ -598,6 +605,7 @@ def iros_task():
             "approach_acc": [1, 4],
             "press_speed": [0.24, 1],
             "press_acc": [1, 3.39],
+            "f_push": 5,
             "duration": 0,
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0]

@@ -191,7 +191,7 @@ bool TaxPlace::check_local_err_conditions(const Percept &p){
 
 double TaxPlace::get_goal_heuristic(const Percept &p){
 //    bool h = m_memory->get_live_context()->grasped_object->name==get_object("Placeable")->name;
-    bool h = get_result().success;
+    bool h = !get_result().success;
     return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Retract").block<3,1>(0,3)).norm() +
             acos(((get_object_pose_T("Retract").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) +
             h * 1;

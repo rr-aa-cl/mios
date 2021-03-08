@@ -169,6 +169,7 @@ ControlReturnType Core::execute_skill(){
 
     post_execution();
     m_blend_skill=false;
+    m_panda_body.stop_gripper();
     return result;
 }
 
