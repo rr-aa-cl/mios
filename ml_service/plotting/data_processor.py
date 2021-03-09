@@ -1,6 +1,7 @@
 from plotting.result import Result
 import numpy as np
 from typing import Tuple
+import scipy.stats
 
 
 class DataError(Exception):
@@ -18,11 +19,11 @@ class DataProcessor:
                 length = len(l)
         return length
 
-    def get_collection_of_costs(self, results: list, decreasing: bool = False, episode_length: int = 1) -> list:
+    def get_collection_of_costs(self, results: list, decreasing: bool = False, episode_length: int = 1, agent=None) -> list:
         costs = []
         for r in results:
             if decreasing is True:
-                costs.append(self.get_monotonically_decreasing_cost(r.get_cost_per_trial(episode_length)))
+                costs.append(self.get_monotonically_decreasing_cost(r.get_cost_per_trial(episode_length, agent)))
             else:
                 costs.append(r.get_cost_per_trial(episode_length))
 
@@ -33,12 +34,12 @@ class DataProcessor:
                 c.extend([c[-1]] * (n_trials - len(c)))
         return costs
 
-    def get_collection_of_costs_over_time(self, results: list, min_length: int, decreasing: bool = False) -> list:
+    def get_collection_of_costs_over_time(self, results: list, min_length: int = False, decreasing: bool = False, agent=None) -> list:
         costs = []
         times = []
         max_span = 0
         for r in results:
-            cost, time = r.get_cost_per_time()
+            cost, time = r.get_cost_per_time(agent)
             if time[-1] - time[0] > max_span:
                 max_span = time[-1] - time[0]
             times.append(time)
@@ -59,7 +60,7 @@ class DataProcessor:
                     if cnt_cost < len(times[i]) - 1:
                         cnt_cost += 1
                 cost_over_time[i][j] = current_cost
-            if len(cost_over_time[i]) < min_length:
+            if min_length is not False and len(cost_over_time[i]) < min_length:
                 cost_over_time[i].extend([cost_over_time[i][-1]] * (min_length - len(cost_over_time[i])))
         return cost_over_time
 
@@ -78,11 +79,18 @@ class DataProcessor:
             arr[i, -1] = percentage * cost[-1]
         return arr
 
-    def get_average_cost(self, results: list, decreasing: bool = False, episode_length: int = 1) -> np.ndarray:
-        return np.average(np.asarray(self.get_collection_of_costs(results, decreasing, episode_length)), 0)
+    def get_average_cost(self, results: list, decreasing: bool = False, episode_length: int = 1, agent=None) -> np.ndarray:
+        return np.average(np.asarray(self.get_collection_of_costs(results, decreasing, episode_length, agent)), 0)
 
-    def get_average_cost_over_time(self, results: list, min_length: int, decreasing: bool = False) -> np.ndarray:
-        return np.average(np.asarray(self.get_collection_of_costs_over_time(results, min_length, decreasing)), 0)
+    def get_average_cost_over_time(self, results: list, min_length: int = False, decreasing: bool = False, agent=None) -> Tuple[np.ndarray, np.ndarray]:
+        cost = np.asarray(self.get_collection_of_costs_over_time(results, min_length, decreasing, agent))
+        confidence = 0.95
+        interval = []
+        for i in range(cost.shape[1]):
+            se = scipy.stats.sem(cost[:, i])
+            h = se * scipy.stats.t.ppf((1 + confidence) / 2., cost.shape[0] - 1)
+            interval.append(h)
+        return np.average(cost, 0), np.asarray(interval)
 
     def get_monotonically_decreasing_cost(self, cost: np.ndarray) -> np.ndarray:
         cost_monotone = cost
@@ -158,3 +166,20 @@ class DataProcessor:
         for key in d.keys():
             l.append(d[key])
         return l
+
+    def get_cost_difference_curve(self, results_1, results_2):
+        cost1 = self.get_average_cost(results_1, True)
+        cost2 = self.get_average_cost(results_2, True)
+        cost_space = np.linspace(0, np.max([np.max(cost1), np.max(cost2)]), 1000)
+        curve1 = []
+        curve2 = []
+        for inc in cost_space:
+            curve1.append(len(cost1[cost1<inc]))
+        for inc in cost_space:
+            curve2.append(len(cost2[cost2<inc]))
+
+        difference = []
+        for i in range(len(cost_space)):
+            difference.append(abs(curve1[i] - curve2[i]))
+
+        print(difference)

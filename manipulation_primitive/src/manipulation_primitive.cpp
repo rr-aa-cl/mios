@@ -58,7 +58,13 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
     m_cmd.TF_F_ff.setZero();
     m_cmd.dq_d.setZero();
     m_cmd.tau_ff.setZero();
+    m_cmd.K_x=m_memory->read_parameters()->control.cart_imp.K_x;
+    m_cmd.xi_x=m_memory->read_parameters()->control.cart_imp.xi_x;
+    m_cmd.K_theta=m_memory->read_parameters()->control.joint_imp.K_theta;
+    m_cmd.xi_theta=m_memory->read_parameters()->control.joint_imp.xi_theta;
+    m_cmd.O_R_T=m_memory->read_parameters()->frames.O_R_T;
     if(m_strategies.size()==0){
+        spdlog::error("No strategies have been added to the primitive.");
         return false;
     }
     bool TF_T_EE_d_set=false;
@@ -69,6 +75,7 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
     bool joint_compliance_set=false;
     bool cart_compliance_set=false;
     bool O_R_T_set=false;
+    bool gripper_set=false;
 
     double weight_check=0;
 
@@ -132,6 +139,20 @@ bool ManipulationPrimitive::compose_command(const Percept& p){
                 O_R_T_set=true;
             }else{
                 spdlog::error("More than one policy is commanding O_R_T.");
+                return false;
+            }
+        }
+        if(strategy_command_pattern.find(CommandPatternGripper)!=strategy_command_pattern.end()){
+            if(!O_R_T_set){
+                m_cmd.gripper_request=s.second.cmd.get_gripper_request();
+                m_cmd.gripper_width=s.second.cmd.gripper_width;
+                m_cmd.gripper_speed=s.second.cmd.gripper_speed;
+                m_cmd.gripper_force=s.second.cmd.gripper_force;
+                m_cmd.gripper_object=s.second.cmd.gripper_object;
+                actuator_command_pattern.insert(CommandPatternGripper);
+                gripper_set=true;
+            }else{
+                spdlog::error("More than one policy is commanding gripper.");
                 return false;
             }
         }
@@ -205,8 +226,8 @@ std::string ManipulationPrimitive::get_name() const{
     return m_name;
 }
 
-bool ManipulationPrimitive::is_settled() const{
-    return m_cmd.is_settled(m_memory->read_parameters()->limits);
+bool ManipulationPrimitive::is_settled(bool ignore) const{
+    return m_cmd.is_settled(m_memory->read_parameters()->limits, ignore);
 }
 
 const std::shared_ptr<PrimitiveStrategy> ManipulationPrimitive::get_strategy_interface(const std::string &name) const{

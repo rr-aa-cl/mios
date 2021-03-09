@@ -2,7 +2,9 @@ from knowledge_processor.knowledge_manager import KnowledgeManager
 from mongodb_client.mongodb_client import MongoDBClient
 from socketserver import ThreadingMixIn
 
+import random
 import logging
+import numpy as np
 from xmlrpc.server import SimpleXMLRPCServer
 
 
@@ -35,6 +37,11 @@ class Database():
         self.rpc_server.register_function(self.get_predicted_knowledge, "get_predicted_knowledge")
         self.rpc_server.register_function(self.process_knowledge, "process_knowledge")
         self.rpc_server.register_function(self.stop_server, "stop_server")
+        self.rpc_server.register_function(self.push_trial, "push_trial")
+        self.rpc_server.register_function(self.request_trials, "request_trials")
+        self.rpc_server.register_function(self.push_trial_2, "push_trial_2")
+        self.rpc_server.register_function(self.request_online_evaluation, "request_online_evaluation")
+        self.rpc_server.register_function(self.clear_memory, "clear_memory")
         logger.debug("databse.start_server: starting rpc server with global database at port "+str(self.port))
         #self.rpc_server.serve_forever()
         self.stop = False
@@ -86,3 +93,20 @@ class Database():
     def stop_server(self):
         logger.debug("database.stop_server")
         self.stop = True
+
+    def push_trial(self, agent: str, theta: list, cost: float, keep_size: int):
+        self.knowledge_manager.push_trial(agent, theta, cost, keep_size)
+
+    def request_trials(self, n_trials: int):
+        return self.knowledge_manager.request_trials(n_trials)
+
+    def push_trial_2(self, theta, cost, task_parameter):
+        self.knowledge_manager.push_trial_2(theta, cost, task_parameter)
+
+    def request_online_evaluation(self, theta, task_parameter):
+        return self.knowledge_manager.request_online_evaluation(theta, task_parameter)
+
+    def clear_memory(self):
+        self.knowledge_manager.clear_memory()
+
+

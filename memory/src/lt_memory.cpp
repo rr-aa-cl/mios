@@ -256,6 +256,7 @@ bool LTMemory::make_default_environment_consistent(){
 }
 
 bool LTMemory::get_task_data(const std::string uuid, TaskData &data) const{
+    spdlog::debug("LTMEMORY::get_task_data(" + uuid + ")");
     if(m_task_data.find(uuid)==m_task_data.end()){
         return false;
     }else{

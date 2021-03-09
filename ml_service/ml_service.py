@@ -212,3 +212,14 @@ def test_knowledge():
     client = MongoDBClient("collective-panda-001.local")
     knowledge = km.get_knowledge_by_filter(client, "ml_results", "insert_object", {"meta.tags": {"$all": ["transfer_learning", "cylinder_50", "n1"]}})
     print(knowledge)
+
+
+def test_trial_pushing(host: str):
+    s = ServerProxy("http://" + host + ":8001", allow_none=True)
+
+    agents = ["a1", "a2", "a3"]
+    for a in agents:
+        for i in range(5):
+            s.push_trial_2(random.sample(range(-30, 30), 6), random.random(), 0)
+
+    print(s.request_online_evaluation([5,2,5,7,9,10], 0))

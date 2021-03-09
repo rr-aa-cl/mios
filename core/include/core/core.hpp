@@ -48,7 +48,7 @@ public:
     // Gripper
     bool grasp_object(const std::string& name, double speed=1);
     bool release_object(std::optional<double> width, double speed=1);
-    bool grasp(double width, double speed, double force, double epsilon_inner, double epsilon_outer);
+    bool grasp(double width, double speed, double force, double epsilon_inner, double epsilon_outer, std::string object_name="NullObject");
     bool move_gripper(double width,double speed);
     bool is_grasping();
     bool home_gripper();
@@ -82,6 +82,8 @@ private:
     franka::CartesianVelocities cart_velocity_controller_pipeline(const franka::RobotState& state);
     franka::JointVelocities joint_velocity_controller_pipeline(const franka::RobotState& state);
 
+    void handle_gripper(Actuator* cmd);
+
 private:
     Percept m_percept;
 
@@ -101,6 +103,10 @@ private:
 private:
     bool m_is_ready;
     unsigned m_robot_configuration;
+    bool m_blend_skill;
+
+private:
+    unsigned m_hand_grace_period;
 };
 
 }

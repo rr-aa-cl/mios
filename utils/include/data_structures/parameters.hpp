@@ -10,6 +10,7 @@
 namespace mios {
 
 enum PandaHand{PandaHandDefault,PandaHandSofthand2,PandaHandNone};
+enum SkillConditionLevel{sclModel,sclSpecification,sclExternal};
 
 class Object;
 
@@ -81,6 +82,12 @@ public:
     double load_m;
     Eigen::Matrix<double,3,1> load_com;
     Eigen::Matrix<double,3,3> load_I;
+
+    Eigen::Matrix<double,2,1> env_X;
+    Eigen::Matrix<double,2,1> env_dX;
+
+    double env_q;
+    double env_dq;
 
     bool safe_mode;
 
@@ -235,6 +242,15 @@ public:
          * Frequency of parallel thread
          */
     unsigned parallels_frequency;
+
+    bool ignore_settling;
+
+    SkillConditionLevel condition_level_pre;
+    SkillConditionLevel condition_level_success;
+    SkillConditionLevel condition_level_error;
+    SkillConditionLevel condition_level_exit;
+
+
 
 };
 

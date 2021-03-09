@@ -127,7 +127,7 @@ Actuator* Skill::cycle(const Percept &p){
     }
     if(m_life_cycle==SkillLifeCycle::slSettle){
         spdlog::trace("Skill::cycle.settle");
-        if(m_active_mp->is_settled()){
+        if(m_active_mp->is_settled(m_memory->read_parameters()->skill->ignore_settling) && is_settled(p,m_memory->read_parameters()->skill->ignore_settling)){
             m_life_cycle=SkillLifeCycle::slTerminate;
         }
         return m_active_mp->stop(p,m_stop_factor);
@@ -205,6 +205,19 @@ Actuator* Skill::cycle(const Percept &p){
     m_life_cycle=SkillLifeCycle::slSettle;
     m_stop_factor=1;
     return m_active_mp->stop(p);
+}
+
+bool Skill::is_settled(const Percept &p, bool ignore){
+    if(ignore){
+        return true;
+    }
+    if(p.proprioception.dq.norm()<m_memory->read_parameters()->user.env_dq &&
+            p.proprioception.TF_dX_EE.block<3,1>(0,0).norm()<m_memory->read_parameters()->user.env_dX(0) &&
+            p.proprioception.TF_dX_EE.block<3,1>(2,0).norm()<m_memory->read_parameters()->user.env_dX(1)){
+        return true;
+    }else{
+        return false;
+    }
 }
 
 void Skill::set_pause(bool pause){
@@ -422,6 +435,19 @@ void Skill::update_policies(const Percept &p){
 
 double Skill::get_goal_heuristic(const Percept &p){
     return 0;
+}
+
+
+bool Skill::is_in_env(const std::string &pose, const std::string &mp, const Percept &p){
+    if(get_active_mp()->get_strategy_interface(mp)->finished()){
+        if((p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T(pose).block<3,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0)
+           && acos(((get_object_pose_T(pose).block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) < m_memory->read_parameters()->user.env_X(1)){
+            return true;
+        }else{
+            return false;
+        }
+    }
+    return false;
 }
 
 }

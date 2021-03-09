@@ -7,6 +7,7 @@ from plotting.plotter import Plotter
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import csv
+import scipy.stats
 
 plot = Plotter()
 
@@ -22,13 +23,15 @@ def single_experiment(host: str, task_type: str, database: str, tags: list = Non
     plot.plot_cost_over_trials(p.get_monotonically_decreasing_cost(result.get_cost_per_trial()))
 
 
-def average_experiment(host: str, task_type: str, database: str, tags: list):
+def average_experiment(host: str, task_type: str, database: str, tags: list, agent = None):
     p = DataProcessor()
 
     results = get_multiple_experiment_data(host, task_type, results_db=database, filter={"meta.tags": {"$all": tags}})
-    cost = p.get_average_cost(results, True, 13)
-    plot.plot_cost_over_trials(cost)
-
+    # cost = p.get_average_cost_over_time(results, 1500, True)
+    cost = p.get_average_cost(results, True, 1, agent)
+    plt.plot(cost)
+    plt.ylim([0,2.5])
+    plt.show()
 
 def plot_experiment(host: str, task_type: str, database: str, tags: list):
     p = DataProcessor()
@@ -617,8 +620,9 @@ def knowledge_quality(tags, hosts = ["localhost"], legend = None):
     plot.plot_knowledge_error(distances, legend)
         
 
-def transfer_learning_parameters(filter, host):
-    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
+def transfer_learning_parameters(filter, host, result_db = "transfer_all_v2"):
+    #calculate the mean distance between optimas and their initial knowledges
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_pad", "key_old", "key_hatch"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
     p = DataProcessor()
     from knowledge_processor.knowledge_manager import KnowledgeManager
     from mongodb_client.mongodb_client import MongoDBClient
@@ -632,7 +636,7 @@ def transfer_learning_parameters(filter, host):
             try:
                 tags = ["transfer_learning", task, "from_" + tasks[i]]
                 results = get_multiple_experiment_data(host, "insert_object",
-                                                    results_db="ml_results",
+                                                    results_db=result_db,
                                                     filter={"meta.tags":  tags})
             except (DataNotFoundError, DataError):
                 print("No data found for experiment (" + str(i) + ")")
@@ -645,7 +649,7 @@ def transfer_learning_parameters(filter, host):
                     "geometry_factor": r.meta_data["cost_function"]["geometry_factor"],
                     "tags": r.tags
                 }
-                optimum = manager.get_knowledge_by_identity(client, task_identity, "ml_results", None)
+                optimum = manager.get_knowledge_by_identity(client, task_identity, result_db, None)
                 optimum = r.normalize_result(optimum["parameters"])
                 init_knowledge = r.get_knowledge_norm()
                 #optimum = r.get_best_theta_norm()
@@ -660,6 +664,36 @@ def transfer_learning_parameters(filter, host):
     import pprint
     pprint.pprint(data)
     plot.plot_parameter_similarity(data)
+    header = np.array(tasks)
+
+    # save mean distance as csv matrix:
+    means_mtx = []
+    stds_mtx = []
+    for task_key in data.keys():
+        task_means = []
+        task_stds = []
+        for knowledge_key in data[task_key].keys():
+            task_means.append(data[task_key][knowledge_key]["mean_dist"])
+            task_stds.append(data[task_key][knowledge_key]["mean_dist"])
+        means_mtx.append(task_means)
+        stds_mtx.append(task_stds)
+    means_mtx = np.array(means_mtx)
+    means_mtx = np.transpose(means_mtx)
+    
+    stds_mtx = np.array(stds_mtx)
+    means_mtx = means_mtx.astype('|S4')
+    stds_mtx = stds_mtx.astype('|S4')
+    means_mtx = np.vstack((header, means_mtx))
+    stds_mtx = np.vstack((header, stds_mtx))
+
+    header = np.array(["from_"+task for task in header])
+    header = np.insert(header, 0, "")
+
+    means_mtx = np.hstack((header.reshape(-1,1), means_mtx))
+    stds_mtx = np.hstack((header.reshape(-1,1), stds_mtx))
+
+    np.savetxt("optima_knowledge_distance_mean.csv", means_mtx, delimiter=",", fmt="%s")
+    np.savetxt("optima_knowledge_distance_std.csv", stds_mtx, delimiter=",", fmt="%s")
 
 def no_transfer_learning_parameters(filter, host):
     tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
@@ -784,3 +818,203 @@ def color_matrix(name = "es_matrix.csv"):
     fig.colorbar(psm, ax=ax)
     plt.show()
 
+
+def plot_collective_benchmark():
+    host = "collective-panda-002.local"
+    tags = ["collective_learning_benchmark_single2_5_ind"]
+    p = DataProcessor()
+
+    print("Plotting single_ind_5")
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    # cost = p.get_average_cost_over_time(results, 1500, True)
+    cost = p.get_average_cost(results, True, 5)
+    plt.plot(cost)
+
+    tags = ["collective_learning_benchmark_single2_10_ind"]
+    print("Plotting single_ind_10")
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
+                                           filter={"meta.tags": {"$all": tags}})
+    # cost = p.get_average_cost_over_time(results, 1500, True)
+    cost = p.get_average_cost(results, True, 10)
+    plt.plot(cost)
+
+    tags = ["collective_learning_benchmark_share2_5_ind", "collective-panda-002.local"]
+    print("Plotting share_ind_5")
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
+                                           filter={"meta.tags": {"$all": tags}})
+    # cost = p.get_average_cost_over_time(results, 1500, True)
+    cost = p.get_average_cost(results, True, 5)
+    plt.plot(cost)
+
+    tags = ["collective_learning_benchmark_share2_10_ind", "collective-panda-002.local"]
+    print("Plotting share_ind_10")
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
+                                           filter={"meta.tags": {"$all": tags}})
+    # cost = p.get_average_cost_over_time(results, 1500, True)
+    cost = p.get_average_cost(results, True, 5)
+    plt.plot(cost)
+
+    plt.legend(("Single_5", "Single_10", "Shared_10", "Shared_15"))
+
+    plt.ylim([0,1])
+    plt.show()
+
+
+def plot_difference_curve():
+    host = "collective-panda-002.local"
+    results1 = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
+                                           filter={"meta.tags": {"$all": ["collective_learning_benchmark_single_t0"]}})
+    results2 = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
+                                            filter={"meta.tags": {"$all": ["collective_learning_benchmark_share_t"]}})
+    p = DataProcessor()
+    p.get_cost_difference_curve(results1, results2)
+
+
+def plot_collective_benchmark_2():
+    host = "collective-panda-002.local"
+    tags = [["collective_learning_benchmark_single_t0"], ["collective_learning_benchmark_single_t01"],
+            ["collective_learning_benchmark_single_t02"],
+            ["collective_learning_benchmark_share_t", "collective-panda-002.local"],
+            ["collective_learning_benchmark_share_t", "collective-panda-008.local"],
+            ["collective_learning_benchmark_share_t", "collective-panda-009.local"]]
+    episode_length = [1, 1, 1, 1, 1, 1]
+    p = DataProcessor()
+
+    for i in range(len(tags)):
+        print("Plotting " + str(tags[i]))
+        add_plot_over_trials(host, tags[i], p, episode_length[i])
+
+    plt.legend(("Task_0_single", "Task_01_single", "Task_02_single", "Task_0_shared", "Task_01_shared", "Task_02_shared"))
+
+    plt.ylim([0, 0.4])
+    plt.xlabel("Trial [1]")
+    plt.ylabel("Cost [1]")
+    plt.show()
+
+
+def plot_collective_benchmark_3():
+    host = "collective-panda-002.local"
+    tags = [["collective_learning_benchmark_single3_0"], ["collective_learning_benchmark_single3_01"],
+            ["collective_learning_benchmark_single3_02"],
+            ["collective_learning_benchmark_share3_10_ind", "collective-panda-002.local"],
+            ["collective_learning_benchmark_share3_10_ind", "collective-panda-008.local"],
+            ["collective_learning_benchmark_share3_10_ind", "collective-panda-009.local"]]
+    p = DataProcessor()
+
+    for i in range(len(tags)):
+        add_plot_over_time(host, tags[i], p)
+
+    plt.legend(("Task_0", "Task_01", "Task_02", "Task_0_shared", "Task_01_shared", "Task_02_shared"))
+
+    plt.ylim([0, 0.4])
+    plt.xlim([0, 70])
+    plt.xlabel("Time [s]")
+    plt.ylabel("Cost [1]")
+    plt.show()
+
+
+def add_plot_over_trials(host: str, tags: list, data_processor: DataProcessor, episode_length: int):
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    cost = data_processor.get_average_cost(results, True, episode_length)
+    plt.plot(cost)
+
+
+def add_plot_over_time(host: str, tags: list, data_processor: DataProcessor):
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    cost, confidence = data_processor.get_average_cost_over_time(results, decreasing=True)
+    plt.plot(cost)
+
+
+def plot_stuff_1():
+    p = DataProcessor()
+
+    tags = ["collective_learning_experiment_multi"]
+    results = get_multiple_experiment_data("collective-panda-007.local", "insert_object", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    agent = "collective-panda-008"
+    cost = p.get_average_cost_over_time(results, 2000, True, agent)
+    # cost = p.get_average_cost(results, True, 1, agent)
+    plt.plot(cost)
+
+    tags = ["transfer_learning", "cylinder_60"]
+    results = get_multiple_experiment_data("collective-control-001.local", "insert_object", results_db="transfer_base_v2", filter={"meta.tags": {"$all": tags}})
+    cost = p.get_average_cost_over_time(results, 2000, True)
+    # cost = p.get_average_cost(results, True, 1)
+    plt.plot(cost)
+
+    plt.legend(("Shared","Single"))
+
+    plt.ylim([0,1])
+    plt.xlabel("Trial [1]")
+    plt.ylabel("Normed Cost [1]")
+    plt.show()
+
+
+def plot_iros_learning(host="collective-control-001.local"):
+
+    expert = {
+        "move": {
+            "cost": [5.8, 5.02, 0.37],
+            "time": [6.17, 49.4, 30.4]
+        },
+        "turn": {
+            "cost": [1.12, 0.74, 0.63],
+            "time": [27, 15, 7]
+        },
+        "press_button": {
+            "cost": [0.65],
+            "time": [28]
+        },
+        "extraction": {
+            "cost": [0.68, 0.37],
+            "time": [28, 18]
+        },
+        "insertion": {
+            "cost": [1.35, 1.16, 1.16, 1.16, 1.16, 0.66],
+            "time": [36, 32, 26, 45, 5, 2]
+        },
+        "place": {
+            "cost": [4.23, 3.01],
+            "time": [22, 36]
+        },
+        "grab": {
+            "cost": [5.01, 3.51, 3.51, 3.21],
+            "time": [46, 78, 76, 26]
+        }
+    }
+
+    p = DataProcessor()
+    skills = ["move", "grab", "insert_object", "turn", "extraction", "place", "press_button"]
+    tags2 = ["move", "grab", "insertion", "turn", "extraction", "place", "press_button"]
+
+    fig, axes = plt.subplots(1, len(skills), sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0.2})
+
+    for i in range(len(skills)):
+        print("Fetching data for skill:" + skills[i])
+        tags = [tags2[i]]
+        results = get_multiple_experiment_data(host, skills[i], results_db="iros2021", filter={"meta.tags": {"$all": tags}})
+        cost, confidence = p.get_average_cost_over_time(results, decreasing=True)
+        cost = cost * 5
+        axes[i].fill_between(np.linspace(0, len(cost), len(cost)), cost-confidence*5, cost+confidence*5, alpha=0.2)
+        axes[i].plot(cost, linewidth=2)
+        axes[i].plot([0, len(cost)], [5, 5],  color="black", linestyle="dashed")
+
+        time = [expert[tags2[i]]["time"][0]]
+        for j in range(1, len(expert[tags2[i]]["time"])):
+            time.append(expert[tags2[i]]["time"][j] + time[j-1])
+
+        axes[i].plot(time, expert[tags2[i]]["cost"], "r^")
+
+        axes[i].set_ylim(0, 10)
+        axes[i].set_xlim(0, len(cost))
+        axes[i].grid()
+        axes[i].tick_params(axis="both", which="both", length=0)
+        axes[i].set_title(skills[i], y=1.0, pad=-14)
+        axes[i].set_xlabel("Time [s]")
+        if i == 0:
+            axes[i].set_ylabel("Cost [s]                  t_max + h")
+
+    fig.set_size_inches(16, 3)
+    plt.yticks(np.arange(0, 10, step=1))
+    plt.savefig("iros_results.png", bbox_inches='tight', dpi=300)
+    plt.suptitle("Skill Learning")
+    plt.show()

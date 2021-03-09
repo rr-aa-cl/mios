@@ -32,6 +32,7 @@ class Trial:
 
         self.task_uuid = "INVALID"
         self.trial_uuid = "INVALID"
+        self.agent = "INVALID"
 
         self.trial_number = 0
         self.log = log
@@ -62,6 +63,8 @@ class Engine:
         self.max_trial_repeats = 3
 
         self.cnt_trial = 0
+        self.cnt_pushed = 0
+        self.cnt_completed = 0
         self.cnt_optimal = 0
         self.stop_condition = None
 
@@ -97,6 +100,7 @@ class Engine:
         if trial.is_valid() is False:
             return "INVALID"
         trial.trial_uuid = str(uuid.uuid4())
+        self.cnt_pushed += 1
         self.queued_trials.put(deepcopy(trial))
         return trial.trial_uuid
 
@@ -111,7 +115,9 @@ class Engine:
             if self.keep_running is False:
                 logger.error("Service has been stopped.")
                 return Trial(dict(), [], dict(), False)
-            time.sleep(0.1)
+            # time.sleep(0.1)
+
+        self.cnt_completed += 1
 
         return self.completed_trials[trial_uuid]
 
@@ -158,11 +164,23 @@ class Engine:
         for a in self.agents:
             worker_threads[a] = None
 
+        logger.info("Setting up experiment.")
+        for a in self.free_agents:
+            worker_threads[a] = Thread(target=self.setup_experiment, args=(a,))
+            worker_threads[a].start()
+
+        for a in self.free_agents:
+            worker_threads[a].join()
+
+        logger.info("Setup procedure done.")
+
         while self.keep_running is True:
             try:
+                # logger.debug("Engine::main_loop.get_trial")
                 trial = self.queued_trials.get(False)
+                # logger.debug("Engine::main_loop.new_trial: " + trial.trial_uuid)
             except Empty:
-                time.sleep(0.1)
+                # time.sleep(0.1)
                 continue
             # logger.debug("Engine.main_loop.while1: For trial_uuid: " + trial.trial_uuid)
             thread_started = False
@@ -175,30 +193,32 @@ class Engine:
                 for a in self.agents.copy():
                     if a not in self.free_agents:
                         logger.debug("Agent " + a + " not in self.free_agents")
-                        time.sleep(1)
+                        # time.sleep(1)
                         continue
                     if worker_threads[a] is not None and worker_threads[a].is_alive() is True:
                         logger.debug("Thread of agent " + a + " is alive")
-                        time.sleep(1)
+                        # time.sleep(1)
                         continue
 
                     # logger.debug("Engine.main_loop().is_busy(" + a + ")")
                     response = call_method(a, 12000, "is_busy")
                     if response is None:
                         logger.debug("is_busy on agent " + a + ": response is None")
-                        time.sleep(1)
+                        # time.sleep(1)
                         continue
                     if response["result"]["busy"] is True:
                         logger.debug("is_busy on agent " + a + ": is busy")
-                        time.sleep(1)
+                        # time.sleep(1)
                         continue
 
                     self.free_agents.remove(a)
+                    trial.agent = a
                     worker_threads[a] = Thread(target=self._worker_loop, args=(a, trial,))
                     worker_threads[a].start()
                     thread_started = True
+                    break
 
-            time.sleep(0.1)
+            # time.sleep(0.1)
 
         logger.debug("Engine::main_loop.after_loop")
         self.write_final_results()
@@ -218,29 +238,33 @@ class Engine:
                 logger.warning("Could not execute task for agent " + agent + ". Trial will be re-inserted into queue.")
                 self.queued_trials.put(trial)
             else:
+                logger.debug("Engine::_worker_loop.task_done")
                 self.queued_trials.task_done()
-                self.completed_trials[trial.trial_uuid] = trial
+                self.completed_trials[trial.trial_uuid] = deepcopy(trial)
                 if trial.task_result.optimal is True:
                     logger.debug("Engine::_worker_loop.is_optimal")
                     self.cnt_optimal += 1
 
         self._reset_task(agent, trial)
         self.free_agents.add(agent)
+        logger.debug("Free agent " + agent)
 
     def _execute_task(self, agent: str, trial: Trial) -> bool:
-        logger.debug("Engine._execute_task(" + agent + ")")
-        logger.debug("Engine::_execute_task.task_context: " + str(trial.task_context))
+        logger.debug("Engine._execute_task(" + agent + ") with trial " + trial.trial_uuid)
+        # logger.debug("Engine::_execute_task.task_context: " + str(trial.task_context))
         cnt_repeat = -1
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
             logger.debug("Engine::_execute_task.loop")
             cnt_repeat += 1
             result, task_uuid = self._start_task(agent, trial.task_context)
             if result is False:
+                logger.error("Result was False after start_task")
                 return False
 
             trial.t_0 = time.time()
             result, trial.task_result = self._wait_for_task(agent, task_uuid)
             if result is False:
+                logger.error("Result was False after wait_for_task")
                 return False
             if "TaskError" in trial.task_result.errors:
                 logger.error("Received an task error, service will terminate.")
@@ -259,7 +283,9 @@ class Engine:
             trial.t_delta = trial.t_1 - trial.t_0
             trial.trial_number = self.cnt_trial
             self.cnt_trial += 1
+            logger.debug("FINISHED trial " + str(self.cnt_trial) + " with uuid " + trial.trial_uuid)
             trial.task_result.final_cost, trial.task_result.optimal = self.problem_definition.calculate_cost(trial.task_result)
+            logger.debug("Cost: " + str(trial.task_result.final_cost))
 
             theta = np.zeros((1,(len(self.problem_definition.domain.limits))))
             for j in range(len(self.problem_definition.domain.limits)):
@@ -273,6 +299,7 @@ class Engine:
             if trial.log is True:
                 self.write_task_result(trial)
             break
+        logger.debug("Engine::_execute_task.end")
         return cnt_repeat < self.max_trial_repeats and self.keep_running is True
 
     def _reset_task(self, agent: str, trial: Trial):
@@ -311,7 +338,7 @@ class Engine:
         task_uuid = "INVALID"
         task_name = task_context["name"]
         logger.info("Executing task " + task_name + " on agent " + agent + ".")
-        logger.debug("Task context: " + str(task_context))
+        # logger.debug("Task context: " + str(task_context))
         response = start_task(agent, task_name, task_context, True)
         if response is None:
             logger.warning("Agent " + agent + " is not responding.")
@@ -336,12 +363,13 @@ class Engine:
             return False, task_uuid
 
         task_uuid = response["result"]["task_uuid"]
+        logger.debug("Engine::_start_Task.end")
         return True, task_uuid
 
     def _wait_for_task(self, agent: str, task_uuid: str) -> (bool, TaskResult):
         task_result = TaskResult()
         response = wait_for_task(agent, task_uuid)
-        logger.debug("Engine._wait_for_task.response: " + str(response))
+        # logger.debug("Engine._wait_for_task.response: " + str(response))
         if response is None:
             logger.warning("Agent " + agent + " is not responding.")
             time.sleep(1)
@@ -363,7 +391,40 @@ class Engine:
             time.sleep(1)
             return False, task_result
 
+        logger.debug("Engine::_wait_for_task.end")
         return True, task_result
+
+    def setup_experiment(self, agent):
+        logger.debug("Engine::_reset_task()")
+        for i in self.problem_definition.setup_instructions:
+            logger.debug("Engine::setup_experiment.instructions: " + str(i["parameters"]))
+            instruction_done = False
+            while instruction_done is False:
+                logger.debug("Engine::_reset_task.loop")
+                if i["method"] == "start_task":
+                    result, task_uuid = self._start_task(agent, i["parameters"])
+                    if result is False:
+                        logger.debug("Setup experiment could not be started.")
+                        logger.debug(result)
+                        time.sleep(1)
+                        continue
+
+                    result, task_result = self._wait_for_task(agent, task_uuid)
+                    if result is False or task_result.success is False:
+                        logger.debug("Could not wait for setup_experiment")
+                        logger.debug(result)
+                        time.sleep(1)
+                        continue
+                else:
+                    response = call_method(agent, 12000, i["method"], i["parameters"])
+                    if response is None:
+                        logger.debug(response)
+                        time.sleep(1)
+                        continue
+
+                instruction_done = True
+
+        logger.debug("Engine::setup_experiment.end")
 
     def write_final_results(self):
         data = {
@@ -380,7 +441,8 @@ class Engine:
             "success": trial.task_result.success,
             "t_0": trial.t_0,
             "t_1": trial.t_1,
-            "t_delta": trial.t_delta
+            "t_delta": trial.t_delta,
+            "agent": trial.agent
         }
         logger.debug("Engine::write_task_result.data: " + str(data))
         self.database_results_collection.update_one({'_id': self.database_results_id},

@@ -1,23 +1,39 @@
-from utils.experiment_wizard import start_experiment
+from utils.experiment_wizard import *
 from definitions.insertion_definitions import insert_cylinder
 from definitions.insertion_definitions import insert_cylinder_light
 from definitions.insertion_definitions import insert_key
 from definitions.insertion_definitions import insert_key_light
+from definitions.insertion_definitions import insert_generic
 from definitions.benchmark_definitions import mios_ml_benchmark
+from definitions.templates import move
+from definitions.templates import turn
+from definitions.templates import tax_insertion
+from definitions.templates import press_button
+from definitions.templates import extraction
+from definitions.templates import place
+from definitions.templates import grab
 from services.cmaes import CMAESConfiguration
+from services.svm import SVMConfiguration
 from utils.udp_client import call_method
 from utils.database import delete_local_results
 from utils.database import delete_local_knowledge
+from utils.database import backup_results
 from experiments.collective_learning import CollectiveLearningBase
 
+from threading import Thread
+from xmlrpc.client import ServerProxy
 
-def simple_benchmark():
-    pd = mios_ml_benchmark()
-    service_config = CMAESConfiguration()
+
+def simple_benchmark(robot: str, agents: list, n_iter: int = 1, tags: list = []):
+    pd = mios_ml_benchmark(0.2)
+    #service_config = CMAESConfiguration()
+    service_config = SVMConfiguration()
     service_config.exploration_mode = True
-    service_config.n_ind = 10
-    service_config.n_gen = 10
-    start_experiment("collective-panda-007.local", pd, service_config, 3)
+    #service_config.n_ind = 10
+    #service_config.n_gen = 10
+    service_config.batch_width = 5
+    service_config.n_trials = 200
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
 
 
 def transfer_learning_debug(from_host: str = None, from_db: str = None, task: str = None, from_tag: str = None):
@@ -416,8 +432,168 @@ def pinakothek(use_prior: bool = False):
 
 
 def collective_learning_raw():
-    for i in range(10):
-        e = CollectiveLearningBase()
-        print("Running experiment " + str(i + 1))
-        e.start(["collective_learning_insertion_raw", "n" + str(i + 1)], "none", "similar", "collective-panda-002",
-                "collective_learning_insertion_screen_001", 1.25, blocking=True)
+    call_method("collective-panda-001.local", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    #call_method("collective-panda-002.local", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-007.local", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-008.local", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    #call_method("collective-panda-009.local", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    agents = ["collective-panda-001", "collective-panda-007", "collective-panda-008"]
+
+    pd = insert_generic()
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 10
+    service_config.n_gen = 10
+    knowledge = None
+    tags = ["collective_learning_multi_agent"]
+    start_experiment("collective-panda-001.local", agents, pd, service_config, 10, tags=tags, knowledge=knowledge)
+
+
+def collective_learning_benchmark():
+    agents = ["collective-panda-007", "collective-panda-008",
+              "collective-panda-009", "collective-panda-001", "collective-panda-002"]
+
+    pd = mios_ml_benchmark(0)
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 10
+    service_config.n_gen = 10
+    knowledge = None
+    tag = "collective_learning_benchmark_multi"
+    delete_local_results(agents, "ml_results", pd.task_type, [tag])
+    tags = [tag]
+    start_experiment(agents[0], agents, pd, service_config, 10, tags=tags, knowledge=knowledge)
+
+
+def collective_learning_benchmark_2():
+    agents = ["collective-panda-002.local", "collective-panda-008.local",
+              "collective-panda-009.local"]
+
+    service_config = CMAESConfiguration()
+    service_config = SVMConfiguration()
+    service_config.exploration_mode = True
+    #service_config.n_ind = 10
+    #service_config.n_gen = 10
+    service_config.n_trials = 300
+    service_config.batch_width = 15
+    service_config.n_immigrant = 10
+    tag = "collective_learning_benchmark_share_t"
+    knowledge = {"mode": "none", "kb_location": agents[0], "kb_tags": [tag]}
+    threads = []
+    pd = mios_ml_benchmark(0)
+    delete_local_results(agents, "ml_results", pd.task_type, [tag])
+    s = ServerProxy("http://" + agents[0] + ":8001", allow_none=True)
+    for i in range(5):
+        s.clear_memory()
+        for a in agents:
+            pd = mios_ml_benchmark(i * 0.1)
+            pd.cost_function.geometry_factor = i * 0.1
+            tags = [tag, a]
+            threads.append(Thread(target=start_single_experiment, args=(a, [a], pd, service_config, i, tags, knowledge, False,)))
+            threads[-1].start()
+
+        for t in threads:
+            t.join()
+
+    for a in agents:
+        if a == agents[0]:
+            continue
+        backup_results(a, agents[0], pd.task_type, [tag], "ml_results")
+
+
+def collective_learning_experiment_2():
+    agents = ["collective-panda-007", "collective-panda-008",
+              "collective-panda-001"]
+
+    call_method("collective-panda-001", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    #call_method("collective-panda-002", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-007", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method("collective-panda-008", 12002, "set_grasped_object", {"object": "generic_insertable"})
+    #call_method("collective-panda-009", 12002, "set_grasped_object", {"object": "generic_insertable"})
+
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 13
+    service_config.n_gen = 10
+    tag = "collective_learning_experiment_multi"
+    knowledge = None
+    pd = insert_generic()
+    delete_local_results(agents, "ml_results", pd.task_type, [tag])
+    tags = [tag]
+    start_experiment(agents[0], agents, pd, service_config, 10, tags=tags, knowledge=knowledge)
+
+
+def tax_learn_move(robot: str, agents: list, n_iter: int = 1):
+    pd = move("iros_loc_2", "iros_loc_1", 5)
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 9
+    service_config.n_gen = 20
+    tags = ["iros2021", "move"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
+def tax_learn_turn(robot: str, agents: list, n_iter: int = 1):
+    call_method(robot, 12002, "set_grasped_object", {"object": "iros_key"})
+    pd = turn("iros_key", "iros_turn_goal", "iros_lock")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 8
+    service_config.n_gen = 20
+    tags = ["iros2021", "turn"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
+def tax_learn_insertion(robot: str, agents: list, n_iter: int = 1):
+    call_method(robot, 12002, "set_grasped_object", {"object": "iros_key"})
+    pd = tax_insertion("iros_key", "iros_lock", "iros_lock_approach")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 13
+    service_config.n_gen = 20
+    tags = ["iros2021", "insertion"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
+def tax_learn_extraction(robot: str, agents: list, n_iter: int = 1):
+    call_method(robot, 12002, "set_grasped_object", {"object": "key_pad"})
+    pd = extraction("key_pad", "lock_pad", "lock_pad_above")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 13
+    service_config.n_gen = 20
+    tags = ["iros2021", "extraction"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
+def tax_learn_press_button(robot: str, agents: list, n_iter: int = 1):
+    pd = press_button("iros_button_approach", "iros_button", "iros_button_approach")
+    #s = ServerProxy("http://localhost:8000", allow_none=True)
+    #s.subscribe_to_event("button_press", robot, "12000")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 9
+    service_config.n_gen = 20
+    tags = ["iros2021", "press_button"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
+def tax_learn_place(robot: str, agents: list, n_iter: int = 1):
+    call_method(robot, 12002, "set_grasped_object", {"object": "iros_key"})
+    pd = place("iros_key_place_approach", "iros_key", "iros_key_place_approach", "iros_key_storage")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 9
+    service_config.n_gen = 20
+    tags = ["iros2021", "place"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
+def tax_learn_grab(robot: str, agents: list, n_iter: int = 1):
+    pd = grab("iros_key_place_approach", "iros_key", "iros_key_place_approach", "iros_key_storage")
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 9
+    service_config.n_gen = 20
+    tags = ["iros2021", "grab"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)

@@ -15,9 +15,9 @@ logger = logging.getLogger("ml_service")
 
 
 class Experiment(metaclass=ABCMeta):
-    def __init__(self):
+    def __init__(self, notification_user_token: str = "", notification_api_token: str = ""):
         self.tags = []
-        self.task_scheduler = TaskScheduler()
+        self.task_scheduler = TaskScheduler(notification_user_token, notification_api_token)
         self.creation_pipeline = None
         self.agents = []
         self.task_type = None

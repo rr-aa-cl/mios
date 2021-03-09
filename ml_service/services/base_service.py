@@ -60,6 +60,7 @@ class BaseService(metaclass=ABCMeta):
         self.knowledge_source = None
         self.knowledge = False
         self.confidence = None
+        self.host_name = socket.gethostname()
 
         # 10s timeout for xmlrpc clinet:
         socket.setdefaulttimeout(10)
@@ -218,13 +219,13 @@ class BaseService(metaclass=ABCMeta):
         return theta
 
     def update_default_context(self, x) -> dict:
-        logger.debug("BaseService.update_default_context(" + str(x) + ")")
+        # logger.debug("BaseService.update_default_context(" + str(x) + ")")
         theta = dict()
         updated_context = self.problem_definition.default_context
         for i in range(len(self.problem_definition.domain.vector_mapping)):
             theta[self.problem_definition.domain.vector_mapping[i]] = x[i]
 
-        logger.debug("BaseService.update_default_context.theta: " + str(theta))
+        # logger.debug("BaseService.update_default_context.theta: " + str(theta))
 
         for p in theta.keys():
             for mapping in self.problem_definition.domain.context_mapping[p]:

@@ -255,6 +255,8 @@ protected:
     virtual SkillCost measure_cost(const Percept& p);
     virtual double get_custom_cost(const Percept& p);
 
+    bool is_in_env(const std::string& pose, const std::string& mp, const Percept& p);
+
 private:
     std::shared_ptr<ManipulationPrimitive> m_active_mp;
     SkillResult m_result;
@@ -262,7 +264,7 @@ private:
     void run_parallels();
     void stop_parallels();
     void terminate_parallels();
-    bool has_settled();
+    bool is_settled(const Percept& p, bool ignore=false);
 
     std::unordered_map<std::string,std::shared_ptr<ManipulationPrimitive> > m_mp_graph;
     std::string m_init_mp;

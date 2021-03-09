@@ -196,6 +196,25 @@ protected:
 
     void write_skill_object(const std::string skill,const std::string groundable,const std::string object);
 
+    template<typename T_skill, typename T_param>void add_skill(const std::string name){
+        if(m_context["skills"].find(name)==m_context["skills"].end()){
+            spdlog::error("Skill with id "+name+" not in this task. Check the task context for consistency. Stopping task.");
+            stop_task(true);
+            throw TaskException("Skill with id "+name+" not in this task. Check the task context for consistency. Stopping task.");
+        }
+        if(m_flag_stop){
+            return;
+        }
+
+        m_skill_engine->reserve_skill_context<T_param>(m_context, name);
+        std::shared_ptr<Skill> skill = std::make_shared<T_skill>(name,m_memory,m_portal);
+        if(!m_skill_engine->add_skill(skill)){
+            throw TaskException("Could not add skill to queue.");
+        }
+    }
+
+    void execute_skill_queue();
+
 //    void execute_skill(const std::string& name);
     template<typename T_skill, typename T_param>void execute_skill(const std::string &name){
         std::scoped_lock<std::mutex> lock(m_mtx_execution);

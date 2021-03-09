@@ -3,6 +3,10 @@
 
 namespace mios {
 
+Percept::Percept(){
+    internal_model.hand_activity_state=HandActivityState::hsIdle;
+}
+
 void Percept::update(std::unique_ptr<franka::Model> const& model, const franka::RobotState &robot_state, const franka::GripperState &gripper_state,std::optional<Eigen::Matrix<double,3,3> > O_R_T){
 
     // Internal Model

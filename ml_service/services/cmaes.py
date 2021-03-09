@@ -2,14 +2,13 @@ import logging
 import numpy as np
 import random
 import deap
-from copy import deepcopy
-from deap import algorithms
+import time
 from deap import base
 from deap import cma
 from deap import creator
 from deap import tools
+from xmlrpc.client import ServerProxy
 
-from engine.engine import Trial
 from services.base_service import BaseService
 from services.base_service import ServiceConfiguration
 
@@ -22,12 +21,14 @@ class CMAESConfiguration(ServiceConfiguration):
         self.n_ind = 10
         self.n_gen = 10
         self.sigma_init = 0.2
+        self.n_immigrant = 0
 
     def _to_dict(self):
         config = {
             "n_ind": self.n_ind,
             "n_gen": self.n_gen,
-            "sigma_init": self.sigma_init
+            "sigma_init": self.sigma_init,
+            "n_immigrant": self.n_immigrant
         }
         return config
 
@@ -35,6 +36,7 @@ class CMAESConfiguration(ServiceConfiguration):
         self.n_ind = config_dict["n_ind"]
         self.n_gen = config_dict["n_gen"]
         self.sigma_init = config_dict["sigma_init"]
+        self.n_immigrant = config_dict["n_immigrant"]
 
 
 class CMAESService(BaseService):
@@ -64,7 +66,7 @@ class CMAESService(BaseService):
 
         print("CMAES: " + str(self.centroid))
         print(self.problem_definition.domain.vector_mapping)
-        self.strategy = deap.cma.Strategy(centroid=self.centroid, sigma=sigma_init)
+        self.strategy = deap.cma.Strategy(centroid=self.centroid, sigma=sigma_init, lambda_=self.configuration.n_ind)
         # else:
         #     self.centroid = self.problem_definition.domain.normalize(self.centroid)
         #     sigma_init = self.configuration.sigma_init / 4
@@ -105,24 +107,37 @@ class CMAESService(BaseService):
     def map(self, f, x_set: np.ndarray):
         # logger.debug("CMAESService.trial(" + str(x_set) + ")")
 
-        trial_uuids = []
+        trial_uuids = dict()
 
         for x in x_set:
-            trial_uuids.append(self.push_trial(x))
+            uuid = self.push_trial(x)
+            trial_uuids[uuid] = x
 
         costs = []
         self.success_ratio = 0
-        for uuid in trial_uuids:
+        if self.knowledge_source is None:
+            kb = None
+        else:
+            kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
+        for uuid in trial_uuids.keys():
             result = self.wait_for_result(uuid)
             if result.final_cost is None:
-                logger.error("None was returned as cost, invoking stop.")
+                logger.error("None was returned as cost for trial " + uuid + ", invoking stop.")
                 self.stop()
                 costs.append((0,))
             else:
                 self.success_ratio += result.success
                 costs.append((result.final_cost,))
-
-        self.success_ratio /= float(len(trial_uuids))
+            theta = []
+            for i in range(len(trial_uuids[uuid])):
+                theta.append(float(trial_uuids[uuid][i]))
+            if kb is not None:
+                #kb.push_trial(self.host_name, theta, float(result.final_cost), self.configuration.n_ind)
+                print(theta)
+                print(result.final_cost)
+                print(self.problem_definition.cost_function.geometry_factor)
+                kb.push_trial_2(theta, float(result.final_cost), self.problem_definition.cost_function.geometry_factor)
+        self.success_ratio /= float(len(trial_uuids.keys()))
 
         logger.debug("CMAES costs: " + str(costs))
         return costs
@@ -133,10 +148,46 @@ class CMAESService(BaseService):
         logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
         self.population = None
 
+        if self.knowledge_source is None:
+            kb = None
+        else:
+            kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
+
         for gen in range(ngen):
             # Generate a new population
             self.population = toolbox.generate()
+            # random.shuffle(self.population)
+            if kb is not None:
+                separated_pop = self.population[len(self.population) - self.configuration.n_immigrant:]
+                self.population = self.population[:len(self.population) - self.configuration.n_immigrant]
             fitnesses = toolbox.map(toolbox.evaluate, self.population)
+            if kb is not None:
+                theta = []
+                for i in range(self.configuration.n_immigrant):
+                    theta.append([])
+                    for j in range(len(separated_pop[i])):
+                        theta[i].append(float(separated_pop[i][j]))
+                while True:
+                    cost = kb.request_online_evaluation(theta, self.problem_definition.cost_function.geometry_factor)
+                    if cost is not False:
+                        for i in range(self.configuration.n_immigrant):
+                            fitnesses.append((cost[i],))
+                        self.population.extend(separated_pop)
+                        break
+                    else:
+                        time.sleep(1)
+                        continue
+                # while True:
+                #     new_population = kb.request_trials(self.configuration.n_immigrant)
+                #     if new_population is False:
+                #         print("Not enought yet")
+                #         time.sleep(1)
+                #         continue
+                #     else:
+                #         break
+                # for i in new_population:
+                #     self.population.append(deap.creator.Individual(i[0]))
+                #     fitnesses.append((i[1],))
             for ind, fit in zip(self.population, fitnesses):
                 ind.fitness.values = fit
 
@@ -146,7 +197,7 @@ class CMAESService(BaseService):
             # Update the strategy with the evaluated individuals
             toolbox.update(self.population)
             self.confidence = float(self.strategy.sigma)
-            
+
             print("ratio: " + str(self.success_ratio))
             print("sigma:" + str(self.strategy.sigma))
 

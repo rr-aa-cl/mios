@@ -132,7 +132,10 @@ class Interface:
         while self.is_busy():
             time.sleep(1)
 
-        return self.service.result
+        result = self.service.result
+        del self.service
+        self.service = None
+        return result
 
     def start_global_database(self):
         logger.debug("interface.start_global_database")

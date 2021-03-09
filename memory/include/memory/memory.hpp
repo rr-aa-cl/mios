@@ -19,6 +19,7 @@ public:
     bool load_default_parameters(nlohmann::json& parameters);
     bool set_default_parameters();
     bool apply_skill_context(const nlohmann::json& context, const std::string skill_id);
+    bool apply_reserved_skill_context(const std::string skill_id);
 
     void store_task_data(const std::string& uuid, const std::string& task_id, const nlohmann::json& context, const TaskResult& result);
     std::shared_ptr<Task> load_task(const std::string& task_id, const nlohmann::json& parameters,Core* core);
@@ -37,6 +38,11 @@ public:
     bool update_database();
     void post_event(const std::string& name, const nlohmann::json& content);
     void remove_event(const std::string& name);
+
+    void clear_reserved_skills();
+    template<typename T>bool reserve_skill_context(const nlohmann::json task_context, const std::string& skill_id){
+        return m_st_memory.reserve_skill_context<T>(task_context,skill_id);
+    }
 
 public:
     std::optional<nlohmann::json> get_live_parameter(const std::string& parameter);

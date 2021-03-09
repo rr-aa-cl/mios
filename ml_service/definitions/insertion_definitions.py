@@ -1,5 +1,6 @@
 from definitions.templates import insertion
 from definitions.templates import insertion_light
+from definitions.templates import insertion_demo
 
 
 def insert_cylinder(d: float, geometry_factor: float):
@@ -37,6 +38,28 @@ def insert_key_light(key_type: str, geometry_factor: float):
     approach = "lock_" + key_type + "_above"
     pd = insertion_light(insertable, insert_into, approach)
     pd.cost_function.geometry_factor = geometry_factor
+    pd.domain.limits["offset_x"] = (-0.002, 0.002)
+    pd.domain.limits["offset_y"] = (-0.002, 0.002)
+    return pd
+
+
+def insert_key_demo(key_type: str, geometry_factor: float):
+    insertable = "key_" + key_type
+    insert_into = "lock_" + key_type
+    approach = "lock_" + key_type + "_above"
+    pd = insertion_demo(insertable, insert_into, approach)
+    pd.cost_function.geometry_factor = geometry_factor
+    pd.domain.limits["offset_x"] = (-0.002, 0.002)
+    pd.domain.limits["offset_y"] = (-0.002, 0.002)
+    return pd
+
+
+def insert_generic():
+    insertable = "generic_insertable"
+    insert_into = "generic_container"
+    approach = "generic_approach"
+    pd = insertion(insertable, insert_into, approach)
+    pd.cost_function.geometry_factor = 0
     pd.domain.limits["offset_x"] = (-0.002, 0.002)
     pd.domain.limits["offset_y"] = (-0.002, 0.002)
     return pd

@@ -305,6 +305,20 @@ bool Task::reserve_subtask(const std::string &name){
     }
 }
 
+void Task::execute_skill_queue(){
+    ControlReturnType result=m_skill_engine->execute_skill_queue();
+
+    for(std::pair<std::string,SkillResult> r : m_skill_engine->get_results()){
+        m_result.skill_results[r.first] = r.second;
+    }
+    m_skill_engine->clear_results();
+
+    if(result==ControlReturnType::crtException){
+//        m_result.skill_results[name].success=false;
+        throw TaskException("An exception occurred when executing skill queue.");
+    }
+}
+
 void Task::execute_subtask(const std::string& task_id,const std::string task_name){
     std::scoped_lock<std::mutex> lock(m_mtx_execution);
     if(m_reserved_subtasks.find(task_name)==m_reserved_subtasks.end()){

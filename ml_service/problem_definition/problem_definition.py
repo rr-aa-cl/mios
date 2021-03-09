@@ -24,11 +24,11 @@ class CostFunction:
     def __init__(self):
         self.geometry_factor = None
         self.optimum_skills = []
-        self.optimum_weights = [0] * 5
-        self.optimum_expressions = ["var"] * 5
+        self.optimum_weights = [0] * 6
+        self.optimum_expressions = ["var"] * 6
         self.heuristic_skills = []
         self.heuristic_expressions = "var"
-        self.max_cost = [1] * 5
+        self.max_cost = [1] * 6
         self.finish_thr = 0
         self.cost_grid_weights = np.array([[]])
         self.cost_grid_val = np.array([[]])
@@ -159,9 +159,9 @@ class ProblemDefinition:
         return valid
 
     def calculate_cost(self, result: TaskResult) -> Tuple[float, bool]:
-        if len(self.cost_function.optimum_expressions) != 5:
+        if len(self.cost_function.optimum_expressions) != 6:
             raise CostFunctionError
-        if len(self.cost_function.optimum_weights) != 5:
+        if len(self.cost_function.optimum_weights) != 6:
             raise CostFunctionError
         if sum(self.cost_function.optimum_weights) != 1:
             raise CostFunctionError

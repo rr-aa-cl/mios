@@ -43,7 +43,7 @@ public:
     void terminate(const Percept& p);
     Actuator* cmd_from_buffer();
     Actuator* stop(const Percept &p,double stop_factor=1.0);
-    bool is_settled() const;
+    bool is_settled(bool ignore=false) const;
     template<typename T> void create_strategy(const std::string& name,double weight){
         if(m_strategies.find(name)!=m_strategies.end()){
             throw SkillException("Strategy with name " + name + " already exists.");

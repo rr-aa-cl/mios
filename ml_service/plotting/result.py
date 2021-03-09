@@ -27,7 +27,7 @@ class Result:
         self.uuid = data_tmp["meta"]["uuid"]
         self.tags = data_tmp["meta"]["tags"]
 
-    def get_cost_per_trial(self, episode_length: int = 1) -> list:
+    def get_cost_per_trial(self, episode_length: int = 1, agent: str = None) -> list:
         cost_raw = []
         cost = []
         if len(self.trials) % episode_length != 0:
@@ -35,7 +35,13 @@ class Result:
             return []
         n_episodes = len(self.trials) / episode_length
         for t in self.trials:
-            cost_raw.append(t["cost"])
+            if agent is not None:
+                if agent == t["agent"]:
+                    cost_raw.append(t["cost"])
+                else:
+                    continue
+            else:
+                cost_raw.append(t["cost"])
         for i in range(int(n_episodes)):
             cost.append(np.min(np.asarray(cost_raw[i * episode_length : i * episode_length + episode_length])))
 
@@ -49,13 +55,20 @@ class Result:
 
         return parameters
 
-    def get_cost_per_time(self) -> Tuple[list, list]:
+    def get_cost_per_time(self, agent: str = None) -> Tuple[list, list]:
         cost = []
         time = []
         t_0 = self.trials[0]["t_0"]
         for t in self.trials:
-            cost.append(t["cost"])
-            time.append(t["t_1"] - t_0)
+            if agent is not None:
+                if agent == t["agent"]:
+                    cost.append(t["cost"])
+                    time.append(t["t_1"] - t_0)
+                else:
+                    continue
+            else:
+                cost.append(t["cost"])
+                time.append(t["t_1"] - t_0)
         return cost, time
 
     def get_theta_per_trial(self):
