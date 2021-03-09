@@ -174,6 +174,7 @@ ControlReturnType Core::execute_skill(){
 }
 
 void Core::post_execution(){
+    spdlog::trace("Core::post_execution()");
     m_controller_pipeline->terminate();
     m_controller_pipeline=std::make_unique<NullControllerPipeline>();
     for(auto& m : m_safety_stage_1){

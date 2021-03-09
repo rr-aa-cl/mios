@@ -164,6 +164,9 @@ bool TaxPlace::check_local_suc_conditions(const Percept &p){
 }
 
 bool TaxPlace::check_local_ex_conditions(const Percept &p){
+    if(m_memory->get_live_context()->grasped_object->name=="NullObject"){
+        return true;
+    }
     if(get_active_mp()->get_name()=="retract"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
             if((p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Retract").block<3,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0)

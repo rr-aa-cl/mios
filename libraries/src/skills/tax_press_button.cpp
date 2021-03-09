@@ -113,8 +113,9 @@ std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_contact_mp(const P
     Eigen::Matrix<double,6,1> dX_d;
     Eigen::Matrix<double,3,1> dir=get_object_pose_T("Button").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);
     dir/=dir.norm();
-    dX_d<<dir*skill_params->approach_speed(0),0,0,0;
-    move->set_TF_dX_d(dX_d,skill_params->approach_acc);
+    dX_d<<0,0,skill_params->press_speed(0),0,0,0;
+    std::cout<<"SPEED: "<<dX_d<<std::endl;
+    move->set_TF_dX_d(dX_d,skill_params->press_acc);
     return mp;
 }
 

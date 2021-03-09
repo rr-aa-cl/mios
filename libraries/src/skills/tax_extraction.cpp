@@ -70,13 +70,13 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxExtraction::graph_tran
 std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_move_mp(const Percept &p){
     std::shared_ptr<SkillParametersTaxExtraction> skill_params = get_parameters<SkillParametersTaxExtraction>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
-    mp->create_strategy<MoveToPoseStrategy>("s_move",1);
-    std::shared_ptr<MoveToPoseStrategy> s_move = mp->get_strategy<MoveToPoseStrategy>("s_move");
-    s_move->set_goal(get_object_pose_T("ExtractTo"),skill_params->extraction_speed,skill_params->extraction_acc);
+    mp->create_strategy<MoveToPoseStrategy>("move",1);
+    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
+    move->set_goal(get_object_pose_T("ExtractTo"),skill_params->extraction_speed,skill_params->extraction_acc);
 
     Eigen::Matrix<double,2,1> t_scale;
     t_scale<<1,1;
-    s_move->set_scale(t_scale);
+    move->set_scale(t_scale);
     return mp;
 }
 
@@ -87,13 +87,13 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_wiggle_mp(const Per
     mp->get_strategy<FFWiggleStrategy>("wiggle_x")->set_coefficients(Eigen::Matrix<double,6,1>::Zero(),skill_params->search_a,
                                                                    Eigen::Matrix<double,6,1>::Zero(),skill_params->search_f,
                                                                    Eigen::Matrix<double,6,1>::Zero(),Eigen::Matrix<double,6,1>::Zero());
-    mp->create_strategy<MoveToPoseStrategy>("s_move",1);
-    std::shared_ptr<MoveToPoseStrategy> s_move = mp->get_strategy<MoveToPoseStrategy>("s_move");
-    s_move->set_goal(get_object_pose_T("ExtractTo"),skill_params->extraction_speed,skill_params->extraction_acc);
+    mp->create_strategy<MoveToPoseStrategy>("move",1);
+    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
+    move->set_goal(get_object_pose_T("ExtractTo"),skill_params->extraction_speed,skill_params->extraction_acc);
 
     Eigen::Matrix<double,2,1> t_scale;
     t_scale<<1,1;
-    s_move->set_scale(t_scale);
+    move->set_scale(t_scale);
     return mp;
 }
 
@@ -102,7 +102,7 @@ bool TaxExtraction::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxExtraction::check_local_suc_conditions(const Percept &p){
-    return is_in_env("ExtractTo","move",p)
+    return is_in_env("ExtractTo","move",p);
 }
 
 bool TaxExtraction::check_local_ex_conditions(const Percept &p){

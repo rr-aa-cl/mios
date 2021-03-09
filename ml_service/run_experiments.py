@@ -535,7 +535,7 @@ def tax_learn_move(robot: str, agents: list, n_iter: int = 1):
 
 def tax_learn_turn(robot: str, agents: list, n_iter: int = 1):
     call_method(robot, 12002, "set_grasped_object", {"object": "iros_key"})
-    pd = turn("iros_key", "iros_turn_2", "iros_turn_1")
+    pd = turn("iros_key", "iros_turn_goal", "iros_lock")
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 8
@@ -545,8 +545,8 @@ def tax_learn_turn(robot: str, agents: list, n_iter: int = 1):
 
 
 def tax_learn_insertion(robot: str, agents: list, n_iter: int = 1):
-    call_method(robot, 12002, "set_grasped_object", {"object": "key_pad"})
-    pd = tax_insertion("key_pad", "lock_pad", "lock_pad_above")
+    call_method(robot, 12002, "set_grasped_object", {"object": "iros_key"})
+    pd = tax_insertion("iros_key", "iros_lock", "iros_lock_approach")
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 13

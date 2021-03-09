@@ -251,8 +251,8 @@ def tax_test_insertion(robot):
             "insertion_acc": [0.8, 1],
             "f_max_push": 10,
             "DeltaX": [0.0005, -0.002, 0, 0, 0, 0],
-            "search_a": [1, 1, 1, 0.3, 0.3, 0],
-            "search_f": [0.8, 0.8, 0.8, 0.8, 0.8, 0],
+            "search_a": [10, 10, 1, 0.3, 0.3, 0],
+            "search_f": [1, 0.75, 0.8, 0.8, 0.8, 0],
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0],
             "stuck_dx_thr": 0.05
@@ -585,6 +585,7 @@ def iros_task():
                 "Button": "iros_button",
                 "Approach": "iros_button_approach"
             },
+            "f_push": 5,
             "approach_speed": [0.5, 1],
             "approach_acc": [1, 4],
             "press_speed": [0.1, 0.5],
