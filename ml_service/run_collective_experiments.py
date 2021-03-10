@@ -65,6 +65,8 @@ def benchmark_collective(agents: list, unique_tag: str, n_iter: int = 1):
         for t in threads:
             t.join()
 
+        j += 1
+
     for a in agents:
         backup_results(a, database, pd.task_type, [tag], "collective_data")
 
