@@ -1158,10 +1158,10 @@ def extraction_cost() -> CostFunction:
 
 def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefinition:
     limits = {
-        "speed_i_t": (0.1, 0.5),
-        "speed_i_r": (0.1, 1),
-        "acc_i_t": (0.5, 1),
-        "acc_i_r": (0.4, 4),
+        "speed_i_t": (0, 0.5),
+        "speed_i_r": (0, 1),
+        "acc_i_t": (0, 1),
+        "acc_i_r": (0, 4),
         "wiggle_a_x": (0, 10),
         "wiggle_a_y": (0, 10),
         "wiggle_a_z": (0, 10),
@@ -1179,12 +1179,12 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
         "offset_y": (-0.005, 0.005),
         "offset_phi": (-10, 10),
         "offset_chi": (-10, 10),
-        "K_x": (100, 2000),
-        "K_y": (100, 2000),
-        "K_z": (100, 2000),
-        "K_phi": (10, 200),
-        "K_chi": (10, 200),
-        "K_psi": (10, 200)
+        "K_x": (0, 2000),
+        "K_y": (0, 2000),
+        "K_z": (0, 2000),
+        "K_phi": (0, 200),
+        "K_chi": (0, 200),
+        "K_psi": (0, 200)
     }
     context_mapping = {
         "speed_i_t": ["skills.insertion.skill.insertion_speed-1"],
