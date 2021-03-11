@@ -75,18 +75,18 @@ def benchmark_collective(agents: list, unique_tag: str, n_iter: int = 1):
         backup_results(a, database, pd.task_type, [tag], "collective_data")
 
 
-def experiment_single(agent: str,  unique_tag: str, n_iter: int = 1):
+def experiment_single(agent: str,  unique_tag: str, factor: float, n_iter: int = 1):
     call_method(agent, 12002, "set_grasped_object", {"object": "generic_insertable"})
     pd = insert_generic()
     delete_local_results([agent], "ml_results", pd.task_type, ["collective_experiment_single"])
-    for f in experiment_factors:
-        tags = ["collective_experiment_single", "f_" + str(f), unique_tag]
-        pd = insert_generic()
-        service_config = SVMConfiguration()
-        service_config.exploration_mode = True
-        service_config.batch_width = base_batch_size_experiment
-        service_config.n_trials = n_trials_experiment
-        start_experiment(agent, [agent], pd, service_config, n_iter, tags=tags, keep_record=False)
+    tags = ["collective_experiment_single", "f_" + str(factor), unique_tag]
+    pd = insert_generic()
+    pd.cost_function.geometry_factor = factor
+    service_config = SVMConfiguration()
+    service_config.exploration_mode = True
+    service_config.batch_width = base_batch_size_experiment
+    service_config.n_trials = n_trials_experiment
+    start_experiment(agent, [agent], pd, service_config, n_iter, tags=tags, keep_record=False)
 
     backup_results(agent, database, pd.task_type, ["collective_experiment_single"], "collective_data")
 
