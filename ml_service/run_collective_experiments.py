@@ -25,7 +25,7 @@ agents_experiment = ["collective-panda-001", "collective-panda-007",
 base_batch_size_benchmark = 5
 n_trials_benchmark = 200
 base_batch_size_experiment = 15
-n_trials_experiment = 150
+n_trials_experiment = 180
 
 
 def benchmark_single(agent: str,  unique_tag: str, n_iter: int = 1):
@@ -127,7 +127,7 @@ def experiment_collective(agents: list, unique_tag: str, n_iter: int = 1):
         backup_results(a, database, pd.task_type, [tag], "collective_data")
 
 
-def plot_data_comparison(unique_tag: str, benchmark: bool = True):
+def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchmark: bool = True):
     if benchmark is True:
         marker = "collective_benchmark"
         skill = "benchmark_rastrigin"
@@ -142,7 +142,7 @@ def plot_data_comparison(unique_tag: str, benchmark: bool = True):
     p = DataProcessor()
 
     for i in range(len(factors)):
-        tags_single = [marker + "_single", unique_tag, "f_" + str(factors[i])]
+        tags_single = [marker + "_single", unique_tag_single, "f_" + str(factors[i])]
         try:
             results_single = get_multiple_experiment_data(database, skill,
                                                    results_db="collective_data",
@@ -159,7 +159,7 @@ def plot_data_comparison(unique_tag: str, benchmark: bool = True):
         axes[1, i].set_xlabel("Time [s]")
         axes[0, i].set_title("Task" + str(factors[i]))
 
-        tags_shared = [marker + "_shared", unique_tag, "f_" + str(factors[i])]
+        tags_shared = [marker + "_shared", unique_tag_shared, "f_" + str(factors[i])]
         try:
             results_shared = get_multiple_experiment_data(database, skill,
                                                           results_db="collective_data",
