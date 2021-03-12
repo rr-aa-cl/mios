@@ -16,16 +16,16 @@ from plotting.plotter import Plotter
 import matplotlib.pyplot as plt
 
 benchmark_factors = [0, 0.1, 0.2, 0.3, 0.4]
-experiment_factors = [0, 0.1, 0.2, 0.3, 0.4]
+experiment_factors = [0, 0.1, 0.2, 0.3]
 database = "collective-control-001.local"
 agents_benchmark = ["collective-panda-001", "collective-panda-002", "collective-panda-003",
           "collective-panda-008", "collective-panda-009"]
-agents_experiment = ["collective-panda-001", "collective-panda-002", "collective-panda-007",
+agents_experiment = ["collective-panda-001", "collective-panda-007",
           "collective-panda-008", "collective-panda-009"]
 base_batch_size_benchmark = 5
 n_trials_benchmark = 200
-base_batch_size_experiment = 10
-n_trials_experiment = 200
+base_batch_size_experiment = 15
+n_trials_experiment = 150
 
 
 def benchmark_single(agent: str,  unique_tag: str, n_iter: int = 1):
@@ -127,16 +127,29 @@ def experiment_collective(agents: list, unique_tag: str, n_iter: int = 1):
         backup_results(a, database, pd.task_type, [tag], "collective_data")
 
 
-def plot_data_comparison(unique_tag: str):
+def plot_data_comparison(unique_tag: str, benchmark: bool = True):
+    if benchmark is True:
+        marker = "collective_benchmark"
+        skill = "benchmark_rastrigin"
+        factors = benchmark_factors
+    else:
+        marker = "collective_experiment"
+        skill = "insert_object"
+        factors = experiment_factors
+
     fig, axes = plt.subplots(2, len(benchmark_factors), sharey=True, gridspec_kw={'hspace': 0.2, 'wspace': 0})
 
     p = DataProcessor()
 
-    for i in range(len(benchmark_factors)):
-        tags_single = ["collective_benchmark_single", unique_tag, "f_" + str(benchmark_factors[i])]
-        results_single = get_multiple_experiment_data(database, "benchmark_rastrigin",
-                                               results_db="collective_data",
-                                               filter={"meta.tags": {"$all": tags_single}})
+    for i in range(len(factors)):
+        tags_single = [marker + "_single", unique_tag, "f_" + str(factors[i])]
+        try:
+            results_single = get_multiple_experiment_data(database, skill,
+                                                   results_db="collective_data",
+                                                   filter={"meta.tags": {"$all": tags_single}})
+        except DataNotFoundError:
+            print("No data found for tags: " + str(tags_single))
+            continue
         cost_trial_single = p.get_average_cost(results_single, True)
         cost_time_single, confidence = p.get_average_cost_over_time(results_single, decreasing=True)
 
@@ -144,11 +157,11 @@ def plot_data_comparison(unique_tag: str):
         axes[1, i].plot(cost_time_single)
         axes[0, i].set_xlabel("Trial [1]")
         axes[1, i].set_xlabel("Time [s]")
-        axes[0, i].set_title("Task" + str(benchmark_factors[i]))
+        axes[0, i].set_title("Task" + str(factors[i]))
 
-        tags_shared = ["collective_benchmark_shared", unique_tag, "f_" + str(benchmark_factors[i])]
+        tags_shared = [marker + "_shared", unique_tag, "f_" + str(factors[i])]
         try:
-            results_shared = get_multiple_experiment_data(database, "benchmark_rastrigin",
+            results_shared = get_multiple_experiment_data(database, skill,
                                                           results_db="collective_data",
                                                           filter={"meta.tags": {"$all": tags_shared}})
         except DataNotFoundError:
@@ -161,10 +174,13 @@ def plot_data_comparison(unique_tag: str):
         axes[1, i].plot(cost_time_shared)
         axes[0, i].set_xlabel("Trial [1]")
         axes[1, i].set_xlabel("Time [s]")
-        axes[0, i].set_title("Task" + str(benchmark_factors[i]))
+        axes[0, i].set_title("Task" + str(factors[i]))
 
-        axes[0, i].plot(get_difference_function(cost_trial_single, cost_trial_shared))
-        axes[1, i].plot(get_difference_function(cost_time_single, cost_time_shared))
+        axes[0, i].set_ylim(0, 5)
+        axes[1, i].set_ylim(0, 5)
+
+        #axes[0, i].plot(get_difference_function(cost_trial_single, cost_trial_shared))
+        #axes[1, i].plot(get_difference_function(cost_time_single, cost_time_shared))
 
         if i == 0:
             axes[0, i].set_ylabel("Cost [s]")
