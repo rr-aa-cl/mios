@@ -16,7 +16,9 @@ from plotting.plotter import Plotter
 import matplotlib.pyplot as plt
 
 benchmark_factors = [0, 0.1, 0.2, 0.3, 0.4]
+benchmark_learning_thresholds = [0.01, 0.01, 0.01, 0.01]
 experiment_factors = [0, 0.1, 0.2, 0.3]
+experiment_learning_thresholds = [0.225, 0.21, 0.172, 0.156]
 database = "collective-control-001.local"
 agents_benchmark = ["collective-panda-001", "collective-panda-002", "collective-panda-003",
           "collective-panda-008", "collective-panda-009"]
@@ -78,7 +80,7 @@ def benchmark_collective(agents: list, unique_tag: str, n_iter: int = 1):
 def experiment_single(agent: str,  unique_tag: str, factor: float, n_iter: int = 1):
     call_method(agent, 12002, "set_grasped_object", {"object": "generic_insertable"})
     pd = insert_generic()
-    delete_local_results([agent], "ml_results", pd.task_type, ["collective_experiment_single"])
+    delete_local_results([agent], "ml_results", pd.task_type, ["collective_experiment_single", unique_tag])
     tags = ["collective_experiment_single", "f_" + str(factor), unique_tag]
     pd = insert_generic()
     pd.cost_function.geometry_factor = factor
@@ -88,7 +90,7 @@ def experiment_single(agent: str,  unique_tag: str, factor: float, n_iter: int =
     service_config.n_trials = n_trials_experiment
     start_experiment(agent, [agent], pd, service_config, n_iter, tags=tags, keep_record=False)
 
-    backup_results(agent, database, pd.task_type, ["collective_experiment_single"], "collective_data")
+    backup_results(agent, database, pd.task_type, ["collective_experiment_single", unique_tag], "collective_data")
 
 
 def experiment_collective(agents: list, unique_tag: str, n_iter: int = 1):
@@ -106,7 +108,7 @@ def experiment_collective(agents: list, unique_tag: str, n_iter: int = 1):
     threads = []
     pd = insert_generic()
     delete_local_results(agents, "ml_results", pd.task_type, [tag])
-    delete_local_results([database], "collective_data", pd.task_type, [tag])
+    delete_local_results([database], "collective_data", pd.task_type, [tag, unique_tag])
     s = ServerProxy("http://" + agents[0] + ":8001", allow_none=True)
     for i in range(n_iter):
         s.clear_memory()
@@ -124,7 +126,7 @@ def experiment_collective(agents: list, unique_tag: str, n_iter: int = 1):
             t.join()
 
     for a in agents:
-        backup_results(a, database, pd.task_type, [tag], "collective_data")
+        backup_results(a, database, pd.task_type, [tag, unique_tag], "collective_data")
 
 
 def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchmark: bool = True):
@@ -132,14 +134,20 @@ def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchma
         marker = "collective_benchmark"
         skill = "benchmark_rastrigin"
         factors = benchmark_factors
+        learning_thresholds = benchmark_learning_thresholds
     else:
         marker = "collective_experiment"
         skill = "insert_object"
         factors = experiment_factors
+        learning_thresholds = experiment_learning_thresholds
 
-    fig, axes = plt.subplots(2, len(benchmark_factors), sharey=True, gridspec_kw={'hspace': 0.2, 'wspace': 0})
+    fig, axes = plt.subplots(2, len(factors), sharey=True, gridspec_kw={'hspace': 0.2, 'wspace': 0})
 
     p = DataProcessor()
+
+    knowledge_time_single = [0]
+    knowledge_time_shared = [0]
+    knowledge_time_parallel = [0]
 
     for i in range(len(factors)):
         tags_single = [marker + "_single", unique_tag_single, "f_" + str(factors[i])]
@@ -153,8 +161,11 @@ def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchma
         cost_trial_single = p.get_average_cost(results_single, True)
         cost_time_single, confidence = p.get_average_cost_over_time(results_single, decreasing=True)
 
-        axes[0, i].plot(cost_trial_single)
-        axes[1, i].plot(cost_time_single)
+        knowledge_time_single.append(get_learning_duration(cost_time_single, learning_thresholds[i])+knowledge_time_single[-1])
+        knowledge_time_parallel.append(get_learning_duration(cost_time_single, learning_thresholds[i]))
+
+        axes[0, i].plot(cost_trial_single * 5)
+        axes[1, i].plot(cost_time_single * 5)
         axes[0, i].set_xlabel("Trial [1]")
         axes[1, i].set_xlabel("Time [s]")
         axes[0, i].set_title("Task" + str(factors[i]))
@@ -170,14 +181,17 @@ def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchma
         cost_trial_shared = p.get_average_cost(results_shared, True)
         cost_time_shared, confidence = p.get_average_cost_over_time(results_shared, min_length=len(cost_time_single), decreasing=True)
 
-        axes[0, i].plot(cost_trial_shared)
-        axes[1, i].plot(cost_time_shared)
+        knowledge_time_shared.append(get_learning_duration(cost_time_shared, learning_thresholds[i]))
+
+        axes[0, i].plot(cost_trial_shared * 5)
+        axes[1, i].plot(cost_time_shared * 5)
         axes[0, i].set_xlabel("Trial [1]")
         axes[1, i].set_xlabel("Time [s]")
         axes[0, i].set_title("Task" + str(factors[i]))
 
         axes[0, i].set_ylim(0, 5)
         axes[1, i].set_ylim(0, 5)
+        plt.legend(("Single", "Shared"))
 
         #axes[0, i].plot(get_difference_function(cost_trial_single, cost_trial_shared))
         #axes[1, i].plot(get_difference_function(cost_time_single, cost_time_shared))
@@ -186,11 +200,21 @@ def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchma
             axes[0, i].set_ylabel("Cost [s]")
             axes[1, i].set_ylabel("Cost [s]")
 
+    knowledge_time_shared.sort()
+    knowledge_time_parallel.sort()
+
+    fig_knowledge, axes_knowledge = plt.subplots()
+    axes_knowledge.plot(knowledge_time_single, np.linspace(0, len(knowledge_time_single) - 1, len(knowledge_time_single)))
+    axes_knowledge.plot(knowledge_time_parallel, np.linspace(0, len(knowledge_time_parallel) - 1, len(knowledge_time_parallel)))
+    axes_knowledge.plot(knowledge_time_shared, np.linspace(0, len(knowledge_time_shared) - 1, len(knowledge_time_shared)))
+
+    axes_knowledge.legend(("Single", "Parallel", "Shared"))
+
     plt.show()
 
 
 def get_learning_duration(cost: np.ndarray, threshold: float):
-    return np.where(cost <= threshold)[0]
+    return np.where(cost <= threshold)[0][0]
 
 
 def get_difference_function(cost1: np.ndarray, cost2: np.ndarray):

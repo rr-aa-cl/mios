@@ -31,7 +31,7 @@ def simple_benchmark(robot: str, agents: list, n_iter: int = 1, tags: list = [])
     service_config.exploration_mode = True
     #service_config.n_ind = 10
     #service_config.n_gen = 10
-    service_config.batch_width = 5
+    service_config.batch_width = 15
     service_config.n_trials = 200
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
 
