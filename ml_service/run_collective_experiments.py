@@ -210,6 +210,9 @@ def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchma
 
     axes_knowledge.legend(("Single", "Parallel", "Shared"))
 
+    plt.xlabel("Time [s]")
+    plt.ylabel("Knowledge Unit [1]")
+
     plt.show()
 
 
