@@ -411,14 +411,14 @@ def transfer_learning_test_40(from_host: str = None, from_db: str = None, task: 
 
 
 def pinakothek(use_prior: bool = False):
-    call_method("collective-panda-prime.local", 12002, "set_grasped_object", {"object": "key_old"})
-    pd = insert_key("old")
+    call_method("collective-panda-prime.local", 12002, "set_grasped_object", {"object": "key_garmi"})
+    pd = insert_key("garmi")
     service_config = CMAESConfiguration()
     service_config.exploration_mode = True
     service_config.n_ind = 5
     service_config.n_gen = 10
     knowledge = None
-    tags = ["transfer_learning"]
+    tags = ["pinakothek"]
     if use_prior is True:
         knowledge = {
             "mode": "specific",
@@ -427,8 +427,8 @@ def pinakothek(use_prior: bool = False):
             "kb_task_type": "insert_object",
             "kb_tags": ["transfer_learning", "key_old"]
         }
-        tags = ["transfer_learning", "from_cylinder_10"]
-    start_experiment("collective-panda-prime", pd, service_config, 10, tags=tags, knowledge=knowledge)
+        tags = ["pinakothek", "from_cylinder_10"]
+    start_experiment("collective-panda-prime", ["collective-panda-prime"], pd, service_config, 1, tags=tags, knowledge=knowledge)
 
 
 def collective_learning_raw():
