@@ -197,6 +197,7 @@ def plot_transfer_learning_3():
     speedup_matrix = np.zeros((len(tasks), len(tasks)))
     le_ratio_matrix = np.zeros((len(tasks), len(tasks)))
     kl_matrix = np.zeros((len(tasks), len(tasks)))
+    casr_matrix = np.zeros((len(tasks), len(tasks)))
 
     p = DataProcessor()
     fig, axes = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0})
@@ -281,6 +282,7 @@ def plot_transfer_learning_3():
                     le_transfer = np.sum(cost) - baseline
                     le_ratio_matrix[i * n_rows + j][t] = le_transfer / le_base
                     kl_matrix[i * n_rows + j][t] = calculate_kl_divence(base_cost, cost)
+                    casr_matrix[i * n_rows + j][t] = np.sum(casr)/np.sum(base_casr)
 
                     speedup_matrix[i * n_rows + j][t] = calculate_speedup(base_cost, cost)
                     axes[i, j].plot(cost, zorder=1, color = task_colors[t])
@@ -355,26 +357,31 @@ def plot_transfer_learning_3():
     print(speedup_matrix)
     print(le_ratio_matrix)
     print(kl_matrix)
+    print(casr_matrix)
 
     header = np.array(["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"])
 
     es_matrix = es_matrix.astype('|S4')
     speedup_matrix = speedup_matrix.astype('|S4')
     le_ratio_matrix = le_ratio_matrix.astype('|S4')
+    casr_matrix = casr_matrix.astype('|S4')
 
     es_matrix = np.vstack((header, es_matrix))
     speedup_matrix = np.vstack((header, speedup_matrix))
     le_ratio_matrix = np.vstack((header, le_ratio_matrix))
+    casr_matrix = np.vstack((header, casr_matrix))
 
     header = np.insert(header, 0, "")
 
     es_matrix = np.hstack((header.reshape(-1,1), es_matrix))
     speedup_matrix = np.hstack((header.reshape(-1, 1), speedup_matrix))
     le_ratio_matrix = np.hstack((header.reshape(-1, 1), le_ratio_matrix))
+    casr_matrix = np.hstack((header.reshape(-1, 1), casr_matrix))
 
     np.savetxt("es_matrix.csv", es_matrix, delimiter=",", fmt="%s")
     np.savetxt("speedup_matrix.csv", speedup_matrix, delimiter=",", fmt="%s")
     np.savetxt("ler_matrix.csv", le_ratio_matrix, delimiter=",", fmt="%s")
+    np.savetxt("casr_matrix.csv", casr_matrix, delimiter=",", fmt="%s")
     plt.show()
 
 
@@ -1040,7 +1047,7 @@ def plot_iros_learning(host="collective-control-001.local"):
         results = get_multiple_experiment_data(host, skills[i], results_db="iros2021", filter={"meta.tags": {"$all": tags}})
         cost, confidence = p.get_average_cost_over_time(results, decreasing=True)
         cost = cost * 5
-        axes[i].fill_between(np.linspace(0, len(cost), len(cost)), cost-confidence*5, cost+confidence*5, alpha=0.2)
+        axes[i].fill_between(np.linspace(0, len(cost), len(cost)), cost-confidence, cost+confidence*5, alpha=0.2)
         axes[i].plot(cost, linewidth=2)
         axes[i].plot([0, len(cost)], [5, 5],  color="black", linestyle="dashed")
 
