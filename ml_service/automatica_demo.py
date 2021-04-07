@@ -7,9 +7,9 @@ from definitions.insertion_definitions import insert_generic
 from threading import Thread
 
 
-robots = ["collective-panda-prime.local", "collective-panda-001.local", "collective-panda-002.local",
-          "collective-panda-003.local", "collective-panda-007.local", "collective-panda-008.local",
-          "collective-panda-009.local"]
+robots = ["collective-panda-007", "collective-panda-002",
+          "collective-panda-001", "collective-panda-008",
+          "collective-panda-009"]
 
 
 def get_ip(hostname: str):
@@ -61,7 +61,7 @@ def run_demo():
 
 
 def demo_part_1():
-    call_method(robots[0], 12000, "set_grasped_object", {"object": "generic_insertable"})
+    call_method(robots[0], 12002, "set_grasped_object", {"object": "generic_insertable"})
     insertion_context = {
         "skill": {
             "objects": {
@@ -69,21 +69,23 @@ def demo_part_1():
                 "Approach": "generic_container_approach",
                 "Insertable": "generic_insertable"
             },
-            "approach_speed": [0.5, 1],
-            "approach_acc": [1, 4],
-            "insertion_speed": [0.4, 0.077],
-            "insertion_acc": [0.78, 1.62],
+            "approach_speed": [0.2, 0.5],
+            "approach_acc": [0.5, 1],
+            "insertion_speed": [0.1, 0.4],
+            "insertion_acc": [0.5, 1.0],
             "f_max_push": 10,
-            "search_a": [5, 6, 4, 1.15, 1.5, 0],
-            "search_f": [2, 1, 0.6, 0.7, 0.87, 0],
+            "search_a": [0, 0, 0, 0, 0, 0],
+            "search_f": [0, 0, 0, 0, 0., 0],
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0],
-            "stuck_dx_thr": 0.035
+            "stuck_dx_thr": 0.035,
+            "DeltaX": [0, 0, 0, 0, 0, 0],
+            "time_max": 5
         },
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [1004, 536, 1617, 17, 35, 68]
+                "K_x": [200, 1000, 150, 100, 100, 100]
             }
         },
         "user": {
@@ -114,13 +116,25 @@ def demo_part_1():
         }
     }
 
+    insertion_context1 = copy.deepcopy(insertion_context)
+    insertion_context1["skill"]["DeltaX"] = [0.01, -0.005, 0, 0.05, 0.02, 0]
+    insertion_context1["skill"]["search_a"] = [3, 3, 0, 0, 0, 0]
+    insertion_context1["skill"]["search_f"] = [1, 0.75, 0, 0, 0, 0]
+
+    insertion_context2 = copy.deepcopy(insertion_context)
+    insertion_context2["skill"]["DeltaX"] = [-0.002, 0.005, 0, 0.1, -0.1, 0]
+    insertion_context2["skill"]["insertion_speed"] = [0.01, 0.01]
+    insertion_context2["skill"]["search_a"] = [8, 8, 0, 0, 0, 0]
+    insertion_context2["skill"]["search_f"] = [1, 0.75, 0, 0, 0, 0]
+    insertion_context3 = copy.deepcopy(insertion_context)
+
     t = Task(robots[0])
-    t.add_skill("insertion", "TaxInsertion", insertion_context)
-    t.add_skill("extraction", "TaxExtraction", extraction_context)
-    t.add_skill("insertion", "TaxInsertion", insertion_context)
-    t.add_skill("extraction", "TaxExtraction", extraction_context)
-    t.add_skill("insertion", "TaxInsertion", insertion_context)
-    t.add_skill("extraction", "TaxExtraction", extraction_context)
+    t.add_skill("insertion1", "TaxInsertion", insertion_context1)
+    t.add_skill("extraction1", "TaxExtraction", extraction_context)
+    t.add_skill("insertion2", "TaxInsertion", insertion_context2)
+    t.add_skill("extraction2", "TaxExtraction", extraction_context)
+    t.add_skill("insertion3", "TaxInsertion", insertion_context3)
+    t.add_skill("extraction3", "TaxExtraction", extraction_context)
     t.start()
     result = t.wait()
 
@@ -190,6 +204,7 @@ def demo_part_3():
     service_config.exploration_mode = True
     service_config.n_trials = n_trials_experiment
     service_config.batch_width = base_batch_size_experiment * len(agents)
+    print(service_config.batch_width)
     service_config.n_immigrant = service_config.batch_width - base_batch_size_experiment
     tag = "collective_experiment_shared"
     knowledge = {"mode": "none", "kb_location": agents[0], "kb_tags": [tag]}
@@ -208,13 +223,13 @@ def demo_part_3():
 
     input("Press key to stop.")
     for a in agents:
-        s = ServerProxy("http://" + agents[0] + ":8000", allow_none=True)
+        s = ServerProxy("http://" + a + ":8000", allow_none=True)
         s.stop_service()
         stop_task(a)
 
 
 def demo_part_4():
-    call_method(robots[0], 12000, "set_grasped_object", {"object": "generic_insertable"})
+    call_method(robots[0], 12002, "set_grasped_object", {"object": "generic_insertable"})
     insertion_context = {
         "skill": {
             "objects": {
@@ -222,9 +237,9 @@ def demo_part_4():
                 "Approach": "generic_container_approach",
                 "Insertable": "generic_insertable"
             },
-            "approach_speed": [0.5, 1],
-            "approach_acc": [1, 4],
-            "insertion_speed": [0.4, 0.077],
+            "approach_speed": [0.2, 0.5],
+            "approach_acc": [0.5, 1],
+            "insertion_speed": [0.2, 0.3],
             "insertion_acc": [0.78, 1.62],
             "f_max_push": 10,
             "search_a": [5, 6, 4, 1.15, 1.5, 0],
@@ -236,7 +251,7 @@ def demo_part_4():
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [1004, 536, 1617, 17, 35, 68]
+                "K_x": [1004, 536, 1617, 50, 35, 68]
             }
         },
         "user": {
@@ -249,8 +264,8 @@ def demo_part_4():
                 "Turnable": "generic_insertable",
                 "GoalOrientation": "automatica_turn_goal"
             },
-            "turn_speed": [0.5, 2],
-            "turn_acc": [2, 25.0]},
+            "turn_speed": [0.1, 0.5],
+            "turn_acc": [0.5, 1.0]},
         "control": {
             "control_mode": 0,
             "cart_imp": {
@@ -267,8 +282,8 @@ def demo_part_4():
                 "Turnable": "generic_insertable",
                 "GoalOrientation": "generic_container"
             },
-            "turn_speed": [0.5, 2],
-            "turn_acc": [2, 25.0]},
+            "turn_speed": [0.1, 0.5],
+            "turn_acc": [0.5, 1.0]},
         "control": {
             "control_mode": 0,
             "cart_imp": {
@@ -307,5 +322,24 @@ def demo_part_4():
     t.add_skill("turn", "TaxTurn", turn_context)
     t.add_skill("turn_back", "TaxTurn", turn_back_context)
     t.add_skill("extraction", "TaxExtraction", extraction_context)
-    t.start()
+    t.start(True)
     t.wait()
+
+
+def teach_insertable(robot: str):
+    call_method(robot, 12002, "set_grasped_object", {"object": "generic_insertable"})
+    input("Teach approach")
+    call_method(robot, 12002, "teach_object", {"object": "generic_container_approach"})
+    input("Teach container")
+    call_method(robot, 12002, "teach_object", {"object": "generic_container"})
+
+
+def command_collective(cmd: str):
+    threads = []
+    for r in robots:
+        robot = r
+        threads.append(Thread(target=call_method, args=(robot, 12002, cmd,)))
+        threads[-1].start()
+
+    for t in threads:
+        t.join()
