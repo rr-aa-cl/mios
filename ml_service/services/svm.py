@@ -267,7 +267,13 @@ class SVMService(BaseService):
         counter = 0
         if index == 0:  # when first run use knowledge if available
             if self.centroid is not None:
-                self.action_list_norm.append([float(param) for param in self.centroid])
+                if not self.confidence:
+                    self.confidence = 0.2
+                    
+                self.action_list_norm.append([float(param) for param in self.centroid])  # add centroid ("knowledge") to action list
+                for i in range(1,self.configuration.batch_width):  # fill up batch with random trials around centroid
+                    random_trial = np.random.normal(0, self.confidence, self.numberOfParameters) + self.centroid
+                    self.action_list_norm.append(list(random_trial))       
             else:
                 temp_param_norm_samples = lhs(self.numberOfParameters, samples=self.configuration.batch_width)
                 for t in temp_param_norm_samples:
