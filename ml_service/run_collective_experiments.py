@@ -27,8 +27,8 @@ agents_benchmark = ["collective-panda-001", "collective-panda-002", "collective-
           "collective-panda-008", "collective-panda-009"]
 agents_experiment = ["collective-panda-001", "collective-panda-007",
           "collective-panda-008", "collective-panda-009"]
-base_batch_size_benchmark = 10
-n_trials_benchmark = 100
+base_batch_size_benchmark = 15
+n_trials_benchmark = 300
 base_batch_size_experiment = 15
 n_trials_experiment = 180
 
