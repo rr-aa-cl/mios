@@ -19,18 +19,18 @@ import scipy.stats
 
 benchmark_factors = [0, 0.1, 0.2, 0.3, 0.4]
 benchmark_learning_thresholds = [0.01, 0.01, 0.01, 0.01]
-experiment_factors = [0, 0.1, 0.2, 0.3]
-experiment_learning_thresholds = [1.1/5, 0.85/5, 0.8/5, 0.7/5]
+experiment_factors = [0, 0.1, 0.2, 0.3, 0.4]
+experiment_learning_thresholds = [1.1/5, 0.85/5, 0.8/5, 0.7/5, 0.7/5]
 #experiment_learning_thresholds = [1, 1, 1, 1]
 database = "collective-control-001.local"
 agents_benchmark = ["collective-panda-001", "collective-panda-002", "collective-panda-003",
           "collective-panda-008", "collective-panda-009"]
-agents_experiment = ["collective-panda-001", "collective-panda-007",
+agents_experiment = ["collective-panda-001", "collective-panda-002", "collective-panda-007",
           "collective-panda-008", "collective-panda-009"]
 base_batch_size_benchmark = 15
 n_trials_benchmark = 300
 base_batch_size_experiment = 15
-n_trials_experiment = 180
+n_trials_experiment = 300
 
 
 def benchmark_single(agent: str,  unique_tag: str, n_iter: int = 1):
@@ -86,7 +86,7 @@ def experiment_single(agent: str,  unique_tag: str, factor: float, n_iter: int =
     delete_local_results([agent], "ml_results", pd.task_type, ["collective_experiment_single", unique_tag])
     tags = ["collective_experiment_single", "f_" + str(factor), unique_tag]
     pd = insert_generic()
-    pd.cost_function.geometry_factor = factor
+    pd.identity = [factor]
     service_config = SVMConfiguration()
     service_config.exploration_mode = True
     service_config.batch_width = base_batch_size_experiment
@@ -118,7 +118,7 @@ def experiment_collective(agents: list, unique_tag: str, n_iter: int = 1):
         j = 0
         for a in agents:
             pd = insert_generic()
-            pd.cost_function.geometry_factor = experiment_factors[j]
+            pd.identity = [experiment_factors[j]]
             tags = [tag, a, unique_tag, "f_" + str(experiment_factors[j])]
             threads.append(
                 Thread(target=start_single_experiment, args=(a, [a], pd, service_config, i, tags, knowledge, False,)))
