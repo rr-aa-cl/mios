@@ -1,5 +1,6 @@
 #!/usr/bin/python3 -u
-from utils.udp_client import *
+from utils.ws_client import *
+import time
 import socket
 from utils.experiment_wizard import *
 from services.svm import SVMConfiguration
@@ -8,7 +9,7 @@ from threading import Thread
 
 
 robots = ["collective-panda-prime", "collective-panda-007", "collective-panda-002",
-          "collective-panda-008", "collective-panda-003",
+          "collective-panda-008", "collective-panda-003", "collective-panda-001",
           "collective-panda-009"]
 
 
@@ -33,14 +34,18 @@ class Task:
 
     def start(self, queue: bool = False):
         self.t_0 = time.time()
-        response = start_task(self.robot, "GenericTask", parameters={
+        parameters = {
             "parameters": {
                 "skill_names": self.skill_names,
                 "skill_types": self.skill_types,
                 "as_queue": queue
             },
             "skills": self.skill_context
-        })
+        }
+        print(self.skill_context)
+        print("DONE")
+        response = start_task(self.robot, "GenericTask", parameters)
+
         self.task_uuid = response["result"]["task_uuid"]
 
     def wait(self):
@@ -61,7 +66,7 @@ def run_demo():
 
 
 def demo_part_1():
-    call_method(robots[0], 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method(robots[0], 12000, "set_grasped_object", {"object": "generic_insertable"})
     insertion_context = {
         "skill": {
             "objects": {
@@ -85,11 +90,24 @@ def demo_part_1():
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [200, 1000, 150, 100, 100, 100]
+                "K_x": [500, 500, 500, 100, 100, 100]
             }
         },
         "user": {
             "env_X": [0.02, 0.04]
+        }
+    }
+    move_up_context = {
+        "skill": {
+            "objects": {
+                "GoalPose": "EndEffector"
+            },
+            "speed": [0.1, 0.5],
+            "acc": [0.5, 1],
+            "T_T_EE_g_offset": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0.05, 1]
+        },
+        "control": {
+            "control_mode": 0
         }
     }
     extraction_context = {
@@ -117,34 +135,66 @@ def demo_part_1():
     }
 
     insertion_context1 = copy.deepcopy(insertion_context)
-    insertion_context1["skill"]["DeltaX"] = [0.01, -0.005, 0, 0.05, 0.02, 0]
+    insertion_context1["skill"]["DeltaX"] = [0.01, -0.005, 0, 10, 5, 0]
     insertion_context1["skill"]["search_a"] = [3, 3, 0, 0, 0, 0]
     insertion_context1["skill"]["search_f"] = [1, 0.75, 0, 0, 0, 0]
 
     insertion_context2 = copy.deepcopy(insertion_context)
-    insertion_context2["skill"]["DeltaX"] = [-0.002, 0.005, 0, 0.1, -0.1, 0]
+    insertion_context2["skill"]["DeltaX"] = [-0.002, 0.005, 0, 10, -10, 0]
     insertion_context2["skill"]["insertion_speed"] = [0.01, 0.01]
     insertion_context2["skill"]["search_a"] = [8, 8, 0, 0, 0, 0]
     insertion_context2["skill"]["search_f"] = [1, 0.75, 0, 0, 0, 0]
     insertion_context3 = copy.deepcopy(insertion_context)
-    insertion_context3["skill"]["DeltaX"] = [-0.01, 0.005, 0, 0.0, -1.15, 0]
+    insertion_context3["skill"]["DeltaX"] = [-0.01, 0.005, 0, 0.0, -7, 0]
     insertion_context3["skill"]["insertion_speed"] = [0.01, 0.01]
     insertion_context3["skill"]["search_a"] = [8, 8, 0, 0, 0, 0]
     insertion_context3["skill"]["search_f"] = [1, 0.75, 0, 0, 0, 0]
     insertion_context3["control"]["cart_imp"]["K_x"] = [100, 100, 500, 50, 50, 50]
 
+
+    wiggle_context = {
+        "skill": {
+            "dX_fourier_a_a": [0, 0.05, 0, 0, 0, 0],
+            "dX_fourier_a_phi": [0, 0.71, 0, 0, 0, 0],
+            "dX_fourier_a_f": [0, 1, 0, 0, 0, 0],
+            "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
+            "use_EE": True,
+            "time_max": 5
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+
     t = Task(robots[0])
     t.add_skill("insertion1", "TaxInsertion", insertion_context1)
     t.add_skill("extraction1", "TaxExtraction", extraction_context)
+    t.add_skill("move1", "TaxMove", move_up_context)
     t.add_skill("insertion2", "TaxInsertion", insertion_context2)
     t.add_skill("extraction2", "TaxExtraction", extraction_context)
+    t.add_skill("move2", "TaxMove", move_up_context)
     t.add_skill("insertion3", "TaxInsertion", insertion_context3)
     t.add_skill("extraction3", "TaxExtraction", extraction_context)
-    t.start()
+    move_up_context2 = copy.deepcopy(move_up_context)
+    move_up_context2["skill"]["T_T_EE_g_offset"][14] = 0.2
+    t.add_skill("move3", "TaxMove", move_up_context2)
+    t.add_skill("fail", "GenericWiggleMotion", wiggle_context)
+    t.start(False)
     result = t.wait()
 
 
 def demo_part_2():
+
+    result = start_task(robots[0], "MoveToJointPose", {
+        "parameters": {
+            "pose": "automatica_telepresence",
+            "speed": 1,
+            "acc": 2
+        }
+    })
+    wait_for_task(robots[0], result["result"]["task_uuid"])
+
     ip_master = get_ip(robots[0])
     ip_slaves = []
     for i in range(1, len(robots)):
@@ -206,7 +256,7 @@ def demo_part_3():
     n_trials_experiment = 180
     agents = robots[1:]
     for a in agents:
-        call_method(a, 12002, "set_grasped_object", {"object": "generic_insertable"})
+        call_method(a, 12000, "set_grasped_object", {"object": "generic_insertable"})
 
     service_config = SVMConfiguration()
     service_config.exploration_mode = True
@@ -237,7 +287,15 @@ def demo_part_3():
 
 
 def demo_part_4():
-    call_method(robots[0], 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method(robots[0], 12000, "set_grasped_object", {"object": "generic_insertable"})
+    result = start_task(robots[0], "MoveToJointPose", {
+        "parameters": {
+            "pose": "generic_container_approach",
+            "speed": 1,
+            "acc": 2
+        }
+    })
+    wait_for_task(robots[0], result["result"]["task_uuid"])
     insertion_context = {
         "skill": {
             "objects": {
@@ -247,9 +305,10 @@ def demo_part_4():
             },
             "approach_speed": [0.2, 0.5],
             "approach_acc": [0.5, 1],
-            "insertion_speed": [0.2, 0.3],
-            "insertion_acc": [0.78, 1.62],
+            "insertion_speed": [0.1, 0.3],
+            "insertion_acc": [0.5, 1.62],
             "f_max_push": 10,
+            "DeltaX": [0.005, 0, 0, 0, 10, 0],
             "search_a": [5, 6, 4, 1.15, 1.5, 0],
             "search_f": [2, 1, 0.6, 0.7, 0.87, 0],
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
@@ -259,11 +318,11 @@ def demo_part_4():
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [1004, 536, 1617, 50, 35, 68]
+                "K_x": [1004, 536, 1617, 100, 100, 68]
             }
         },
         "user": {
-            "env_X": [0.02, 0.04]
+            "env_X": [0.02, 0.02]
         }
     }
     turn_context = {
@@ -330,24 +389,24 @@ def demo_part_4():
     # t.add_skill("turn", "TaxTurn", turn_context)
     # t.add_skill("turn_back", "TaxTurn", turn_back_context)
     t.add_skill("extraction", "TaxExtraction", extraction_context)
-    t.start(True)
+    t.start()
     t.wait()
 
 
 def teach_insertable(robot: str):
     input("Press key to start teaching.")
-    call_method(robot, 12002, "set_grasped_object", {"object": "generic_insertable"})
+    call_method(robot, 12000, "set_grasped_object", {"object": "generic_insertable"})
     input("Teach approach")
-    call_method(robot, 12002, "teach_object", {"object": "generic_container_approach"})
+    call_method(robot, 12000, "teach_object", {"object": "generic_container_approach"})
     input("Teach container")
-    call_method(robot, 12002, "teach_object", {"object": "generic_container"})
+    call_method(robot, 12000, "teach_object", {"object": "generic_container"})
 
 
 def command_collective(cmd: str):
     threads = []
     for r in robots:
         robot = r
-        threads.append(Thread(target=call_method, args=(robot, 12002, cmd,)))
+        threads.append(Thread(target=call_method, args=(robot, 12000, cmd,)))
         threads[-1].start()
 
     for t in threads:
