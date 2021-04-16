@@ -84,6 +84,11 @@ void GenericTask::add_any_skill(unsigned int index){
     case msrm_utils::str_to_int("TaxPressButton"):
         add_skill<TaxPressButton,SkillParametersTaxPressButton>(name);
         break;
+    case msrm_utils::str_to_int("GenericWiggleMotion"):
+        add_skill<GenericWiggleMotion,SkillParametersGenericWiggleMotion>(name);
+        break;
+    default:
+        throw TaskException("Skill with type " + type + " not known to GenericTask");
     }
 }
 

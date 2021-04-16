@@ -6,6 +6,7 @@
 namespace mios {
 
 bool SkillParametersTaxMove::from_json(const nlohmann::json &p){
+    spdlog::trace("SkillParametersTaxMove::from_json");
     if(!msrm_utils::read_json_param(p,"t_settle",t_settle)){
         t_settle=0;
     }

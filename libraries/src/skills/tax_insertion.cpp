@@ -76,7 +76,7 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::get_initial_mp(const Percep
 
 std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_transition(const Percept &p){
     if(get_active_mp()->get_name()=="approach"){
-        if(is_in_env("Approach","move",p)){
+        if(get_active_mp()->get_strategy_interface("move")->finished()){
             return create_contact_mp(p);
         }else{
             return {};

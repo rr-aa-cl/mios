@@ -1315,10 +1315,13 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
                 "skill": {
                     "speed": [0.1, 0.5],
                     "acc": [0.5, 1],
-                    "T_T_EE_g_offset": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -0.05, 1],
+                    "T_T_EE_g_offset": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0.05, 1],
                     "objects": {
                         "GoalPose": "EndEffector",
                     }
+                },
+                "control": {
+                    "control_mode": 0
                 },
                 "user": {
                     "env_X": [0.01, 0.03]

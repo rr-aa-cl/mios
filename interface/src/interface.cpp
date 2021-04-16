@@ -72,7 +72,7 @@ nlohmann::json CommandInterface::terminate(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::start_task(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: start_task");
+    spdlog::trace("CommandInterface: start_task");
     nlohmann::json response;
     bool result;
     std::string task_uuid;

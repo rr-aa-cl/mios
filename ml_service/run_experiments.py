@@ -555,6 +555,17 @@ def tax_learn_insertion(robot: str, agents: list, n_iter: int = 1):
     start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
 
 
+def generic_insertion(robot: str, agents: list, n_iter: int = 1):
+    call_method(robot, 12002, "set_grasped_object", {"object": "generic_insertable"})
+    pd = insert_generic()
+    service_config = CMAESConfiguration()
+    service_config.exploration_mode = True
+    service_config.n_ind = 13
+    service_config.n_gen = 20
+    tags = ["generic_insertion"]
+    start_experiment(robot, agents, pd, service_config, n_iter, tags=tags, keep_record=False)
+
+
 def tax_learn_extraction(robot: str, agents: list, n_iter: int = 1):
     call_method(robot, 12002, "set_grasped_object", {"object": "key_pad"})
     pd = extraction("key_pad", "lock_pad", "lock_pad_above")

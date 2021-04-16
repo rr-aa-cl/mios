@@ -24,7 +24,9 @@ def call_method(hostname: str, port: int, method: str, payload=None, timeout: fl
     return response
 
 
-def start_task(hostname: str, task: str, parameters={}, queue=False, timeout=-1) -> dict:
+def start_task(hostname: str, task: str, parameters=None, queue=False, timeout=-1) -> dict:
+    if parameters is None:
+        parameters = {}
     payload = {
         "task": task,
         "parameters": parameters,
