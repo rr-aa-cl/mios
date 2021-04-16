@@ -1287,8 +1287,8 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
     task_context = {
         "name": "GenericTask",
         "parameters": {
-            "skill_types": ["TaxExtraction", "TaxMove", "MoveToPoseJoint"],
-            "skill_names": ["extraction", "move_up", "move"]
+            "skill_types": ["TaxExtraction", "MoveToPoseJoint"],
+            "skill_names": ["extraction", "move"]
         },
         "skills": {
             "extraction": {
@@ -1302,22 +1302,6 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
                         "Extractable": insertable,
                         "Container": container,
                         "ExtractTo": approach
-                    }
-                },
-                "control": {
-                    "control_mode": 0
-                },
-                "user": {
-                    "env_X": [0.01, 0.03]
-                }
-            },
-            "move_up": {
-                "skill": {
-                    "speed": [0.1, 0.5],
-                    "acc": [0.5, 1],
-                    "T_T_EE_g_offset": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0.05, 1],
-                    "objects": {
-                        "GoalPose": "EndEffector",
                     }
                 },
                 "control": {
