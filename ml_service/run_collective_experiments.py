@@ -513,7 +513,7 @@ def plot_batch_data_comparison(unique_tag_single: str, unique_tag_shared: str, b
     knowledge_time_single = []
 
     for i in range(n_tasks):
-        tags_single = [marker + "_single_batchwise_similar", unique_tag_single, "t_" + str(i)]
+        tags_single = [marker + "_single_batchwise", unique_tag_single, "t_" + str(i)]
         try:
             results_single = get_multiple_experiment_data(database, skill,
                                                    results_db="collective_data",

@@ -241,7 +241,8 @@ def plot_transfer_learning_3():
                 axes[i, j].plot(base_cost, linestyle="dashed", zorder=2, linewidth=4)
                 axes_casr[i, j].plot([0, len(base_casr)], [0, len(base_casr)], color="black", linestyle="dashed")
                 axes_casr[i, j].plot(base_casr, linestyle="dashed", zorder=2, linewidth=4)
-                legend = ["Optimal CASR", tasks[i * n_rows + j]]
+                legend = [tasks[i * n_rows + j]]
+                legend_casr = ["Optimal CASR", tasks[i * n_rows + j]]
             except (DataNotFoundError, DataError):
                 print("Base cost for task " + tasks[i] + " not found.")
                 continue
@@ -289,11 +290,12 @@ def plot_transfer_learning_3():
                     axes_casr[i, j].plot(casr, zorder=1, color=task_colors[t])
 
                     legend.append("from_" + tasks[t])
+                    legend_casr.append("from_" + tasks[t])
                 except (DataNotFoundError, DataError):
                     pass
 
             axes[i, j].legend(legend, fontsize='x-small', loc=1)
-            axes_casr[i, j].legend(legend, fontsize='x-small', loc='upper left')
+            axes_casr[i, j].legend(legend_casr, fontsize='x-small', loc='upper left')
             # if i == 0:
             #     pass
             #     axes[i, j].annotate("t" + str(j), xy=(0.5, 1), xytext=(0, 5),
