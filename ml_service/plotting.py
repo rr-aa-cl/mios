@@ -31,7 +31,7 @@ def average_experiment(host: str, task_type: str, database: str, tags: list, age
 
     results = get_multiple_experiment_data(host, task_type, results_db=database, filter={"meta.tags": {"$all": tags}})
     # cost = p.get_average_cost_over_time(results, 1500, True)
-    cost = p.get_average_cost(results, True, 1, agent)
+    cost, confidence = p.get_average_cost(results, True, 1, agent)
     plt.plot(cost)
     plt.ylim([0,2.5])
     plt.show()

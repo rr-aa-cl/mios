@@ -321,14 +321,14 @@ class KnowledgeManager:
 
         return knowledge
 
-    def get_similar_knowledge(self, task_identifier: dict, knowledge_tags: dict, knowledge_db: str = "local_knowledge",
+    def get_similar_knowledge(self, task_identifier: dict, scope: dict, knowledge_db: str = "local_knowledge",
                               data_db: str = "ml_results"):
         '''searches for most similar knowledge / creates knowledge from similar results'''
         collection = task_identifier["task_type"]
         identity = task_identifier["identity"]
 
         # search knowledge from the same knowledge_pool (other tasks)
-        knowledge_filter = {"meta.tags": knowledge_tags,
+        knowledge_filter = {"meta.scope": scope,
                             "meta.task_type": task_identifier["task_type"]
                             }
 
@@ -339,7 +339,7 @@ class KnowledgeManager:
             # take most similar knowledge according to cost function ("optimum_weights"):
             return self.get_most_similar_task(docs, identity)
         logger.debug("knowledge_manager.get_similar_knowledge(): can\'t find knowledge for " +
-                     str(task_identifier) + " in knowledge pool " + str(knowledge_tags) + " at " + str(collection))
+                     str(task_identifier) + " under scope " + str(scope) + " at " + str(collection))
 
         return False
 
@@ -375,10 +375,9 @@ class KnowledgeManager:
         vector_mapping = metainfo[0]["domain"]["vector_mapping"]
         return successful_trials, vector_mapping, optimum_weights, confidence
 
-    def get_most_similar_task(self, tasks, identity: np.ndarray, weights: np.ndarray):
+    def get_most_similar_task(self, tasks, identity: np.ndarray):
         '''find most similar task in a list of tasks according to identity'''
         # normalize weights:
-        weights = np.array(weights) / sum(weights)
 
         most_similar_task = tasks[0]
         smallest_dist = float('inf')
@@ -394,8 +393,7 @@ class KnowledgeManager:
                     continue
 
             # use euclidean distance as similarity measure:  sqrt(sum( (a-b)**2 ))
-            dist_id = np.linalg.norm(identity - temp_identity)
-            dist = np.dot(dist_id, weights)
+            dist = np.linalg.norm(identity - temp_identity)
 
             if dist < smallest_dist:
                 smallest_dist = dist

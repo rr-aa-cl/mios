@@ -104,11 +104,11 @@ class BaseService(metaclass=ABCMeta):
                 client = MongoDBClient(knowledge_source["kb_location"])
                 self.knowledge = self.knowledge_manager.get_knowledge_by_filter(client, knowledge_source["kb_db"],
                                                                knowledge_source["kb_task_type"],
-                                                               {"meta.tags": {"$all": knowledge_source["kb_tags"]}})
+                                                               {"meta.tags": {"$all": knowledge_source["scope"]}})
             elif knowledge_source["mode"] == 'local':
                 logger.debug("base_service.initialize(): get local knowlege")
                 if knowledge_type == "similar":
-                    self.knowledge = self.knowledge_manager.get_similar_knowledge(self.problem_definition.get_task_identifier(), knowledge_source["kb_tags"])
+                    self.knowledge = self.knowledge_manager.get_similar_knowledge(self.problem_definition.get_task_identifier(), knowledge_source["scope"])
                 elif knowledge_type == "predicted":
                     self.knowledge = self.knowledge_manager.get_predicted_knowledge(self.problem_definition.task_type, self.knowledge_source["scope"], self.problem_definition.identity)
                     print("#########################################")
@@ -121,7 +121,7 @@ class BaseService(metaclass=ABCMeta):
                 with ServerProxy("http://" + knowledge_source["kb_location"] + ":8001") as kb:
                     try:
                         if knowledge_type == "similar":
-                            self.knowledge = kb.get_similar_knowledge(self.problem_definition.get_task_identifier(), knowledge_source["kb_tags"])
+                            self.knowledge = kb.get_similar_knowledge(self.problem_definition.get_task_identifier(), knowledge_source["scope"])
                         elif knowledge_type == "predicted":
                             self.knowledge = kb.get_predicted_knowledge(self.problem_definition.task_type, self.knowledge_source["scope"], self.problem_definition.identity)
                         else:
