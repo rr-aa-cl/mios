@@ -779,6 +779,7 @@ SkillParameters::SkillParameters(){
     condition_level_success=SkillConditionLevel::sclModel;
     condition_level_error=SkillConditionLevel::sclModel;
     condition_level_exit=SkillConditionLevel::sclModel;
+    ignore_settling=true;
 }
 
 bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
@@ -876,7 +877,7 @@ nlohmann::json SkillParameters::get_default_values(){
     nlohmann::json default_values;
     default_values["time_max"]=0;;
     default_values["parallels_frequency"]=1000;
-    default_values["ignore_settling"]=false;
+    default_values["ignore_settling"]=true;
     default_values["objects"]={};
     default_values["condition_level_pre"]="Model";
     default_values["condition_level_success"]="Model";
@@ -938,6 +939,10 @@ nlohmann::json SkillParameters::to_json() const{
 Parameters::Parameters():control(ControlParameters()),system(SystemParameters()),limits(LimitParameters()),user(UserParameters()),
     frames(FramesParameters()),skill(std::make_unique<SkillParametersNullSkill>()){
 
+}
+
+void Parameters::clear_skill_parameters(){
+    skill=std::make_unique<SkillParametersNullSkill>();
 }
 
 LiveContext::LiveContext(Object* grasped_object):grasped_object(grasped_object){

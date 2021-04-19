@@ -180,7 +180,7 @@ def demo_part_1():
     move_up_context2["skill"]["T_T_EE_g_offset"][14] = 0.2
     t.add_skill("move3", "TaxMove", move_up_context2)
     t.add_skill("fail", "GenericWiggleMotion", wiggle_context)
-    t.start(False)
+    t.start(True)
     result = t.wait()
 
 

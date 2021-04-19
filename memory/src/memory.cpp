@@ -59,6 +59,10 @@ void Memory::clear_reserved_skills(){
     m_st_memory.clear_reserved_skills();
 }
 
+void Memory::clear_skill_parameters(){
+    m_st_memory.clear_skill_parameters();
+}
+
 std::shared_ptr<Task> Memory::load_task(const std::string &task_id, const nlohmann::json &parameters,Core* core){
     return m_lt_memory.load_task(task_id,parameters,core);
 }

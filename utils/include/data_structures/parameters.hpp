@@ -271,6 +271,7 @@ public:
     template<typename T>const std::unique_ptr<T>& get_skill_parameters(){
         return std::static_pointer_cast<T>(skill);
     }
+    void clear_skill_parameters();
 };
 
 class LiveContext{

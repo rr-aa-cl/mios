@@ -30,6 +30,7 @@ public:
     void internal_update(const Percept& p);
 
     void clear_reserved_skills();
+    void clear_skill_parameters();
 
     template<typename T>bool reserve_skill_context(const nlohmann::json task_context, const std::string& skill_id){
         Parameters p=m_parameters;
