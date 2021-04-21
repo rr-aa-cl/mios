@@ -463,6 +463,8 @@ def experiment_single_batchwise_similar(agent: str,  unique_tag: str, n_tasks: i
     delete_local_results([database], "collective_data", "insertion", ["collective_experiment_single_batchwise_similar"])
     delete_local_knowledge([agent], "local_knowledge", "insertion", ["experiment_batchwise_similar"])
 
+    call_method(agent, 12002, "set_grasped_object", {"object": "generic_insertable"})
+
     task_set = []
 
     for j in range(n_tasks):
