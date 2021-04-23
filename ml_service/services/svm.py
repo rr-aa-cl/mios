@@ -78,6 +78,8 @@ class SVMService(BaseService):
         self.episodes = 0
         self.numberOfParameters = 0
         self.target_cost = None
+        self.neglect_samples = 0
+        self.bad_gmm_prediciton = 0
 
     def _initialize(self):
         self.numberOfParameters = 2
@@ -88,6 +90,8 @@ class SVMService(BaseService):
         self.gmm_samples=[]
         self.bestSample=[]
         self.svmCounter=0
+        self.neglect_samples = 0  # neglect first part of self.success, self.rewards to calculate self.mean
+        self.bad_gmm_prediciton = 0  # counts how often gmm is not able to select samples which satisfy svm-predictions
         self.minCost=np.infty
         self.success=[]
         self.rewards=[]
@@ -268,8 +272,7 @@ class SVMService(BaseService):
         if index == 0:  # when first run use knowledge if available
             if self.centroid is not None:
                 if not self.confidence:
-                    self.confidence = 0.2
-                    
+                    self.confidence = 0.1
                 self.action_list_norm.append([float(param) for param in self.centroid])  # add centroid ("knowledge") to action list
                 for i in range(1,self.configuration.batch_width):  # fill up batch with random trials around centroid
                     random_trial = np.random.normal(0, self.confidence, self.numberOfParameters) + self.centroid
@@ -297,7 +300,7 @@ class SVMService(BaseService):
                     self.action_list_norm.append(action_norm)
                     i += 1
                     counter = 0
-                    # print "added innovation"
+                    self.bad_gmm_prediciton += 1
                     continue
 
                 elif self.classifierActive==True:
@@ -357,6 +360,9 @@ class SVMService(BaseService):
 
     def _trainSVM(self):
         if self.svmCounter >= 5:
+            if self.bad_gmm_prediciton >= self.configuration.batch_width:
+                self.neglect_samples = len(self.rewards) - self.configuration.batch_width  # neglect everything bevor last (bad) batch when calculating self.mean
+                self.mean = sum(self.rewards[self.neglect_samples:]) / len(self.rewards[self.neglect_samples:])
             self._preprocessSamples()
             self.mean = self._calculateMeanReward()
             self._redefineSamples()
@@ -365,28 +371,22 @@ class SVMService(BaseService):
             # self.classifier.fit(self.svm_samples,self.success)
 
             tt = 0
-            self.td = 0
+            if self.neglect_samples > 0:
+                print("sucess:",self.success,"\n","svm_samples:",self.svm_samples)
+            clf = SVC(C=100000)
+            clf.fit(self.svm_samples, self.success)
+            temp = np.abs(clf.decision_function(self.svm_samples))
+            # print(clf.decision_function(self.svm_samples))
 
-            gammas = [1000]
-
-            for i in gammas:
-                d = i
-
-                clf = SVC(C=100000)
-                clf.fit(self.svm_samples, self.success)
-                temp = np.abs(clf.decision_function(self.svm_samples))
-                # print(clf.decision_function(self.svm_samples))
-
-                if tt < temp.min():
-                    self.td = d
-                    tt = temp.min()
-                    self.classifier = clf
+            if tt < temp.min():
+                tt = temp.min()
+                self.classifier = clf
 
             # self._plotData()
 
             self.classifierActive = True
 
-            if self.svmCounter >= 15 and len(self.gmm_samples) > 2:
+            if self.svmCounter >= 15 and len(self.gmm_samples) > 2:    # gmm_samples > mean
 
                 for x in self.classifier.support_vectors_:
                     pass
@@ -398,34 +398,26 @@ class SVMService(BaseService):
                 if maxcomponents > len(self.gmm_samples):
                     maxcomponents = len(self.gmm_samples)
                 maxcomponents = 1
-                for i in range(0, maxcomponents):
-                    gmm = mixture.GaussianMixture(n_components=i + 1, covariance_type='diag')
-                    # raw_input(self.gmm_samples)
-                    # print self.gmm_samples
-                    gmm.fit(np.asarray(self.gmm_samples))
-                    bic.append(gmm.bic(np.asarray(self.gmm_samples)))
-                    if bic[-1] < lowest_bic:
-                        lowest_bic = bic[-1]
-                        self.sampling_gmm = gmm
-
-                # print(bic)
-                print(self.sampling_gmm.means_)
-                print(self.sampling_gmm.covariances_)
+                self.sampling_gmm = mixture.BayesianGaussianMixture(n_components=maxcomponents, covariance_type='diag', n_init=3)
+                self.sampling_gmm.fit(np.asarray(self.gmm_samples))
 
                 self.gmm_active = True
                 print(self.gmm_samples)
                 print(np.asarray(self.gmm_samples))
                 print("GMM is active")
 
+            else:
+                self.gmm_active = False
+
             print("Classifier is active")
 
     def _calculateMeanReward(self):
         counter = 0
         xsum = 0
-        for i in range(0, len(self.rewards)):
-            if self.success[i] == 1:
+        for i in range(0, len(self.rewards[self.neglect_samples:])):
+            if self.success[self.neglect_samples + i] == 1:
                 counter += 1
-                xsum += self.rewards[i]
+                xsum += self.rewards[self.neglect_samples + i]
 
         if counter == 0:
             return 0
@@ -435,13 +427,9 @@ class SVMService(BaseService):
         for i in range(0, len(self.rewards)):
             if self.rewards[i] < self.mean:
                 self.success[i] = 0
+            else:
+                self.success[i] = 1
 
-    def _checkSamples(self):
-        counter = 0
-        for i in range(0, len(self.svm_samples)):
-            if self.rewards[i] >= self.mean:
-                counter += 1
-        return counter
 
     def _redefineSamples(self):
         self.gmm_samples = []
