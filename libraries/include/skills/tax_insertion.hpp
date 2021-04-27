@@ -8,19 +8,35 @@ class SkillParametersTaxInsertion : public SkillParameters{
 public:
     bool from_json(const nlohmann::json &parameters) override;
     std::map<std::string, std::set<std::string> > get_parameter_list() override;
-    Eigen::Matrix<double,2,1> insertion_speed;
-    Eigen::Matrix<double,2,1> insertion_acc;
-    Eigen::Matrix<double,2,1> approach_speed;
-    Eigen::Matrix<double,2,1> approach_acc;
-    Eigen::Matrix<double,6,1> search_a;
-    Eigen::Matrix<double,6,1> search_f;
-    Eigen::Matrix<double,6,1> DeltaX;
-    double f_max_push;
 
-    Eigen::Matrix<double,6,1> ROI_x;
-    Eigen::Matrix<double,6,1> ROI_phi;
+    struct P0{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,6,1> DeltaX;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
 
-    double stuck_dx_thr;
+    }p0;
+
+    struct P1{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+    }p1;
+
+    struct P2{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,6,1> search_a;
+        Eigen::Matrix<double,6,1> search_f;
+        double f_push;
+    }p2;
+
+    struct P3{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+        double f_push;
+    }p3;
+
 };
 
 class TaxInsertion : public Skill{
@@ -34,7 +50,10 @@ public:
     double get_goal_heuristic(const Percept &p) override;
 
 private:
+
     bool is_stuck(const Percept& p);
+    bool is_outside(const Percept& p);
+
     std::shared_ptr<ManipulationPrimitive> create_approach_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_contact_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_insert_mp(const Percept& p);

@@ -1,63 +1,104 @@
-#include "skills/tax_insertion.hpp"
+﻿#include "skills/tax_insertion.hpp"
 #include "strategies/move_to_pose.hpp"
 #include "strategies/ff_wiggle_strategy.hpp"
 #include "strategies/twist_strategy.hpp"
+#include "strategies/ff_strategy.hpp"
+#include "strategies/cart_compliance_strategy.hpp"
 #include "msrm_utils/math.hpp"
 
 namespace mios {
 
 bool SkillParametersTaxInsertion::from_json(const nlohmann::json &parameters){
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_speed",approach_speed)){
-        spdlog::error("Parameter approach_speed could not be loaded but is mandatory.");
+
+    if(parameters.find("p0")==parameters.end()){
+        spdlog::error("Parameters for primitive 0 are missing.");
         return false;
-    }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_acc",approach_acc)){
-        spdlog::error("Parameter approach_acc could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"insertion_speed",insertion_speed)){
-        spdlog::error("Parameter insertion_speed could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"insertion_acc",insertion_acc)){
-        spdlog::error("Parameter insertion_acc could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param(parameters,"f_max_push",f_max_push)){
-        spdlog::error("Parameter f_max_push could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param(parameters,"stuck_dx_thr",stuck_dx_thr)){
-        stuck_dx_thr=0.005;
-    }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"search_a",search_a)){
-        search_a.setZero();
-    }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"search_f",search_f)){
-        search_f.setZero();
-    }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"DeltaX",DeltaX)){
-        DeltaX.setZero();
-    }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_x",ROI_x)){
-        spdlog::error("Parameter ROI_x could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_phi",ROI_phi)){
-        spdlog::error("Parameter ROI_phi could not be loaded but is mandatory.");
-        return false;
+    }else if(parameters.find("p0")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+            spdlog::error("Missing parameter: p0.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"DeltaX",p0.DeltaX)){
+            spdlog::error("Missing parameter: p0.DeltaX");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+            spdlog::error("Missing parameter: p0.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+            spdlog::error("Missing parameter: p0.ddX_d");
+            return false;
+        }
     }
 
-    if(stuck_dx_thr>insertion_speed(0) || stuck_dx_thr<0){
-        spdlog::warn("stuck_dx_thr cannot be greater than insertion_speed[0] or smaller than 0.");
-        stuck_dx_thr=insertion_speed(0);
+    if(parameters.find("p1")==parameters.end()){
+        spdlog::error("Parameters for primitive 1 are missing.");
+        return false;
+    }else if(parameters.find("p1")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p1"],"K_x",p1.K_x)){
+            spdlog::error("Missing parameter: p1.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
+            spdlog::error("Missing parameter: p1.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"ddX_d",p1.ddX_d)){
+            spdlog::error("Missing parameter: p1.ddX_d");
+            return false;
+        }
+    }
+
+    if(parameters.find("p2")==parameters.end()){
+        spdlog::error("Parameters for primitive 2 are missing.");
+        return false;
+    }else if(parameters.find("p2")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"K_x",p2.K_x)){
+            spdlog::error("Missing parameter: p2.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"search_a",p2.search_a)){
+            spdlog::error("Missing parameter: p2.search_a");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"search_f",p2.search_f)){
+            spdlog::error("Missing parameter: p2.search_f");
+            return false;
+        }
+        if(!msrm_utils::read_json_param(parameters["p2"],"f_push",p2.f_push)){
+            spdlog::error("Missing parameter: p2.f_push");
+            return false;
+        }
+    }
+
+    if(parameters.find("p3")==parameters.end()){
+        spdlog::error("Parameters for primitive 3 are missing.");
+        return false;
+    }else if(parameters.find("p3")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p3"],"K_x",p3.K_x)){
+            spdlog::error("Missing parameter: p3.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param(parameters["p3"],"f_push",p3.f_push)){
+            spdlog::error("Missing parameter: p3.f_push");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"dX_d",p3.dX_d)){
+            spdlog::error("Missing parameter: p3.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"ddX_d",p3.ddX_d)){
+            spdlog::error("Missing parameter: p3.ddX_d");
+            return false;
+        }
     }
 
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxInsertion::get_parameter_list(){
-    return {{"f_max_push",{}},{"approach_speed",{}},{"approach_acc",{}},{"insertion_speed",{}},{"insertion_acc",{}},{"stuck_dx_thr",{}},{"search_a",{}},{"search_f",{}},{"DeltaX",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+    return {{"p0",{"K_x","DeltaX","dX_d","ddX_d"}},{"p1",{"K_x","dX_d","ddX_d"}},{"p2",{"K_x","search_a","search_f","f_push"}},{"p3",{"K_x","f_push","dX_d","ddX_d"}}};
 }
 
 TaxInsertion::TaxInsertion(const std::string &name, Memory *memory,Portal* portal):Skill("TaxInsertion",{"Insertable","Container","Approach"},name,memory,portal,
@@ -78,30 +119,25 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_trans
     if(get_active_mp()->get_name()=="approach"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
             return create_contact_mp(p);
-        }else{
-            return {};
         }
     }
     if(get_active_mp()->get_name()=="contact"){
         if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
-            return create_insert_mp(p);
-        }else{
-            return {};
+            return create_wiggle_mp(p);
         }
     }
     if(get_active_mp()->get_name()=="insert"){
-        if(!is_stuck(p)){
-            return {};
-        }else{
+        if(is_stuck(p)){
             return create_wiggle_mp(p);
         }
     }
     if(get_active_mp()->get_name()=="wiggle"){
         if(!is_stuck(p)){
             return create_insert_mp(p);
-        }else{
-            return {};
         }
+    }
+    if(is_outside(p)){
+        return create_approach_mp(p);
     }
     return {};
 }
@@ -112,11 +148,13 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_approach_mp(const Pe
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
     Eigen::Matrix<double,4,4> T_a_offset = get_object_pose_T("Approach");
-    T_a_offset.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(skill_params->DeltaX(3),skill_params->DeltaX(4),skill_params->DeltaX(5));
+    T_a_offset.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(skill_params->p0.DeltaX(3),skill_params->p0.DeltaX(4),skill_params->p0.DeltaX(5));
     Eigen::Matrix<double,4,4> T_a = get_object_pose_T("Approach");
     T_a.block<3,3>(0,0)=T_a_offset.block<3,3>(0,0)*T_a.block<3,3>(0,0);
-    T_a.block<3,1>(0,3)+=skill_params->DeltaX.block<3,1>(0,0);
-    move->set_goal(T_a,skill_params->approach_speed,skill_params->approach_acc);
+    T_a.block<3,1>(0,3)+=skill_params->p0.DeltaX.block<3,1>(0,0);
+    move->set_goal(T_a,skill_params->p0.dX_d,skill_params->p0.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p0.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
@@ -126,10 +164,12 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_contact_mp(const Per
     mp->create_strategy<TwistStrategy>("move",1);
     std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
     Eigen::Matrix<double,6,1> dX_d;
-    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Container").block<3,1>(0,3)+skill_params->DeltaX.block<3,1>(0,0)-p.proprioception.T_T_EE.block<3,1>(0,3);
+    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Container").block<3,1>(0,3)+skill_params->p0.DeltaX.block<3,1>(0,0)-p.proprioception.T_T_EE.block<3,1>(0,3);
     dir/=dir.norm();
-    dX_d<<dir*skill_params->insertion_speed(0),0,0,0;
-    move->set_TF_dX_d(dX_d,skill_params->insertion_acc);
+    dX_d<<dir*skill_params->p1.dX_d(0),0,0,0;
+    move->set_TF_dX_d(dX_d,skill_params->p1.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p1.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
@@ -141,12 +181,19 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_insert_mp(const Perc
     std::shared_ptr<MoveToPoseStrategy> orientation = mp->get_strategy<MoveToPoseStrategy>("orientation");
     Eigen::Matrix<double,4,4> T_g=get_object_pose_T("Container");
     T_g.block<3,1>(0,3)=p.proprioception.T_T_EE.block<3,1>(0,3);
-    orientation->set_goal(T_g,skill_params->insertion_speed,skill_params->insertion_acc);
+    orientation->set_goal(T_g,skill_params->p3.dX_d,skill_params->p3.ddX_d);
 
-    mp->create_strategy<TwistStrategy>("position",1);
-    m_insert_dir<<get_object_pose_T("Container").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3),0,0,0;
-    m_insert_dir/=m_insert_dir.norm();
-    mp->get_strategy<TwistStrategy>("position")->set_TF_dX_d(m_insert_dir*skill_params->insertion_speed(0),skill_params->insertion_acc);
+    mp->create_strategy<FFStrategy>("push",1);
+    Eigen::Matrix<double,6,1> f_push;
+    f_push<<0,0,skill_params->p3.f_push,0,0,0;
+    mp->get_strategy<FFStrategy>("push")->set_TF_F_ff(f_push,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+
+    Eigen::Matrix<double,6,1> K_x=skill_params->p3.K_x;
+    K_x(2)=0;
+    Eigen::Matrix<double,6,1> xi_x=m_memory->read_parameters()->control.cart_imp.xi_x;
+    xi_x(2)=0;
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(K_x,xi_x);
 
     return mp;
 }
@@ -156,47 +203,31 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_wiggle_mp(const Perc
     std::shared_ptr<SkillParametersTaxInsertion> skill_params = get_parameters<SkillParametersTaxInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("wiggle",p);
     mp->create_strategy<FFWiggleStrategy>("wiggle_x",1);
-    mp->get_strategy<FFWiggleStrategy>("wiggle_x")->set_coefficients(Eigen::Matrix<double,6,1>::Zero(),skill_params->search_a,
-                                                                   Eigen::Matrix<double,6,1>::Zero(),skill_params->search_f,
+    mp->get_strategy<FFWiggleStrategy>("wiggle_x")->set_coefficients(Eigen::Matrix<double,6,1>::Zero(),skill_params->p2.search_a,
+                                                                   Eigen::Matrix<double,6,1>::Zero(),skill_params->p2.search_f,
                                                                    Eigen::Matrix<double,6,1>::Zero(),Eigen::Matrix<double,6,1>::Zero());
-    mp->create_strategy<MoveToPoseStrategy>("orientation",1);
-    std::shared_ptr<MoveToPoseStrategy> orientation = mp->get_strategy<MoveToPoseStrategy>("orientation");
-    Eigen::Matrix<double,4,4> T_g=get_object_pose_T("Container");
-    T_g.block<3,1>(0,3)=p.proprioception.T_T_EE.block<3,1>(0,3);
-    orientation->set_goal(T_g,skill_params->insertion_speed,skill_params->insertion_acc);
 
-    mp->create_strategy<TwistStrategy>("position",1);
-    m_insert_dir<<get_object_pose_T("Container").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3),0,0,0;
-    m_insert_dir/=m_insert_dir.norm();
-    mp->get_strategy<TwistStrategy>("position")->set_TF_dX_d(m_insert_dir*skill_params->insertion_speed(0),skill_params->insertion_acc);
+    mp->create_strategy<FFStrategy>("push",1);
+    Eigen::Matrix<double,6,1> f_push;
+    f_push<<0,0,skill_params->p3.f_push,0,0,0;
+    mp->get_strategy<FFStrategy>("push")->set_TF_F_ff(f_push,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+    Eigen::Matrix<double,6,1> K_x=skill_params->p3.K_x;
+    K_x(2)=0;
+    Eigen::Matrix<double,6,1> xi_x=m_memory->read_parameters()->control.cart_imp.xi_x;
+    xi_x(2)=0;
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(K_x,xi_x);
     return mp;
 }
 
 void TaxInsertion::update_policies(const Percept &p){
-    std::shared_ptr<SkillParametersTaxInsertion> skill_params = get_parameters<SkillParametersTaxInsertion>();
-    if(get_active_mp()->get_name()=="insert" || get_active_mp()->get_name()=="wiggle"){
-        double force_factor=1;
-        if(p.proprioception.TF_F_ext_K(2)<skill_params->f_max_push-1){
-            force_factor=1;
-        }else if(p.proprioception.TF_F_ext_K(2)>skill_params->f_max_push){
-            force_factor=0;
-        }else{
-            force_factor=-p.proprioception.TF_F_ext_K(2)+skill_params->f_max_push;
-        }
-        get_active_mp()->get_strategy<TwistStrategy>("position")->set_TF_dX_d(m_insert_dir*skill_params->insertion_speed(0)*force_factor,skill_params->insertion_acc);
-    }
+
 
 }
 
 bool TaxInsertion::check_local_pre_conditions(const Percept &p){
     Eigen::Matrix<double,4,4> T_container = get_object_pose_T("Container");
     std::shared_ptr<SkillParametersTaxInsertion> skill_params = get_parameters<SkillParametersTaxInsertion>();
-    for(unsigned i=0;i<3;i++){
-        if(p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)>T_container(3,i)+skill_params->ROI_x(i*2+1)){
-            return false;
-        }
-    }
-    // TODO check for ROI in rotation
     if(m_memory->get_live_context()->grasped_object->name!=get_object("Insertable")->name){
         spdlog::debug("TaxInsertion::check_local_pre_conditions: Have not grasped Insertable");
         return false;
@@ -205,8 +236,8 @@ bool TaxInsertion::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxInsertion::check_local_suc_conditions(const Percept &p){
-    bool depth = p.proprioception.T_T_EE(2,3)>get_object_pose_T("Container")(2,3)-0.001;
-    bool lateral = (p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm()<0.004;
+    bool depth = p.proprioception.T_T_EE(2,3)>get_object_pose_T("Container")(2,3)-m_memory->read_parameters()->user.env_X(0);
+    bool lateral = (p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0);
     return depth && lateral;
 }
 
@@ -215,13 +246,6 @@ bool TaxInsertion::check_local_ex_conditions(const Percept &p){
 }
 
 bool TaxInsertion::check_local_err_conditions(const Percept &p){
-    const Eigen::Matrix<double,6,1>& ROI_x=get_parameters<SkillParametersTaxInsertion>()->ROI_x;
-    const Eigen::Matrix<double,6,1>& ROI_phi=get_parameters<SkillParametersTaxInsertion>()->ROI_phi;
-    double error_angle=acos(p.proprioception.T_T_EE.block<3,1>(0,2).dot(get_object_pose_T("Container").block<3,1>(0,2)));
-    Eigen::Matrix<double,3,1> dist = p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3);
-    if(dist(0) < ROI_x(0) || dist(0) > ROI_x(1) || dist(1) < ROI_x(2) || dist(1) > ROI_x(3) || dist(2) < ROI_x(4) || dist(2) > ROI_x(5)){
-        return true;
-    }
     return false;
 }
 
@@ -240,14 +264,18 @@ bool TaxInsertion::is_stuck(const Percept &p){
     }
     m_dx_avg/=m_dx_avg_mem.size();
 //    m_dx_avg=std::accumulate(m_dx_avg_mem.begin(),m_dx_avg_mem.end(),0)/(double)m_dx_avg_mem.size();
-    if(!m_is_stuck && m_dx_avg<get_parameters<SkillParametersTaxInsertion>()->stuck_dx_thr-get_parameters<SkillParametersTaxInsertion>()->stuck_dx_thr*0.1){
+    if(!m_is_stuck && m_dx_avg<m_memory->read_parameters()->user.env_dX(0)-m_memory->read_parameters()->user.env_dX(0)*0.1){
         m_is_stuck=true;
         return true;
-    }else if(m_is_stuck && m_dx_avg>get_parameters<SkillParametersTaxInsertion>()->stuck_dx_thr+get_parameters<SkillParametersTaxInsertion>()->stuck_dx_thr*0.1){
+    }else if(m_is_stuck && m_dx_avg>m_memory->read_parameters()->user.env_dX(0)+m_memory->read_parameters()->user.env_dX(0)*0.1){
         m_is_stuck=false;
         return false;
     }
     return m_is_stuck;
+}
+
+bool TaxInsertion::is_outside(const Percept &p){
+    return false;
 }
 
 
