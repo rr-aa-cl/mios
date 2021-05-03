@@ -10,7 +10,7 @@ from threading import Thread
 
 robots = ["collective-panda-prime", "collective-panda-007", "collective-panda-002",
           "collective-panda-008", "collective-panda-003", "collective-panda-001",
-          "collective-panda-009"]
+          "collective-panda-009", "collective-panda-010", "collective-panda-004"]
 
 
 def get_ip(hostname: str):
@@ -180,7 +180,17 @@ def demo_part_1():
     move_up_context2["skill"]["T_T_EE_g_offset"][14] = 0.2
     t.add_skill("move3", "TaxMove", move_up_context2)
     t.add_skill("fail", "GenericWiggleMotion", wiggle_context)
-    t.start(False)
+
+    result = start_task(robots[0], "MoveToJointPose", {
+        "parameters": {
+            "pose": "generic_container_approach",
+            "speed": 1,
+            "acc": 2
+        }
+    })
+    wait_for_task(robots[0], result["result"]["task_uuid"])
+
+    t.start(True)
     result = t.wait()
 
 

@@ -40,6 +40,7 @@ public:
     void remove_event(const std::string& name);
 
     void clear_reserved_skills();
+    void clear_skill_parameters();
     template<typename T>bool reserve_skill_context(const nlohmann::json task_context, const std::string& skill_id){
         return m_st_memory.reserve_skill_context<T>(task_context,skill_id);
     }
