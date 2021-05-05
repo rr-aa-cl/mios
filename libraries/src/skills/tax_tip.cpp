@@ -1,37 +1,68 @@
 #include "skills/tax_tip.hpp"
 #include "strategies/twist_strategy.hpp"
 #include "strategies/move_to_pose.hpp"
+#include "strategies/cart_compliance_strategy.hpp"
 
 namespace mios{
 
 bool SkillParametersTaxTip::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param(parameters,"f_contact",f_contact)){
-        spdlog::error("Parameter f_contact could not be loaded but is mandatory.");
+
+    if(parameters.find("p0")==parameters.end()){
+        spdlog::error("Parameters for primitive 0 are missing.");
         return false;
+    }else if(parameters.find("p0")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+            spdlog::error("Missing parameter: p0.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+            spdlog::error("Missing parameter: p0.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+            spdlog::error("Missing parameter: p0.ddX_d");
+            return false;
+        }
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_speed",approach_speed)){
-        spdlog::error("Parameter approach_speed could not be loaded but is mandatory.");
+
+    if(parameters.find("p1")==parameters.end()){
+        spdlog::error("Parameters for primitive 1 are missing.");
         return false;
+    }else if(parameters.find("p1")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p1"],"K_x",p1.K_x)){
+            spdlog::error("Missing parameter: p1.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
+            spdlog::error("Missing parameter: p1.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"ddX_d",p1.ddX_d)){
+            spdlog::error("Missing parameter: p1.ddX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param(parameters["p1"],"f_tip",p1.f_tip)){
+            spdlog::error("Missing parameter: p1.f_tip");
+            return false;
+        }
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_acc",approach_acc)){
-        spdlog::error("Parameter approach_acc could not be loaded but is mandatory.");
+
+    if(parameters.find("p2")==parameters.end()){
+        spdlog::error("Parameters for primitive 2 are missing.");
         return false;
-    }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"tip_speed",tip_speed)){
-        spdlog::error("Parameter tip_speed could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"tip_acc",tip_acc)){
-        spdlog::error("Parameter tip_acc could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_x",ROI_x)){
-        spdlog::error("Parameter ROI_x could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_phi",ROI_phi)){
-        spdlog::error("Parameter ROI_phi could not be loaded but is mandatory.");
-        return false;
+    }else if(parameters.find("p2")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"K_x",p2.K_x)){
+            spdlog::error("Missing parameter: p2.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p2"],"dX_d",p2.dX_d)){
+            spdlog::error("Missing parameter: p2.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p2"],"ddX_d",p2.ddX_d)){
+            spdlog::error("Missing parameter: p2.ddX_d");
+            return false;
+        }
     }
     return true;
 }
@@ -59,13 +90,13 @@ std::shared_ptr<ManipulationPrimitive> TaxTip::get_initial_mp(const Percept& p){
 std::optional<std::shared_ptr<ManipulationPrimitive> > TaxTip::graph_transition(const Percept &p){
     if(get_active_mp()->get_name()=="approach"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
-            return create_push_mp(p);
+            return create_tip_mp(p);
         }else{
             return {};
         }
     }
     if(get_active_mp()->get_name()=="tip"){
-        if(get_active_mp()->get_strategy_interface("tip")->finished() && p.proprioception.TF_F_ext_K(2)>get_parameters<SkillParametersTaxTip>()->f_contact){
+        if(p.proprioception.TF_F_ext_K(2)>get_parameters<SkillParametersTaxTip>()->p1.f_tip){
             return create_retract_mp(p);
         }else{
             return {};
@@ -79,16 +110,25 @@ std::shared_ptr<ManipulationPrimitive> TaxTip::create_approach_mp(const Percept 
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Approach"),skill_params->approach_speed,skill_params->approach_acc);
+    Eigen::Matrix<double,4,4> T_a = get_object_pose_T("Approach");
+    move->set_goal(T_a,skill_params->p0.dX_d,skill_params->p0.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p0.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
-std::shared_ptr<ManipulationPrimitive> TaxTip::create_push_mp(const Percept &p){
+std::shared_ptr<ManipulationPrimitive> TaxTip::create_tip_mp(const Percept &p){
     std::shared_ptr<SkillParametersTaxTip> skill_params = get_parameters<SkillParametersTaxTip>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("tip",p);
-    mp->create_strategy<MoveToPoseStrategy>("tip",1);
-    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("tip");
-    move->set_goal(get_object_pose_T("Tippable"),skill_params->tip_speed,skill_params->tip_acc);
+    mp->create_strategy<TwistStrategy>("move",1);
+    std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
+    Eigen::Matrix<double,6,1> dX_d;
+    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Tippable").block<3,1>(0,3);
+    dir/=dir.norm();
+    dX_d<<dir*skill_params->p1.dX_d(0),0,0,0;
+    move->set_TF_dX_d(dX_d,skill_params->p1.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p1.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
@@ -97,8 +137,10 @@ std::shared_ptr<ManipulationPrimitive> TaxTip::create_retract_mp(const Percept &
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("retract",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Approach"),skill_params->tip_speed,skill_params->tip_acc);
-    return mp;
+    Eigen::Matrix<double,4,4> T_a = get_object_pose_T("Approach");
+    move->set_goal(T_a,skill_params->p2.dX_d,skill_params->p2.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p2.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
 }
 
 bool TaxTip::check_local_pre_conditions(const Percept &p){
@@ -114,7 +156,7 @@ bool TaxTip::check_local_pre_conditions(const Percept &p){
 
 bool TaxTip::check_local_suc_conditions(const Percept &p){
     std::shared_ptr<SkillParametersTaxTip> skill_params = get_parameters<SkillParametersTaxTip>();
-    if(p.proprioception.TF_F_ext_K(2)>skill_params->f_contact){
+    if(p.proprioception.TF_F_ext_K(2)>skill_params->p1.f_tip){
         return true;
     }
     return false;
