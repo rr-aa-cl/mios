@@ -1,6 +1,7 @@
 #include "skills/tax_extraction.hpp"
 #include "strategies/move_to_pose.hpp"
 #include "strategies/ff_wiggle_strategy.hpp"
+#include "strategies/twist_strategy.hpp"
 
 namespace mios {
 
@@ -70,13 +71,12 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxExtraction::graph_tran
 std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_move_mp(const Percept &p){
     std::shared_ptr<SkillParametersTaxExtraction> skill_params = get_parameters<SkillParametersTaxExtraction>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
-    mp->create_strategy<MoveToPoseStrategy>("move",1);
-    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("ExtractTo"),skill_params->extraction_speed,skill_params->extraction_acc);
+    mp->create_strategy<TwistStrategy>("move",1);
+    std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
+    Eigen::Matrix<double,6,1> dX_d;
+    dX_d<<0,0,-skill_params->extraction_speed(0),0,0,0;
+    move->set_TF_dX_d(dX_d,skill_params->extraction_acc);
 
-    Eigen::Matrix<double,2,1> t_scale;
-    t_scale<<1,1;
-    move->set_scale(t_scale);
     return mp;
 }
 
@@ -87,13 +87,11 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_wiggle_mp(const Per
     mp->get_strategy<FFWiggleStrategy>("wiggle_x")->set_coefficients(Eigen::Matrix<double,6,1>::Zero(),skill_params->search_a,
                                                                    Eigen::Matrix<double,6,1>::Zero(),skill_params->search_f,
                                                                    Eigen::Matrix<double,6,1>::Zero(),Eigen::Matrix<double,6,1>::Zero());
-    mp->create_strategy<MoveToPoseStrategy>("move",1);
-    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("ExtractTo"),skill_params->extraction_speed,skill_params->extraction_acc);
-
-    Eigen::Matrix<double,2,1> t_scale;
-    t_scale<<1,1;
-    move->set_scale(t_scale);
+    mp->create_strategy<TwistStrategy>("move",1);
+    std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
+    Eigen::Matrix<double,6,1> dX_d;
+    dX_d<<0,0,-skill_params->extraction_speed(0),0,0,0;
+    move->set_TF_dX_d(dX_d,skill_params->extraction_acc);
     return mp;
 }
 
@@ -102,7 +100,7 @@ bool TaxExtraction::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxExtraction::check_local_suc_conditions(const Percept &p){
-    return get_active_mp()->get_strategy_interface("move")->finished();
+    return p.proprioception.T_T_EE(2,3)<get_object_pose_T("ExtractTo")(2,3);
 }
 
 bool TaxExtraction::check_local_ex_conditions(const Percept &p){
