@@ -480,6 +480,8 @@ def experiment_single_batchwise_similar(agent: str,  unique_tag: str, n_tasks: i
 
     for i in range(n_iter):
         for j in range(len(task_set)):
+            if j==0:
+                knowledge = None
             pd = insert_generic()
             pd.cost_function.optimum_weights[0] = task_set[j][0]
             pd.cost_function.optimum_weights[2] = task_set[j][1]
@@ -489,6 +491,30 @@ def experiment_single_batchwise_similar(agent: str,  unique_tag: str, n_tasks: i
             start_single_experiment(agent, [agent], pd, service_config, i, tags, knowledge, False)
 
     backup_results(agent, database, "insertion", ["collective_experiment_single_batchwise_similar", unique_tag], "collective_data")
+
+
+def plot_batch_data(unique_tag: str, db: str):
+    p = DataProcessor()
+    marker = "collective_experiment"
+    skill = "insert_object"
+    n_tasks = 10
+
+    fig, axes = plt.subplots(n_tasks, 1)
+    for i in range(n_tasks):
+        tags = [marker + "_single_batchwise_similar", unique_tag, "t_" + str(i)]
+        try:
+            results = get_multiple_experiment_data(db, skill,
+                                                          results_db="ml_results",
+                                                          filter={"meta.tags": {"$all": tags}})
+            cost, conf = p.get_average_cost_over_time(results, decreasing=True)
+            axes[i].plot(cost)
+
+        except DataNotFoundError:
+            print("No data found for tags: " + str(tags))
+            continue
+
+    plt.show()
+
 
 
 def plot_batch_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchmark: bool = True):
