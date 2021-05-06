@@ -141,6 +141,7 @@ std::shared_ptr<ManipulationPrimitive> TaxTip::create_retract_mp(const Percept &
     move->set_goal(T_a,skill_params->p2.dX_d,skill_params->p2.ddX_d);
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p2.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
+    return mp;
 }
 
 bool TaxTip::check_local_pre_conditions(const Percept &p){

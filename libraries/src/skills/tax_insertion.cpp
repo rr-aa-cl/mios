@@ -140,6 +140,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_trans
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_approach_mp(const Percept &p){
+    spdlog::trace("TaxInsertion::create_approach_mp()");
     std::shared_ptr<SkillParametersTaxInsertion> skill_params = get_parameters<SkillParametersTaxInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
@@ -156,6 +157,7 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_approach_mp(const Pe
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_contact_mp(const Percept &p){
+    spdlog::trace("TaxInsertion::create_contact_mp()");
     std::shared_ptr<SkillParametersTaxInsertion> skill_params = get_parameters<SkillParametersTaxInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("contact",p);
     mp->create_strategy<TwistStrategy>("move",1);
@@ -171,7 +173,7 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_contact_mp(const Per
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_insert_mp(const Percept &p){
-    spdlog::debug("Insertion::create_move_mp");
+    spdlog::debug("TaxInsertion::create_insert_mp");
     std::shared_ptr<SkillParametersTaxInsertion> skill_params = get_parameters<SkillParametersTaxInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("insert",p);
     mp->create_strategy<MoveToPoseStrategy>("orientation",1);
@@ -196,9 +198,14 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_insert_mp(const Perc
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_wiggle_mp(const Percept &p){
-    spdlog::debug("Insertion::create_wiggle_mp");
+    spdlog::debug("TaxInsertion::create_wiggle_mp");
     std::shared_ptr<SkillParametersTaxInsertion> skill_params = get_parameters<SkillParametersTaxInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("wiggle",p);
+    mp->create_strategy<MoveToPoseStrategy>("orientation",1);
+    std::shared_ptr<MoveToPoseStrategy> orientation = mp->get_strategy<MoveToPoseStrategy>("orientation");
+    Eigen::Matrix<double,4,4> T_g=get_object_pose_T("Container");
+    T_g.block<3,1>(0,3)=p.proprioception.T_T_EE.block<3,1>(0,3);
+    orientation->set_goal(T_g,skill_params->p3.dX_d,skill_params->p3.ddX_d);
     mp->create_strategy<FFWiggleStrategy>("wiggle_x",1);
     mp->get_strategy<FFWiggleStrategy>("wiggle_x")->set_coefficients(Eigen::Matrix<double,6,1>::Zero(),skill_params->p2.search_a,
                                                                    Eigen::Matrix<double,6,1>::Zero(),skill_params->p2.search_f,

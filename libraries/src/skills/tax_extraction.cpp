@@ -23,8 +23,8 @@ bool SkillParametersTaxExtraction::from_json(const nlohmann::json &parameters){
             spdlog::error("Missing parameter: p0.search_f");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p0"],"f_push",p0.f_pull)){
-            spdlog::error("Missing parameter: p0.f_push");
+        if(!msrm_utils::read_json_param(parameters["p0"],"f_pull",p0.f_pull)){
+            spdlog::error("Missing parameter: p0.f_pull");
             return false;
         }
     }
@@ -37,8 +37,8 @@ bool SkillParametersTaxExtraction::from_json(const nlohmann::json &parameters){
             spdlog::error("Missing parameter: p1.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p1"],"f_push",p1.f_pull)){
-            spdlog::error("Missing parameter: p1.f_push");
+        if(!msrm_utils::read_json_param(parameters["p1"],"f_pull",p1.f_pull)){
+            spdlog::error("Missing parameter: p1.f_pull");
             return false;
         }
         if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
@@ -55,7 +55,7 @@ bool SkillParametersTaxExtraction::from_json(const nlohmann::json &parameters){
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxExtraction::get_parameter_list(){
-    return {{"p0",{"K_x","search_a","search_f","f_push"}},{"p1",{"K_x","f_push","dX_d","ddX_d"}}};
+    return {{"p0",{"K_x","search_a","search_f","f_pull"}},{"p1",{"K_x","f_pull","dX_d","ddX_d"}}};
 }
 
 TaxExtraction::TaxExtraction(const std::string &name, Memory *memory, Portal* portal):Skill("TaxExtraction",{"Extractable","Container","ExtractTo"},name,memory,portal,
@@ -73,7 +73,7 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::get_initial_mp(const Perce
 }
 
 std::optional<std::shared_ptr<ManipulationPrimitive> > TaxExtraction::graph_transition(const Percept &p){
-    if(get_active_mp()->get_name()=="move"){
+    if(get_active_mp()->get_name()=="extract"){
         if(!is_stuck(p)){
             return {};
         }else{
@@ -103,7 +103,7 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_move_mp(const Perce
 
     mp->create_strategy<FFStrategy>("pull",1);
     Eigen::Matrix<double,6,1> f_pull;
-    f_pull<<0,0,skill_params->p1.f_pull,0,0,0;
+    f_pull<<0,0,-skill_params->p1.f_pull,0,0,0;
     mp->get_strategy<FFStrategy>("pull")->set_TF_F_ff(f_pull,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
 
     Eigen::Matrix<double,6,1> K_x=skill_params->p1.K_x;
@@ -127,7 +127,7 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_wiggle_mp(const Per
 
     mp->create_strategy<FFStrategy>("pull",1);
     Eigen::Matrix<double,6,1> f_pull;
-    f_pull<<0,0,skill_params->p0.f_pull,0,0,0;
+    f_pull<<0,0,-skill_params->p0.f_pull,0,0,0;
     mp->get_strategy<FFStrategy>("pull")->set_TF_F_ff(f_pull,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
     Eigen::Matrix<double,6,1> K_x=skill_params->p0.K_x;
     K_x(2)=0;
@@ -143,7 +143,7 @@ bool TaxExtraction::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxExtraction::check_local_suc_conditions(const Percept &p){
-    return p.proprioception.T_T_EE(2,3)>get_object_pose_T("ExtractTo")(2,3)-m_memory->read_parameters()->user.env_X(0);
+    return p.proprioception.T_T_EE(2,3)<get_object_pose_T("ExtractTo")(2,3)-m_memory->read_parameters()->user.env_X(0);
 }
 
 bool TaxExtraction::check_local_ex_conditions(const Percept &p){

@@ -42,626 +42,83 @@ class Task:
         return result
 
 
-def start_skill(address: str, skill: str, parameters: dict, control: dict, user: dict = {}, skill_name: str = "skill"):
-    response = start_task(address, "GenericTask", parameters={"parameters": {
-        "skill_names": [skill_name],
-        "skill_types": [skill]
-    },
-        "skills": {
-            "skill": {
-                "skill": parameters,
-                "control": control,
-                "user": user
-            }
-        }})
-    return response
-
-
-def tax_test_grab(robot="collective-panda-008.local"):
-    grab_context = {
+def test_insertion(robot, insertable, container, approach):
+    call_method(robot, 12000, "set_grasped_object", {"object": insertable})
+    context = {
         "skill": {
             "objects": {
-                "Retract": "iros_key_grab_retract",
-                "Approach": "iros_key_grab_approach",
-                "Grabbable": "iros_key"
+                "Container": container,
+                "Approach": approach,
+                "Insertable": insertable
             },
-            "time_max": 5,
-            "approach_speed": [0.5, 1],
-            "approach_acc": [1, 4],
-            "grab_speed": [0.05, 0.1],
-            "grab_acc": [0.1, 0.4],
-            "grasp_width": 0.03,
-            "grasp_speed": 0.2,
-            "grasp_force": 30,
-            "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
-            "ROI_phi": [0, 0, 0, 0, 0, 0]
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [1900, 1900, 1900, 190, 190, 190]
-            }
-        }
-    }
-    t = Task(robot)
-    t.add_skill("grab", "TaxGrab", grab_context)
-    t.start()
-    result = t.wait()
-    cost = result["result"]["task_result"]["skill_results"]["grab"]["cost"]["time"]
-    heuristic = result["result"]["task_result"]["skill_results"]["grab"]["heuristic"]
-    total_cost = cost + heuristic
-    with open("expert_data_grab.txt", "a") as f:
-        f.write(str(total_cost) + "\n")
-
-    print("Total cost: " + str(total_cost))
-
-
-def tax_test_place(robot="collective-panda-008.local"):
-    call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
-    place_context = {
-        "skill": {
-            "objects": {
-                "Retract": "iros_key_grab_retract",
-                "Approach": "iros_key_grab_approach",
-                "Placeable": "iros_key",
-                "Surface": "iros_key_storage"
+            "time_max": 10,
+            "p0": {
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "DeltaX": [0, 0, 0, 0, 10, 0],
+                "K_x":[1000, 1000, 1000, 100, 100, 100]
             },
-            "time_max": 5,
-            "approach_speed": [0.5, 1],
-            "approach_acc": [1, 4],
-            "place_speed": [0.5, 1.0],
-            "place_acc": [1., 4.0],
-            "release_width": 0.06,
-            "release_speed": 2.0,
-            "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
-            "ROI_phi": [0, 0, 0, 0, 0, 0]
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        },
-        "user": {
-            "env_X": [0.015, 0.02]
-        }
-    }
-    t = Task(robot)
-    t.add_skill("place", "TaxPlace", place_context)
-    t.start()
-    result = t.wait()
-    cost = result["result"]["task_result"]["skill_results"]["place"]["cost"]["time"]
-    heuristic = result["result"]["task_result"]["skill_results"]["place"]["heuristic"]
-    total_cost = cost + heuristic
-    with open("expert_data_place.txt", "a") as f:
-        f.write(str(total_cost) + "\n")
-
-    print("Total cost: " + str(total_cost))
-
-
-def tax_test_turn(robot="collective-panda-008.local"):
-    call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
-    turn_context = {
-        "skill": {
-            "objects": {
-                "Turnable": "iros_key",
-                "GoalOrientation": "iros_turn_goal"
-            },
-            "turn_speed": [0.5, 2.5],
-            "turn_acc": [2, 25]},
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        },
-        "user": {
-            "env_X": [0.01, 0.02]
-        }
-    }
-    turn_back_context = {
-        "skill": {
-            "objects": {
-                "Turnable": "iros_key",
-                "GoalOrientation": "iros_lock"
-            },
-            "turn_speed": [0.2, 2.5],
-            "turn_acc": [0.5, 30.0]},
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        },
-        "user": {
-            "env_X": [0.01, 0.02]
-        }
-    }
-    t = Task(robot)
-    t.add_skill("turn", "TaxTurn", turn_context)
-    #t.add_skill("turn_back", "TaxTurn", turn_back_context)
-    t.start()
-    result = t.wait()
-    cost = result["result"]["task_result"]["skill_results"]["turn"]["cost"]["time"]
-    heuristic = result["result"]["task_result"]["skill_results"]["turn"]["heuristic"]
-    total_cost = cost + heuristic
-    with open("expert_turn_place.txt", "a") as f:
-        f.write(str(total_cost) + "\n")
-
-    print("Total cost: " + str(total_cost))
-
-
-def test_tax_press_button(robot="collective-panda-008.local"):
-    start_skill(robot, "TaxPressButton",
-                {"objects": {"Button": "iros_button", "Approach": "iros_button_approach"},
-                 "approach_speed": [0.05, 0.5], "approach_acc": [0.5, 1.0],
-                 "press_speed": [0.05, 0.5], "press_acc": [0.5, 1.0], "duration": 2,
-                 "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
-                 "ROI_phi": [0, 0, 0, 0, 0, 0],
-                 "condition_level_success": "External",
-                 "condition_level_error": "External"
-                 },
-                {"control_mode": 0},
-                {
-                    "env_X": [0.005, 0.1]
-                })
-
-
-def tax_test_move(robot):
-    move1_context = {
-        "skill": {
-            "objects": {
-                "GoalPose": "iros_loc_1"
-            },
-            "speed": [1.0, 4.0],
-            "acc": [8.0, 8.0],
-            "time_max": 5
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        }
-    }
-    t = Task(robot)
-    t.add_skill("move", "TaxMove", move1_context)
-    t.start()
-    result = t.wait()
-    cost = result["result"]["task_result"]["skill_results"]["move"]["cost"]["time"]
-    heuristic = result["result"]["task_result"]["skill_results"]["move"]["heuristic"]
-    total_cost = cost + heuristic
-    with open("expert_data_move.txt", "a") as f:
-        f.write(str(total_cost)+"\n")
-
-
-def tax_test_insertion(robot):
-    call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
-    insertion_context = {
-        "skill": {
-            "objects": {
-                "Container": "iros_lock",
-                "Approach": "iros_lock_approach",
-                "Insertable": "iros_key"
-            },
-            "time_max": 5,
-            "approach_speed": [0.5, 1],
-            "approach_acc": [1, 4],
-            "insertion_speed": [0.5, 0.5],
-            "insertion_acc": [0.8, 1],
-            "f_max_push": 10,
-            "DeltaX": [0.0005, -0.002, 0, 0, 0, 0],
-            "search_a": [10, 10, 1, 0.3, 0.3, 0],
-            "search_f": [1, 0.75, 0.8, 0.8, 0.8, 0],
-            "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
-            "ROI_phi": [0, 0, 0, 0, 0, 0],
-            "stuck_dx_thr": 0.05
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        }
-    }
-    t = Task(robot)
-    t.add_skill("insertion", "TaxInsertion", insertion_context)
-    t.start()
-    result = t.wait()
-    cost = result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["time"]
-    heuristic = result["result"]["task_result"]["skill_results"]["insertion"]["heuristic"]
-    total_cost = cost + heuristic
-    with open("expert_data_insertion.txt", "a") as f:
-        f.write(str(total_cost) + "\n")
-
-    print("Total cost: " + str(total_cost))
-
-
-def tax_test_button_press(robot):
-    button_press_context = {
-        "skill": {
-            "objects": {
-                "Button": "iros_button",
-                "Approach": "iros_button_approach"
-            },
-            "approach_speed": [0.5, 1],
-            "approach_acc": [1, 4],
-            "press_speed": [0.5, 1],
-            "f_push": 1,
-            "press_acc": [1, 4],
-            "duration": 0,
-            "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
-            "ROI_phi": [0, 0, 0, 0, 0, 0],
-            "condition_level_success": "External",
-            "condition_level_error": "External"
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        },
-        "user": {
-            "env_X": [0.01, 0.02]
-        }
-    }
-    # s = ServerProxy("http://localhost:8000", allow_none=True)
-    # s.subscribe_to_event("button_press", "collective-panda-010.local", "12000")
-    t = Task(robot)
-    t.add_skill("button_press", "TaxPressButton", button_press_context)
-    t.start()
-    result = t.wait()
-    cost = result["result"]["task_result"]["skill_results"]["button_press"]["cost"]["time"]
-    heuristic = result["result"]["task_result"]["skill_results"]["button_press"]["heuristic"]
-    total_cost = cost + heuristic
-    with open("expert_data_button_press.txt", "a") as f:
-        f.write(str(total_cost) + "\n")
-
-    print("Total cost: " + str(total_cost))
-
-
-def subscribe_to_event_server(robot):
-    s = ServerProxy("http://collective-control-001.local:8002", allow_none=True)
-    s.subscribe_to_event("button_press", robot, "12000")
-
-
-def tax_test_extraction(robot="collective-panda-008.local"):
-    call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
-    extraction_context = {
-        "skill": {
-            "objects": {
-                "Container": "iros_lock",
-                "ExtractTo": "iros_lock_approach",
-                "Extractable": "iros_key"
-            },
-            "time_max": 5,
-            "extraction_speed": [0.25, 0.15],
-            "extraction_acc": [1, 0.8],
-            "search_a": [1, 1, 1, 0.3, 0.3, 0],
-            "search_f": [0.2, 0.2, 0.2, 0.2, 0.2, 0],
-            "stuck_dx_thr": 0.05
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        }
-    }
-    t = Task(robot)
-    t.add_skill("extract", "TaxExtraction", extraction_context)
-    t.start()
-    result = t.wait()
-    cost = result["result"]["task_result"]["skill_results"]["extract"]["cost"]["time"]
-    heuristic = result["result"]["task_result"]["skill_results"]["extract"]["heuristic"]
-    total_cost = cost + heuristic
-    with open("expert_data_extraction.txt", "a") as f:
-        f.write(str(total_cost) + "\n")
-
-    print("Total cost: " + str(total_cost))
-
-
-def test_skill_queue(robot="localhost"):
-    move1_context = {
-        "skill": {
-            "objects": {
-                "GoalPose": "test_pose_1"
-            },
-            "speed": [0.1, 0.5],
-            "acc": [0.5, 5]
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        },
-        "frames": {
-            "O_R_T": [1, 0, 0, 0, 1, 0, 0, 0, 1]
-        }
-    }
-    move2_context = {
-        "skill": {
-            "objects": {
-                "GoalPose": "test_pose_2"
-            },
-            "speed": [0.1, 0.5],
-            "acc": [0.5, 5]
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
+            "p1": {
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
                 "K_x": [1000, 1000, 1000, 100, 100, 100]
+            },
+            "p2": {
+                "search_a": [10, 10, 0, 0, 0, 0],
+                "search_f": [1, 0.75, 0, 0, 0, 0],
+                "K_x": [200, 200, 0, 100, 100, 100],
+                "f_push": 10
+            },
+            "p3": {
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "f_push": 10,
+                "K_x": [1000, 1000, 0, 100, 100, 100]
             }
         },
-        "frames": {
-            "O_R_T": [1, 0, 0, 0, -1, 0, 0, 0, -1]
+        "control": {
+            "control_mode": 0
         }
     }
     t = Task(robot)
-    t.add_skill("move1", "TaxMove", move1_context)
-    t.add_skill("move2", "TaxMove", move2_context)
-    t.add_skill("move3", "TaxMove", move1_context)
-    t.add_skill("move4", "TaxMove", move2_context)
-    t.add_skill("move5", "TaxMove", move1_context)
-    t.add_skill("move6", "TaxMove", move2_context)
-    t.start(True)
+    t.add_skill("insertion", "TaxInsertion", context)
+    t.start()
     result = t.wait()
     print(result)
 
 
-def iros_task():
-    robot = "collective-panda-010.local"
-
-    response = start_task(robot, "MoveToJointPose", {"parameters": {"pose": "iros_idle_pose"}})
-    wait_for_task(robot, response["result"]["task_uuid"])
-    t_0 = time.time()
-    # move to grab key
-    iros1 = Task(robot)
-
-    grab_context = {
+def test_extraction(robot, extractable, container, retreat):
+    call_method(robot, 12000, "set_grasped_object", {"object": extractable})
+    context = {
         "skill": {
-            "ignore_settling": True,
             "objects": {
-                "Retract": "iros_key_grab_retract",
-                "Approach": "iros_key_grab_approach",
-                "Grabbable": "iros_key"
+                "Container": container,
+                "ExtractTo": retreat,
+                "Extractable": extractable
             },
-            "approach_speed": [0.5, 1],
-            "approach_acc": [1, 4.0],
-            "grab_speed": [0.3, 2],
-            "grab_acc": [1, 4],
-            "grasp_width": 0.0,
-            "grasp_speed": 100,
-            "grasp_force": 30,
-            "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
-            "ROI_phi": [0, 0, 0, 0, 0, 0]
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
+            "time_max": 10,
+            "p0": {
+                "search_a": [20, 20, 0, 3, 3, 0],
+                "search_f": [1, 0.75, 0, 1, 0.75, 0],
+                "K_x": [200, 200, 0, 50, 50, 100],
+                "f_pull": 10
+            },
+            "p1": {
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "f_pull": 10,
+                "K_x": [1000, 1000, 0, 100, 100, 100]
             }
-        }
-    }
-
-    insertion_context = {
-        "skill": {
-            "objects": {
-                "Container": "iros_lock",
-                "Approach": "iros_lock_approach",
-                "Insertable": "iros_key"
-            },
-            "approach_speed": [0.5, 1],
-            "approach_acc": [1, 4],
-            "insertion_speed": [0.2, 0.5],
-            "insertion_acc": [0.8, 1.0],
-            "search_a": [3, 3, 0, 0, 0, 0],
-            "search_f": [1, 0.75, 0, 0, 0, 0],
-            "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
-            "ROI_phi": [0, 0, 0, 0, 0, 0],
-            "f_max_push": 5
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [500, 500, 2000, 200, 200, 200]
-            }
-        },
-        "user": {
-            "env_X": [0.02, 0.04]
-        }
-    }
-    turn_context = {
-        "skill": {
-            "ignore_settling": True,
-            "objects": {
-                "Turnable": "iros_key",
-                "GoalOrientation": "iros_turn_goal"
-            },
-            "turn_speed": [0.2, 2],
-            "turn_acc": [0.5, 30.0]},
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        },
-        "user": {
-            "env_X": [0.03, 0.02]
-        }
-    }
-    turn_back_context = {
-        "skill": {
-            "objects": {
-                "Turnable": "iros_key",
-                "GoalOrientation": "iros_lock"
-            },
-            "turn_speed": [0.2, 2],
-            "turn_acc": [0.5, 30.0]},
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        },"user": {
-            "env_X": [0.03, 0.02]
-        }
-    }
-    extraction_context = {
-        "skill": {
-            "ignore_settling": True,
-            "objects": {
-                "Container": "iros_lock",
-                "ExtractTo": "iros_lock_retract",
-                "Extractable": "iros_key"
-            },
-            "extraction_speed": [0.5, 4],
-            "extraction_acc": [1, 1.0],
-            "search_a": [0, 0, 0, 0, 0, 0],
-            "search_f": [0, 0, 0, 0, 0, 0]
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200,200, 200]
-            }
-        },
-        "user": {
-            "env_X": [0.01, 0.02]
-        }
-    }
-
-    place_context = {
-        "skill": {
-            "ignore_settling": True,
-            "objects": {
-                "Retract": "iros_key_place_retract",
-                "Approach": "iros_key_place_approach",
-                "Placeable": "iros_key",
-                "Surface": "iros_key_storage"
-            },
-            "approach_speed": [0.5, 1],
-            "approach_acc": [1, 4],
-            "place_speed": [0.1, 0.5],
-            "place_acc": [0.5, 1.0],
-            "release_width": 0.05,
-            "release_speed": 100,
-            "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
-            "ROI_phi": [0, 0, 0, 0, 0, 0]
         },
         "control": {
             "control_mode": 0
         },
         "user": {
-            "env_X": [0.015, 0.02]
+            "env_dX": [0.05, 0.05]
         }
     }
-    move4_context = {
-        "skill": {
-            "ignore_settling": True,
-            "objects": {
-                "GoalPose": "iros_button_roi"
-            },
-            "speed": [0.5, 1],
-            "acc": [2, 4],
-            "finger_width": 0,
-            "finger_speed": 100
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        },
-        "user": {
-            "env_X": [0.02, 0.04]
-        }
-    }
-    button_press_context = {
-        "skill": {
-            "ignore_settling": True,
-            "objects": {
-                "Button": "iros_button",
-                "Approach": "iros_button_approach"
-            },
-            "f_push": 5,
-            "approach_speed": [0.5, 1],
-            "approach_acc": [1, 4],
-            "press_speed": [0.1, 0.5],
-            "press_acc": [1, 1.0],
-            "duration": 0,
-            "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
-            "ROI_phi": [0, 0, 0, 0, 0, 0]
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-         },
-        "user": {
-            "env_X": [0.01, 0.04]
-        }
-    }
-    move5_context = {
-        "skill": {
-            "objects": {
-                "GoalPose": "iros_idle_pose"
-            },
-            "speed": [0.3, 0.5],
-            "acc": [1, 1]
-        },
-        "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
-            }
-        }
-    }
-
-    iros1.add_skill("grab_key", "TaxGrab", grab_context)
-    iros1.add_skill("insertion", "TaxInsertion", insertion_context)
-    iros1.add_skill("turn_key", "TaxTurn", turn_context)
-    iros1.add_skill("turn_back_key", "TaxTurn", turn_back_context)
-    iros1.add_skill("extraction", "TaxExtraction", extraction_context)
-    iros1.add_skill("place_key", "TaxPlace", place_context)
-    iros1.add_skill("move_to_button", "TaxMove", move4_context)
-    iros1.add_skill("press_button", "TaxPressButton", button_press_context)
-    iros1.add_skill("move_to_idle", "TaxMove", move5_context)
-
-    iros1.start(True)
-    result = iros1.wait()
-
+    t = Task(robot)
+    t.add_skill("extraction", "TaxExtraction", context)
+    t.start()
+    result = t.wait()
     print(result)
-    print("Execution time: " + str(time.time() - t_0))
-
-    cost = dict()
-
-    for skill, r in result["result"]["task_result"]["skill_results"].items():
-        cost[skill] = r["cost"]["time"]
-
-    return cost
-
-
-def iros_task_loop():
-    cost_avg = dict()
-    for i in range(10):
-        cost = iros_task()
-        for skill, c in cost.items():
-            if skill not in cost_avg:
-                cost_avg[skill] = []
-            cost_avg[skill].append(c)
-
-    with open('iros_data.csv', 'w') as f:
-        write = csv.writer(f)
-        write.writerow(cost_avg.keys())
-        table = []
-        i = 0
-        for skill, c in cost_avg.items():
-            table.append(c)
-            i += 1
-
-        table_np = np.asarray(table)
-        table = table_np.transpose().tolist()
-        write.writerows(table)
