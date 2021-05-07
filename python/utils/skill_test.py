@@ -78,6 +78,9 @@ def test_insertion(robot, insertable, container, approach):
         },
         "control": {
             "control_mode": 0
+        },
+        "user": {
+            "env_dX": [0.01, 0.05]
         }
     }
     t = Task(robot)
@@ -98,23 +101,25 @@ def test_extraction(robot, extractable, container, retreat):
             },
             "time_max": 10,
             "p0": {
-                "search_a": [20, 20, 0, 3, 3, 0],
-                "search_f": [1, 0.75, 0, 1, 0.75, 0],
-                "K_x": [200, 200, 0, 50, 50, 100],
-                "f_pull": 10
+                "search_a": [5, 5, 0, 1, 1, 0],
+                "search_f": [2, 1.5, 0, 1, 0.75, 0],
+                "K_x": [50, 50, 1000, 50, 50, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+                #"f_pull": 40
             },
             "p1": {
                 "dX_d": [0.1, 0.5],
                 "ddX_d": [0.5, 1],
-                "f_pull": 10,
-                "K_x": [1000, 1000, 0, 100, 100, 100]
+                #"f_pull": 40,
+                "K_x": [1000, 1000, 1000, 100, 100, 100]
             }
         },
         "control": {
             "control_mode": 0
         },
         "user": {
-            "env_dX": [0.05, 0.05]
+            "env_dX": [0.01, 0.05]
         }
     }
     t = Task(robot)

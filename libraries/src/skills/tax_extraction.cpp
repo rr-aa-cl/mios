@@ -3,6 +3,7 @@
 #include "strategies/ff_wiggle_strategy.hpp"
 #include "strategies/ff_strategy.hpp"
 #include "strategies/cart_compliance_strategy.hpp"
+#include "strategies/twist_strategy.hpp"
 
 namespace mios {
 
@@ -23,8 +24,16 @@ bool SkillParametersTaxExtraction::from_json(const nlohmann::json &parameters){
             spdlog::error("Missing parameter: p0.search_f");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p0"],"f_pull",p0.f_pull)){
-            spdlog::error("Missing parameter: p0.f_pull");
+//        if(!msrm_utils::read_json_param(parameters["p0"],"f_pull",p0.f_pull)){
+//            spdlog::error("Missing parameter: p0.f_pull");
+//            return false;
+//        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+            spdlog::error("Missing parameter: p0.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+            spdlog::error("Missing parameter: p0.ddX_d");
             return false;
         }
     }
@@ -37,10 +46,10 @@ bool SkillParametersTaxExtraction::from_json(const nlohmann::json &parameters){
             spdlog::error("Missing parameter: p1.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p1"],"f_pull",p1.f_pull)){
-            spdlog::error("Missing parameter: p1.f_pull");
-            return false;
-        }
+//        if(!msrm_utils::read_json_param(parameters["p1"],"f_pull",p1.f_pull)){
+//            spdlog::error("Missing parameter: p1.f_pull");
+//            return false;
+//        }
         if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
             spdlog::error("Missing parameter: p1.dX_d");
             return false;
@@ -55,7 +64,7 @@ bool SkillParametersTaxExtraction::from_json(const nlohmann::json &parameters){
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxExtraction::get_parameter_list(){
-    return {{"p0",{"K_x","search_a","search_f","f_pull"}},{"p1",{"K_x","f_pull","dX_d","ddX_d"}}};
+    return {{"p0",{"K_x","search_a","search_f","dX_d","ddX_d"}},{"p1",{"K_x","dX_d","ddX_d"}}};
 }
 
 TaxExtraction::TaxExtraction(const std::string &name, Memory *memory, Portal* portal):Skill("TaxExtraction",{"Extractable","Container","ExtractTo"},name,memory,portal,
@@ -91,7 +100,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxExtraction::graph_tran
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_move_mp(const Percept &p){
-    spdlog::debug("TaxExtraction::create_move_mp");
+    spdlog::trace("TaxExtraction::create_move_mp");
 
     std::shared_ptr<SkillParametersTaxExtraction> skill_params = get_parameters<SkillParametersTaxExtraction>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("extract",p);
@@ -101,15 +110,19 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_move_mp(const Perce
     T_g.block<3,1>(0,3)=p.proprioception.T_T_EE.block<3,1>(0,3);
     orientation->set_goal(T_g,skill_params->p1.dX_d,skill_params->p1.ddX_d);
 
-    mp->create_strategy<FFStrategy>("pull",1);
-    Eigen::Matrix<double,6,1> f_pull;
-    f_pull<<0,0,-skill_params->p1.f_pull,0,0,0;
-    mp->get_strategy<FFStrategy>("pull")->set_TF_F_ff(f_pull,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+    mp->create_strategy<TwistStrategy>("pull",1);
+    Eigen::Matrix<double,6,1> dX_d;
+    dX_d<<0,0,-skill_params->p0.dX_d(0),0,0,0;
+    mp->get_strategy<TwistStrategy>("pull")->set_TF_dX_d(dX_d,skill_params->p0.ddX_d);
+//    mp->create_strategy<FFStrategy>("pull",1);
+//    Eigen::Matrix<double,6,1> f_pull;
+//    f_pull<<0,0,-skill_params->p1.f_pull,0,0,0;
+//    mp->get_strategy<FFStrategy>("pull")->set_TF_F_ff(f_pull,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
 
     Eigen::Matrix<double,6,1> K_x=skill_params->p1.K_x;
-    K_x(2)=0;
+//    K_x(2)=0;
     Eigen::Matrix<double,6,1> xi_x=m_memory->read_parameters()->control.cart_imp.xi_x;
-    xi_x(2)=0;
+//    xi_x(2)=0;
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(K_x,xi_x);
 
@@ -117,7 +130,7 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_move_mp(const Perce
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_wiggle_mp(const Percept &p){
-    spdlog::debug("TaxExtraction::create_wiggle_mp");
+    spdlog::trace("TaxExtraction::create_wiggle_mp");
     std::shared_ptr<SkillParametersTaxExtraction> skill_params = get_parameters<SkillParametersTaxExtraction>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("wiggle",p);
     mp->create_strategy<FFWiggleStrategy>("wiggle_x",1);
@@ -125,14 +138,19 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_wiggle_mp(const Per
                                                                    Eigen::Matrix<double,6,1>::Zero(),skill_params->p0.search_f,
                                                                    Eigen::Matrix<double,6,1>::Zero(),Eigen::Matrix<double,6,1>::Zero());
 
-    mp->create_strategy<FFStrategy>("pull",1);
-    Eigen::Matrix<double,6,1> f_pull;
-    f_pull<<0,0,-skill_params->p0.f_pull,0,0,0;
-    mp->get_strategy<FFStrategy>("pull")->set_TF_F_ff(f_pull,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+    mp->create_strategy<TwistStrategy>("pull",1);
+    Eigen::Matrix<double,6,1> dX_d;
+    dX_d<<0,0,-skill_params->p0.dX_d(0),0,0,0;
+    mp->get_strategy<TwistStrategy>("pull")->set_TF_dX_d(dX_d,skill_params->p0.ddX_d);
+
+//    mp->create_strategy<FFStrategy>("pull",1);
+//    Eigen::Matrix<double,6,1> f_pull;
+//    f_pull<<0,0,-skill_params->p0.f_pull,0,0,0;
+//    mp->get_strategy<FFStrategy>("pull")->set_TF_F_ff(f_pull,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
     Eigen::Matrix<double,6,1> K_x=skill_params->p0.K_x;
-    K_x(2)=0;
+//    K_x(2)=0;
     Eigen::Matrix<double,6,1> xi_x=m_memory->read_parameters()->control.cart_imp.xi_x;
-    xi_x(2)=0;
+//    xi_x(2)=0;
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(K_x,xi_x);
     return mp;
@@ -159,7 +177,7 @@ double TaxExtraction::get_goal_heuristic(const Percept &p){
 }
 
 bool TaxExtraction::is_stuck(const Percept &p){
-    m_dx_avg_mem[m_dx_avg_last++]=p.proprioception.TF_dX_EE.block<3,1>(0,0).norm();
+    m_dx_avg_mem[m_dx_avg_last++]=p.proprioception.TF_dX_EE(2);
     if(m_dx_avg_last==m_dx_avg_mem.size()){
         m_dx_avg_last=0;
     }

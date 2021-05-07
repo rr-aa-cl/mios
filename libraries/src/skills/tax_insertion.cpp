@@ -258,7 +258,7 @@ double TaxInsertion::get_goal_heuristic(const Percept &p){
 }
 
 bool TaxInsertion::is_stuck(const Percept &p){
-    m_dx_avg_mem[m_dx_avg_last++]=p.proprioception.TF_dX_EE.block<3,1>(0,0).norm();
+    m_dx_avg_mem[m_dx_avg_last++]=p.proprioception.TF_dX_EE(2);
     if(m_dx_avg_last==m_dx_avg_mem.size()){
         m_dx_avg_last=0;
     }
