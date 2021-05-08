@@ -162,3 +162,79 @@ def test_push(robot, surface, approach):
     t.start()
     result = t.wait()
     print(result)
+
+
+def test_press_button(robot, button, approach):
+    context = {
+        "skill": {
+            "objects": {
+                "Button": button,
+                "Approach": approach
+            },
+            "time_max": 10,
+            "p0": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+            },
+            "p1": {
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "K_x": [1000, 1000, 1000, 100, 100, 100]
+            },
+            "p2": {
+                "duration": 5,
+                "f_push": 40,
+                "K_x": [1000, 1000, 0, 100, 100, 100]
+            },
+            "p3": {
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "K_x": [1000, 1000, 1000, 100, 100, 100]
+            },
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("press_button", "TaxPressButton", context)
+    t.start()
+    result = t.wait()
+    print(result)
+
+
+def test_tip(robot, tippable, approach):
+    context = {
+        "skill": {
+            "objects": {
+                "Tippable": tippable,
+                "Approach": approach
+            },
+            "time_max": 10,
+            "p0": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+            },
+            "p1": {
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "f_tip": 10
+            },
+            "p2": {
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "K_x": [1000, 1000, 1000, 100, 100, 100]
+            },
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("tip", "TaxTip", context)
+    t.start()
+    result = t.wait()
+    print(result)

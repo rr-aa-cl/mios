@@ -27,6 +27,7 @@
 #include "skills/tax_press_button.hpp"
 #include "skills/tax_turn.hpp"
 #include "skills/tax_push.hpp"
+#include "skills/tax_tip.hpp"
 
 namespace mios {
 
@@ -87,6 +88,9 @@ void GenericTask::add_any_skill(unsigned int index){
         break;
     case msrm_utils::str_to_int("TaxPressButton"):
         add_skill<TaxPressButton,SkillParametersTaxPressButton>(name);
+        break;
+    case msrm_utils::str_to_int("TaxTip"):
+        add_skill<TaxTip,SkillParametersTaxTip>(name);
         break;
     case msrm_utils::str_to_int("GenericWiggleMotion"):
         add_skill<GenericWiggleMotion,SkillParametersGenericWiggleMotion>(name);
@@ -174,6 +178,9 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("TaxPush"):
         execute_skill<TaxPush,SkillParametersTaxPush>(name);
+        break;
+    case msrm_utils::str_to_int("TaxTip"):
+        execute_skill<TaxTip,SkillParametersTaxTip>(name);
         break;
     default:
         throw TaskException("Skill with type " + type + " not known to GenericTask");
