@@ -23,8 +23,8 @@ bool SkillParametersTaxExtraction::from_json(const nlohmann::json &parameters){
             spdlog::error("Missing parameter: p0.search_f");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p0"],"f_push",p0.f_pull)){
-            spdlog::error("Missing parameter: p0.f_push");
+        if(!msrm_utils::read_json_param(parameters["p0"],"f_pull",p0.f_pull)){
+            spdlog::error("Missing parameter: p0.f_pull");
             return false;
         }
     }
@@ -37,8 +37,8 @@ bool SkillParametersTaxExtraction::from_json(const nlohmann::json &parameters){
             spdlog::error("Missing parameter: p1.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p1"],"f_push",p1.f_pull)){
-            spdlog::error("Missing parameter: p1.f_push");
+        if(!msrm_utils::read_json_param(parameters["p1"],"f_pull",p1.f_pull)){
+            spdlog::error("Missing parameter: p1.f_pull");
             return false;
         }
         if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
@@ -55,7 +55,7 @@ bool SkillParametersTaxExtraction::from_json(const nlohmann::json &parameters){
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxExtraction::get_parameter_list(){
-    return {{"p0",{"K_x","search_a","search_f","f_push"}},{"p1",{"K_x","f_push","dX_d","ddX_d"}}};
+    return {{"p0",{"K_x","search_a","search_f","f_pull"}},{"p1",{"K_x","f_pull","dX_d","ddX_d"}}};
 }
 
 TaxExtraction::TaxExtraction(const std::string &name, Memory *memory, Portal* portal):Skill("TaxExtraction",{"Extractable","Container","ExtractTo"},name,memory,portal,
