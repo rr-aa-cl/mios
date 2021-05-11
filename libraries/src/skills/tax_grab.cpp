@@ -2,51 +2,96 @@
 #include "strategies/twist_strategy.hpp"
 #include "strategies/move_to_pose.hpp"
 #include "strategies/gripper_strategy.hpp"
+#include "strategies/cart_compliance_strategy.hpp"
 
 namespace mios{
 
 bool SkillParametersTaxGrab::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_speed",approach_speed)){
-        spdlog::error("Parameter approach_speed could not be loaded but is mandatory.");
+    if(parameters.find("p0")==parameters.end()){
+        spdlog::error("Parameters for primitive 0 are missing.");
         return false;
+    }else if(parameters.find("p0")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+            spdlog::error("Missing parameter: p0.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+            spdlog::error("Missing parameter: p0.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+            spdlog::error("Missing parameter: p0.ddX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param(parameters["p0"],"gripper_speed",p0.gripper_speed)){
+            spdlog::error("Missing parameter: p0.gripper_speed");
+            return false;
+        }
+        if(!msrm_utils::read_json_param(parameters["p0"],"gripper_width",p0.gripper_width)){
+            spdlog::error("Missing parameter: p0.gripper_width");
+            return false;
+        }
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_acc",approach_acc)){
-        spdlog::error("Parameter approach_acc could not be loaded but is mandatory.");
+    if(parameters.find("p1")==parameters.end()){
+        spdlog::error("Parameters for primitive 1 are missing.");
         return false;
+    }else if(parameters.find("p1")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p1"],"K_x",p1.K_x)){
+            spdlog::error("Missing parameter: p1.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
+            spdlog::error("Missing parameter: p1.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"ddX_d",p1.ddX_d)){
+            spdlog::error("Missing parameter: p1.ddX_d");
+            return false;
+        }
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"grab_speed",grab_speed)){
-        spdlog::error("Parameter grab_speed could not be loaded but is mandatory.");
+    if(parameters.find("p2")==parameters.end()){
+        spdlog::error("Parameters for primitive 2 are missing.");
         return false;
+    }else if(parameters.find("p2")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"K_x",p2.K_x)){
+            spdlog::error("Missing parameter: p2.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param(parameters["p2"],"grasp_force",p2.grasp_force)){
+            spdlog::error("Missing parameter: p2.grasp_force");
+            return false;
+        }
+        if(!msrm_utils::read_json_param(parameters["p2"],"grasp_speed",p2.grasp_speed)){
+            spdlog::error("Missing parameter: p2.grasp_speed");
+            return false;
+        }
+        if(!msrm_utils::read_json_param(parameters["p2"],"grasp_width",p2.grasp_width)){
+            spdlog::error("Missing parameter: p2.grasp_width");
+            return false;
+        }
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"grab_acc",grab_acc)){
-        spdlog::error("Parameter grab_acc could not be loaded but is mandatory.");
+    if(parameters.find("p3")==parameters.end()){
+        spdlog::error("Parameters for primitive 3 are missing.");
         return false;
-    }
-    if(!msrm_utils::read_json_param(parameters,"grasp_width",grasp_width)){
-        spdlog::error("Parameter grasp_width could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param(parameters,"grasp_speed",grasp_speed)){
-        spdlog::error("Parameter grasp_speed could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param(parameters,"grasp_force",grasp_force)){
-        spdlog::error("Parameter grasp_force could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_x",ROI_x)){
-        spdlog::error("Parameter ROI_x could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_phi",ROI_phi)){
-        spdlog::error("Parameter ROI_phi could not be loaded but is mandatory.");
-        return false;
+    }else if(parameters.find("p3")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p3"],"K_x",p3.K_x)){
+            spdlog::error("Missing parameter: p3.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"dX_d",p3.dX_d)){
+            spdlog::error("Missing parameter: p3.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"ddX_d",p3.ddX_d)){
+            spdlog::error("Missing parameter: p3.ddX_d");
+            return false;
+        }
     }
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxGrab::get_parameter_list(){
-    return {{"approach_speed",{}},{"approach_acc",{}},{"grab_speed",{}},{"grab_acc",{}},{"grasp_width",{}},{"grasp_speed",{}},{"grasp_force",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+    return {{"p0",{"K_x","dX_d","ddX_d","gripper_speed","gripper_width"}},{"p1",{"K_x","dX_d","ddX_d"}},{"p2",{"K_x","grasp_speed","grasp_force","grasp_width"}},{"p3",{"K_x","dX_d","ddX_d"}}};
 }
 
 TaxGrab::TaxGrab(const std::string& name, Memory* memory, Portal* portal):Skill("TaxGrab",{"Grabbable", "Approach", "Retract"},name,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
@@ -74,7 +119,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxGrab::graph_transition
         }
     }
     if(get_active_mp()->get_name()=="pre_grasp"){
-        if(is_in_env("Grabbable","move",p)){
+        if(get_active_mp()->get_strategy_interface("move")->finished()){
             return create_grasp_mp(p);
         }else{
             return {};
@@ -91,40 +136,52 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxGrab::graph_transition
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxGrab::create_approach_mp(const Percept &p){
+    spdlog::trace("TaxGrab::create_approach_mp");
     std::shared_ptr<SkillParametersTaxGrab> skill_params = get_parameters<SkillParametersTaxGrab>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Approach"),skill_params->approach_speed,skill_params->approach_acc);
+    move->set_goal(get_object_pose_T("Approach"),skill_params->p0.dX_d,skill_params->p0.ddX_d);
     mp->create_strategy<GripperStrategy>("open_gripper",1);
-    mp->get_strategy<GripperStrategy>("open_gripper")->move(1,1000);
+    mp->get_strategy<GripperStrategy>("open_gripper")->move(skill_params->p0.gripper_speed,1000);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p0.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxGrab::create_pre_grasp_mp(const Percept &p){
+    spdlog::trace("TaxGrab::create_pre_grasp_mp");
     std::shared_ptr<SkillParametersTaxGrab> skill_params = get_parameters<SkillParametersTaxGrab>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("pre_grasp",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Grabbable"),skill_params->grab_speed,skill_params->grab_acc);
+    move->set_goal(get_object_pose_T("Grabbable"),skill_params->p1.dX_d,skill_params->p1.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p1.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxGrab::create_grasp_mp(const Percept &p){
+    spdlog::trace("TaxGrab::create_grasp_mp");
     std::shared_ptr<SkillParametersTaxGrab> skill_params = get_parameters<SkillParametersTaxGrab>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("grasp",p);
     mp->create_strategy<GripperStrategy>("grasp",1);
     std::shared_ptr<GripperStrategy> grasp = mp->get_strategy<GripperStrategy>("grasp");
-    grasp->grasp(skill_params->grasp_width,skill_params->grasp_speed,skill_params->grasp_force,get_object("Grabbable")->name);
+    grasp->grasp(skill_params->p2.grasp_width,skill_params->p2.grasp_speed,skill_params->p2.grasp_force,get_object("Grabbable")->name);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p2.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxGrab::create_retract_mp(const Percept &p){
+    spdlog::trace("TaxGrab::create_retract_mp");
     std::shared_ptr<SkillParametersTaxGrab> skill_params = get_parameters<SkillParametersTaxGrab>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("retract",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Retract"),skill_params->grab_speed,skill_params->grab_acc);
+    move->set_goal(get_object_pose_T("Retract"),skill_params->p3.dX_d,skill_params->p3.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p3.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
@@ -149,12 +206,7 @@ bool TaxGrab::check_local_suc_conditions(const Percept &p){
 bool TaxGrab::check_local_ex_conditions(const Percept &p){
     if(get_active_mp()->get_name()=="retract"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
-            if((p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Retract").block<3,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0)
-               && acos(((get_object_pose_T("Retract").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) < m_memory->read_parameters()->user.env_X(1)){
-                return true;
-            }else{
-                return false;
-            }
+            return true;
         }
     }
     return false;

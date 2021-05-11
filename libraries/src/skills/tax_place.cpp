@@ -2,49 +2,86 @@
 #include "strategies/twist_strategy.hpp"
 #include "strategies/move_to_pose.hpp"
 #include "strategies/gripper_strategy.hpp"
-#include "strategies/null_strategy.hpp"
+#include "strategies/cart_compliance_strategy.hpp"
+#include "strategies/twist_strategy.hpp"
 #include "msrm_utils/math.hpp"
 
 namespace mios{
 
 bool SkillParametersTaxPlace::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_speed",approach_speed)){
-        spdlog::error("Parameter approach_speed could not be loaded but is mandatory.");
+    if(parameters.find("p0")==parameters.end()){
+        spdlog::error("Parameters for primitive 0 are missing.");
         return false;
+    }else if(parameters.find("p0")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+            spdlog::error("Missing parameter: p0.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+            spdlog::error("Missing parameter: p0.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+            spdlog::error("Missing parameter: p0.ddX_d");
+            return false;
+        }
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_acc",approach_acc)){
-        spdlog::error("Parameter approach_acc could not be loaded but is mandatory.");
+    if(parameters.find("p1")==parameters.end()){
+        spdlog::error("Parameters for primitive 1 are missing.");
         return false;
+    }else if(parameters.find("p1")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p1"],"K_x",p1.K_x)){
+            spdlog::error("Missing parameter: p1.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
+            spdlog::error("Missing parameter: p1.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"ddX_d",p1.ddX_d)){
+            spdlog::error("Missing parameter: p1.ddX_d");
+            return false;
+        }
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"place_speed",place_speed)){
-        spdlog::error("Parameter place_speed could not be loaded but is mandatory.");
+    if(parameters.find("p2")==parameters.end()){
+        spdlog::error("Parameters for primitive 2 are missing.");
         return false;
+    }else if(parameters.find("p2")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"K_x",p2.K_x)){
+            spdlog::error("Missing parameter: p2.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param(parameters["p2"],"release_speed",p2.release_speed)){
+            spdlog::error("Missing parameter: p2.release_speed");
+            return false;
+        }
+        if(!msrm_utils::read_json_param(parameters["p2"],"release_width",p2.release_width)){
+            spdlog::error("Missing parameter: p2.release_width");
+            return false;
+        }
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"place_acc",place_acc)){
-        spdlog::error("Parameter place_acc could not be loaded but is mandatory.");
+    if(parameters.find("p3")==parameters.end()){
+        spdlog::error("Parameters for primitive 3 are missing.");
         return false;
-    }
-    if(!msrm_utils::read_json_param(parameters,"release_width",release_width)){
-        spdlog::error("Parameter release_width could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param(parameters,"release_speed",release_speed)){
-        spdlog::error("Parameter release_speed could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_x",ROI_x)){
-        spdlog::error("Parameter ROI_x could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_phi",ROI_phi)){
-        spdlog::error("Parameter ROI_phi could not be loaded but is mandatory.");
-        return false;
+    }else if(parameters.find("p3")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p3"],"K_x",p3.K_x)){
+            spdlog::error("Missing parameter: p3.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"dX_d",p3.dX_d)){
+            spdlog::error("Missing parameter: p3.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"ddX_d",p3.ddX_d)){
+            spdlog::error("Missing parameter: p3.ddX_d");
+            return false;
+        }
     }
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxPlace::get_parameter_list(){
-    return {{"approach_speed",{}},{"approach_acc",{}},{"place_speed",{}},{"place_acc",{}},{"release_width",{}},{"release_speed",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+    return {{"p0",{"K_x","dX_d","ddX_d"}},{"p1",{"K_x","dX_d","ddX_d"}},{"p2",{"K_x","release_speed","release_force","grasp_width"}},{"p3",{"K_x","dX_d","ddX_d"}}};
 }
 
 TaxPlace::TaxPlace(const std::string& name, Memory* memory, Portal* portal):Skill("TaxPlace",{"Placeable","Surface", "Approach", "Retract"},name,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
@@ -66,12 +103,12 @@ std::shared_ptr<ManipulationPrimitive> TaxPlace::get_initial_mp(const Percept& p
 std::optional<std::shared_ptr<ManipulationPrimitive> > TaxPlace::graph_transition(const Percept &p){
     if(get_active_mp()->get_name()=="approach"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
-            return create_pre_release_mp(p);
+            return create_contact_mp(p);
         }else{
             return {};
         }
     }
-    if(get_active_mp()->get_name()=="pre_release"){
+    if(get_active_mp()->get_name()=="contact"){
         if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
             return create_release_mp(p);
         }else{
@@ -90,51 +127,55 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxPlace::graph_transitio
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxPlace::create_approach_mp(const Percept &p){
+    spdlog::trace("TaxPlace::create_approach_mp");
     std::shared_ptr<SkillParametersTaxPlace> skill_params = get_parameters<SkillParametersTaxPlace>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Approach"),skill_params->approach_speed,skill_params->approach_acc);
+    move->set_goal(get_object_pose_T("Approach"),skill_params->p0.dX_d,skill_params->p0.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p0.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
-std::shared_ptr<ManipulationPrimitive> TaxPlace::create_pre_release_mp(const Percept &p){
+std::shared_ptr<ManipulationPrimitive> TaxPlace::create_contact_mp(const Percept &p){
+    spdlog::trace("TaxPlace::create_contact_mp");
     std::shared_ptr<SkillParametersTaxPlace> skill_params = get_parameters<SkillParametersTaxPlace>();
-    std::shared_ptr<ManipulationPrimitive> mp = create_mp("pre_release",p);
-    mp->create_strategy<MoveToPoseStrategy>("move",1);
-    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-
-    Eigen::Matrix<double,4,4> T_g=get_object_pose_T("Surface");
-    T_g.block<3,3>(0,0)=p.proprioception.T_T_EE.block<3,3>(0,0);
-    Eigen::Matrix<double,3,1> goal_dir=T_g.block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);
-    goal_dir.normalize();
-    T_g.block<3,1>(0,3)+=goal_dir*0.1;
-
-    move->set_goal(T_g,skill_params->place_speed,skill_params->place_acc);
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("contact",p);
+    mp->create_strategy<TwistStrategy>("move",1);
+    std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
+    Eigen::Matrix<double,6,1> dX_d;
+    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Surface").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);;
+    dir/=dir.norm();
+    dX_d<<dir*skill_params->p1.dX_d(0),0,0,0;
+    move->set_TF_dX_d(dX_d,skill_params->p1.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p1.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxPlace::create_release_mp(const Percept &p){
-
-
+    spdlog::trace("TaxPlace::create_release_mp");
     std::shared_ptr<SkillParametersTaxPlace> skill_params = get_parameters<SkillParametersTaxPlace>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("release",p);
-//    mp->create_strategy<NullStrategy>("sim_release",1);
-//    m_t_sim=std::chrono::high_resolution_clock::now();
-
-
     mp->create_strategy<GripperStrategy>("release",1);
     std::shared_ptr<GripperStrategy> release = mp->get_strategy<GripperStrategy>("release");
-    release->move(skill_params->release_width,skill_params->release_speed);
+    release->move(skill_params->p2.release_width,skill_params->p2.release_speed);
+    std::cout<<skill_params->p2.release_speed<<std::endl;
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p2.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxPlace::create_retract_mp(const Percept &p){
+    spdlog::trace("TaxPlace::create_retract_mp");
     std::shared_ptr<SkillParametersTaxPlace> skill_params = get_parameters<SkillParametersTaxPlace>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("retract",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Retract"),skill_params->place_speed,skill_params->place_acc);
+    move->set_goal(get_object_pose_T("Retract"),skill_params->p3.dX_d,skill_params->p3.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p3.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
@@ -154,9 +195,6 @@ bool TaxPlace::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxPlace::check_local_suc_conditions(const Percept &p){
-//    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_t_sim).count()>700 && get_active_mp()->get_name()=="release"){
-//        return true;
-//    }
     if(m_memory->get_live_context()->grasped_object->name=="NullObject"){
         return true;
     }
@@ -164,17 +202,9 @@ bool TaxPlace::check_local_suc_conditions(const Percept &p){
 }
 
 bool TaxPlace::check_local_ex_conditions(const Percept &p){
-    if(m_memory->get_live_context()->grasped_object->name=="NullObject"){
-        return true;
-    }
     if(get_active_mp()->get_name()=="retract"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
-            if((p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Retract").block<3,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0)
-               && acos(((get_object_pose_T("Retract").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) < m_memory->read_parameters()->user.env_X(1)){
-                return true;
-            }else{
-                return false;
-            }
+            return true;
         }
     }
     return false;

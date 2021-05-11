@@ -54,8 +54,8 @@ bool SkillParametersTaxPush::from_json(const nlohmann::json& parameters){
             spdlog::error("Missing parameter: p2.f_push");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p2"],"distance",p2.distance)){
-            spdlog::error("Missing parameter: p2.distance");
+        if(!msrm_utils::read_json_param(parameters["p2"],"duration",p2.duration)){
+            spdlog::error("Missing parameter: p2.duration");
             return false;
         }
     }
@@ -91,7 +91,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxPush::graph_transition
         }
     }
     if(get_active_mp()->get_name()=="contact"){
-        if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(2)){
+        if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
             return create_push_mp(p);
         }else{
             return {};
@@ -120,7 +120,7 @@ std::shared_ptr<ManipulationPrimitive> TaxPush::create_contact_mp(const Percept 
     mp->create_strategy<TwistStrategy>("move",1);
     std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
     Eigen::Matrix<double,6,1> dX_d;
-    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Surface").block<3,1>(0,3);
+    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Surface").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);;
     dir/=dir.norm();
     dX_d<<dir*skill_params->p1.dX_d(0),0,0,0;
     move->set_TF_dX_d(dX_d,skill_params->p1.ddX_d);
@@ -135,7 +135,7 @@ std::shared_ptr<ManipulationPrimitive> TaxPush::create_push_mp(const Percept &p)
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("push",p);
     mp->create_strategy<DesiredWrenchStrategy>("wrench",1);
     Eigen::Matrix<double,6,1> TF_F_d;
-    TF_F_d<<skill_params->p2.f_push,0,0,0;
+    TF_F_d<<0,0,skill_params->p2.f_push,0,0,0;
     mp->get_strategy<DesiredWrenchStrategy>("wrench")->set_TF_F_d(TF_F_d,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p1.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
@@ -148,7 +148,7 @@ bool TaxPush::check_local_pre_conditions(const Percept &p){
     Eigen::Matrix<double,4,4> T_container = get_object_pose_T("Surface");
     std::shared_ptr<SkillParametersTaxPush> skill_params = get_parameters<SkillParametersTaxPush>();
     for(unsigned i=0;i<3;i++){
-        if(p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2+1)){
+        if(p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)>T_container(3,i)+skill_params->ROI_x(i*2+1)){
             return false;
         }
     }
@@ -157,7 +157,7 @@ bool TaxPush::check_local_pre_conditions(const Percept &p){
 
 bool TaxPush::check_local_suc_conditions(const Percept &p){
     std::shared_ptr<SkillParametersTaxPush> skill_params = get_parameters<SkillParametersTaxPush>();
-    if((p.proprioception.T_T_EE.block<3,1>(0,3)-m_T_T_EE_contact.block<3,1>(0,3)).norm()>=skill_params->p2.distance){
+    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_memory->get_live_context()->t_mp).count()>=skill_params->p2.duration*1000){
         return true;
     }
     return false;

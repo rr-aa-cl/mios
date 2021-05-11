@@ -12,14 +12,16 @@ struct SkillParametersTaxExtraction : public SkillParameters{
         Eigen::Matrix<double,6,1> K_x;
         Eigen::Matrix<double,6,1> search_a;
         Eigen::Matrix<double,6,1> search_f;
-        double f_pull;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+//        double f_pull;
     }p0;
 
     struct P1{
         Eigen::Matrix<double,6,1> K_x;
         Eigen::Matrix<double,2,1> dX_d;
         Eigen::Matrix<double,2,1> ddX_d;
-        double f_pull;
+//        double f_pull;
     }p1;
 
 };

@@ -6,16 +6,30 @@ class SkillParametersTaxGrab : public SkillParameters{
 public:
     bool from_json(const nlohmann::json& parameters) override;
     std::map<std::string, std::set<std::string> > get_parameter_list() override;
-    Eigen::Matrix<double,2,1> approach_speed;
-    Eigen::Matrix<double,2,1> approach_acc;
-    Eigen::Matrix<double,2,1> grab_speed;
-    Eigen::Matrix<double,2,1> grab_acc;
-    double grasp_width;
-    double grasp_speed;
-    double grasp_force;
 
-    Eigen::Matrix<double,6,1> ROI_x;
-    Eigen::Matrix<double,6,1> ROI_phi;
+    struct P0{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+        double gripper_speed;
+        double gripper_width;
+    }p0;
+    struct P1{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+    }p1;
+    struct P2{
+        Eigen::Matrix<double,6,1> K_x;
+        double grasp_width;
+        double grasp_speed;
+        double grasp_force;
+    }p2;
+    struct P3{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+    }p3;
 };
 
 class TaxGrab : public Skill{

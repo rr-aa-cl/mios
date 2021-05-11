@@ -1,6 +1,6 @@
 #include "skills/tax_pull.hpp"
-#include "strategies/desired_wrench_strategy.hpp"
-#include "strategies/move_to_pose.hpp"
+#include "strategies/cart_compliance_strategy.hpp"
+#include "strategies/ff_strategy.hpp"
 #include <msrm_utils/math.hpp>
 
 namespace mios{
@@ -14,12 +14,12 @@ bool SkillParametersTaxPull::from_json(const nlohmann::json& parameters){
             spdlog::error("Missing parameter: p0.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
-            spdlog::error("Missing parameter: p0.dX_d");
+        if(!msrm_utils::read_json_param(parameters["p0"],"f_pull",p0.f_pull)){
+            spdlog::error("Missing parameter: p0.f_pull");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
-            spdlog::error("Missing parameter: p0.ddX_d");
+        if(!msrm_utils::read_json_param(parameters["p0"],"duration",p0.duration)){
+            spdlog::error("Missing parameter: p0.duration");
             return false;
         }
     }
@@ -27,10 +27,10 @@ bool SkillParametersTaxPull::from_json(const nlohmann::json& parameters){
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxPull::get_parameter_list(){
-    return {{"p0",{"K_x","dX_d","ddX_d"}}};
+    return {{"p0",{"K_x","f_pull","duration"}}};
 }
 
-TaxPull::TaxPull(const std::string& name, Memory* memory, Portal *portal):Skill("TaxPull",{"Pullable","GoalLocation"},name,memory,portal,{ControlMode::mCartTorque}){
+TaxPull::TaxPull(const std::string& name, Memory* memory, Portal *portal):Skill("TaxPull",{"Pullable"},name,memory,portal,{ControlMode::mCartTorque}){
 
 }
 
@@ -47,11 +47,15 @@ std::shared_ptr<ManipulationPrimitive> TaxPull::get_initial_mp(const Percept& p)
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxPull::create_pull_mp(const Percept &p){
+    spdlog::trace("TaxPull::create_pull_mp");
     std::shared_ptr<SkillParametersTaxPull> skill_params = get_parameters<SkillParametersTaxPull>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("pull",p);
-    mp->create_strategy<MoveToPoseStrategy>("move",1);
-    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("GoalLocation"),skill_params->p0.dX_d,skill_params->p0.ddX_d);
+    mp->create_strategy<FFStrategy>("wrench",1);
+    Eigen::Matrix<double,6,1> TF_F_d;
+    TF_F_d<<0,0,-skill_params->p0.f_pull,0,0,0;
+    mp->get_strategy<FFStrategy>("wrench")->set_TF_F_ff(TF_F_d,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p0.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
@@ -63,7 +67,11 @@ bool TaxPull::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxPull::check_local_suc_conditions(const Percept &p){
-    return is_in_env("GoalLocation","move",p);
+    std::shared_ptr<SkillParametersTaxPull> skill_params = get_parameters<SkillParametersTaxPull>();
+    if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_memory->get_live_context()->t_mp).count()>=skill_params->p0.duration*1000){
+        return true;
+    }
+    return false;
 }
 
 bool TaxPull::check_local_err_conditions(const Percept &p){

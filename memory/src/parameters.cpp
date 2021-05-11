@@ -778,10 +778,10 @@ SkillParameters::SkillParameters(){
     ignore_settling=true;
     ROI_x<<-10,10,-10,10,-10,10;
     ROI_phi<<-10,10,-10,10,-10,10;
-    condition_level_pre=SkillConditionLevel::sclModel;
-    condition_level_success=SkillConditionLevel::sclModel;
-    condition_level_error=SkillConditionLevel::sclModel;
-    condition_level_exit=SkillConditionLevel::sclModel;
+    condition_level_pre=SkillConditionLevel::sclSpecification;
+    condition_level_success=SkillConditionLevel::sclSpecification;
+    condition_level_error=SkillConditionLevel::sclSpecification;
+    condition_level_exit=SkillConditionLevel::sclSpecification;
 }
 
 bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
@@ -891,10 +891,10 @@ nlohmann::json SkillParameters::get_default_values(){
     default_values["ROI_x"]={-10,10,-10,10,-10,10};
     default_values["ROI_phi"]={-10,10,-10,10,-10,10};
     default_values["objects"]={};
-    default_values["condition_level_pre"]="Model";
-    default_values["condition_level_success"]="Model";
-    default_values["condition_level_error"]="Model";
-    default_values["condition_level_exit"]="Model";
+    default_values["condition_level_pre"]="Specification";
+    default_values["condition_level_success"]="Specification";
+    default_values["condition_level_error"]="Specification";
+    default_values["condition_level_exit"]="Specification";
     return default_values;
 }
 

@@ -6,16 +6,26 @@ class SkillParametersTaxPlace : public SkillParameters{
 public:
     bool from_json(const nlohmann::json& parameters) override;
     std::map<std::string, std::set<std::string> > get_parameter_list() override;
-    double f_contact;
-    Eigen::Matrix<double,2,1> approach_speed;
-    Eigen::Matrix<double,2,1> approach_acc;
-    Eigen::Matrix<double,2,1> place_speed;
-    Eigen::Matrix<double,2,1> place_acc;
-    double release_width;
-    double release_speed;
-
-    Eigen::Matrix<double,6,1> ROI_x;
-    Eigen::Matrix<double,6,1> ROI_phi;
+    struct P0{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+    }p0;
+    struct P1{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+    }p1;
+    struct P2{
+        Eigen::Matrix<double,6,1> K_x;
+        double release_width;
+        double release_speed;
+    }p2;
+    struct P3{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+    }p3;
 };
 
 class TaxPlace : public Skill{
@@ -32,7 +42,7 @@ private:
     bool check_local_pre_conditions(const Percept &p) override;
 
     std::shared_ptr<ManipulationPrimitive> create_approach_mp(const Percept& p);
-    std::shared_ptr<ManipulationPrimitive> create_pre_release_mp(const Percept& p);
+    std::shared_ptr<ManipulationPrimitive> create_contact_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_release_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_retract_mp(const Percept& p);
 

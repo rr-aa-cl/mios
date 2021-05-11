@@ -68,7 +68,7 @@ bool SkillParametersTaxTip::from_json(const nlohmann::json& parameters){
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxTip::get_parameter_list(){
-    return {{"f_contact",{}},{"approach_speed",{}},{"approach_acc",{}},{"tip_speed",{}},{"tip_acc",{}},{"ROI_x",{}},{"ROI_phi",{}}};
+    return {{"p0",{"K_x","dX_d","ddX_d"}},{"p1",{"K_x","dX_d","ddX_d","f_tip"}},{"p2",{"K_x","dX_d","ddX_d"}}};
 }
 
 TaxTip::TaxTip(const std::string& name, Memory* memory, Portal* portal):Skill("TaxTip",{"Tippable", "Approach"},name,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
@@ -106,6 +106,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxTip::graph_transition(
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxTip::create_approach_mp(const Percept &p){
+    spdlog::trace("TaxTip::create_approach_mp()");
     std::shared_ptr<SkillParametersTaxTip> skill_params = get_parameters<SkillParametersTaxTip>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
@@ -118,12 +119,13 @@ std::shared_ptr<ManipulationPrimitive> TaxTip::create_approach_mp(const Percept 
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxTip::create_tip_mp(const Percept &p){
+    spdlog::trace("TaxTip::create_tip_mp()");
     std::shared_ptr<SkillParametersTaxTip> skill_params = get_parameters<SkillParametersTaxTip>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("tip",p);
     mp->create_strategy<TwistStrategy>("move",1);
     std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
     Eigen::Matrix<double,6,1> dX_d;
-    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Tippable").block<3,1>(0,3);
+    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Tippable").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);
     dir/=dir.norm();
     dX_d<<dir*skill_params->p1.dX_d(0),0,0,0;
     move->set_TF_dX_d(dX_d,skill_params->p1.ddX_d);
@@ -133,6 +135,7 @@ std::shared_ptr<ManipulationPrimitive> TaxTip::create_tip_mp(const Percept &p){
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxTip::create_retract_mp(const Percept &p){
+    spdlog::trace("TaxTip::create_retract_mp()");
     std::shared_ptr<SkillParametersTaxTip> skill_params = get_parameters<SkillParametersTaxTip>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("retract",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
@@ -141,13 +144,14 @@ std::shared_ptr<ManipulationPrimitive> TaxTip::create_retract_mp(const Percept &
     move->set_goal(T_a,skill_params->p2.dX_d,skill_params->p2.ddX_d);
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p2.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
+    return mp;
 }
 
 bool TaxTip::check_local_pre_conditions(const Percept &p){
     Eigen::Matrix<double,4,4> T_container = get_object_pose_T("Tippable");
     std::shared_ptr<SkillParametersTaxTip> skill_params = get_parameters<SkillParametersTaxTip>();
     for(unsigned i=0;i<3;i++){
-        if(p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2+1)){
+        if(p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)>T_container(3,i)+skill_params->ROI_x(i*2+1)){
             return false;
         }
     }

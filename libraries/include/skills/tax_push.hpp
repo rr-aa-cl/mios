@@ -20,7 +20,7 @@ public:
     struct P2{
         Eigen::Matrix<double,6,1> K_x;
         double f_push;
-        double distance;
+        double duration;
     }p2;
 };
 

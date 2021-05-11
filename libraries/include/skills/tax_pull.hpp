@@ -8,8 +8,8 @@ public:
     std::map<std::string, std::set<std::string> > get_parameter_list() override;
     struct P0{
         Eigen::Matrix<double,6,1> K_x;
-        Eigen::Matrix<double,2,1> dX_d;
-        Eigen::Matrix<double,2,1> ddX_d;
+        double f_pull;
+        double duration;
     }p0;
 };
 
