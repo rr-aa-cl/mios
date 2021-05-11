@@ -101,7 +101,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxPush::graph_transition
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxPush::create_approach_mp(const Percept &p){
-    spdlog::debug("TaxPush::create_approach_mp");
+    spdlog::trace("TaxPush::create_approach_mp");
     std::shared_ptr<SkillParametersTaxPush> skill_params = get_parameters<SkillParametersTaxPush>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
@@ -114,7 +114,7 @@ std::shared_ptr<ManipulationPrimitive> TaxPush::create_approach_mp(const Percept
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxPush::create_contact_mp(const Percept &p){
-    spdlog::debug("TaxPush::create_contact_mp");
+    spdlog::trace("TaxPush::create_contact_mp");
     std::shared_ptr<SkillParametersTaxPush> skill_params = get_parameters<SkillParametersTaxPush>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("contact",p);
     mp->create_strategy<TwistStrategy>("move",1);
@@ -130,7 +130,7 @@ std::shared_ptr<ManipulationPrimitive> TaxPush::create_contact_mp(const Percept 
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxPush::create_push_mp(const Percept &p){
-    spdlog::debug("TaxPush::create_push_mp");
+    spdlog::trace("TaxPush::create_push_mp");
     std::shared_ptr<SkillParametersTaxPush> skill_params = get_parameters<SkillParametersTaxPush>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("push",p);
     mp->create_strategy<DesiredWrenchStrategy>("wrench",1);

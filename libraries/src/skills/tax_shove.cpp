@@ -66,7 +66,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxShove::graph_transitio
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxShove::create_approach_mp(const Percept &p){
-    spdlog::debug("TaxShove::create_approach_mp");
+    spdlog::trace("TaxShove::create_approach_mp");
     std::shared_ptr<SkillParametersTaxShove> skill_params = get_parameters<SkillParametersTaxShove>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
@@ -79,7 +79,7 @@ std::shared_ptr<ManipulationPrimitive> TaxShove::create_approach_mp(const Percep
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxShove::create_shove_mp(const Percept &p){
-    spdlog::debug("TaxShove::create_shove_mp");
+    spdlog::trace("TaxShove::create_shove_mp");
     std::shared_ptr<SkillParametersTaxShove> skill_params = get_parameters<SkillParametersTaxShove>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);

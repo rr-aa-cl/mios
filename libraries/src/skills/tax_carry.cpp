@@ -1,40 +1,33 @@
 #include "skills/tax_carry.hpp"
 #include "strategies/move_to_pose.hpp"
+#include "strategies/cart_compliance_strategy.hpp"
 #include <franka/exception.h>
 
 namespace mios {
 
-bool SkillParametersTaxCarry::from_json(const nlohmann::json &p){
-    if(!msrm_utils::read_json_param(p,"t_settle",t_settle)){
-        t_settle=0;
-    }
-    if(!msrm_utils::read_json_param<double,2,1>(p,"speed",speed)){
-        spdlog::error("Parameter speed could not be loaded but is mandatory.");
+bool SkillParametersTaxCarry::from_json(const nlohmann::json &parameters){
+    if(parameters.find("p0")==parameters.end()){
+        spdlog::error("Parameters for primitive 0 are missing.");
         return false;
-    }
-    if(!msrm_utils::read_json_param<double,2,1>(p,"acc",acc)){
-        spdlog::error("Parameter acc could not be loaded but is mandatory.");
-        return false;
-    }
-    if(!msrm_utils::read_json_param<double,4,4>(p,"T_T_EE_g_offset",T_T_EE_g_offset)){
-        T_T_EE_g_offset.setIdentity();
-    }
-    bool object_set=false;
-    if(!p["objects"].is_null()){
-        if(p["objects"].find("goal_pose")!=p["objects"].end()){
-            object_set=true;
+    }else if(parameters.find("p0")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+            spdlog::error("Missing parameter: p0.K_x");
+            return false;
         }
-    }
-
-    if(!msrm_utils::read_json_param<double,4,4>(p,"T_T_EE_g",T_T_EE_g) && !object_set){
-        spdlog::error("Parameter T_T_EE_g could not be loaded but is mandatory.");
-        return false;
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+            spdlog::error("Missing parameter: p0.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+            spdlog::error("Missing parameter: p0.ddX_d");
+            return false;
+        }
     }
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxCarry::get_parameter_list(){
-    return {{"t_settle",{}},{"speed",{}},{"acc",{}},{"T_T_EE_g_offset",{}},{"T_T_EE_g",{}}};
+    return {{"p0",{"K_x","dX_d","ddX_d"}}};
 }
 
 TaxCarry::TaxCarry(const std::string &id, Memory *memory, Portal *portal):Skill("TaxCarry",{"Carriable","GoalPose"},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}),
@@ -42,21 +35,18 @@ m_finished(false){
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxCarry::get_initial_mp(const Percept &p_0){
+    return create_move_mp(p_0);
+}
+
+std::shared_ptr<ManipulationPrimitive> TaxCarry::create_move_mp(const Percept &p){
+    spdlog::trace("TaxCarry::create_move_mp");
     std::shared_ptr<SkillParametersTaxCarry> skill_params = get_parameters<SkillParametersTaxCarry>();
-    std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p_0);
-    mp->create_strategy<MoveToPoseStrategy>("s_0",1);
-    Eigen::Matrix<double,4,4> T_g;
-    if(this->get_object("GoalPose")->name=="NullObject"){
-        T_g=skill_params->T_T_EE_g;
-    }else{
-        T_g=get_object("GoalPose")->O_T_OB;
-    }
-    T_g.block<3,1>(0,3)+=skill_params->T_T_EE_g_offset.block<3,1>(0,3);
-    T_g.block<3,3>(0,0)=skill_params->T_T_EE_g_offset.block<3,3>(0,0)*T_g.block<3,3>(0,0);
-    mp->get_strategy<MoveToPoseStrategy>("s_0")->set_goal(T_g,skill_params->speed,skill_params->acc);
-    Eigen::Matrix<double,2,1> scale;
-    scale<<1,1;
-    mp->get_strategy<MoveToPoseStrategy>("s_0")->set_scale(scale);
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
+    mp->create_strategy<MoveToPoseStrategy>("move",1);
+    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
+    move->set_goal(get_object_pose_T("Approach"),skill_params->p0.dX_d,skill_params->p0.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p0.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
@@ -68,11 +58,7 @@ bool TaxCarry::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxCarry::check_local_suc_conditions(const Percept &p){
-    if(get_active_mp()->get_strategy<MoveToPoseStrategy>("s_0")->finished()){
-        if(!m_finished){
-            m_finished=true;
-            m_t_finished=std::chrono::high_resolution_clock::now();
-        }
+    if(is_in_env("GoalPose","move",p)){
         return true;
     }else{
         return false;
@@ -84,14 +70,6 @@ bool TaxCarry::check_local_err_conditions(const Percept &p){
         return true;
     }
     return false;
-}
-
-bool TaxCarry::check_local_ex_conditions(const Percept &p){
-    if(std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_t_finished).count()>=get_parameters<SkillParametersTaxCarry>()->t_settle*1000){
-        return true;
-    }else{
-        return false;
-    }
 }
 
 }

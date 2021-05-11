@@ -350,3 +350,112 @@ def test_place(robot, approach, placeable, surface, retract):
     t.start()
     result = t.wait()
     print(result)
+
+
+def test_shove(robot, approach, shoveable, location):
+    context = {
+        "skill": {
+            "objects": {
+                "Shoveable": shoveable,
+                "Approach": approach,
+                "Location": location,
+            },
+            "time_max": 10,
+            "p0": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+            },
+            "p1": {
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "K_x": [1000, 1000, 1000, 100, 100, 100]
+            }
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("shove", "TaxShove", context)
+    t.start()
+    result = t.wait()
+    print(result)
+
+
+def test_turn_lever(robot, lever, goal_location):
+    context = {
+        "skill": {
+            "objects": {
+                "Lever": lever,
+                "GoalLocation": goal_location
+            },
+            "time_max": 10,
+            "p0": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+            }
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("turn_lever", "TaxTurnLever", context)
+    t.start()
+    result = t.wait()
+    print(result)
+
+
+def test_move(robot, goal_pose):
+    context = {
+        "skill": {
+            "objects": {
+                "GoalPose": goal_pose
+            },
+            "time_max": 10,
+            "p0": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "finger_width": -1,
+                "finger_speed": -1,
+                "t_settle": 0.5,
+                "T_T_EE_g_offset": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+            }
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("move", "TaxMove", context)
+    t.start()
+    result = t.wait()
+    print(result)
+
+
+def test_carry(robot, goal_pose, carriable):
+    context = {
+        "skill": {
+            "objects": {
+                "GoalPose": goal_pose,
+                "Carriable": carriable
+            },
+            "time_max": 10,
+            "p0": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+            }
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("carry", "TaxCarry", context)
+    t.start()
+    result = t.wait()
+    print(result)

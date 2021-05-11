@@ -1,24 +1,34 @@
 #include "skills/tax_turn_lever.hpp"
-#include "strategies/desired_wrench_strategy.hpp"
 #include "strategies/move_to_pose.hpp"
+#include "strategies/cart_compliance_strategy.hpp"
 #include <msrm_utils/math.hpp>
 
 namespace mios{
 
 bool SkillParametersTaxTurnLever::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"speed",speed)){
-        spdlog::error("Parameter speed could not be loaded but is mandatory.");
+    if(parameters.find("p0")==parameters.end()){
+        spdlog::error("Parameters for primitive 0 are missing.");
         return false;
+    }else if(parameters.find("p0")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+            spdlog::error("Missing parameter: p0.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+            spdlog::error("Missing parameter: p0.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+            spdlog::error("Missing parameter: p0.ddX_d");
+            return false;
+        }
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"acc",acc)){
-        spdlog::error("Parameter acc could not be loaded but is mandatory.");
-        return false;
-    }
+
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxTurnLever::get_parameter_list(){
-    return {{"speed",{}},{"acc",{}}};
+    return {{"p0",{"K_x","dX_d","ddX_d"}}};
 }
 
 TaxTurnLever::TaxTurnLever(const std::string& name, Memory* memory, Portal *portal):Skill("TaxTurnLever",{"Lever", "GoalPosition"},name,memory,portal,{ControlMode::mCartTorque}){
@@ -38,11 +48,14 @@ std::shared_ptr<ManipulationPrimitive> TaxTurnLever::get_initial_mp(const Percep
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxTurnLever::create_turn_mp(const Percept &p){
+    spdlog::trace("TaxTurnLever::create_turn_mp");
     std::shared_ptr<SkillParametersTaxTurnLever> skill_params = get_parameters<SkillParametersTaxTurnLever>();
-    std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("turn",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("GoalPosition"),skill_params->speed,skill_params->acc);
+    move->set_goal(get_object_pose_T("GoalPosition"),skill_params->p0.dX_d,skill_params->p0.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p0.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
@@ -54,7 +67,7 @@ bool TaxTurnLever::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxTurnLever::check_local_suc_conditions(const Percept &p){
-    return get_active_mp()->get_strategy_interface("move")->finished();
+    return is_in_env("GoalLocation","move",p);
 }
 
 bool TaxTurnLever::check_local_err_conditions(const Percept &p){
