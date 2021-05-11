@@ -11,7 +11,7 @@
 namespace mios {
 class Core;
 
-Telemetry_UDP::Telemetry_UDP(Core *core):m_core(core),keep_running(false),m_frequency(2000){
+Telemetry_UDP::Telemetry_UDP(Core *core):m_core(core),keep_running(false),m_frequency(200){
 
 }
 
@@ -105,7 +105,8 @@ void Telemetry_UDP::sending_loop(){
         }
         const Percept* p = m_core->get_percept();
         nlohmann::json msg_data;
-        msrm_utils::write_json_array<double,6,1>(msg_data["O_F_ext_K"],p->proprioception.O_F_ext_K);
+
+        msrm_utils::write_json_array<double,7,1>(msg_data["tau_ext"],p->proprioception.tau_ext);
         msrm_utils::write_json_array<double,7,1>(msg_data["q"],p->proprioception.q);
         msrm_utils::write_json_array<double,4,4>(msg_data["O_T_EE"],p->proprioception.O_T_EE);
         
