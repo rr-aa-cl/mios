@@ -4,6 +4,7 @@
 #include "task/task_engine.hpp"
 #include "portal/portal.hpp"
 #include "memory/memory.hpp"
+#include "telemetry/telemetry_udp.hpp"
 #include <spdlog/spdlog.h>
 
 
@@ -11,7 +12,7 @@ namespace mios {
 
 using msrm_utils::ArgPair;
 
-CommandInterface::CommandInterface(Core *core, TaskEngine *task_engine,Portal* portal,Memory* memory):m_core(core),m_task_engine(task_engine),m_portal(portal),m_memory(memory){
+CommandInterface::CommandInterface(Core *core, TaskEngine *task_engine,Portal* portal,Memory* memory,Telemetry_UDP* telemetry):m_core(core),m_task_engine(task_engine),m_portal(portal),m_memory(memory),m_telemetry(telemetry){
     bind_methods();
 }
 
@@ -45,6 +46,8 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("get_state",std::bind(&CommandInterface::get_state,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("get_model",std::bind(&CommandInterface::get_model,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("reload_database",std::bind(&CommandInterface::reload_database,this,std::placeholders::_1),{});
+    m_portal->bind_method_to_all("subscribe_telemetry",std::bind(&CommandInterface::subscribe_telemetry,this,std::placeholders::_1),{});
+    m_portal->bind_method_to_all("stop_telemetry",std::bind(&CommandInterface::stop_telemetry,this,std::placeholders::_1),{});
 
     m_portal->bind_method_to_all("unlock_brakes",std::bind(&CommandInterface::unlock_brakes,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("lock_brakes",std::bind(&CommandInterface::lock_brakes,this,std::placeholders::_1),{});
@@ -427,6 +430,37 @@ nlohmann::json CommandInterface::reload_database(const nlohmann::json &request){
     return response;
 }
 
+nlohmann::json CommandInterface::subscribe_telemetry(const nlohmann::json &request){
+    spdlog::debug("CommandInterface: subscribe to telemetry");
+    nlohmann::json response;
+    response["result"] = true; 
+    if(request.find("ip") == request.end()){
+        response["result"] = false;
+        response["error_message"] = "CommandInterface.subscribe_telemetry: No IP in request "+request.dump();
+        return response;
+    }
+    if(request.find("port") == request.end()){
+        response["result"] = false;
+        response["error_message"] = "CommandInterface.subscribe_telemetry: No port in request "+request.dump();
+        return response;
+    }
+    if(request.find("subscribe") == request.end()){
+        response["result"] = false;
+        response["error_message"] = "CommandInterface.subscribe_telemetry: No subscribe in request "+request.dump();
+        return response;
+    }
+
+    if(!m_telemetry->add_subscriber(request["ip"], request["port"], request["subscribe"])){
+        response["result"] = false;
+        response["error_message"] = "Could not add subscriber "+request.dump();
+    };
+    return response;
+}
+nlohmann::json CommandInterface::stop_telemetry(const nlohmann::json &request){
+    nlohmann::json response;
+    response["result"] = m_telemetry->stop_sending();
+    return response;
+}
 //nlohmann::json CommandInterface::subscribe_to_event_stream(const nlohmann::json &request){
 //    nlohmann::json response;
 //    EventSubscriber subscriber;

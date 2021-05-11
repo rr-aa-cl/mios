@@ -65,7 +65,8 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/portal/include
     ${CMAKE_SOURCE_DIR}/learning_module/include
     ${CMAKE_SOURCE_DIR}/libraries/include
-    ${CMAKE_SOURCE_DIR}/ros_workspace/devel/include)
+    ${CMAKE_SOURCE_DIR}/ros_workspace/devel/include
+    ${CMAKE_SOURCE_DIR}/telemetry/include)
 
 link_directories(${CMAKE_SOURCE_DIR}/third_party/lib)
 
@@ -75,7 +76,8 @@ link_directories(${CMAKE_SOURCE_DIR}/lib/plugins)
 
 set(SOURCES core/src/core.cpp interface/src/interface.cpp manipulation_primitive/src/manipulation_primitive.cpp manipulation_primitive/src/primitive_strategy.cpp
     skill/src/skill.cpp task/src/task.cpp task/src/task_engine.cpp panda/src/softhand2.cpp panda/src/qbmove_communications.cpp learning_module/src/learning_module.cpp
-    task/src/taskfactory.cpp task/src/taskobserver.cpp skill/src/skill_library.cpp skill/src/skill_engine.cpp portal/src/portal.cpp panda/src/panda_body.cpp interface/src/ros_node.cpp)
+    task/src/taskfactory.cpp task/src/taskobserver.cpp skill/src/skill_library.cpp skill/src/skill_engine.cpp portal/src/portal.cpp panda/src/panda_body.cpp interface/src/ros_node.cpp
+    telemetry/src/telemetry_udp.cpp)
 
 set(UTILS_SRC utils/src/actuator.cpp utils/src/percept.cpp utils/src/object.cpp utils/src/exceptions.cpp utils/src/results.cpp utils/src/event.cpp)
 

@@ -8,10 +8,11 @@ class Core;
 class TaskEngine;
 class Portal;
 class Memory;
+class Telemetry_UDP;
 
 class CommandInterface{
 public:
-    CommandInterface(Core *core, TaskEngine *task_engine, Portal *portal, Memory* memory);
+    CommandInterface(Core *core, TaskEngine *task_engine, Portal *portal, Memory* memory, Telemetry_UDP* telemetry);
 private:
     void bind_methods();
 
@@ -44,6 +45,8 @@ private:
     nlohmann::json get_state(const nlohmann::json& request);
     nlohmann::json get_model(const nlohmann::json& request);
     nlohmann::json reload_database(const nlohmann::json& request);
+    nlohmann::json subscribe_telemetry(const nlohmann::json& request);
+    nlohmann::json stop_telemetry(const nlohmann::json &request);
 
     // robot level
     nlohmann::json start_desk_task(const nlohmann::json& request);
@@ -65,6 +68,8 @@ private:
     TaskEngine* m_task_engine;
     Portal* m_portal;
     Memory* m_memory;
+    Telemetry_UDP* m_telemetry;
+
 };
 
 

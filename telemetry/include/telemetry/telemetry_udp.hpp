@@ -9,8 +9,6 @@
 #include <atomic>
 #include <unistd.h>
 
-#include "knowledge_base/local_memory.hpp"
-
 
 namespace mios {
 
@@ -19,7 +17,7 @@ struct ConfigTelemetryUDP{
         ip_dst="none";
         port_dst=0;
         packagesize=217;
-        frequency=1000;
+        frequency=200;
         name="none";
         location="none";
     }
@@ -32,27 +30,37 @@ struct ConfigTelemetryUDP{
 
     unsigned frequency;
 };
+struct Subscriber{
+    unsigned port;
+    std::string ip;
+    std::string address;
+    std::vector<std::string> subscribtions; 
+};
 
 class Telemetry_UDP{
 public:
-    Telemetry_UDP();
+    Telemetry_UDP(Core *core);
     ~Telemetry_UDP();
 
-    bool initialize(ConfigTelemetryUDP config);
-    bool send_telemetry(const Percept& p);
-    bool terminate();
+    //bool initialize(ConfigTelemetryUDP config);
 
+    bool add_subscriber(const std::string &addr, const unsigned port, const std::vector<std::string> &subs);
+    bool start_sending();
+    bool stop_sending();
+    
 private:
+    bool send(const nlohmann::json &msg_data, const std::string &address, const unsigned port);
+    void sending_loop();
 
-    ConfigTelemetryUDP _config;
+    Core *m_core;
 
-    // Outgoing connection
-    int _s_out;
-    struct sockaddr_in _si_other_out,_si_me_out;
-    unsigned _slen_out;
-    unsigned _n_package;
+    std::vector<Subscriber> subscriber_vector;
+    //std::map<std::pair<std::string, unsigned>, std::vector<std::string> > m_address_sub_map;
+    std::atomic<bool> keep_running;
+    std::thread sending_thread;
 
-    unsigned _cnt_frequency;
+    unsigned m_frequency;  //ms
+    int m_socket;
 
 };
 

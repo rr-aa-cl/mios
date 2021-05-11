@@ -20,6 +20,7 @@
 #include "interface/interface.hpp"
 #include "interface/ros_node.hpp"
 #include "learning_module/learning_module.hpp"
+#include "telemetry/telemetry_udp.hpp"
 
 #include "data_structures/percept.hpp"
 #include "data_structures/actuator.hpp"
@@ -96,6 +97,7 @@ private:
     CommandInterface m_command_interface;
     RosNode m_ros_node;
     LearningModule m_learning_module;
+    Telemetry_UDP m_telemetry;
     std::unique_ptr<ControllerPipeline> m_controller_pipeline;
     std::set<std::unique_ptr<SafetyModuleStage1> > m_safety_stage_1;
     std::set<std::unique_ptr<SafetyModuleStage2> > m_safety_stage_2;
