@@ -17,6 +17,7 @@ Telemetry_UDP::Telemetry_UDP(Core *core):m_core(core),keep_running(false),m_freq
 
 Telemetry_UDP::~Telemetry_UDP(){
     keep_running = false;
+    thread_running = false;
 }
 
 bool Telemetry_UDP::send(const nlohmann::json &msg_data, const std::string &address, const unsigned port){
@@ -29,13 +30,12 @@ bool Telemetry_UDP::send(const nlohmann::json &msg_data, const std::string &addr
         return false;
     }
 
-    memset((char *) &m_si_other, 0, m_slen);                    //clear address
-    m_si_other.sin_family = AF_INET;                            //set socket family
-    m_si_other.sin_port = htons(port);                          //set port
+    memset((char *) &m_si_other, 0, m_slen);                    // clear address
+    m_si_other.sin_family = AF_INET;                            // set socket family
+    m_si_other.sin_port = htons(port);                          // set port
 
-    // do dns request before for m_adress!
-    if(inet_aton(address.c_str(), &m_si_other.sin_addr)==0){    //set ip address
-        //spdlog::error("Invalid address: "+address+", port: "+std::to_string(port));
+    if(inet_aton(address.c_str(), &m_si_other.sin_addr)==0){    // make ip address binary
+        spdlog::error("Telemetry_UDP.send: Invalid address: "+address+", port: "+std::to_string(port));
         return false;
     }
 
@@ -51,13 +51,13 @@ bool Telemetry_UDP::send(const nlohmann::json &msg_data, const std::string &addr
 }
 
 bool Telemetry_UDP::add_subscriber(const std::string &addr, const unsigned port, const std::vector<std::string> &subs){
-    //check ip address:
+    // check ip address:
     std::string ip = addr;
     if(!msrm_utils::is_valid_ip_address(addr.c_str())){
-        ip = msrm_utils::get_ip_by_hostname(addr.c_str()).value_or("none");
+        ip = msrm_utils::get_ip_by_hostname(addr.c_str()).value_or("none");  //dns request for addr (hostname)
     }
     if(!msrm_utils::is_valid_ip_address(ip.c_str())){
-        spdlog::error("Invalid IP address " + addr + " set for telemetry.");
+        spdlog::error("Telemetry_UDP.add_subscriber: Invalid IP address " + addr + " set for telemetry.");
         return false;
     }
     // is subscriber already in subscriber list?
@@ -66,9 +66,9 @@ bool Telemetry_UDP::add_subscriber(const std::string &addr, const unsigned port,
              [&ip_temp = addr]
              (const Subscriber &sub) -> bool { return ip_temp == sub.address; }); 
     if(it == subscriber_vector.end()){
-        subscriber_vector.push_back(sub_temp);  //add new subscriber
+        subscriber_vector.push_back(sub_temp);  // add new subscriber
     }
-    else{  //update subscriber
+    else{  // update subscriber
         for(auto sub : subscriber_vector){
             if(sub.address == sub_temp.address){
                 sub.subscribtions = sub_temp.subscribtions;
@@ -79,34 +79,38 @@ bool Telemetry_UDP::add_subscriber(const std::string &addr, const unsigned port,
     return Telemetry_UDP::start_sending();
 }
 bool Telemetry_UDP::start_sending(){
-    //start sending_loop in own thread
+    // start sending_loop in own thread
     if(keep_running){
         return true;
     }
     keep_running = true;
     spdlog::debug("Telemetry_UDP.start_sending "+std::to_string(keep_running));
     sending_thread = std::thread(&Telemetry_UDP::sending_loop, this);
+    thread_running = true;
     return true;
 
 }
 bool Telemetry_UDP::stop_sending(){
-// keep running false, join running thread
+    // keep running false, join running thread
     spdlog::debug("Telemetry_UDP.stop_sending: terminating sending thread...");
     keep_running = false;
-    sending_thread.join();
+    if(thread_running){
+        sending_thread.join();
+        thread_running = false;
+    }
     spdlog::debug("Telemetry_UDP.stop_sending: sending thread terminated ");
     return true;
 }
 void Telemetry_UDP::sending_loop(){
     spdlog::debug("Telemetry_UDP.sending_loop started");
     while(keep_running){
-        //get current percept
+        // get current percept
         if(!m_core->refresh_percept({})){
             spdlog::error("No current state available, could not refresh perception.");
         }
         const Percept* p = m_core->get_percept();
         for(auto sub : subscriber_vector){
-            //build message for every subscriber
+            // build message for every subscriber
             nlohmann::json msg_data;
             for(std::string subscribtion : sub.subscribtions){
                 switch(perception.find(subscribtion)->second){
@@ -165,10 +169,10 @@ void Telemetry_UDP::sending_loop(){
                     default: msg_data["Error"] = "No definded Telemetry subscribed";
                 }
             }
-            //send to every subscriber
+            // send to every subscriber
             bool works = send(msg_data, sub.ip, sub.port);
         }
-        //wait
+        // wait
         std::this_thread::sleep_for(std::chrono::milliseconds(m_frequency));
     }
 }

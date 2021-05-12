@@ -38,6 +38,7 @@ private:
     std::vector<Subscriber> subscriber_vector;
     std::atomic<bool> keep_running;
     std::thread sending_thread;
+    bool thread_running;
 
     unsigned m_frequency;  //ms
     int m_socket;
