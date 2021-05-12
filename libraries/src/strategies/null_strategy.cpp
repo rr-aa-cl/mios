@@ -1,4 +1,5 @@
 #include "strategies/null_strategy.hpp"
+#include "utils/exceptions.hpp"
 
 namespace mios {
 
@@ -15,6 +16,7 @@ void NullStrategy::terminate(const Percept &p){
 }
 
 bool NullStrategy::finished(){
+    throw SkillException("Call to a NullStrategy.");
     return true;
 }
 

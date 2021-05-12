@@ -352,11 +352,11 @@ def test_place(robot, approach, placeable, surface, retract):
     print(result)
 
 
-def test_shove(robot, approach, shoveable, location):
+def test_shove(robot, approach, shovable, location):
     context = {
         "skill": {
             "objects": {
-                "Shoveable": shoveable,
+                "Shovable": shovable,
                 "Approach": approach,
                 "Location": location,
             },
@@ -383,19 +383,23 @@ def test_shove(robot, approach, shoveable, location):
     print(result)
 
 
-def test_turn_lever(robot, lever, goal_location):
+def test_turn_lever(robot, lever, goal_position):
+    call_method(robot, 12000, "set_grasped_object", {"object": lever})
     context = {
         "skill": {
             "objects": {
                 "Lever": lever,
-                "GoalLocation": goal_location
+                "GoalPosition": goal_position
             },
             "time_max": 10,
             "p0": {
-                "K_x": [1000, 1000, 1000, 100, 100, 100],
-                "dX_d": [0.1, 0.5],
+                "K_x": [500, 1000, 500, 50, 50, 50],
+                "dX_d": [0.05, 0.5],
                 "ddX_d": [0.5, 1],
             }
+        },
+        "user": {
+            "env_X": [0.01, 1]
         },
         "control": {
             "control_mode": 0
@@ -437,6 +441,7 @@ def test_move(robot, goal_pose):
 
 
 def test_carry(robot, goal_pose, carriable):
+    call_method(robot, 12000, "set_grasped_object", {"object": carriable})
     context = {
         "skill": {
             "objects": {
@@ -456,6 +461,79 @@ def test_carry(robot, goal_pose, carriable):
     }
     t = Task(robot)
     t.add_skill("carry", "TaxCarry", context)
+    t.start()
+    result = t.wait()
+    print(result)
+
+
+def test_slide(robot, goal_pose, slidable, surface):
+    call_method(robot, 12000, "set_grasped_object", {"object": slidable})
+    context = {
+        "skill": {
+            "objects": {
+                "GoalPose": goal_pose,
+                "Slidable": slidable,
+                "Surface": surface
+            },
+            "time_max": 10,
+            "p0": {
+                "K_x": [1000, 1000, 0, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "f_slide": 10
+            }
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("slide", "TaxSlide", context)
+    t.start()
+    result = t.wait()
+    print(result)
+
+
+def test_swipe(robot, approach, swipe_start, swipe_end, retract, stylus):
+    call_method(robot, 12000, "set_grasped_object", {"object": stylus})
+    context = {
+        "skill": {
+            "objects": {
+                "Approach": approach,
+                "SwipeStart": swipe_start,
+                "SwipeEnd": swipe_end,
+                "Retract": retract,
+                "Stylus": stylus
+            },
+            "time_max": 10,
+            "p0": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+            },
+            "p1": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+            },
+            "p2": {
+                "K_x": [1000, 1000, 0, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "f_swipe": 10
+            },
+            "p3": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+            }
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("swipe", "TaxSwipe", context)
     t.start()
     result = t.wait()
     print(result)

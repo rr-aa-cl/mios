@@ -1,4 +1,5 @@
 #include "manipulation_primitive/manipulation_primitive.hpp"
+#include "strategies/null_strategy.hpp"
 #include "memory/memory.hpp"
 #include <spdlog/spdlog.h>
 
@@ -232,7 +233,8 @@ bool ManipulationPrimitive::is_settled(bool ignore) const{
 
 const std::shared_ptr<PrimitiveStrategy> ManipulationPrimitive::get_strategy_interface(const std::string &name) const{
     if(m_strategies.find(name)==m_strategies.end()){
-        return nullptr;
+        spdlog::error("Primitive " + m_name + " has no strategy with name " + name + ".");
+        return std::make_shared<NullStrategy>(NullStrategy());
     }else{
         return m_strategies.at(name).strategy;
     }

@@ -81,7 +81,7 @@ std::shared_ptr<ManipulationPrimitive> TaxShove::create_approach_mp(const Percep
 std::shared_ptr<ManipulationPrimitive> TaxShove::create_shove_mp(const Percept &p){
     spdlog::trace("TaxShove::create_shove_mp");
     std::shared_ptr<SkillParametersTaxShove> skill_params = get_parameters<SkillParametersTaxShove>();
-    std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("shove",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
     move->set_goal(get_object_pose_T("Location"),skill_params->p1.dX_d,skill_params->p1.ddX_d);
@@ -92,17 +92,17 @@ std::shared_ptr<ManipulationPrimitive> TaxShove::create_shove_mp(const Percept &
 
 void TaxShove::update_internal_models(const Percept &p){
     update_object("Shovable")->O_T_OB=p.proprioception.O_T_EE;
-    double f_contact = p.proprioception.TF_F_ext_K.block<3,1>(0,3).norm();
+    double f_contact = p.proprioception.TF_F_ext_K.block<3,1>(0,0).norm();
     if(f_contact>m_memory->read_parameters()->user.F_ext_contact(0)){
         m_has_contact=true;
     }
 }
 
 bool TaxShove::check_local_pre_conditions(const Percept &p){
-    Eigen::Matrix<double,4,4> T_shoveable = get_object_pose_T("Shoveable");
+    Eigen::Matrix<double,4,4> T_shovable = get_object_pose_T("Shovable");
     std::shared_ptr<SkillParametersTaxShove> skill_params = get_parameters<SkillParametersTaxShove>();
     for(unsigned i=0;i<3;i++){
-        if(p.proprioception.T_T_EE(3,i)<T_shoveable(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)<T_shoveable(3,i)+skill_params->ROI_x(i*2+1)){
+        if(p.proprioception.T_T_EE(3,i)<T_shovable(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)>T_shovable(3,i)+skill_params->ROI_x(i*2+1)){
             return false;
         }
     }
@@ -113,7 +113,7 @@ bool TaxShove::check_local_err_conditions(const Percept &p){
     std::shared_ptr<SkillParametersTaxShove> skill_params = get_parameters<SkillParametersTaxShove>();
     if(get_active_mp()->get_name()=="shove" && get_active_mp()->get_strategy_interface("move")->finished()){
         if(!m_has_contact){
-            return false;
+            return true;
         }
     }
     return false;

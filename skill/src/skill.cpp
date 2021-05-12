@@ -84,6 +84,7 @@ Object* Skill::update_object(const std::string &o){
 }
 
 bool Skill::initialize(const Percept &p){
+    spdlog::trace("Skill::initialize()");
     if(!msrm_utils::is_orthonormal(m_memory->read_parameters()->frames.O_R_T)){
         spdlog::error("O_R_T of skill "+m_id+" is invalid. Aborting execution.");
         std::cout<<"O_R_T: "<<m_memory->read_parameters()->frames.O_R_T<<std::endl;
@@ -239,6 +240,7 @@ void Skill::set_init_mp(const std::string& name){
 }
 
 void Skill::terminate(const Percept& p){
+    spdlog::trace("Skill::terminate()");
     for(auto& mp : m_mp_graph){
         mp.second->terminate(p);
     }
@@ -246,12 +248,12 @@ void Skill::terminate(const Percept& p){
 }
 
 void Skill::invoke_failure(){
-    spdlog::debug("Skill::invoke_failure()");
+    spdlog::trace("Skill::invoke_failure()");
     m_flag_invoke_failure=true;
 }
 
 void Skill::invoke_success(){
-    spdlog::debug("Skill::invoke_success()");
+    spdlog::trace("Skill::invoke_success()");
     m_flag_invoke_success=true;
 }
 
@@ -332,7 +334,7 @@ const std::string& Skill::get_id() const{
 }
 
 bool Skill::ground_objects(){
-    spdlog::debug("SKILL:GROUND_OBJECTS");
+    spdlog::trace("Skill:ground_objects");
     for(const auto& o : m_objects){
         if(m_memory->get_parameters()->skill->objects.find(o)==m_memory->get_parameters()->skill->objects.end()){
             spdlog::error("No object of type " + o + " has been provided.");

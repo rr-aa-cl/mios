@@ -66,14 +66,14 @@ bool TaxTurnLever::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxTurnLever::check_local_suc_conditions(const Percept &p){
-    return is_in_env("GoalLocation","move",p);
+    return is_in_env("GoalPosition","move",p);
 }
 
 bool TaxTurnLever::check_local_err_conditions(const Percept &p){
     if(m_memory->get_live_context()->grasped_object->name!=get_object("Lever")->name){
-        return false;
+        return true;
     }
-    return true;
+    return false;
 }
 
 }

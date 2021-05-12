@@ -29,6 +29,11 @@
 #include "skills/tax_push.hpp"
 #include "skills/tax_tip.hpp"
 #include "skills/tax_pull.hpp"
+#include "skills/tax_carry.hpp"
+#include "skills/tax_shove.hpp"
+#include "skills/tax_turn_lever.hpp"
+#include "skills/tax_slide.hpp"
+#include "skills/tax_swipe.hpp"
 
 namespace mios {
 
@@ -95,6 +100,21 @@ void GenericTask::add_any_skill(unsigned int index){
         break;
     case msrm_utils::str_to_int("TaxTip"):
         add_skill<TaxTip,SkillParametersTaxTip>(name);
+        break;
+    case msrm_utils::str_to_int("TaxCarry"):
+        add_skill<TaxCarry,SkillParametersTaxCarry>(name);
+        break;
+    case msrm_utils::str_to_int("TaxShove"):
+        add_skill<TaxShove,SkillParametersTaxShove>(name);
+        break;
+    case msrm_utils::str_to_int("TaxTurnLever"):
+        add_skill<TaxTurnLever,SkillParametersTaxTurnLever>(name);
+        break;
+    case msrm_utils::str_to_int("TaxSlide"):
+        add_skill<TaxSlide,SkillParametersTaxSlide>(name);
+        break;
+    case msrm_utils::str_to_int("TaxSwipe"):
+        add_skill<TaxSwipe,SkillParametersTaxSwipe>(name);
         break;
     case msrm_utils::str_to_int("GenericWiggleMotion"):
         add_skill<GenericWiggleMotion,SkillParametersGenericWiggleMotion>(name);
@@ -188,6 +208,21 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("TaxTip"):
         execute_skill<TaxTip,SkillParametersTaxTip>(name);
+        break;
+    case msrm_utils::str_to_int("TaxShove"):
+        execute_skill<TaxShove,SkillParametersTaxShove>(name);
+        break;
+    case msrm_utils::str_to_int("TaxCarry"):
+        execute_skill<TaxCarry,SkillParametersTaxCarry>(name);
+        break;
+    case msrm_utils::str_to_int("TaxTurnLever"):
+        execute_skill<TaxTurnLever,SkillParametersTaxTurnLever>(name);
+        break;
+    case msrm_utils::str_to_int("TaxSlide"):
+        execute_skill<TaxSlide,SkillParametersTaxSlide>(name);
+        break;
+    case msrm_utils::str_to_int("TaxSwipe"):
+        execute_skill<TaxSwipe,SkillParametersTaxSwipe>(name);
         break;
     default:
         throw TaskException("Skill with type " + type + " not known to GenericTask");

@@ -41,10 +41,10 @@ std::shared_ptr<ManipulationPrimitive> TaxCarry::get_initial_mp(const Percept &p
 std::shared_ptr<ManipulationPrimitive> TaxCarry::create_move_mp(const Percept &p){
     spdlog::trace("TaxCarry::create_move_mp");
     std::shared_ptr<SkillParametersTaxCarry> skill_params = get_parameters<SkillParametersTaxCarry>();
-    std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Approach"),skill_params->p0.dX_d,skill_params->p0.ddX_d);
+    move->set_goal(get_object_pose_T("GoalPose"),skill_params->p0.dX_d,skill_params->p0.ddX_d);
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p0.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;

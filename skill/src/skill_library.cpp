@@ -32,6 +32,11 @@
 #include "skills/tax_push.hpp"
 #include "skills/tax_pull.hpp"
 #include "skills/tax_tip.hpp"
+#include "skills/tax_shove.hpp"
+#include "skills/tax_carry.hpp"
+#include "skills/tax_turn_lever.hpp"
+#include "skills/tax_slide.hpp"
+#include "skills/tax_swipe.hpp"
 
 namespace mios {
 
@@ -64,6 +69,11 @@ SkillLibrary::SkillLibrary(Memory* memory, Portal* portal){
     m_skill_parameters.insert(std::make_pair("TaxPush",std::make_shared<SkillParametersTaxPush>()));
     m_skill_parameters.insert(std::make_pair("TaxPull",std::make_shared<SkillParametersTaxPull>()));
     m_skill_parameters.insert(std::make_pair("TaxTip",std::make_shared<SkillParametersTaxTip>()));
+    m_skill_parameters.insert(std::make_pair("TaxShove",std::make_shared<SkillParametersTaxShove>()));
+    m_skill_parameters.insert(std::make_pair("TaxCarry",std::make_shared<SkillParametersTaxCarry>()));
+    m_skill_parameters.insert(std::make_pair("TaxTurnLever",std::make_shared<SkillParametersTaxTurnLever>()));
+    m_skill_parameters.insert(std::make_pair("TaxSlide",std::make_shared<SkillParametersTaxSlide>()));
+    m_skill_parameters.insert(std::make_pair("TaxSwipe",std::make_shared<SkillParametersTaxSwipe>()));
 }
 
 const std::map<std::string,std::shared_ptr<Skill> >* SkillLibrary::get_skills() const{
