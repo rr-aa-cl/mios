@@ -47,6 +47,7 @@ bool Telemetry_UDP::send(const nlohmann::json &msg_data, const std::string &addr
         std::cout<<std::strerror(errno)<<std::endl;
         return false;
     }
+    close(m_socket);
     return true;
 }
 
