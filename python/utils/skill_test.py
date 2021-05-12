@@ -537,3 +537,55 @@ def test_swipe(robot, approach, swipe_start, swipe_end, retract, stylus):
     t.start()
     result = t.wait()
     print(result)
+
+
+def test_turn(robot, goal_orientation, turnable):
+    call_method(robot, 12000, "set_grasped_object", {"object": turnable})
+    context = {
+        "skill": {
+            "objects": {
+                "GoalOrientation": goal_orientation,
+                "Turnable": turnable
+            },
+            "time_max": 10,
+            "p0": {
+                "K_x": [1000, 1000, 0, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+            }
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("turn", "TaxTurn", context)
+    t.start()
+    result = t.wait()
+    print(result)
+
+
+def test_bend(robot, goal_pose, bendable):
+    call_method(robot, 12000, "set_grasped_object", {"object": bendable})
+    context = {
+        "skill": {
+            "objects": {
+                "GoalPose": goal_pose,
+                "Bendable": bendable
+            },
+            "time_max": 10,
+            "p0": {
+                "K_x": [1000, 1000, 0, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+            }
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("bend", "TaxBend", context)
+    t.start()
+    result = t.wait()
+    print(result)
