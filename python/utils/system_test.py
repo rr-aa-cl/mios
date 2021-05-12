@@ -1,6 +1,8 @@
 #!/usr/bin/python3 -u
 import time
 import numpy as np
+import json
+import socket
 
 from ws_client import *
 
@@ -612,6 +614,51 @@ def test_generic_task(address):
             }
         }})
     print(response)
+
+def test_telemetry_udp(address: str, subscriber_addr: str, subscriber_port: int = 12346):
+    print("Testing Telemtry_UDP module...")
+    print("subscribe to Telemetry_UDP with \"tau_ext\", \"q\"...")
+    result_1 = call_method(address, 12000, "subscribe_telemetry", {"ip":subscriber_addr,"port":subscriber_port,"subscribe":["tau_ext","q"]})
+    if result_1["result"]["result"] == True:
+        print("successfull subscribed :)")
+    else:
+        print("Error while subscribing: ", result)
+    print("receiving subscribed telemetry packages for next 10 seconds...")
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  
+    s.bind((subscriber_addr, subscriber_port))
+    cnt = 0
+    received_pkgs = []
+    start_time = time.time()
+    try:       
+        print("\n    --Interrupt with ctrl+c--\n")                                    
+        while True:  
+            data, adrr = s.recvfrom(4096)  
+            received_pkgs.append(json.loads(data.decode("utf-8")))
+            cnt += 1 
+            if time.time() - start_time > 10:
+                break
+    except KeyboardInterrupt:
+        pass
+    end_time = time.time()
+    print("received ",cnt," packages over last",end_time-start_time, " seconds")
+    pkg_validation_cnt = 0
+    for pkg in received_pkgs:
+        if pkg.get("tau_ext", False) != False and pkg.get("q", False) != False:
+            pkg_validation_cnt +=1
+    print(cnt-pkg_validation_cnt, " package(s) are corrupted.")
+
+
+    print("Stopping Telemtry_UDP again...")
+    result_2 = call_method(address, 12000, "stop_telemetry", {}, timeout=5)
+    if result_2["result"]["result"] == True:
+        print("Successfull stopped Telemetry_UDP.")
+    else:
+        print("Stopping was not successfull!")
+    if result_1["result"]["result"] and result_2["result"]["result"] and cnt-pkg_validation_cnt == 0:
+        print("\nEverything works fine :)")
+    else:
+        print("\nTest failed!")
+
 
 
 def start_skill(address: str, skill: str, parameters: dict, control: dict):
