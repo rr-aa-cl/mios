@@ -41,6 +41,9 @@ private:
     bool thread_running;
 
     unsigned m_frequency;  //ms
+    std::chrono::time_point<std::chrono::high_resolution_clock> time_1;
+    std::chrono::time_point<std::chrono::high_resolution_clock> time_2;
+    std::chrono::duration<double, std::milli> time_duration;
     int m_socket;
 
     std::map<std::string, unsigned> perception{

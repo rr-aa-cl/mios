@@ -107,6 +107,7 @@ bool Telemetry_UDP::stop_sending(){
 void Telemetry_UDP::sending_loop(){
     spdlog::debug("Telemetry_UDP.sending_loop started");
     while(keep_running){
+        time_1 = std::chrono::high_resolution_clock::now();
         // get current percept
         if(!m_core->refresh_percept({})){
             spdlog::error("No current state available, could not refresh perception.");
@@ -175,8 +176,10 @@ void Telemetry_UDP::sending_loop(){
             // send to every subscriber
             bool works = send(msg_data, sub.ip, sub.port);
         }
+        time_2 = std::chrono::high_resolution_clock::now();
+        time_duration = time_2 - time_1;
         // wait
-        std::this_thread::sleep_for(std::chrono::milliseconds(m_frequency));
+        std::this_thread::sleep_for(std::chrono::milliseconds(m_frequency) - time_duration);
     }
 }
 
