@@ -23,7 +23,6 @@ bool SkillParametersTaxTurnLever::from_json(const nlohmann::json& parameters){
             return false;
         }
     }
-
     return true;
 }
 

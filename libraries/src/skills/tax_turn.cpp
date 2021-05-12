@@ -1,21 +1,31 @@
 #include "skills/tax_turn.hpp"
 #include "strategies/move_to_pose.hpp"
+#include "strategies/cart_compliance_strategy.hpp"
 
 namespace mios{
 bool SkillParametersTaxTurn::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"turn_speed",turn_speed)){
-        spdlog::error("Parameter turn_speed could not be loaded but is mandatory.");
+    if(parameters.find("p0")==parameters.end()){
+        spdlog::error("Parameters for primitive 0 are missing.");
         return false;
-    }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"turn_acc",turn_acc)){
-        spdlog::error("Parameter turn_acc could not be loaded but is mandatory.");
-        return false;
+    }else if(parameters.find("p0")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+            spdlog::error("Missing parameter: p0.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+            spdlog::error("Missing parameter: p0.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+            spdlog::error("Missing parameter: p0.ddX_d");
+            return false;
+        }
     }
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxTurn::get_parameter_list(){
-    return {{"turn_speed",{}},{"turn_acc",{}}};
+    return {{"p0",{"K_x","dX_d","ddX_d"}}};
 }
 
 TaxTurn::TaxTurn(const std::string& id, Memory* memory, Portal* portal):Skill("Turn",{"Turnable","GoalOrientation"},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
@@ -35,11 +45,14 @@ std::shared_ptr<ManipulationPrimitive> TaxTurn::get_initial_mp(const Percept& p)
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxTurn::create_turn_mp(const Percept &p){
+    spdlog::trace("TaxTurn::create_turn_mp");
     std::shared_ptr<SkillParametersTaxTurn> skill_params = get_parameters<SkillParametersTaxTurn>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("turn",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("GoalOrientation"),skill_params->turn_speed,skill_params->turn_acc);
+    move->set_goal(get_object_pose_T("GoalPosition"),skill_params->p0.dX_d,skill_params->p0.ddX_d);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p0.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 

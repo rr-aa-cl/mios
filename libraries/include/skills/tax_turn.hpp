@@ -6,8 +6,11 @@ class SkillParametersTaxTurn : public SkillParameters{
 public:
     bool from_json(const nlohmann::json& parameters) override;
     std::map<std::string, std::set<std::string> > get_parameter_list() override;
-    Eigen::Matrix<double,2,1> turn_speed;
-    Eigen::Matrix<double,2,1> turn_acc;
+    struct P0{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+    }p0;
 };
 
 class TaxTurn : public Skill{
