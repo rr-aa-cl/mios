@@ -50,7 +50,7 @@ std::shared_ptr<ManipulationPrimitive> TaxTurn::create_turn_mp(const Percept &p)
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("turn",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("GoalPosition"),skill_params->p0.dX_d,skill_params->p0.ddX_d);
+    move->set_goal(get_object_pose_T("GoalOrientation"),skill_params->p0.dX_d,skill_params->p0.ddX_d);
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p0.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;

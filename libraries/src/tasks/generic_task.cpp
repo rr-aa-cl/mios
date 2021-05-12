@@ -34,6 +34,7 @@
 #include "skills/tax_turn_lever.hpp"
 #include "skills/tax_slide.hpp"
 #include "skills/tax_swipe.hpp"
+#include "skills/tax_bend.hpp"
 
 namespace mios {
 
@@ -70,6 +71,9 @@ void GenericTask::add_any_skill(unsigned int index){
         break;
     case msrm_utils::str_to_int("HoldPose"):
         add_skill<HoldPose,SkillParametersHoldPose>(name);
+        break;
+    case msrm_utils::str_to_int("GenericWiggleMotion"):
+        add_skill<GenericWiggleMotion,SkillParametersGenericWiggleMotion>(name);
         break;
     case msrm_utils::str_to_int("TaxMove"):
         add_skill<TaxMove,SkillParametersTaxMove>(name);
@@ -116,8 +120,8 @@ void GenericTask::add_any_skill(unsigned int index){
     case msrm_utils::str_to_int("TaxSwipe"):
         add_skill<TaxSwipe,SkillParametersTaxSwipe>(name);
         break;
-    case msrm_utils::str_to_int("GenericWiggleMotion"):
-        add_skill<GenericWiggleMotion,SkillParametersGenericWiggleMotion>(name);
+    case msrm_utils::str_to_int("TaxBend"):
+        add_skill<TaxBend,SkillParametersTaxBend>(name);
         break;
     default:
         throw TaskException("Skill with type " + type + " not known to GenericTask");
@@ -223,6 +227,9 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("TaxSwipe"):
         execute_skill<TaxSwipe,SkillParametersTaxSwipe>(name);
+        break;
+    case msrm_utils::str_to_int("TaxBend"):
+        execute_skill<TaxBend,SkillParametersTaxBend>(name);
         break;
     default:
         throw TaskException("Skill with type " + type + " not known to GenericTask");
