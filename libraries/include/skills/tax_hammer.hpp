@@ -7,19 +7,22 @@ namespace mios {
 struct SkillParametersTaxHammer : public SkillParameters{
     bool from_json(const nlohmann::json &parameters) override;
     std::map<std::string, std::set<std::string> > get_parameter_list() override;
-    Eigen::Matrix<double,2,1> approach_speed;
-    Eigen::Matrix<double,2,1> approach_acc;
-    Eigen::Matrix<double,2,1> down_speed;
-    Eigen::Matrix<double,2,1> down_acc;
-    Eigen::Matrix<double,2,1> up_speed;
-    Eigen::Matrix<double,2,1> up_acc;
-    Eigen::Matrix<double,2,1> down_wrench;
-    Eigen::Matrix<double,2,1> up_wrench;
-    double n_max;
-    double f_h;
-
-    Eigen::Matrix<double,6,1> ROI_x;
-    Eigen::Matrix<double,6,1> ROI_phi;
+    struct P0{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+    }p0;
+    struct P1{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+        double f_hammer;
+    }p1;
+    struct P2{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+    }p2;
 };
 
 class TaxHammer : public Skill{
@@ -42,7 +45,6 @@ private:
 
 private:
 
-    unsigned m_n_cnt;
 };
 
 }

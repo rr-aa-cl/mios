@@ -35,6 +35,9 @@
 #include "skills/tax_slide.hpp"
 #include "skills/tax_swipe.hpp"
 #include "skills/tax_bend.hpp"
+#include "skills/tax_hold.hpp"
+#include "skills/tax_hammer.hpp"
+
 
 namespace mios {
 
@@ -122,6 +125,12 @@ void GenericTask::add_any_skill(unsigned int index){
         break;
     case msrm_utils::str_to_int("TaxBend"):
         add_skill<TaxBend,SkillParametersTaxBend>(name);
+        break;
+    case msrm_utils::str_to_int("TaxHold"):
+        add_skill<TaxHold,SkillParametersTaxHold>(name);
+        break;
+    case msrm_utils::str_to_int("TaxHammer"):
+        add_skill<TaxHammer,SkillParametersTaxHammer>(name);
         break;
     default:
         throw TaskException("Skill with type " + type + " not known to GenericTask");
@@ -230,6 +239,12 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("TaxBend"):
         execute_skill<TaxBend,SkillParametersTaxBend>(name);
+        break;
+    case msrm_utils::str_to_int("TaxHold"):
+        execute_skill<TaxHold,SkillParametersTaxHold>(name);
+        break;
+    case msrm_utils::str_to_int("TaxHammer"):
+        execute_skill<TaxHammer,SkillParametersTaxHammer>(name);
         break;
     default:
         throw TaskException("Skill with type " + type + " not known to GenericTask");

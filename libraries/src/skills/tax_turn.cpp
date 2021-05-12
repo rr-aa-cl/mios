@@ -28,7 +28,7 @@ std::map<std::string, std::set<std::string> > SkillParametersTaxTurn::get_parame
     return {{"p0",{"K_x","dX_d","ddX_d"}}};
 }
 
-TaxTurn::TaxTurn(const std::string& id, Memory* memory, Portal* portal):Skill("Turn",{"Turnable","GoalOrientation"},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
+TaxTurn::TaxTurn(const std::string& id, Memory* memory, Portal* portal):Skill("TaxTurn",{"Turnable","GoalOrientation"},id,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
 
 }
 

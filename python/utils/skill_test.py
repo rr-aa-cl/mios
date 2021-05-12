@@ -589,3 +589,61 @@ def test_bend(robot, goal_pose, bendable):
     t.start()
     result = t.wait()
     print(result)
+
+
+def test_hold(robot):
+    context = {
+        "skill": {
+            "time_max": 10,
+            "p0": {
+                "K_x": [2000, 2000, 2000, 200, 200, 200],
+                "t_hold": 5
+            }
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("hold", "TaxHold", context)
+    t.start()
+    result = t.wait()
+    print(result)
+
+
+def test_hammer(robot, approach, hammerable, hammer):
+    call_method(robot, 12000, "set_grasped_object", {"object": hammer})
+    context = {
+        "skill": {
+            "objects": {
+                "Approach": approach,
+                "Hammerable": hammerable,
+                "Hammer": hammer
+            },
+            "time_max": 10,
+            "p0": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+            },
+            "p1": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "f_hammer": 10
+            },
+            "p2": {
+                "K_x": [1000, 1000, 1000, 100, 100, 100],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+            }
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("hammer", "TaxHammer", context)
+    t.start()
+    result = t.wait()
+    print(result)
