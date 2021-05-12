@@ -68,9 +68,11 @@ bool Telemetry_UDP::add_subscriber(const std::string &addr, const unsigned port,
              (const Subscriber &sub) -> bool { return ip_temp == sub.address; }); 
     if(it == subscriber_vector.end()){
         subscriber_vector.push_back(sub_temp);  // add new subscriber
+        spdlog::debug("Telemetry_UDP.add_subscriber: Subscriber " + sub_temp.address + ":"+std::to_string(sub_temp.port));
     }
     else{  // update subscriber
-        for(auto sub : subscriber_vector){
+        spdlog::debug("Telemetry_UDP.add_subscriber: update existing Subsciber " + sub_temp.address + ":"+std::to_string(sub_temp.port));
+        for(auto &sub : subscriber_vector){
             if(sub.address == sub_temp.address){
                 sub.subscribtions = sub_temp.subscribtions;
                 sub.port = sub_temp.port;
