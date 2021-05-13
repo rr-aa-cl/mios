@@ -97,7 +97,7 @@ private:
     CommandInterface m_command_interface;
     RosNode m_ros_node;
     LearningModule m_learning_module;
-    Telemetry_UDP m_telemetry;
+    TelemetryUDP m_telemetry;
     std::unique_ptr<ControllerPipeline> m_controller_pipeline;
     std::set<std::unique_ptr<SafetyModuleStage1> > m_safety_stage_1;
     std::set<std::unique_ptr<SafetyModuleStage2> > m_safety_stage_2;

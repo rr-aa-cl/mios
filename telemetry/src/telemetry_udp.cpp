@@ -11,16 +11,16 @@
 namespace mios {
 class Core;
 
-Telemetry_UDP::Telemetry_UDP(Core *core):m_core(core),keep_running(false),m_frequency(200){
+TelemetryUDP::TelemetryUDP(Core *core):m_core(core),keep_running(false),m_frequency(200){
 
 }
 
-Telemetry_UDP::~Telemetry_UDP(){
+TelemetryUDP::~TelemetryUDP(){
     keep_running = false;
     thread_running = false;
 }
 
-bool Telemetry_UDP::send(const nlohmann::json &msg_data, const std::string &address, const unsigned port){
+bool TelemetryUDP::send(const nlohmann::json &msg_data, const std::string &address, const unsigned port){
     struct sockaddr_in m_si_other;
     unsigned m_slen = sizeof(m_si_other);
     if ((m_socket=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) // If socket for outgoing connection could not be created...
@@ -43,7 +43,7 @@ bool Telemetry_UDP::send(const nlohmann::json &msg_data, const std::string &addr
     const char* msg = payload.c_str();
     int result = sendto(m_socket, msg, strlen(msg), 0, (struct sockaddr *) &m_si_other, m_slen);  //flag MSG_CONFIRM
     if(result<0){
-        spdlog::error("Telemetry_UDP.send: Could not send message: ");
+        spdlog::error("Telemetry: Could not send message: ");
         std::cout<<std::strerror(errno)<<std::endl;
         return false;
     }
@@ -51,7 +51,7 @@ bool Telemetry_UDP::send(const nlohmann::json &msg_data, const std::string &addr
     return true;
 }
 
-bool Telemetry_UDP::add_subscriber(const std::string &addr, const unsigned port, const std::vector<std::string> &subs){
+bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, const std::vector<std::string> &subs){
     // check ip address:
     std::string ip = addr;
     if(!msrm_utils::is_valid_ip_address(addr.c_str())){
@@ -79,33 +79,34 @@ bool Telemetry_UDP::add_subscriber(const std::string &addr, const unsigned port,
             }
         }
     }
-    return Telemetry_UDP::start_sending();
+    return TelemetryUDP::start_sending();
 }
-bool Telemetry_UDP::start_sending(){
+bool TelemetryUDP::start_sending(){
     // start sending_loop in own thread
     if(keep_running){
         return true;
     }
     keep_running = true;
-    spdlog::debug("Telemetry_UDP.start_sending "+std::to_string(keep_running));
-    sending_thread = std::thread(&Telemetry_UDP::sending_loop, this);
+    spdlog::debug("TelemetryUDP::start_sending "+std::to_string(keep_running));
+    sending_thread = std::thread(&TelemetryUDP::sending_loop, this);
     thread_running = true;
+    spdlog::info("Telemetry has been started.");
     return true;
 
 }
-bool Telemetry_UDP::stop_sending(){
+bool TelemetryUDP::stop_sending(){
     // keep running false, join running thread
-    spdlog::debug("Telemetry_UDP.stop_sending: terminating sending thread...");
+    spdlog::trace("Telemetry_UDP.stop_sending()");
     keep_running = false;
     if(thread_running){
         sending_thread.join();
         thread_running = false;
     }
-    spdlog::debug("Telemetry_UDP.stop_sending: sending thread terminated ");
+    spdlog::info("Telemetry has been terminated.");
     return true;
 }
-void Telemetry_UDP::sending_loop(){
-    spdlog::debug("Telemetry_UDP.sending_loop started");
+void TelemetryUDP::sending_loop(){
+    spdlog::trace("TelemetryUDP::sending_loop()");
     while(keep_running){
         time_1 = std::chrono::high_resolution_clock::now();
         // get current percept

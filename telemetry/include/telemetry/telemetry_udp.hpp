@@ -8,10 +8,16 @@
 #include <poll.h>
 #include <atomic>
 #include <unistd.h>
+#include <vector>
+#include <string>
+#include <thread>
+#include <map>
+#include <nlohmann/json.hpp>
 
 
 namespace mios {
 
+class Core;
 
 struct Subscriber{
     unsigned port;
@@ -20,10 +26,10 @@ struct Subscriber{
     std::vector<std::string> subscribtions; 
 };
 
-class Telemetry_UDP{
+class TelemetryUDP{
 public:
-    Telemetry_UDP(Core *core);
-    ~Telemetry_UDP();
+    TelemetryUDP(Core *core);
+    ~TelemetryUDP();
 
     bool add_subscriber(const std::string &addr, const unsigned port, const std::vector<std::string> &subs);
     bool start_sending();

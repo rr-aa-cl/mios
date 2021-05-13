@@ -12,7 +12,7 @@ namespace mios {
 
 using msrm_utils::ArgPair;
 
-CommandInterface::CommandInterface(Core *core, TaskEngine *task_engine,Portal* portal,Memory* memory,Telemetry_UDP* telemetry):m_core(core),m_task_engine(task_engine),m_portal(portal),m_memory(memory),m_telemetry(telemetry){
+CommandInterface::CommandInterface(Core *core, TaskEngine *task_engine,Portal* portal,Memory* memory,TelemetryUDP* telemetry):m_core(core),m_task_engine(task_engine),m_portal(portal),m_memory(memory),m_telemetry(telemetry){
     bind_methods();
 }
 
