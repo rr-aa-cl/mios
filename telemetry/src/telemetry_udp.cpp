@@ -58,19 +58,28 @@ bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, 
 }
 
 bool TelemetryUDP::remove_subscriber(const std::string &addr){
-    m_mtx_subscriber.lock();
-    auto it = std::find_if(m_subscribers.begin(), m_subscribers.end(),
-                    [&ip_temp = addr](const Subscriber &sub) -> bool
-                    { return ip_temp == sub.address; });
-    if(it == m_subscribers.end()) {
-        // no subscriber with this addr found
-        spdlog::debug("TelemetryUDP::remove_subscriber: No subscriber with address "+addr+" found.");
-        return false;
+    unsigned retry_cnt = 0;
+    while(true){
+        if(m_mtx_subscriber.try_lock()){
+            auto it = std::find_if(m_subscribers.begin(), m_subscribers.end(),
+                            [&ip_temp = addr](const Subscriber &sub) -> bool
+                            { return ip_temp == sub.address; });
+            if(it == m_subscribers.end()) {
+                // no subscriber with this addr found
+                spdlog::debug("TelemetryUDP::remove_subscriber: No subscriber with address "+addr+" found.");
+                return false;
+            }
+            m_subscribers.erase(it);
+            m_mtx_subscriber.unlock();
+            spdlog::debug("TelemetryUDP::remove_subscriber: removed subscriber "+addr);
+            return true;
+        }
+        if(retry_cnt > 10){
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
-    m_subscribers.erase(it);
-    m_mtx_subscriber.unlock();
-    spdlog::debug("TelemetryUDP::remove_subscriber: removed subscriber "+addr);
-    return true;
+    return false;
 }
 bool TelemetryUDP::start_sending(){
     spdlog::trace("TelemetryUDP::start_sending()");
