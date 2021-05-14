@@ -622,7 +622,7 @@ def test_telemetry_udp(address: str, subscriber_addr: str, subscriber_port: int 
     result_1 = call_method(address, 12000, "subscribe_telemetry",
                            {"ip": subscriber_addr, "port": subscriber_port, "subscribe": ["tau_ext", "q"]})
     if result_1["result"]["result"] == True:
-        print("successfull subscribed :)")
+        print("successfull subscribed.")
     else:
         print("Error while subscribing: ", result)
     print("receiving subscribed telemetry packages for next 10 seconds...")
@@ -648,7 +648,11 @@ def test_telemetry_udp(address: str, subscriber_addr: str, subscriber_port: int 
         if pkg.get("tau_ext", False) != False and pkg.get("q", False) != False:
             pkg_validation_cnt += 1
     print(cnt - pkg_validation_cnt, " package(s) are corrupted.")
-    if result_1["result"]["result"] and cnt - pkg_validation_cnt == 0:
+    print("unsubscribe...")
+    result_2 = call_method(address, 12000, "unsubscribe_telemetry", {"ip": subscriber_addr})
+    if result_2["result"]["result"]:
+        print("successfull unsibscribed.")
+    if result_1["result"]["result"] and cnt - pkg_validation_cnt == 0 and result_2["result"]["result"]:
         print("\nEverything works fine :)")
     else:
         print("\nTest failed!")
