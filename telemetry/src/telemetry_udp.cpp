@@ -34,8 +34,8 @@ bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, 
 
     m_mtx_subscriber.lock();
     auto it = std::find_if(m_subscribers.begin(), m_subscribers.end(),
-                           [&ip_temp = addr](const Subscriber &sub) -> bool
-    { return ip_temp == sub.address; });
+                    [&ip_temp = addr](const Subscriber &sub) -> bool
+                    { return ip_temp == sub.address; });
     if(it == m_subscribers.end()){
         m_subscribers.push_back(sub_temp);  // add new subscriber
         if(!sub_temp.stream->connect()){
@@ -54,6 +54,22 @@ bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, 
         }
     }
     m_mtx_subscriber.unlock();
+    return true;
+}
+
+bool TelemetryUDP::remove_subscriber(const std::string &addr){
+    m_mtx_subscriber.lock();
+    auto it = std::find_if(m_subscribers.begin(), m_subscribers.end(),
+                    [&ip_temp = addr](const Subscriber &sub) -> bool
+                    { return ip_temp == sub.address; });
+    if(it == m_subscribers.end()) {
+        // no subscriber with this addr found
+        spdlog::debug("TelemetryUDP::remove_subscriber: No subscriber with address "+addr+" found.");
+        return false;
+    }
+    m_subscribers.erase(it);
+    m_mtx_subscriber.unlock();
+    spdlog::debug("TelemetryUDP::remove_subscriber: removed subscriber "+addr);
     return true;
 }
 bool TelemetryUDP::start_sending(){
@@ -156,7 +172,6 @@ void TelemetryUDP::sending_loop(){
             }
             // send to every subscriber
             sub.stream->send(msg_data.dump());
-            //            bool works = send(msg_data, sub.ip, sub.port);
         }
         m_mtx_subscriber.unlock();
         m_time_2 = std::chrono::high_resolution_clock::now();

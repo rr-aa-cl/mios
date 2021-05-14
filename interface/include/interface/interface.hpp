@@ -45,7 +45,7 @@ private:
     nlohmann::json get_model(const nlohmann::json& request);
     nlohmann::json reload_database(const nlohmann::json& request);
     nlohmann::json subscribe_telemetry(const nlohmann::json& request);
-    nlohmann::json stop_telemetry(const nlohmann::json &request);
+    nlohmann::json unsubscribe_telemetry(const nlohmann::json &request);
 
     // robot level
     nlohmann::json start_desk_task(const nlohmann::json& request);

@@ -46,7 +46,7 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("get_model",std::bind(&CommandInterface::get_model,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("reload_database",std::bind(&CommandInterface::reload_database,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("subscribe_telemetry",std::bind(&CommandInterface::subscribe_telemetry,this,std::placeholders::_1),{});
-    m_portal->bind_method_to_all("stop_telemetry",std::bind(&CommandInterface::stop_telemetry,this,std::placeholders::_1),{});
+    m_portal->bind_method_to_all("unsubscribe_telemetry",std::bind(&CommandInterface::unsubscribe_telemetry,this,std::placeholders::_1),{});
 
     m_portal->bind_method_to_all("unlock_brakes",std::bind(&CommandInterface::unlock_brakes,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("lock_brakes",std::bind(&CommandInterface::lock_brakes,this,std::placeholders::_1),{});
@@ -455,9 +455,9 @@ nlohmann::json CommandInterface::subscribe_telemetry(const nlohmann::json &reque
     };
     return response;
 }
-nlohmann::json CommandInterface::stop_telemetry(const nlohmann::json &request){
+nlohmann::json CommandInterface::unsubscribe_telemetry(const nlohmann::json &request){
     nlohmann::json response;
-    response["result"] = m_core->get_telemetry()->stop_sending();
+    response["result"] = m_core->get_telemetry()->remove_subscriber(request["ip"]);
     return response;
 }
 //nlohmann::json CommandInterface::subscribe_to_event_stream(const nlohmann::json &request){
