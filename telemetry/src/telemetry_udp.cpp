@@ -69,10 +69,13 @@ bool TelemetryUDP::remove_subscriber(const std::string &addr){
                 spdlog::debug("TelemetryUDP::remove_subscriber: No subscriber with address "+addr+" found.");
                 return false;
             }
-            m_subscribers.erase(it);
-            m_mtx_subscriber.unlock();
-            spdlog::debug("TelemetryUDP::remove_subscriber: removed subscriber "+addr);
-            return true;
+            if((*it).stream->disconnect()){
+                m_subscribers.erase(it);
+                m_mtx_subscriber.unlock();
+                spdlog::debug("TelemetryUDP::remove_subscriber: removed subscriber "+addr);
+                return true;
+            }
+
         }
         if(retry_cnt > 10){
             break;
