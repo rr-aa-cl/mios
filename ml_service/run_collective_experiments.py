@@ -25,8 +25,8 @@ experiment_learning_thresholds = [0.7/5, 0.5/5, 0.6/5, 0.7/5, 0.6/5]
 #experiment_learning_thresholds = [1, 1, 1, 1]
 database = "collective-control-001.local"
 agents_benchmark = ["collective-panda-001", "collective-panda-003"]
-agents_experiment = ["collective-panda-001", "collective-panda-003", "collective-panda-007",
-          "collective-panda-008", "collective-panda-009"]
+agents_experiment = ["collective-panda-001", "collective-panda-007",
+          "collective-panda-008"]
 
 task_map = {
     "collective-panda-001": "cylinder_40",
@@ -156,7 +156,7 @@ def plot_success():
     plt.show()
 
 
-def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchmark: bool = True):
+def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, agents: list, benchmark: bool = True):
     if benchmark is True:
         marker = "collective_benchmark"
         skill = "benchmark_rastrigin"
@@ -178,11 +178,12 @@ def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchma
     knowledge_time_shared = []
     knowledge_time_parallel = []
 
-    for i in range(len(factors)):
+    i = 0
+    for a in agents:
         found_single = True
         found_shared = True
 
-        tags_single = [marker + "_single", unique_tag_single, "f_" + str(factors[i])]
+        tags_single = [marker + "_single", unique_tag_single, "task_" + task_map[a]]
         try:
             results_single = get_multiple_experiment_data(database, skill,
                                                    results_db="collective_data",
@@ -228,7 +229,7 @@ def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchma
             print("No data found for tags: " + str(tags_single))
             found_single = False
 
-        tags_shared = [marker + "_shared", unique_tag_shared, "f_" + str(factors[i])]
+        tags_shared = [marker + "_shared", unique_tag_shared, "task_" + task_map[a]]
         try:
             results_shared = get_multiple_experiment_data(database, skill,
                                                           results_db="collective_data",
@@ -316,6 +317,8 @@ def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, benchma
             axes[1, i].legend(("Single Learning", "Collective Learning"))
             axes_asr[1, i].legend(("Single Learning", "Collective Learning"))
             axes_casr[1, i].legend(("Single Learning", "Collective Learning", "Optimal Success Rate"))
+
+        i += 1
 
     fig_knowledge, axes_knowledge = plt.subplots()
 
