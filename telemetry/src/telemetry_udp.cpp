@@ -67,6 +67,7 @@ bool TelemetryUDP::remove_subscriber(const std::string &addr){
             if(it == m_subscribers.end()) {
                 // no subscriber with this addr found
                 spdlog::debug("TelemetryUDP::remove_subscriber: No subscriber with address "+addr+" found.");
+                m_mtx_subscriber.unlock();
                 return false;
             }
             spdlog::debug("TelemetryUDP::remove_subscriber: removing subscriber... "+(*it).ip +":"+ std::to_string((*it).port));

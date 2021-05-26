@@ -435,23 +435,23 @@ nlohmann::json CommandInterface::subscribe_telemetry(const nlohmann::json &reque
     response["result"] = true; 
     if(request.find("ip") == request.end()){
         response["result"] = false;
-        response["error_message"] = "CommandInterface.subscribe_telemetry: No IP in request "+request.dump();
+        response["error"] = "CommandInterface.subscribe_telemetry: No ip in request "+request.dump();
         return response;
     }
     if(request.find("port") == request.end()){
         response["result"] = false;
-        response["error_message"] = "CommandInterface.subscribe_telemetry: No port in request "+request.dump();
+        response["error"] = "CommandInterface.subscribe_telemetry: No port in request "+request.dump();
         return response;
     }
     if(request.find("subscribe") == request.end()){
         response["result"] = false;
-        response["error_message"] = "CommandInterface.subscribe_telemetry: No subscribe in request "+request.dump();
+        response["error"] = "CommandInterface.subscribe_telemetry: No subscribe in request "+request.dump();
         return response;
     }
 
     if(!m_core->get_telemetry()->add_subscriber(request["ip"], request["port"], request["subscribe"])){
         response["result"] = false;
-        response["error_message"] = "Could not add subscriber "+request.dump();
+        response["error"] = "Could not add subscriber "+request.dump();
     };
     return response;
 }
