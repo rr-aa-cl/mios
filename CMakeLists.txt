@@ -17,6 +17,16 @@ if(CCACHE_PROGRAM)
     set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 endif()
 
+find_package(Eigen3 REQUIRED)
+
+if(NOT TARGET Eigen3::Eigen3)
+  add_library(Eigen3::Eigen3 INTERFACE IMPORTED)
+  set_target_properties(Eigen3::Eigen3 PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIRS}
+    INTERFACE_COMPILE_DEFINITIONS "${EIGEN3_DEFINITIONS}"
+  )
+endif()
+
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
 set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/_deps)
@@ -129,8 +139,11 @@ add_executable(mios main/src/mios.cpp ${SOURCES} ${MEMORY_SRC} ${UTILS_SRC} ${CO
 set_target_properties(mios PROPERTIES UNITY_BUILD ON)
 target_precompile_headers(mios PRIVATE ${CMAKE_SOURCE_DIR}/utils/include/utils/pch.hpp)
 
-target_link_libraries(mios general ${PLUGINS} mongocxx-static ${LIBMONGOCXX_STATIC_LIBRARIES} stdc++fs ${roscpp_LIBRARIES}
-                            debug msrm_cpp_utils_dbg ssl crypto pthread boost_system
-                            optimized msrm_cpp_utils ssl crypto pthread boost_system)
+#target_link_libraries(mios PRIVATE general ${PLUGINS} mongocxx-static ${LIBMONGOCXX_STATIC_LIBRARIES} stdc++fs ${roscpp_LIBRARIES}
+#                            debug msrm_cpp_utils_dbg ssl crypto pthread boost_system
+#                            optimized msrm_cpp_utils ssl crypto pthread boost_system)
+
+target_link_libraries(mios PRIVATE ${PLUGINS} mongocxx-static ${LIBMONGOCXX_STATIC_LIBRARIES} stdc++fs ${roscpp_LIBRARIES}
+                            $<BUILD_INTERFACE:msrm_cpp_utils> ssl crypto pthread boost_system)
 
 install(TARGETS mios DESTINATION ${CMAKE_SOURCE_DIR}/bin)

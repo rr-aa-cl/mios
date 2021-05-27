@@ -1,8 +1,9 @@
 FetchContent_Declare(
     msrm_utils
     GIT_REPOSITORY https://gitlab.lrz.de/ge29miq/msrm_utils.git
-    GIT_TAG v1.2.0)
+    GIT_TAG v1.2.1)
 set(BUILD_TESTS OFF CACHE INTERNAL "No tests")
+set(USE_PCH OFF CACHE INTERNAL "No tests")
 
 FetchContent_Declare(
     libfranka
