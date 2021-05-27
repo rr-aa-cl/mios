@@ -1,38 +1,62 @@
-cmake_minimum_required(VERSION 3.16)
+# Copyright (c) 2018 - present, Lars Johannsmeier
+# All rights reserved.
+# contact: lars.johannsmeier@tum.de
 
-find_program(CCACHE_PROGRAM ccache)
-if(CCACHE_PROGRAM)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
-endif()
+cmake_minimum_required(VERSION 3.16...3.20)
 
 include(cmake/utils.cmake)
 get_mios_version()
 
 project(mios VERSION ${MIOS_VERSION}
-                 DESCRIPTION "machine intelligence operating system (for panda arms)"
+                 DESCRIPTION "Machine Intelligence Operating System (for Franka Emika Panda arms)"
                  LANGUAGES CXX)
 
-project(mios
-    LANGUAGES CXX
-    )
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+    set(CMAKE_CUDA_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
+include(FetchContent)
+set(FETCHCONTENT_QUIET OFF)
+set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/_deps)
+include(cmake/extern.cmake)
 
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
+
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_LINK_DEPENDS_NO_SHARED)
+set(CMAKE_DEBUG_POSTFIX _dbg)
+set(CMAKE_EXPORT_COMPILE_COMMANDS On)
+set(CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/extern/lib/cmake)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=return-type -Werror=uninitialized -Wno-error=deprecated-declarations -Wno-error=unused-result")
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/third_party/share/cmake;${CMAKE_SOURCE_DIR}/third_party/lib/cmake)
 
-find_package(Franka REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(pybind11 REQUIRED)
-find_package(libmongocxx-static REQUIRED)
-find_package(libbsoncxx-static REQUIRED)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
+add_compile_options(-std=c++17)
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-Wthread-safety)
+endif()
+
+if(CMAKE_BUILD_TYPE MATCHES Release)
+    include(${CMAKE_SOURCE_DIR}/build/release/conanbuildinfo.cmake)
+elseif(CMAKE_BUILD_TYPE MATCHES Debug)
+    include(${CMAKE_SOURCE_DIR}/build/debug/conanbuildinfo.cmake)
+endif()
+conan_basic_setup()
+
+#find_package(Franka REQUIRED)
+#find_package(Eigen3 REQUIRED)
+#find_package(libmongocxx-static REQUIRED)
+#find_package(libbsoncxx-static REQUIRED)
 #find_package(PythonLibs REQUIRED)
 
 find_package(roscpp REQUIRED
@@ -68,7 +92,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/ros_workspace/devel/include
     ${CMAKE_SOURCE_DIR}/telemetry/include)
 
-link_directories(${CMAKE_SOURCE_DIR}/third_party/lib)
+link_directories(${CMAKE_SOURCE_DIR}/extern/lib)
 
 set(PLUGINS mogen_p2p mogen_p2p_joint cntr_aic cntr_force cntr_joint_imp cntr_joint_var_imp cntr_mux cntr_nullsp_proj
     conv_vel2pose motion_error_cart virtual_cube virtual_walls_joint)
@@ -101,12 +125,11 @@ else()
 endif()
 
 add_executable(mios main/src/mios.cpp ${SOURCES} ${MEMORY_SRC} ${UTILS_SRC} ${CONTROLLER_SRC} ${SAFETY_SRC} ${SOURCES_STRATEGIES} ${SOURCES_SKILLS} ${SOURCES_TASKS} ${SOURCES_PATTERN})
-#cotire(mios)
 
 set_target_properties(mios PROPERTIES UNITY_BUILD ON)
 target_precompile_headers(mios PRIVATE ${CMAKE_SOURCE_DIR}/utils/include/utils/pch.hpp)
 
-target_link_libraries(mios general ${PLUGINS} franka mongocxx-static ${LIBMONGOCXX_STATIC_LIBRARIES} stdc++fs ${roscpp_LIBRARIES} pybind11::embed
+target_link_libraries(mios general ${PLUGINS} mongocxx-static ${LIBMONGOCXX_STATIC_LIBRARIES} stdc++fs ${roscpp_LIBRARIES}
                             debug msrm_cpp_utils_dbg ssl crypto pthread boost_system
                             optimized msrm_cpp_utils ssl crypto pthread boost_system)
 
