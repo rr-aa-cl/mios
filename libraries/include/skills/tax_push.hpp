@@ -40,8 +40,5 @@ private:
     std::shared_ptr<ManipulationPrimitive> create_contact_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_push_mp(const Percept& p);
 
-private:
-    Eigen::Matrix<double,4,4> m_T_T_EE_contact;
-
 };
 }

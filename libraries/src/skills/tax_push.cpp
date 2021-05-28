@@ -63,7 +63,7 @@ bool SkillParametersTaxPush::from_json(const nlohmann::json& parameters){
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersTaxPush::get_parameter_list(){
-    return {{"p0",{"K_x","dX_d","ddX_d"}},{"p1",{"K_x","dX_d","ddX_d"}},{"p2",{"K_x","f_push","distance"}}};
+    return {{"p0",{"K_x","dX_d","ddX_d"}},{"p1",{"K_x","dX_d","ddX_d"}},{"p2",{"K_x","f_push","duration"}}};
 }
 
 TaxPush::TaxPush(const std::string& name, Memory* memory, Portal *portal):Skill("TaxPush",{"Surface", "Approach"},name,memory,portal,{ControlMode::mCartTorque}){
