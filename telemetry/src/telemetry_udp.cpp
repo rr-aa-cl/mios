@@ -18,7 +18,8 @@ TelemetryUDP::~TelemetryUDP(){
     stop_sending();
 }
 
-bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, const std::vector<std::string> &subs){
+bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, const std::vector<std::string> &subs
+                                  bool sendWithTerminatingNullCharacter){
     // check ip address:
     std::string ip = addr;
     if(!msrm_utils::is_valid_ip_address(addr.c_str())){
@@ -35,7 +36,8 @@ bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, 
                     { return ip_temp == sub.address; });
     if(it == m_subscribers.end()){
         std::string name = "telemetry_" + ip + ":" + std::to_string(port);
-        Subscriber sub_temp = {port, ip, addr, subs, m_portal->open_udp_outstream(name,ip,port)};
+        Subscriber sub_temp = {port, ip, addr, subs, sendWithTerminatingNullCharacter,
+                               m_portal->open_udp_outstream(name, ip, port)};
         m_subscribers.push_back(sub_temp);  // add new subscriber
         if(!sub_temp.stream->connect()){
             spdlog::error("Could not connect outgoing UDP stream to " + sub_temp.address + ":" + std::to_string(sub_temp.port));
@@ -179,7 +181,7 @@ void TelemetryUDP::sending_loop(){
                 }
             }
             // send to every subscriber
-            sub.stream->send(msg_data.dump());
+            sub.stream->send(msg_data.dump(), sub.sendWithTerminatingNullCharacter);
         }
         m_mtx_subscriber.unlock();
         m_time_2 = std::chrono::high_resolution_clock::now();

@@ -448,8 +448,13 @@ nlohmann::json CommandInterface::subscribe_telemetry(const nlohmann::json &reque
         response["error"] = "CommandInterface.subscribe_telemetry: No subscribe in request "+request.dump();
         return response;
     }
+    bool sendWithTerminatingNullCharacter = false;
+    if (request.find("withTerminatingNullCharacter") != request.end()) {
+        sendWithTerminatingNullCharacter = request["withTerminatingNullCharacter"];
+    }
 
-    if(!m_core->get_telemetry()->add_subscriber(request["ip"], request["port"], request["subscribe"])){
+    if(!m_core->get_telemetry()->add_subscriber(request["ip"], request["port"], request["subscribe"],
+                                                sendWithTerminatingNullCharacter)){
         response["result"] = false;
         response["error"] = "Could not add subscriber "+request.dump();
     };

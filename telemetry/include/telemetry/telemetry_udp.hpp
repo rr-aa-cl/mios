@@ -30,6 +30,7 @@ struct Subscriber{
     std::string ip;
     std::string address;
     std::vector<std::string> subscriptions;
+    bool sendWithTerminatingNullCharacter;
     std::shared_ptr<msrm_utils::UDPStreamSender> stream;
 };
 
@@ -38,7 +39,8 @@ public:
     TelemetryUDP(Core* core, Portal* portal);
     ~TelemetryUDP();
 
-    bool add_subscriber(const std::string &addr, const unsigned port, const std::vector<std::string> &subs);
+    bool add_subscriber(const std::string &addr, const unsigned port, const std::vector<std::string> &subs
+                        bool sendWithTerminatingNullCharacter);
     bool remove_subscriber(const std::string &addr);
     bool start_sending();
     bool stop_sending();
