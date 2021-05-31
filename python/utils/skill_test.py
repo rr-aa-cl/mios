@@ -1,5 +1,7 @@
 #!/usr/bin/python3 -u
 import time
+import pymongo
+from pymongo import MongoClient
 import numpy as np
 
 from ws_client import *
@@ -42,7 +44,42 @@ class Task:
         return result
 
 
-def test_insertion(robot, insertable, container, approach):
+def upload_result(host: str, skill: str, tag: str, result: dict):
+
+    db_result = {
+        "cost": {
+            "time": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["time"],
+            "contact_forces": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["contact_forces"],
+            "distance": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["distance"],
+            "effort_avg": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["effort_avg"],
+            "effort_total": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["effort_total"],
+            "custom": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["custom"]
+        },
+        "success": result["result"]["task_result"]["success"]
+    }
+
+    client = MongoClient('mongodb://' + host + ':27017')
+    performance_data = client.taxonomy.performance
+    skill_performance = performance_data.find_one({'name': skill})
+    found = False
+    if skill_performance is None:
+        skill_performance = dict()
+        skill_performance["results"] = dict()
+        skill_performance["name"] = skill
+    else:
+        found = True
+
+    if tag not in skill_performance["results"]:
+        skill_performance["results"][tag] = []
+    skill_performance["results"][tag].append(db_result)
+
+    if found is True:
+            performance_data.delete_many({'name': skill})
+
+    performance_data.insert_one(skill_performance)
+
+
+def test_insertion(robot, insertable, container, approach, record_performance: bool = False):
     call_method(robot, 12000, "set_grasped_object", {"object": insertable})
     context = {
         "skill": {
@@ -55,7 +92,7 @@ def test_insertion(robot, insertable, container, approach):
             "p0": {
                 "dX_d": [0.1, 0.5],
                 "ddX_d": [0.5, 1],
-                "DeltaX": [0, 0, 0, 0, 10, 0],
+                "DeltaX": [-0.01, 0, 0, 0, 10, 0],
                 "K_x":[1000, 1000, 1000, 100, 100, 100]
             },
             "p1": {
@@ -64,7 +101,7 @@ def test_insertion(robot, insertable, container, approach):
                 "K_x": [1000, 1000, 1000, 100, 100, 100]
             },
             "p2": {
-                "search_a": [10, 10, 0, 0, 0, 0],
+                "search_a": [15, 15, 0, 0, 0, 0],
                 "search_f": [1, 0.75, 0, 0, 0, 0],
                 "K_x": [200, 200, 0, 100, 100, 100],
                 "f_push": 10
@@ -88,6 +125,8 @@ def test_insertion(robot, insertable, container, approach):
     t.start()
     result = t.wait()
     print(result)
+    if record_performance is True:
+        upload_result("collective-control-001", "insertion", insertable, result)
 
 
 def test_extraction(robot, extractable, container, retreat):

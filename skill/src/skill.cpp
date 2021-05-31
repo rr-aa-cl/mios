@@ -209,6 +209,7 @@ Actuator* Skill::cycle(const Percept &p){
 
 bool Skill::is_settled(const Percept &p, bool ignore){
     if(ignore){
+        std::cout<<"IGNORE: "<<std::endl;
         return true;
     }
     if(p.proprioception.dq.norm()<m_memory->read_parameters()->user.env_dq &&

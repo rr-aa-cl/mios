@@ -241,7 +241,7 @@ bool TaxInsertion::check_local_pre_conditions(const Percept &p){
 
 bool TaxInsertion::check_local_suc_conditions(const Percept &p){
     bool depth = p.proprioception.T_T_EE(2,3)>get_object_pose_T("Container")(2,3)-m_memory->read_parameters()->user.env_X(0);
-    bool lateral = (p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0);
+    bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0);
     return depth && lateral;
 }
 
