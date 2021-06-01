@@ -1,7 +1,7 @@
 #include "portal/portal.hpp"
 
-#include <msrm_utils/network.hpp>
-#include "msrm_utils/system.hpp"
+#include <msrm_cpp_utils/network.hpp>
+#include "msrm_cpp_utils/system.hpp"
 #include <spdlog/spdlog.h>
 
 namespace mios {
@@ -10,7 +10,7 @@ Portal::Portal(const std::string &websocket_address, unsigned websocket_port, co
 m_keep_running(false),m_websocket_address(websocket_address),m_websocket_port(websocket_port),m_websocket_endpoint(websocket_endpoint),m_rpc_address(rpc_address),m_rpc_port(rpc_port),
 m_udp_port(udp_port){
     m_servers.insert(std::make_pair(JsonServers::Websocket,std::make_unique<msrm_utils::JsonWebsocketServer>(m_websocket_address,m_websocket_port,m_websocket_endpoint)));
-    m_servers.insert(std::make_pair(JsonServers::RPC,std::make_unique<msrm_utils::JsonRPCServer>(m_rpc_address,m_rpc_port)));
+//    m_servers.insert(std::make_pair(JsonServers::RPC,std::make_unique<msrm_utils::JsonRPCServer>(m_rpc_address,m_rpc_port)));
     m_servers.insert(std::make_pair(JsonServers::UDP,std::make_unique<msrm_utils::JsonUDPServer>(m_udp_port)));
 }
 
@@ -32,7 +32,7 @@ bool Portal::initialize(){
             if(s.first==JsonServers::Websocket){
                 spdlog::warn("Could not start websocket server with parameters: [address: "+m_websocket_address+", port: "+std::to_string(m_websocket_port)+", endpoint: "+m_websocket_endpoint+"]");
             }
-            if(s.first==JsonServers::Websocket){
+            if(s.first==JsonServers::RPC){
                 spdlog::warn("Could not start rpc server with parameters: [address: "+m_rpc_address+", port: "+std::to_string(m_rpc_port)+"]");
             }
             if(s.first==JsonServers::UDP){

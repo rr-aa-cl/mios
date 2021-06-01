@@ -2,7 +2,7 @@
 #include "strategies/move_to_pose.hpp"
 #include "strategies/ff_wiggle_strategy.hpp"
 #include "strategies/twist_strategy.hpp"
-#include "msrm_utils/math.hpp"
+#include "msrm_cpp_utils/math.hpp"
 
 namespace mios {
 

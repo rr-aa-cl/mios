@@ -1,9 +1,9 @@
 #include "core/core.hpp"
 
-#include <msrm_utils/math.hpp>
-#include <msrm_utils/conversion.hpp>
-#include <msrm_utils/json.hpp>
-#include <msrm_utils/system.hpp>
+#include <msrm_cpp_utils/math.hpp>
+#include <msrm_cpp_utils/conversion.hpp>
+#include <msrm_cpp_utils/json.hpp>
+#include <msrm_cpp_utils/system.hpp>
 #include "utils/exceptions.hpp"
 #include "skill/skill.hpp"
 

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#include <msrm_utils/output.hpp>
+#include <msrm_cpp_utils/output.hpp>
 
 namespace mios {
 

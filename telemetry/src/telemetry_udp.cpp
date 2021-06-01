@@ -1,7 +1,7 @@
 #include "telemetry/telemetry_udp.hpp"
 
-#include "msrm_utils/network.hpp"
-#include "msrm_utils/output.hpp"
+#include "msrm_cpp_utils/network.hpp"
+#include "msrm_cpp_utils/output.hpp"
 #include "spdlog/spdlog.h"
 
 #include "core/core.hpp"

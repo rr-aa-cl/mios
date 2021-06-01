@@ -116,16 +116,10 @@ then
 git clone https://gitlab.lrz.de/ge29miq/msrm_utils.git
 fi
 cd msrm_utils
-git checkout v1.1.1
-cd cpp
-mkdir -p build/debug
+git checkout v1.3.0
 mkdir -p build/release
-cd build/debug
-cmake -DCMAKE_BUILD_TYPE=Debug -DUSER_INCLUDE_PATH=${ROOT}/include -DBUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} ../..
-make -j$(nproc --all)
-make install
-cd ../release
-cmake -DCMAKE_BUILD_TYPE=Release -DUSER_INCLUDE_PATH=${ROOT}/include -DBUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} ../..
+cd build/release
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${ROOT} ../..
 make -j$(nproc --all)
 make install
 

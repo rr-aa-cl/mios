@@ -1,5 +1,5 @@
 #include "data_structures/object.hpp"
-#include <msrm_utils/json.hpp>
+#include <msrm_cpp_utils/json.hpp>
 #include <spdlog/spdlog.h>
 
 namespace mios {

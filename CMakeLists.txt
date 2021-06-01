@@ -47,6 +47,7 @@ include_directories(${roscpp_INCLUDE_DIRS})
 include_directories(${std_srvs_INCLUDE_DIRS})
 include_directories(${message_generation_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/third_party/include)
+include_directories(${CMAKE_SOURCE_DIR}/third_party/include/simple-websocket-server)
 include_directories(${LIBMONGOCXX_STATIC_INCLUDE_DIRS})
 include_directories(${LIBBSONCXX_STATIC_INCLUDE_DIRS})
 

@@ -4,8 +4,8 @@
 #include "skills/move_to_pose_cart.hpp"
 #include "skills/move_to_contact.hpp"
 #include "skills/insertion.hpp"
-#include "msrm_utils/json.hpp"
-#include "msrm_utils/math.hpp"
+#include "msrm_cpp_utils/json.hpp"
+#include "msrm_cpp_utils/math.hpp"
 
 namespace mios{
 

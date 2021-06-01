@@ -1,6 +1,6 @@
 #include "data_structures/actuator.hpp"
 #include <spdlog/spdlog.h>
-#include <msrm_utils/math.hpp>
+#include <msrm_cpp_utils/math.hpp>
 
 namespace mios {
 

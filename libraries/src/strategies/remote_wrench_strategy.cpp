@@ -1,7 +1,7 @@
 #include "strategies/remote_wrench_strategy.hpp"
 #include "portal/portal.hpp"
 #include <functional>
-#include "msrm_utils/math.hpp"
+#include "msrm_cpp_utils/math.hpp"
 
 namespace mios {
 

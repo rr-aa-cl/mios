@@ -1,7 +1,7 @@
 #include "strategies/remote_joint_pose_strategy.hpp"
 #include "portal/portal.hpp"
 #include <functional>
-#include <msrm_utils/conversion.hpp>
+#include <msrm_cpp_utils/conversion.hpp>
 
 namespace mios {
 

@@ -11,7 +11,7 @@
 
 #include "pybind11/pybind11.h"
 #include "core/core.hpp"
-#include "msrm_utils/network.hpp"
+#include "msrm_cpp_utils/network.hpp"
 #include "cxxopts.hpp"
 #include "utils/version.hpp"
 

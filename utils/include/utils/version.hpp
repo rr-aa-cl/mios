@@ -1,7 +1,7 @@
 #pragma once
 
 #define MIOS_VER_MAJOR 0
-#define MIOS_VER_MINOR 11
+#define MIOS_VER_MINOR 12
 #define MIOS_VER_PATCH 0
 
 #define MIOS_VERSION (MIOS_VER_MAJOR * 10000 + MIOS_VER_MINOR * 100 + MIOS_VER_PATCH)
