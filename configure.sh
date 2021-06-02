@@ -6,6 +6,7 @@ sudo apt-get install -y libpython3.8
 sudo apt-get install -y python3-pip
 
 sudo pip3 install -U pytest numpy
+sudo pip3 install conan
 
 ROOT=$(dirname "$(realpath $0)")/third_party
 
