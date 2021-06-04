@@ -134,6 +134,8 @@ include(cmake/FetchContent.cmake)
 add_library(${PROJECT_NAME}::project_options ALIAS project_options)
 add_library(${PROJECT_NAME}::project_warnings ALIAS project_warnings)
 
+add_subdirectory(src)
+
 message("#########################################")
     message("\t \t Summary")
     message("#########################################")
@@ -155,7 +157,6 @@ message("#########################################")
         message("Version:          \t ${PROJECT_VERSION}")
         message("########################################")
 
-#add_subdirectory(src)
 
 # Copyright (c) 2018 - present, Lars Johannsmeier
 # All rights reserved.

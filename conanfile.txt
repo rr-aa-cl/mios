@@ -1,5 +1,5 @@
 [requires]
-boost/1.75.0
+boost/1.76.0
 eigen/3.3.9
 nlohmann_json/3.9.1
 catch2/2.13.6
