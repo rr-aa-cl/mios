@@ -3,7 +3,7 @@
 #include "mios/skills/move_to_pose_cart.hpp"
 #include "mios/skills/extraction.hpp"
 #include "msrm_cpp_utils/json/json.hpp"
-#include "msrm_cpp_utils/json/math.hpp"
+#include "msrm_cpp_utils/math/math.hpp"
 
 namespace mios{
 

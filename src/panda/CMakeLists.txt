@@ -52,6 +52,7 @@ target_link_libraries(${MODULE_NAME}
     msrm_cpp_utils::network
     msrm_cpp_utils::conversion
     CONAN_PKG::pybind11
+    ${PYTHON_LIBRARY_DIRS}
     )
 
 apply_module_options(${MODULE_NAME})

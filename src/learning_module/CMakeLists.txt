@@ -40,6 +40,7 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_options
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
+    ${PYTHON_LIBRARY_DIRS}
     PUBLIC
     CONAN_PKG::pybind11
     CONAN_PKG::nlohmann_json

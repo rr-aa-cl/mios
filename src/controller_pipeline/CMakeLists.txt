@@ -34,6 +34,11 @@ endif()
 
 add_library(${PROJECT_NAME}::${MODULE_NAME} ALIAS ${MODULE_NAME})
 
+target_link_directories(${MODULE_NAME}
+    PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/lib/plugins>
+    )
+
 target_include_directories(${MODULE_NAME}
     PRIVATE
     src
@@ -48,6 +53,12 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}_project_deps
     msrm_cpp_utils::math
+    conv_vel2pose
+    cntr_aic
+    cntr_force
+    cntr_joint_var_imp
+    cntr_nullsp_proj
+    cntr_mux
     PUBLIC
     ${PROJECT_NAME}::memory
     ${PROJECT_NAME}::utils

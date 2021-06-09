@@ -1,10 +1,10 @@
-#include "interface/ros_node.hpp"
-#include "core/core.hpp"
+#include "mios/interface/ros_node.hpp"
+#include "mios/core/core.hpp"
 #include "mios/task/task_engine.hpp"
-#include "portal/portal.hpp"
-#include "memory/memory.hpp"
+#include "mios/portal/portal.hpp"
+#include "mios/memory/memory.hpp"
+#include "msrm_cpp_utils/conversion/conversion.hpp"
 #include <functional>
-#include "msrm_cpp_utils/conversion.hpp"
 
 namespace mios {
 

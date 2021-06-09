@@ -1,8 +1,11 @@
 add_executable(mios src/mios.cpp)
 
+find_package(PythonLibsNew REQUIRED)
+
 target_include_directories(mios
     PRIVATE
     src
+    ${PYTHON_INCLUDE_DIRS}
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
     )
@@ -16,6 +19,7 @@ target_link_libraries(mios
     ${PROJECT_NAME}::core
     CONAN_PKG::pybind11
     CONAN_PKG::cxxopts
+    ${PYTHON_LIBRARY_DIRS}
     )
 
 install(TARGETS mios DESTINATION ${CMAKE_SOURCE_DIR}/bin)
