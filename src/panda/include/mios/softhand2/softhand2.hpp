@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string.h>
 #include <unistd.h>
-#include "mios/panda/qbmove_communications.h"
+#include "mios/softhand2/qbmove_communications.h"
 
 namespace mios{
 

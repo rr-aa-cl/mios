@@ -1,6 +1,6 @@
 #pragma once
 
-#include "task/task.hpp"
+#include "mios/task/task.hpp"
 namespace mios{
 class TestTask3 : public Task{
 public:

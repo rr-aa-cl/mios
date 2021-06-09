@@ -5,8 +5,7 @@
 #include <set>
 
 #include "nlohmann/json.hpp"
-#include "eigen3/Eigen/Core"
-
+#include "eigen3/Eigen/Dense"
 
 namespace mios {
 

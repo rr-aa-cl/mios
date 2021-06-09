@@ -1,5 +1,5 @@
 #include "mios/strategies/remote_twist_strategy.hpp"
-#include "portal/portal.hpp"
+#include "mios/portal/portal.hpp"
 #include <functional>
 
 namespace mios {

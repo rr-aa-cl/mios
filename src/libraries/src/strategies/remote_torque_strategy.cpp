@@ -1,8 +1,8 @@
 #include "mios/strategies/remote_torque_strategy.hpp"
-#include "portal/portal.hpp"
+#include "mios/portal/portal.hpp"
+#include "msrm_cpp_utils/math/math.hpp"
 #include <functional>
 #include <math.h>
-#include "msrm_cpp_utils/math.hpp"
 
 namespace mios {
 

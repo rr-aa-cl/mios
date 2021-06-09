@@ -51,6 +51,7 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::task
     PUBLIC
     roscpp
+    CONAN_PKG::nlohmann_json
     )
 
 apply_module_options(${MODULE_NAME})

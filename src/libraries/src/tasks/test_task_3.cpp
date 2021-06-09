@@ -1,6 +1,6 @@
-#include "tasks/test_task_3.hpp"
-#include "tasks/test_task_1.hpp"
-#include "tasks/test_task_2.hpp"
+#include "mios/tasks/test_task_3.hpp"
+#include "mios/tasks/test_task_1.hpp"
+#include "mios/tasks/test_task_2.hpp"
 #include "mios/skills/test_skill_1.hpp"
 namespace mios{
 TestTask3::TestTask3(Core *core):Task("TestTask3",core),recovered(false){

@@ -1,7 +1,7 @@
 #include "mios/strategies/remote_cart_pose_strategy.hpp"
-#include "portal/portal.hpp"
+#include "mios/portal/portal.hpp"
+#include <msrm_cpp_utils/conversion/conversion.hpp>
 #include <functional>
-#include <msrm_cpp_utils/conversion.hpp>
 
 namespace mios {
 

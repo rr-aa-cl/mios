@@ -1,5 +1,5 @@
 #include "mios/strategies/ff_strategy.hpp"
-#include "msrm_cpp_utils/math.hpp"
+#include "msrm_cpp_utils/math/math.hpp"
 
 namespace mios {
 

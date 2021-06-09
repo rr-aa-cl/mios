@@ -1,6 +1,6 @@
 #pragma once
 
-#include "strategy/primitive_strategy.hpp"
+#include "mios/strategy/primitive_strategy.hpp"
 #include <eigen3/Eigen/Core>
 
 namespace mios {

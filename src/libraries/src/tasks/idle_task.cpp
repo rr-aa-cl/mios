@@ -1,4 +1,4 @@
-#include "tasks/idle_task.hpp"
+#include "mios/tasks/idle_task.hpp"
 #include "mios/skills/generic_wiggle_motion.hpp"
 #include "mios/skills/hold_pose.hpp"
 #include "mios/skills/move_to_pose_joint.hpp"

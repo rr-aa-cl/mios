@@ -5,15 +5,15 @@
 #include <arpa/inet.h>
 #include <string.h>
 
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 #include "pybind11/pybind11.h"
-#include "core/core.hpp"
-#include "msrm_cpp_utils/network.hpp"
+#include "mios/core/core.hpp"
+#include "msrm_cpp_utils/network/network.hpp"
 #include "cxxopts.hpp"
-#include "utils/version.hpp"
+#include "commons/config.hpp"
 
 void exit_handler(int s);
 
@@ -62,9 +62,10 @@ int main(int argc, char** argv){
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, NULL);
 
+
     spdlog::info("############################################################");
     spdlog::info("MIOS");
-    spdlog::info("Version: " + std::to_string(MIOS_VER_MAJOR) + "." + std::to_string(MIOS_VER_MINOR) + "." + std::to_string(MIOS_VER_PATCH));
+//    spdlog::info("Version: " + std::to_string(PROJECT_VERSION_MAJOR) + "." + std::to_string(PROJECT_VERSION_MINOR) + "." + std::to_string(MIOS_VER_PATCH));
 
     unsigned port=12000;
     if(!msrm_utils::is_port_available("localhost",port)){

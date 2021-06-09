@@ -45,11 +45,14 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
     ${PROJECT_NAME}::core
     ${PROJECT_NAME}::memory
-    ${PROJECT_NAME}::skill
-    ${PROJECT_NAME}::portal
-    ${PROJECT_NAME}::utils
     PUBLIC
+    ${PROJECT_NAME}::portal
+    ${PROJECT_NAME}::skill
+    ${PROJECT_NAME}::utils
+    ${PROJECT_NAME}::tasks
     msrm_cpp_utils::json
+    msrm_cpp_utils::system
+    msrm_cpp_utils::files
     )
 
 apply_module_options(${MODULE_NAME})

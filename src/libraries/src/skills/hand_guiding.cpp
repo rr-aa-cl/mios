@@ -1,7 +1,7 @@
 #include "mios/skills/hand_guiding.hpp"
 #include "mios/strategies/cart_compliance_strategy.hpp"
-#include "msrm_cpp_utils/conversion.hpp"
-#include "msrm_cpp_utils/files.hpp"
+#include "msrm_cpp_utils/conversion/conversion.hpp"
+#include "msrm_cpp_utils/files/files.hpp"
 
 
 namespace mios{

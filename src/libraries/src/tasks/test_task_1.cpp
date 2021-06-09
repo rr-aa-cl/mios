@@ -1,4 +1,4 @@
-#include "tasks/test_task_1.hpp"
+#include "mios/tasks/test_task_1.hpp"
 #include "mios/skills/test_skill_1.hpp"
 namespace mios{
 TestTask1::TestTask1(Core* core):Task("TestTask1",core),m_result_code(-1),recovered(false){

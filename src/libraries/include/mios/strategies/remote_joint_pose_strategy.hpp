@@ -1,6 +1,6 @@
 #pragma once
 
-#include "strategy/primitive_strategy.hpp"
+#include "mios/strategy/primitive_strategy.hpp"
 #include <deque>
 #include <array>
 #include <memory>

@@ -1,4 +1,4 @@
-#include "safety_stage_1/velocity_walls.hpp"
+#include "mios/safety_stage_1/velocity_walls.hpp"
 
 namespace mios {
 

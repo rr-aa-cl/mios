@@ -1,18 +1,18 @@
-#include "task/taskfactory.hpp"
-#include "task/task.hpp"
-#include <msrm_cpp_utils/files.hpp>
-#include <spdlog/spdlog.h>
-#include "tasks/null_task.hpp"
-#include "tasks/idle_task.hpp"
-#include "tasks/test_task_1.hpp"
-#include "tasks/test_task_2.hpp"
-#include "tasks/test_task_3.hpp"
-#include "tasks/learner_test.hpp"
-#include "tasks/move_to_cart_pose.hpp"
-#include "tasks/move_to_joint_pose.hpp"
-#include "tasks/generic_task.hpp"
-#include "tasks/insert_object.hpp"
-#include "tasks/extract_object.hpp"
+#include "mios/task/taskfactory.hpp"
+#include "mios/task/task.hpp"
+#include "msrm_cpp_utils/files/files.hpp"
+#include "mios/tasks/null_task.hpp"
+#include "mios/tasks/idle_task.hpp"
+#include "mios/tasks/test_task_1.hpp"
+#include "mios/tasks/test_task_2.hpp"
+#include "mios/tasks/test_task_3.hpp"
+#include "mios/tasks/learner_test.hpp"
+#include "mios/tasks/move_to_cart_pose.hpp"
+#include "mios/tasks/move_to_joint_pose.hpp"
+#include "mios/tasks/generic_task.hpp"
+#include "mios/tasks/insert_object.hpp"
+#include "mios/tasks/extract_object.hpp"
+#include "spdlog/spdlog.h"
 
 namespace mios{
 

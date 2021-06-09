@@ -15,6 +15,7 @@
 #include <map>
 
 #include "nlohmann/json.hpp"
+#include "Eigen/Core"
 
 namespace msrm_utils{
 class UDPStreamSender;

@@ -1,4 +1,4 @@
-#include "safety_stage_2/virtual_joint_walls.hpp"
+#include "mios/safety_stage_2/virtual_joint_walls.hpp"
 
 namespace mios {
 

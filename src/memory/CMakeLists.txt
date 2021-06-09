@@ -42,11 +42,12 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_options
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
-    ${PROJECT_NAME}::utils
     ${PROJECT_NAME}::task
     ${PROJECT_NAME}::skill
     msrm_cpp_utils::json
+    msrm_cpp_utils::math
     PUBLIC
+    ${PROJECT_NAME}::utils
     CONAN_PKG::nlohmann_json
     CONAN_PKG::mongo-cxx-driver
     )

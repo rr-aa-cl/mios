@@ -1,7 +1,7 @@
 #include "mios/skills/tax_spoon.hpp"
 #include "mios/strategies/null_strategy.hpp"
 #include "mios/strategies/move_to_pose.hpp"
-#include <msrm_cpp_utils/math.hpp>
+#include "msrm_cpp_utils/math/math.hpp"
 
 namespace mios{
 

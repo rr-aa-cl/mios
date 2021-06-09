@@ -1,4 +1,4 @@
-#include "tasks/learner_test.hpp"
+#include "mios/tasks/learner_test.hpp"
 #include "mios/skills/ml_test_skill.hpp"
 
 namespace mios{

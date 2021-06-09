@@ -1,5 +1,5 @@
-#include "panda/softhand2.hpp"
-#include <spdlog/spdlog.h>
+#include "mios/softhand2/softhand2.hpp"
+#include "spdlog/spdlog.h"
 
 
 namespace mios{

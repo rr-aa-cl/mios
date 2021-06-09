@@ -1,4 +1,4 @@
-#include "tasks/generic_task.hpp"
+#include "mios/tasks/generic_task.hpp"
 #include <msrm_cpp_utils/files.hpp>
 
 #include "mios/skills/test_skill_1.hpp"

@@ -1,5 +1,5 @@
-#include "mongodb_client/mongodb_client.hpp"
-#include <spdlog/spdlog.h>
+#include "mios/mongodb_client/mongodb_client.hpp"
+#include "spdlog/spdlog.h"
 
 #include <bsoncxx/json.hpp>
 #include <bsoncxx/document/view_or_value.hpp>
@@ -13,7 +13,7 @@
 #include <mongocxx/exception/operation_exception.hpp>
 #include <bsoncxx/exception/exception.hpp>
 
-#include "data_structures/parameters.hpp"
+#include "mios/data_structures/parameters.hpp"
 
 namespace mios {
 

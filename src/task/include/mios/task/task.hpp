@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Eigen/Core"
 #include "mios/portal/portal.hpp"
 #include "msrm_cpp_utils/json/json.hpp"
 #include "spdlog/spdlog.h"
@@ -10,6 +11,7 @@
 #include "mios/data_structures/results.hpp"
 #include "mios/skill/skill.hpp"
 #include "mios/utils/types.hpp"
+
 
 #include <list>
 #include <map>

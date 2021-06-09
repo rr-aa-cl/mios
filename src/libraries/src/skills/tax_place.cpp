@@ -3,7 +3,7 @@
 #include "mios/strategies/move_to_pose.hpp"
 #include "mios/strategies/gripper_strategy.hpp"
 #include "mios/strategies/null_strategy.hpp"
-#include "msrm_cpp_utils/math.hpp"
+#include "msrm_cpp_utils/math/math.hpp"
 
 namespace mios{
 

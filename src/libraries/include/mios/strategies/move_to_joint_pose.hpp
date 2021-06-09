@@ -1,6 +1,6 @@
 #pragma once
 
-#include "strategy/primitive_strategy.hpp"
+#include "mios/strategy/primitive_strategy.hpp"
 #include "plugins/mogen_p2p_joint_wrapper.hpp"
 #include <eigen3/Eigen/Core>
 

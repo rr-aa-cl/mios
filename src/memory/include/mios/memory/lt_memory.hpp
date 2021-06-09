@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 #include "mios/mongodb_client/mongodb_client.hpp"
-#include "mios/data_structures/parameters.hpp"
+#include "mios/data_structures/object.hpp"
 #include "mios/data_structures/task_data.hpp"
 
 namespace mios {

@@ -8,7 +8,7 @@
 #include "franka/model.h"
 #include "franka/robot_state.h"
 #include "franka/gripper_state.h"
-#include "mios/panda/softhand2.hpp"
+#include "mios/softhand2/softhand2.hpp"
 
 #include "mios/data_structures/parameters.hpp"
 #include "mios/utils/types.hpp"

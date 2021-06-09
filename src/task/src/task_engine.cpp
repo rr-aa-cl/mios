@@ -1,10 +1,10 @@
-#include "task/task_engine.hpp"
-#include "task/taskfactory.hpp"
-#include "core/core.hpp"
-#include "memory/memory.hpp"
+#include "mios/task/task_engine.hpp"
+#include "mios/task/taskfactory.hpp"
+#include "mios/core/core.hpp"
+#include "mios/memory/memory.hpp"
 
 #include <sstream>
-#include <spdlog/spdlog.h>
+#include "spdlog/spdlog.h"
 
 namespace mios {
 

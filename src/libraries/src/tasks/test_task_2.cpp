@@ -1,5 +1,5 @@
-#include "tasks/test_task_2.hpp"
-#include "tasks/test_task_1.hpp"
+#include "mios/tasks/test_task_2.hpp"
+#include "mios/tasks/test_task_1.hpp"
 #include "mios/skills/test_skill_1.hpp"
 namespace mios{
 TestTask2::TestTask2(Core* core):Task("TestTask2",core){

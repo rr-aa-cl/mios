@@ -1,7 +1,7 @@
 #include "mios/skill/skill_library.hpp"
-#include "memory/memory.hpp"
-#include "portal/portal.hpp"
-#include "data_structures/percept.hpp"
+#include "mios/memory/memory.hpp"
+#include "mios/portal/portal.hpp"
+#include "mios/data_structures/percept.hpp"
 
 #include "mios/skills/test_skill_1.hpp"
 #include "mios/skills/generic_wiggle_motion.hpp"

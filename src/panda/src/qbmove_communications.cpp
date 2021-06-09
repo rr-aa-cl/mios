@@ -75,8 +75,8 @@
     #include <IOKit/IOBSD.h>
 #endif
 
-#include "panda/qbmove_communications.h"
-#include "panda/commands.h"
+#include "mios/softhand2/qbmove_communications.h"
+#include "mios/softhand2/commands.h"
 
 
 //=================================================================     #defines

@@ -1,4 +1,4 @@
-#include "safety_stage_2/virtual_cube.hpp"
+#include "mios/safety_stage_2/virtual_cube.hpp"
 #include "spdlog/spdlog.h"
 
 namespace mios {

@@ -38,6 +38,7 @@ target_include_directories(${MODULE_NAME}
     src
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
     )
 
 target_link_libraries(${MODULE_NAME}
@@ -45,6 +46,7 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_options
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
+    msrm_cpp_utils::math
     PUBLIC
     ${PROJECT_NAME}::memory
     ${PROJECT_NAME}::utils
