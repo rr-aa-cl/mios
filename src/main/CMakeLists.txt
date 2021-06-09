@@ -19,7 +19,6 @@ target_link_libraries(mios
     ${PROJECT_NAME}::core
     CONAN_PKG::pybind11
     CONAN_PKG::cxxopts
-    ${PYTHON_LIBRARY_DIRS}
     )
 
 install(TARGETS mios DESTINATION ${CMAKE_SOURCE_DIR}/bin)
