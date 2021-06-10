@@ -22,7 +22,7 @@ add_library(${PROJECT_NAME}::${MODULE_NAME} ALIAS ${MODULE_NAME})
 
 target_link_directories(${MODULE_NAME}
     PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/lib>
+    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/lib/plugins>
     )
 
 target_include_directories(${MODULE_NAME}
@@ -44,8 +44,9 @@ target_link_libraries(${MODULE_NAME}
     msrm_cpp_utils::math
     msrm_cpp_utils::files
     msrm_cpp_utils::conversion
-    PUBLIC
     mogen_p2p
+    mogen_p2p_joint
+    PUBLIC
     CONAN_PKG::eigen
     )
 
@@ -135,6 +136,7 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::skills
     msrm_cpp_utils::json
     msrm_cpp_utils::math
+    msrm_cpp_utils::files
     PUBLIC
     ${PROJECT_NAME}::task
     )

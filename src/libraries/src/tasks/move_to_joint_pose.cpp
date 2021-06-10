@@ -1,6 +1,6 @@
 #include "mios/tasks/move_to_joint_pose.hpp"
 #include "mios/skills/move_to_pose_joint.hpp"
-#include <msrm_cpp_utils/json.hpp>
+#include "msrm_cpp_utils/json/json.hpp"
 
 namespace mios {
 

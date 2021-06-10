@@ -3,7 +3,7 @@
 #include "mios/skills/hold_pose.hpp"
 #include "mios/skills/move_to_pose_joint.hpp"
 
-#include <msrm_cpp_utils/files.hpp>
+#include "msrm_cpp_utils/files/files.hpp"
 #include <spdlog/spdlog.h>
 
 namespace mios {
