@@ -1,14 +1,15 @@
 #include "mios/controller_pipeline/joint_torque_pipeline.hpp"
-#include <iostream>
+#include "spdlog/spdlog.h"
 
 namespace mios {
 
 JointTorqueControllerPipeline::JointTorqueControllerPipeline():m_panda_cmd({0,0,0,0,0,0,0}){
-
+    spdlog::trace("JointTorqueControllerPipeline::JointTorqueControllerPipeline()");
 }
 
 
 void JointTorqueControllerPipeline::initialize(const Percept &p_0, Memory *memory){
+    spdlog::trace("JointTorqueControllerPipeline::initialize()");
     initialize_cntr_joint_imp(p_0,memory);
     initialize_cntr_mux(p_0,memory);
 
@@ -55,16 +56,19 @@ void JointTorqueControllerPipeline::update_percept(Percept::Controller &p){
 }
 
 void JointTorqueControllerPipeline::terminate(){
+    spdlog::trace("JointTorqueControllerPipeline::terminate()");
     m_cntr_joint_imp.terminate();
     m_cntr_mux.terminate();
 }
 
 void JointTorqueControllerPipeline::context_switch(const Percept &p){
+    spdlog::trace("JointTorqueControllerPipeline::context_switch()");
     m_q_d=p.proprioception.q;
     m_q_0=m_q_d;
 }
 
 void JointTorqueControllerPipeline::initialize_cntr_joint_imp(const Percept &p, Memory *memory){
+    spdlog::trace("JointTorqueControllerPipeline::initialize_cntr_joint_imp()");
     m_q_d=p.proprioception.q;
     const ControlParameters& p_cntr=memory->read_parameters()->control;
 
@@ -90,6 +94,7 @@ void JointTorqueControllerPipeline::input_cntr_joint_imp(const Percept &p){
 }
 
 void JointTorqueControllerPipeline::initialize_cntr_mux(const Percept &p,Memory* memory){
+    spdlog::trace("JointTorqueControllerPipeline::initialize_cntr_mux()");
     const LimitParameters& p_limits=memory->read_parameters()->limits;
 
     m_cntr_mux.p.dtau_max=p_limits.joint_space.dtau_J_max;

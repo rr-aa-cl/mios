@@ -1,7 +1,6 @@
 #include "mios/controller_pipeline/cart_torque_pipeline.hpp"
 #include "spdlog/spdlog.h"
 #include "msrm_cpp_utils/math/math.hpp"
-#include <iostream>
 
 namespace mios {
 
@@ -14,6 +13,7 @@ CartTorqueControllerPipeline::~CartTorqueControllerPipeline(){
 }
 
 void CartTorqueControllerPipeline::initialize(const Percept &p_0, Memory *memory){
+    spdlog::trace("CartTorqueControllerPipeline::initialize()");
     initialize_cntr_aic(p_0,memory);
     initialize_cntr_force(p_0,memory);
     initialize_cntr_mux(p_0,memory);
@@ -104,6 +104,7 @@ void CartTorqueControllerPipeline::context_switch(const Percept &p){
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_aic(const Percept &p,Memory* memory){
+    spdlog::trace("CartTorqueControllerPipeline::initialize_cntr_aic()");
     const ControlParameters& p_cntr=memory->read_parameters()->control;
     const FramesParameters& p_frames=memory->read_parameters()->frames;
     const LimitParameters& p_limits=memory->read_parameters()->limits;
@@ -152,6 +153,7 @@ void CartTorqueControllerPipeline::input_cntr_aic(const Percept &p){
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_force(const Percept &p, Memory *memory){
+    spdlog::trace("CartTorqueControllerPipeline::initialize_cntr_force()");
     const ControlParameters& p_cntr=memory->read_parameters()->control;
     const LimitParameters& p_limits=memory->read_parameters()->limits;
     m_cntr_force.p.active=p_cntr.force_control.active;
@@ -183,6 +185,7 @@ void CartTorqueControllerPipeline::input_cntr_force(const Percept &p){
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_mux(const Percept &p,Memory* memory){
+    spdlog::trace("CartTorqueControllerPipeline::initialize_cntr_mux()");
     const LimitParameters& p_limits=memory->read_parameters()->limits;
 
     m_cntr_mux.p.dtau_max=p_limits.joint_space.dtau_J_max;
@@ -199,6 +202,7 @@ void CartTorqueControllerPipeline::input_cntr_mux(const Percept &p){
 }
 
 void CartTorqueControllerPipeline::initialize_cntr_nullsp(const Percept& p,Memory* memory){
+    spdlog::trace("CartTorqueControllerPipeline::initialize_cntr_nullsp()");
     const ControlParameters& p_cntr=memory->read_parameters()->control;
 
     m_cntr_nullsp_q.u.theta_d=p.proprioception.q;

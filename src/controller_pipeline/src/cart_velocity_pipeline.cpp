@@ -1,14 +1,15 @@
 #include "mios/controller_pipeline/cart_velocity_pipeline.hpp"
+#include "spdlog/spdlog.h"
 
 namespace mios {
 
 CartVelocityControllerPipeline::CartVelocityControllerPipeline():m_panda_cmd({0,0,0,0,0,0}){
-
+    spdlog::trace("CartVelocityControllerPipeline::CartVelocityControllerPipeline()");
 }
 
 
 void CartVelocityControllerPipeline::initialize(const Percept &p_0, Memory *memory){
-
+    spdlog::trace("CartVelocityControllerPipeline::initialize()");
 }
 
 franka::Finishable *CartVelocityControllerPipeline::step(const Percept &p, const Actuator &cmd){
@@ -33,11 +34,11 @@ void CartVelocityControllerPipeline::update_percept(Percept::Controller &p){
 }
 
 void CartVelocityControllerPipeline::terminate(){
-
+    spdlog::trace("CartVelocityControllerPipeline::terminate()");
 }
 
 void CartVelocityControllerPipeline::context_switch(const Percept &p){
-
+    spdlog::trace("CartVelocityControllerPipeline::context_switch()");
 }
 
 }

@@ -1,13 +1,14 @@
 #include "mios/controller_pipeline/null_pipeline.hpp"
+#include "spdlog/spdlog.h"
 
 namespace mios {
 
 NullControllerPipeline::NullControllerPipeline():m_panda_cmd({0,0,0,0,0,0,0}){
-
+    spdlog::trace("NullControllerPipeline::NullControllerPipeline()");
 }
 
 void NullControllerPipeline::initialize(const Percept &p_0, Memory *memory){
-
+    spdlog::trace("NullControllerPipeline::initialize()");
 }
 
 franka::Finishable* NullControllerPipeline::step(const Percept &p, const Actuator &cmd){
@@ -23,11 +24,11 @@ void NullControllerPipeline::update_percept(Percept::Controller &p){
 }
 
 void NullControllerPipeline::terminate(){
-
+    spdlog::trace("NullControllerPipeline::terminate()");
 }
 
 void NullControllerPipeline::context_switch(const Percept &p){
-
+    spdlog::trace("NullControllerPipeline::context_switch()");
 }
 
 }

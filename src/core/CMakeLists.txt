@@ -52,6 +52,7 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::skill
     ${PROJECT_NAME}::task
     ${PROJECT_NAME}::telemetry
+    ${PROJECT_NAME}::utils
     )
 
 apply_module_options(${MODULE_NAME})

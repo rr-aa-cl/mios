@@ -18,13 +18,9 @@
 #include "mios/safety_stage_2/virtual_joint_walls.hpp"
 #include "mios/safety_stage_2/cartesian_velocity_damping.hpp"
 
-#include <iostream>
-#include <chrono>
+#include "spdlog/spdlog.h"
+
 #include <thread>
-
-#include <functional>
-
-#include <spdlog/spdlog.h>
 
 namespace mios {
 
@@ -33,13 +29,16 @@ Core::Core(unsigned database_port, unsigned robot_configuration):m_memory(databa
     m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_ros_node(this,&m_task_engine,&m_portal,&m_memory),
     m_telemetry(TelemetryUDP(this,&m_portal)),m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false),
     m_robot_configuration(robot_configuration),m_blend_skill(false),m_hand_grace_period(0){
+    spdlog::trace("Core::Core()");
 }
 
 Core::~Core(){
+    spdlog::trace("Core::~Core()");
     terminate();
 }
 
 bool Core::initialize(){
+    spdlog::trace("Core::initialize()");
     spdlog::info("Initializing memory...");
     if(!m_memory.initialize(&m_skill_library,m_robot_configuration)){
         spdlog::error("Could not initialize memory.");
@@ -73,11 +72,13 @@ bool Core::initialize(){
 }
 
 void Core::start(){
+    spdlog::trace("Core::start()");
     spdlog::info("Starting task engine...");
     m_task_engine.life_cycle();
 }
 
 void Core::terminate(){
+    spdlog::trace("Core::terminate()");
     m_panda_body.disconnect_from_robot();
     m_panda_body.disconnect_from_gripper();
 }
@@ -115,8 +116,8 @@ TelemetryUDP* Core::get_telemetry(){
 }
 
 ControlReturnType Core::execute_skill(){
+    spdlog::trace("Core:execute_skill()");
     std::scoped_lock<std::mutex> busy_lock(m_mtx_is_busy);
-    spdlog::trace("CORE:execute_skill()");
 
     if(!m_panda_body.pre_run_checks()){
         if(!m_panda_body.recover()){
@@ -297,6 +298,7 @@ franka::JointVelocities Core::joint_velocity_controller_pipeline(const franka::R
 }
 
 bool Core::grasp_object(const std::string &name,double speed){
+    spdlog::trace("Core::grasp_object()");
     const Object* object=m_memory.get_object(name);
     if(object->name=="NullObject"){
         spdlog::error("Cannot find object "+name+" in knowledge base.");
@@ -330,6 +332,7 @@ bool Core::grasp_object(const std::string &name,double speed){
 }
 
 bool Core::home_gripper(){
+    spdlog::trace("Core::home_gripper()");
     if(!refresh_percept({})){
         spdlog::error("Could not refresh my perception. Discrepancy between real world and believe state is possible.");
         return false;
@@ -342,6 +345,7 @@ bool Core::home_gripper(){
 }
 
 bool Core::grasp(double width, double speed, double force,double epsilon_inner,double epsilon_outer,std::string object_name){
+    spdlog::trace("Core::grasp()");
     if(m_percept.robot_mode==franka::RobotMode::kUserStopped){
         spdlog::error("Action is not permitted while in user mode.");
         return false;
@@ -366,6 +370,7 @@ bool Core::grasp(double width, double speed, double force,double epsilon_inner,d
 }
 
 bool Core::move_gripper(double width, double speed){
+    spdlog::trace("Core::move_gripper()");
     if(m_percept.robot_mode==franka::RobotMode::kUserStopped){
         spdlog::error("Action is not permitted while in user mode.");
         return false;
@@ -387,11 +392,13 @@ bool Core::move_gripper(double width, double speed){
 }
 
 bool Core::is_grasping(){
+    spdlog::trace("Core::is_grasping()");
     refresh_percept({});
     return m_percept.proprioception.is_grasping;
 }
 
 bool Core::set_grasped_object(const std::string &name){
+    spdlog::trace("Core::set_grasped_object()");
     const Object* object=m_memory.get_object(name);
     if(object->name=="NullObject"){
         spdlog::error("Cannot find object "+name+" in knowledge base.");
@@ -417,6 +424,7 @@ bool Core::set_grasped_object(const std::string &name){
 }
 
 bool Core::release_object(std::optional<double> width, double speed){
+    spdlog::trace("Core::release_object()");
     const Object* object=m_memory.get_live_context()->grasped_object;
     if(object->name=="NullObject" && !is_grasping()){
         spdlog::error("I am not grasping anything.");
@@ -449,6 +457,7 @@ bool Core::release_object(std::optional<double> width, double speed){
 }
 
 bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF){
+    spdlog::trace("Core::refresh_percept()");
     franka::RobotState robot_state;
     franka::GripperState gripper_state;
     if(!m_panda_body.get_robot_state(robot_state)){
@@ -466,30 +475,37 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF){
 }
 
 bool Core::unlock_body(){
+    spdlog::trace("Core::unlock_body()");
     return m_panda_body.unlock_brakes(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
 }
 
 bool Core::lock_body(){
+    spdlog::trace("Core::lock_body()");
     return m_panda_body.lock_brakes(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
 }
 
 bool Core::shutdown_body(){
+    spdlog::trace("Core::shutdown_body()");
     return m_panda_body.shutdown_robot(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
 }
 
 bool Core::pack_body(){
+    spdlog::trace("Core::pack_body()");
     return m_panda_body.move_to_pack_pose(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
 }
 
 bool Core::start_desk_task(const std::string &task){
+    spdlog::trace("Core::start_desk_task()");
     return m_panda_body.start_desk_task(task,m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
 }
 
 bool Core::stop_desk_task(){
+    spdlog::trace("Core::stop_desk_task()");
     return m_panda_body.stop_desk_task(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
 }
 
 bool Core::recover_body(){
+    spdlog::trace("Core::recover_body()");
     return m_panda_body.recover();
 }
 

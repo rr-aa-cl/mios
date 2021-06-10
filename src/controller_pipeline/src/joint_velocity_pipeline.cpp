@@ -1,14 +1,15 @@
 #include "mios/controller_pipeline/joint_velocity_pipeline.hpp"
+#include "spdlog/spdlog.h"
 
 namespace mios {
 
 JointVelocityControllerPipeline::JointVelocityControllerPipeline():m_panda_cmd({0,0,0,0,0,0,0}){
-
+    spdlog::trace("JointVelocityControllerPipeline::JointVelocityControllerPipeline()");
 }
 
 
 void JointVelocityControllerPipeline::initialize(const Percept &p_0, Memory *memory){
-
+    spdlog::trace("JointVelocityControllerPipeline::initialize()");
 }
 
 franka::Finishable *JointVelocityControllerPipeline::step(const Percept &p, const Actuator &cmd){
@@ -32,11 +33,11 @@ void JointVelocityControllerPipeline::update_percept(Percept::Controller &p){
 }
 
 void JointVelocityControllerPipeline::terminate(){
-
+    spdlog::trace("JointVelocityControllerPipeline::terminate()");
 }
 
 void JointVelocityControllerPipeline::context_switch(const Percept &p){
-
+    spdlog::trace("JointVelocityControllerPipeline::context_switch()");
 }
 
 }

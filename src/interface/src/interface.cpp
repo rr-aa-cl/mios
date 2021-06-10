@@ -1,9 +1,10 @@
 #include "mios/interface/interface.hpp"
 
 #include "mios/core/core.hpp"
-#include "mios/task/task_engine.hpp"
-#include "mios/portal/portal.hpp"
 #include "mios/memory/memory.hpp"
+#include "mios/portal/portal.hpp"
+#include "mios/task/task_engine.hpp"
+
 #include "spdlog/spdlog.h"
 
 
@@ -12,10 +13,12 @@ namespace mios {
 using msrm_utils::ArgPair;
 
 CommandInterface::CommandInterface(Core *core, TaskEngine *task_engine,Portal* portal,Memory* memory):m_core(core),m_task_engine(task_engine),m_portal(portal),m_memory(memory){
+    spdlog::trace("ComanndInterface::CommandInterface()");
     bind_methods();
 }
 
 void CommandInterface::bind_methods(){
+    spdlog::trace("ComanndInterface::bind_methods()");
     m_portal->bind_method_to_all("start_task",std::bind(&CommandInterface::start_task,this,std::placeholders::_1),{ArgPair("task",{}),ArgPair("parameters",{}),ArgPair("queue",false)});
     m_portal->bind_method_to_all("stop_task",std::bind(&CommandInterface::stop_task,this,std::placeholders::_1),
     {ArgPair("raise_exception",false),ArgPair("recover",false),ArgPair("empty_queue",false)});
@@ -69,12 +72,13 @@ void CommandInterface::bind_methods(){
 }
 
 nlohmann::json CommandInterface::terminate(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:terminate()");
     m_task_engine->stop();
     return nlohmann::json();
 }
 
 nlohmann::json CommandInterface::start_task(const nlohmann::json &request){
-    spdlog::trace("CommandInterface: start_task");
+    spdlog::trace("CommandInterface:start_task()");
     nlohmann::json response;
     bool result;
     std::string task_uuid;
@@ -87,7 +91,7 @@ nlohmann::json CommandInterface::start_task(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::stop_task(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: stop_task");
+    spdlog::trace("CommandInterface:stop_task()");
     nlohmann::json response;
     bool result;
     std::string error_message;
@@ -98,7 +102,7 @@ nlohmann::json CommandInterface::stop_task(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::remove_task(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: remove_task");
+    spdlog::trace("CommandInterface:remove_task()");
     nlohmann::json response;
     bool result;
     std::string error_message;
@@ -113,7 +117,7 @@ nlohmann::json CommandInterface::remove_task(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::wait_for_task(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: wait_for_task");
+    spdlog::trace("CommandInterface:wait_for_task()");
     nlohmann::json response;
     std::string task_uuid;
     bool result;
@@ -151,7 +155,7 @@ nlohmann::json CommandInterface::wait_for_task(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::is_busy(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: is_busy");
+    spdlog::trace("CommandInterface:is_busy()");
     nlohmann::json response;
     response["result"]=true;
     response["busy"]=m_task_engine->is_busy();
@@ -159,7 +163,7 @@ nlohmann::json CommandInterface::is_busy(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::set_grasped_object(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: set_grasped_object");
+    spdlog::trace("CommandInterface:set_grasped_object()");
     nlohmann::json response;
     response["result"]=false;
     response["error"]="";
@@ -172,7 +176,7 @@ nlohmann::json CommandInterface::set_grasped_object(const nlohmann::json &reques
 }
 
 nlohmann::json CommandInterface::grasp_object(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: grasp_object");
+    spdlog::trace("CommandInterface:grasp_object()");
     nlohmann::json response;
     response["result"]=false;
     response["error"]="";
@@ -185,7 +189,7 @@ nlohmann::json CommandInterface::grasp_object(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::grasp(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: grasp");
+    spdlog::trace("CommandInterface:grasp()");
     nlohmann::json response;
     response["result"]=false;
     response["error"]="";
@@ -198,7 +202,7 @@ nlohmann::json CommandInterface::grasp(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::release_object(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: release_object");
+    spdlog::trace("CommandInterface:release_object()");
     spdlog::info("Releasing object");
     nlohmann::json response;
     std::optional<double> width;
@@ -218,7 +222,7 @@ nlohmann::json CommandInterface::release_object(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::move_gripper(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: move_gripper");
+    spdlog::trace("CommandInterface:move_gripper()");
     nlohmann::json response;
     response["result"]=false;
     response["error"]="";
@@ -231,7 +235,7 @@ nlohmann::json CommandInterface::move_gripper(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::home_gripper(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: home_gripper");
+    spdlog::trace("CommandInterface:home_gripper()");
     nlohmann::json response;
     response["result"]=false;
     response["error"]="";
@@ -244,7 +248,7 @@ nlohmann::json CommandInterface::home_gripper(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::teach_object(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: teach_object");
+    spdlog::trace("CommandInterface:teach_object()");
     nlohmann::json response;
     std::string object_name;
     bool teach_width=false;
@@ -266,7 +270,7 @@ nlohmann::json CommandInterface::teach_object(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::set_partial_object_data(const nlohmann::json &request){
-    spdlog::trace("CommandInterface: set_partial_object_data");
+    spdlog::trace("CommandInterface:set_partial_object_data()");
     nlohmann::json response;
     std::string object_name;
     request["object"].get_to(object_name);
@@ -286,7 +290,7 @@ nlohmann::json CommandInterface::set_partial_object_data(const nlohmann::json &r
 }
 
 nlohmann::json CommandInterface::set_object(const nlohmann::json &request){
-    spdlog::trace("CommandInterface: set_object");
+    spdlog::trace("CommandInterface:set_object()");
     nlohmann::json response;
     std::string name;
     request["object"].get_to(name);
@@ -324,7 +328,7 @@ nlohmann::json CommandInterface::set_object(const nlohmann::json &request){
 //}
 
 nlohmann::json CommandInterface::download_task_context(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: download_task_context");
+    spdlog::trace("CommandInterface:download_task_context()");
     nlohmann::json response, context;
     std::string task_id;
     request["task"].get_to(task_id);
@@ -340,7 +344,7 @@ nlohmann::json CommandInterface::download_task_context(const nlohmann::json &req
 }
 
 nlohmann::json CommandInterface::download_skill_context(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: download_skill_context");
+    spdlog::trace("CommandInterface:download_skill_context()");
     nlohmann::json response, context;
     std::string skill_id;
     request["skill"].get_to(skill_id);
@@ -356,7 +360,7 @@ nlohmann::json CommandInterface::download_skill_context(const nlohmann::json &re
 }
 
 nlohmann::json CommandInterface::download_object_context(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: download_object_context");
+    spdlog::trace("CommandInterface:download_object_context()");
     nlohmann::json response, context;
     std::string object;
     request["object"].get_to(object);
@@ -373,6 +377,7 @@ nlohmann::json CommandInterface::download_object_context(const nlohmann::json &r
 }
 
 nlohmann::json CommandInterface::get_state(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:get_state()");
     nlohmann::json response;
     bool result=true;
     std::string error_message="";
@@ -400,6 +405,7 @@ nlohmann::json CommandInterface::get_state(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::get_model(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:get_model()");
     nlohmann::json response;
     bool result=true;
     std::string error_message="";
@@ -420,6 +426,7 @@ nlohmann::json CommandInterface::get_model(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::reload_database(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:reload_database()");
     nlohmann::json response;
     response["result"]=true;
     if(!m_memory->set_default_parameters()){
@@ -430,7 +437,7 @@ nlohmann::json CommandInterface::reload_database(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::subscribe_telemetry(const nlohmann::json &request){
-    spdlog::debug("CommandInterface: subscribe to telemetry");
+    spdlog::trace("CommandInterface:subscribe_telemetry()");
     nlohmann::json response;
     response["result"] = true; 
     if(request.find("ip") == request.end()){
@@ -461,6 +468,7 @@ nlohmann::json CommandInterface::subscribe_telemetry(const nlohmann::json &reque
     return response;
 }
 nlohmann::json CommandInterface::unsubscribe_telemetry(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:unsubscribe_telemetry()");
     nlohmann::json response;
     response["result"] = m_core->get_telemetry()->remove_subscriber(request["ip"]);
     return response;
@@ -486,6 +494,7 @@ nlohmann::json CommandInterface::unsubscribe_telemetry(const nlohmann::json &req
 //}
 
 nlohmann::json CommandInterface::start_desk_task(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:start_desk_task()");
     nlohmann::json response;
     std::string task;
     request["task"].get_to(task);
@@ -495,6 +504,7 @@ nlohmann::json CommandInterface::start_desk_task(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::stop_desk_task(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:stop_desk_task()");
     nlohmann::json response;
     bool result=m_core->stop_desk_task();
     response["result"]=result;
@@ -502,6 +512,7 @@ nlohmann::json CommandInterface::stop_desk_task(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::unlock_brakes(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:unlock_brakes()");
     nlohmann::json response;
     bool result=m_core->unlock_body();
     response["result"]=result;
@@ -509,6 +520,7 @@ nlohmann::json CommandInterface::unlock_brakes(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::lock_brakes(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:lock_brakes()");
     nlohmann::json response;
     bool result=m_core->lock_body();
     response["result"]=result;
@@ -516,6 +528,7 @@ nlohmann::json CommandInterface::lock_brakes(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::shutdown(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:shutdown()");
     nlohmann::json response;
     bool result=m_core->shutdown_body();
     response["result"]=result;
@@ -523,6 +536,7 @@ nlohmann::json CommandInterface::shutdown(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::pack_pose(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:pack_pose()");
     nlohmann::json response;
     response["error"]="";
     response["result"]=true;
@@ -536,6 +550,7 @@ nlohmann::json CommandInterface::pack_pose(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::set_live_parameter(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:set_live_parameter()");
     nlohmann::json response;
     m_memory->set_live_parameter(request["key"],request["value"]);
     response["error"]="";
@@ -544,6 +559,7 @@ nlohmann::json CommandInterface::set_live_parameter(const nlohmann::json &reques
 }
 
 nlohmann::json CommandInterface::post_event(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:post_event()");
     nlohmann::json response;
     std::string name;
     request["name"].get_to(name);
@@ -553,6 +569,7 @@ nlohmann::json CommandInterface::post_event(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::get_event(const nlohmann::json &request){
+    spdlog::trace("CommandInterface:get_event()");
     nlohmann::json response;
     std::string name;
     request["name"].get_to(name);
@@ -561,7 +578,7 @@ nlohmann::json CommandInterface::get_event(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::learn_task(const nlohmann::json &request){
-    spdlog::debug("CommandInterface::learn_task()");
+    spdlog::trace("CommandInterface:learn_task()");
     nlohmann::json response;
     bool result=true;
 
@@ -593,6 +610,7 @@ nlohmann::json CommandInterface::learn_task(const nlohmann::json &request){
 }
 
 nlohmann::json CommandInterface::stop_learning(const nlohmann::json &request){
+    spdlog::trace("CommandInterface::stop_learning()");
     return nlohmann::json();
 }
 

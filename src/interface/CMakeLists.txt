@@ -46,8 +46,8 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
     ${PROJECT_NAME}::core
-    ${PROJECT_NAME}::portal
     ${PROJECT_NAME}::memory
+    ${PROJECT_NAME}::portal
     ${PROJECT_NAME}::task
     PUBLIC
     roscpp

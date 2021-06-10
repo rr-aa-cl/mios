@@ -6,6 +6,8 @@
 #include "mios/utils/exceptions.hpp"
 
 #include <map>
+#include <string>
+#include <memory>
 
 namespace mios {
 

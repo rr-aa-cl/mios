@@ -6,16 +6,17 @@ namespace mios {
 
 ManipulationPrimitive::ManipulationPrimitive(const std::string& name, const Percept &p_0, Memory *memory)
     :m_name(name),m_memory(memory),m_cmd(Actuator(p_0,memory->read_parameters()->control)),m_flag_initialized(false),m_flag_terminated(false){
+    spdlog::trace("ManipulationPrimitive::ManipulationPrimitive()");
 }
 
 Actuator* ManipulationPrimitive::initialize(const Percept &p_0){
-    spdlog::debug("ManipulationPrimitive::initialize(p_0)");
+    spdlog::trace("ManipulationPrimitive::initialize(Percept)");
     m_cmd.initialize(p_0,m_memory->read_parameters()->control, m_memory->read_parameters()->frames.O_R_T);
     return initialize(p_0,m_cmd);
 }
 
 Actuator* ManipulationPrimitive::initialize(const Percept &p_0, const Actuator& cmd){
-    spdlog::debug("ManipulationPrimitive::initialize(p_0,cmd)");
+    spdlog::trace("ManipulationPrimitive::initialize(Percept,Actuator)");
     m_cmd.blend(cmd,p_0);
     m_memory->get_live_context()->t_mp=std::chrono::high_resolution_clock::now();
     for(auto& s : m_strategies){
@@ -45,6 +46,7 @@ Actuator* ManipulationPrimitive::step(const Percept &p){
 }
 
 void ManipulationPrimitive::terminate(const Percept &p){
+    spdlog::trace("ManipulationPrimitive::terminate()");
     if(m_flag_initialized && !m_flag_terminated){
         for(auto& s : m_strategies){
             s.second.strategy->terminate(p);
@@ -208,6 +210,7 @@ Actuator* ManipulationPrimitive::cmd_from_buffer(){
 }
 
 Actuator* ManipulationPrimitive::stop(const Percept& p, double stop_factor){
+    spdlog::trace("ManipulationPrimitive::stop()");
     m_cmd.set_zero(p);
     m_cmd.set_stop_factor(stop_factor);
     return &m_cmd;
