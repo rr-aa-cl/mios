@@ -1,4 +1,5 @@
 #pragma once
+#include "eigen3/Eigen/Core"
 
 #include "mios/portal/portal.hpp"
 
@@ -11,7 +12,6 @@
 
 #include "msrm_cpp_utils/json/json.hpp"
 #include "spdlog/spdlog.h"
-#include "eigen3/Eigen/Core"
 #include "nlohmann/json.hpp"
 
 #include <list>
