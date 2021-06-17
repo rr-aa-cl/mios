@@ -8,8 +8,8 @@ from plotting.data_acquisition import *
 from plotting.data_processor import DataProcessor
 
 def live_plot(robots, tags):
-    tags = ["collective_experiment_shared","paper_run_1", "n3"]
-    robots = ["collective-panda-001.local", "collective-panda-002.local", "collective-panda-003.local", "collective-panda-009.local"]
+    tags = tags  # ["collective_experiment_shared","paper_run_1", "n3"]
+    robots = robots  # ["collective-panda-001.local", "collective-panda-002.local", "collective-panda-003.local", "collective-panda-009.local"]
     cmap = plt.get_cmap('gist_rainbow')
     colors = [cmap(i) for i in np.linspace(0, 1, len(robots))]
     # calculating number of couloms:
@@ -31,6 +31,7 @@ def live_plot(robots, tags):
     current_data_sets = []
     for i in range(len(robots)):
         axes[i].grid()
+        axes[i].set_title(robots[i])
         line, = axes[i].plot([],[], lw=3, color=colors[i])
         plot_lines.append(line)
         current_data_sets.append({"x":[], "y":[]})  # keep track of current data
@@ -43,6 +44,8 @@ def live_plot(robots, tags):
                 results = get_experiment_data(host, skill_class, "ml_results", filter={"meta.tags": {"$all": tags}})
             except DataNotFoundError:
                 return False, False
+            if len(results.trials) == 0:
+                return False, False
             cost, time = results.get_cost_per_time()
             cost_mon = p.get_monotonically_decreasing_cost(cost)
             return cost_mon, time
@@ -52,17 +55,18 @@ def live_plot(robots, tags):
 
     def animate(data):
         for i in range(len(robots)):
-            cost,time = get_results("collective-panda-001.local","insert_object",["collective_experiment_shared","paper_run_1", "n3"])
-            new_data_index = len(current_data_sets[i]["x"]) - len(time)
-            if new_data_index < 0:  # just update if new data is available
-                current_data_sets[i]["x"].extend(time[new_data_index:])
-                current_data_sets[i]["y"].extend(cost[new_data_index:])
-                plot_lines[i].set_data(current_data_sets[i]["x"], current_data_sets[i]["y"])
-                plot_lines[i].axes.set_xlim(0,max(time))
-                if cost[-1] < 10:
-                    plot_lines[i].axes.set_ylim(0,10)
-                else:
-                    plot_lines[i].axes.set_ylim(0,max(cost))
+            cost,time = get_results(robots[i],"insert_object", tags)
+            if cost == False:
+                continue
+            current_data_sets[i]["x"] = time
+            current_data_sets[i]["y"] = cost
+
+            plot_lines[i].set_data(current_data_sets[i]["x"], current_data_sets[i]["y"])
+            plot_lines[i].axes.set_xlim(0,max(time))
+            if cost[-1] < 1:
+                plot_lines[i].axes.set_ylim(0,1)
+            else:
+                plot_lines[i].axes.set_ylim(0,max(cost))
             
         return plot_lines
 

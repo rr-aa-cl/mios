@@ -1117,6 +1117,9 @@ def live_plotting():
     from plotting.live_plotter import live_plot
     #lp = LivePlotter([],[])
     #lp.start_plot()
-    live_plot()
-if __name__ == "__main__":
-    live_plotting()
+    robots = [  "collective-panda-001.local", "collective-panda-002.local",
+                 "collective-panda-003.local", "collective-panda-009.local"]
+    tags = ["live_plotting_test"]
+    live_plot(robots,tags)
+
+
