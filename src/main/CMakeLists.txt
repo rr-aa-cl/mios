@@ -22,4 +22,4 @@ target_link_libraries(mios
     stdc++fs
     )
 
-install(TARGETS mios DESTINATION ${CMAKE_SOURCE_DIR}/bin)
+install(TARGETS mios DESTINATION ${CMAKE_INSTALL_BINDIR})

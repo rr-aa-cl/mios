@@ -207,15 +207,14 @@ def test_tax_press_button(robot="collective-panda-008.local"):
                 })
 
 
-def tax_test_move(robot):
+def tax_test_move(robot, location):
     move1_context = {
         "skill": {
             "objects": {
-                "GoalPose": "iros_loc_1"
+                "GoalPose": location
             },
-            "speed": [1.0, 4.0],
-            "acc": [8.0, 8.0],
-            "time_max": 5
+            "speed": [0.1, 0.5],
+            "acc": [0.5, 1.0]
         },
         "control": {
             "control_mode": 0,
@@ -228,11 +227,6 @@ def tax_test_move(robot):
     t.add_skill("move", "TaxMove", move1_context)
     t.start()
     result = t.wait()
-    cost = result["result"]["task_result"]["skill_results"]["move"]["cost"]["time"]
-    heuristic = result["result"]["task_result"]["skill_results"]["move"]["heuristic"]
-    total_cost = cost + heuristic
-    with open("expert_data_move.txt", "a") as f:
-        f.write(str(total_cost)+"\n")
 
 
 def tax_test_insertion(robot):
