@@ -48,7 +48,7 @@ option(SIMPLE_BUILD "Build the project as minimally as possible" OFF)
 option(BUILD_DOC "Build the project's documentation" OFF)
 option(FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." OFF)
 option(DEBUG_LOGGING "Enabling debug logging" OFF)
-option(ENABLE_IPO "Enable Interprocedural Optimization, aka Link Time Optimization (LTO)" ON)
+option(ENABLE_IPO "Enable Interprocedural Optimization, aka Link Time Optimization (LTO)" OFF)
 option(ENABLE_PCH "Enable Precompiled Headers" ON)
 option(ENABLE_UNITY_BUILD "Enable unity build" ON)
 
