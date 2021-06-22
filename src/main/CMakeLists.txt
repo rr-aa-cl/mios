@@ -20,8 +20,6 @@ target_link_libraries(mios
     CONAN_PKG::pybind11
     CONAN_PKG::cxxopts
     stdc++fs
-    ssl
-    boost_system
     )
 
 install(TARGETS mios DESTINATION ${CMAKE_SOURCE_DIR}/bin)

@@ -136,8 +136,8 @@ add_library(${PROJECT_NAME}::${PROJECT_NAME}_project_deps ALIAS ${PROJECT_NAME}_
 target_link_libraries(${PROJECT_NAME}_project_deps
     INTERFACE
     CONAN_PKG::spdlog
-    stdc++fs
-    boost_system
+#    stdc++fs
+#    boost_system
     )
 
 add_subdirectory(src)
