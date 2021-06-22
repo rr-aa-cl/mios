@@ -41,7 +41,11 @@ public:
     }
     std::unordered_map<std::string, SkillResult> get_results();
 
+    void log_data(const Percept& p);
+
 private:
+    void init_logs();
+    void write_logs();
     bool get_percept(const Percept& p);
     bool load_skill(std::shared_ptr<Skill> skill);
     void unload_skill();
@@ -53,6 +57,9 @@ private:
     std::list<std::shared_ptr<Skill> >::iterator m_it_skill_queue;
     std::unordered_map<std::string,SkillResult> m_results;
     bool m_queue;
+
+    std::vector<nlohmann::json> m_data_log;
+    long m_log_cnt;
 
 };
 

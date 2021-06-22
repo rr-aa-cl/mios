@@ -39,6 +39,7 @@ public:
     bool get_flag_error() const;
     void set_flag_error();
     std::string get_name() const;
+    bool has_strategies() const;
 
     Actuator* initialize(const Percept &p_0);
     Actuator* initialize(const Percept &p_0, const Actuator &cmd);

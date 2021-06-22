@@ -1,9 +1,9 @@
 #include "mios/skill/skill_engine.hpp"
-//#include "mios/skill/skill.hpp"
 #include "mios/skills/null_skill.hpp"
 #include "mios/core/core.hpp"
 #include "mios/memory/memory.hpp"
-
+#include "msrm_cpp_utils/files/files.hpp"
+#include <boost/filesystem.hpp>
 
 namespace mios{
 
@@ -117,7 +117,7 @@ ControlReturnType SkillEngine::execute_skill_queue(){
         clear_skill_queue();
         return result;
     }
-
+    init_logs();
     try{
         spdlog::info("Executing skill...");
         result = m_core->execute_skill();
@@ -132,6 +132,7 @@ ControlReturnType SkillEngine::execute_skill_queue(){
     m_active_skill->terminate(*m_core->get_percept());
     m_results.insert(std::pair<std::string,SkillResult>(m_active_skill->get_id(),m_active_skill->get_result()));
     unload_skill();
+    write_logs();
     if(!m_core->refresh_percept({})){
         clear_skill_queue();
         return ControlReturnType::crtException;
@@ -159,6 +160,7 @@ ControlReturnType SkillEngine::execute_skill(std::shared_ptr<Skill> skill){
         return ControlReturnType::crtException;
     }
     ControlReturnType result=ControlReturnType::crtException;
+    init_logs();
     try{
         spdlog::info("Executing skill...");
         result = m_core->execute_skill();
@@ -172,11 +174,11 @@ ControlReturnType SkillEngine::execute_skill(std::shared_ptr<Skill> skill){
     spdlog::info("Unloading skill...");
     skill->terminate(*m_core->get_percept());
     unload_skill();
-    if(!m_core->refresh_percept({})){
+    write_logs();
+    if(!m_core->refresh_percept({},true)){
         return ControlReturnType::crtException;
     }
     spdlog::info("Terminating skill...");
-    skill->write_logs();
     return result;
 }
 
@@ -193,6 +195,70 @@ Actuator* SkillEngine::get_next_command(const Percept& percept){
 std::unordered_map<std::string,SkillResult> SkillEngine::get_results(){
     spdlog::trace("SkillEngine::get_results");
     return m_results;
+}
+
+void SkillEngine::log_data(const Percept &p){
+    if(m_log_cnt>=m_data_log.size()){
+        return;
+    }
+    m_data_log[m_log_cnt]["time"]=std::chrono::duration<double>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+    m_data_log[m_log_cnt]["q"]=msrm_utils::from_eigen<double,7,1>(p.proprioception.q);
+    m_data_log[m_log_cnt]["dq"]=msrm_utils::from_eigen<double,7,1>(p.proprioception.dq);
+    m_data_log[m_log_cnt]["O_T_EE"]=msrm_utils::from_eigen<double,4,4>(p.proprioception.O_T_EE);
+    m_data_log[m_log_cnt]["dX"]=msrm_utils::from_eigen<double,6,1>(p.proprioception.O_dX_EE);
+    m_data_log[m_log_cnt]["tau_ext"]=msrm_utils::from_eigen<double,7,1>(p.proprioception.tau_ext);
+    m_data_log[m_log_cnt]["F_ext"]=msrm_utils::from_eigen<double,6,1>(p.proprioception.K_F_ext_K);
+
+
+    m_log_cnt++;
+}
+
+void SkillEngine::init_logs(){
+    spdlog::trace("SkillEngine::init_logs");
+    m_log_cnt=0;
+    nlohmann::json data_log;
+    m_data_log.resize(m_memory->read_parameters()->skill->data_length);
+}
+
+void SkillEngine::write_logs(){
+    spdlog::trace("SkillEngine::write_logs");
+    if(!m_memory->read_parameters()->skill->log_data || m_data_log.size()==0){
+        return;
+    }
+    spdlog::info("Writing logs into file...");
+    std::string log_file = boost::filesystem::path(boost::filesystem::current_path()).string()+"/../logs/logs_"+m_memory->read_parameters()->skill->log_name+".txt";
+    boost::filesystem::create_directories(boost::filesystem::path(boost::filesystem::current_path()).string()+"/../logs/");
+    std::remove(log_file.c_str());
+    try{
+        for(const auto& el : m_data_log[0].items()){
+            if(m_data_log[0][el.key()].is_array()){
+                for(unsigned i=0;i<m_data_log[0][el.key()].size();i++){
+                    msrm_utils::write_data_to_file(el.key(),log_file);
+                }
+            }else{
+                msrm_utils::write_data_to_file(el.key(),log_file);
+            }
+        }
+        msrm_utils::write_endl_to_file(log_file);
+        if(m_log_cnt>=m_data_log.size()){
+            m_log_cnt=m_data_log.size();
+        }
+        for(unsigned i=0;i<m_log_cnt;i++){
+            for(const auto& el : m_data_log[i].items()){
+                if(m_data_log[i][el.key()].is_array()){
+                    for(unsigned j=0;j<m_data_log[i][el.key()].size();j++){
+                        msrm_utils::write_data_to_file(m_data_log[i][el.key()][j],log_file);
+                    }
+                }else{
+                    msrm_utils::write_data_to_file(m_data_log[i][el.key()],log_file);
+                }
+            }
+            msrm_utils::write_endl_to_file(log_file);
+        }
+    }catch(const nlohmann::json::exception& e){
+        spdlog::debug(e.what());
+    }
+    spdlog::info("Logs have been written to "+log_file+".");
 }
 
 }

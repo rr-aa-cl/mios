@@ -18,6 +18,8 @@
 #include "mios/safety_stage_2/virtual_joint_walls.hpp"
 #include "mios/safety_stage_2/cartesian_velocity_damping.hpp"
 
+#include <functional>
+
 #include "spdlog/spdlog.h"
 
 #include <thread>
@@ -176,7 +178,7 @@ ControlReturnType Core::execute_skill(){
 
     post_execution();
     m_blend_skill=false;
-//    m_panda_body.stop_gripper();
+    //    m_panda_body.stop_gripper();
     return result;
 }
 
@@ -266,6 +268,9 @@ franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
     for(auto& m : m_safety_stage_2){
         m->step(m_percept,panda_cmd);
     }
+
+    m_skill_engine.log_data(m_percept);
+
     if(cmd->is_stopped()){
         if(m_skill_engine.is_running_queue()){
             m_blend_skill=true;
@@ -456,18 +461,40 @@ bool Core::release_object(std::optional<double> width, double speed){
     }
 }
 
-bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF){
-    spdlog::trace("Core::refresh_percept()");
+bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, bool wait){
     franka::RobotState robot_state;
     franka::GripperState gripper_state;
-    if(!m_panda_body.get_robot_state(robot_state)){
-        spdlog::debug("Core::refresh_percept.failed_to_acquire_robot_state");
-        return false;
+    bool read_successful=false;
+    if(wait){
+        while(!read_successful){
+            read_successful=true;
+            if(!m_panda_body.get_robot_state(robot_state)){
+                spdlog::debug("Core::refresh_percept.failed_to_acquire_robot_state");
+                read_successful=false;
+            }
+            if(!m_panda_body.get_gripper_state(gripper_state)){
+                spdlog::debug("Core::refresh_percept.failed_to_acquire_gripper_state");
+                read_successful=false;
+            }
+            if(!read_successful){
+                spdlog::debug("Waiting for valid perception...");
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }else{
+                break;
+            }
+        }
+    }else{
+        if(!m_panda_body.get_robot_state(robot_state)){
+            spdlog::debug("Core::refresh_percept.failed_to_acquire_robot_state");
+            return false;
+        }
+        if(!m_panda_body.get_gripper_state(gripper_state)){
+            spdlog::debug("Core::refresh_percept.failed_to_acquire_gripper_state");
+            return false;
+        }
+
     }
-    if(!m_panda_body.get_gripper_state(gripper_state)){
-        spdlog::debug("Core::refresh_percept.failed_to_acquire_gripper_state");
-        return false;
-    }
+
     m_percept.update(m_panda_body.get_panda_model(),robot_state,gripper_state,O_R_TF);
     m_controller_pipeline->update_percept(m_percept.controller);
     m_memory.internal_update(m_percept);

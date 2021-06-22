@@ -21,10 +21,6 @@ Skill::Skill(const std::string &type, const std::unordered_set<std::string> &obj
     m_msg_local_success(false),m_msg_global_success(false),m_cost_contact_forces_sum(0),m_cost_effort_avg_sum(0){
     spdlog::trace("Skill::Skill()");
     m_costs.insert(std::make_pair("ExecutionTime",0));
-
-    m_log_cnt=0;
-    nlohmann::json data_log;
-    m_data_log.resize(m_memory->read_parameters()->skill->data_length);
 }
 
 Skill::~Skill(){
@@ -117,6 +113,10 @@ Actuator* Skill::cycle(const Percept &p){
     if(m_life_cycle==SkillLifeCycle::slInit){
         spdlog::trace("Skill::cycle.init");
         m_active_mp=get_initial_mp(p);
+        if(!m_active_mp->has_strategies()){
+            spdlog::critical("Manipulation primitive " + next_mp.value()->get_name() + " has no strategies.");
+            throw SkillException("Missing strategy.");
+        }
         m_result.p_0=p;
         m_time_start=std::chrono::high_resolution_clock::now();
         m_memory->get_live_context()->t_skill=std::chrono::high_resolution_clock::now();
@@ -189,6 +189,10 @@ Actuator* Skill::cycle(const Percept &p){
     }
     next_mp=graph_transition(p);
     if(next_mp.has_value()){
+        if(!next_mp.value()->has_strategies()){
+            spdlog::critical("Manipulation primitive " + next_mp.value()->get_name() + " has no strategies.");
+            throw SkillException("Missing strategy.");
+        }
         m_life_cycle=SkillLifeCycle::slTransition;
     }
 
@@ -204,9 +208,6 @@ Actuator* Skill::cycle(const Percept &p){
 
     if(m_life_cycle==SkillLifeCycle::slExecution){
         auxiliaries(p);
-        if(m_memory->read_parameters()->skill->log_data){
-            log_data(p);
-        }
         update_internal_models(p);
         update_policies(p);
         m_result.cost=measure_cost(p);
@@ -380,22 +381,6 @@ bool Skill::ground_objects(){
 
 void Skill::auxiliaries([[maybe_unused]] const Percept &p){
 
-}
-
-void Skill::log_data(const Percept &p){
-    if(m_log_cnt>=m_data_log.size()){
-        return;
-    }
-    m_data_log[m_log_cnt]["time"]=std::chrono::duration<double>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-    m_data_log[m_log_cnt]["q"]=msrm_utils::from_eigen<double,7,1>(p.proprioception.q);
-    m_data_log[m_log_cnt]["dq"]=msrm_utils::from_eigen<double,7,1>(p.proprioception.dq);
-    m_data_log[m_log_cnt]["O_T_EE"]=msrm_utils::from_eigen<double,4,4>(p.proprioception.O_T_EE);
-    m_data_log[m_log_cnt]["dX"]=msrm_utils::from_eigen<double,6,1>(p.proprioception.O_dX_EE);
-    m_data_log[m_log_cnt]["tau_ext"]=msrm_utils::from_eigen<double,7,1>(p.proprioception.tau_ext);
-    m_data_log[m_log_cnt]["F_ext"]=msrm_utils::from_eigen<double,6,1>(p.proprioception.K_F_ext_K);
-
-
-    m_log_cnt++;
 }
 
 void Skill::parallels(){

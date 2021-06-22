@@ -229,6 +229,10 @@ std::string ManipulationPrimitive::get_name() const{
     return m_name;
 }
 
+bool ManipulationPrimitive::has_strategies() const{
+    return m_strategies.size()>0;
+}
+
 bool ManipulationPrimitive::is_settled(bool ignore) const{
     return m_cmd.is_settled(m_memory->read_parameters()->limits, ignore);
 }
