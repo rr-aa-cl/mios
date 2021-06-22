@@ -55,18 +55,29 @@ __pycache__
 *.mexa64
 slprj/
 logs/
-build/
 *.autosave
 .*
 *.md5
 
-*.txt.user
-build-*
-CMakeLists.txt.user*
+# Build #
+#########
+build*
 venv
+_deps
 
+
+# IDE files #
+###########
+.idea
+cmake-build-*
+CMakeLists.txt.user
 
 # doxygen #
 ###########
 doc/html/*
 doc/latex/*
+
+# Mios #
+########
+mios
+src/ros_workspace/devel

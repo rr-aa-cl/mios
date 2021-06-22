@@ -1,1 +1,0 @@
-{"name": "TestTask2", "parameters": {"d": [0, 0], "e": 0, "f": false, "stop_level": 0, "success": false}, "skills": {"t2_s1": {"control": {"control_mode": 0}, "skill": {"objects": {"object": "TestObject1"}}, "type": "TestSkill1"}, "t2_s2": {"control": {"control_mode": 0}, "skill": {"objects": {"object": "TestObject1"}}, "type": "TestSkill1"}}}

@@ -1,0 +1,14 @@
+[requires]
+boost/1.76.0
+eigen/3.3.9
+nlohmann_json/3.9.1
+simple-websocket-server/2.0.2
+cpp-httplib/0.8.8
+catch2/2.13.6
+spdlog/1.8.5
+pybind11/2.6.2
+cxxopts/2.2.1
+mongo-cxx-driver/3.6.2
+
+[generators]
+cmake

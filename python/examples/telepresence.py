@@ -14,10 +14,10 @@ def start_joystick_mode(ip_master, ip_slave):
 
 def start_joint_mode(ip_master, ip_slave):
     start_skill(ip_master, "Telepresence", {"is_master": True, "ip_dst": ip_slave, "port_dst": 8888, "port_src": 8888,
-                                            "telepresence_mode": "DirectJoint",
+                                            "telepresence_mode": "DirectJoint", "terminate_when_loc": True,
                                             "direct_joint": {"alpha": [15, 15, 10, 7, 6, 4, 3]}}, {"control_mode": 1})
     start_skill(ip_slave, "Telepresence", {"is_master": False, "ip_dst": ip_master, "port_dst": 8888, "port_src": 8888,
-                                           "telepresence_mode": "DirectJoint",
+                                           "telepresence_mode": "DirectJoint", "terminate_when_loc": True,
                                            "direct_joint": {"alpha": [0, 0, 0, 0, 0, 0, 0]}}, {"control_mode": 1})
 
 

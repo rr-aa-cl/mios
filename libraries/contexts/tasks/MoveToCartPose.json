@@ -1,1 +1,0 @@
-{"name": "MoveToCartPose", "parameters": {"pose": null, "T_EE_g": null, "speed": [0.1, 0.5], "acc": [0.5, 1]}, "skills": {"move": {"type": "MoveToPoseCart"}}}

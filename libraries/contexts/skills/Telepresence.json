@@ -1,1 +1,0 @@
-{"name": "Telepresence", "is_master": null, "ip_dst": null, "port_dst": null, "port_src": null, "telepresence_mode": null, "use_zoh_deadband": false, "deadband_k": null, "joystick": {"amp": null, "force_thr": null}, "direct_joint": {"alpha": null}, "direct_cart": {"alpha": null}}
