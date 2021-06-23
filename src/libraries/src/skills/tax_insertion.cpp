@@ -70,6 +70,14 @@ bool SkillParametersTaxInsertion::from_json(const nlohmann::json &parameters){
             spdlog::error("Missing parameter: p2.f_push");
             return false;
         }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p2"],"dX_d",p2.dX_d)){
+            spdlog::error("Missing parameter: p2.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p2"],"ddX_d",p2.ddX_d)){
+            spdlog::error("Missing parameter: p2.ddX_d");
+            return false;
+        }
     }
 
     if(parameters.find("p3")==parameters.end()){
@@ -126,15 +134,15 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_trans
             return create_wiggle_mp(p);
         }
     }
-    if(get_active_mp()->get_name()=="insert"){
-        if(is_stuck(p)){
-            return create_wiggle_mp(p);
-        }
-    }
+//    if(get_active_mp()->get_name()=="insert"){
+//        if(is_stuck(p)){
+//            return create_wiggle_mp(p);
+//        }
+//    }
     if(get_active_mp()->get_name()=="wiggle"){
-        if(!is_stuck(p)){
-            return create_insert_mp(p);
-        }
+//        if(!is_stuck(p)){
+//            return create_insert_mp(p);
+//        }
     }
     return {};
 }
@@ -205,7 +213,7 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_wiggle_mp(const Perc
     std::shared_ptr<MoveToPoseStrategy> orientation = mp->get_strategy<MoveToPoseStrategy>("orientation");
     Eigen::Matrix<double,4,4> T_g=get_object_pose_T("Container");
     T_g.block<3,1>(0,3)=p.proprioception.T_T_EE.block<3,1>(0,3);
-    orientation->set_goal(T_g,skill_params->p3.dX_d,skill_params->p3.ddX_d);
+    orientation->set_goal(T_g,skill_params->p2.dX_d,skill_params->p2.ddX_d);
     mp->create_strategy<FFWiggleStrategy>("wiggle_x",1);
     mp->get_strategy<FFWiggleStrategy>("wiggle_x")->set_coefficients(Eigen::Matrix<double,6,1>::Zero(),skill_params->p2.search_a,
                                                                    Eigen::Matrix<double,6,1>::Zero(),skill_params->p2.search_f,
@@ -213,9 +221,9 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_wiggle_mp(const Perc
 
     mp->create_strategy<FFStrategy>("push",1);
     Eigen::Matrix<double,6,1> f_push;
-    f_push<<0,0,skill_params->p3.f_push,0,0,0;
+    f_push<<0,0,skill_params->p2.f_push,0,0,0;
     mp->get_strategy<FFStrategy>("push")->set_TF_F_ff(f_push,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
-    Eigen::Matrix<double,6,1> K_x=skill_params->p3.K_x;
+    Eigen::Matrix<double,6,1> K_x=skill_params->p2.K_x;
     K_x(2)=0;
     Eigen::Matrix<double,6,1> xi_x=m_memory->read_parameters()->control.cart_imp.xi_x;
     xi_x(2)=0;
@@ -240,8 +248,8 @@ bool TaxInsertion::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxInsertion::check_local_suc_conditions(const Percept &p){
-    bool depth = p.proprioception.T_T_EE(2,3)>get_object_pose_T("Container")(2,3)-m_memory->read_parameters()->user.env_X(0);
-    bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0);
+    bool depth = p.proprioception.T_T_EE(2,3)>get_object_pose_T("Container")(2,3)-m_memory->read_parameters()->user.env_X(2);
+    bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(1);
     return depth && lateral;
 }
 

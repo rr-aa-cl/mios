@@ -48,12 +48,12 @@ def upload_result(host: str, skill: str, tag: str, result: dict):
 
     db_result = {
         "cost": {
-            "time": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["time"],
-            "contact_forces": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["contact_forces"],
-            "distance": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["distance"],
-            "effort_avg": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["effort_avg"],
-            "effort_total": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["effort_total"],
-            "custom": result["result"]["task_result"]["skill_results"]["insertion"]["cost"]["custom"]
+            "time": result["result"]["task_result"]["skill_results"][skill]["cost"]["time"],
+            "contact_forces": result["result"]["task_result"]["skill_results"][skill]["cost"]["contact_forces"],
+            "distance": result["result"]["task_result"]["skill_results"][skill]["cost"]["distance"],
+            "effort_avg": result["result"]["task_result"]["skill_results"][skill]["cost"]["effort_avg"],
+            "effort_total": result["result"]["task_result"]["skill_results"][skill]["cost"]["effort_total"],
+            "custom": result["result"]["task_result"]["skill_results"][skill]["cost"]["custom"]
         },
         "success": result["result"]["task_result"]["success"]
     }
@@ -92,7 +92,7 @@ def test_insertion(robot, insertable, container, approach, record_performance: b
             "p0": {
                 "dX_d": [0.1, 0.5],
                 "ddX_d": [0.5, 1],
-                "DeltaX": [-0.01, 0, 0, 0, 10, 0],
+                "DeltaX": [-0.005, 0, 0, 0, 10, 0],
                 "K_x":[1000, 1000, 1000, 100, 100, 100]
             },
             "p1": {
@@ -101,15 +101,17 @@ def test_insertion(robot, insertable, container, approach, record_performance: b
                 "K_x": [1000, 1000, 1000, 100, 100, 100]
             },
             "p2": {
-                "search_a": [15, 15, 0, 0, 0, 0],
+                "search_a": [10, 10, 0, 0, 0, 0],
                 "search_f": [1, 0.75, 0, 0, 0, 0],
-                "K_x": [200, 200, 0, 100, 100, 100],
-                "f_push": 10
+                "K_x": [1000, 1000, 0, 100, 100, 100],
+                "f_push": 15,
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
             },
             "p3": {
                 "dX_d": [0.1, 0.5],
                 "ddX_d": [0.5, 1],
-                "f_push": 10,
+                "f_push": 15,
                 "K_x": [1000, 1000, 0, 100, 100, 100]
             }
         },
@@ -117,7 +119,8 @@ def test_insertion(robot, insertable, container, approach, record_performance: b
             "control_mode": 0
         },
         "user": {
-            "env_dX": [0.01, 0.05]
+            "env_X": [0.005, 0.01, 0.01, 0.05, 0.05, 0.05],
+            "env_dX": [0.001, 0.001, 0.001, 0.005, 0.005, 0.005]
         }
     }
     t = Task(robot)
@@ -129,7 +132,7 @@ def test_insertion(robot, insertable, container, approach, record_performance: b
         upload_result("collective-control-001", "insertion", insertable, result)
 
 
-def test_extraction(robot, extractable, container, retreat):
+def test_extraction(robot, extractable, container, retreat, record_performance: bool = False):
     call_method(robot, 12000, "set_grasped_object", {"object": extractable})
     context = {
         "skill": {
@@ -158,7 +161,8 @@ def test_extraction(robot, extractable, container, retreat):
             "control_mode": 0
         },
         "user": {
-            "env_dX": [0.01, 0.05]
+            "env_X": [0.005, 0.01, 0.01, 0.05, 0.05, 0.05],
+            "env_dX": [0.001, 0.001, 0.001, 0.005, 0.005, 0.005]
         }
     }
     t = Task(robot)
@@ -166,6 +170,8 @@ def test_extraction(robot, extractable, container, retreat):
     t.start()
     result = t.wait()
     print(result)
+    if record_performance is True:
+        upload_result("collective-control-001", "extraction", extractable, result)
 
 
 def test_push(robot, surface, approach):

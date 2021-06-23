@@ -180,8 +180,9 @@ nlohmann::json LimitParameters::to_json() const{
 }
 
 UserParameters::UserParameters(){
-    dX_default<<1.7,2.5;
-    ddX_default<<13,25;
+    spdlog::trace("UserParameters::UserParameters");
+    dX_default<<0.1,0.5;
+    ddX_default<<0.5,1;
     dq_default=0.5;
     ddq_default=1;
 
@@ -194,8 +195,8 @@ UserParameters::UserParameters(){
     load_com.setZero();
     load_I.setZero();
 
-    env_X<<0.005,0.0175;
-    env_dX<<0.001,0.005;
+    env_X<<0.005,0.005,0.005,0.0175,0.0175,0.0175;
+    env_dX<<0.001,0.001,0.001,0.005,0.005,0.005;
     env_q=0.0175;
     env_dq=0.005;
 
@@ -203,6 +204,7 @@ UserParameters::UserParameters(){
 }
 
 bool UserParameters::from_json(const nlohmann::json &parameters){
+    spdlog::trace("UserParameters::from_json");
     if(!msrm_utils::read_json_param<double,2,1>(parameters,"dX_default",dX_default)){
         spdlog::error("Could not read dX_default.");
         return false;
@@ -249,11 +251,11 @@ bool UserParameters::from_json(const nlohmann::json &parameters){
         return false;
     }
 
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"env_X",env_X)){
+    if(!msrm_utils::read_json_param<double,6,1>(parameters,"env_X",env_X)){
         spdlog::error("Could not read env_X.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"env_dX",env_dX)){
+    if(!msrm_utils::read_json_param<double,6,1>(parameters,"env_dX",env_dX)){
         spdlog::error("Could not read env_dX.");
         return false;
     }
@@ -274,6 +276,7 @@ bool UserParameters::from_json(const nlohmann::json &parameters){
 }
 
 nlohmann::json UserParameters::to_json() const{
+    spdlog::trace("UserParameters::to_json");
     nlohmann::json json_object;
     json_object["dX_default"]=msrm_utils::from_eigen<double,2,1>(dX_default);
     json_object["ddX_default"]=msrm_utils::from_eigen<double,2,1>(ddX_default);
@@ -289,8 +292,8 @@ nlohmann::json UserParameters::to_json() const{
     json_object["load_com"]=msrm_utils::from_eigen<double,3,1>(load_com);
     json_object["load_I"]=msrm_utils::from_eigen<double,3,3>(load_I);
 
-    json_object["env_X"]=msrm_utils::from_eigen<double,2,1>(env_X);
-    json_object["env_dX"]=msrm_utils::from_eigen<double,2,1>(env_dX);
+    json_object["env_X"]=msrm_utils::from_eigen<double,6,1>(env_X);
+    json_object["env_dX"]=msrm_utils::from_eigen<double,6,1>(env_dX);
     json_object["env_q"]=env_q;
     json_object["env_dq"]=env_dq;
 
@@ -902,7 +905,7 @@ nlohmann::json SkillParameters::get_default_values(){
     nlohmann::json default_values;
     default_values["time_max"]=0;;
     default_values["parallels_frequency"]=1000;
-    default_values["ignore_settling"]=false;
+    default_values["ignore_settling"]=true;
     default_values["ROI_x"]={-10,10,-10,10,-10,10};
     default_values["ROI_phi"]={-10,10,-10,10,-10,10};
     default_values["log_data"]=false;

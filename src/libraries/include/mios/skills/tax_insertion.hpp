@@ -26,6 +26,8 @@ public:
         Eigen::Matrix<double,6,1> K_x;
         Eigen::Matrix<double,6,1> search_a;
         Eigen::Matrix<double,6,1> search_f;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
         double f_push;
     }p2;
 
