@@ -3,14 +3,21 @@ from utils.ws_client import *
 import time
 import socket
 from utils.experiment_wizard import *
+from utils.database import *
 from services.svm import SVMConfiguration
 from definitions.insertion_definitions import insert_generic
 from threading import Thread
 
 
-robots = ["collective-panda-prime", "collective-panda-007", "collective-panda-002",
-          "collective-panda-008", "collective-panda-003", "collective-panda-001",
-          "collective-panda-009"]
+robots = ["collective-panda-prime",
+ #"collective-panda-007",
+  "collective-panda-002",
+  #        "collective-panda-008",
+           "collective-panda-003",
+            "collective-panda-001",
+          "collective-panda-009"]#,
+   #        "collective-panda-010",
+   #         "collective-panda-004"]
 
 
 def get_ip(hostname: str):
@@ -180,7 +187,17 @@ def demo_part_1():
     move_up_context2["skill"]["T_T_EE_g_offset"][14] = 0.2
     t.add_skill("move3", "TaxMove", move_up_context2)
     t.add_skill("fail", "GenericWiggleMotion", wiggle_context)
-    t.start(False)
+
+    result = start_task(robots[0], "MoveToJointPose", {
+        "parameters": {
+            "pose": "generic_container_approach",
+            "speed": 1,
+            "acc": 2
+        }
+    })
+    wait_for_task(robots[0], result["result"]["task_uuid"])
+
+    t.start(True)
     result = t.wait()
 
 
@@ -264,7 +281,7 @@ def demo_part_3():
     service_config.batch_width = base_batch_size_experiment * len(agents)
     print(service_config.batch_width)
     service_config.n_immigrant = service_config.batch_width - base_batch_size_experiment
-    tag = "collective_experiment_shared"
+    tag = "live_plotting_test" #"collective_experiment_shared"
     knowledge = {"mode": "none", "kb_location": agents[0], "kb_tags": [tag]}
     threads = []
     pd = insert_generic()
@@ -274,6 +291,7 @@ def demo_part_3():
     for a in agents:
         pd = insert_generic()
         tags = [tag, a, "automatica_demo"]
+        delete_results([a], tags)
         threads.append(
             Thread(target=start_single_experiment, args=(a, [a], pd, service_config, 1, tags, knowledge, False,)))
         threads[-1].start()
@@ -429,6 +447,11 @@ def teach_insertable(robot: str):
     call_method(robot, 12000, "teach_object", {"object": "generic_container_approach"})
     input("Teach container")
     call_method(robot, 12000, "teach_object", {"object": "generic_container"})
+
+
+def delete_results(agents, tags):
+    delete_local_results(agents,"ml_results","insert_object", tags)
+    delete_local_knowledge(agents,"ml_results","insert_object", tags)
 
 
 def command_collective(cmd: str):

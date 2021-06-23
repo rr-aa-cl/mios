@@ -241,7 +241,8 @@ def plot_transfer_learning_3():
                 axes[i, j].plot(base_cost, linestyle="dashed", zorder=2, linewidth=4)
                 axes_casr[i, j].plot([0, len(base_casr)], [0, len(base_casr)], color="black", linestyle="dashed")
                 axes_casr[i, j].plot(base_casr, linestyle="dashed", zorder=2, linewidth=4)
-                legend = ["Optimal CASR", tasks[i * n_rows + j]]
+                legend = [tasks[i * n_rows + j]]
+                legend_casr = ["Optimal CASR", tasks[i * n_rows + j]]
             except (DataNotFoundError, DataError):
                 print("Base cost for task " + tasks[i] + " not found.")
                 continue
@@ -289,11 +290,12 @@ def plot_transfer_learning_3():
                     axes_casr[i, j].plot(casr, zorder=1, color=task_colors[t])
 
                     legend.append("from_" + tasks[t])
+                    legend_casr.append("from_" + tasks[t])
                 except (DataNotFoundError, DataError):
                     pass
 
             axes[i, j].legend(legend, fontsize='x-small', loc=1)
-            axes_casr[i, j].legend(legend, fontsize='x-small', loc='upper left')
+            axes_casr[i, j].legend(legend_casr, fontsize='x-small', loc='upper left')
             # if i == 0:
             #     pass
             #     axes[i, j].annotate("t" + str(j), xy=(0.5, 1), xytext=(0, 5),
@@ -385,6 +387,45 @@ def plot_transfer_learning_3():
     plt.show()
 
 
+def test_speedup(base_task: str, second_task: str):
+    trial_wise = False
+    episode_size = 1
+    p = DataProcessor()
+
+    tags = ["transfer_learning", base_task]
+    results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+                                           results_db="transfer_base_v2",
+                                           filter={"meta.tags": {"$all": tags}})
+    if trial_wise is True:
+        base_cost, _ = p.get_average_cost(results, True, episode_size)
+        base_casr, _ = p.get_average_success(results)
+    else:
+        base_cost, _ = p.get_average_cost_over_time(results, 1500, True)
+        base_cost = base_cost[0:1500]
+        base_casr, _ = p.get_average_success_over_time(results)
+        base_casr = base_casr[0:1500]
+    base_cost = np.insert(base_cost, 0, 10)
+    base_cost = base_cost * 10
+
+    tags = ["transfer_learning", base_task, "from_" + second_task]
+    results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+                                           results_db="transfer_all_v2",
+                                           filter={"meta.tags": {"$all": tags}})
+    if trial_wise is True:
+        cost, _ = p.get_average_cost(results, True, episode_size)
+        casr, _ = p.get_average_success(results)
+    else:
+        cost, _ = p.get_average_cost_over_time(results, 1500, True)
+        cost = cost[0:1500]
+        casr, _ = p.get_average_success_over_time(results)
+        casr = casr[0:1500]
+    cost = np.insert(cost, 0, 10)
+    cost = cost * 10
+
+    speedup = calculate_speedup(base_cost, cost)
+    print(speedup)
+
+
 def find_convergence(cost: np.ndarray, interval: float = 0.05) -> int:
     for i in range(len(cost) - 1):
         in_interval = True
@@ -399,12 +440,12 @@ def find_convergence(cost: np.ndarray, interval: float = 0.05) -> int:
 
 
 def calculate_speedup(base_cost: list, cost: list):
-    confidences = np.linspace(0.02, 0.05, 8)
+    confidences = np.linspace(0.02, 0.1, 8)
     speedup_sum = 0
     for c in confidences:
         index_thr_base_cost = find_convergence(base_cost, c)
         thr_base_cost = base_cost[index_thr_base_cost]
-        index_thr_transfer_cost = np.where(cost < thr_base_cost)
+        index_thr_transfer_cost = np.where(cost < thr_base_cost + c)
         if index_thr_transfer_cost[0].size == 0:
             index_thr_transfer_cost = 1
             index_thr_base_cost = 1
@@ -1071,3 +1112,14 @@ def plot_iros_learning(host="collective-control-001.local"):
     plt.savefig("iros_results.png", bbox_inches='tight', dpi=300)
     plt.suptitle("Skill Learning")
     plt.show()
+
+def live_plotting():
+    from plotting.live_plotter import live_plot
+    #lp = LivePlotter([],[])
+    #lp.start_plot()
+    robots = [  "collective-panda-001.local", "collective-panda-002.local",
+                 "collective-panda-003.local", "collective-panda-009.local"]
+    tags = ["live_plotting_test"]
+    live_plot(robots,tags)
+
+

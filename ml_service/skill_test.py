@@ -303,16 +303,16 @@ def subscribe_to_event_server(robot):
 
 
 def tax_test_extraction(robot="collective-panda-008.local"):
-    call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
+    call_method(robot, 12000, "set_grasped_object", {"object": "generic_insertable"})
     extraction_context = {
         "skill": {
             "objects": {
-                "Container": "iros_lock",
-                "ExtractTo": "iros_lock_approach",
-                "Extractable": "iros_key"
+                "Container": "generic_container",
+                "ExtractTo": "generic_container_approach",
+                "Extractable": "generic_insertable"
             },
-            "extraction_speed": [0.5, 1],
-            "extraction_acc": [1, 4],
+            "extraction_speed": [0.1, 1],
+            "extraction_acc": [0.5, 1],
             "search_a": [3, 1.7, 3.6, 0.64, 0.85, 0],
             "search_f": [0.77, 0, 0.8, 0.16, 0.58, 0],
             "stuck_dx_thr": 0.09

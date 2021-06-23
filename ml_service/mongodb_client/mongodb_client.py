@@ -10,8 +10,9 @@ logger = logging.getLogger("ml_service")
 class MongoDBClient():
     """Simple Client for MongoDB interaction"""
 
-    def __init__(self, host='localhost', port=27017):
+    def __init__(self, host: str='localhost', port: int=27017, max_retry: int=3):
         self.client = MongoClient(host, port)
+        self.max_retry = max_retry
         logger.info("MongoDB is initialized at " + host + ":" + str(port))
 
     def read(self, db: str, collection: str, search_param: dict) -> list:
@@ -34,7 +35,7 @@ class MongoDBClient():
             for f in col.find(filter=search_param):
                 f["_id"] = str(f["_id"])
                 findings.append(f)
-            if retry_count > 2:
+            if retry_count >= self.max_retry:
                 break
             else:
                 retry_count += 1

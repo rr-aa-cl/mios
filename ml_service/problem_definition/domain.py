@@ -2,16 +2,19 @@ import numpy as np
 
 
 class Domain:
-    def __init__(self, limits: dict, context_mapping: dict, x_0: dict = None):
+    def __init__(self, limits: dict, context_mapping: dict, x_0: dict = None, non_shareables: list = None):
         # keys: parameters (string), values: limits (tuples)
         self.limits = limits
         self.x_0 = dict()
+        self.non_shareables = list()
         for p in self.limits.keys():
             self.x_0[p] = 0
 
         if x_0 is not None:
             for key, val in x_0.items():
                 self.x_0[key] = val
+        if non_shareables is not None:
+            self.non_shareables = non_shareables
         # shows index of parameter
         self.vector_mapping = list()
         # keys: parameters (string), values: mapped to (list of dot-separated strings, dimensions by dash)
@@ -24,13 +27,15 @@ class Domain:
             "limits": self.limits,
             "vector_mapping": self.vector_mapping,
             "context_mapping": self.context_mapping,
-            "x_0": self.x_0
+            "x_0": self.x_0,
+            "non_shareables": self.non_shareables
         }
         return domain
 
     @staticmethod
     def from_dict(domain_dict):
-        d = Domain(domain_dict["limits"], domain_dict["context_mapping"], domain_dict["x_0"])
+        d = Domain(domain_dict["limits"], domain_dict["context_mapping"], domain_dict["x_0"],
+                   domain_dict["non_shareables"])
         return d
 
     def get_default_x0(self):

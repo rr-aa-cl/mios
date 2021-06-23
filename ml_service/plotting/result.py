@@ -73,18 +73,23 @@ class Result:
     def get_cost_per_time(self, agent: str = None) -> Tuple[list, list]:
         cost = []
         time = []
-        t_0 = self.trials[0]["t_0"]
-        for t in self.trials:
-            if agent is not None:
-                if agent == t["agent"]:
+        try:
+            t_0 = self.trials[0]["t_0"]
+            for t in self.trials:
+                if agent is not None:
+                    if agent == t["agent"]:
+                        cost.append(t["cost"])
+                        time.append(t["t_1"] - t_0)
+                    else:
+                        continue
+                else:
                     cost.append(t["cost"])
                     time.append(t["t_1"] - t_0)
-                else:
-                    continue
-            else:
-                cost.append(t["cost"])
-                time.append(t["t_1"] - t_0)
-        return cost, time
+            return cost, time
+        except Exception as e:
+            print(e)
+            print("Meta data: " + str(self.meta_data))
+
 
     def get_theta_per_trial(self):
         theta = []

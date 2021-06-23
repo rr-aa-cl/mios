@@ -11,7 +11,7 @@ class DataNotFoundError(Exception):
 
 
 def get_experiment_data(host: str, task_type: str, results_db: str = "ml_results", filter: dict = None, uuid: str = None):
-    db_client = MongoDBClient(host)
+    db_client = MongoDBClient(host, max_retry=1)
 
     if filter is not None:
         docs = db_client.read(results_db, task_type, filter)

@@ -906,11 +906,14 @@ nlohmann::json SkillParameters::get_default_values(){
     default_values["time_max"]=0;;
     default_values["parallels_frequency"]=1000;
     default_values["ignore_settling"]=true;
+<<<<<<< HEAD:src/utils/src/parameters.cpp
     default_values["ROI_x"]={-10,10,-10,10,-10,10};
     default_values["ROI_phi"]={-10,10,-10,10,-10,10};
     default_values["log_data"]=false;
     default_values["data_length"]=0;
     default_values["log_name"]="";
+=======
+>>>>>>> 4194f1d0df0ff7e34d261d3330197d494c7140f3:memory/src/parameters.cpp
     default_values["objects"]={};
     default_values["condition_level_pre"]="Specification";
     default_values["condition_level_success"]="Specification";
@@ -980,7 +983,15 @@ Parameters::Parameters():control(ControlParameters()),system(SystemParameters())
 
 }
 
+<<<<<<< HEAD:src/utils/src/parameters.cpp
 LiveContext::LiveContext(Object* grasped_object_in):grasped_object(grasped_object_in){
+=======
+void Parameters::clear_skill_parameters(){
+    skill=std::make_unique<SkillParametersNullSkill>();
+}
+
+LiveContext::LiveContext(Object* grasped_object):grasped_object(grasped_object){
+>>>>>>> 4194f1d0df0ff7e34d261d3330197d494c7140f3:memory/src/parameters.cpp
 
 }
 

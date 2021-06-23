@@ -20,7 +20,8 @@ def mios_ml_benchmark(x0) -> ProblemDefinition:
         "x5": ["parameters.x-5"],
         "x6": ["parameters.x-6"]
     }
-    domain = Domain(limits, context_mapping)
+    non_shareables = ["x1"]
+    domain = Domain(limits, context_mapping, non_shareables=non_shareables)
     default_context = {
         "name": "LearnerTest",
         "skills": {

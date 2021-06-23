@@ -1246,7 +1246,8 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
         "K_psi": 0.1
     }
 
-    domain = Domain(limits, context_mapping, x_0)
+    non_shareables = ["offset_x", "offset_y", "offset_phi", "offset_chi"]
+    domain = Domain(limits, context_mapping, x_0, non_shareables)
     default_context = {
         "name": "GenericTask",
         "parameters": {
@@ -1287,8 +1288,8 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
     task_context = {
         "name": "GenericTask",
         "parameters": {
-            "skill_types": ["TaxExtraction", "TaxMove", "MoveToPoseJoint"],
-            "skill_names": ["extraction", "move_up", "move"]
+            "skill_types": ["TaxExtraction", "MoveToPoseJoint"],
+            "skill_names": ["extraction", "move"]
         },
         "skills": {
             "extraction": {
@@ -1302,22 +1303,6 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
                         "Extractable": insertable,
                         "Container": container,
                         "ExtractTo": approach
-                    }
-                },
-                "control": {
-                    "control_mode": 0
-                },
-                "user": {
-                    "env_X": [0.01, 0.03]
-                }
-            },
-            "move_up": {
-                "skill": {
-                    "speed": [0.1, 0.5],
-                    "acc": [0.5, 1],
-                    "T_T_EE_g_offset": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0.05, 1],
-                    "objects": {
-                        "GoalPose": "EndEffector",
                     }
                 },
                 "control": {
@@ -1347,7 +1332,7 @@ def tax_insertion(insertable: str, container: str, approach: str) -> ProblemDefi
     }
     reset_instructions.append({"method": "start_task", "parameters": task_context})
     pd = ProblemDefinition("insert_object", domain, default_context, [], [], reset_instructions,
-                           tax_insertion_cost(), ["insertion", insertable])
+                           tax_insertion_cost(), [1], tags=["insertion", insertable])
     return pd
 
 
