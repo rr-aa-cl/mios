@@ -9,6 +9,11 @@ set(PROJECT_VERSION_MINOR 13)
 set(PROJECT_VERSION_PATCH 0)
 set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
 
+configure_file (
+    "${CMAKE_SOURCE_DIR}/include/commons/config.hpp.in"
+    "${CMAKE_SOURCE_DIR}/include/commons/config.hpp"
+    )
+
 project(mios VERSION ${PROJECT_VERSION}
     DESCRIPTION "Machine Intelligence Operating System (for Franka Emika Panda arms)"
     LANGUAGES CXX

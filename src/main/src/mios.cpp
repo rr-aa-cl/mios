@@ -53,7 +53,7 @@ int main(int argc, char** argv){
     auto logger = std::shared_ptr<spdlog::logger>(new spdlog::logger("mios", {console_sink, file_sink}));
     logger->set_level(info_level);
     spdlog::set_default_logger(logger);
-    spdlog::debug("FIRST LINE OF CODE");
+    spdlog::trace("FIRST LINE OF CODE");
 
     struct sigaction sigIntHandler;
 
@@ -62,10 +62,9 @@ int main(int argc, char** argv){
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, NULL);
 
-
     spdlog::info("############################################################");
     spdlog::info("MIOS");
-//    spdlog::info("Version: " + std::to_string(PROJECT_VERSION_MAJOR) + "." + std::to_string(PROJECT_VERSION_MINOR) + "." + std::to_string(MIOS_VER_PATCH));
+    spdlog::info("Version: " + std::to_string(PROJECT_VERSION_MAJOR) + "." + std::to_string(PROJECT_VERSION_MINOR) + "." + std::to_string(PROJECT_VERSION_PATCH));
 
     unsigned port=12000;
     if(!msrm_utils::is_port_available("localhost",port)){
@@ -86,7 +85,7 @@ int main(int argc, char** argv){
     spdlog::info("############################################################");
     spdlog::info("System is ready.");
     core.start();
-    spdlog::debug("LAST LINE OF CODE");
+    spdlog::trace("LAST LINE OF CODE");
     return 0;
 }
 

@@ -80,3 +80,5 @@ doc/latex/*
 # Mios #
 ########
 mios
+devel
+include/commons/config.hpp
