@@ -31,8 +31,8 @@ bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, 
     // is subscriber already in subscriber list?
     m_mtx_subscriber.lock();
     auto it = std::find_if(m_subscribers.begin(), m_subscribers.end(),
-                    [&ip_temp = addr](const Subscriber &sub) -> bool
-                    { return ip_temp == sub.address; });
+                           [&ip_temp = addr](const Subscriber &sub) -> bool
+    { return ip_temp == sub.address; });
     if(it == m_subscribers.end()){
         std::string name = "telemetry_" + ip + ":" + std::to_string(port);
         Subscriber sub_temp = {port, ip, addr, subs, sendWithTerminatingNullCharacter,
@@ -57,8 +57,8 @@ bool TelemetryUDP::remove_subscriber(const std::string &addr){
     while(true){
         if(m_mtx_subscriber.try_lock()){
             auto it = std::find_if(m_subscribers.begin(), m_subscribers.end(),
-                            [&ip_temp = addr](const Subscriber &sub) -> bool
-                            { return ip_temp == sub.address; });
+                                   [&ip_temp = addr](const Subscriber &sub) -> bool
+            { return ip_temp == sub.address; });
             if(it == m_subscribers.end()) {
                 // no subscriber with this addr found
                 spdlog::debug("TelemetryUDP::remove_subscriber: No subscriber with address "+addr+" found.");
@@ -112,11 +112,7 @@ void TelemetryUDP::sending_loop(){
     while(m_keep_running){
         m_time_1 = std::chrono::high_resolution_clock::now();
         // get current perception
-        if(!m_core->is_busy()){
-            if(!m_core->refresh_percept({})){
-                spdlog::warn("No current state available, could not refresh perception.");
-            }
-        }
+
         const Percept* p = m_core->get_percept();
         m_mtx_subscriber.lock();
         for(auto sub : m_subscribers){
