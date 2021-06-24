@@ -13,10 +13,12 @@ add_library(${MODULE_NAME}
     ${${MODULE_NAME}_HEADER_FILES}
     )
 
+find_package (Python3 COMPONENTS Interpreter Development)
+find_package(PythonLibsNew REQUIRED)
+
 
 add_library(${PROJECT_NAME}::${MODULE_NAME} ALIAS ${MODULE_NAME})
 
-find_package(PythonLibsNew REQUIRED)
 
 target_include_directories(${MODULE_NAME}
     PRIVATE
@@ -35,6 +37,7 @@ target_link_libraries(${MODULE_NAME}
     PUBLIC
     CONAN_PKG::pybind11
     CONAN_PKG::nlohmann_json
+    Python3::Python
     )
 
 apply_module_options(${MODULE_NAME})

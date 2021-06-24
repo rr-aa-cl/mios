@@ -21,6 +21,7 @@ add_library(${MODULE_NAME}
 
 add_library(${PROJECT_NAME}::${MODULE_NAME} ALIAS ${MODULE_NAME})
 
+find_package (Python3 COMPONENTS Interpreter Development)
 find_package(PythonLibsNew REQUIRED)
 
 target_include_directories(${MODULE_NAME}
@@ -29,8 +30,8 @@ target_include_directories(${MODULE_NAME}
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    ${PYTHON_INCLUDE_DIRS}
     )
+
 
 target_link_libraries(${MODULE_NAME}
     PRIVATE
@@ -44,6 +45,7 @@ target_link_libraries(${MODULE_NAME}
     PUBLIC
     ${PROJECT_NAME}::utils
     Franka::Franka
+    Python3::Python
     )
 
 apply_module_options(${MODULE_NAME})

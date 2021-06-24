@@ -225,6 +225,13 @@ bool MongodbClient::make_document_consistent(const std::string& name, std::strin
                     if(template_doc.find(el.key())==template_doc.end()){ // if element is not found in template
                         doc_in_database.erase(el.key());
                     }
+                    if(el.value().is_array()){
+                        if(!template_doc[el.key()].is_array()){
+                            doc_in_database[el.key()]=template_doc[el.key()];
+                        }else if(el.value().size()!=template_doc[el.key()].size()){
+                            doc_in_database[el.key()]=template_doc[el.key()];
+                        }
+                    }
                 }
                 bsoncxx::document::view_or_value doc_replacement=bsoncxx::from_json(doc_in_database.dump());
                 m_mongodb[collection].replace_one({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize},doc_replacement);
