@@ -58,6 +58,8 @@ option(ENABLE_IPO "Enable Interprocedural Optimization, aka Link Time Optimizati
 option(ENABLE_PCH "Enable Precompiled Headers" ON)
 option(ENABLE_UNITY_BUILD "Enable unity build" ON)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+
 add_library(${PROJECT_NAME}_project_warnings INTERFACE)
 add_library(${PROJECT_NAME}_project_options INTERFACE)
 add_library(${PROJECT_NAME}_project_deps INTERFACE)
