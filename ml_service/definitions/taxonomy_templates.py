@@ -118,8 +118,8 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
             "insertion": {
                 "skill": {
                     "time_max": 5.0,
-                    "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1],
-                    "ROI_phi": [-0.03, 0.03, -0.03, 0.03, -1, 1],
+                    "ROI_x": [-0.03, 0.03, -0.03, 0.03, -0.1, 0.1],
+                    "ROI_phi": [-0.03, 0.03, -0.03, 0.03, -0.1, 0.1],
                     "objects": {
                         "Insertable": insertable,
                         "Container": container,

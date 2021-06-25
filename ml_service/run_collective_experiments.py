@@ -5,9 +5,9 @@ from utils.udp_client import call_method
 from utils.database import delete_local_results
 from utils.database import delete_local_knowledge
 from utils.database import backup_results
-from definitions.insertion_definitions import insert_generic
 from definitions.benchmark_definitions import mios_ml_benchmark
 from definitions.benchmark_definitions import mios_complex_ml_benchmark
+from definitions.taxonomy_templates import insertion
 from threading import Thread
 from xmlrpc.client import ServerProxy
 import numpy as np
@@ -25,8 +25,8 @@ experiment_learning_thresholds = [0.7/5, 0.5/5, 0.6/5, 0.7/5, 0.6/5]
 #experiment_learning_thresholds = [1, 1, 1, 1]
 database = "collective-control-001.local"
 agents_benchmark = ["collective-panda-001", "collective-panda-003"]
-agents_experiment = ["collective-panda-001", "collective-panda-007",
-          "collective-panda-008"]
+agents_experiment = ["collective-panda-001", "collective-panda-003", "collective-panda-007",
+          "collective-panda-008", "collective-panda-009"]
 
 task_map = {
     "collective-panda-001": "cylinder_40",
@@ -40,7 +40,17 @@ task_map = {
 base_batch_size_benchmark = 15
 n_trials_benchmark = 300
 base_batch_size_experiment = 15
-n_trials_experiment = 300
+n_trials_experiment = 200
+
+
+def insert_generic() -> ProblemDefinition:
+    insertable = "generic_insertable"
+    insert_into = "generic_container"
+    approach = "generic_container_approach"
+    pd = insertion(insertable, insert_into, approach)
+    pd.domain.limits["p0_offset_x"] = (-0.002, 0.002)
+    pd.domain.limits["p0_offset_y"] = (-0.002, 0.002)
+    return pd
 
 
 def benchmark_single(agent: str,  unique_tag: str, n_iter: int = 1):
