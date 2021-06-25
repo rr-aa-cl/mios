@@ -1,7 +1,7 @@
 #pragma once
 
 #include "mios/strategy/primitive_strategy.hpp"
-#include "plugins/mogen_p2p_wrapper.hpp"
+#include "mogen_p2p_wrapper.hpp"
 #include "eigen3/Eigen/Core"
 
 namespace mios {

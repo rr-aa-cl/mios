@@ -207,12 +207,9 @@ void CartTorqueControllerPipeline::initialize_cntr_nullsp(const Percept& p,Memor
 
     m_cntr_nullsp_q.u.theta_d=p.proprioception.q;
 
-    cntr_joint_var_imp::In_P_cntr_joint_var_imp in_p_cntr_nullsp_q;
-
     m_cntr_nullsp_q.p.enable_ffwd_acc.setZero();
     m_cntr_nullsp_q.p.enable_ffwd_vel.setZero();
 
-    cntr_nullsp_proj::In_P_cntr_nullsp_proj in_p_cntr_nullsp_proj;
     m_cntr_nullsp_proj.p.singlr_comp_mode.setZero();
     m_cntr_nullsp_proj.p.singlr_threshold.setZero();
 

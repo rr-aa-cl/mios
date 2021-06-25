@@ -24,11 +24,6 @@ add_library(${MODULE_NAME}
 
 add_library(${PROJECT_NAME}::${MODULE_NAME} ALIAS ${MODULE_NAME})
 
-target_link_directories(${MODULE_NAME}
-    PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/lib/plugins>
-    )
-
 target_include_directories(${MODULE_NAME}
     PRIVATE
     src
@@ -37,15 +32,18 @@ target_include_directories(${MODULE_NAME}
     $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
     )
 
+find_package(virtual_cube REQUIRED)
+find_package(virtual_walls_joint REQUIRED)
+
 target_link_libraries(${MODULE_NAME}
     PRIVATE
     ${PROJECT_NAME}::${PROJECT_NAME}_project_options
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
     msrm_cpp_utils::math
-    virtual_cube
-    virtual_walls_joint
     PUBLIC
+    virtual_cube::virtual_cube
+    virtual_walls_joint::virtual_walls_joint
     ${PROJECT_NAME}::memory
     ${PROJECT_NAME}::utils
     CONAN_PKG::eigen

@@ -2,12 +2,13 @@
 
 #include "mios/controller_pipeline/controller_pipeline.hpp"
 
-#include "plugins/cntr_aic_wrapper.hpp"
-#include "plugins/cntr_force_wrapper.hpp"
-#include "plugins/cntr_joint_var_imp_wrapper.hpp"
-#include "plugins/cntr_mux_wrapper.hpp"
-#include "plugins/conv_vel2pose_wrapper.hpp"
-#include "plugins/cntr_nullsp_proj_wrapper.hpp"
+
+#include "cntr_aic_wrapper.hpp"
+#include "cntr_force_wrapper.hpp"
+#include "cntr_joint_var_imp_wrapper.hpp"
+#include "cntr_mux_wrapper.hpp"
+#include "conv_vel2pose_wrapper.hpp"
+#include "cntr_nullsp_proj_wrapper.hpp"
 
 #include "eigen3/Eigen/Core"
 

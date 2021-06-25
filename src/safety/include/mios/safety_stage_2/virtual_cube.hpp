@@ -1,7 +1,7 @@
 #pragma once
 
 #include "mios/safety_stage_2/safety_module_stage_2.hpp"
-#include "plugins/virtual_cube_wrapper.hpp"
+#include "virtual_cube_wrapper.hpp"
 
 namespace mios{
 

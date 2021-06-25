@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.16...3.20)
 
 set(PROJECT_VERSION_MAJOR 0)
 set(PROJECT_VERSION_MINOR 13)
-set(PROJECT_VERSION_PATCH 1)
+set(PROJECT_VERSION_PATCH 2)
 set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
 
 configure_file (
@@ -58,6 +58,9 @@ option(DEBUG_LOGGING "Enabling debug logging" OFF)
 option(ENABLE_IPO "Enable Interprocedural Optimization, aka Link Time Optimization (LTO)" OFF)
 option(ENABLE_PCH "Enable Precompiled Headers" ON)
 option(ENABLE_UNITY_BUILD "Enable unity build" ON)
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/src/plugins)
 
 add_library(${PROJECT_NAME}_project_warnings INTERFACE)
 add_library(${PROJECT_NAME}_project_options INTERFACE)

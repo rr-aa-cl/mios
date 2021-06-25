@@ -8,7 +8,6 @@ MoveToJointPoseStrategy::MoveToJointPoseStrategy():PrimitiveStrategy({CommandPat
 }
 
 void MoveToJointPoseStrategy::initialize(const Percept &p_0){
-    mogen_p2p_joint::In_P_mogen_p2p_joint mogen_p2p_joint_in_p;
     m_mogen_p2p_joint.p.dq_max<<m_dq_max;
     m_mogen_p2p_joint.p.ddq_max<<m_ddq_max;
     m_mogen_p2p_joint.p.q_0=p_0.proprioception.q;

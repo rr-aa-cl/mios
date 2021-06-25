@@ -11,4 +11,4 @@ cxxopts/2.2.1
 mongo-cxx-driver/3.6.2
 
 [generators]
-cmake
+cmake_find_package

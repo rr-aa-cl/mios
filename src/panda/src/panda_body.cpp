@@ -2,7 +2,7 @@
 #include "mios/memory/memory.hpp"
 #include "msrm_cpp_utils/network/network.hpp"
 #include "msrm_cpp_utils/conversion/conversion.hpp"
-#include "plugins/conv_vel2pose_wrapper.hpp"
+#include "conv_vel2pose_wrapper.hpp"
 
 #include "spdlog/spdlog.h"
 
