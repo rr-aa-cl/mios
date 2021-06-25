@@ -21,9 +21,10 @@ def single_experiment(host: str, task_type: str, database: str, tags: list = Non
     else:
         return
     cost, confidence = result.get_cost_per_time()
-    plt.plot(cost)
+    cost_mono = p.get_monotonically_decreasing_cost(cost)
+    plt.plot(cost_mono)
     plt.show()
-    #plot.plot_cost_over_trials(p.get_monotonically_decreasing_cost(result.get_cost_per_trial()))
+    #plot.plot_cost_over_trials())
 
 
 def average_experiment(host: str, task_type: str, database: str, tags: list, agent = None):
