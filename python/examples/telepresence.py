@@ -45,7 +45,7 @@ class Task:
         return result
 
 
-def direct_joint_mode(master, slave):
+def direct_joint_mode(master: str, slave: str):
     master_context = {
         "skill": {
             "is_master": True,
@@ -85,7 +85,7 @@ def direct_joint_mode(master, slave):
     t_s.start()
 
 
-def joystick_mode(master, slave):
+def joystick_mode(master: str, slave: str):
     master_context = {
         "skill": {
             "is_master": True,
@@ -123,42 +123,81 @@ def joystick_mode(master, slave):
     t_s.start()
 
 
-def start_cartesian_mode(ip_master, ip_slave):
-    # start_skill(ip_master, "Telepresence", {"is_master": True, "ip_dst": ip_slave, "port_dst": 8888, "port_src": 8888,
-    #                                        "telepresence_mode": "DirectCart",
-    #                                        "direct_cart": {"alpha": [0, 0, 0, 0, 0, 0]}}, {"control_mode": 0})
-    start_skill(ip_slave, "Telepresence", {"is_master": False, "ip_dst": ip_master, "port_dst": 8888, "port_src": 8888,
-                                           "telepresence_mode": "DirectCart",
-                                           "direct_cart": {"alpha": [0, 0, 0, 0, 0, 0], "plane": True,
-                                                           "F_ff": [0, 0, 10, 0, 0, 0]}}, {"control_mode": 0})
-
-
-def start_multi_joint_mode(ip_master: str, ip_slaves: list):
-    start_skill(ip_master, "Telepresence", {"is_master": True, "ip_dst": "0.0.0.0", "port_dst": 8888, "port_src": 8888,
-                                            "telepresence_mode": "DirectJoint", "multicast": True,
-                                            "multicast_group": ip_slaves,
-                                            "direct_joint": {"alpha": [0, 0, 0, 0, 0, 0]}}, {"control_mode": 1})
-    for ip in ip_slaves:
-        start_skill(ip, "Telepresence",
-                    {"is_master": False, "ip_dst": ip_master, "port_dst": 8888, "port_src": 8888,
-                     "telepresence_mode": "DirectJoint", "multicast": True,
-                     "direct_joint": {"alpha": [0, 0, 0, 0, 0, 0]}}, {"control_mode": 1})
-
-    input("Press key to stop.")
-    for ip in ip_slaves:
-        stop_task(ip)
-
-    stop_task(ip_master)
-
-
-def start_skill(address: str, skill: str, parameters: dict, control: dict):
-    response = start_task(address, "GenericTask", parameters={"parameters": {
-        "skill_names": ["skill"],
-        "skill_types": [skill]
-    },
-        "skills": {
-            "skill": {
-                "skill": parameters,
-                "control": control
+def direct_cartesian_mode(master: str, slave: str):
+    master_context = {
+        "skill": {
+            "is_master": True,
+            "ip_dst": get_ip(slave),
+            "port_dst": 8888,
+            "port_src": 8888,
+            "telepresence_mode": "DirectCart",
+            "direct_cart": {
+                "alpha": [0, 0, 0, 0, 0, 0]
             }
-        }})
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    slave_context = {
+        "skill": {
+            "is_master": False,
+            "ip_dst": get_ip(master),
+            "port_dst": 8888,
+            "port_src": 8888,
+            "telepresence_mode": "DirectCart"
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t_m = Task(master)
+    t_s = Task(slave)
+    t_m.add_skill("telepresence", "Telepresence", master_context)
+    t_s.add_skill("telepresence", "Telepresence", slave_context)
+
+    t_m.start()
+    t_s.start()
+
+
+def multi_direct_joint_mode(master: str, slaves: list):
+
+    ip_slaves = []
+    for s in slaves:
+        ip_slaves.append(get_ip(s))
+
+    master_context = {
+        "skill": {
+            "is_master": True,
+            "ip_dst": "0.0.0.0",
+            "port_dst": 8888,
+            "port_src": 8888,
+            "multicast": True,
+            "multicast_group": ip_slaves,
+            "telepresence_mode": "DirectJoint"
+        },
+        "control": {
+            "control_mode": 1
+        }
+    }
+    t_m = Task(master)
+    t_m.add_skill("telepresence", "Telepresence", master_context)
+    t_m.start()
+
+    for s in slaves:
+        slave_context = {
+            "skill": {
+                "is_master": False,
+                "ip_dst": get_ip(master),
+                "port_dst": 8888,
+                "port_src": 8888,
+                "multicast": True,
+                "telepresence_mode": "DirectJoint"
+            },
+            "control": {
+                "control_mode": 1
+            }
+        }
+        t_s = Task(s)
+        t_s.add_skill("telepresence", "Telepresence", slave_context)
+        t_s.start()
