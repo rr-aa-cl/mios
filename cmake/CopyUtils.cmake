@@ -17,3 +17,5 @@ configure_file(${CMAKE_SOURCE_DIR}/src/plugins/virtual_cube/libvirtual_cube.so $
 configure_file(${CMAKE_SOURCE_DIR}/src/plugins/virtual_walls_joint/libvirtual_walls_joint.so ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/lib/plugins/libvirtual_walls_joint.so COPYONLY)
 
 file(COPY ${CMAKE_SOURCE_DIR}/ml_service DESTINATION ${CMAKE_SOURCE_DIR}/${PROJECT_NAME})
+
+file(COPY ${CMAKE_BINARY_DIR}/lib/boost DESTINATION ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/lib)
