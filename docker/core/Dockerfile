@@ -11,7 +11,7 @@ RUN pip3 install -U requests
 RUN pip3 install -U pyDOE scikit-optimize
 RUN pip3 install -U websockets
 RUN apt-get install -y fping
-COPY mios_package/ /mios/
+COPY mios/ /mios/
 COPY dependencies/ /dependencies/
 
 EXPOSE 12000 12001 12002 8888 8889
