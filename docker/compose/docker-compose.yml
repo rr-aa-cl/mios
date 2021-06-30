@@ -2,9 +2,11 @@ version: "3.8"
 services:
   mios:
     image: "10.162.15.39/mios"
+    restart: always
     environment:
-      - verbosity=trace
+      - verbosity=info
       - database_port=27005
+      - robot_config=0
     network_mode: "host"
     cap_add:
       - SYS_NICE
@@ -19,3 +21,5 @@ services:
     image: "mongo:4.4.6"
     ports:
       - "27005:27017"
+    volumes:
+      - ./localFolder:/data/db
