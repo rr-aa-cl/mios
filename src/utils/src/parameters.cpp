@@ -891,7 +891,7 @@ nlohmann::json SkillParameters::get_default_values(){
     nlohmann::json default_values;
     default_values["time_max"]=0;;
     default_values["parallels_frequency"]=1000;
-    default_values["ignore_settling"]=false;
+    default_values["ignore_settling"]=true;
     default_values["log_data"]=false;
     default_values["data_length"]=0;
     default_values["log_name"]="";
