@@ -1,9 +1,9 @@
 version: "3.8"
 services:
   mios:
-    image: "msrm/mios:release"
+    image: "10.162.15.39/mios"
     environment:
-      - verbosity=info
+      - verbosity=trace
       - database_port=27005
     network_mode: "host"
     cap_add:
@@ -12,10 +12,10 @@ services:
       - "ros"
       - "mongo"
   ros:
-    image: "ros:melodic-ros-core"
+    image: "ros:noetic-ros-core"
     network_mode: "host"
     command: roscore
   mongo:
-    image: "mongo:4.0.20-xenial"
+    image: "mongo:4.4.6"
     ports:
       - "27005:27017"
