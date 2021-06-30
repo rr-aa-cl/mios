@@ -1,42 +1,24 @@
 from problem_definition.domain import Domain
 from engine.task_result import TaskResult
+from engine.task_result import QMetric
+from engine.task_result import cost_types
 from utils.exception import CostFunctionError
-from utils.exception import ProblemDefinitionError
 import logging
-from typing import Tuple
 import numpy as np
-from scipy.interpolate import griddata
-
 
 logger = logging.getLogger("ml_service")
 
 
 class CostFunction:
-
-    cost_types = ["time", "contact_forces", "effort_avg", "effort_total", "distance", "custom"]
-
     def __init__(self):
         self.optimum_skills = []
-        self.optimum_weights = dict.fromkeys(self.cost_types, 0)
-        self.optimum_expressions = dict.fromkeys(self.cost_types, "var")
-        self.max_cost = dict.fromkeys(self.cost_types, 0)
+        self.optimum_weights = dict.fromkeys(cost_types, 0)
+        self.optimum_expressions = dict.fromkeys(cost_types, "var")
+        self.max_cost = dict.fromkeys(cost_types, 0)
         self.heuristic_skills = []
         self.heuristic_expressions = "var"
         self.finish_thr = 0
-        self.cost_grid_weights = np.array([[]])
-        self.cost_grid_val = np.array([[]])
         self.normal_cost = 1
-
-    def add_to_cost_grid(self, identity: np.ndarray, cost):
-        contains = False
-        for i in range(len(self.cost_grid_weights)):
-            if np.array_equal(self.cost_grid_weights[i], identity):
-                self.cost_grid_val[i] = cost
-                contains = True
-                break
-        if contains is False:
-            self.cost_grid_weights = np.append(self.cost_grid_weights, identity.reshape(1, -1), axis=0)
-            self.cost_grid_val = np.append(self.cost_grid_val, np.array([cost]).reshape(1, -1), axis=0)
 
     def to_dict(self):
         c = {
@@ -46,8 +28,6 @@ class CostFunction:
             "heuristic_skills": self.heuristic_skills,
             "heuristic_expressions": self.heuristic_expressions,
             "max_cost": self.max_cost,
-            "cost_grid_weights": self.cost_grid_weights.tolist(),
-            "cost_grid_val": self.cost_grid_val.tolist(),
             "finish_thr": self.finish_thr
         }
         return c
@@ -61,16 +41,14 @@ class CostFunction:
         c.heuristic_skills = cf_dict["heuristic_skills"]
         c.heuristic_expressions = cf_dict["heuristic_expressions"]
         c.max_cost = cf_dict["max_cost"]
-        c.cost_grid_weights = np.asarray(cf_dict["cost_grid_weights"])
-        c.cost_grid_val = np.asarray(cf_dict["cost_grid_val"])
         c.finish_thr = cf_dict["finish_thr"]
         return c
 
 
 class ProblemDefinition:
-    def __init__(self, task_type: str, domain: Domain, default_context: dict, setup_instructions: list,
-                 termination_instruction: list, reset_instruction: list, cost_function: CostFunction, identity: list,
-                 identity_weights: list = None, tags=None):
+    def __init__(self, skill_class: str, skill_instance: str, domain: Domain, default_context: dict,
+                 setup_instructions: list, termination_instruction: list, reset_instruction: list,
+                 cost_function: CostFunction, identity: list, identity_weights: list = None, tags=None):
         if tags is None:
             tags = []
         self.domain = domain
@@ -79,7 +57,8 @@ class ProblemDefinition:
         self.termination_instructions = termination_instruction
         self.reset_instructions = reset_instruction
         self.uuid = "INVALID"
-        self.task_type = task_type
+        self.skill_class = skill_class
+        self.skill_instance = skill_instance
         self.cost_function = cost_function
         self.tags = tags
         self.optimum_thr = 0
@@ -103,17 +82,8 @@ class ProblemDefinition:
 
         return healthy
 
-
-    def calc_optimum_thr(self):
-        if self.cost_function.cost_grid_weights.shape[0] > 2:
-            self.optimum_thr = 1.0 * griddata(self.cost_function.cost_grid_weights, self.cost_function.cost_grid_val,
-                                              self.identity, method="nearest")
-            self.optimum_thr = float(self.optimum_thr)
-        else:
-            self.optimum_thr = 0
-
     def get_task_identifier(self) -> dict:
-        return {"task_type": self.task_type, "tags": self.tags, "identity": self.identity}
+        return {"skill_class": self.skill_class, "tags": self.tags, "identity": self.identity}
 
     def to_dict(self) -> dict:
         problem_definition = {
@@ -123,10 +93,11 @@ class ProblemDefinition:
             "termination_instructions": self.termination_instructions,
             "reset_instructions": self.reset_instructions,
             "uuid": self.uuid,
-            "task_type": self.task_type,
+            "skill_class": self.skill_class,
             "tags": self.tags,
             "cost_function": self.cost_function.to_dict(),
             "optimum_thr": self.optimum_thr,
+            "skill_instance": self.skill_instance,
             "identity": self.identity,
             "identity_weights": self.identity_weights
         }
@@ -134,10 +105,11 @@ class ProblemDefinition:
 
     @staticmethod
     def from_dict(pd_dict):
-        pd = ProblemDefinition(pd_dict["task_type"], Domain.from_dict(pd_dict["domain"]), pd_dict["default_context"],
-                               pd_dict["setup_instructions"], pd_dict["termination_instructions"],
-                               pd_dict["reset_instructions"], CostFunction.from_dict(pd_dict["cost_function"]),
-                               pd_dict["identity"], pd_dict["identity_weights"], pd_dict["tags"])
+        pd = ProblemDefinition(pd_dict["skill_class"], pd_dict["skill_instance"], Domain.from_dict(pd_dict["domain"]),
+                               pd_dict["default_context"], pd_dict["setup_instructions"],
+                               pd_dict["termination_instructions"], pd_dict["reset_instructions"],
+                               CostFunction.from_dict(pd_dict["cost_function"]), pd_dict["identity"],
+                               pd_dict["identity_weights"], pd_dict["tags"])
         pd.domain = Domain.from_dict(pd_dict["domain"])
         pd.cost_function = CostFunction.from_dict(pd_dict["cost_function"])
         return pd
@@ -168,7 +140,7 @@ class ProblemDefinition:
 
         return valid
 
-    def calculate_cost(self, result: TaskResult) -> Tuple[float, bool]:
+    def calculate_cost(self, result: TaskResult) -> QMetric:
         if len(self.cost_function.optimum_expressions) != 6:
             logger.error("Length of cost_function.optimum_expressions must be 6.")
             raise CostFunctionError
@@ -179,30 +151,33 @@ class ProblemDefinition:
             logger.error("Sum of cost_function.optimum_weights must be 1.")
             raise CostFunctionError
 
-        cost_per_weight = dict.fromkeys(self.cost_function.cost_types, 0)
-        for s in self.cost_function.optimum_skills:
-            for cost_type in cost_per_weight.keys():
-                cost_per_weight[cost_type] += result.cost[s][cost_type]
+        cost_per_weight = dict.fromkeys(cost_types, 0)
+        for cost_type in cost_per_weight.keys():
+            cost_per_weight[cost_type] += result.q_metric.cost[cost_type]
 
         cost = 0
+
         for cost_type in cost_per_weight.keys():
             if self.cost_function.optimum_weights[cost_type] > 0:
                 var = cost_per_weight[cost_type]
                 cost += self.cost_function.optimum_weights[cost_type] * (
-                            eval(self.cost_function.optimum_expressions[cost_type]) / self.cost_function.max_cost[cost_type]) * self.cost_function.normal_cost
+                        eval(self.cost_function.optimum_expressions[cost_type]) / self.cost_function.max_cost[
+                    cost_type]) * self.cost_function.normal_cost
 
                 if eval(self.cost_function.optimum_expressions[cost_type]) > self.cost_function.max_cost[cost_type]:
                     logger.debug("Exceeded maximum cost! Cost is " + str(
                         eval(self.cost_function.optimum_expressions[cost_type])) + ", maximum cost is " + str(
                         self.cost_function.max_cost[cost_type]))
-                    result.success = False
+                    result.q_metric.success = False
 
         heuristic = 0
-        for s in self.cost_function.heuristic_skills:
-            var = result.heuristic[s]
-            heuristic += eval(self.cost_function.heuristic_expressions)
+        var = result.q_metric.heuristic
+        heuristic += eval(self.cost_function.heuristic_expressions)
 
-        if result.success is True:
-            return cost, cost < self.optimum_thr
+        if result.q_metric.success is True:
+            result.q_metric.final_cost = cost
+            result.q_metric.optimal = cost < self.optimum_thr
         else:
-            return heuristic + self.cost_function.normal_cost, False
+            result.q_metric.final_cost = heuristic + self.cost_function.normal_cost
+
+        return result.q_metric

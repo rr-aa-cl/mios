@@ -170,18 +170,18 @@ class SVMService(BaseService):
         self.success_ratio = 0
         for uuid in trial_uuids:
             result = self.wait_for_result(uuid)
-            if result.final_cost is None:
+            if result.q_metric.final_cost is None:
                 logger.error("None was returned as cost, invoking stop.")
                 self.stop()
                 costs.append((0,))
             else:
-                self.success_ratio += result.success
-                costs.append((result.final_cost,))
+                self.success_ratio += result.q_metric.success
+                costs.append((result.q_metric.final_cost,))
             if kb is not None:
                 theta = []
                 for i in range(len(trial_uuids[uuid])):
                     theta.append(float(trial_uuids[uuid][i]))
-                kb.push_trial(self.host_name, theta, float(result.final_cost), self.configuration.batch_width)
+                kb.push_trial(self.host_name, theta, float(result.q_metric.final_cost), self.configuration.batch_width)
                 # kb.push_trial_2(theta, float(result.final_cost), self.problem_definition.cost_function.geometry_factor)
 
         self.success_ratio /= float(len(trial_uuids))

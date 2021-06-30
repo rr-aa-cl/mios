@@ -131,9 +131,18 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
                         "K_x": [2000, 2000, 2000, 200, 200, 200],
                         "DeltaX": [0, 0, 0, 0, 0, 0]
                     },
+                    "p1": {
+                        "dX_d": [0.1, 0.5],
+                        "ddX_d": [0.5, 1],
+                        "K_x": [2000, 2000, 2000, 200, 200, 200]
+                    },
                     "p2": {
                         "search_a": [0, 0, 0, 0, 0, 0],
-                        "search_f": [0, 0, 0, 0, 0, 0]
+                        "search_f": [0, 0, 0, 0, 0, 0],
+                        "dX_d": [0.1, 0.5],
+                        "ddX_d": [0.5, 1],
+                        "K_x": [2000, 2000, 2000, 200, 200, 200],
+                        "f_push": 0
                     },
                     "p3": {
                         "dX_d": [0.1, 0.5],
@@ -202,7 +211,7 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
         }
     }
     reset_instructions.append({"method": "start_task", "parameters": reset_context})
-    pd = ProblemDefinition("insertion", domain, default_skill_context, [], [], reset_instructions,
+    pd = ProblemDefinition("insertion", insertable, domain, default_skill_context, [], [], reset_instructions,
                            insertion_cost(), [1], tags=["insertion", insertable])
     return pd
 

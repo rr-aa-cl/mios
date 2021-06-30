@@ -121,22 +121,22 @@ class CMAESService(BaseService):
             kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
         for uuid in trial_uuids.keys():
             result = self.wait_for_result(uuid)
-            if result.final_cost is None:
+            if result.q_metric.final_cost is None:
                 logger.error("None was returned as cost for trial " + uuid + ", invoking stop.")
                 self.stop()
                 costs.append((0,))
             else:
-                self.success_ratio += result.success
-                costs.append((result.final_cost,))
+                self.success_ratio += result.q_metric.success
+                costs.append((result.q_metric.final_cost,))
             theta = []
             for i in range(len(trial_uuids[uuid])):
                 theta.append(float(trial_uuids[uuid][i]))
             if kb is not None:
-                #kb.push_trial(self.host_name, theta, float(result.final_cost), self.configuration.n_ind)
+                #kb.push_trial(self.host_name, theta, float(result.q_metric.final_cost), self.configuration.n_ind)
                 print(theta)
-                print(result.final_cost)
+                print(result.q_metric.final_cost)
                 print(self.problem_definition.cost_function.geometry_factor)
-                kb.push_trial_2(theta, float(result.final_cost), self.problem_definition.cost_function.geometry_factor)
+                kb.push_trial_2(theta, float(result.q_metric.final_cost), self.problem_definition.cost_function.geometry_factor)
         self.success_ratio /= float(len(trial_uuids.keys()))
 
         logger.debug("CMAES costs: " + str(costs))

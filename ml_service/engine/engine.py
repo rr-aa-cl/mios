@@ -8,7 +8,6 @@ from queue import Empty
 from copy import deepcopy
 import uuid
 import numpy as np
-from sklearn.neural_network import MLPRegressor
 from mongodb_client.mongodb_client import MongoDBClient
 from problem_definition.problem_definition import ProblemDefinition
 from engine.task_result import TaskResult
@@ -45,8 +44,10 @@ class Trial:
 
 
 class Engine:
-    def __init__(self, agents: set = set()):
+    def __init__(self, agents: set = None):
         logger.debug("Engine.__init__(" + str(agents) + ")")
+        if agents is None:
+            agents = set()
         self.agents = agents
         self.free_agents = agents
         self.queued_trials = Queue()
@@ -68,7 +69,7 @@ class Engine:
         self.cnt_optimal = 0
         self.stop_condition = None
 
-        self.x = np.empty((0,0))
+        self.x = np.empty((0, 0))
         self.y = np.empty((0,))
 
         self.lock_data = Lock()
@@ -123,11 +124,10 @@ class Engine:
 
     def initialize_results(self, problem_definition: ProblemDefinition):
         self.problem_definition = problem_definition
-        self.problem_definition.calc_optimum_thr()
         self.meta_data = problem_definition.to_dict()
         self.meta_data["t_0"] = time.time()
         self.meta_data["date"] = str(datetime.datetime.now())
-        self.database_results_collection = self.database_client.client.ml_results[problem_definition.task_type]
+        self.database_results_collection = self.database_client.client.ml_results[problem_definition.skill_class]
         self.database_results_id = self.database_results_collection.insert_one(
             {"meta": self.meta_data}).inserted_id
         return self.database_results_id
@@ -136,25 +136,7 @@ class Engine:
         if self.exploration_mode is True:
             return False
         else:
-            #print(str(self.cnt_optimal) + " > " + str(self.problem_definition.cost_function.finish_thr) + "?")
             return self.cnt_optimal > self.problem_definition.cost_function.finish_thr
-
-        # regressor = MLPRegressor(hidden_layer_sizes=(10,), activation="relu", solver="adam", max_iter=4000)
-        # self.lock_data.acquire()
-        #
-        # XY = np.append(self.x, self.y.reshape(-1,1), axis=1)
-        # XY = XY[np.argsort(XY[:,-1],)]
-        # # np.random.shuffle(XY)
-        # size_lower = int(np.ceil(XY.shape[0]*0.1))
-        # size_upper = int(np.ceil(XY.shape[0] * 0.5))
-        # print(XY)
-        #
-        # if XY.shape[0] > 6:
-        #     regressor.fit(XY[size_lower:size_upper,0:-1],XY[size_lower:size_upper,-1].flatten())
-        #     print("Score: " + str(regressor.score(XY[0:size_lower,0:-1],XY[0:size_lower,-1].flatten())))
-        # self.lock_data.release()
-        # time.sleep(1)
-        # return False
 
     def main_loop(self):
         logger.debug("Engine.main_loop()")
@@ -241,7 +223,7 @@ class Engine:
                 logger.debug("Engine::_worker_loop.task_done")
                 self.queued_trials.task_done()
                 self.completed_trials[trial.trial_uuid] = deepcopy(trial)
-                if trial.task_result.optimal is True:
+                if trial.task_result.q_metric.optimal is True:
                     logger.debug("Engine::_worker_loop.is_optimal")
                     self.cnt_optimal += 1
 
@@ -284,16 +266,16 @@ class Engine:
             trial.trial_number = self.cnt_trial
             self.cnt_trial += 1
             logger.debug("FINISHED trial " + str(self.cnt_trial) + " with uuid " + trial.trial_uuid)
-            trial.task_result.final_cost, trial.task_result.optimal = self.problem_definition.calculate_cost(trial.task_result)
-            logger.debug("Cost: " + str(trial.task_result.final_cost))
+            trial.task_result.q_metric = self.problem_definition.calculate_cost(trial.task_result)
+            logger.debug("Cost: " + str(trial.task_result.q_metric.final_cost))
 
             theta = np.zeros((1,(len(self.problem_definition.domain.limits))))
             for j in range(len(self.problem_definition.domain.limits)):
                 theta[0][j] = trial.theta[self.problem_definition.domain.vector_mapping[j]]
             self.lock_data.acquire()
-            if trial.task_result.final_cost < 1:
+            if trial.task_result.q_metric.final_cost < 1:
                 self.x = np.append(self.x, theta, axis=0)
-                self.y = np.append(self.y, trial.task_result.final_cost)
+                self.y = np.append(self.y, trial.task_result.q_metric.final_cost)
             self.lock_data.release()
 
             if trial.log is True:
@@ -318,7 +300,7 @@ class Engine:
                         continue
 
                     result, trial.task_result = self._wait_for_task(agent, task_uuid)
-                    if result is False or trial.task_result.success is False:
+                    if result is False or trial.task_result.q_metric.success is False:
                         logger.debug("Could not wait for reset_task")
                         logger.debug(result)
                         time.sleep(1)
@@ -410,7 +392,7 @@ class Engine:
                         continue
 
                     result, task_result = self._wait_for_task(agent, task_uuid)
-                    if result is False or task_result.success is False:
+                    if result is False or task_result.q_metric.success is False:
                         logger.debug("Could not wait for setup_experiment")
                         logger.debug(result)
                         time.sleep(1)
@@ -437,8 +419,7 @@ class Engine:
     def write_task_result(self, trial: Trial):
         data = {
             "theta": trial.theta,
-            "cost": trial.task_result.final_cost,
-            "success": trial.task_result.success,
+            "q_metric": trial.task_result.q_metric.to_dict(),
             "t_0": trial.t_0,
             "t_1": trial.t_1,
             "t_delta": trial.t_delta,

@@ -51,13 +51,14 @@ class Interface:
 
     def stop_rpc_server(self):
         logger.debug("Interface::stop_rpc_server()")
-        #t = Thread(target=self.rpc_server.shutdown())
-        #t.start()
+        # t = Thread(target=self.rpc_server.shutdown())
+        # t.start()
         self.rpc_server.server_close()
         self.rpc_server.shutdown()
         logger.debug("Interface::stop_rpc_server.end")
 
     def start_service_wrapper(self, problem_definition: dict, configuration: dict, agents, knowledge: dict = None):
+        logger.debug("Interface::start_service_wrapper")
         if configuration["service_name"] == "cmaes":
             service_configuration = CMAESConfiguration()
             service_configuration.from_dict(configuration)
@@ -69,7 +70,8 @@ class Interface:
                            knowledge)
 
     def start_service(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
-                   agents: set, knowledge: dict = None) -> str:
+                      agents: set, knowledge: dict = None) -> str:
+        logger.debug("Interface::start_service")
         if self.service_lock.acquire(blocking=False) is False:
             return "INVALID"
 
@@ -86,12 +88,14 @@ class Interface:
             logger.error("Service with name " + configuration.service_name + " does not exist.")
             return "INVALID"
 
-        self.learn_thread = Thread(target=self.learn_task, args=(problem_definition, configuration, agents, knowledge),daemon=False)
+        self.learn_thread = Thread(target=self.learn_task, args=(problem_definition, configuration, agents, knowledge),
+                                   daemon=False)
         self.learn_thread.start()
         return problem_definition.uuid
 
     def learn_task(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
-                   agents: set, knowledge:dict) -> bool:
+                   agents: set, knowledge: dict) -> bool:
+        logger.debug("Interface::learn_task")
         """strt to learn a task according to instructions"""
         try:
             logger.debug("interface.learn_task: start learning task")
@@ -99,13 +103,14 @@ class Interface:
                 return False
             logger.debug("Service initialized ")
             result = self.service.learn_task()
-            logger.debug("learning success "+str(result))
+            logger.debug("learning success " + str(result))
             return result
         finally:
             logger.debug("Interface::learn_task.finally: Releasing service lock")
             self.service_lock.release()
 
     def stop_service(self):
+        logger.debug("Interface::stop_service")
         """Stop the learning process, if possible save all results and stop the robot"""
         if self.service is not None:
             self.service.stop()
@@ -145,14 +150,15 @@ class Interface:
         self.global_db_thread = Thread(target=self.global_db.start_server, daemon=False)
         self.global_db_thread.start()
         return True
-    
+
     def stop_global_database(self):
         logger.debug("interface.stop_global_database")
-        addr = "http://localhost:"+str(self.global_db.port)+"/"
+        addr = "http://localhost:" + str(self.global_db.port) + "/"
         with ServerProxy(addr) as proxy:
             i = proxy.stop_server()
         self.global_db_thread.join(3)
-        logger.debug("interface.stop_global_database: global Database hase been stoped, "+str(not self.global_db_thread.is_alive()))
+        logger.debug("interface.stop_global_database: global Database hase been stoped, " + str(
+            not self.global_db_thread.is_alive()))
         return not self.global_db_thread.is_alive()
 
     def get_status(self) -> str:
