@@ -1,27 +1,39 @@
 #!/usr/bin/python3 -u
+from task import *
 from ws_client import *
 import time
 
 
 def record_trajectory(robot: str, duration: int, trajectory_name: str):
-    start_skill(robot, "HandGuiding", {"record_trajectory": True, "recording_length": duration * 1000,
-                                       "recording_name": trajectory_name}, {"control_mode": 0})
+    context = {
+        "skill": {
+            "record_trajectory": True,
+            "recording_length": duration * 1000,
+            "recording_name": trajectory_name
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("record_trajectory", "HandGuiding", context)
+    t.start()
     time.sleep(duration)
-    stop_task(robot)
+    result = t.stop()
+    print("Result: " + str(result))
 
 
-def play_trajectory(robot: str, file: str):
-    start_skill(robot, "MoveTrajectory", {"file": file, "plane": False, "F_ff": [0, 0, 5, 0, 0, 0]}, {"control_mode": 0})
-
-
-def start_skill(address: str, skill: str, parameters: dict, control: dict):
-    response = start_task(address, "GenericTask", parameters={"parameters": {
-        "skill_names": ["skill"],
-        "skill_types": [skill]
-    },
-        "skills": {
-            "skill": {
-                "skill": parameters,
-                "control": control
-            }
-        }})
+def play_trajectory(robot: str, trajectory_name: str):
+    context = {
+        "skill": {
+            "file": trajectory_name
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("move_trajectory", "MoveTrajectory", context)
+    t.start()
+    result = t.wait()
+    print("Result: " + str(result))

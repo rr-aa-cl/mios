@@ -1,48 +1,10 @@
 #!/usr/bin/python3 -u
-from ws_client import *
-import time
+from task import *
 import socket
 
 
 def get_ip(hostname: str):
     return socket.gethostbyname(hostname)
-
-
-class Task:
-    def __init__(self, robot):
-        self.skill_names = []
-        self.skill_types = []
-        self.skill_context = dict()
-
-        self.robot = robot
-        self.task_uuid = "INVALID"
-        self.t_0 = 0
-
-    def add_skill(self, name, type, context):
-        self.skill_names.append(name)
-        self.skill_types.append(type)
-        self.skill_context[name] = context
-
-    def start(self, queue: bool = False):
-        self.t_0 = time.time()
-        parameters = {
-            "parameters": {
-                "skill_names": self.skill_names,
-                "skill_types": self.skill_types,
-                "as_queue": queue
-            },
-            "skills": self.skill_context
-        }
-        print(self.skill_context)
-        print("DONE")
-        response = start_task(self.robot, "GenericTask", parameters)
-
-        self.task_uuid = response["result"]["task_uuid"]
-
-    def wait(self):
-        result = wait_for_task(self.robot, self.task_uuid)
-        print("Task execution took " + str(time.time() - self.t_0) + " s.")
-        return result
 
 
 def direct_joint_mode(master: str, slave: str):
@@ -86,6 +48,9 @@ def direct_joint_mode(master: str, slave: str):
 
     t_m.start()
     t_s.start()
+    input("Press Enter to stop...")
+    t_m.stop()
+    t_s.stop()
 
 
 def joystick_mode(master: str, slave: str):
@@ -124,6 +89,9 @@ def joystick_mode(master: str, slave: str):
 
     t_m.start()
     t_s.start()
+    input("Press Enter to stop...")
+    t_m.stop()
+    t_s.stop()
 
 
 def direct_cartesian_mode(master: str, slave: str):
@@ -161,6 +129,9 @@ def direct_cartesian_mode(master: str, slave: str):
 
     t_m.start()
     t_s.start()
+    input("Press Enter to stop...")
+    t_m.stop()
+    t_s.stop()
 
 
 def multi_direct_joint_mode(master: str, slaves: list):
@@ -187,6 +158,8 @@ def multi_direct_joint_mode(master: str, slaves: list):
     t_m.add_skill("telepresence", "Telepresence", master_context)
     t_m.start()
 
+    slave_tasks = []
+
     for s in slaves:
         slave_context = {
             "skill": {
@@ -204,3 +177,8 @@ def multi_direct_joint_mode(master: str, slaves: list):
         t_s = Task(s)
         t_s.add_skill("telepresence", "Telepresence", slave_context)
         t_s.start()
+        slave_tasks.append(t_s)
+    input("Press Enter to stop...")
+    t_m.stop()
+    for t in slave_tasks:
+        t.stop()
