@@ -29,7 +29,6 @@ class Task:
             "skills": self.skill_context
         }
         print(self.skill_context)
-        print("DONE")
         response = start_task(self.robot, "GenericTask", parameters)
 
         self.task_uuid = response["result"]["task_uuid"]
