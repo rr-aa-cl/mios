@@ -614,8 +614,8 @@ from definitions.taxonomy_templates import insertion
 
 
 def taxonomy_learning(robot: str):
-    call_method(robot, 12002, "set_grasped_object", {"object": "cylinder_30"})
-    pd = insertion("cylinder_30", "cylinder_30_hole", "cylinder_30_approach")
+    call_method(robot, 12002, "set_grasped_object", {"object": "cylinder_50"})
+    pd = insertion("cylinder_50", "cylinder_50_hole", "cylinder_50_approach")
     service_config = SVMConfiguration()
     service_config.exploration_mode = True
     service_config.n_trials = 100
