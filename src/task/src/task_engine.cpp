@@ -80,9 +80,8 @@ void TaskEngine::life_cycle(){
                 invalid_mode=false;
             }
             if(!invalid_mode && mode==franka::RobotMode::kOther){
-                spdlog::warn("Robot is in invalid mode, attempting to recover...");
                 if(!m_core->recover_body()){
-                    spdlog::error("Automatic recovery failed, please toggle the user stop...");
+                    spdlog::error("Automatic recovery was required but failed, please toggle the user stop...");
                     m_mtx_task_queue.lock();
                     m_task_queue.clear();
                     m_mtx_task_queue.unlock();
@@ -99,7 +98,7 @@ void TaskEngine::life_cycle(){
                 recovery=false;
             }
             if(!recovery && mode==franka::RobotMode::kAutomaticErrorRecovery){
-                spdlog::warn("Performing automatic error recovery, please wait...");
+                spdlog::trace("TaskEngine::life_cycle.recovery_mode");
                 m_mtx_task_queue.lock();
                 m_task_queue.clear();
                 m_mtx_task_queue.unlock();
@@ -162,8 +161,11 @@ void TaskEngine::life_cycle(){
             try{
                 spdlog::info("Executing task " + m_active_task->get_id() + " with uuid " + m_active_task->get_uuid());
                 m_active_task->execute();
+            }catch(const TaskException& e){
+                spdlog::error("A task exception occured.");
+                exceptional_event=true;
             }catch(const std::exception& e){
-                spdlog::debug(e.what());
+                spdlog::critical("An unexpected exception occured: " + std::string(e.what()));
                 exceptional_event=true;
             }
             if(exceptional_event){
@@ -181,8 +183,11 @@ void TaskEngine::life_cycle(){
                     m_active_task->recover_task();
                     m_active_task->complete_recovery();
                 }
+            }catch(const TaskException& e){
+                spdlog::error("A task exception occured.");
+                exceptional_event=true;
             }catch(const std::exception& e){
-                spdlog::debug(e.what());
+                spdlog::critical("An unexpected exception occured: " + std::string(e.what()));
                 exceptional_event=true;
             }
             m_task_life_cycle=TaskLifeCycle::Termination;

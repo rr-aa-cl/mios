@@ -134,7 +134,8 @@ void TestSkill1::auxiliaries(const Percept &p){
         if(c->exception=="skill"){
             spdlog::trace("TestSkill1::auxiliaries::skill");
             m_result_code=5;
-            throw SkillException("This is a skill exception that has been thrown for test purposes");
+            spdlog::error("This is a skill exception that has been thrown for test purposes");
+            throw SkillException();
         }
     }
     m_result_code=-1;

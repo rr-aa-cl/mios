@@ -90,11 +90,7 @@ TaxPlace::TaxPlace(const std::string& name, Memory* memory, Portal* portal):Skil
 }
 
 Eigen::Matrix<double,3,3> TaxPlace::get_O_R_T_0([[maybe_unused]] const Percept &p) const{
-    if(get_object("Surface")->name!="NullObject"){
-        return get_object("Surface")->O_T_OB.block<3,3>(0,0);
-    }else{
-        throw SkillException("No valid object has been grounded.");
-    }
+    return get_object("Surface")->O_T_OB.block<3,3>(0,0);
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxPlace::get_initial_mp(const Percept& p){
@@ -117,7 +113,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxPlace::graph_transitio
         }
     }
     if(get_active_mp()->get_name()=="release"){
-//        if(get_result().success){
+        //        if(get_result().success){
         if(get_active_mp()->get_strategy_interface("release")->finished()){
             return create_retract_mp(p);
         }else{
@@ -224,7 +220,7 @@ bool TaxPlace::check_local_err_conditions(const Percept &p){
 }
 
 double TaxPlace::get_goal_heuristic(const Percept &p){
-//    bool h = m_memory->get_live_context()->grasped_object->name==get_object("Placeable")->name;
+    //    bool h = m_memory->get_live_context()->grasped_object->name==get_object("Placeable")->name;
     bool h = !get_result().success;
     return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Retract").block<3,1>(0,3)).norm() +
             acos(((get_object_pose_T("Retract").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) +

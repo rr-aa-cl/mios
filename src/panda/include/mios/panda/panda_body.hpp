@@ -30,7 +30,7 @@ public:
     bool connect_to_gripper(const std::optional<std::string> &ip);
     void disconnect_from_robot();
     void disconnect_from_gripper();
-    bool recover();
+    ControlReturnType recover();
 
     bool pre_run_checks() const;
 

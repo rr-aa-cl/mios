@@ -36,11 +36,7 @@ std::shared_ptr<ManipulationPrimitive> Turn::get_initial_mp(const Percept& p){
 }
 
 Eigen::Matrix<double,3,3> Turn::get_O_R_T_0(const Percept &p) const{
-    if(get_object("turnable")->name!="NullObject"){
-        return get_object("turnable")->O_T_OB.block<3,3>(0,0);
-    }else{
-        throw SkillException("No valid object has been grounded.");
-    }
+    return get_object("turnable")->O_T_OB.block<3,3>(0,0);
 }
 
 bool Turn::check_local_suc_conditions(const Percept &p){

@@ -205,7 +205,8 @@ void Task::overwrite_context(const std::string &skill_name, const std::string &p
         m_context["skills"][skill_name][parameter_type][parameter]=value;
     }catch(const nlohmann::detail::type_error& e){
         spdlog::debug(e.what());
-        throw TaskException("Error when attempting to overwrite task context. Make sure the skill and the parameter exist in the default context.");
+        spdlog::error("Error when attempting to overwrite task context. Make sure the skill and the parameter exist in the default context.");
+        throw TaskException();
     }
 }
 
@@ -214,7 +215,8 @@ void Task::write_skill_object(const std::string skill, const std::string grounda
         m_context["skills"][skill]["skill"]["objects"][groundable]=object;
     }catch(const nlohmann::detail::type_error& e){
         spdlog::debug(e.what());
-        throw TaskException("Error when attempting to overwrite skill objects. Make sure the skill and the parameter exist in the default context.");
+        spdlog::error("Error when attempting to overwrite skill objects. Make sure the skill and the parameter exist in the default context.");
+        throw TaskException();
     }
 }
 
@@ -223,7 +225,8 @@ void Task::overwrite_context(const std::string& subtask_name, const std::string 
         m_context["subtasks"][subtask_name]["skills"][skill_name][parameter_type][parameter]=value;
     }catch(const nlohmann::detail::type_error& e){
         spdlog::debug(e.what());
-        throw TaskException("Error when attempting to overwrite task context. Make sure the skill and the parameter exist in the default context.");
+        spdlog::error("Error when attempting to overwrite task context. Make sure the skill and the parameter exist in the default context.");
+        throw TaskException();
     }
 }
 
@@ -313,9 +316,10 @@ void Task::execute_skill_queue(){
     }
     m_skill_engine->clear_results();
 
-    if(result==ControlReturnType::crtException){
+    if(result.exception){
 //        m_result.skill_results[name].success=false;
-        throw TaskException("An exception occurred when executing skill queue.");
+        spdlog::error("An exception occurred when executing skill queue.");
+        throw TaskException();
     }
 }
 
@@ -323,7 +327,8 @@ void Task::execute_subtask(const std::string& task_id,const std::string task_nam
     std::scoped_lock<std::mutex> lock(m_mtx_execution);
     if(m_reserved_subtasks.find(task_name)==m_reserved_subtasks.end()){
         stop_task(true);
-        throw TaskException("Subtask with name "+task_name+" is not contained in task "+ m_id +". Stopping task.");
+        spdlog::error("Subtask with name "+task_name+" is not contained in task "+ m_id +". Stopping task.");
+        throw TaskException();
     }
     if(m_flag_stop){
         return;
@@ -331,7 +336,8 @@ void Task::execute_subtask(const std::string& task_id,const std::string task_nam
     spdlog::info("Executing subtask "+task_name+"...");
     m_active_subtask = m_memory->load_subtask(task_id,m_context["subtasks"][task_name],m_core);
     if(m_active_subtask->get_id()=="NullTask"){
-        throw TaskException("Error when loading subtask with name " + task_name);
+        spdlog::error("Error when loading subtask with name " + task_name);
+        throw TaskException();
     }
     spdlog::info("Executing subtask "+task_name+"...");
     m_active_subtask->execute();
@@ -377,7 +383,8 @@ TaskResult Task::get_result() const{
 
 TaskResult Task::get_subtask_result(const std::string &subtask_name) const{
     if(m_subtask_results.find(subtask_name)==m_subtask_results.end()){
-        throw TaskException("Cannot return result for non-existing subtask with name " + subtask_name + ".");
+        spdlog::error("Cannot return result for non-existing subtask with name " + subtask_name + ".");
+        throw TaskException();
     }
     return m_subtask_results.at(subtask_name);
 }

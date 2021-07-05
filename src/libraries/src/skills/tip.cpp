@@ -29,11 +29,7 @@ Tip::Tip(const std::string& name, Memory* memory, Portal* portal):Skill("Tip",{"
 }
 
 Eigen::Matrix<double,3,3> Tip::get_O_R_T_0(const Percept &p) const{
-    if(get_object("tippable")->name!="NullObject"){
-        return get_object("tippable")->O_T_OB.block<3,3>(0,0);
-    }else{
-        throw SkillException("No valid object has been grounded.");
-    }
+    return get_object("tippable")->O_T_OB.block<3,3>(0,0);
 }
 
 std::shared_ptr<ManipulationPrimitive> Tip::get_initial_mp(const Percept& p){

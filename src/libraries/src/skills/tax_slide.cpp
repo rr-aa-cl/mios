@@ -40,12 +40,8 @@ TaxSlide::TaxSlide(const std::string& name, Memory* memory, Portal *portal):Skil
 
 }
 
-Eigen::Matrix<double,3,3> TaxSlide::get_O_R_T_0(const Percept &p) const{
-    if(get_object("Surface")->name!="NullObject"){
-        return get_object("Surface")->O_T_OB.block<3,3>(0,0);
-    }else{
-        throw SkillException("No valid object has been grounded.");
-    }
+Eigen::Matrix<double,3,3> TaxSlide::get_O_R_T_0([[maybe_unused]] const Percept &p) const{
+    return get_object("Slidable")->O_T_OB.block<3,3>(0,0);
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxSlide::get_initial_mp(const Percept& p){

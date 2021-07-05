@@ -42,11 +42,7 @@ TaxWipe::TaxWipe(const std::string& name, Memory* memory, Portal* portal):Skill(
 }
 
 Eigen::Matrix<double,3,3> TaxWipe::get_O_R_T_0(const Percept &p) const{
-    if(get_object("Wipeable")->name!="NullObject"){
-        return get_object("Wipeable")->O_T_OB.block<3,3>(0,0);
-    }else{
-        throw SkillException("No valid object has been grounded.");
-    }
+    return get_object("Wipeable")->O_T_OB.block<3,3>(0,0);
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxWipe::get_initial_mp(const Percept& p){

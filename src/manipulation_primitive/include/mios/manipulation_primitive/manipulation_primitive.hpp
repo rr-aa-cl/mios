@@ -4,6 +4,7 @@
 #include "mios/data_structures/actuator.hpp"
 #include "mios/strategy/primitive_strategy.hpp"
 #include "mios/utils/exceptions.hpp"
+#include "spdlog/spdlog.h"
 
 #include <map>
 #include <string>
@@ -50,14 +51,16 @@ public:
     bool is_settled(bool ignore=false) const;
     template<typename T> void create_strategy(const std::string& name,double weight){
         if(m_strategies.find(name)!=m_strategies.end()){
-            throw SkillException("Strategy with name " + name + " already exists.");
+            spdlog::error("Strategy with name " + name + " already exists.");
+            throw SkillException();
         }else{
             m_strategies.insert(std::make_pair(name,StrategyData{std::make_shared<T>(),Actuator(m_cmd),weight}));
         }
     }
     template<typename T>std::shared_ptr<T> get_strategy(const std::string& name){
         if(m_strategies.find(name)==m_strategies.end()){
-            throw SkillException("Strategy with name " + name + " does not exist.");
+            spdlog::error("Strategy with name " + name + " already exists.");
+            throw SkillException();
         }
         return std::static_pointer_cast<T>(m_strategies.at(name).strategy);
     }

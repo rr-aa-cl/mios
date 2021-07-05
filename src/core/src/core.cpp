@@ -121,17 +121,17 @@ ControlReturnType Core::execute_skill(){
     spdlog::trace("Core:execute_skill()");
 
     if(!m_panda_body.pre_run_checks()){
-        if(!m_panda_body.recover()){
-            return ControlReturnType::crtException;
+        if(ControlReturnType result=m_panda_body.recover();result.exception){
+            return result;
         }
     }
+    ControlReturnType result(false,"None","");
 
-    spdlog::debug("CORE: start_control_cycle: while-loop");
     refresh_percept(m_memory.read_parameters()->frames.O_R_T);
     m_percept.update_controller();
     m_panda_body.set_robot_parameters();
 
-    ControlReturnType result=ControlReturnType::crtException;
+    spdlog::trace("CORE:execute_skill.start_control_cycle");
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mCartTorque){
         m_controller_pipeline=std::make_unique<CartTorqueControllerPipeline>();
         m_safety_stage_1.insert(std::make_unique<VelocityWallsSafetyModule>());
@@ -175,7 +175,6 @@ ControlReturnType Core::execute_skill(){
         spdlog::error("No control mode has been selected.");
     }
 
-    post_execution();
     m_blend_skill=false;
     //    m_panda_body.stop_gripper();
     return result;
@@ -531,7 +530,7 @@ bool Core::stop_desk_task(){
 
 bool Core::recover_body(){
     spdlog::trace("Core::recover_body()");
-    return m_panda_body.recover();
+    return !m_panda_body.recover().exception;
 }
 
 const Percept* Core::get_percept() const{

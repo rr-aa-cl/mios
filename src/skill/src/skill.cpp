@@ -30,7 +30,8 @@ Skill::~Skill(){
 
 std::shared_ptr<ManipulationPrimitive> Skill::get_mp(const std::string &mp) const{
     if(m_mp_graph.find(mp)==m_mp_graph.end()){
-        throw SkillException("No MP with id "+mp+" is contained within skill of type "+m_type+". Check the skill implementation.");
+        spdlog::error("No MP with id "+mp+" is contained within skill of type "+m_type+". Check the skill implementation.");
+        throw SkillException();
     }
     return m_mp_graph.at(mp);
 }
@@ -38,14 +39,16 @@ std::shared_ptr<ManipulationPrimitive> Skill::get_mp(const std::string &mp) cons
 std::shared_ptr<ManipulationPrimitive> Skill::create_mp(const std::string &name, const Percept &p){
     spdlog::trace("Skill::create_mp");
     if(m_active_mp->get_name()==name){
-        throw SkillException("Manipulation primitive with name " + name + " is already active. Implementation of manipulation graph seems faulty.");
+        spdlog::error("Manipulation primitive with name " + name + " is already active. Implementation of manipulation graph seems faulty.");
+        throw SkillException();
     }
     return std::make_shared<ManipulationPrimitive>(name,p,m_memory);
 }
 
 Eigen::Matrix<double,4,4> Skill::get_object_pose_O(const std::string &object_name) const{
     if(m_grounded_objects.find(object_name)==m_grounded_objects.end()){
-        throw SkillException("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
+        spdlog::error("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
+        throw SkillException();
     }
     const Object* object=m_grounded_objects.at(object_name);
     return object->O_T_OB;
@@ -53,7 +56,8 @@ Eigen::Matrix<double,4,4> Skill::get_object_pose_O(const std::string &object_nam
 
 Eigen::Matrix<double,4,4> Skill::get_object_pose_T(const std::string &object_name) const{
     if(m_grounded_objects.find(object_name)==m_grounded_objects.end()){
-        throw SkillException("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
+        spdlog::error("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
+        throw SkillException();
     }
     const Object* object=m_grounded_objects.at(object_name);
     return msrm_utils::rotate_matrix(object->O_T_OB,m_memory->read_parameters()->frames.O_R_T.transpose());
@@ -61,7 +65,8 @@ Eigen::Matrix<double,4,4> Skill::get_object_pose_T(const std::string &object_nam
 
 Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_T(const std::string &object_name) const{
     if(m_grounded_objects.find(object_name)==m_grounded_objects.end()){
-        throw SkillException("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
+        spdlog::error("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
+        throw SkillException();
     }
     const Object* object=m_grounded_objects.at(object_name);
     return msrm_utils::rotate_matrix(object->O_T_OB*object->OB_T_gp,m_memory->read_parameters()->frames.O_R_T.transpose());
@@ -69,7 +74,8 @@ Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_T(const std::string &obje
 
 Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_O(const std::string &object_name) const{
     if(m_grounded_objects.find(object_name)==m_grounded_objects.end()){
-        throw SkillException("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
+        spdlog::error("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
+        throw SkillException();
     }
     const Object* object=m_grounded_objects.at(object_name);
     return object->O_T_OB*object->OB_T_gp;
@@ -77,19 +83,21 @@ Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_O(const std::string &obje
 
 const Object* Skill::get_object(const std::string &o) const{
     if(m_grounded_objects.find(o)==m_grounded_objects.end()){
-        throw SkillException("Skill "+ this->get_id() +" of type "+m_type+" has no groundables with name " + o + ".");
+        spdlog::error("Skill "+ this->get_id() +" of type "+m_type+" has no groundables with name " + o + ".");
+        throw SkillException();
     }
     return m_grounded_objects.at(o);
 }
 
 Object* Skill::update_object(const std::string &o){
     if(m_grounded_objects.find(o)==m_grounded_objects.end()){
-        throw SkillException("Skill "+ this->get_id() +" of type "+m_type+" has no groundables with name " + o + ".");
+        spdlog::error("Skill "+ this->get_id() +" of type "+m_type+" has no groundables with name " + o + ".");
+        throw SkillException();
     }
     return m_grounded_objects.at(o);
 }
 
-bool Skill::initialize(const Percept &p){
+bool Skill::initialize([[maybe_unused]] const Percept &p){
     spdlog::trace("Skill::initialize");
     if(!msrm_utils::is_orthonormal(m_memory->read_parameters()->frames.O_R_T)){
         spdlog::error("O_R_T of skill "+m_id+" is invalid. Aborting execution.");
@@ -114,8 +122,8 @@ Actuator* Skill::cycle(const Percept &p){
         spdlog::trace("Skill::cycle.init");
         m_active_mp=get_initial_mp(p);
         if(!m_active_mp->has_strategies()){
-            spdlog::critical("Manipulation primitive " + next_mp.value()->get_name() + " has no strategies.");
-            throw SkillException("Missing strategy.");
+            spdlog::error("Manipulation primitive " + next_mp.value()->get_name() + " has no strategies.");
+            throw SkillException();
         }
         m_result.p_0=p;
         m_time_start=std::chrono::high_resolution_clock::now();
@@ -189,8 +197,8 @@ Actuator* Skill::cycle(const Percept &p){
     next_mp=graph_transition(p);
     if(next_mp.has_value()){
         if(!next_mp.value()->has_strategies()){
-            spdlog::critical("Manipulation primitive " + next_mp.value()->get_name() + " has no strategies.");
-            throw SkillException("Missing strategy.");
+            spdlog::error("Manipulation primitive " + next_mp.value()->get_name() + " has no strategies.");
+            throw SkillException();
         }
         m_life_cycle=SkillLifeCycle::slTransition;
     }
@@ -251,7 +259,8 @@ Eigen::Matrix<double,3,3> Skill::get_O_R_T_0([[maybe_unused]] const Percept &p) 
 void Skill::set_init_mp(const std::string& name){
     spdlog::trace("Skill::set_init_mp");
     if(m_mp_graph.find(name)==m_mp_graph.end()){
-        throw SkillException("Error when setting initial mp. No mp with name " + name + " available.");
+        spdlog::error("Error when setting initial mp. No mp with name " + name + " available.");
+        throw SkillException();
     }
     m_active_mp=m_mp_graph[name];
 }
@@ -314,7 +323,7 @@ bool Skill::check_global_err_conditions(const Percept& p) const{
     return false;
 }
 
-bool Skill::check_global_suc_conditions(const Percept &p) const{
+bool Skill::check_global_suc_conditions([[maybe_unused]] const Percept &p) const{
     if(m_flag_invoke_success){
         spdlog::info("Success has been invoked externally");
         return true;

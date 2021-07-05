@@ -132,7 +132,8 @@ void GenericTask::add_any_skill(unsigned int index){
         add_skill<TaxHammer,SkillParametersTaxHammer>(name);
         break;
     default:
-        throw TaskException("Skill with type " + type + " not known to GenericTask");
+        spdlog::error("Skill with type " + type + " not known to GenericTask");
+        throw TaskException();
     }
 }
 
@@ -246,7 +247,8 @@ void GenericTask::execute_any_skill(unsigned index){
         execute_skill<TaxHammer,SkillParametersTaxHammer>(name);
         break;
     default:
-        throw TaskException("Skill with type " + type + " not known to GenericTask");
+        spdlog::error("Skill with type " + type + " not known to GenericTask");
+        throw TaskException();
     }
 }
 
