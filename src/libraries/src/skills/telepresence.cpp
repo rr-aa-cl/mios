@@ -209,7 +209,8 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                             mp->create_strategy<RemoteWrenchStrategy>("telepresence",1);
                             mp->get_strategy<RemoteWrenchStrategy>("telepresence")->set_damping(get_parameters<Params>()->direct_cart.alpha);
                             if(!mp->get_strategy<RemoteWrenchStrategy>("telepresence")->connect(m_portal,"remote_wrench_in",get_parameters<Params>()->port_src,256,0,10000,200)){
-                                throw SkillException("Could not open incoming udp channel.");
+                                spdlog::error("Could not open incoming udp channel.");
+                                throw SkillException();
                             }
                         }
                         m_udp_sender = m_portal->open_udp_outstream("remote_cart_pose_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
@@ -225,7 +226,8 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                             mp->create_strategy<RemoteTorqueStrategy>("telepresence",1);
                             mp->get_strategy<RemoteTorqueStrategy>("telepresence")->set_damping(get_parameters<Params>()->direct_joint.alpha);
                             if(!mp->get_strategy<RemoteTorqueStrategy>("telepresence")->connect(m_portal,"remote_torque_in",get_parameters<Params>()->port_src,256,0,10000,200)){
-                                throw SkillException("Could not open incoming udp channel.");
+                                spdlog::error("Could not open incoming udp channel.");
+                                throw SkillException();
                             }
                         }
                         m_udp_sender = m_portal->open_udp_outstream("remote_joint_pose_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
@@ -239,16 +241,19 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                         if(!read_parameters<Params>()->multicast){
                             mp->create_strategy<RemoteWrenchStrategy>("telepresence",1);
                             if(!mp->get_strategy<RemoteWrenchStrategy>("telepresence")->connect(m_portal,"remote_wrench_in",get_parameters<Params>()->port_src,256,0,10000,200)){
-                                throw SkillException("Could not open incoming udp channel.");
+                                spdlog::error("Could not open incoming udp channel.");
+                                throw SkillException();
                             }
                         }
                         m_udp_sender = m_portal->open_udp_outstream("remote_twist_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
                     }
                     if(m_udp_sender==nullptr){
-                        throw SkillException("Could not open outgoing udp channel.");
+                        spdlog::error("Could not open outgoing udp channel.");
+                        throw SkillException();
                     }
                     if(!m_udp_sender->connect()){
-                        throw SkillException("Could not open outgoing udp channel.");
+                        spdlog::error("Could not open outgoing udp channel.");
+                        throw SkillException();
                     }
                     return mp;
                 }
@@ -339,7 +344,8 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
                     mp->create_strategy<RemoteCartPoseStrategy>("telepresence",1);
                     if(!mp->get_strategy<RemoteCartPoseStrategy>("telepresence")->connect(m_portal,"remote_cart_pose_in",get_parameters<Params>()->port_src,256,0,10000,20,read_parameters<Params>()->multicast)){
-                        throw SkillException("Could not open incoming udp channel.");
+                        spdlog::error("Could not open incoming udp channel.");
+                        throw SkillException();
                     }
                     m_udp_sender = m_portal->open_udp_outstream("remote_force_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
                     mp->create_strategy<FFStrategy>("feed_forward",1);
@@ -359,23 +365,27 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
                     mp->create_strategy<RemoteJointPoseStrategy>("telepresence",1);
                     if(!mp->get_strategy<RemoteJointPoseStrategy>("telepresence")->connect(m_portal,"remote_joint_pose_in",get_parameters<Params>()->port_src,256,0,10000,20,read_parameters<Params>()->multicast)){
-                        throw SkillException("Could not open incoming udp channel.");
+                        spdlog::error("Could not open incoming udp channel.");
+                        throw SkillException();
                     }
                     m_udp_sender = m_portal->open_udp_outstream("remote_torque_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
                     mp->create_strategy<RemoteTwistStrategy>("telepresence",1);
                     if(!mp->get_strategy<RemoteTwistStrategy>("telepresence")->connect(m_portal,"remote_twist_in",get_parameters<Params>()->port_src,256,0,10000,200,read_parameters<Params>()->multicast)){
-                        throw SkillException("Could not open incoming udp channel.");
+                        spdlog::error("Could not open incoming udp channel.");
+                        throw SkillException();
                     }
                     mp->get_strategy<RemoteTwistStrategy>("telepresence")->set_frame(read_parameters<Params>()->joystick.static_frame);
                     m_udp_sender = m_portal->open_udp_outstream("remote_force_out",read_parameters<Params>()->ip_dst,read_parameters<Params>()->port_dst);
                 }
                 if(m_udp_sender==nullptr){
-                    throw SkillException("Could not open outgoing udp channel.");
+                    spdlog::error("Could not open outgoing udp channel.");
+                    throw SkillException();
                 }
                 if(!m_udp_sender->connect()){
-                    throw SkillException("Could not open outgoing udp channel.");
+                    spdlog::error("Could not open outgoing udp channel.");
+                    throw SkillException();
                 }
                 return mp;
             }

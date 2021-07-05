@@ -16,7 +16,8 @@ void TestTask1::execute(){
 
         if(m_exception=="task"){
             m_result_code=9;
-            throw TaskException("This is a task exception that has been thrown for test purposes");
+            spdlog::error("This is a task exception that has been thrown for test purposes");
+            throw TaskException();
         }
         execute_skill<TestSkill1,SkillParametersTestSkill1>("t1_s1");
     }

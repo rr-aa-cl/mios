@@ -44,11 +44,7 @@ Wipe::Wipe(const std::string& name, Memory* memory, Portal* portal):Skill("Wipe"
 }
 
 Eigen::Matrix<double,3,3> Wipe::get_O_R_T_0(const Percept &p) const{
-    if(get_object("wipeable")->name!="NullObject"){
-        return get_object("wipeable")->O_T_OB.block<3,3>(0,0);
-    }else{
-        throw SkillException("No valid object has been grounded.");
-    }
+    return get_object("wipeable")->O_T_OB.block<3,3>(0,0);
 }
 
 std::shared_ptr<ManipulationPrimitive> Wipe::get_initial_mp(const Percept& p){
@@ -59,12 +55,8 @@ std::shared_ptr<ManipulationPrimitive> Wipe::get_initial_mp(const Percept& p){
     mp->create_strategy<MoveToPoseStrategy>("approach",1);
 
     Eigen::Matrix<double,4,4> T_g;
-    if(this->get_object("wipeable")->name!="NullObject"){
-        T_g=get_object_pose_T("wipeable");
-        T_g(2,3)-=0.03;
-    }else{
-        throw SkillException("No valid object has been grounded.");
-    }
+    T_g=get_object_pose_T("wipeable");
+    T_g(2,3)-=0.03;
     Eigen::Matrix<double,2,1> speed;
     Eigen::Matrix<double,2,1> acc;
     speed<<skill_params->speed,m_memory->read_parameters()->user.dX_default(1);

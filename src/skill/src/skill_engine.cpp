@@ -102,7 +102,7 @@ ControlReturnType SkillEngine::execute_skill_queue(){
     m_active_skill=*m_it_skill_queue;
     ++m_it_skill_queue;
 
-    ControlReturnType result=ControlReturnType::crtException;
+    ControlReturnType result(false,"None","");
     m_memory->apply_reserved_skill_context(m_active_skill->get_id());
     if(!m_active_skill->ground_objects()){
         return result;
@@ -121,13 +121,18 @@ ControlReturnType SkillEngine::execute_skill_queue(){
     try{
         spdlog::info("Executing skill...");
         result = m_core->execute_skill();
-        spdlog::info("Skill ran nominally.");
+        if(!result.exception){
+            spdlog::info("Skill ran nominally.");
+        }else{
+            spdlog::error("An error occured during skill execution: (" + result.error + ", " + result.error_msg + ")");
+            m_active_skill->append_error(result.error);
+        }
     }catch(const SkillException& e){
         spdlog::debug(e.what());
-        result=ControlReturnType::crtException;
-        spdlog::warn("A skill exception occured.");
-        m_core->post_execution();
+        result = {true,"SkillException",e.what()};
+        spdlog::error("A skill exception occured");
     }
+    m_core->post_execution();
     spdlog::info("Unloading skill...");
     m_active_skill->terminate(*m_core->get_percept());
     m_results.insert(std::pair<std::string,SkillResult>(m_active_skill->get_id(),m_active_skill->get_result()));
@@ -135,9 +140,13 @@ ControlReturnType SkillEngine::execute_skill_queue(){
     write_logs();
     if(!m_core->refresh_percept({})){
         clear_skill_queue();
-        return ControlReturnType::crtException;
+        return {true,"PerceptError","Could not refresh the perception"};
     }
-    spdlog::info("Terminating skill...");
+    if(!result.exception){
+        spdlog::info("Skill terminated nominally...");
+    }else{
+        spdlog::warn("Errors occured during skill execution, check above messages for more information.");
+    }
     clear_skill_queue();
     return result;
 }
@@ -156,28 +165,37 @@ ControlReturnType SkillEngine::execute_skill(std::shared_ptr<Skill> skill){
     m_queue=false;
     if(!load_skill( skill)){
         spdlog::error("Skill could not be loaded.");
-        return ControlReturnType::crtException;
+        return {true,"SkillLoadError","Skill could not be loaded."};
     }
-    ControlReturnType result=ControlReturnType::crtException;
+    ControlReturnType result(false,"None","");
     init_logs();
     try{
         spdlog::info("Executing skill...");
         result = m_core->execute_skill();
-        spdlog::info("Skill ran nominally.");
+        if(!result.exception){
+            spdlog::info("Skill ran nominally.");
+        }else{
+            spdlog::error("An error occured during skill execution: (" + result.error + ", " + result.error_msg + ")");
+            m_active_skill->append_error(result.error);
+        }
     }catch(const SkillException& e){
         spdlog::debug(e.what());
-        result=ControlReturnType::crtException;
-        spdlog::warn("A skill exception occured.");
-        m_core->post_execution();
+        result = {true,"SkillException",e.what()};
+        spdlog::error("A skill exception occured: " + std::string(e.what()));
     }
+    m_core->post_execution();
     spdlog::info("Unloading skill...");
     skill->terminate(*m_core->get_percept());
     unload_skill();
     write_logs();
     if(!m_core->refresh_percept({},true)){
-        return ControlReturnType::crtException;
+        return {true,"PerceptError","Could not refresh the perception"};
     }
-    spdlog::info("Terminating skill...");
+    if(!result.exception){
+        spdlog::info("Skill terminated nominally...");
+    }else{
+        spdlog::warn("Errors occured during skill execution, check above messages for more information.");
+    }
     return result;
 }
 

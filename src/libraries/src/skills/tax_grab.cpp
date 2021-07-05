@@ -54,11 +54,7 @@ TaxGrab::TaxGrab(const std::string& name, Memory* memory, Portal* portal):Skill(
 }
 
 Eigen::Matrix<double,3,3> TaxGrab::get_O_R_T_0([[maybe_unused]] const Percept &p) const{
-    if(get_object("Grabbable")->name!="NullObject"){
-        return get_object("Grabbable")->O_T_OB.block<3,3>(0,0);
-    }else{
-        throw SkillException("No valid object has been grounded.");
-    }
+    return get_object("Grabbable")->O_T_OB.block<3,3>(0,0);
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxGrab::get_initial_mp(const Percept& p){
@@ -150,7 +146,7 @@ bool TaxGrab::check_local_ex_conditions(const Percept &p){
     if(get_active_mp()->get_name()=="retract"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
             if((p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Retract").block<3,1>(0,3)).norm()<m_memory->read_parameters()->user.env_X(0)
-               && acos(((get_object_pose_T("Retract").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) < m_memory->read_parameters()->user.env_X(1)){
+                    && acos(((get_object_pose_T("Retract").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) < m_memory->read_parameters()->user.env_X(1)){
                 return true;
             }else{
                 return false;

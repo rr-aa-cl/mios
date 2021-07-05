@@ -46,11 +46,7 @@ TaxSwipe::TaxSwipe(const std::string& name, Memory* memory, Portal *portal):Skil
 }
 
 Eigen::Matrix<double,3,3> TaxSwipe::get_O_R_T_0(const Percept &p) const{
-    if(get_object("SwipeStart")->name!="NullObject"){
-        return get_object("SwipeStart")->O_T_OB.block<3,3>(0,0);
-    }else{
-        throw SkillException("No valid object has been grounded.");
-    }
+    return get_object("SwipeStart")->O_T_OB.block<3,3>(0,0);
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxSwipe::get_initial_mp(const Percept& p){
@@ -139,9 +135,9 @@ bool TaxSwipe::check_local_pre_conditions(const Percept &p){
 
 bool TaxSwipe::check_local_suc_conditions(const Percept &p){
     std::shared_ptr<SkillParametersTaxSwipe> skill_params = get_parameters<SkillParametersTaxSwipe>();
-        if((p.proprioception.O_T_EE.block<3,1>(0,3)-get_object_pose_T("Approach").block<3,1>(0,3)).norm()<0.005 && get_active_mp()->get_name()=="retract"){
-            return true;
-        }
+    if((p.proprioception.O_T_EE.block<3,1>(0,3)-get_object_pose_T("Approach").block<3,1>(0,3)).norm()<0.005 && get_active_mp()->get_name()=="retract"){
+        return true;
+    }
     return false;
 }
 

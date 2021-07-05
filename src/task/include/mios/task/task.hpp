@@ -208,7 +208,8 @@ protected:
         if(m_context["skills"].find(name)==m_context["skills"].end()){
             spdlog::error("Skill with id "+name+" not in this task. Check the task context for consistency. Stopping task.");
             stop_task(true);
-            throw TaskException("Skill with id "+name+" not in this task. Check the task context for consistency. Stopping task.");
+            spdlog::error("Skill with id "+name+" not in this task. Check the task context for consistency. Stopping task.");
+            throw TaskException();
         }
         if(m_flag_stop){
             return;
@@ -217,7 +218,8 @@ protected:
         m_skill_engine->reserve_skill_context<T_param>(m_context, name);
         std::shared_ptr<Skill> skill = std::make_shared<T_skill>(name,m_memory,m_portal);
         if(!m_skill_engine->add_skill(skill)){
-            throw TaskException("Could not add skill to queue.");
+            spdlog::error("Could not add skill to queue.");
+            throw TaskException();
         }
     }
 
@@ -229,7 +231,8 @@ protected:
         if(m_context["skills"].find(name)==m_context["skills"].end()){
             spdlog::error("Skill with id "+name+" not in this task. Check the task context for consistency. Stopping task.");
             stop_task(true);
-            throw TaskException("Skill with id "+name+" not in this task. Check the task context for consistency. Stopping task.");
+            spdlog::error("Skill with id "+name+" not in this task. Check the task context for consistency. Stopping task.");
+            throw TaskException();
         }
         if(m_flag_stop){
             return;
@@ -237,7 +240,8 @@ protected:
 
         m_memory->get_parameters()->create_skill_parameters<T_param>();
         if(!m_skill_engine->apply_skill_context(m_context,name)){
-            throw TaskException("Could not apply skill context.");
+            spdlog::error("Could not apply skill context.");
+            throw TaskException();
         }
         std::shared_ptr<Skill> skill = std::make_shared<T_skill>(name,m_memory,m_portal);
         ControlReturnType result=m_skill_engine->execute_skill(skill);
@@ -245,9 +249,10 @@ protected:
         if(skill->get_result().exception){
             m_flag_stop = true;
         }
-        if(result==ControlReturnType::crtException){
+        if(result.exception){
             m_result.skill_results[name].success=false;
-            throw TaskException("An exception occurred when executing skill " + name + ".");
+            spdlog::error("An exception occurred when executing skill " + name + ".");
+            throw TaskException();
         }
     }
 
