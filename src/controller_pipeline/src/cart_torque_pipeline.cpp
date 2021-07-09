@@ -159,10 +159,8 @@ void CartTorqueControllerPipeline::initialize_cntr_force(const Percept &p, Memor
     m_cntr_force.p.active=p_cntr.force_control.active;
     m_cntr_force.p.dF_d_max<<p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(0),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1),p_limits.cartesian_space.dF_J_max(1);
     m_cntr_force.p.F_d_max<<p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(0),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1),p_limits.cartesian_space.F_J_max(1);
-    m_cntr_force.p.dtau_max<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),
-            std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max();
-    m_cntr_force.p.tau_max<<std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),
-            std::numeric_limits<double>::max(),std::numeric_limits<double>::max(),std::numeric_limits<double>::max();
+    m_cntr_force.p.dtau_max=p_limits.joint_space.dtau_J_max;
+    m_cntr_force.p.tau_max=p_limits.joint_space.tau_J_max;
     m_cntr_force.p.k_p=p_cntr.force_control.k_p;
     m_cntr_force.p.k_i=p_cntr.force_control.k_i;
     m_cntr_force.p.k_d=p_cntr.force_control.k_d;
@@ -180,7 +178,7 @@ void CartTorqueControllerPipeline::input_cntr_force(const Percept &p){
     m_cntr_force.u.B_J_0=p.internal_model.B_J_O;
     m_cntr_force.u.DX<<0,0,0,0,0,0;
     m_cntr_force.u.TF_F_d_K<<0,0,0,0,0,0;
-    m_cntr_force.u.TF_F_ext_K=-p.proprioception.TF_F_ext_K;
+    m_cntr_force.u.TF_F_ext_K=p.proprioception.TF_F_ext_K;
     m_cntr_force.u.O_R_T=p.controller.O_R_T;
 }
 
