@@ -140,6 +140,7 @@ ControlReturnType Core::execute_skill(){
         m_safety_stage_2.insert(std::make_unique<VirtualJointWallsSafetyModule>());
         m_safety_stage_2.insert(std::make_unique<CartesianVelocityDampingSafetyModule>());
         m_controller_pipeline->initialize(m_percept,&m_memory);
+        m_controller_pipeline->update_percept(m_percept.controller);
         for(auto& m : m_safety_stage_1){
             m->initialize(m_percept,&m_memory);
         }
@@ -154,6 +155,7 @@ ControlReturnType Core::execute_skill(){
         m_safety_stage_2.insert(std::make_unique<VirtualCubeSafetyModule>());
         m_safety_stage_2.insert(std::make_unique<VirtualJointWallsSafetyModule>());
         m_controller_pipeline->initialize(m_percept,&m_memory);
+        m_controller_pipeline->update_percept(m_percept.controller);
         for(auto& m : m_safety_stage_1){
             m->initialize(m_percept,&m_memory);
         }
@@ -165,11 +167,13 @@ ControlReturnType Core::execute_skill(){
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mCartVelocity){
         m_controller_pipeline=std::make_unique<CartVelocityControllerPipeline>();
         m_controller_pipeline->initialize(m_percept,&m_memory);
+        m_controller_pipeline->update_percept(m_percept.controller);
         result=m_panda_body.control(std::bind(&Core::cart_velocity_controller_pipeline,this,std::placeholders::_1));
     }
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mJointVelocity){
         m_controller_pipeline=std::make_unique<JointVelocityControllerPipeline>();
         m_controller_pipeline->initialize(m_percept,&m_memory);
+        m_controller_pipeline->update_percept(m_percept.controller);
         result=m_panda_body.control(std::bind(&Core::joint_velocity_controller_pipeline,this,std::placeholders::_1));
     }
     if(m_memory.read_parameters()->control.control_mode==ControlMode::mNoControl){
