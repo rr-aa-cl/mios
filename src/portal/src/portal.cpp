@@ -119,10 +119,10 @@ void Portal::close_udp_instream(const std::string &name){
     }
 }
 
-std::string Portal::send_message(const std::string &address, unsigned int port, const std::string &method, const nlohmann::json request){
+std::string Portal::send_message(const std::string &address, unsigned int port, const std::string &method, const nlohmann::json request, std::string protocol, double timeout){
     spdlog::trace("Portal::send_message");
     std::scoped_lock<std::mutex> lock(m_mtx_message);
-    m_message_queue.emplace(Message{address,port,method,request,msrm_utils::generate_uuid()});
+    m_message_queue.emplace(Message{address,port,method,request,msrm_utils::generate_uuid(),protocol,timeout});
     return m_message_queue.front().uuid;
 }
 
@@ -146,9 +146,20 @@ void Portal::send_messages(){
             Message m = m_message_queue.front();
             m_mtx_message.unlock();
             nlohmann::json response;
-            if(!msrm_utils::JsonWebsocketClient::call_method(m.address,m.port,"mios/core",m.method,m.request,response,5)){
-                response=false;
+            spdlog::debug("Sending message to " + m.address + ":" + std::to_string(m.port));
+            if(m.protocol=="websocket"){
+                if(!msrm_utils::JsonWebsocketClient::call_method(m.address,m.port,"mios/core",m.method,m.request,response,m.timeout)){
+                    response=false;
+                }
             }
+            else if(m.protocol=="udp"){
+                if(!msrm_utils::JsonUDPClient::call_method(m.address,m.port,m.method,m.request,response,1000000)){
+                    response=false;
+                }
+            }else{
+                spdlog::error("Cannot send message via protocol " + m.protocol);
+            }
+            std::cout<<response<<std::endl;
             m_mtx_message.lock();
             m_message_responses.emplace(std::make_pair(m.uuid,response));
             m_message_queue.pop();
