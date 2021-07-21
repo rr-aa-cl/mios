@@ -119,7 +119,6 @@ TelemetryUDP* Core::get_telemetry(){
 
 ControlReturnType Core::execute_skill(){
     spdlog::trace("Core:execute_skill()");
-    std::scoped_lock<std::mutex> busy_lock(m_mtx_is_busy);
 
     if(!m_panda_body.pre_run_checks()){
         if(ControlReturnType result=m_panda_body.recover();result.exception){
@@ -129,6 +128,7 @@ ControlReturnType Core::execute_skill(){
     ControlReturnType result(false,"None","");
 
     refresh_percept(m_memory.read_parameters()->frames.O_R_T);
+    std::scoped_lock<std::mutex> busy_lock(m_mtx_is_busy);
     m_percept.update_controller();
     m_panda_body.set_robot_parameters();
 
@@ -467,9 +467,15 @@ bool Core::release_object(std::optional<double> width, double speed){
 bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, bool wait){
     franka::RobotState robot_state;
     franka::GripperState gripper_state;
+    if(is_busy()){
+        return true;
+    }
     bool read_successful=false;
     if(wait){
         while(!read_successful){
+            if(is_busy()){
+                return true;
+            }
             read_successful=true;
             if(!m_panda_body.get_robot_state(robot_state)){
                 spdlog::debug("Core::refresh_percept.failed_to_acquire_robot_state");
@@ -550,6 +556,7 @@ bool Core::is_ready() const{
 bool Core::is_busy(){
     if(m_mtx_is_busy.try_lock()){
         m_mtx_is_busy.unlock();
+        std::cout<<"not busy"<<std::endl;
         return false;
     }else{
         return true;
