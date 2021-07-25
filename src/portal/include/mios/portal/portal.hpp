@@ -27,6 +27,7 @@ struct Message{
     std::string uuid;
     std::string protocol;
     double timeout;
+    bool repeat;
 };
 
 class Portal{
@@ -48,7 +49,7 @@ public:
     void close_udp_outstream(const std::string& name);
     void close_udp_instream(const std::string& name);
 
-    std::string send_message(const std::string& address, unsigned port, const std::string& method, const nlohmann::json request, std::string protocol="websocket", double timeout=5);
+    std::string send_message(const std::string& address, unsigned port, const std::string& method, const nlohmann::json request, std::string protocol="websocket", double timeout=5, bool repeat=false);
     nlohmann::json get_message_response(const std::string& message_uuid);
 
 private:

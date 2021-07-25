@@ -181,12 +181,12 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 spdlog::debug("Telepresence: Starting handshake (master)");
                 if(read_parameters<Params>()->multicast){
                     for(const auto& ip : read_parameters<Params>()->multicast_group){
-                        m_handshake_message_uuid=m_portal->send_message(ip,read_parameters<Params>()->remote_event_port,"post_event",request,read_parameters<Params>()->remote_event_protocol);
+                        m_handshake_message_uuid=m_portal->send_message(ip,read_parameters<Params>()->remote_event_port,"post_event",request,read_parameters<Params>()->remote_event_protocol,5,true);
                     }
                     m_handshake_stage=2;
                     m_memory->post_event("sync_done",nlohmann::json());
                 }else{
-                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->ip_dst,read_parameters<Params>()->remote_event_port,"post_event",request,read_parameters<Params>()->remote_event_protocol);
+                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->ip_dst,read_parameters<Params>()->remote_event_port,"post_event",request,read_parameters<Params>()->remote_event_protocol,5,true);
                     m_handshake_stage=1;
                 }
             }
@@ -328,7 +328,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 nlohmann::json response;
                 if(m_handshake_stage==0){
                     spdlog::debug("Telepresence: Sending sync_done (slave)");
-                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->ip_dst,read_parameters<Params>()->remote_event_port,"post_event",{{"name","sync_done"}},read_parameters<Params>()->remote_event_protocol);
+                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->ip_dst,read_parameters<Params>()->remote_event_port,"post_event",{{"name","sync_done"}},read_parameters<Params>()->remote_event_protocol,5,true);
                     m_handshake_stage++;
                 }
                 if(m_handshake_stage==1){
