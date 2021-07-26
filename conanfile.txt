@@ -9,6 +9,7 @@ spdlog/1.8.5
 pybind11/2.6.2
 cxxopts/2.2.1
 mongo-cxx-driver/3.6.2
+openssl/1.1.1k
 
 [options]
 boost:shared=True
