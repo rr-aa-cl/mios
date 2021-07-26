@@ -158,6 +158,7 @@ bool SkillEngine::is_running_queue(){
 void SkillEngine::unload_skill(){
     spdlog::trace("SkillEngine::unload_skill");
     m_active_skill=std::make_shared<NullSkill>("NullSkill",m_memory,m_core->get_portal());
+    m_core->get_portal()->remove_messages();
 }
 
 ControlReturnType SkillEngine::execute_skill(std::shared_ptr<Skill> skill){

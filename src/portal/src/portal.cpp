@@ -144,6 +144,12 @@ void Portal::remove_message(const std::string& message_uuid){
     m_message_queue.erase(message_uuid);
 }
 
+void Portal::remove_messages(){
+    m_mtx_message.lock();
+    m_message_queue.clear();
+    m_mtx_message.unlock();
+}
+
 void Portal::send_messages(){
     spdlog::trace("Portal::send_messages");
     while(m_keep_running){

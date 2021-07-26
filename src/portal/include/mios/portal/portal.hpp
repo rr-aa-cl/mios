@@ -52,6 +52,7 @@ public:
     std::string send_message(const std::string& address, unsigned port, const std::string& method, const nlohmann::json request, std::string protocol="websocket", double timeout=5, bool repeat=false);
     nlohmann::json get_message_response(const std::string& message_uuid);
     void remove_message(const std::string& message_uuid);
+    void remove_messages();
 
 private:
     void send_messages();
