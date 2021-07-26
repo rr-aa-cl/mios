@@ -46,24 +46,24 @@ Eigen::Matrix<double, 3, 3> TaxExtraction::get_O_R_T_0([[maybe_unused]] const Pe
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxExtraction::get_initial_mp(const Percept &p_0){
-    return create_move_mp(p_0);
+    return create_wiggle_mp(p_0);
 }
 
 std::optional<std::shared_ptr<ManipulationPrimitive> > TaxExtraction::graph_transition(const Percept &p){
-    if(get_active_mp()->get_name()=="move"){
-        if(!is_stuck(p)){
-            return {};
-        }else{
-            return create_wiggle_mp(p);
-        }
-    }
-    if(get_active_mp()->get_name()=="wiggle"){
-        if(!is_stuck(p)){
-            return create_move_mp(p);
-        }else{
-            return {};
-        }
-    }
+//    if(get_active_mp()->get_name()=="move"){
+//        if(!is_stuck(p)){
+//            return {};
+//        }else{
+//            return create_wiggle_mp(p);
+//        }
+//    }
+//    if(get_active_mp()->get_name()=="wiggle"){
+//        if(!is_stuck(p)){
+//            return create_move_mp(p);
+//        }else{
+//            return {};
+//        }
+//    }
     return {};
 }
 

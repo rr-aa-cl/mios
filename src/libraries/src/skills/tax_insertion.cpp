@@ -84,25 +84,25 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_trans
     }
     if(get_active_mp()->get_name()=="contact"){
         if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
-            return create_insert_mp(p);
-        }else{
-            return {};
-        }
-    }
-    if(get_active_mp()->get_name()=="insert"){
-        if(!is_stuck(p)){
-            return {};
-        }else{
             return create_wiggle_mp(p);
-        }
-    }
-    if(get_active_mp()->get_name()=="wiggle"){
-        if(!is_stuck(p)){
-            return create_insert_mp(p);
         }else{
             return {};
         }
     }
+//    if(get_active_mp()->get_name()=="insert"){
+//        if(!is_stuck(p)){
+//            return {};
+//        }else{
+//            return create_wiggle_mp(p);
+//        }
+//    }
+//    if(get_active_mp()->get_name()=="wiggle"){
+//        if(!is_stuck(p)){
+//            return create_insert_mp(p);
+//        }else{
+//            return {};
+//        }
+//    }
     return {};
 }
 
