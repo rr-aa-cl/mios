@@ -198,6 +198,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 }else if(response.is_null()){
                     return {};
                 }else{
+                    m_portal->remove_message(m_handshake_message_uuid);
                     m_handshake_stage=2;
                 }
             }
@@ -339,6 +340,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     }else if(response.is_null()){
                         return {};
                     }else{
+                        m_portal->remove_message(m_handshake_message_uuid);
                         m_handshake_stage=2;
                     }
                 }

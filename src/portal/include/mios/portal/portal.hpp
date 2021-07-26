@@ -51,6 +51,7 @@ public:
 
     std::string send_message(const std::string& address, unsigned port, const std::string& method, const nlohmann::json request, std::string protocol="websocket", double timeout=5, bool repeat=false);
     nlohmann::json get_message_response(const std::string& message_uuid);
+    void remove_message(const std::string& message_uuid);
 
 private:
     void send_messages();
@@ -59,7 +60,7 @@ private:
     bool m_keep_running;
     std::thread m_message_thread;
     std::mutex m_mtx_message;
-    std::queue<Message> m_message_queue;
+    std::unordered_map<std::string,Message> m_message_queue;
     std::unordered_map<std::string,nlohmann::json> m_message_responses;
 
     std::unordered_map<std::string, std::shared_ptr<msrm_utils::UDPStreamSender> > m_outstreams;
