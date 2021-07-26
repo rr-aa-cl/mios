@@ -556,7 +556,6 @@ bool Core::is_ready() const{
 bool Core::is_busy(){
     if(m_mtx_is_busy.try_lock()){
         m_mtx_is_busy.unlock();
-        std::cout<<"not busy"<<std::endl;
         return false;
     }else{
         return true;
