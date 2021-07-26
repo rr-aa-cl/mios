@@ -46,8 +46,11 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
         spdlog::error("Missing parameter: port_src");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"ws_port_dst",ws_port_dst)){
-        ws_port_dst = 12000; // default port for remote websocket handshake
+    if(!msrm_utils::read_json_param(parameters,"remote_event_protocol",remote_event_protocol)){
+        remote_event_protocol="websocket";
+    }
+    if(!msrm_utils::read_json_param(parameters,"remote_event_port",remote_event_port)){
+        remote_event_port=12000;
     }
     if(!msrm_utils::read_json_param(parameters,"use_zoh_deadband",use_zoh_deadband)){
         use_zoh_deadband=false;
@@ -124,7 +127,7 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
 }
 
 std::map<std::string,std::set<std::string> > SkillParametersTelepresence::get_parameter_list(){
-    return {{"is_master",{}},{"ip_dst",{}},{"port_dst",{}},{"port_src",{}},{"ws_port_dst",{}},{"terminate_when_loc",{}},{"multicast",{}},{"multicast_group",{}},{"telepresence_mode",{}},
+    return {{"is_master",{}},{"ip_dst",{}},{"port_dst",{}},{"port_src",{}},{"remote_event_port",{}},{"remote_event_protocol",{}},{"terminate_when_loc",{}},{"multicast",{}},{"multicast_group",{}},{"telepresence_mode",{}},
         {"joystick",{"amp","force_thr","static_frame"}},{"direct_joint",{"alpha"}},{"direct_cart",{"alpha"}},{"direct_cart",{"plane"}}};
 }
 
@@ -178,12 +181,12 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 spdlog::debug("Telepresence: Starting handshake (master)");
                 if(read_parameters<Params>()->multicast){
                     for(const auto& ip : read_parameters<Params>()->multicast_group){
-                        m_handshake_message_uuid=m_portal->send_message(ip,read_parameters<Params>()->ws_port_dst,"post_event",request);
+                        m_handshake_message_uuid=m_portal->send_message(ip,read_parameters<Params>()->remote_event_port,"post_event",request,read_parameters<Params>()->remote_event_protocol,5,true);
                     }
                     m_handshake_stage=2;
                     m_memory->post_event("sync_done",nlohmann::json());
                 }else{
-                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->ip_dst,read_parameters<Params>()->ws_port_dst,"post_event",request);
+                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->ip_dst,read_parameters<Params>()->remote_event_port,"post_event",request,read_parameters<Params>()->remote_event_protocol,5,true);
                     m_handshake_stage=1;
                 }
             }
@@ -195,6 +198,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 }else if(response.is_null()){
                     return {};
                 }else{
+                    m_portal->remove_message(m_handshake_message_uuid);
                     m_handshake_stage=2;
                 }
             }
@@ -293,7 +297,6 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
                     msrm_utils::read_json_param<double,4,4>(m_memory->get_event("handshake")->get_content(),"O_T_EE_master",m_O_T_EE_master);
                     mp->create_strategy<MoveToPoseStrategy>("move",1);
-                    std::cout<<"MASTER: "<<m_O_T_EE_master<<std::endl;
                     mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(m_O_T_EE_master,m_memory->read_parameters()->user.dX_default,m_memory->read_parameters()->user.ddX_default);
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
@@ -326,7 +329,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 nlohmann::json response;
                 if(m_handshake_stage==0){
                     spdlog::debug("Telepresence: Sending sync_done (slave)");
-                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->ip_dst,read_parameters<Params>()->ws_port_dst,"post_event",{{"name","sync_done"}});
+                    m_handshake_message_uuid=m_portal->send_message(read_parameters<Params>()->ip_dst,read_parameters<Params>()->remote_event_port,"post_event",{{"name","sync_done"}},read_parameters<Params>()->remote_event_protocol,5,true);
                     m_handshake_stage++;
                 }
                 if(m_handshake_stage==1){
@@ -337,6 +340,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     }else if(response.is_null()){
                         return {};
                     }else{
+                        m_portal->remove_message(m_handshake_message_uuid);
                         m_handshake_stage=2;
                     }
                 }

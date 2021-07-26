@@ -22,7 +22,7 @@ set(BUILD_TESTS OFF CACHE INTERNAL "No examples")
 FetchContent_Declare(
     msrm_cpp_utils
     GIT_REPOSITORY https://gitlab.lrz.de/ge29miq/msrm_utils.git
-    GIT_TAG v1.4.2)
+    GIT_TAG v1.4.3)
 
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE INTERNAL "")
 

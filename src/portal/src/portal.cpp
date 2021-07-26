@@ -7,11 +7,11 @@
 namespace mios {
 
 Portal::Portal(const std::string &websocket_address, unsigned websocket_port, const std::string &websocket_endpoint, const std::string &rpc_address, unsigned rpc_port, unsigned udp_port):
-m_keep_running(false),m_websocket_address(websocket_address),m_websocket_port(websocket_port),m_websocket_endpoint(websocket_endpoint),m_rpc_address(rpc_address),m_rpc_port(rpc_port),
-m_udp_port(udp_port){
+    m_keep_running(false),m_websocket_address(websocket_address),m_websocket_port(websocket_port),m_websocket_endpoint(websocket_endpoint),m_rpc_address(rpc_address),m_rpc_port(rpc_port),
+    m_udp_port(udp_port){
     spdlog::trace("Portal::Portal");
     m_servers.insert(std::make_pair(JsonServers::Websocket,std::make_unique<msrm_utils::JsonWebsocketServer>(m_websocket_address,m_websocket_port,m_websocket_endpoint)));
-//    m_servers.insert(std::make_pair(JsonServers::RPC,std::make_unique<msrm_utils::JsonRPCServer>(m_rpc_address,m_rpc_port)));
+    //    m_servers.insert(std::make_pair(JsonServers::RPC,std::make_unique<msrm_utils::JsonRPCServer>(m_rpc_address,m_rpc_port)));
     m_servers.insert(std::make_pair(JsonServers::UDP,std::make_unique<msrm_utils::JsonUDPServer>(m_udp_port)));
 }
 
@@ -119,11 +119,12 @@ void Portal::close_udp_instream(const std::string &name){
     }
 }
 
-std::string Portal::send_message(const std::string &address, unsigned int port, const std::string &method, const nlohmann::json request){
+std::string Portal::send_message(const std::string &address, unsigned int port, const std::string &method, const nlohmann::json request, std::string protocol, double timeout, bool repeat){
     spdlog::trace("Portal::send_message");
     std::scoped_lock<std::mutex> lock(m_mtx_message);
-    m_message_queue.emplace(Message{address,port,method,request,msrm_utils::generate_uuid()});
-    return m_message_queue.front().uuid;
+    std::string msg_uuid = msrm_utils::generate_uuid();
+    m_message_queue.insert(std::pair<std::string,Message>(msg_uuid,Message{address,port,method,request,msg_uuid,protocol,timeout,repeat}));
+    return msg_uuid;
 }
 
 nlohmann::json Portal::get_message_response(const std::string &message_uuid){
@@ -138,22 +139,81 @@ nlohmann::json Portal::get_message_response(const std::string &message_uuid){
     }
 }
 
+void Portal::remove_message(const std::string& message_uuid){
+    std::scoped_lock<std::mutex> lock(m_mtx_message);
+    m_message_queue.erase(message_uuid);
+}
+
 void Portal::send_messages(){
     spdlog::trace("Portal::send_messages");
     while(m_keep_running){
+        bool result=true;
+        std::set<std::string> finished_messages;
         m_mtx_message.lock();
-        if(!m_message_queue.empty()){
-            Message m = m_message_queue.front();
-            m_mtx_message.unlock();
+        std::unordered_map<std::string,Message> message_pool_copy=m_message_queue;
+        m_mtx_message.unlock();
+        for(auto m : message_pool_copy){
             nlohmann::json response;
-            if(!msrm_utils::JsonWebsocketClient::call_method(m.address,m.port,"mios/core",m.method,m.request,response,5)){
+            spdlog::debug("Sending message to " + m.second.address + ":" + std::to_string(m.second.port));
+            result=true;
+            if(m.second.protocol=="websocket"){
+                if(!msrm_utils::JsonWebsocketClient::call_method(m.second.address,m.second.port,"mios/core",m.second.method,m.second.request,response,m.second.timeout)){
+                    result=false;
+                    response=false;
+                }
+            }
+            else if(m.second.protocol=="udp"){
+                if(!msrm_utils::JsonUDPClient::call_method(m.second.address,m.second.port,m.second.method,m.second.request,response,static_cast<int>(m.second.timeout))){
+                    result=false;
+                    response=false;
+                }
+            }else{
+                spdlog::error("Cannot send message via protocol " + m.second.protocol);
                 response=false;
+                break;
+            }
+            if(result){
+                finished_messages.insert(m.first);
             }
             m_mtx_message.lock();
-            m_message_responses.emplace(std::make_pair(m.uuid,response));
-            m_message_queue.pop();
+            m_message_responses.emplace(std::make_pair(m.first,response));
+            m_mtx_message.unlock();
+        }
+        m_mtx_message.lock();
+        for(auto uuid : finished_messages){
+            m_message_queue.erase(uuid);
         }
         m_mtx_message.unlock();
+        //        if(!m_message_queue.empty()){
+        //            Message m = m_message_queue.front();
+        //            m_mtx_message.unlock();
+        //            nlohmann::json response;
+        //            bool result=true;
+        //            do{
+        //                spdlog::debug("Sending message to " + m.address + ":" + std::to_string(m.port));
+        //                result=true;
+        //                if(m.protocol=="websocket"){
+        //                    if(!msrm_utils::JsonWebsocketClient::call_method(m.address,m.port,"mios/core",m.method,m.request,response,m.timeout)){
+        //                        result=false;
+        //                        response=false;
+        //                    }
+        //                }
+        //                else if(m.protocol=="udp"){
+        //                    if(!msrm_utils::JsonUDPClient::call_method(m.address,m.port,m.method,m.request,response,static_cast<int>(m.timeout))){
+        //                        result=false;
+        //                        response=false;
+        //                    }
+        //                }else{
+        //                    spdlog::error("Cannot send message via protocol " + m.protocol);
+        //                    response=false;
+        //                    break;
+        //                }
+        //            }while(m.repeat && !result);
+        //            m_mtx_message.lock();
+        //            m_message_responses.emplace(std::make_pair(m.uuid,response));
+        //            m_message_queue.pop();
+        //        }
+        //        m_mtx_message.unlock();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }

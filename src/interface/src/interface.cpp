@@ -573,7 +573,13 @@ nlohmann::json CommandInterface::get_event(const nlohmann::json &request){
     nlohmann::json response;
     std::string name;
     request["name"].get_to(name);
-    response["content"]=m_memory->get_event(name)->get_content();
+
+    const Event* event=m_memory->get_event(name);
+    if(event==nullptr){
+        response["content"]="INVALID_EVENT";
+    }else{
+        response["content"]=event->get_content();
+    }
     return response;
 }
 
