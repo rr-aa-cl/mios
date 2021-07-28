@@ -10,9 +10,9 @@ Portal::Portal(const std::string &websocket_address, unsigned websocket_port, co
     m_keep_running(false),m_websocket_address(websocket_address),m_websocket_port(websocket_port),m_websocket_endpoint(websocket_endpoint),m_rpc_address(rpc_address),m_rpc_port(rpc_port),
     m_udp_port(udp_port){
     spdlog::trace("Portal::Portal");
-    m_servers.insert(std::make_pair(JsonServers::Websocket,std::make_unique<msrm_utils::JsonWebsocketServer>(m_websocket_address,m_websocket_port,m_websocket_endpoint)));
+    m_servers.insert(std::make_pair(JsonServers::Websocket,std::make_unique<msrm_utils::JsonWebsocketServer>("mios-interface",m_websocket_address,m_websocket_port,m_websocket_endpoint)));
     //    m_servers.insert(std::make_pair(JsonServers::RPC,std::make_unique<msrm_utils::JsonRPCServer>(m_rpc_address,m_rpc_port)));
-    m_servers.insert(std::make_pair(JsonServers::UDP,std::make_unique<msrm_utils::JsonUDPServer>(m_udp_port)));
+    m_servers.insert(std::make_pair(JsonServers::UDP,std::make_unique<msrm_utils::JsonUDPServer>("mios-interface",m_udp_port)));
 }
 
 Portal::~Portal(){
@@ -91,7 +91,7 @@ std::shared_ptr<msrm_utils::UDPStreamSender> Portal::open_udp_outstream(const st
         spdlog::error("A UDP channel with name " + name + " already exists.");
         return nullptr;
     }
-    m_outstreams.insert(std::make_pair(name,std::make_shared<msrm_utils::UDPStreamSender>(address,port)));
+    m_outstreams.insert(std::make_pair(name,std::make_shared<msrm_utils::UDPStreamSender>(name,address,port)));
     return m_outstreams[name];
 }
 
@@ -101,7 +101,7 @@ std::shared_ptr<msrm_utils::UDPStreamReceiver> Portal::open_udp_instream(const s
         spdlog::error("A UDP channel with name " + name + " already exists.");
         return nullptr;
     }
-    m_instreams.insert(std::make_pair(name,std::make_shared<msrm_utils::UDPStreamReceiver>(port,buffer_size,timeout_s,timeout_us,max_lost_packet,callback,multicast)));
+    m_instreams.insert(std::make_pair(name,std::make_shared<msrm_utils::UDPStreamReceiver>(name,port,buffer_size,timeout_s,timeout_us,max_lost_packet,callback,multicast)));
     return m_instreams[name];
 }
 
