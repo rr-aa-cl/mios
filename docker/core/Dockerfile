@@ -14,7 +14,7 @@ RUN apt-get install -y fping
 COPY mios/ /mios/
 COPY dependencies/ /dependencies/
 
-EXPOSE 12000 12001 12002 8888/udp 8889/udp
+EXPOSE 12000 12001 12002 8888 8889
 
 ARG default_verbosity_value=info
 ARG default_database_port_value=27017
