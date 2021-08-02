@@ -155,7 +155,33 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
                     "control_mode": 0
                 },
                 "user": {
-                    "env_X": [0.005, 0.01, 0.01, 0.03, 0.03, 0.03],
+                    "env_X": [0.005, 0.01, 0.01, 0.03, 0.03, 0.03]
+                }
+            }
+        }
+    }
+    setup_instructions = []
+    setup_context = {
+        "name": "GenericTask",
+        "parameters": {
+            "skill_types": ["MoveToPoseJoint"],
+            "skill_names": ["move"]
+        },
+        "skills": {
+            "move": {
+                "skill": {
+                    "speed": 0.5,
+                    "acc": 1,
+                    "q_g": [0, 0, 0, 0, 0, 0, 0],
+                    "objects": {
+                        "goal_pose": approach
+                    }
+                },
+                "control": {
+                    "control_mode": 3
+                },
+                "user": {
+                    "env_X": [0.005, 0.005, 0.005, 0.0175, 0.0175, 0.0175]
                 }
             }
         }
@@ -210,8 +236,9 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
             }
         }
     }
+    setup_instructions.append({"method": "start_task", "parameters": setup_context})
     reset_instructions.append({"method": "start_task", "parameters": reset_context})
-    pd = ProblemDefinition("insertion", insertable, domain, default_skill_context, [], [], reset_instructions,
+    pd = ProblemDefinition("insertion", insertable, domain, default_skill_context, setup_instructions, [], reset_instructions,
                            insertion_cost(), [1], tags=["insertion", insertable])
     return pd
 
