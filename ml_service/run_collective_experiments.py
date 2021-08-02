@@ -33,7 +33,7 @@ task_map = {
     "collective-panda-002": "key_abus_e30",
     "collective-panda-003": "plug_eth",
     "collective-panda-007": "cylinder_20",
-    "collective-panda-008": "cylinder_60",
+    "collective-panda-008": "cylinder_30",
     "collective-panda-009": "key_old",
 }
 
@@ -102,17 +102,16 @@ def benchmark_collective(agents: list, unique_tag: str, n_iter: int = 1):
 
 def experiment_single(agent: str,  unique_tag: str, n_iter: int = 1):
     call_method(agent, 12002, "set_grasped_object", {"object": "generic_insertable"})
-    pd = insert_generic()
-    delete_local_results([agent], "ml_results", pd.task_type, ["collective_experiment_single", unique_tag])
+    pd = insertion("generic_insertable", "generic_container", "generic_container_approach")
+    delete_local_results([agent], "ml_results", pd.skill_class, ["collective_experiment_single", unique_tag])
     tags = ["collective_experiment_single", "task_" + str(task_map[agent]), unique_tag]
-    pd = insert_generic()
     service_config = SVMConfiguration()
     service_config.exploration_mode = True
     service_config.batch_width = base_batch_size_experiment
     service_config.n_trials = n_trials_experiment
     start_experiment(agent, [agent], pd, service_config, n_iter, tags=tags, keep_record=False)
 
-    backup_results(agent, database, pd.task_type, ["collective_experiment_single", unique_tag], "collective_data")
+    backup_results(agent, database, pd.skill_class, ["collective_experiment_single", unique_tag], "collective_data")
 
 
 def experiment_collective(agents: list, unique_tag: str, n_iter: int = 1):
