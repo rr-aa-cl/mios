@@ -22,6 +22,7 @@ Skill::Skill(const std::string &type, const std::unordered_set<std::string> &obj
     m_msg_local_success(false),m_msg_global_success(false),m_cost_contact_forces_sum(0),m_cost_effort_avg_sum(0){
     spdlog::trace("Skill::Skill()");
     m_costs.insert(std::make_pair("ExecutionTime",0));
+    m_ROI_center.setZero();
 }
 
 Skill::~Skill(){
@@ -307,8 +308,29 @@ bool Skill::check_global_err_conditions(const Percept& p) const{
         }
     }
     for(unsigned i=0;i<7;i++){
-        if(fabs(p.proprioception.tau_ext(i))>=m_memory->read_parameters()->user.tau_ext_max(i)){
-            spdlog::error("Skill "+m_id+" has violated the maximum external joint torques at joint "+std::to_string(i)+".");
+        if(fabs(p.proprioception.dq(i))>=m_memory->read_parameters()->limits.joint_space.dq_max(i)){
+            spdlog::error("Skill "+m_id+" has violated the maximum joint velocities at joint "+std::to_string(i)+".");
+            std::cout<<"dq: "<<p.proprioception.dq<<std::endl;
+            return true;
+        }
+    }
+    for(unsigned i=0;i<3;i++){
+        if(p.proprioception.T_T_EE(i,3)<m_ROI_center(i)+m_memory->read_parameters()->skill->ROI_x(2*i)){
+            return true;
+        }
+        if(p.proprioception.T_T_EE(i,3)>m_ROI_center(i)+m_memory->read_parameters()->skill->ROI_x(2*i+1)){
+            return true;
+        }
+    }
+    for(unsigned i=0;i<3;i++){
+        if(fabs(p.proprioception.TF_dX_EE(i))>=m_memory->read_parameters()->limits.cartesian_space.dX_max(0)){
+            spdlog::error("Skill "+m_id+" has violated the maximum cartesian twist limits.");
+            std::cout<<"dX_d: "<<p.proprioception.TF_dX_EE<<std::endl;
+            return true;
+        }
+        if(fabs(p.proprioception.TF_dX_EE(i+3))>=m_memory->read_parameters()->limits.cartesian_space.dX_max(1)){
+            spdlog::error("Skill "+m_id+" has violated the maximum cartesian twist limits.");
+            std::cout<<"dX_d: "<<p.proprioception.TF_dX_EE<<std::endl;
             return true;
         }
     }
@@ -529,6 +551,10 @@ bool Skill::is_in_env(const std::string &pose, const std::string &mp, const Perc
         return reached_position && reached_orientation;
     }
     return false;
+}
+
+void Skill::set_ROI_center(const Eigen::Matrix<double, 3, 1> &ROI_center){
+    m_ROI_center=ROI_center;
 }
 
 }

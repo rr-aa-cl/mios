@@ -264,6 +264,7 @@ protected:
     virtual double get_custom_cost(const Percept& p);
 
     bool is_in_env(const std::string& pose, const std::string& mp, const Percept& p);
+    void set_ROI_center(const Eigen::Matrix<double,3,1>& ROI_center);
 
 private:
     std::shared_ptr<ManipulationPrimitive> m_active_mp;
@@ -308,6 +309,8 @@ private:
 
     std::vector<nlohmann::json> m_data_log;
     unsigned long m_log_cnt;
+
+    Eigen::Matrix<double,3,1> m_ROI_center;
 
 };
 
