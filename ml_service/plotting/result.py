@@ -42,7 +42,7 @@ class Result:
             time.append(t["t_1"] - t_0)
         return success, time
 
-    def get_cost_per_trial(self, episode_length: int = 1, agent: str = None) -> list:
+    def get_cost_per_trial(self, episode_length: int = 1, cost_type: str = None, agent: str = None) -> list:
         cost_raw = []
         cost = []
         if len(self.trials) % episode_length != 0:
@@ -52,11 +52,17 @@ class Result:
         for t in self.trials:
             if agent is not None:
                 if agent == t["agent"]:
-                    cost_raw.append(t["cost"])
+                    if cost_type is None:
+                        cost_raw.append(t["q_metric"]["final_cost"])
+                    else:
+                        cost_raw.append(t["q_metric"]["cost"][cost_type])
                 else:
                     continue
             else:
-                cost_raw.append(t["cost"])
+                if cost_type is None:
+                    cost_raw.append(t["q_metric"]["final_cost"])
+                else:
+                    cost_raw.append(t["q_metric"]["cost"][cost_type])
         for i in range(int(n_episodes)):
             cost.append(np.min(np.asarray(cost_raw[i * episode_length : i * episode_length + episode_length])))
 
@@ -70,7 +76,7 @@ class Result:
 
         return parameters
 
-    def get_cost_per_time(self, agent: str = None) -> Tuple[list, list]:
+    def get_cost_per_time(self, cost_type: str = None, agent: str = None) -> Tuple[list, list]:
         cost = []
         time = []
         try:
@@ -78,18 +84,23 @@ class Result:
             for t in self.trials:
                 if agent is not None:
                     if agent == t["agent"]:
-                        cost.append(t["cost"])
+                        if cost_type is None:
+                            cost.append(t["q_metric"]["final_cost"])
+                        else:
+                            cost.append(t["q_metric"]["cost"][cost_type])
                         time.append(t["t_1"] - t_0)
                     else:
                         continue
                 else:
-                    cost.append(t["cost"])
+                    if cost_type is None:
+                        cost.append(t["q_metric"]["final_cost"])
+                    else:
+                        cost.append(t["q_metric"]["cost"][cost_type])
                     time.append(t["t_1"] - t_0)
             return cost, time
         except Exception as e:
             print(e)
             print("Meta data: " + str(self.meta_data))
-
 
     def get_theta_per_trial(self):
         theta = []
@@ -154,6 +165,7 @@ class Result:
             data_dict[param] = normalize(data_dict[param], min_param, max_param)
         return data_dict
 
+
 class Knowledge:
     def __init__(self, data: dict):
         data_tmp = copy.deepcopy(data)
@@ -169,9 +181,11 @@ class Knowledge:
         for key in self.parameter_dict.keys():
             parameter_list.append(self.parameter_dict[key])
         return parameter_list
-        
+
+
 def normalize(d, min, max):
     return (d - min) / (max - min)
+
 
 def denormalize(d_norm, min, max):
     return d_norm * (max - min) + min

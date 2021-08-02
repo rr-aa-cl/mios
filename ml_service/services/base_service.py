@@ -178,7 +178,7 @@ class BaseService(metaclass=ABCMeta):
 
         self.engine_thread.join()  # wait for engine to write final results
 
-        ml_data = self.DBclient.read("ml_results", self.problem_definition.task_type, {"_id": self.database_results_id})
+        ml_data = self.DBclient.read("ml_results", self.problem_definition.skill_class, {"_id": self.database_results_id})
         if len(ml_data) != 1:
             logger.error(
                 "base_service.learn_task: cannot find ml_results on local database to copy them to global database")

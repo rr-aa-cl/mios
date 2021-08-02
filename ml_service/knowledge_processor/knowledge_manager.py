@@ -42,19 +42,19 @@ class KnowledgeManager:
         self.trial_data_x = []
         self.trial_data_y = []
 
-    def collect_data(self, db_client, task_identifier, data_db: str = "ml_results") -> list:
-        if "identity" in task_identifier:
-            result_filter = {"meta.tags": task_identifier["tags"],
-                             "meta.identity": task_identifier["identity"],
-                             "meta.task_type": task_identifier["task_type"]}
+    def collect_data(self, db_client, skill_identifier, data_db: str = "ml_results") -> list:
+        if "identity" in skill_identifier:
+            result_filter = {"meta.tags": skill_identifier["tags"],
+                             "meta.identity": skill_identifier["identity"],
+                             "meta.task_type": skill_identifier["skill_class"]}
         else:
-            result_filter = {"meta.tags": task_identifier["tags"],
-                             "meta.task_type": task_identifier["task_type"]}
+            result_filter = {"meta.tags": skill_identifier["tags"],
+                             "meta.task_type": skill_identifier["skill_class"]}
 
-        doc = db_client.read(data_db, task_identifier["task_type"], result_filter)
+        doc = db_client.read(data_db, skill_identifier["task_type"], result_filter)
         if doc is None or len(doc) == 0:
             logger.error("Could not find any results for filter " + str(
-                result_filter) + " on database " + data_db + " in collection " + task_identifier["task_type"] + ".")
+                result_filter) + " on database " + data_db + " in collection " + skill_identifier["skill_class"] + ".")
             return []
         return doc
 
@@ -141,7 +141,7 @@ class KnowledgeManager:
         return knowledge
 
     def process_knowledge_local(self, db_client, task_identity: dict, data_db: str = "ml_results") -> str("_id"):
-        '''process raw data from trials to knowledge; working from and on the database'''
+        """process raw data from trials to knowledge; working from and on the database"""
         # allocate all ml_data with same task identity:
         doc = self.collect_data(db_client, task_identity, data_db)
         if not doc:
