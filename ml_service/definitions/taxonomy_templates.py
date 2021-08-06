@@ -29,13 +29,20 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
         "p2_wiggle_f_z": (0, 3),
         "p2_wiggle_f_phi": (0, 1),
         "p2_wiggle_f_chi": (0, 1),
+        "p2_wiggle_phi_x": (0, 6.28),
+        "p2_wiggle_phi_y": (0, 6.28),
+        "p2_wiggle_phi_z": (0, 6.28),
+        "p2_wiggle_phi_phi": (0, 6.28),
+        "p2_wiggle_phi_chi": (0, 6.28),
         "p2_K_x": (0, 2000),
         "p2_K_y": (0, 2000),
         "p2_K_z": (0, 2000),
         "p2_K_phi": (0, 200),
         "p2_K_chi": (0, 200),
         "p2_K_psi": (0, 200),
-        "p2_f_push": (0, 30)
+        "p2_f_push_x": (-30, 30),
+        "p2_f_push_y": (-30, 30),
+        "p2_f_push_z": (0, 30)
     }
     context_mapping = {
         "p0_offset_x": ["skills.insertion.skill.p0.DeltaX-1"],
@@ -64,48 +71,29 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
         "p2_wiggle_f_z": ["skills.insertion.skill.p2.search_f-3"],
         "p2_wiggle_f_phi": ["skills.insertion.skill.p2.search_f-4"],
         "p2_wiggle_f_chi": ["skills.insertion.skill.p2.search_f-5"],
+        "p2_wiggle_phi_x": ["skills.insertion.skill.p2.search_phi-1"],
+        "p2_wiggle_phi_y": ["skills.insertion.skill.p2.search_phi-2"],
+        "p2_wiggle_phi_z": ["skills.insertion.skill.p2.search_phi-3"],
+        "p2_wiggle_phi_phi": ["skills.insertion.skill.p2.search_phi-4"],
+        "p2_wiggle_phi_chi": ["skills.insertion.skill.p2.search_phi-5"],
         "p2_K_x": ["skills.insertion.skill.p2.K_x-1"],
         "p2_K_y": ["skills.insertion.skill.p2.K_x-2"],
         "p2_K_z": ["skills.insertion.skill.p2.K_x-3"],
         "p2_K_phi": ["skills.insertion.skill.p2.K_x-4"],
         "p2_K_chi": ["skills.insertion.skill.p2.K_x-5"],
         "p2_K_psi": ["skills.insertion.skill.p2.K_x-6"],
-        "p2_f_push": ["skills.insertion.skill.p2.f_push"]
+        "p2_f_push_x": ["skills.insertion.skill.p2.f_push-1"],
+        "p2_f_push_y": ["skills.insertion.skill.p2.f_push-2"],
+        "p2_f_push_z": ["skills.insertion.skill.p2.f_push-3"]
     }
+    x_0 = dict()
+    for p in limits:
+        x_0[p] = 0.1
 
-    x_0 = {
-        "p0_offset_x": 0.5,
-        "p0_offset_y": 0.5,
-        "p0_offset_phi": 0.5,
-        "p0_offset_chi": 0.5,
-        "p1_dx_d": 0.1,
-        "p1_dphi_d": 0.1,
-        "p1_ddx_d": 0.1,
-        "p1_ddphi_d": 0.1,
-        "p1_K_x": 0.1,
-        "p1_K_phi": 0.1,
-        "p2_dx_d": 0.1,
-        "p2_dphi_d": 0.1,
-        "p2_ddx_d": 0.1,
-        "p2_ddphi_d": 0.1,
-        "p2_wiggle_a_x": 0.1,
-        "p2_wiggle_a_y": 0.1,
-        "p2_wiggle_a_z": 0.1,
-        "p2_wiggle_a_phi": 0.1,
-        "p2_wiggle_a_chi": 0.1,
-        "p2_wiggle_f_x": 0.1,
-        "p2_wiggle_f_y": 0.1,
-        "p2_wiggle_f_z": 0.1,
-        "p2_wiggle_f_phi": 0.1,
-        "p2_wiggle_f_chi": 0.1,
-        "p2_K_x": 0.1,
-        "p2_K_y": 0.1,
-        "p2_K_z": 0.1,
-        "p2_K_phi": 0.1,
-        "p2_K_chi": 0.1,
-        "p2_K_psi": 0.1,
-        "p2_f_push": 0.1
-    }
+    x_0["p0_offset_x"] = 0.5,
+    x_0["p0_offset_y"] = 0.5,
+    x_0["p0_offset_phi"] = 0.5,
+    x_0["p0_offset_chi"] = 0.5,
 
     domain = Domain(limits, context_mapping, x_0)
     default_skill_context = {
@@ -139,10 +127,11 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
                     "p2": {
                         "search_a": [0, 0, 0, 0, 0, 0],
                         "search_f": [0, 0, 0, 0, 0, 0],
+                        "search_phi": [0, 0, 0, 0, 0, 0],
                         "dX_d": [0.1, 0.5],
                         "ddX_d": [0.5, 1],
                         "K_x": [2000, 2000, 2000, 200, 200, 200],
-                        "f_push": 0
+                        "f_push": [0, 0, 0, 0, 0, 0]
                     },
                     "p3": {
                         "dX_d": [0.1, 0.5],
@@ -249,5 +238,5 @@ def insertion_cost() -> CostFunction:
     c.optimum_weights["time"] = 1
     c.max_cost["time"] = 5
     c.heuristic_skills = ["insertion"]
-    c.heuristic_expressions = "np.exp(var*100)"
+    c.heuristic_expressions = "np.exp(var)"
     return c

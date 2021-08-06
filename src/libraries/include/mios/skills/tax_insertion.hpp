@@ -26,9 +26,10 @@ public:
         Eigen::Matrix<double,6,1> K_x;
         Eigen::Matrix<double,6,1> search_a;
         Eigen::Matrix<double,6,1> search_f;
+        Eigen::Matrix<double,6,1> search_phi;
         Eigen::Matrix<double,2,1> dX_d;
         Eigen::Matrix<double,2,1> ddX_d;
-        double f_push;
+        Eigen::Matrix<double,6,1> f_push;
     }p2;
 
     struct P3{
@@ -68,6 +69,8 @@ private:
 private:
 
     Eigen::Matrix<double,6,1> m_insert_dir;
+
+    double m_E_avg;
 
     double m_dx_avg;
     unsigned m_dx_avg_last;

@@ -3,6 +3,7 @@
 #include "mios/skills/tax_insertion.hpp"
 #include "mios/strategies/move_to_pose.hpp"
 #include "mios/strategies/ff_wiggle_strategy.hpp"
+#include "mios/strategies/ff_wrench_lissajous_strategy.hpp"
 #include "mios/strategies/twist_strategy.hpp"
 #include "msrm_cpp_utils/math/math.hpp"
 
@@ -66,7 +67,11 @@ bool SkillParametersTaxInsertion::from_json(const nlohmann::json &parameters){
             spdlog::error("Missing parameter: p2.search_f");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p2"],"f_push",p2.f_push)){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"search_phi",p2.search_phi)){
+            spdlog::error("Missing parameter: p2.search_phi");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"f_push",p2.f_push)){
             spdlog::error("Missing parameter: p2.f_push");
             return false;
         }
@@ -112,6 +117,7 @@ std::map<std::string, std::set<std::string> > SkillParametersTaxInsertion::get_p
 TaxInsertion::TaxInsertion(const std::string &name, Memory *memory,Portal* portal):Skill("TaxInsertion",{"Insertable","Container","Approach"},name,memory,portal,
 {ControlMode::mCartTorque}),m_dx_avg_last(0),m_is_stuck(false){
     m_dx_avg_mem.assign(100,0);
+    m_E_avg=0;
 }
 
 
@@ -229,15 +235,13 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_wiggle_mp(const Perc
     Eigen::Matrix<double,4,4> T_g=get_object_pose_T("Container");
     T_g.block<3,1>(0,3)=p.proprioception.T_T_EE.block<3,1>(0,3);
     orientation->set_goal(T_g,skill_params->p2.dX_d,skill_params->p2.ddX_d);
-    mp->create_strategy<FFWiggleStrategy>("wiggle_x",1);
-    mp->get_strategy<FFWiggleStrategy>("wiggle_x")->set_coefficients(Eigen::Matrix<double,6,1>::Zero(),skill_params->p2.search_a,
-                                                                   Eigen::Matrix<double,6,1>::Zero(),skill_params->p2.search_f,
-                                                                   Eigen::Matrix<double,6,1>::Zero(),Eigen::Matrix<double,6,1>::Zero());
+    mp->create_strategy<FFWrenchLissajousStrategy>("wiggle_x",1);
+    mp->get_strategy<FFWrenchLissajousStrategy>("wiggle_x")->set_coefficients(skill_params->p2.search_a,skill_params->p2.search_f,skill_params->p2.search_phi);
 
     mp->create_strategy<FFStrategy>("push",1);
-    Eigen::Matrix<double,6,1> f_push;
-    f_push<<0,0,skill_params->p2.f_push,0,0,0;
-    mp->get_strategy<FFStrategy>("push")->set_TF_F_ff(f_push,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+//    Eigen::Matrix<double,6,1> f_push;
+//    f_push<<0,0,skill_params->p2.f_push,0,0,0;
+    mp->get_strategy<FFStrategy>("push")->set_TF_F_ff(skill_params->p2.f_push,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
     Eigen::Matrix<double,6,1> K_x=skill_params->p2.K_x;
     K_x(2)=0;
     Eigen::Matrix<double,6,1> xi_x=m_memory->read_parameters()->control.cart_imp.xi_x;
@@ -273,7 +277,8 @@ bool TaxInsertion::check_local_err_conditions(const Percept &p){
 }
 
 double TaxInsertion::get_goal_heuristic([[maybe_unused]] const Percept &p){
-    return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm();
+    m_E_avg+=(p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm()*0.001;
+    return m_E_avg/(std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()/1000.0);
 }
 
 bool TaxInsertion::is_stuck(const Percept &p){
