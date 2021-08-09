@@ -245,6 +245,9 @@ franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
     }
 
     Actuator* cmd=m_skill_engine.get_next_command(m_percept);
+    if(!cmd->is_valid()){
+        exception=true;
+    }
     if(exception){
         cmd->stop();
     }
