@@ -961,6 +961,10 @@ Parameters::Parameters():control(ControlParameters()),system(SystemParameters())
 
 }
 
+void Parameters::clear_skill_parameters(){
+    skill=std::make_unique<SkillParametersNullSkill>();
+}
+
 LiveContext::LiveContext(Object* grasped_object_in):grasped_object(grasped_object_in){
 
 }

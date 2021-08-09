@@ -196,6 +196,8 @@ void TaskEngine::life_cycle(){
             spdlog::debug("TaskLifeCycle: termination, task_uuid: "+m_active_task->get_uuid());
             m_active_task->write_result();
             m_memory->store_task_data(m_active_task->get_uuid(),m_active_task->get_id(),m_active_task->get_context(),m_active_task->get_result());
+            m_memory->clear_reserved_skills();
+            m_memory->clear_skill_parameters();
             m_task_life_cycle=TaskLifeCycle::Switch;
         }
         if(m_task_life_cycle==TaskLifeCycle::Switch){
