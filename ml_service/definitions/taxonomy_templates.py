@@ -40,9 +40,9 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
         "p2_K_phi": (0, 200),
         "p2_K_chi": (0, 200),
         "p2_K_psi": (0, 200),
-        "p2_f_push_x": (-30, 30),
-        "p2_f_push_y": (-30, 30),
-        "p2_f_push_z": (0, 30)
+        "p2_f_push_x": (-10, 10),
+        "p2_f_push_y": (-10, 10),
+        "p2_f_push_z": (0, 15)
     }
     context_mapping = {
         "p0_offset_x": ["skills.insertion.skill.p0.DeltaX-1"],
