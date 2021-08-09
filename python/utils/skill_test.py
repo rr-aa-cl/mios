@@ -703,12 +703,12 @@ def test_draw(robot="collective-panda-008.local"):
 
 
 def test_crank(robot="collective-panda-008.local"):
-    call_method(robot, 12000, "set_grasped_object", {"object": "test_crank_crank"})
+    call_method(robot, 12000, "set_grasped_object", {"object": "paternoster_crank_handle"})
     crank_context = {
         "skill": {
             "objects": {
-                "Crank": "test_crank_crank",
-                "Center": "test_crank_center"
+                "Crank": "paternoster_crank_handle",
+                "Center": "paternoster_crank_center"
             },
             "crank_speed": [0.01, 0.5],
             "crank_acc": [0.5, 1],
@@ -730,5 +730,46 @@ def test_crank(robot="collective-panda-008.local"):
     }
     t = Task(robot)
     t.add_skill("crank", "Crank", crank_context)
+    t.start()
+    result = t.wait()
+
+
+def move_to_pose(robot, pose):
+    move_context = {
+        "skill": {
+            "objects": {
+                "goal_pose": pose
+            },
+            "speed": 0.5,
+            "acc": 1.0
+        },
+        "control": {
+            "control_mode": 3,
+        }
+    }
+    t = Task(robot)
+    t.add_skill("move", "MoveToPoseJoint", move_context)
+    t.start()
+    result = t.wait()
+
+
+def move_to_pose_2(robot, pose):
+    move_context = {
+        "skill": {
+            "objects": {
+                "GoalPose": pose
+            },
+            "speed": [0.1, 0.5],
+            "acc": [0.5, 1.0]
+        },
+        "control": {
+            "control_mode": 2,
+            "cart_imp": {
+                "K_x": [2000, 2000, 2000, 200, 200, 200]
+            }
+        }
+    }
+    t = Task(robot)
+    t.add_skill("move", "TaxMove", move_context)
     t.start()
     result = t.wait()
