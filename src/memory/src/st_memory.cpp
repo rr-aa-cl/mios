@@ -216,6 +216,7 @@ void STMemory::clear_reserved_skills(){
 }
 
 void STMemory::clear_skill_parameters(){
+    spdlog::trace("STMemory::clear_skill_parameters");
     m_parameters.clear_skill_parameters();
 }
 
