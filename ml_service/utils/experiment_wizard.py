@@ -22,7 +22,7 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
         if "n" + str(i) in problem_def.tags:
             problem_def.tags.remove("n" + str(i))
         problem_def.tags.append("n" + str(i+1))
-        if keep_record is True and len(client.read("ml_results", problem_def.task_type, {"meta.tags": {"$all": problem_def.tags}})) != 0:
+        if keep_record is True and len(client.read("ml_results", problem_def.skill_class, {"meta.tags": {"$all": problem_def.tags}})) != 0:
             print("Continue at n" + str(i+1))
             continue
         s = ServerProxy("http://" + learner + ":8000", allow_none=True)
@@ -34,7 +34,7 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
             knowledge["scope"].append("n" + str(i+1))
         uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge)
         s.wait_for_service()
-        # backup_result(agent, "collective-control-001.local", problem_def.task_type, uuid)
+        # backup_result(agent, "collective-control-001.local", problem_def.skill_class, uuid)
 
 
 def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, service: ServiceConfiguration, iter: int = 1,
@@ -52,7 +52,7 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
     if "n" + str(iter) in problem_def.tags:
         problem_def.tags.remove("n" + str(iter))
     problem_def.tags.append("n" + str(iter+1))
-    if keep_record is True and len(client.read("ml_results", problem_def.task_type, {"meta.tags": {"$all": problem_def.tags}})) != 0:
+    if keep_record is True and len(client.read("ml_results", problem_def.skill_class, {"meta.tags": {"$all": problem_def.tags}})) != 0:
         print("Continue at n" + str(iter+1))
         return
     s = ServerProxy("http://" + learner + ":8000", allow_none=True)
@@ -65,4 +65,4 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
         print(knowledge_tmp)
     uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge_tmp)
     s.wait_for_service()
-        # backup_result(agent, "collective-control-001.local", problem_def.task_type, uuid)
+        # backup_result(agent, "collective-control-001.local", problem_def.skill_class, uuid)

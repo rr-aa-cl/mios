@@ -46,12 +46,12 @@ class KnowledgeManager:
         if "identity" in skill_identifier:
             result_filter = {"meta.tags": skill_identifier["tags"],
                              "meta.identity": skill_identifier["identity"],
-                             "meta.task_type": skill_identifier["skill_class"]}
+                             "meta.skill_class": skill_identifier["skill_class"]}
         else:
             result_filter = {"meta.tags": skill_identifier["tags"],
-                             "meta.task_type": skill_identifier["skill_class"]}
+                             "meta.skill_class": skill_identifier["skill_class"]}
 
-        doc = db_client.read(data_db, skill_identifier["task_type"], result_filter)
+        doc = db_client.read(data_db, skill_identifier["skill_class"], result_filter)
         if doc is None or len(doc) == 0:
             logger.error("Could not find any results for filter " + str(
                 result_filter) + " on database " + data_db + " in collection " + skill_identifier["skill_class"] + ".")
@@ -76,20 +76,20 @@ class KnowledgeManager:
         knowledge["meta"]["scope"] = scope
 
         knowledge_filter = {"meta.scope": scope,
-                            "meta.task_type": knowledge["meta"]["task_type"],
+                            "meta.skill_class": knowledge["meta"]["skill_class"],
                             "meta.identity": knowledge["meta"]["identity"]}
-        available_knowledge = db_client.read(knowledge_db, knowledge["meta"]["task_type"], knowledge_filter)
+        available_knowledge = db_client.read(knowledge_db, knowledge["meta"]["skill_class"], knowledge_filter)
         if len(available_knowledge) == 0:
             logger.debug("KnowledgeManager::store_knowledge: create new knowledge entry")
-            return db_client.write(knowledge_db, knowledge["meta"]["task_type"], knowledge)
+            return db_client.write(knowledge_db, knowledge["meta"]["skill_class"], knowledge)
         elif len(available_knowledge) == 1:
             logger.debug(
                 "KnowledgeManager::store_knowledge: update knowledge entry for task identity on database " + str(
                     knowledge_db))
             id = available_knowledge[0]["_id"]
             knowledge["_id"] = id
-            db_client.remove(knowledge_db, knowledge["meta"]["task_type"], {"_id": id})
-            db_client.write(knowledge_db, knowledge["meta"]["task_type"], knowledge)
+            db_client.remove(knowledge_db, knowledge["meta"]["skill_class"], {"_id": id})
+            db_client.write(knowledge_db, knowledge["meta"]["skill_class"], knowledge)
             return available_knowledge[0]["_id"]
         else:
             logger.error(
@@ -131,7 +131,7 @@ class KnowledgeManager:
 
         task_identity = {
             "identity": doc[0]["meta"]["identity"],
-            "task_type": doc[0]["meta"]["task_type"],
+            "skill_class": doc[0]["meta"]["skill_class"],
             "tags": doc[0]["meta"]["tags"]
         }
 
@@ -203,7 +203,7 @@ class KnowledgeManager:
 
         knowledge_filter = {
             "meta.scope": scope,
-            "meta.task_type": skill_class
+            "meta.skill_class": skill_class
         }
 
         doc = self.collect_knowledge(self.DBclient, knowledge_db, skill_class, knowledge_filter)
@@ -311,7 +311,7 @@ class KnowledgeManager:
         # confidence gives no good results when predicting
         # meta["confidence"] = float(best_error / np.sqrt(len(training_data_x_normalized)))  # divided by root of n_parameters because max error is root(n_parameters)
         meta["identity"] = identity
-        meta["task_type"] = skill_class
+        meta["skill_class"] = skill_class
         meta["scope"] = scope
         meta["time"] = time.ctime()
         meta["prediction"] = True
@@ -324,12 +324,12 @@ class KnowledgeManager:
     def get_similar_knowledge(self, task_identifier: dict, scope: dict, knowledge_db: str = "local_knowledge",
                               data_db: str = "ml_results"):
         '''searches for most similar knowledge / creates knowledge from similar results'''
-        collection = task_identifier["task_type"]
+        collection = task_identifier["skill_class"]
         identity = task_identifier["identity"]
 
         # search knowledge from the same knowledge_pool (other tasks)
         knowledge_filter = {"meta.scope": scope,
-                            "meta.task_type": task_identifier["task_type"]
+                            "meta.skill_class": task_identifier["skill_class"]
                             }
 
         docs = self.DBclient.read(knowledge_db, collection, knowledge_filter)
