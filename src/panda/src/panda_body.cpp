@@ -169,10 +169,10 @@ ControlReturnType PandaBody::recover(){
         return {false,"None",""};
     }catch(const franka::NetworkException& e){
         spdlog::debug(e.what());
-        return {false,"NetworkException",""};
+        return {true,"NetworkException",""};
     }catch(const franka::CommandException& e){
         spdlog::debug(e.what());
-        return {false,"CommandException",""};
+        return {true,"CommandException",""};
     }
 }
 
