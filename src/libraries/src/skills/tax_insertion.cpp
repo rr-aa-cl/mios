@@ -278,6 +278,9 @@ bool TaxInsertion::check_local_err_conditions(const Percept &p){
 
 double TaxInsertion::get_goal_heuristic([[maybe_unused]] const Percept &p){
     m_E_avg+=(p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Container").block<3,1>(0,3)).norm()*0.001;
+    if(std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()/1000.0==0){
+        return 0;
+    }
     return m_E_avg/(std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()/1000.0);
 }
 
