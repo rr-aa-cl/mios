@@ -46,9 +46,8 @@ class TaskResult:
         for skill, r in result["skill_results"].items():
             for cost_type, cost_value in r["cost"].items():
                 self.q_metric.cost[cost_type] += r["cost"][cost_type]
-                print(self.q_metric.heuristic)
-                print(r)
-                self.q_metric.heuristic += r["heuristic"]
+                if r["heuristic"] is not None:
+                    self.q_metric.heuristic += r["heuristic"]
 
         self.q_metric.success = result["success"]
         self.errors = result["error"]
