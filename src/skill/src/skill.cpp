@@ -379,7 +379,7 @@ bool Skill::ground_objects(){
             return false;
         }
         Object* o = m_memory->get_object(m.second);
-        if(o==nullptr){
+        if(o->name=="NullObject"){
             spdlog::error("No object with name "+m.second+" exists.");
             return false;
         }

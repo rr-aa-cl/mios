@@ -26,6 +26,8 @@
 #include "mios/skills/tax_place.hpp"
 #include "mios/skills/tax_press_button.hpp"
 #include "mios/skills/tax_turn.hpp"
+#include "mios/skills/draw.hpp"
+#include "mios/skills/crank.hpp"
 
 namespace mios {
 
@@ -168,6 +170,12 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("TaxTurn"):
         execute_skill<TaxTurn,SkillParametersTaxTurn>(name);
+        break;
+    case msrm_utils::str_to_int("Draw"):
+        execute_skill<Draw,SkillParametersDraw>(name);
+        break;
+    case msrm_utils::str_to_int("Crank"):
+        execute_skill<Crank,SkillParametersCrank>(name);
         break;
     default:
         spdlog::error("Skill with type " + type + " not known to GenericTask");

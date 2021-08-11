@@ -80,8 +80,9 @@ void TaskEngine::life_cycle(){
                 invalid_mode=false;
             }
             if(!invalid_mode && mode==franka::RobotMode::kOther){
+                spdlog::trace("TaskEngine::invalid_mode_recovery");
                 if(!m_core->recover_body()){
-                    spdlog::error("Automatic recovery was required but failed, please toggle the user stop...");
+                    spdlog::error("Robot is in invalid mode. Check if the brakes are locked or please toggle the user stop...");
                     m_mtx_task_queue.lock();
                     m_task_queue.clear();
                     m_mtx_task_queue.unlock();
@@ -196,6 +197,8 @@ void TaskEngine::life_cycle(){
             spdlog::debug("TaskLifeCycle: termination, task_uuid: "+m_active_task->get_uuid());
             m_active_task->write_result();
             m_memory->store_task_data(m_active_task->get_uuid(),m_active_task->get_id(),m_active_task->get_context(),m_active_task->get_result());
+            m_memory->clear_reserved_skills();
+            m_memory->clear_skill_parameters();
             m_task_life_cycle=TaskLifeCycle::Switch;
         }
         if(m_task_life_cycle==TaskLifeCycle::Switch){

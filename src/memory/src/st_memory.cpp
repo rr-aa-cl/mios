@@ -215,6 +215,11 @@ void STMemory::clear_reserved_skills(){
     m_reserved_parameters.clear();
 }
 
+void STMemory::clear_skill_parameters(){
+    spdlog::trace("STMemory::clear_skill_parameters");
+    m_parameters.clear_skill_parameters();
+}
+
 bool STMemory::set_default_parameters(){
     spdlog::trace("STMemory::set_default_parameters");
     nlohmann::json default_parameters;

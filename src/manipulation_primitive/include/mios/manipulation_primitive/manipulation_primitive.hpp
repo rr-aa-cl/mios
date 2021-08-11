@@ -59,7 +59,7 @@ public:
     }
     template<typename T>std::shared_ptr<T> get_strategy(const std::string& name){
         if(m_strategies.find(name)==m_strategies.end()){
-            spdlog::error("Strategy with name " + name + " already exists.");
+            spdlog::error("Strategy with name " + name + " does not exist.");
             throw SkillException();
         }
         return std::static_pointer_cast<T>(m_strategies.at(name).strategy);

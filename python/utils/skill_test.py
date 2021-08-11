@@ -659,3 +659,117 @@ def iros_task_loop():
         table_np = np.asarray(table)
         table = table_np.transpose().tolist()
         write.writerows(table)
+
+
+def test_draw(robot="collective-panda-008.local"):
+    call_method(robot, 12000, "set_grasped_object", {"object": "test_draw_pen"})
+    draw_context = {
+        "skill": {
+            "objects": {
+                "Pen": "test_draw_pen",
+                "Surface": "test_draw_surface"
+            },
+            "approach_speed": [0.2, 0.5],
+            "approach_acc": [0.5, 1],
+            "contact_speed": [0.05, 0.5],
+            "contact_acc": [0.5, 1],
+            "draw_speed": [0.2, 0.5],
+            "draw_acc": [0.5, 1],
+            "file_mode": True,
+            "path_file": "painting.txt",
+            "f_draw": 10,
+            "surface_distance": 0.05,
+            "port_src": 8888
+        },
+        "control": {
+            "control_mode": 0,
+            "cart_imp": {
+                "K_x": [1500, 1500, 1500, 150, 150, 150]
+            },
+            "nullspace_control": {
+                "K_theta": [20, 20, 15, 10, 7, 5, 2],
+                "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
+                "active": True
+            }
+        },
+        "user": {
+            "F_ext_contact": [8, 5]
+        }
+    }
+    t = Task(robot)
+    t.add_skill("draw", "Draw", draw_context)
+    t.start()
+    result = t.wait()
+
+
+def test_crank(robot="collective-panda-008.local"):
+    call_method(robot, 12000, "set_grasped_object", {"object": "paternoster_crank_handle"})
+    crank_context = {
+        "skill": {
+            "objects": {
+                "Crank": "paternoster_crank_handle",
+                "Center": "paternoster_crank_center"
+            },
+            "crank_speed": [0.01, 0.5],
+            "crank_acc": [0.5, 1],
+            "radius": 0.1,
+            "n_turns": 2,
+            "clockwise": False
+        },
+        "control": {
+            "control_mode": 0,
+            "cart_imp": {
+                "K_x": [1500, 1500, 1500, 150, 150, 150]
+            },
+            "nullspace_control": {
+                "K_theta": [20, 20, 15, 10, 7, 5, 2],
+                "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
+                "active": True
+            }
+        }
+    }
+    t = Task(robot)
+    t.add_skill("crank", "Crank", crank_context)
+    t.start()
+    result = t.wait()
+
+
+def move_to_pose(robot, pose):
+    move_context = {
+        "skill": {
+            "objects": {
+                "goal_pose": pose
+            },
+            "speed": 0.5,
+            "acc": 1.0
+        },
+        "control": {
+            "control_mode": 3,
+        }
+    }
+    t = Task(robot)
+    t.add_skill("move", "MoveToPoseJoint", move_context)
+    t.start()
+    result = t.wait()
+
+
+def move_to_pose_2(robot, pose):
+    move_context = {
+        "skill": {
+            "objects": {
+                "GoalPose": pose
+            },
+            "speed": [0.1, 0.5],
+            "acc": [0.5, 1.0]
+        },
+        "control": {
+            "control_mode": 2,
+            "cart_imp": {
+                "K_x": [2000, 2000, 2000, 200, 200, 200]
+            }
+        }
+    }
+    t = Task(robot)
+    t.add_skill("move", "TaxMove", move_context)
+    t.start()
+    result = t.wait()
