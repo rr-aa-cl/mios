@@ -30,7 +30,7 @@ class Result:
     def get_successes_per_trial(self):
         success = []
         for t in self.trials:
-            success.append(t["success"])
+            success.append(t["q_metric"]["success"])
         return success
 
     def get_successes_per_time(self):
@@ -38,7 +38,7 @@ class Result:
         time = []
         t_0 = self.trials[0]["t_0"]
         for t in self.trials:
-            success.append(t["success"])
+            success.append(t["q_metric"]["success"])
             time.append(t["t_1"] - t_0)
         return success, time
 

@@ -173,7 +173,7 @@ def plot_data_comparison(unique_tag_single: str, unique_tag_shared: str, agents:
         learning_thresholds = benchmark_learning_thresholds
     else:
         marker = "collective_experiment"
-        skill = "insert_object"
+        skill = "insertion"
         factors = experiment_factors
         learning_thresholds = experiment_learning_thresholds
 
