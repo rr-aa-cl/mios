@@ -128,8 +128,8 @@ def experiment_collective(agents: list, unique_tag: str, n_iter: int = 1):
     knowledge = {"mode": "none", "kb_location": agents[0], "kb_tags": [tag]}
     threads = []
     pd = insert_generic()
-    delete_local_results(agents, "ml_results", pd.task_type, [tag])
-    delete_local_results([database], "collective_data", pd.task_type, [tag, unique_tag])
+    delete_local_results(agents, "ml_results", pd.skill_class, [tag])
+    delete_local_results([database], "collective_data", pd.skill_class, [tag, unique_tag])
     s = ServerProxy("http://" + agents[0] + ":8001", allow_none=True)
     for i in range(n_iter):
         s.clear_memory()
@@ -146,7 +146,7 @@ def experiment_collective(agents: list, unique_tag: str, n_iter: int = 1):
             t.join()
 
     for a in agents:
-        backup_results(a, database, pd.task_type, [tag, unique_tag], "collective_data")
+        backup_results(a, database, pd.skill_class, [tag, unique_tag], "collective_data")
 
 
 def plot_success():
