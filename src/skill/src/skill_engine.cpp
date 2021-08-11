@@ -31,6 +31,10 @@ bool SkillEngine::load_skill(std::shared_ptr<Skill> skill){
     if(!m_active_skill->ground_objects()){
         return false;
     }
+    spdlog::info("Modifying objects...");
+    if(!m_active_skill->modify_objects()){
+        return false;
+    }
     spdlog::info("Refreshing percept...");
     if(!m_core->refresh_percept({})){
         return false;
@@ -55,6 +59,9 @@ bool SkillEngine::blend_skill_stage_1(){
     ++m_it_skill_queue;
     m_memory->apply_reserved_skill_context(m_active_skill->get_id());
     if(!m_active_skill->ground_objects()){
+        return false;
+    }
+    if(!m_active_skill->modify_objects()){
         return false;
     }
     if(m_active_skill->get_valid_control_modes()->find(m_memory->read_parameters()->control.control_mode)==m_active_skill->get_valid_control_modes()->end()){
@@ -105,6 +112,9 @@ ControlReturnType SkillEngine::execute_skill_queue(){
     ControlReturnType result(false,"None","");
     m_memory->apply_reserved_skill_context(m_active_skill->get_id());
     if(!m_active_skill->ground_objects()){
+        return result;
+    }
+    if(!m_active_skill->modify_objects()){
         return result;
     }
     m_memory->get_parameters()->frames.O_R_T=m_active_skill->get_O_R_T_0(*m_core->get_percept());

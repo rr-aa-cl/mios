@@ -812,6 +812,9 @@ bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
     if(p.find("objects")!=p.end()){
         read_skill_objects(p["objects"]);
     }
+    if(p.find("objects_modifier")!=p.end()){
+        read_skill_objects_modifier(p["objects_modifier"]);
+    }
     std::string level_pre;
     if(!msrm_utils::read_json_param(p,"condition_level_pre",level_pre)){
         spdlog::error("Could not read condition_level_pre.");
@@ -884,6 +887,13 @@ void SkillParameters::read_skill_objects(const nlohmann::json &p){
     for(const auto& o : p.items()){
         spdlog::debug("SkillParameters:read_skill_objects: o.key: " + o.key() + ", o.value: "+o.value().dump());
         objects.insert(std::make_pair(o.key(),o.value()));
+    }
+}
+
+void SkillParameters::read_skill_objects_modifier(const nlohmann::json &p){
+    for(const auto& o : p.items()){
+        spdlog::debug("SkillParameters:read_skill_objects_modifier: o.key: " + o.key() + ", o.value: "+o.value().dump());
+        objects_modifier.insert(std::make_pair(o.key(),o.value()));
     }
 }
 

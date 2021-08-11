@@ -124,6 +124,7 @@ public:
      */
 
     bool ground_objects();
+    bool modify_objects();
 
     /**
      * Returns a const reference to the indicated skill object.

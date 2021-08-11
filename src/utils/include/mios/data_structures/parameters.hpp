@@ -225,6 +225,7 @@ public:
      */
     bool read_global_skill_parameters(const nlohmann::json& p);
     void read_skill_objects(const nlohmann::json& p);
+    void read_skill_objects_modifier(const nlohmann::json& p);
     static nlohmann::json get_default_values();
     virtual bool from_json(const nlohmann::json& parameters) = 0;
     virtual std::map<std::string,std::set<std::string> > get_parameter_list() = 0;
@@ -234,6 +235,7 @@ public:
          * Mapping of skill objects to objects in the knowledge base.
          */
     std::unordered_map<std::string,std::string> objects;
+    std::unordered_map<std::string,nlohmann::json> objects_modifier;
 
     /**
          * Maximum time for skill execution. After exceeding this time the skill is terminated unsuccessful. A value of 0 allows for infinite execution time.

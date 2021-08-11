@@ -388,6 +388,33 @@ bool Skill::ground_objects(){
     return true;
 }
 
+bool Skill::modify_objects(){
+    spdlog::trace("Skill::ground_objects");
+    for(const auto& o : m_objects){
+        if(m_memory->get_parameters()->skill->objects_modifier.find(o)==m_memory->get_parameters()->skill->objects_modifier.end()){
+            continue;
+        }else{
+            nlohmann::json modifier = m_memory->get_parameters()->skill->objects_modifier[o];
+            if(modifier.find("O_T_OB")!=modifier.end() && modifier.find("T_T_OB")!=modifier.end()){
+                spdlog::error("Cannot modify O_T_OB and T_T_OB for object " + o + " for skill " + m_id + " at the same time.");
+                return false;
+            }
+            if(modifier.find("O_T_OB")!=modifier.end()){
+                Eigen::Matrix<double,4,4> O_T_OB_mod;
+                msrm_utils::read_json_param<double,4,4>(modifier["O_T_OB"],O_T_OB_mod);
+                update_object(o)->O_T_OB.block<3,1>(0,3)+=O_T_OB_mod.block<3,1>(0,3);
+                update_object(o)->O_T_OB.block<3,3>(0,0)=O_T_OB_mod.block<3,3>(0,0)*update_object(o)->O_T_OB.block<3,3>(0,0);
+            }
+            if(modifier.find("T_T_OB")!=modifier.end()){
+                Eigen::Matrix<double,4,4> T_T_OB_mod;
+                msrm_utils::read_json_param<double,4,4>(modifier["T_T_OB"],T_T_OB_mod);
+                update_object(o)->O_T_OB.block<3,1>(0,3)+=(m_memory->get_parameters()->frames.O_R_T*T_T_OB_mod.block<3,1>(0,3));
+                update_object(o)->O_T_OB.block<3,3>(0,0)=msrm_utils::rotate_matrix(T_T_OB_mod,m_memory->get_parameters()->frames.O_R_T).block<3,3>(0,0)*update_object(o)->O_T_OB.block<3,3>(0,0);
+            }
+        }
+    }
+}
+
 void Skill::auxiliaries([[maybe_unused]] const Percept &p){
 
 }
