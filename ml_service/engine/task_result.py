@@ -12,7 +12,7 @@ class QMetric:
         self.final_cost = None
         self.success = None
         self.cost = dict()
-        self.heuristic = dict()
+        self.heuristic = None
         self.optimal = False
 
     def to_dict(self) -> dict:
@@ -28,9 +28,29 @@ class QMetric:
 
 class TaskResult:
     def __init__(self):
-
         self.errors = []
         self.q_metric = QMetric()
+        self.n_variations = 1
+        self.var_failures = 0
+
+    def add_variation(self, q_metric: QMetric):
+        self.n_variations += 1
+        if q_metric.success is False and self.q_metric.success is True:
+            self.q_metric.final_cost = q_metric.final_cost
+        elif q_metric.success is True and self.q_metric.success is False:
+            pass
+        else:
+            self.q_metric.final_cost = (self.q_metric.final_cost * self.n_variations + q_metric.final_cost) / self.n_variations
+
+        if q_metric.success is False:
+            self.var_failures += 1
+            self.q_metric.success = False
+
+        self.q_metric.heuristic = (self.q_metric.heuristic * self.n_variations * self.var_failures + q_metric.heuristic) / (self.n_variations * self.var_failures)
+        for c in self.q_metric.cost:
+            self.q_metric.cost[c] = (self.q_metric.cost[c] * self.n_variations + q_metric.cost[c]) / self.n_variations
+
+
 
     def calculate(self, result: dict) -> bool:
         if "success" not in result:
@@ -50,6 +70,8 @@ class TaskResult:
                     self.q_metric.heuristic += r["heuristic"]
 
         self.q_metric.success = result["success"]
+        if self.q_metric.success is False:
+            self.var_failures = 1
         self.errors = result["error"]
 
         return True

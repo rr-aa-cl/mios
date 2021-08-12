@@ -244,29 +244,35 @@ class Engine:
                 return False
 
             trial.t_0 = time.time()
-            result, trial.task_result = self._wait_for_task(agent, task_uuid)
-            if result is False:
-                logger.error("Result was False after wait_for_task")
-                return False
-            if "TaskError" in trial.task_result.errors:
-                logger.error("Received an task error, service will terminate.")
-                self.stop()
-                return False
-            if "RealTimeError" in trial.task_result.errors:
-                logger.warning("Received a realtime error, trial will be repeated.")
-                time.sleep(1)
-                continue
-            if "UserStopped" in trial.task_result.errors:
-                logger.warning("Received a user stop error, trial will be repeated.")
-                time.sleep(1)
-                continue
+            for i in range(self.problem_definition.n_variations):
+                print("Running variation " + str(i))
+                result, variation_result = self._wait_for_task(agent, task_uuid)
+                if result is False:
+                    logger.error("Result was False after wait_for_task")
+                    return False
+                if "TaskError" in trial.task_result.errors:
+                    logger.error("Received an task error, service will terminate.")
+                    self.stop()
+                    return False
+                if "RealTimeError" in trial.task_result.errors:
+                    logger.warning("Received a realtime error, trial will be repeated.")
+                    time.sleep(1)
+                    continue
+                if "UserStopped" in trial.task_result.errors:
+                    logger.warning("Received a user stop error, trial will be repeated.")
+                    time.sleep(1)
+                    continue
+
+                if i==0:
+                    trial.task_result.q_metric = self.problem_definition.calculate_cost(variation_result)
+                else:
+                    trial.task_result.add_variation(self.problem_definition.calculate_cost(variation_result))
 
             trial.t_1 = time.time()
             trial.t_delta = trial.t_1 - trial.t_0
             trial.trial_number = self.cnt_trial
             self.cnt_trial += 1
             logger.debug("FINISHED trial " + str(self.cnt_trial) + " with uuid " + trial.trial_uuid)
-            trial.task_result.q_metric = self.problem_definition.calculate_cost(trial.task_result)
             logger.debug("Cost: " + str(trial.task_result.q_metric.final_cost))
 
             theta = np.zeros((1,(len(self.problem_definition.domain.limits))))

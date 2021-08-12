@@ -227,10 +227,24 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
             }
         }
     }
+
+    object_modifier = {
+        "insertion": {
+            "Approach": {
+                "T_T_OB": {
+                    "x": (-0.005, 0.005),
+                    "y": (-0.005, 0.005)
+                }
+            }
+        }
+    }
+
     setup_instructions.append({"method": "start_task", "parameters": setup_context})
     reset_instructions.append({"method": "start_task", "parameters": reset_context})
     pd = ProblemDefinition("insertion", insertable, domain, default_skill_context, setup_instructions, [], reset_instructions,
-                           insertion_cost(), [1], tags=["insertion", insertable])
+                           insertion_cost(), [1], tags=["insertion", insertable], object_modifier=object_modifier,
+                           n_variations=5)
+    print(pd.default_context)
     return pd
 
 
