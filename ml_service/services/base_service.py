@@ -229,7 +229,7 @@ class BaseService(metaclass=ABCMeta):
                   self.get_theta(x_real)))
 
     def wait_for_result(self, uuid: str) -> TaskResult:
-        return self.engine.wait_for_trial(uuid, 50).task_result
+        return self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations).task_result
 
     def get_theta(self, x) -> dict:
         logger.debug("BaseService.get_theta(" + str(x) + ")")

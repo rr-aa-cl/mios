@@ -359,6 +359,7 @@ class KnowledgeManager:
                 for t in trials:
                     alltrials.append(t)
             successful_trials = alltrials
+            print(optimum_weights)
             optimum_weights = list(np.mean(optimum_weights, axis=0))
         else:
             doc = doc[0]
@@ -405,7 +406,7 @@ class KnowledgeManager:
         for nr in range(len(d)):
             key = "n" + str(nr)
             if d.get(key, False):  # if trial number available
-                if (d[key]["success"] == True):  # if trial was successfull
+                if (d[key]["q_metric"]["success"] == True):  # if trial was successfull
                     successful_trials.append(d[key])
         return successful_trials
 

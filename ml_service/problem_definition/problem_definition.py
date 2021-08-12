@@ -50,7 +50,7 @@ class ProblemDefinition:
     def __init__(self, skill_class: str, skill_instance: str, domain: Domain, default_context: dict,
                  setup_instructions: list, termination_instruction: list, reset_instruction: list,
                  cost_function: CostFunction, identity: list, identity_weights: list = None, tags=None,
-                 object_modifier: dict = {}, n_variations = 0):
+                 object_modifier: dict = {}, n_variations = 1):
         if tags is None:
             tags = []
         self.domain = domain
@@ -65,6 +65,7 @@ class ProblemDefinition:
         self.cost_function = cost_function
         self.tags = tags
         self.optimum_thr = 0
+        self.n_variations = n_variations
         if identity is None:
             self.identity = [0]
         else:
@@ -77,8 +78,6 @@ class ProblemDefinition:
         if len(self.identity) != len(self.identity_weights):
             logger.debug(str(len(self.identity)) + "!=" + str(len(self.identity_weights)))
             raise CostFunctionError
-
-        self.apply_object_modifiers()
 
     def self_check(self):
         healthy = True
@@ -104,7 +103,9 @@ class ProblemDefinition:
             "optimum_thr": self.optimum_thr,
             "skill_instance": self.skill_instance,
             "identity": self.identity,
-            "identity_weights": self.identity_weights
+            "identity_weights": self.identity_weights,
+            "object_modifier": self.object_modifier,
+            "n_variations": self.n_variations
         }
         return problem_definition
 
@@ -114,7 +115,8 @@ class ProblemDefinition:
                                pd_dict["default_context"], pd_dict["setup_instructions"],
                                pd_dict["termination_instructions"], pd_dict["reset_instructions"],
                                CostFunction.from_dict(pd_dict["cost_function"]), pd_dict["identity"],
-                               pd_dict["identity_weights"], pd_dict["tags"])
+                               pd_dict["identity_weights"], pd_dict["tags"], object_modifier=pd_dict["object_modifier"],
+                               n_variations=pd_dict["n_variations"])
         pd.domain = Domain.from_dict(pd_dict["domain"])
         pd.cost_function = CostFunction.from_dict(pd_dict["cost_function"])
         return pd
@@ -145,31 +147,23 @@ class ProblemDefinition:
 
         return valid
 
-    def apply_object_modifiers(self):
-        obm = {
-            "insertion": {
-                "Approach": {
-                    "T_T_OB": {
-                        "x": (-0.01, 0.01)
-                    }
-                }
-            }
-        }
+    def apply_object_modifiers(self, context):
+        print("#################################MOD########################")
         valid_modifiers = {"O_T_OB", "T_T_OB"}
         for skill in self.object_modifier:
-            if skill not in self.default_context["skills"]:
+            if skill not in context["skills"]:
                 logger.error("Skill " + skill + " not in object modifier list.")
                 return False
             object_modifier = dict()
-            if "objects_modifier" not in self.default_context["skills"][skill]["skill"]:
-                self.default_context["skills"][skill]["skill"]["objects_modifier"] = dict()
+            if "objects_modifier" not in context["skills"][skill]["skill"]:
+                context["skills"][skill]["skill"]["objects_modifier"] = dict()
             for obj in self.object_modifier[skill]:
-                if obj not in self.default_context["skills"][skill]["skill"]["objects"]:
+                if obj not in context["skills"][skill]["skill"]["objects"]:
                     logger.error("Skill " + skill + " has no object " + obj + " to modify.")
                     return False
                 object_modifier[obj] = dict()
-                if obj not in self.default_context["skills"][skill]["skill"]["objects_modifier"]:
-                    self.default_context["skills"][skill]["skill"]["objects_modifier"][obj] = dict()
+                if obj not in context["skills"][skill]["skill"]["objects_modifier"]:
+                    context["skills"][skill]["skill"]["objects_modifier"][obj] = dict()
                 for modifier in self.object_modifier[skill][obj]:
                     if modifier not in valid_modifiers:
                         logger.error(modifier + " is not a valid object modifier.")
@@ -182,14 +176,14 @@ class ProblemDefinition:
                             x = random.uniform(self.object_modifier[skill][obj][modifier]["x"][0],
                                                self.object_modifier[skill][obj][modifier]["x"][1])
                         if "y" in self.object_modifier[skill][obj][modifier]:
-                            x = random.uniform(self.object_modifier[skill][obj][modifier]["y"][0],
+                            y = random.uniform(self.object_modifier[skill][obj][modifier]["y"][0],
                                                self.object_modifier[skill][obj][modifier]["y"][1])
                         if "z" in self.object_modifier[skill][obj][modifier]:
-                            x = random.uniform(self.object_modifier[skill][obj][modifier]["z"][0],
+                            z = random.uniform(self.object_modifier[skill][obj][modifier]["z"][0],
                                                self.object_modifier[skill][obj][modifier]["z"][1])
                         mod_value = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]
-                    self.default_context["skills"][skill]["skill"]["objects_modifier"][obj][modifier] = mod_value
-
+                    context["skills"][skill]["skill"]["objects_modifier"][obj][modifier] = mod_value
+            print(context["skills"][skill]["skill"]["objects_modifier"])
 
     def calculate_cost(self, result: TaskResult) -> QMetric:
         if len(self.cost_function.optimum_expressions) != 6:

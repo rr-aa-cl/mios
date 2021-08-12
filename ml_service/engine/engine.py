@@ -211,84 +211,97 @@ class Engine:
 
     def _worker_loop(self, agent: str, trial: Trial):
         logger.debug("Engine._worker_loop(" + agent + ", " + trial.trial_uuid + ")")
-        if trial.is_valid() is False:
-            raise ProblemDefinitionError
-
-        result = self._execute_task(agent, trial)
-        if self.keep_running is True:
-            if result is False:
-                logger.warning("Could not execute task for agent " + agent + ". Trial will be re-inserted into queue.")
-                self.queued_trials.put(trial)
-            else:
-                logger.debug("Engine::_worker_loop.task_done")
-                self.queued_trials.task_done()
-                self.completed_trials[trial.trial_uuid] = deepcopy(trial)
-                if trial.task_result.q_metric.optimal is True:
-                    logger.debug("Engine::_worker_loop.is_optimal")
-                    self.cnt_optimal += 1
-
-        self._reset_task(agent, trial)
+        self._run_trial(agent, trial)
         self.free_agents.add(agent)
         logger.debug("Free agent " + agent)
 
-    def _execute_task(self, agent: str, trial: Trial) -> bool:
+    def _run_trial(self, agent: str, trial: Trial):
+        if trial.is_valid() is False:
+            raise ProblemDefinitionError
+
+        trial.t_0 = time.time()
+        for i in range(self.problem_definition.n_variations):
+            print("Running variation " + str(i))
+            self.problem_definition.apply_object_modifiers(trial.task_context)
+            result, variation_result = self._execute_task(agent, trial)
+
+            if self.keep_running is True:
+                if result is False:
+                    logger.warning("Could not execute task for agent " + agent + ". Trial will be re-inserted into queue.")
+                    self.queued_trials.put(trial)
+                    self._reset_task(agent, trial)
+                    return
+            else:
+                break
+
+            theta = np.zeros((1, (len(self.problem_definition.domain.limits))))
+            for j in range(len(self.problem_definition.domain.limits)):
+                theta[0][j] = trial.theta[self.problem_definition.domain.vector_mapping[j]]
+
+            if i == 0:
+                trial.task_result = variation_result
+            else:
+                trial.task_result.add_variation(variation_result.q_metric)
+
+            trial.t_1 = time.time()
+            trial.t_delta = trial.t_1 - trial.t_0
+            trial.trial_number = self.cnt_trial
+
+            self.lock_data.acquire()
+            if trial.task_result.q_metric.final_cost < 1:
+                self.x = np.append(self.x, theta, axis=0)
+                self.y = np.append(self.y, trial.task_result.q_metric.final_cost)
+            self.lock_data.release()
+            self._reset_task(agent, trial)
+
+        logger.debug("Cost: " + str(trial.task_result.q_metric.final_cost))
+        logger.debug("FINISHED trial " + str(self.cnt_trial) + " with uuid " + trial.trial_uuid)
+        if trial.task_result.q_metric.optimal is True:
+            logger.debug("Engine::_worker_loop.is_optimal")
+            self.cnt_optimal += 1
+
+        trial.task_result.q_metric.heuristic = trial.task_result.q_metric.heuristic * (1 - trial.task_result.q_metric.success_rate)
+        if trial.log is True:
+            self.write_task_result(trial)
+        logger.debug("Engine::_worker_loop.trial_done")
+        self.cnt_trial += 1
+        self.queued_trials.task_done()
+        self.completed_trials[trial.trial_uuid] = deepcopy(trial)
+
+    def _execute_task(self, agent: str, trial: Trial) -> (bool, TaskResult):
         logger.debug("Engine._execute_task(" + agent + ") with trial " + trial.trial_uuid)
         # logger.debug("Engine::_execute_task.task_context: " + str(trial.task_context))
         cnt_repeat = -1
+        variation_result = None
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
             logger.debug("Engine::_execute_task.loop")
             cnt_repeat += 1
             result, task_uuid = self._start_task(agent, trial.task_context)
             if result is False:
                 logger.error("Result was False after start_task")
-                return False
+                return False, None
+            result, variation_result = self._wait_for_task(agent, task_uuid)
+            variation_result.q_metric = self.problem_definition.calculate_cost(variation_result)
+            print(variation_result.q_metric.final_cost)
+            if result is False:
+                logger.error("Result was False after wait_for_task")
+                return False, None
+            if "TaskError" in trial.task_result.errors:
+                logger.error("Received an task error, service will terminate.")
+                self.stop()
+                return False, None
+            if "RealTimeError" in trial.task_result.errors:
+                logger.warning("Received a realtime error, trial will be repeated.")
+                time.sleep(1)
+                return False, None
+            if "UserStopped" in trial.task_result.errors:
+                logger.warning("Received a user stop error, trial will be repeated.")
+                time.sleep(1)
+                return False, None
 
-            trial.t_0 = time.time()
-            for i in range(self.problem_definition.n_variations):
-                print("Running variation " + str(i))
-                result, variation_result = self._wait_for_task(agent, task_uuid)
-                if result is False:
-                    logger.error("Result was False after wait_for_task")
-                    return False
-                if "TaskError" in trial.task_result.errors:
-                    logger.error("Received an task error, service will terminate.")
-                    self.stop()
-                    return False
-                if "RealTimeError" in trial.task_result.errors:
-                    logger.warning("Received a realtime error, trial will be repeated.")
-                    time.sleep(1)
-                    continue
-                if "UserStopped" in trial.task_result.errors:
-                    logger.warning("Received a user stop error, trial will be repeated.")
-                    time.sleep(1)
-                    continue
-
-                if i==0:
-                    trial.task_result.q_metric = self.problem_definition.calculate_cost(variation_result)
-                else:
-                    trial.task_result.add_variation(self.problem_definition.calculate_cost(variation_result))
-
-            trial.t_1 = time.time()
-            trial.t_delta = trial.t_1 - trial.t_0
-            trial.trial_number = self.cnt_trial
-            self.cnt_trial += 1
-            logger.debug("FINISHED trial " + str(self.cnt_trial) + " with uuid " + trial.trial_uuid)
-            logger.debug("Cost: " + str(trial.task_result.q_metric.final_cost))
-
-            theta = np.zeros((1,(len(self.problem_definition.domain.limits))))
-            for j in range(len(self.problem_definition.domain.limits)):
-                theta[0][j] = trial.theta[self.problem_definition.domain.vector_mapping[j]]
-            self.lock_data.acquire()
-            if trial.task_result.q_metric.final_cost < 1:
-                self.x = np.append(self.x, theta, axis=0)
-                self.y = np.append(self.y, trial.task_result.q_metric.final_cost)
-            self.lock_data.release()
-
-            if trial.log is True:
-                self.write_task_result(trial)
             break
         logger.debug("Engine::_execute_task.end")
-        return cnt_repeat < self.max_trial_repeats and self.keep_running is True
+        return cnt_repeat < self.max_trial_repeats and self.keep_running is True, variation_result
 
     def _reset_task(self, agent: str, trial: Trial):
         logger.debug("Engine::_reset_task()")
@@ -305,8 +318,8 @@ class Engine:
                         time.sleep(1)
                         continue
 
-                    result, trial.task_result = self._wait_for_task(agent, task_uuid)
-                    if result is False or trial.task_result.q_metric.success is False:
+                    result, task_result = self._wait_for_task(agent, task_uuid)
+                    if result is False or task_result.q_metric.success is False:
                         logger.debug("Could not wait for reset_task")
                         logger.debug(result)
                         time.sleep(1)

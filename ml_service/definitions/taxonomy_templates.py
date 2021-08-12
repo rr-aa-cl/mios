@@ -146,7 +146,7 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
                     "control_mode": 0
                 },
                 "user": {
-                    "env_X": [0.001, 0.001, 0.001, 0.03, 0.03, 0.03]
+                    "env_X": [0.01, 0.01, 0.001, 0.03, 0.03, 0.03]
                 }
             }
         }
@@ -235,6 +235,12 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
                     "x": (-0.005, 0.005),
                     "y": (-0.005, 0.005)
                 }
+            },
+            "Container": {
+                "T_T_OB": {
+                    "x": (-0.005, 0.005),
+                    "y": (-0.005, 0.005)
+                }
             }
         }
     }
@@ -243,8 +249,7 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
     reset_instructions.append({"method": "start_task", "parameters": reset_context})
     pd = ProblemDefinition("insertion", insertable, domain, default_skill_context, setup_instructions, [], reset_instructions,
                            insertion_cost(), [1], tags=["insertion", insertable], object_modifier=object_modifier,
-                           n_variations=5)
-    print(pd.default_context)
+                           n_variations=3)
     return pd
 
 

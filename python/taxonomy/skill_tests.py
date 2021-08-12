@@ -13,7 +13,25 @@ class InsertionTest(BaseTest):
         reset_default_contexts["extraction"] = json.load(f)
         f = open(self.path_to_default_context + "move_joint.json")
         reset_default_contexts["move_joint"] = json.load(f)
-        self.initialize(default_context, reset_default_contexts, record_performance)
+
+        object_modifier = {
+            "insertion": {
+                "Approach": {
+                    "T_T_OB": {
+                        "x": (-0.005, 0.005),
+                        "y": (-0.005, 0.005)
+                    }
+                },
+                "Container": {
+                    "T_T_OB": {
+                        "x": (-0.005, 0.005),
+                        "y": (-0.005, 0.005)
+                    }
+                }
+            }
+        }
+
+        self.initialize(default_context, reset_default_contexts, object_modifier, record_performance)
 
     def run(self, args: dict, result_uuid: str = None, result_trial: int = None):
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Insertable"]})
@@ -69,7 +87,7 @@ class ExtractionTest(BaseTest):
         reset_default_contexts["extraction"] = json.load(f)
         f = open(self.path_to_default_context + "move_joint.json")
         reset_default_contexts["move_joint"] = json.load(f)
-        self.initialize(default_context, reset_default_contexts, record_performance)
+        self.initialize(default_context, reset_default_contexts, record_performance=record_performance)
 
     def run(self, args: dict, result_uuid: str = None, result_trial: int = None):
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Extractable"]})

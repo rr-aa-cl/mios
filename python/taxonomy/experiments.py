@@ -8,7 +8,7 @@ def insertion_test_cylinder_30():
                      {"Insertable": "cylinder_30", "Container": "cylinder_30_hole", "Approach": "cylinder_30_approach"},
                      {"Extractable": "cylinder_30", "Container": "cylinder_30_hole",
                       "ExtractTo": "cylinder_30_approach", "GoalPose": "cylinder_30_approach"}, 10,
-                     "0f3ed537-2a69-401c-8476-06b0c3993b0a", 89)
+                     "114a59f4-1327-4e4d-98da-2bcc214ff926", 75)
 
 
 def insertion_test_cylinder_50():

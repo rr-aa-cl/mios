@@ -233,7 +233,7 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_wiggle_mp(const Perc
     mp->create_strategy<MoveToPoseStrategy>("orientation",1);
     std::shared_ptr<MoveToPoseStrategy> orientation = mp->get_strategy<MoveToPoseStrategy>("orientation");
     Eigen::Matrix<double,4,4> T_g=get_object_pose_T("Container");
-    T_g.block<3,1>(0,3)=p.proprioception.T_T_EE.block<3,1>(0,3);
+//    T_g.block<3,1>(0,3)=p.proprioception.T_T_EE.block<3,1>(0,3);
     orientation->set_goal(T_g,skill_params->p2.dX_d,skill_params->p2.ddX_d);
     mp->create_strategy<FFWrenchLissajousStrategy>("wiggle_x",1);
     mp->get_strategy<FFWrenchLissajousStrategy>("wiggle_x")->set_coefficients(skill_params->p2.search_a,skill_params->p2.search_f,skill_params->p2.search_phi);
