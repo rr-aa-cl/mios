@@ -5,6 +5,7 @@ from engine.task_result import cost_types
 from utils.exception import CostFunctionError
 import logging
 import numpy as np
+import random
 
 logger = logging.getLogger("ml_service")
 
@@ -48,10 +49,12 @@ class CostFunction:
 class ProblemDefinition:
     def __init__(self, skill_class: str, skill_instance: str, domain: Domain, default_context: dict,
                  setup_instructions: list, termination_instruction: list, reset_instruction: list,
-                 cost_function: CostFunction, identity: list, identity_weights: list = None, tags=None):
+                 cost_function: CostFunction, identity: list, identity_weights: list = None, tags=None,
+                 object_modifier: dict = {}, n_variations = 0):
         if tags is None:
             tags = []
         self.domain = domain
+        self.object_modifier = object_modifier
         self.default_context = default_context
         self.setup_instructions = setup_instructions
         self.termination_instructions = termination_instruction
@@ -74,6 +77,8 @@ class ProblemDefinition:
         if len(self.identity) != len(self.identity_weights):
             logger.debug(str(len(self.identity)) + "!=" + str(len(self.identity_weights)))
             raise CostFunctionError
+
+        self.apply_object_modifiers()
 
     def self_check(self):
         healthy = True
@@ -139,6 +144,52 @@ class ProblemDefinition:
                 valid = False
 
         return valid
+
+    def apply_object_modifiers(self):
+        obm = {
+            "insertion": {
+                "Approach": {
+                    "T_T_OB": {
+                        "x": (-0.01, 0.01)
+                    }
+                }
+            }
+        }
+        valid_modifiers = {"O_T_OB", "T_T_OB"}
+        for skill in self.object_modifier:
+            if skill not in self.default_context["skills"]:
+                logger.error("Skill " + skill + " not in object modifier list.")
+                return False
+            object_modifier = dict()
+            if "objects_modifier" not in self.default_context["skills"][skill]["skill"]:
+                self.default_context["skills"][skill]["skill"]["objects_modifier"] = dict()
+            for obj in self.object_modifier[skill]:
+                if obj not in self.default_context["skills"][skill]["skill"]["objects"]:
+                    logger.error("Skill " + skill + " has no object " + obj + " to modify.")
+                    return False
+                object_modifier[obj] = dict()
+                if obj not in self.default_context["skills"][skill]["skill"]["objects_modifier"]:
+                    self.default_context["skills"][skill]["skill"]["objects_modifier"][obj] = dict()
+                for modifier in self.object_modifier[skill][obj]:
+                    if modifier not in valid_modifiers:
+                        logger.error(modifier + " is not a valid object modifier.")
+                        return False
+                    if modifier == "T_T_OB" or modifier == "O_T_OB":
+                        x = 0
+                        y = 0
+                        z = 0
+                        if "x" in self.object_modifier[skill][obj][modifier]:
+                            x = random.uniform(self.object_modifier[skill][obj][modifier]["x"][0],
+                                               self.object_modifier[skill][obj][modifier]["x"][1])
+                        if "y" in self.object_modifier[skill][obj][modifier]:
+                            x = random.uniform(self.object_modifier[skill][obj][modifier]["y"][0],
+                                               self.object_modifier[skill][obj][modifier]["y"][1])
+                        if "z" in self.object_modifier[skill][obj][modifier]:
+                            x = random.uniform(self.object_modifier[skill][obj][modifier]["z"][0],
+                                               self.object_modifier[skill][obj][modifier]["z"][1])
+                        mod_value = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]
+                    self.default_context["skills"][skill]["skill"]["objects_modifier"][obj][modifier] = mod_value
+
 
     def calculate_cost(self, result: TaskResult) -> QMetric:
         if len(self.cost_function.optimum_expressions) != 6:
