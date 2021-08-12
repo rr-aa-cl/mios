@@ -813,6 +813,7 @@ bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
         read_skill_objects(p["objects"]);
     }
     if(p.find("objects_modifier")!=p.end()){
+        std::cout<<p["objects_modifier"]<<std::endl;
         read_skill_objects_modifier(p["objects_modifier"]);
     }
     std::string level_pre;
@@ -906,6 +907,7 @@ nlohmann::json SkillParameters::get_default_values(){
     default_values["data_length"]=0;
     default_values["log_name"]="";
     default_values["objects"]={};
+    default_values["objects_modifier"]={};
     default_values["condition_level_pre"]="Model";
     default_values["condition_level_success"]="Model";
     default_values["condition_level_error"]="Model";
@@ -922,6 +924,7 @@ nlohmann::json SkillParameters::to_json() const{
     json_object["data_length"]=data_length;
     json_object["log_name"]=log_name;
     json_object["objects"]={};
+    json_object["objects_modifier"]={};
 
     if(condition_level_pre==SkillConditionLevel::sclModel){
         json_object["condition_level_pre"]="Model";

@@ -27,15 +27,12 @@ bool SkillEngine::load_skill(std::shared_ptr<Skill> skill){
         return false;
     }
 
-    spdlog::info("Grounding objects...");
     if(!m_active_skill->ground_objects()){
         return false;
     }
-    spdlog::info("Modifying objects...");
     if(!m_active_skill->modify_objects()){
         return false;
     }
-    spdlog::info("Refreshing percept...");
     if(!m_core->refresh_percept({})){
         return false;
     }

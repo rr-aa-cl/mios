@@ -418,8 +418,7 @@ std::string Task::get_uuid() const{
 bool Task::check_context(const nlohmann::json &default_context, const nlohmann::json &user_context) const{
 
     std::unordered_set<std::string> top_level={"name","parameters","skills","_id","subtasks"};
-    std::unordered_set<std::string> skill_level={"skill","control","limits","system","safety","frames","user","objects","type"};
-    std::unordered_set<std::string> common_skill_parameters={"time_max","parallels_frequency","log_data","data_length"};
+    std::unordered_set<std::string> skill_level={"skill","control","limits","system","safety","frames","user","type"};
 
     try{
         for(const auto& el : default_context.items()){
@@ -455,8 +454,8 @@ bool Task::check_context(const nlohmann::json &default_context, const nlohmann::
                     return false;
                 }
                 std::string skill_type=default_context["skills"][skill]["type"];
-                nlohmann::json skill_context;
-                if(!m_memory->load_default_skill_context(skill_type,skill_context)){
+                nlohmann::json default_skill_context;
+                if(!m_memory->load_default_skill_context(skill_type,default_skill_context)){
                     spdlog::error("Could not load a valid skill context for "+skill+" of type " + skill_type +".");
                     return false;
                 }
@@ -470,7 +469,7 @@ bool Task::check_context(const nlohmann::json &default_context, const nlohmann::
                         }
                         if(user_context["skills"][skill].find("skill")!=user_context["skills"][skill].end()){
                             for(const auto& el_p : user_context["skills"][skill]["skill"].items()){
-                                if(skill_context.find(el_p.key())==skill_context.end() && common_skill_parameters.find(el_p.key())==common_skill_parameters.end()){
+                                if(default_skill_context.find(el_p.key())==default_skill_context.end()){
                                     spdlog::error("Syntax error in user task context for task "+m_id+". Symbol with value "+el_p.key()+" is not valid in skill context for skill "+skill+" of type "+skill_type+".");
                                     return false;
                                 }
@@ -493,7 +492,7 @@ bool Task::check_context(const nlohmann::json &default_context, const nlohmann::
                 }
                 if(default_context["skills"][skill].find("skill")==default_context["skills"][skill].end()){
                     for(const auto& el_p : default_context["skills"][skill]["skill"].items()){
-                        if(skill_context.find(el_p.key())==skill_context.end() && common_skill_parameters.find(el_p.key())==common_skill_parameters.end()){
+                        if(default_skill_context.find(el_p.key())==default_skill_context.end()){
                             spdlog::error("Syntax error in task context for task "+m_id+". Symbol with value "+el_p.key()+" is not valid in skill context for skill "+skill+" of type "+skill_type+".");
                             return false;
                         }

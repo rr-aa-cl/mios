@@ -50,8 +50,7 @@ Eigen::Matrix<double,4,4> Skill::get_object_pose_O(const std::string &object_nam
         spdlog::error("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
         throw SkillException();
     }
-    const Object* object=m_grounded_objects.at(object_name);
-    return object->O_T_OB;
+    return m_grounded_objects.at(object_name).O_T_OB;
 }
 
 Eigen::Matrix<double,4,4> Skill::get_object_pose_T(const std::string &object_name) const{
@@ -59,8 +58,7 @@ Eigen::Matrix<double,4,4> Skill::get_object_pose_T(const std::string &object_nam
         spdlog::error("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
         throw SkillException();
     }
-    const Object* object=m_grounded_objects.at(object_name);
-    return msrm_utils::rotate_matrix(object->O_T_OB,m_memory->read_parameters()->frames.O_R_T.transpose());
+    return msrm_utils::rotate_matrix(m_grounded_objects.at(object_name).O_T_OB,m_memory->read_parameters()->frames.O_R_T.transpose());
 }
 
 Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_T(const std::string &object_name) const{
@@ -68,8 +66,7 @@ Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_T(const std::string &obje
         spdlog::error("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
         throw SkillException();
     }
-    const Object* object=m_grounded_objects.at(object_name);
-    return msrm_utils::rotate_matrix(object->O_T_OB*object->OB_T_gp,m_memory->read_parameters()->frames.O_R_T.transpose());
+    return msrm_utils::rotate_matrix(m_grounded_objects.at(object_name).O_T_OB*m_grounded_objects.at(object_name).OB_T_gp,m_memory->read_parameters()->frames.O_R_T.transpose());
 }
 
 Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_O(const std::string &object_name) const{
@@ -77,8 +74,7 @@ Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_O(const std::string &obje
         spdlog::error("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
         throw SkillException();
     }
-    const Object* object=m_grounded_objects.at(object_name);
-    return object->O_T_OB*object->OB_T_gp;
+    return m_grounded_objects.at(object_name).O_T_OB*m_grounded_objects.at(object_name).OB_T_gp;
 }
 
 const Object* Skill::get_object(const std::string &o) const{
@@ -86,7 +82,7 @@ const Object* Skill::get_object(const std::string &o) const{
         spdlog::error("Skill "+ this->get_id() +" of type "+m_type+" has no groundables with name " + o + ".");
         throw SkillException();
     }
-    return m_grounded_objects.at(o);
+    return &m_grounded_objects.at(o);
 }
 
 Object* Skill::update_object(const std::string &o){
@@ -94,7 +90,7 @@ Object* Skill::update_object(const std::string &o){
         spdlog::error("Skill "+ this->get_id() +" of type "+m_type+" has no groundables with name " + o + ".");
         throw SkillException();
     }
-    return m_grounded_objects.at(o);
+    return &m_grounded_objects.at(o);
 }
 
 bool Skill::initialize([[maybe_unused]] const Percept &p){
@@ -383,13 +379,13 @@ bool Skill::ground_objects(){
             spdlog::error("No object with name "+m.second+" exists.");
             return false;
         }
-        m_grounded_objects.emplace(std::make_pair(m.first,o));
+        m_grounded_objects.emplace(std::make_pair(m.first,*o));
     }
     return true;
 }
 
 bool Skill::modify_objects(){
-    spdlog::trace("Skill::ground_objects");
+    spdlog::trace("Skill::modify_objects");
     for(const auto& o : m_objects){
         if(m_memory->get_parameters()->skill->objects_modifier.find(o)==m_memory->get_parameters()->skill->objects_modifier.end()){
             continue;
@@ -401,18 +397,25 @@ bool Skill::modify_objects(){
             }
             if(modifier.find("O_T_OB")!=modifier.end()){
                 Eigen::Matrix<double,4,4> O_T_OB_mod;
-                msrm_utils::read_json_param<double,4,4>(modifier["O_T_OB"],O_T_OB_mod);
+                if(!msrm_utils::read_json_param<double,4,4>(modifier["O_T_OB"],O_T_OB_mod)){
+                    spdlog::error("Could not load object modifier for O_T_OB for object " + o + ".");
+                    return false;
+                }
                 update_object(o)->O_T_OB.block<3,1>(0,3)+=O_T_OB_mod.block<3,1>(0,3);
                 update_object(o)->O_T_OB.block<3,3>(0,0)=O_T_OB_mod.block<3,3>(0,0)*update_object(o)->O_T_OB.block<3,3>(0,0);
             }
             if(modifier.find("T_T_OB")!=modifier.end()){
                 Eigen::Matrix<double,4,4> T_T_OB_mod;
-                msrm_utils::read_json_param<double,4,4>(modifier["T_T_OB"],T_T_OB_mod);
+                if(!msrm_utils::read_json_param<double,4,4>(modifier["T_T_OB"],T_T_OB_mod)){
+                    spdlog::error("Could not load object modifier for T_T_OB for object " + o + ".");
+                    return false;
+                }
                 update_object(o)->O_T_OB.block<3,1>(0,3)+=(m_memory->get_parameters()->frames.O_R_T*T_T_OB_mod.block<3,1>(0,3));
                 update_object(o)->O_T_OB.block<3,3>(0,0)=msrm_utils::rotate_matrix(T_T_OB_mod,m_memory->get_parameters()->frames.O_R_T).block<3,3>(0,0)*update_object(o)->O_T_OB.block<3,3>(0,0);
             }
         }
     }
+    return true;
 }
 
 void Skill::auxiliaries([[maybe_unused]] const Percept &p){
