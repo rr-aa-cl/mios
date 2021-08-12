@@ -230,23 +230,28 @@ def tax_test_move(robot, location):
 
 
 def tax_test_insertion(robot):
-    call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
+    call_method(robot, 12000, "set_grasped_object", {"object": "generic_insertable"})
     insertion_context = {
         "skill": {
             "objects": {
-                "Container": "iros_lock",
-                "Approach": "iros_lock_approach",
-                "Insertable": "iros_key"
+                "Container": "generic_container",
+                "Approach": "generic_container_approach",
+                "Insertable": "generic_insertable"
             },
-            "time_max": 5,
-            "approach_speed": [0.5, 1],
-            "approach_acc": [1, 4],
-            "insertion_speed": [0.5, 0.5],
-            "insertion_acc": [0.8, 1],
-            "f_max_push": 10,
-            "DeltaX": [0.0005, -0.002, 0, 0, 0, 0],
-            "search_a": [10, 10, 1, 0.3, 0.3, 0],
-            "search_f": [1, 0.75, 0.8, 0.8, 0.8, 0],
+            "objects_modifier": {
+                "Approach": {
+                    "T_T_OB": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0.05, 0, 1]
+                }
+            },
+            "time_max": 10,
+            "approach_speed": [0.1, 1],
+            "approach_acc": [0.5, 4],
+            "insertion_speed": [0.1, 0.5],
+            "insertion_acc": [0.5, 1],
+            "f_max_push": 0,
+            "DeltaX": [0, 0, 0, 0, 0, 0],
+            "search_a": [0, 0, 0, 0, 0, 0],
+            "search_f": [0, 0, 0, 0, 0, 0],
             "ROI_x": [-0.2, 0.2, -0.2, 0.2, -0.2, 0.2],
             "ROI_phi": [0, 0, 0, 0, 0, 0],
             "stuck_dx_thr": 0.05
@@ -320,25 +325,25 @@ def subscribe_to_event_server(robot):
 
 
 def tax_test_extraction(robot="collective-panda-008.local"):
-    call_method(robot, 12000, "set_grasped_object", {"object": "iros_key"})
+    call_method(robot, 12000, "set_grasped_object", {"object": "generic_insertable"})
     extraction_context = {
         "skill": {
             "objects": {
-                "Container": "iros_lock",
-                "ExtractTo": "iros_lock_approach",
-                "Extractable": "iros_key"
+                "Container": "generic_container",
+                "ExtractTo": "generic_container_approach",
+                "Extractable": "generic_insertable"
             },
             "time_max": 5,
-            "extraction_speed": [0.25, 0.15],
+            "extraction_speed": [0.05, 0.15],
             "extraction_acc": [1, 0.8],
-            "search_a": [1, 1, 1, 0.3, 0.3, 0],
-            "search_f": [0.2, 0.2, 0.2, 0.2, 0.2, 0],
+            "search_a": [5, 5, 0, 2, 2, 0],
+            "search_f": [0.5, 0.5, 0, 2, 2, 0],
             "stuck_dx_thr": 0.05
         },
         "control": {
             "control_mode": 0,
             "cart_imp": {
-                "K_x": [2000, 2000, 2000, 200, 200, 200]
+                "K_x": [500, 500, 2000, 20, 20, 20]
             }
         }
     }
