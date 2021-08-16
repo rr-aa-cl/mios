@@ -27,6 +27,9 @@ void RemoteTorqueStrategy::get_next_command(Actuator &cmd, const Percept &p){
             cmd.tau_ff(i)-=m_alpha(i)*msrm_utils::sgn(p.proprioception.dq(i))*fabs(power_in);
         }
     }
+    if(!cmd.is_valid()){
+        cmd.tau_ff.setZero();
+    }
 }
 
 void RemoteTorqueStrategy::terminate([[maybe_unused]] const Percept &p){

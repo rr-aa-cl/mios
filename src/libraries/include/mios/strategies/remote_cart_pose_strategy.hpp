@@ -30,6 +30,8 @@ private:
     std::shared_ptr<msrm_utils::UDPStreamReceiver> m_receiver;
     Portal* m_portal;
     std::string m_stream_name;
+
+    Eigen::Matrix<double,4,4> m_last_valid_O_T_EE_d;
 };
 
 }
