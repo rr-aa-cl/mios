@@ -232,15 +232,10 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
         "insertion": {
             "Approach": {
                 "T_T_OB": {
-                    "x": (-0.005, 0.005),
-                    "y": (-0.005, 0.005)
-                }
-            },
-            "Container": {
-                "T_T_OB": {
-                    "x": (-0.005, 0.005),
-                    "y": (-0.005, 0.005)
-                }
+                    "x": (-0.003, 0.003),
+                    "y": (-0.003, 0.003)
+                },
+                "linked_objects" : ["Container"]
             }
         }
     }
@@ -249,7 +244,7 @@ def insertion(insertable: str, container: str, approach: str) -> ProblemDefiniti
     reset_instructions.append({"method": "start_task", "parameters": reset_context})
     pd = ProblemDefinition("insertion", insertable, domain, default_skill_context, setup_instructions, [], reset_instructions,
                            insertion_cost(), [1], tags=["insertion", insertable], object_modifier=object_modifier,
-                           n_variations=3)
+                           n_variations=4)
     return pd
 
 

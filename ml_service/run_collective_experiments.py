@@ -25,8 +25,7 @@ experiment_learning_thresholds = [0.7/5, 0.5/5, 0.6/5, 0.7/5, 0.6/5]
 #experiment_learning_thresholds = [1, 1, 1, 1]
 database = "collective-control-001.local"
 agents_benchmark = ["collective-panda-001", "collective-panda-003"]
-agents_experiment = ["collective-panda-001", "collective-panda-003", "collective-panda-007",
-          "collective-panda-008", "collective-panda-009"]
+agents_experiment = ["collective-panda-001", "collective-panda-002", "collective-panda-007","collective-panda-009"]
 
 task_map = {
     "collective-panda-001": "cylinder_40",
@@ -40,7 +39,7 @@ task_map = {
 base_batch_size_benchmark = 15
 n_trials_benchmark = 300
 base_batch_size_experiment = 15
-n_trials_experiment = 200
+n_trials_experiment = 600
 
 
 def insert_generic() -> ProblemDefinition:

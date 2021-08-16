@@ -165,9 +165,14 @@ class ProblemDefinition:
                 if obj not in context["skills"][skill]["skill"]["objects_modifier"]:
                     context["skills"][skill]["skill"]["objects_modifier"][obj] = dict()
                 for modifier in self.object_modifier[skill][obj]:
+                    if modifier == "linked_objects":
+                        continue
                     if modifier not in valid_modifiers:
                         logger.error(modifier + " is not a valid object modifier.")
                         return False
+                    if "linked_objects" in self.object_modifier[skill][obj]:
+                        for lo in self.object_modifier[skill][obj]["linked_objects"]:
+                            context["skills"][skill]["skill"]["objects_modifier"][lo] = dict()
                     if modifier == "T_T_OB" or modifier == "O_T_OB":
                         x = 0
                         y = 0
@@ -183,6 +188,9 @@ class ProblemDefinition:
                                                self.object_modifier[skill][obj][modifier]["z"][1])
                         mod_value = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]
                     context["skills"][skill]["skill"]["objects_modifier"][obj][modifier] = mod_value
+                    if "linked_objects" in self.object_modifier[skill][obj]:
+                        for lo in self.object_modifier[skill][obj]["linked_objects"]:
+                            context["skills"][skill]["skill"]["objects_modifier"][lo][modifier] = mod_value
             print(context["skills"][skill]["skill"]["objects_modifier"])
 
     def calculate_cost(self, result: TaskResult) -> QMetric:
