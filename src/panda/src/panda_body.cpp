@@ -33,6 +33,15 @@ bool PandaBody::initialize(){
         return false;
     }
     load_gripper_configuration();
+
+    franka::RobotState state;
+    if(!get_robot_state(state)){
+        spdlog::error("Could not acquire initial state from robot.");
+        return false;
+    }
+    if(fabs(state.F_T_NE[14]-0.1034)>1e-4 && m_hand==PandaHand::PandaHandDefault){
+        spdlog::warn("MIOS is configured with the default Franka Hand as end effector, but the robots end effector configuration (see Desk) is not consistent with this. However, this may be fine if a custom configuration has been selected.");
+    }
     if(!set_robot_parameters()){
         spdlog::warn("Could not set robot parameters in current mode.");
     }
