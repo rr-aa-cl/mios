@@ -1,6 +1,7 @@
 #include "mios/strategies/remote_cart_pose_strategy.hpp"
 #include "mios/portal/portal.hpp"
-#include <msrm_cpp_utils/conversion/conversion.hpp>
+#include "msrm_cpp_utils/conversion/conversion.hpp"
+#include "msrm_cpp_utils/math/math.hpp"
 #include <functional>
 
 namespace mios {
@@ -11,13 +12,20 @@ RemoteCartPoseStrategy::RemoteCartPoseStrategy():PrimitiveStrategy({CommandPatte
 
 void RemoteCartPoseStrategy::initialize(const Percept &p_0){
     m_O_T_EE_d_in[0]=msrm_utils::convert_to_array<double,4,4>(p_0.proprioception.T_T_EE);
+    m_last_valid_O_T_EE_d=p_0.proprioception.T_T_EE;
 }
 
 void RemoteCartPoseStrategy::get_next_command(Actuator &cmd, [[maybe_unused]] const Percept &p){
+
     for(unsigned i=0;i<4;i++){
         for(unsigned j=0;j<4;j++){
             cmd.TF_T_EE_d(j,i)=m_O_T_EE_d_in[0][4*i+j];
         }
+    }
+    if(!cmd.is_valid()){
+        cmd.TF_T_EE_d=m_last_valid_O_T_EE_d;
+    }else{
+        m_last_valid_O_T_EE_d=cmd.TF_T_EE_d;
     }
 }
 

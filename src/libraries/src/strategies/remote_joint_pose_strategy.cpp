@@ -11,11 +11,17 @@ RemoteJointPoseStrategy::RemoteJointPoseStrategy():PrimitiveStrategy({CommandPat
 
 void RemoteJointPoseStrategy::initialize(const Percept &p_0){
     m_q_d_in[0]=msrm_utils::convert_to_array<double,7,1>(p_0.proprioception.q);
+    m_last_valid_q_d=p_0.proprioception.q;
 }
 
 void RemoteJointPoseStrategy::get_next_command(Actuator &cmd, [[maybe_unused]] const Percept &p){
     for(unsigned i=0;i<7;i++){
         cmd.q_d(i)=m_q_d_in[0][i];
+    }
+    if(!cmd.is_valid()){
+        cmd.q_d=m_last_valid_q_d;
+    }else{
+        m_last_valid_q_d=cmd.q_d;
     }
 }
 

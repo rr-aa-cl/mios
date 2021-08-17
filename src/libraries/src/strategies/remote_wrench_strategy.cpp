@@ -29,6 +29,9 @@ void RemoteWrenchStrategy::get_next_command(Actuator &cmd, const Percept &p){
     cmd.TF_F_ff(3)=0;
     cmd.TF_F_ff(4)=0;
     cmd.TF_F_ff(5)=0;
+    if(!cmd.is_valid()){
+        cmd.TF_F_ff.setZero();
+    }
 }
 
 void RemoteWrenchStrategy::terminate(const Percept &p){

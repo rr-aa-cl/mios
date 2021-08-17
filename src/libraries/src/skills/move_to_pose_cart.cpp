@@ -46,7 +46,7 @@ std::shared_ptr<ManipulationPrimitive> MoveToPoseCart::get_initial_mp(const Perc
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p_0);
     mp->create_strategy<MoveToPoseStrategy>("s_0",1);
     Eigen::Matrix<double,4,4> T_g;
-    if(this->get_object("goal_pose")->name=="NullObject"){
+    if(this->get_object("goal_pose")->name=="NoneObject"){
         T_g=skill_params->T_T_EE_g;
     }else{
         T_g=get_object("goal_pose")->O_T_OB;

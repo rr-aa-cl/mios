@@ -827,7 +827,6 @@ bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
         read_skill_objects(p["objects"]);
     }
     if(p.find("objects_modifier")!=p.end()){
-        std::cout<<p["objects_modifier"]<<std::endl;
         read_skill_objects_modifier(p["objects_modifier"]);
     }
     std::string level_pre;

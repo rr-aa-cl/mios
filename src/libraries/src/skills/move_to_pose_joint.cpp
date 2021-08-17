@@ -47,7 +47,7 @@ std::shared_ptr<ManipulationPrimitive> MoveToPoseJoint::get_initial_mp(const Per
     mp->create_strategy<MoveToJointPoseStrategy>("s_0",1);
     std::shared_ptr<MoveToJointPoseStrategy> move_s0 = mp->get_strategy<MoveToJointPoseStrategy>("s_0");
     Eigen::Matrix<double,7,1> q_g;
-    if(this->get_object("goal_pose")->name=="NullObject"){
+    if(this->get_object("goal_pose")->name=="NoneObject"){
         q_g=skill_params->q_g;
     }else{
         q_g=get_object("goal_pose")->q;

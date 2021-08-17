@@ -368,6 +368,7 @@ bool LTMemory::load_environment(std::unordered_map<std::string, Object> &environ
     spdlog::trace("LTMemory::load_environment");
     std::set<nlohmann::json> docs;
     environment.emplace(std::make_pair("NullObject",Object("NullObject")));
+    environment.emplace(std::make_pair("NoneObject",Object("NoneObject")));
     if(!m_mongodb_client.read_documents("environment",docs)){
         return false;
     }

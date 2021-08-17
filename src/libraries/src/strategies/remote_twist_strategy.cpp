@@ -19,6 +19,9 @@ void RemoteTwistStrategy::get_next_command(Actuator &cmd, const Percept &p){
     if(!m_static_frame){
         cmd.TF_dX_d<<p.controller.O_R_T.transpose()*p.proprioception.O_T_EE.block<3,3>(0,0)*cmd.TF_dX_d.block<3,1>(0,0),p.controller.O_R_T.transpose()*p.proprioception.O_T_EE.block<3,3>(0,0)*cmd.TF_dX_d.block<3,1>(3,0);
     }
+    if(!cmd.is_valid()){
+        cmd.TF_dX_d.setZero();
+    }
 }
 
 void RemoteTwistStrategy::terminate([[maybe_unused]] const Percept &p){
