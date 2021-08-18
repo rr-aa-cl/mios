@@ -7,7 +7,7 @@
 
 namespace mios {
 
-STMemory::STMemory():m_environment({{"NullObject",Object("NullObject")},{"EndEffector",Object("EndEffector")}}),m_live_context(LiveContext(&m_environment.at("NullObject"))){
+STMemory::STMemory():m_environment({{"NullObject",Object("NullObject")},{"EndEffector",Object("EndEffector")},{"NoneObject",Object("NoneObject")}}),m_live_context(LiveContext(&m_environment.at("NullObject"))){
     spdlog::trace("STMemory::STMemory");
 }
 
@@ -260,8 +260,8 @@ void STMemory::merge_live_context(){
 
 bool STMemory::update_object(const std::string &name, bool teach_width, const Percept& p){
     spdlog::trace("STMemory::update_object(string,bool,Percept)");
-    if(name=="NullObject"){
-        spdlog::error("Cannot overwrite NullObject");
+    if(name=="NullObject" || name=="NoneObject"){
+        spdlog::error("Cannot overwrite NullObject or NoneObject.");
         return false;
     }
     if(m_environment.find(name)==m_environment.end()){
@@ -280,8 +280,8 @@ bool STMemory::update_object(const std::string &name, bool teach_width, const Pe
 
 bool STMemory::update_object(const std::string &name, const nlohmann::json &description){
     spdlog::trace("STMemory::update_object(string,json)");
-    if(name=="NullObject"){
-        spdlog::error("Cannot overwrite NullObject");
+    if(name=="NullObject" || name=="NoneObject"){
+        spdlog::error("Cannot overwrite NullObject or NoneObject");
         return false;
     }
     if(m_environment.find(name)==m_environment.end()){
@@ -296,8 +296,8 @@ bool STMemory::update_object(const std::string &name, const nlohmann::json &desc
 
 bool STMemory::update_partial_object(const std::string &name, const nlohmann::json &description){
     spdlog::trace("STMemory::update_partial_object");
-    if(name=="NullObject"){
-        spdlog::error("Cannot overwrite NullObject");
+    if(name=="NullObject" || name=="NoneObject"){
+        spdlog::error("Cannot overwrite NullObject or NoneObject.");
         return false;
     }
     if(m_environment.find(name)==m_environment.end()){
