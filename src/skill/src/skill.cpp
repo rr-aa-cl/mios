@@ -563,24 +563,32 @@ double Skill::get_goal_heuristic([[maybe_unused]] const Percept &p){
 }
 
 
-bool Skill::is_in_env(const std::string &pose, const std::string &mp, const Percept &p){
-    if(get_active_mp()->get_strategy_interface(mp)==nullptr){
-        return false;
-    }
-    if(get_active_mp()->get_strategy_interface(mp)->finished()){
-        bool reached_position=true;
-        bool reached_orientation=true;
-        for(unsigned i=0;i<3;i++){
-            if(fabs(p.proprioception.T_T_EE(i,3)-get_object_pose_T(pose)(i,3))>m_memory->read_parameters()->user.env_X(i)){
-                reached_position=false;
-            }
+bool Skill::is_in_env(const std::string& pose, const Percept &p){
+    bool reached_position=true;
+    bool reached_orientation=true;
+    for(unsigned i=0;i<3;i++){
+        if(fabs(p.proprioception.T_T_EE(i,3)-get_object_pose_T(pose)(i,3))>m_memory->read_parameters()->user.env_X(i)){
+            reached_position=false;
         }
-        if(acos(((get_object_pose_T(pose).block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) > m_memory->read_parameters()->user.env_X(3)){
-            reached_orientation=false;
-        }
-        return reached_position && reached_orientation;
     }
-    return false;
+    if(acos(((get_object_pose_T(pose).block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) > m_memory->read_parameters()->user.env_X(3)){
+        reached_orientation=false;
+    }
+    return reached_position && reached_orientation;
+}
+
+bool Skill::is_in_env(const Eigen::Matrix<double,4,4>& pose, const Percept &p){
+    bool reached_position=true;
+    bool reached_orientation=true;
+    for(unsigned i=0;i<3;i++){
+        if(fabs(p.proprioception.T_T_EE(i,3)-pose(i,3))>m_memory->read_parameters()->user.env_X(i)){
+            reached_position=false;
+        }
+    }
+    if(acos(((pose.block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) > m_memory->read_parameters()->user.env_X(3)){
+        reached_orientation=false;
+    }
+    return reached_position && reached_orientation;
 }
 
 void Skill::set_ROI_center(const Eigen::Matrix<double, 3, 1> &ROI_center){

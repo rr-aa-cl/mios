@@ -62,7 +62,7 @@ bool TaxDrag::check_local_pre_conditions([[maybe_unused]] const Percept &p){
 }
 
 bool TaxDrag::check_local_suc_conditions(const Percept &p){
-    if(is_in_env("GoalPose","drag",p)){
+    if(is_in_env("GoalPose",p)){
         return true;
     }else{
         return false;

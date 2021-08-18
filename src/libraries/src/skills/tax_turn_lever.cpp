@@ -63,7 +63,7 @@ bool TaxTurnLever::check_local_pre_conditions(const Percept &p){
 }
 
 bool TaxTurnLever::check_local_suc_conditions(const Percept &p){
-    return is_in_env("GoalPosition","move",p);
+    return is_in_env("GoalPosition",p);
 }
 
 bool TaxTurnLever::check_local_err_conditions(const Percept &p){

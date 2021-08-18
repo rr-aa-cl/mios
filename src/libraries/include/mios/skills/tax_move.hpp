@@ -37,6 +37,7 @@ private:
     double get_goal_heuristic(const Percept &p) override;
 
 private:
+    Eigen::Matrix<double,4,4> m_T_T_EE_g;
     bool m_finished;
     std::chrono::high_resolution_clock::time_point m_t_finished;
 };

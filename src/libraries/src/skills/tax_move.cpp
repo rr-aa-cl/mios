@@ -68,15 +68,14 @@ std::shared_ptr<ManipulationPrimitive> TaxMove::create_move_mp(const Percept &p)
     std::shared_ptr<SkillParametersTaxMove> skill_params = get_parameters<SkillParametersTaxMove>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
-    Eigen::Matrix<double,4,4> T_g;
     if(this->get_object("GoalPose")->name=="NullObject"){
-        T_g=skill_params->p0.T_T_EE_g;
+        m_T_T_EE_g=skill_params->p0.T_T_EE_g;
     }else{
-        T_g=get_object_pose_T("GoalPose");
+        m_T_T_EE_g=get_object_pose_T("GoalPose");
     }
-    T_g.block<3,1>(0,3)+=skill_params->p0.T_T_EE_g_offset.block<3,1>(0,3);
-    T_g.block<3,3>(0,0)=skill_params->p0.T_T_EE_g_offset.block<3,3>(0,0)*T_g.block<3,3>(0,0);
-    mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(T_g,skill_params->p0.dX_d,skill_params->p0.ddX_d);
+    m_T_T_EE_g.block<3,1>(0,3)+=skill_params->p0.T_T_EE_g_offset.block<3,1>(0,3);
+    m_T_T_EE_g.block<3,3>(0,0)=skill_params->p0.T_T_EE_g_offset.block<3,3>(0,0)*m_T_T_EE_g.block<3,3>(0,0);
+    mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(m_T_T_EE_g,skill_params->p0.dX_d,skill_params->p0.ddX_d);
     Eigen::Matrix<double,2,1> scale;
     scale<<1,1;
     mp->get_strategy<MoveToPoseStrategy>("move")->set_scale(scale);
@@ -96,7 +95,7 @@ bool TaxMove::check_local_suc_conditions(const Percept &p){
             m_finished=true;
             m_t_finished=std::chrono::high_resolution_clock::now();
         }
-        if(is_in_env("GoalPose","move",p)){
+        if(is_in_env(m_T_T_EE_g,p)){
             return true;
         }else{
             return false;
