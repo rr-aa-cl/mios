@@ -1,7 +1,7 @@
 #include "mios/skills/telepresence.hpp"
 #include "mios/strategies/move_to_joint_pose.hpp"
 #include "mios/strategies/move_to_pose.hpp"
-#include "mios/strategies/null_strategy.hpp"
+#include "mios/strategies/idle_strategy.hpp"
 #include "mios/strategies/cart_compliance_strategy.hpp"
 #include "mios/strategies/joint_compliance_strategy.hpp"
 #include "mios/strategies/remote_twist_strategy.hpp"
@@ -161,7 +161,7 @@ Telepresence::~Telepresence(){
 std::shared_ptr<ManipulationPrimitive> Telepresence::get_initial_mp(const Percept &p_0){
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("handshake",p_0);
     nlohmann::json response;
-    mp->create_strategy<NullStrategy>("idle",1);
+    mp->create_strategy<IdleStrategy>("idle",1);
     return mp;
 }
 
@@ -285,7 +285,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 }
                 nlohmann::json response;
                 spdlog::trace("Telepresence:graph_transition.master.finished");
-                mp->create_strategy<NullStrategy>("idle",1);
+                mp->create_strategy<IdleStrategy>("idle",1);
                 return mp;
             }
         }
@@ -305,7 +305,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     mp->get_strategy<MoveToJointPoseStrategy>("move")->set_goal(m_q_master,0.5,2);
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
-                    mp->create_strategy<NullStrategy>("move",1);
+                    mp->create_strategy<IdleStrategy>("move",1);
                 }
                 m_memory->remove_event("handshake");
                 return mp;
@@ -415,7 +415,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                     m_portal->close_udp_instream("remote_twist_in");
                 }
                 nlohmann::json response;
-                mp->create_strategy<NullStrategy>("idle",1);
+                mp->create_strategy<IdleStrategy>("idle",1);
                 return mp;
             }
         }
