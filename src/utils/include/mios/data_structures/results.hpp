@@ -16,6 +16,8 @@ struct SkillCost{
         effort_avg=0;
         effort_total=0;
         distance=0;
+        desired_force=0;
+        desired_pose=0;
     }
     nlohmann::json to_json() const{
         nlohmann::json cost;
@@ -24,6 +26,8 @@ struct SkillCost{
         cost["effort_avg"]=effort_avg;
         cost["effort_total"]=effort_total;
         cost["distance"]=distance;
+        cost["desired_force"]=desired_force;
+        cost["desired_pose"]=desired_pose;
         cost["custom"]=custom;
         return cost;
     }
@@ -32,6 +36,8 @@ struct SkillCost{
     double effort_avg;
     double effort_total;
     double distance;
+    double desired_force;
+    double desired_pose;
     double custom;
 };
 

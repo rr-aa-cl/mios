@@ -19,13 +19,17 @@ public:
     struct P2{
         Eigen::Matrix<double,6,1> K_x;
         double f_push;
-        double duration;
     }p2;
     struct P3{
         Eigen::Matrix<double,6,1> K_x;
+        double f_push;
+        double duration;
+    }p3;
+    struct P4{
+        Eigen::Matrix<double,6,1> K_x;
         Eigen::Matrix<double,2,1> dX_d;
         Eigen::Matrix<double,2,1> ddX_d;
-    }p3;
+    }p4;
 };
 
 class TaxPressButton : public Skill{
@@ -43,6 +47,7 @@ private:
 
     std::shared_ptr<ManipulationPrimitive> create_approach_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_contact_mp(const Percept& p);
+    std::shared_ptr<ManipulationPrimitive> create_push_down_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_push_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_retract_mp(const Percept& p);
 

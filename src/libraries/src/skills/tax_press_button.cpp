@@ -59,10 +59,6 @@ bool SkillParametersTaxPressButton::from_json(const nlohmann::json& parameters){
             spdlog::error("Missing parameter: p2.f_push");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p2"],"duration",p2.duration)){
-            spdlog::error("Missing parameter: p2.duration");
-            return false;
-        }
     }
 
     if(parameters.find("p3")==parameters.end()){
@@ -73,12 +69,30 @@ bool SkillParametersTaxPressButton::from_json(const nlohmann::json& parameters){
             spdlog::error("Missing parameter: p3.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"dX_d",p3.dX_d)){
-            spdlog::error("Missing parameter: p3.dX_d");
+        if(!msrm_utils::read_json_param(parameters["p3"],"f_push",p3.f_push)){
+            spdlog::error("Missing parameter: p3.f_push");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"ddX_d",p3.ddX_d)){
-            spdlog::error("Missing parameter: p3.ddX_d");
+        if(!msrm_utils::read_json_param(parameters["p3"],"duration",p3.duration)){
+            spdlog::error("Missing parameter: p3.duration");
+            return false;
+        }
+    }
+
+    if(parameters.find("p4")==parameters.end()){
+        spdlog::error("Parameters for primitive 4 are missing.");
+        return false;
+    }else if(parameters.find("p4")!=parameters.end()){
+        if(!msrm_utils::read_json_param<double,6,1>(parameters["p4"],"K_x",p4.K_x)){
+            spdlog::error("Missing parameter: p4.K_x");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p4"],"dX_d",p4.dX_d)){
+            spdlog::error("Missing parameter: p4.dX_d");
+            return false;
+        }
+        if(!msrm_utils::read_json_param<double,2,1>(parameters["p4"],"ddX_d",p4.ddX_d)){
+            spdlog::error("Missing parameter: p4.ddX_d");
             return false;
         }
     }
@@ -161,7 +175,7 @@ std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_contact_mp(const P
     return mp;
 }
 
-std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_push_mp(const Percept &p){
+std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_push_down_mp(const Percept &p){
     spdlog::trace("TaxPressButton::create_push_mp()");
     std::shared_ptr<SkillParametersTaxPressButton> skill_params = get_parameters<SkillParametersTaxPressButton>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("push",p);
@@ -175,6 +189,20 @@ std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_push_mp(const Perc
     return mp;
 }
 
+std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_push_mp(const Percept &p){
+    spdlog::trace("TaxPressButton::create_push_mp()");
+    std::shared_ptr<SkillParametersTaxPressButton> skill_params = get_parameters<SkillParametersTaxPressButton>();
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("push",p);
+    mp->create_strategy<FFStrategy>("push",1);
+    std::shared_ptr<FFStrategy> move = mp->get_strategy<FFStrategy>("push");
+    Eigen::Matrix<double,6,1> F_d;
+    F_d<<0,0,skill_params->p3.f_push,0,0,0;
+    move->set_TF_F_ff(F_d,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+    mp->create_strategy<CartComplianceStrategy>("compliance",1);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p3.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
+    return mp;
+}
+
 std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_retract_mp(const Percept &p){
     spdlog::trace("TaxPressButton::create_retract_mp()");
     std::shared_ptr<SkillParametersTaxPressButton> skill_params = get_parameters<SkillParametersTaxPressButton>();
@@ -182,10 +210,10 @@ std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_retract_mp(const P
     mp->create_strategy<TwistStrategy>("move",1);
     std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
     Eigen::Matrix<double,6,1> dX_d;
-    dX_d<<0,0,-skill_params->p3.dX_d(0),0,0,0;
-    move->set_TF_dX_d(dX_d,skill_params->p3.ddX_d);
+    dX_d<<0,0,-skill_params->p4.dX_d(0),0,0,0;
+    move->set_TF_dX_d(dX_d,skill_params->p4.ddX_d);
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
-    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p3.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p4.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
@@ -207,7 +235,7 @@ bool TaxPressButton::check_local_suc_conditions(const Percept &p){
             if(!m_press_started  && !get_result().success){
                 m_press_t_0=std::chrono::high_resolution_clock::now();
                 m_press_started=true;
-            }else if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_press_t_0).count()>get_parameters<SkillParametersTaxPressButton>()->p2.duration*1000){
+            }else if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_press_t_0).count()>get_parameters<SkillParametersTaxPressButton>()->p3.duration*1000){
                 m_press_started=false;
                 return true;
             }
@@ -218,7 +246,7 @@ bool TaxPressButton::check_local_suc_conditions(const Percept &p){
             if(!m_press_started && !get_result().success){
                 m_press_t_0=std::chrono::high_resolution_clock::now();
                 m_press_started=true;
-            }else if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_press_t_0).count()>get_parameters<SkillParametersTaxPressButton>()->p2.duration*1000){
+            }else if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_press_t_0).count()>get_parameters<SkillParametersTaxPressButton>()->p3.duration*1000){
                 m_press_started=false;
                 return true;
             }
@@ -238,7 +266,7 @@ bool TaxPressButton::check_local_suc_conditions(const Percept &p){
                 if(!m_press_started && !get_result().success){
                     m_press_t_0=std::chrono::high_resolution_clock::now();
                     m_press_started=true;
-                }else if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_press_t_0).count()>get_parameters<SkillParametersTaxPressButton>()->p2.duration*1000){
+                }else if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now()-m_press_t_0).count()>get_parameters<SkillParametersTaxPressButton>()->p3.duration*1000){
                     m_press_started=false;
                     return true;
                 }

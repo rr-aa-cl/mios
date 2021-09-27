@@ -308,6 +308,8 @@ private:
 private:
     double m_cost_contact_forces_sum;
     double m_cost_effort_avg_sum;
+    double m_cost_desired_force_sum;
+    double m_cost_desired_pose_sum;
 
     std::vector<nlohmann::json> m_data_log;
     unsigned long m_log_cnt;

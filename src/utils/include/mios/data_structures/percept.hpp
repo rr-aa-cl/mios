@@ -160,6 +160,7 @@ public:
 
         Eigen::Matrix<double,4,4> TF_T_EE_d;
         Eigen::Matrix<double,6,1> TF_dX_d;
+        Eigen::Matrix<double,6,1> TF_F_d;
         Eigen::Matrix<double,6,1> TF_F_ff;
         Eigen::Matrix<double,3,3> O_R_T;
 

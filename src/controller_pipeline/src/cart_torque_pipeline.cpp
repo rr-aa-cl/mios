@@ -88,6 +88,7 @@ bool CartTorqueControllerPipeline::is_valid_command(const franka::Finishable* co
 
 void CartTorqueControllerPipeline::update_percept(Percept::Controller &p){
     p.TF_T_EE_d=m_cntr_aic.u.TF_T_EE_d;
+    p.TF_F_d=m_cntr_force.u.TF_F_d_K;
     p.K_x=m_cntr_aic.l.K_x;
     p.K_theta=m_cntr_nullsp_q.l.K_theta;
 }
