@@ -17,8 +17,8 @@ class BaseTest(ABC):
         self.object_modifier = dict()
         self.record_performance = False
 
-    def initialize(self, default_context: dict, reset_default_contexts: dict, object_modifier: dict = {},
-                   record_performance: bool = True):
+    def initialize(self, default_context: dict, reset_default_contexts: dict, record_performance: bool = True,
+                   object_modifier: dict = {}):
         self.default_context = default_context
         self.reset_default_contexts = reset_default_contexts
         self.record_performance = record_performance

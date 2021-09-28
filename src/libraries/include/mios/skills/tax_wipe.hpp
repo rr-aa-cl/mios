@@ -6,13 +6,26 @@ class SkillParametersTaxWipe : public SkillParameters{
 public:
     bool from_json(const nlohmann::json& parameters) override;
     std::map<std::string, std::set<std::string> > get_parameter_list() override;
-    Eigen::Matrix<double,2,1> approach_speed;
-    Eigen::Matrix<double,2,1> approach_acc;
-    Eigen::Matrix<double,2,1> wipe_speed;
-    Eigen::Matrix<double,2,1> wipe_acc;
 
-    Eigen::Matrix<double,6,1> ROI_x;
-    Eigen::Matrix<double,6,1> ROI_phi;
+    struct P0{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+    }p0;
+
+    struct P1{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+        double f_wipe;
+    }p1;
+
+    struct P2{
+        Eigen::Matrix<double,6,1> K_x;
+        Eigen::Matrix<double,2,1> dX_d;
+        Eigen::Matrix<double,2,1> ddX_d;
+        double f_wipe;
+    }p2;
 };
 
 class TaxWipe : public Skill{
@@ -31,10 +44,8 @@ private:
     void update_internal_models(const Percept &p) override;
 
     std::shared_ptr<ManipulationPrimitive> create_approach_mp(const Percept& p);
+    std::shared_ptr<ManipulationPrimitive> create_contact_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_wipe_mp(const Percept& p);
 
-private:
-    Eigen::Matrix<double,4,4> m_T_T_wipe;
-    Eigen::Matrix<double,3,1> m_ROI_center;
 };
 }
