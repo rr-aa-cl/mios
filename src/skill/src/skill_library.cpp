@@ -47,6 +47,7 @@
 #include "mios/skills/tax_place.hpp"
 #include "mios/skills/tax_press_button.hpp"
 #include "mios/skills/tax_turn.hpp"
+#include "mios/skills/tax_slide_open.hpp"
 #include "mios/skills/draw.hpp"
 #include "mios/skills/crank.hpp"
 
@@ -92,6 +93,7 @@ SkillLibrary::SkillLibrary(){
     m_skill_parameters.insert(std::make_pair("TaxBend",std::make_shared<SkillParametersTaxBend>()));
 //    m_skill_parameters.insert(std::make_pair("TaxHold",std::make_shared<SkillParametersTaxHold>()));
     m_skill_parameters.insert(std::make_pair("TaxHammer",std::make_shared<SkillParametersTaxHammer>()));
+    m_skill_parameters.insert(std::make_pair("TaxSlideOpen",std::make_shared<SkillParametersTaxSlideOpen>()));
     m_skill_parameters.insert(std::make_pair("Draw",std::make_shared<SkillParametersDraw>()));
     m_skill_parameters.insert(std::make_pair("Crank",std::make_shared<SkillParametersCrank>()));
 }

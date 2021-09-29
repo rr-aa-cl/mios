@@ -105,6 +105,20 @@ def grab_test_item():
                       "Surface": "grab_item"}, 50, "time")
 
 
+def place_test_item():
+    t = PlaceTest("collective-panda-008")
+    start_experiment(t, {"Approach": "grab_item_retract", "Placeable": "grab_item", "Retract": "grab_item_approach",
+                         "Surface": "grab_item"},
+                     {"Approach": "grab_item_approach", "Grabbable": "grab_item", "Retract": "grab_item_retract"},
+                     50, "time")
+
+
+def slide_open_test():
+    t = ShoveTest("collective-panda-008")
+    start_experiment(t, {"Approach": "sldie_open_approach", "Container": "slide_open_container",
+                         "GoalPose": "slide_open_goal"}, {"Approach": "sldie_open_approach"}, 50, "time")
+
+
 def carry_test_item():
     t = CarryTest("collective-panda-008")
     start_experiment(t, {"Carriable": "carry_item", "GoalPose": "carry_item_goal"}, {"GoalPose": "carry_item_start"}, 1)

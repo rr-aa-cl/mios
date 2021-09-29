@@ -41,11 +41,9 @@ private:
     bool check_local_ex_conditions(const Percept &p) override;
     bool check_local_err_conditions(const Percept &p) override;
 
-    void update_internal_models(const Percept &p) override;
-
     std::shared_ptr<ManipulationPrimitive> create_approach_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_contact_mp(const Percept& p);
-    std::shared_ptr<ManipulationPrimitive> create_wipe_mp(const Percept& p);
+    std::shared_ptr<ManipulationPrimitive> create_slide_mp(const Percept& p);
 
 };
 }

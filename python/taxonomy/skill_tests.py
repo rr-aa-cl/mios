@@ -373,6 +373,56 @@ class GrabTest(BaseTest):
         teach_object(self.robot, args["Retract"])
 
 
+class PlaceTest(BaseTest):
+    def __init__(self, robot: str, record_performance: bool = True):
+        super().__init__(robot, "place")
+        f = open(self.path_to_default_context + "place.json")
+        default_context = json.load(f)
+        reset_default_contexts = dict()
+        f = open(self.path_to_default_context + "grab.json")
+        reset_default_contexts["grab"] = json.load(f)
+        self.initialize(default_context, reset_default_contexts, record_performance)
+
+    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+        context = self.default_context
+        if result_uuid is not None and result_trial is not None:
+            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        context["skill"]["objects"] = {
+            "Placeable": args["Placeable"],
+            "Surface": args["Surface"],
+            "Approach": args["Approach"],
+            "Retract": args["Retract"]
+        }
+
+        t = Task(self.robot)
+        t.add_skill(self.skill_class, "TaxPlace", context)
+        t.start()
+        result = t.wait()
+
+        if self.record_performance is True:
+            upload_result(self.db_host, self.skill_class, args["Placeable"], cost_function, result)
+
+    def reset(self, args: dict):
+        t = Task(self.robot)
+        context = self.reset_default_contexts["grab"]
+        context["skill"]["objects"]["Grabbable"] = args["Grabbable"]
+        context["skill"]["objects"]["Approach"] = args["Approach"]
+        context["skill"]["objects"]["Retract"] = args["Retract"]
+        t.add_skill("grab", "TaxGrab", context)
+        t.start()
+        t.wait()
+
+    def teach(self, args: dict):
+        input("Press enter to teach the grabbable.")
+        teach_object(self.robot, args["Placeable"])
+        input("Press enter to teach the surface.")
+        teach_object(self.robot, args["Surface"])
+        input("Press enter to teach the approach pose.")
+        teach_object(self.robot, args["Approach"])
+        input("Press enter to teach the retract pose.")
+        teach_object(self.robot, args["Retract"])
+
+
 class CarryTest(BaseTest):
     def __init__(self, robot: str, record_performance: bool = True):
         super().__init__(robot, "carry")
@@ -657,7 +707,8 @@ class SlideOpenTest(BaseTest):
             context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
         context["skill"]["objects"] = {
             "Container": args["Container"],
-            "Approach": args["Approach"]
+            "Approach": args["Approach"],
+            "GoalPose": args["GoalPose"]
         }
 
         t = Task(self.robot)
@@ -669,7 +720,6 @@ class SlideOpenTest(BaseTest):
             upload_result(self.db_host, self.skill_class, args["Container"], cost_function, result)
 
     def reset(self, args: dict):
-        input("Press enter to continue")
         t = Task(self.robot)
         context = self.reset_default_contexts["move_up"]
         context["skill"]["objects"]["GoalPose"] = "EndEffector"
@@ -680,12 +730,15 @@ class SlideOpenTest(BaseTest):
         t.add_skill("move", "MoveToPoseJoint", context)
         t.start()
         t.wait()
+        input("Press enter to continue")
 
     def teach(self, args: dict):
-        input("Press enter to teach the container.")
-        teach_object(self.robot, args["Container"])
         input("Press enter to teach the approach pose.")
         teach_object(self.robot, args["Approach"])
+        input("Press enter to teach the container.")
+        teach_object(self.robot, args["Container"])
+        input("Press enter to teach the goal pose.")
+        teach_object(self.robot, args["GoalPose"])
 
 
 class WipeTest(BaseTest):
