@@ -188,17 +188,18 @@ bool TaxTip::check_local_ex_conditions(const Percept &p){
 
 
 bool TaxTip::check_local_err_conditions(const Percept &p){
-    const Eigen::Matrix<double,6,1>& ROI_x=get_parameters<SkillParametersTaxTip>()->ROI_x;
-    const Eigen::Matrix<double,6,1>& ROI_phi=get_parameters<SkillParametersTaxTip>()->ROI_phi;
-    double error_angle=acos(p.proprioception.T_T_EE.block<3,1>(0,2).dot(get_object_pose_T("Tippable").block<3,1>(0,2)));
-    Eigen::Matrix<double,3,1> dist = p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Tippable").block<3,1>(0,3);
-    if(dist(0) < ROI_x(0) || dist(0) > ROI_x(1) || dist(1) < ROI_x(2) || dist(1) > ROI_x(3) || dist(2) < ROI_x(4) || dist(2) > ROI_x(5)){
-        return true;
-    }
     if(get_active_mp()->get_name()=="retract"){
         return !get_result().success && get_active_mp()->get_strategy_interface("move")->finished();
     }
     return false;
+}
+
+double TaxTip::get_goal_heuristic(const Percept &p){
+    //    bool h = m_memory->get_live_context()->grasped_object->name==get_object("Placeable")->name;
+    bool h = !get_result().success;
+    return (get_result().p_1.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Approach").block<3,1>(0,3)).norm() +
+            acos(((get_object_pose_T("Approach").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) +
+            h * 1;
 }
 
 }

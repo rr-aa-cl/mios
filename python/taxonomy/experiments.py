@@ -101,8 +101,22 @@ def tip_test_enter():
 def grab_test_item():
     t = GrabTest("collective-panda-008")
     start_experiment(t, {"Approach": "grab_item_approach", "Grabbable": "grab_item", "Retract": "grab_item_retract"},
-                     {"Approach": "grab_item_approach", "Placeable": "grab_item", "Retract": "grab_item_retract",
-                      "Surface": "grab_item"}, 1)
+                     {"Approach": "grab_item_retract", "Placeable": "grab_item", "Retract": "grab_item_approach",
+                      "Surface": "grab_item"}, 50, "time")
+
+
+def place_test_item():
+    t = PlaceTest("collective-panda-008")
+    start_experiment(t, {"Approach": "grab_item_retract", "Placeable": "grab_item", "Retract": "grab_item_approach",
+                         "Surface": "grab_item"},
+                     {"Approach": "grab_item_approach", "Grabbable": "grab_item", "Retract": "grab_item_retract"},
+                     50, "time")
+
+
+def slide_open_test():
+    t = SlideOpenTest("collective-panda-008")
+    start_experiment(t, {"Approach": "slide_open_approach", "Container": "slide_open_lid",
+                         "GoalPose": "slide_open_goal"}, {"Approach": "slide_open_approach"}, 50, "time")
 
 
 def carry_test_item():
@@ -125,7 +139,15 @@ def drag_box_test():
     start_experiment(t, {"Draggable": "blue_box", "GoalPose": "slide_goal"}, {"GoalPose": "drag_start"}, 50, "time")
 
 
-def shove_lid_test():
+def shove_tape_test():
     t = ShoveTest("collective-panda-008")
-    start_experiment(t, {"Shovable": "shove_lid", "Approach": "shove_lid_approach", "Direction": "shove_lid_direction"},
-                     {"GoalPose": "shove_lid_approach"}, 1)
+    start_experiment(t, {"Shovable": "shove_tape", "Approach": "shove_tape_approach", "Direction": "shove_tape_direction"},
+                     {"GoalPose": "shove_tape_approach"}, 50, "time")
+
+
+def swipe_phone_test():
+    t = SwipeTest("collective-panda-008")
+    start_experiment(t, {"Stylus": "swipe_stylus", "Approach": "swipe_approach", "SwipeStart": "swipe_start",
+                         "SwipeEnd": "swipe_end", "Retract": "swipe_retract"},
+                     {"Stylus": "swipe_stylus", "Approach": "swipe_retract", "SwipeStart": "swipe_end",
+                      "SwipeEnd": "swipe_start", "Retract": "swipe_approach"}, 50, "time")

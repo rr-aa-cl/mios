@@ -65,8 +65,8 @@ bool SkillParametersTaxSlideOpen::from_json(const nlohmann::json& parameters){
             spdlog::error("Missing parameter: p2.ddX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p1"],"f_slide",p1.f_slide)){
-            spdlog::error("Missing parameter: p1.f_slide");
+        if(!msrm_utils::read_json_param(parameters["p2"],"f_slide",p2.f_slide)){
+            spdlog::error("Missing parameter: p2.f_slide");
             return false;
         }
     }
@@ -77,7 +77,7 @@ std::map<std::string, std::set<std::string> > SkillParametersTaxSlideOpen::get_p
     return {{"p0",{"K_x","dX_d","ddX_d"}},{"p1",{"K_x","dX_d","ddX_d","f_slide"}},{"p2",{"K_x","dX_d","ddX_d","f_slide"}}};
 }
 
-TaxSlideOpen::TaxSlideOpen(const std::string& name, Memory* memory, Portal* portal):Skill("TaxSlideOpen",{"Approach","Container"},name,memory,portal,{ControlMode::mCartTorque}){
+TaxSlideOpen::TaxSlideOpen(const std::string& name, Memory* memory, Portal* portal):Skill("TaxSlideOpen",{"Approach","Container","GoalPose"},name,memory,portal,{ControlMode::mCartTorque}){
 
 }
 
@@ -99,7 +99,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxSlideOpen::graph_trans
     }
     if(get_active_mp()->get_name()=="contact"){
         if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
-            return create_wipe_mp(p);
+            return create_slide_mp(p);
         }else{
             return {};
         }
@@ -108,7 +108,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxSlideOpen::graph_trans
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxSlideOpen::create_approach_mp(const Percept &p){
-    spdlog::trace("TaxWipe::create_approach_mp()");
+    spdlog::trace("TaxSlideOpen::create_approach_mp()");
     std::shared_ptr<SkillParametersTaxSlideOpen> skill_params = get_parameters<SkillParametersTaxSlideOpen>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
@@ -121,13 +121,13 @@ std::shared_ptr<ManipulationPrimitive> TaxSlideOpen::create_approach_mp(const Pe
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxSlideOpen::create_contact_mp(const Percept &p){
-    spdlog::trace("TaxWipe::create_contact_mp");
+    spdlog::trace("TaxSlideOpen::create_contact_mp");
     std::shared_ptr<SkillParametersTaxSlideOpen> skill_params = get_parameters<SkillParametersTaxSlideOpen>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("contact",p);
     mp->create_strategy<TwistStrategy>("move",1);
     std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
     Eigen::Matrix<double,6,1> dX_d;
-    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Surface").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);;
+    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Container").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);;
     dir/=dir.norm();
     dX_d<<dir*skill_params->p1.dX_d(0),0,0,0;
     move->set_TF_dX_d(dX_d,skill_params->p1.ddX_d);
@@ -136,10 +136,10 @@ std::shared_ptr<ManipulationPrimitive> TaxSlideOpen::create_contact_mp(const Per
     return mp;
 }
 
-std::shared_ptr<ManipulationPrimitive> TaxSlideOpen::create_wipe_mp(const Percept &p){
-    spdlog::trace("TaxWipe::create_slide_mp()");
+std::shared_ptr<ManipulationPrimitive> TaxSlideOpen::create_slide_mp(const Percept &p){
+    spdlog::trace("TaxSlideOpen::create_slide_mp()");
     std::shared_ptr<SkillParametersTaxSlideOpen> skill_params = get_parameters<SkillParametersTaxSlideOpen>();
-    std::shared_ptr<ManipulationPrimitive> mp = create_mp("pull",p);
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("slide",p);
     mp->create_strategy<MoveToPoseStrategy>("slide",1);
     mp->create_strategy<FFStrategy>("push",1);
     std::shared_ptr<MoveToPoseStrategy> slide = mp->get_strategy<MoveToPoseStrategy>("slide");
@@ -161,19 +161,13 @@ bool TaxSlideOpen::check_local_err_conditions(const Percept &p){
     return false;
 }
 
-void TaxSlideOpen::update_internal_models(const Percept &p){
-    if(p.proprioception.TF_F_ext_K.block<3,1>(0,0).norm()>m_memory->read_parameters()->user.F_ext_contact(0)){
-        m_memory->get_object("Wipeable")->set_pose(p.proprioception.O_T_EE(0,3),p.proprioception.O_T_EE(1,3),p.proprioception.O_T_EE(2,3),{});
-    }
-}
-
 bool TaxSlideOpen::check_local_suc_conditions(const Percept &p){
     return true;
 }
 
 bool TaxSlideOpen::check_local_ex_conditions(const Percept &p){
-    if(get_active_mp()->get_name()=="wipe"){
-        return get_active_mp()->get_strategy_interface("move")->finished();
+    if(get_active_mp()->get_name()=="slide"){
+        return get_active_mp()->get_strategy_interface("slide")->finished();
     }
     return false;
 }

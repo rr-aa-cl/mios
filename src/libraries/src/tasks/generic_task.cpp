@@ -36,6 +36,7 @@
 #include "mios/skills/tax_swipe.hpp"
 #include "mios/skills/tax_bend.hpp"
 #include "mios/skills/tax_hammer.hpp"
+#include "mios/skills/tax_slide_open.hpp"
 #include "mios/skills/draw.hpp"
 #include "mios/skills/crank.hpp"
 
@@ -246,6 +247,10 @@ void GenericTask::execute_any_skill(unsigned index){
 //        break;
     case msrm_utils::str_to_int("TaxHammer"):
         execute_skill<TaxHammer,SkillParametersTaxHammer>(name);
+        break;
+    case msrm_utils::str_to_int("TaxSlideOpen"):
+        execute_skill<TaxSlideOpen,SkillParametersTaxSlideOpen>(name);
+        break;
     case msrm_utils::str_to_int("Draw"):
         execute_skill<Draw,SkillParametersDraw>(name);
         break;

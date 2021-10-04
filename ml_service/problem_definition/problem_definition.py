@@ -15,7 +15,7 @@ class CostFunction:
         self.optimum_skills = []
         self.optimum_weights = dict.fromkeys(cost_types, 0)
         self.optimum_expressions = dict.fromkeys(cost_types, "var")
-        self.max_cost = dict.fromkeys(cost_types, 0)
+        self.max_cost = dict.fromkeys(cost_types, 1)
         self.heuristic_skills = []
         self.heuristic_expressions = "var"
         self.finish_thr = 0
@@ -194,12 +194,6 @@ class ProblemDefinition:
             print(context["skills"][skill]["skill"]["objects_modifier"])
 
     def calculate_cost(self, result: TaskResult) -> QMetric:
-        if len(self.cost_function.optimum_expressions) != 6:
-            logger.error("Length of cost_function.optimum_expressions must be 6.")
-            raise CostFunctionError
-        if len(self.cost_function.optimum_weights) != 6:
-            logger.error("Length of cost_function.optimum_weights must be 6.")
-            raise CostFunctionError
         if sum(self.cost_function.optimum_weights.values()) != 1:
             logger.error("Sum of cost_function.optimum_weights must be 1.")
             raise CostFunctionError

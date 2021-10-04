@@ -48,7 +48,7 @@ class KnowledgeProcessor(KnowledgeProcessorBase):
 
         while data:
             # sort for cost
-            c_list = sorted(data, key=lambda t: (t["cost"]))  # lowest cost first
+            c_list = sorted(data, key=lambda t: (t["q_metric"]["cost"]))  # lowest cost first
             # sorted for distance to best trial:
             d_list = sorted(data, key=lambda t: distance_to(self.dict_to_list(t["theta"]),
                                                             self.dict_to_list(c_list[0]["theta"])))
@@ -57,15 +57,15 @@ class KnowledgeProcessor(KnowledgeProcessorBase):
                 mean_gradient = 0
                 if len(cluster) >= 2:
                     for trial in cluster[1:]:
-                        mean_gradient += (trial["cost"] - cluster[0]["cost"]) / distance_to(
+                        mean_gradient += (trial["q_metric"]["cost"] - cluster[0]["q_metric"]["cost"]) / distance_to(
                             self.dict_to_list(trial["theta"]), self.dict_to_list(cluster[0]["theta"]))
                     mean_gradient = mean_gradient / len(cluster[1:])
 
                 dist = distance_to(self.dict_to_list(d_trial["theta"]), self.dict_to_list(cluster[0]["theta"]))
 
-                if d_trial["cost"] > cluster[-1]["cost"]:
+                if d_trial["q_metric"]["cost"] > cluster[-1]["q_metric"]["cost"]:
                     cluster.append(data.pop(data.index(d_trial)))
-                elif d_trial["cost"] > 0.8 * dist * mean_gradient + cluster[0]["cost"]:
+                elif d_trial["q_metric"]["cost"] > 0.8 * dist * mean_gradient + cluster[0]["q_metric"]["cost"]:
                     cluster.append(data.pop(data.index(d_trial)))
                 else:
                     break
