@@ -260,3 +260,17 @@ def read_data(host: str, skill_class: str, skill_instance: str, cost_function: s
 
     print("Success rate: " + str(success_rate) + ", cost: " + str(cost))
 
+
+def ask_for_result(result):
+    while True:
+        text = input("Successful? (y/n)")
+        if text == "y":
+            success = True
+            break
+        elif text == "n":
+            success = False
+            break
+        else:
+            print("False input.")
+            continue
+    result["result"]["task_result"]["success"] = success

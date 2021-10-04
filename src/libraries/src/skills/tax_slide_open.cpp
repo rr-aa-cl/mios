@@ -65,8 +65,8 @@ bool SkillParametersTaxSlideOpen::from_json(const nlohmann::json& parameters){
             spdlog::error("Missing parameter: p2.ddX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p1"],"f_slide",p1.f_slide)){
-            spdlog::error("Missing parameter: p1.f_slide");
+        if(!msrm_utils::read_json_param(parameters["p2"],"f_slide",p2.f_slide)){
+            spdlog::error("Missing parameter: p2.f_slide");
             return false;
         }
     }

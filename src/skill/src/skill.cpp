@@ -23,6 +23,7 @@ Skill::Skill(const std::string &type, const std::unordered_set<std::string> &obj
     spdlog::trace("Skill::Skill()");
     m_costs.insert(std::make_pair("ExecutionTime",0));
     m_ROI_center.setZero();
+    m_contact_cnt=0;
 }
 
 Skill::~Skill(){
@@ -479,26 +480,27 @@ SkillCost Skill::measure_cost(const Percept &p){
     bool contact_t=false;
     bool contact_r=false;
     if(p.proprioception.K_F_ext_K.block<3,1>(0,0).norm()>m_memory->read_parameters()->user.F_ext_contact(0)){
-        m_cost_contact_forces_sum += p.proprioception.K_F_ext_K.block<3,1>(0,0).norm();
         contact_t=true;
     }
     if(p.proprioception.K_F_ext_K.block<3,1>(3,0).norm()>m_memory->read_parameters()->user.F_ext_contact(1)){
-        m_cost_contact_forces_sum += p.proprioception.K_F_ext_K.block<3,1>(3,0).norm();
         contact_r=true;
     }
+    m_cost_contact_forces_sum += p.proprioception.K_F_ext_K.block<3,1>(0,0).norm();
+    m_cost_contact_forces_sum += p.proprioception.K_F_ext_K.block<3,1>(3,0).norm();
+    cost.contact_forces = m_cost_contact_forces_sum / (m_contact_cnt + 1);
+    m_contact_cnt++;
     if(contact_t || contact_r){
-        cost.contact_forces = m_cost_contact_forces_sum / (std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count() + 1);
     }
     double tmp_sum=0;
     for(unsigned i=0;i<3;i++){
-        if(p.controller.TF_F_active(i)){
+        if(p.controller.TF_F_active(i) && contact_t){
             tmp_sum+=pow(p.controller.TF_F_d(i)-p.proprioception.TF_F_ext_K(i),2);
         }
     }
     tmp_sum=0;
     m_cost_desired_force_sum+=sqrt(tmp_sum);
     for(unsigned i=0;i<3;i++){
-        if(p.controller.TF_F_active(i+3)){
+        if(p.controller.TF_F_active(i+3) && contact_r){
             tmp_sum+=pow(p.controller.TF_F_d(i+3)-p.proprioception.TF_F_ext_K(i+3),2);
         }
     }
@@ -508,10 +510,11 @@ SkillCost Skill::measure_cost(const Percept &p){
     m_cost_desired_force_sum+=(p.controller.TF_F_d.block<3,1>(0,0)-p.proprioception.TF_F_ext_K.block<3,1>(0,0)).norm();
     m_cost_desired_pose_sum+=(p.controller.TF_T_EE_d-p.proprioception.T_T_EE).norm();
 
-    cost.desired_force = m_cost_desired_force_sum / (std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count() +1);
+    cost.desired_force = m_cost_desired_force_sum / (m_contact_cnt +1);
 
     cost.time = std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count()/1000.0;
     cost.effort_avg = m_cost_effort_avg_sum / (std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count() +1);
+    cost.desired_pose = m_cost_desired_pose_sum / (std::chrono::duration_cast<std::chrono::milliseconds>(p.time-m_memory->get_live_context()->t_skill).count() +1);
     cost.effort_total += p.proprioception.tau_j.norm();
     cost.distance += p.proprioception.dq.norm()*0.001;
 

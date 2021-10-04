@@ -4,7 +4,8 @@ import logging
 logger = logging.getLogger("ml_service")
 
 
-cost_types = ["time", "contact_forces", "effort_avg", "effort_total", "distance", "custom"]
+cost_types = ["time", "contact_forces", "effort_avg", "effort_total", "distance", "desired_force", "desired_pose",
+              "custom"]
 
 
 class QMetric:
