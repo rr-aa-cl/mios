@@ -39,7 +39,7 @@ Eigen::Matrix<double,3,3> TaxDisplace::get_O_R_T_0(const Percept &p) const{
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxDisplace::get_initial_mp(const Percept& p){
-    return create_bend_mp(p);
+    return create_displace_mp(p);
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxDisplace::create_displace_mp(const Percept &p){
