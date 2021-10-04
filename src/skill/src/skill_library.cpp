@@ -50,6 +50,10 @@
 #include "mios/skills/tax_slide_open.hpp"
 #include "mios/skills/draw.hpp"
 #include "mios/skills/crank.hpp"
+#include "mios/skills/tax_cut.hpp"
+#include "mios/skills/tax_displace.hpp"
+#include "mios/skills/tax_screw.hpp"
+#include "mios/skills/tax_wrench.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -96,6 +100,10 @@ SkillLibrary::SkillLibrary(){
     m_skill_parameters.insert(std::make_pair("TaxSlideOpen",std::make_shared<SkillParametersTaxSlideOpen>()));
     m_skill_parameters.insert(std::make_pair("Draw",std::make_shared<SkillParametersDraw>()));
     m_skill_parameters.insert(std::make_pair("Crank",std::make_shared<SkillParametersCrank>()));
+    m_skill_parameters.insert(std::make_pair("TaxCut",std::make_shared<SkillParametersTaxCut>()));
+    m_skill_parameters.insert(std::make_pair("TaxDisplace",std::make_shared<SkillParametersTaxDisplace>()));
+    m_skill_parameters.insert(std::make_pair("TaxScrew",std::make_shared<SkillParametersTaxScrew>()));
+    m_skill_parameters.insert(std::make_pair("TaxWrench",std::make_shared<SkillParametersTaxWrench>()));
 }
 
 const std::unordered_map<std::string,std::shared_ptr<Skill> >* SkillLibrary::get_skills() const{
