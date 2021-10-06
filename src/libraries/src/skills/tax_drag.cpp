@@ -76,4 +76,9 @@ bool TaxDrag::check_local_err_conditions([[maybe_unused]] const Percept &p){
     return false;
 }
 
+double TaxDrag::get_goal_heuristic(const Percept &p){
+    return (p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("GoalPose").block<3,1>(0,3)).norm() +
+            acos(((get_object_pose_T("GoalPose").block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2);
+}
+
 }

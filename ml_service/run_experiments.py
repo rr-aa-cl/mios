@@ -30,3 +30,18 @@ def learn_tip(robot: str, approach: str, tippable: str, tags: list):
                           {"Tippable": tippable, "Approach": approach}).get_problem_definition(tippable)
     sc = SVMLearner().get_configuration()
     learn_task(robot, pd, sc, tags)
+
+
+def learn_drag(robot: str, approach: str, draggable: str, goal_pose: str, tags: list):
+    pd = DragFactory(robot, ContactForcesMetric("drag", {"contact_forces": 60}),
+                          {"Draggable": draggable, "StartPose": approach, "GoalPose": goal_pose}).get_problem_definition(draggable)
+    sc = SVMLearner().get_configuration()
+    learn_task(robot, pd, sc, tags)
+
+
+def learn_turn_lever(robot: str, start: str, lever: str, goal: str, tags: list):
+    pd = TurnLeverFactory(robot, ContactForcesMetric("turn_lever", {"contact_forces": 60}),
+                          {"Lever": lever, "StartPose": start, "GoalPosition": goal}).get_problem_definition(lever)
+    sc = SVMLearner().get_configuration()
+    learn_task(robot, pd, sc, tags)
+

@@ -23,6 +23,7 @@ private:
     bool check_local_pre_conditions(const Percept &p) override;
     bool check_local_suc_conditions(const Percept& p) override;
     bool check_local_err_conditions(const Percept &p) override;
+    double get_goal_heuristic(const Percept &p) override;
 
     std::shared_ptr<ManipulationPrimitive> create_drag_mp(const Percept& p);
 

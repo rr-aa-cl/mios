@@ -264,8 +264,8 @@ protected:
     virtual SkillCost measure_cost(const Percept& p);
     virtual double get_custom_cost(const Percept& p);
 
-    bool is_in_env(const std::string& pose, const Percept& p);
-    bool is_in_env(const Eigen::Matrix<double,4,4>& pose, const Percept& p);
+    bool is_in_env(const std::string& pose, const Percept& p, bool position_only=false,bool orientation_only=false);
+    bool is_in_env(const Eigen::Matrix<double,4,4>& pose, const Percept& p, bool position_only=false,bool orientation_only=false);
     void set_ROI_center(const Eigen::Matrix<double,3,1>& ROI_center);
 
 private:

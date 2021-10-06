@@ -69,7 +69,7 @@ std::map<std::string, std::set<std::string> > SkillParametersTaxHammer::get_para
     return {{"p0",{"K_x","dX_d","ddX_d"}},{"p1",{"K_x","f_hammer","dX_d","ddX_d"}},{"p2",{"K_x","dX_d","ddX_d"}}};
 }
 
-TaxHammer::TaxHammer(const std::string &name, Memory *memory, Portal* portal):Skill("TaxHammer",{"Approach","Hammerable","Hammer"},name,memory,portal,
+TaxHammer::TaxHammer(const std::string &name, Memory *memory, Portal* portal):Skill("TaxHammer",{"Approach","Hammerable","Hammer","GoalPosition"},name,memory,portal,
 {ControlMode::mCartTorque}){
 
 }
@@ -99,7 +99,14 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxHammer::graph_transiti
         }else{
             return {};
         }
-
+    }
+    if(get_active_mp()->get_name()=="up"){
+        if(get_active_mp()->get_strategy_interface("move")->finished()){
+            return create_down_mp(p);
+        }
+        else{
+            return {};
+        }
     }
     return {};
 }
@@ -149,26 +156,19 @@ bool TaxHammer::check_local_pre_conditions(const Percept &p){
     if(m_memory->get_live_context()->grasped_object->name!=get_object("Hammer")->name){
         return false;
     }
-    Eigen::Matrix<double,4,4> T_container = get_object_pose_T("Hammerable");
-    std::shared_ptr<SkillParametersTaxHammer> skill_params = get_parameters<SkillParametersTaxHammer>();
-    for(unsigned i=0;i<3;i++){
-        if(p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)>T_container(3,i)+skill_params->ROI_x(i*2+1)){
-            return false;
-        }
-    }
     return true;
 }
 
 bool TaxHammer::check_local_suc_conditions(const Percept &p){
     std::shared_ptr<SkillParametersTaxHammer> skill_params = get_parameters<SkillParametersTaxHammer>();
-    if(p.proprioception.TF_F_ext_K(2)>skill_params->p1.f_hammer){
+    if(is_in_env("GoalPosition",p,true)){
         return true;
     }
     return false;
 }
 
 bool TaxHammer::check_local_ex_conditions(const Percept &p){
-    if(get_active_mp()->get_name()=="up"){
+    if(get_active_mp()->get_name()=="up" && get_result().success){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
             return true;
         }
@@ -177,14 +177,6 @@ bool TaxHammer::check_local_ex_conditions(const Percept &p){
 }
 
 bool TaxHammer::check_local_err_conditions(const Percept &p){
-    std::shared_ptr<SkillParametersTaxHammer> skill_params = get_parameters<SkillParametersTaxHammer>();
-    const Eigen::Matrix<double,6,1>& ROI_x=get_parameters<SkillParametersTaxHammer>()->ROI_x;
-    const Eigen::Matrix<double,6,1>& ROI_phi=get_parameters<SkillParametersTaxHammer>()->ROI_phi;
-    double error_angle=acos(p.proprioception.T_T_EE.block<3,1>(0,2).dot(get_object_pose_T("Hammerable").block<3,1>(0,2)));
-    Eigen::Matrix<double,3,1> dist = p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Hammerable").block<3,1>(0,3);
-    if(dist(0) < ROI_x(0) || dist(0) > ROI_x(1) || dist(1) < ROI_x(2) || dist(1) > ROI_x(3) || dist(2) < ROI_x(4) || dist(2) > ROI_x(5)){
-        return true;
-    }
     if(m_memory->get_live_context()->grasped_object->name!=get_object("Hammer")->name){
         return true;
     }

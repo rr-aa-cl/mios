@@ -97,8 +97,7 @@ std::map<std::string, std::set<std::string> > SkillParametersTaxScrew::get_param
 }
 
 TaxScrew::TaxScrew(const std::string& name, Memory* memory, Portal *portal):Skill("TaxScrew",{"Screw","Approach","Screwdriver"},name,memory,portal,{ControlMode::mCartTorque}){
-    m_current_approach_pose=get_object_pose_T("Approach");
-    m_current_screw_pose=get_object_pose_T("Screw");
+
 }
 
 Eigen::Matrix<double,3,3> TaxScrew::get_O_R_T_0(const Percept &p) const{
@@ -145,6 +144,8 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxScrew::graph_transitio
 
 std::shared_ptr<ManipulationPrimitive> TaxScrew::create_approach_mp(const Percept &p){
     spdlog::trace("TaxScrew::create_approach_mp");
+    m_current_approach_pose=get_object_pose_T("Approach");
+    m_current_screw_pose=get_object_pose_T("Screw");
     std::shared_ptr<SkillParametersTaxScrew> skill_params = get_parameters<SkillParametersTaxScrew>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
@@ -184,7 +185,7 @@ std::shared_ptr<ManipulationPrimitive> TaxScrew::create_screw_mp(const Percept &
     push->set_TF_F_ff(F_d,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
     Eigen::Matrix<double,4,4> goal_pose=p.proprioception.T_T_EE;
-    goal_pose.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(0,0,skill_params->p2.phi)*p.proprioception.T_T_EE.block<3,3>(0,0);
+    goal_pose.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(0,0,-skill_params->p2.phi)*p.proprioception.T_T_EE.block<3,3>(0,0);
     move->set_goal(goal_pose,skill_params->p2.dX_d,skill_params->p2.ddX_d);
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p2.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);

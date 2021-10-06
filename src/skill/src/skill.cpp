@@ -597,7 +597,7 @@ double Skill::get_goal_heuristic([[maybe_unused]] const Percept &p){
 }
 
 
-bool Skill::is_in_env(const std::string& pose, const Percept &p){
+bool Skill::is_in_env(const std::string& pose, const Percept &p, bool position_only,bool orientation_only){
     bool reached_position=true;
     bool reached_orientation=true;
     for(unsigned i=0;i<3;i++){
@@ -608,10 +608,16 @@ bool Skill::is_in_env(const std::string& pose, const Percept &p){
     if(acos(((get_object_pose_T(pose).block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) > m_memory->read_parameters()->user.env_X(3)){
         reached_orientation=false;
     }
-    return reached_position && reached_orientation;
+    if(position_only){
+        return reached_position;
+    }else if(orientation_only){
+        return reached_orientation;
+    }else{
+        return reached_position && reached_orientation;
+    }
 }
 
-bool Skill::is_in_env(const Eigen::Matrix<double,4,4>& pose, const Percept &p){
+bool Skill::is_in_env(const Eigen::Matrix<double,4,4>& pose, const Percept &p, bool position_only,bool orientation_only){
     bool reached_position=true;
     bool reached_orientation=true;
     for(unsigned i=0;i<3;i++){
@@ -622,7 +628,13 @@ bool Skill::is_in_env(const Eigen::Matrix<double,4,4>& pose, const Percept &p){
     if(acos(((pose.block<3,3>(0,0).transpose()*p.proprioception.T_T_EE.block<3,3>(0,0)).trace()-1)/2) > m_memory->read_parameters()->user.env_X(3)){
         reached_orientation=false;
     }
-    return reached_position && reached_orientation;
+    if(position_only){
+        return reached_position;
+    }else if(orientation_only){
+        return reached_orientation;
+    }else{
+        return reached_position && reached_orientation;
+    }
 }
 
 void Skill::set_ROI_center(const Eigen::Matrix<double, 3, 1> &ROI_center){
