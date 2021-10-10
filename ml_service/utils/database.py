@@ -33,13 +33,14 @@ def backup_result(from_host: str, to_host: str, skill_class: str, uuid: str, dst
     to_client.write(dst_col, skill_class, result)
 
 
-def backup_results(from_host: str, to_host: str, skill_class: str, tags: list, dst_col: str):
+def backup_results(from_host: str, to_host: str, skill_class: str, tags: list, from_db: str = "ml_results",
+                   to_db: str = "ml_results"):
     from_client = MongoDBClient(from_host)
     to_client = MongoDBClient(to_host)
-    results = from_client.read("ml_results", skill_class, {"meta.tags": {"$all": tags}})
+    results = from_client.read(from_db, skill_class, {"meta.tags": {"$all": tags}})
     for r in results:
         try:
-            to_client.write(dst_col, skill_class, r)
+            to_client.write(to_db, skill_class, r)
         except DuplicateKeyError:
             print("Skipping duplicate...")
 

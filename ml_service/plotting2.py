@@ -6,7 +6,7 @@ from plotting.data_processor import DataError
 import matplotlib.pyplot as plt
 
 
-skills = [
+skills_time = [
     {
         "skill_class": "insert_object",
         "task": "cylinder_10",
@@ -141,12 +141,117 @@ skills = [
         "tags": ["iros2021", "press_button"],
         "max_cost": 10,
         "cost_thr": 5
+    },
+    {
+        "skill_class": "tip",
+        "task": "enter_key",
+        "host": "localhost",
+        "database": "diss_additional",
+        "tags": ["diss_additional"],
+        "max_cost": 10,
+        "cost_thr": 5
+    },
+    {
+        "skill_class": "turn_lever",
+        "task": "red_lever",
+        "host": "localhost",
+        "database": "diss_additional",
+        "tags": ["diss_additionals"],
+        "max_cost": 10,
+        "cost_thr": 5
+    },
+    {
+        "skill_class": "drag",
+        "task": "blue_box",
+        "host": "localhost",
+        "database": "diss_additional",
+        "tags": ["diss_additional"],
+        "max_cost": 10,
+        "cost_thr": 5
     }
 ]
 
+skills_forces = [
+    {
+        "skill_class": "insertion",
+        "task": "cylinder_30",
+        "host": "localhost",
+        "database": "diss_additional",
+        "tags": ["diss_additional"],
+        "max_cost": 100,
+        "cost_thr": 60
+     },
+    {
+        "skill_class": "insertion",
+        "task": "cylinder_40",
+        "host": "localhost",
+        "database": "diss_additional",
+        "tags": ["diss_additional"],
+        "max_cost": 100,
+        "cost_thr": 60
+    },
+    {
+        "skill_class": "insertion",
+        "task": "key_abus_e30",
+        "host": "localhost",
+        "database": "diss_additional",
+        "tags": ["diss_additional"],
+        "max_cost": 100,
+        "cost_thr": 60
+    },
+    {
+        "skill_class": "insertion",
+        "task": "key_old",
+        "host": "localhost",
+        "database": "diss_additional",
+        "tags": ["diss_additional"],
+        "max_cost": 100,
+        "cost_thr": 60
+    },
+    {
+        "skill_class": "extraction",
+        "task": "cylinder_30",
+        "host": "localhost",
+        "database": "diss_additional",
+        "tags": ["diss_additional"],
+        "max_cost": 100,
+        "cost_thr": 60
+    },
+    {
+        "skill_class": "turn_lever",
+        "task": "red_lever",
+        "host": "localhost",
+        "database": "diss_additional",
+        "tags": ["diss_additionals"],
+        "max_cost": 100,
+        "cost_thr": 60
+    },
+    {
+        "skill_class": "tip",
+        "task": "enter_key",
+        "host": "localhost",
+        "database": "diss_additional",
+        "tags": ["diss_additional"],
+        "max_cost": 100,
+        "cost_thr": 60
+    },
+    {
+        "skill_class": "drag",
+        "task": "blue_box",
+        "host": "localhost",
+        "database": "diss_additional",
+        "tags": ["diss_additional"],
+        "max_cost": 100,
+        "cost_thr": 60
+    },
+]
 
-def plot_experiments(config: list, cost_function: str, n_rows: int, n_cols: int, max_cost: int, max_time: int):
+
+def plot_experiments(config: list, cost_function: str, max_cost: int, max_time: int):
     p = DataProcessor()
+
+    n_rows = int(np.ceil(len(config) / 4))
+    n_cols = 4
 
     fig_cost, axes_cost = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0})
     fig_casr, axes_casr = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0})
