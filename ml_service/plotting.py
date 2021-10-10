@@ -74,6 +74,47 @@ def agent_learning(tags, hosts = ["collective-panda-002.local"]):
         plot.plot_learning_over_task(agent_times_cum, agent)
 
 
+def ler_explanation(host, tags_a, tags_b):
+    task_type = "insert_object"
+    database_a = "results_tl_base"
+    database_b = "transfer_all_v2"
+    min_length = 1500
+    p = DataProcessor()
+    #first leaning curve
+    results_a = get_multiple_experiment_data(host, task_type, results_db=database_a, filter={"meta.tags": tags_a})[0]
+    print("len results_a", len(results_a.trials))
+    cost_a, time_a = results_a.get_cost_per_time()
+    cost_a = [c *10 for c in cost_a]
+    print("len cost_a, time_a",len(cost_a),len(time_a))
+
+    plt.plot(time_a, cost_a, color="#4264ff", label="Cost function task A",linewidth=0.85)
+    cost_a_dec = p.get_monotonically_decreasing_cost(cost_a)
+    plt.plot(time_a, cost_a_dec, color="#052fff", label= "Monocally decreasing cost function task A")
+    plt.fill_between(time_a, cost_a_dec, facecolor="#e3e8ff", zorder=0, interpolate=True, label="LE task A")  # , hatch = "///"
+    #second learning curve
+    results_b = get_multiple_experiment_data(host, task_type, results_db=database_b, filter={"meta.tags": tags_b})[0]
+    cost_b, time_b = results_b.get_cost_per_time()
+    cost_b = [c*10 for c in cost_b]
+    cost_b_dec = p.get_monotonically_decreasing_cost(cost_b)
+    plt.plot(time_b, cost_b_dec, color = "#ff7912", label="Monocally decreasing cost function task B")
+    #plt.fill_between(time_b, cost_b_dec, color="#ffffff", zorder=1, interpolate=True)
+    plt.fill_between(time_b, cost_b_dec, facecolor="#ffd2b0", zorder=2, label="LE task B")  #, hatch = "\\\\"
+
+    #additional stuff
+    #red bar
+    plt.plot([time_b[-1],time_b[-1]+20],[cost_b[-1],cost_b[-1]],color='r')
+    plt.plot([time_b[-1],time_b[-1]+20],[0,0],color='r')
+    plt.plot([time_b[-1]+10, time_b[-1]+10], [cost_b[-1], 0], color='r', label="b")
+    
+    plt.xlim(0,1500)
+    plt.ylim(0,10)
+    plt.ylabel("Execution Time [s]")
+    plt.xlabel("Time [s]")
+    plt.legend(loc=1)
+    plt.gcf().set_size_inches(9, 5)
+    plt.savefig("ler_explain.png", bbox_inches='tight', dpi=600) #, pad_inches = 0
+    plt.show()
+
 def plot_collective_learning(tags, data_src):
     filter = {"meta.tags": tags}
     knowledge_mode = "global"
