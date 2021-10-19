@@ -31,12 +31,12 @@ class CostFunctionFactory(ABC):
 
 class ProblemDefinitionFactory(ABC):
 
-    def __init__(self, robot: str, skill_class: str, learn_skills: list, setup_skills: list, reset_skills: list,
+    def __init__(self, robots: list, skill_class: str, learn_skills: list, setup_skills: list, reset_skills: list,
                  termination_skills: list, cost_function: CostFunctionFactory, objects: dict):
         self.path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
         self.skill_class = skill_class
         self.cost_function = cost_function
-        self.robot = robot
+        self.robots = robots
         self.objects = objects
 
         self.learn_context = dict()

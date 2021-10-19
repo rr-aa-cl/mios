@@ -67,7 +67,7 @@ std::map<std::string, std::set<std::string> > SkillParametersTaxShove::get_param
 }
 
 TaxShove::TaxShove(const std::string& name, Memory* memory, Portal* portal):Skill("TaxShove",{"Shovable","Approach","Direction"},name,memory,portal,{ControlMode::mCartTorque,ControlMode::mCartVelocity}){
-    m_has_contact=false;
+    m_has_contact=true;
 }
 
 Eigen::Matrix<double,3,3> TaxShove::get_O_R_T_0(const Percept &p) const{
@@ -131,20 +131,13 @@ std::shared_ptr<ManipulationPrimitive> TaxShove::create_shove_mp(const Percept &
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("shove",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
-    move->set_goal(get_object_pose_T("Direction"),skill_params->p1.dX_d,skill_params->p1.ddX_d);
+    move->set_goal(get_object_pose_T("Direction"),skill_params->p2.dX_d,skill_params->p2.ddX_d);
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
-    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p1.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
+    mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p2.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
 bool TaxShove::check_local_pre_conditions(const Percept &p){
-    Eigen::Matrix<double,4,4> T_shovable = get_object_pose_T("Shovable");
-    std::shared_ptr<SkillParametersTaxShove> skill_params = get_parameters<SkillParametersTaxShove>();
-    for(unsigned i=0;i<3;i++){
-        if(p.proprioception.T_T_EE(3,i)<T_shovable(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)>T_shovable(3,i)+skill_params->ROI_x(i*2+1)){
-            return false;
-        }
-    }
     return true;
 }
 

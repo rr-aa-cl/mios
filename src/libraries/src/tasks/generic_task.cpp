@@ -43,6 +43,7 @@
 #include "mios/skills/tax_displace.hpp"
 #include "mios/skills/tax_screw.hpp"
 #include "mios/skills/tax_wrench.hpp"
+#include "mios/skills/tax_screw_out.hpp"
 
 namespace mios {
 
@@ -272,6 +273,9 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("TaxWrench"):
         execute_skill<TaxWrench,SkillParametersTaxWrench>(name);
+        break;
+    case msrm_utils::str_to_int("TaxScrewOut"):
+        execute_skill<TaxScrewOut,SkillParametersTaxScrewOut>(name);
         break;
     default:
         spdlog::error("Skill with type " + type + " not known to GenericTask");

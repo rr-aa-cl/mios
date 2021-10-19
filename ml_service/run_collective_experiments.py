@@ -7,7 +7,6 @@ from utils.database import delete_local_knowledge
 from utils.database import backup_results
 from definitions.benchmark_definitions import mios_ml_benchmark
 from definitions.benchmark_definitions import mios_complex_ml_benchmark
-from definitions.taxonomy_templates import insertion
 from threading import Thread
 from xmlrpc.client import ServerProxy
 import numpy as np
@@ -17,6 +16,9 @@ from plotting.data_processor import DataError
 from plotting.plotter import Plotter
 import matplotlib.pyplot as plt
 import scipy.stats
+from definitions.templates import *
+from definitions.cost_functions import *
+from definitions.service_configs import *
 
 benchmark_factors = [0, 0.1, 0.2, 0.3, 0.4]
 benchmark_learning_thresholds = [0.01, 0.01, 0.01, 0.01]
@@ -26,6 +28,8 @@ experiment_learning_thresholds = [0.7/5, 0.5/5, 0.6/5, 0.7/5, 0.6/5]
 database = "collective-control-001.local"
 agents_benchmark = ["collective-panda-001", "collective-panda-003"]
 agents_experiment = ["collective-panda-001", "collective-panda-002", "collective-panda-007","collective-panda-009"]
+var_exp_agents = ["collective-panda-001", "collective-panda-002", "collective-panda-004","collective-panda-007",
+                  "collective-panda-008"]
 
 task_map = {
     "collective-panda-001": "cylinder_40",
@@ -617,3 +621,73 @@ def find_convergence(cost: np.ndarray, interval: float = 0.05) -> int:
         if in_interval is True:
             return i
     return len(cost) - 1
+
+
+def var_agents_exp(agents: list, tags: list):
+    for i in range(len(agents)):
+        tags_tmp = tags.copy()
+        tags_tmp.append("n_a_" + str(i+1))
+        pd = InsertionFactory(agents[0:i+1], TimeMetric("insertion", {"time": 5}),
+                              {"Insertable": "key_exp_key", "Container": "key_exp_container",
+                               "Approach": "key_exp_approach"}).get_problem_definition("key_exp_key")
+        sc = SVMLearner().get_configuration()
+        start_experiment(agents[0], agents[0:i+1], pd, sc, 1, tags=tags_tmp, keep_record=False)
+
+
+def plot_var_agents_exp(host_data: str, db_data: str, tags: list):
+    p = DataProcessor()
+    skill_class = "insertion"
+    max_time = 1500
+    fig, axes = plt.subplots(1, 1, sharex=True, sharey=False, gridspec_kw={'hspace': 0, 'wspace': 0})
+
+    axes.set_xlim(0, 1500)
+    axes.set_ylim(0, 10)
+    axes.grid()
+    axes.tick_params(axis="both", which="both", length=0)
+    axes.set_title(skill_class, y=1.0, pad=-14)
+
+    styles = ["solid", "dashed", "dotted", "dashdot", "dashed"]
+
+    for i in range(5):
+        tags_tmp = tags.copy()
+        tags_tmp.append("n_a_" + str(i+1))
+
+        try:
+            results = get_multiple_experiment_data(host_data, skill_class, results_db=db_data,
+                                                   filter={"meta.tags": {"$all": tags_tmp}})
+        except (DataNotFoundError, DataError):
+            print("Data for skill class " + skill_class + " and tags " + str(tags_tmp) + " does not exist on " +
+                  host_data + " in database " + db_data)
+            return False
+        cost, confidence_cost = p.get_average_cost_over_time(results, 1500, True)
+        cost = cost[0:1500] * 5
+        confidence_cost = confidence_cost[0:1500] * 5
+        casr, confidence_casr = p.get_average_success_over_time(results)
+        casr = casr[0:1500]
+        confidence_casr = confidence_casr[0:1500]
+
+        for k in range(1, len(casr)):
+            casr[k] += casr[k - 1]
+
+        axes.plot(cost, linestyle=styles[i], zorder=2, linewidth=4)
+        # axes[0].fill_between(np.linspace(0, len(cost), len(cost)), cost - confidence_cost,
+        #                      cost + confidence_cost, alpha=0.2, color="blue")
+        # axes[1].plot([0, len(casr)], [0, len(casr)], color="black", linestyle="dashed")
+        # axes[1].plot(casr, linestyle="dashed", zorder=2, linewidth=4)
+        # axes[1].fill_between(np.linspace(0, len(casr), len(casr)), casr - confidence_casr,
+        #                      casr + confidence_casr, alpha=0.2)
+    legend_cost = ["n_a=1", "n_a=2", "n_a=3", "n_a=4", "n_a=5"]
+    legend_casr = ["Optimal CASR", skill_class]
+
+    axes.legend(legend_cost, fontsize='x-small', loc=1)
+    # axes[1].legend(legend_casr, fontsize='x-small', loc='upper left')
+
+    ticks = np.linspace(2, 10, 5)
+    axes.set_yticks(ticks)
+    axes.set_yticklabels(list(map(str, ticks)))
+    # ticks = np.linspace(250, max_time, 6)
+    # axes[1].set_xticks(ticks)
+    # axes[1].set_xticklabels(list(map(str, ticks)))
+    # axes[1].tick_params(axis='both', which='major', labelsize=12)
+
+    plt.show()

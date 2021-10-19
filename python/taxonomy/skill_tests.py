@@ -32,7 +32,7 @@ class InsertionTest(BaseTest):
             }
         }
 
-        self.initialize(default_context, reset_default_contexts, record_performance, object_modifier)
+        self.initialize(default_context, reset_default_contexts, record_performance)
 
     def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Insertable"]})
@@ -146,10 +146,10 @@ class PushSurfaceTest(BaseTest):
         reset_default_contexts["move_joint"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Surface": args["Surface"],
             "Approach": args["Approach"]
@@ -159,7 +159,7 @@ class PushSurfaceTest(BaseTest):
         t.add_skill(self.skill_class, "TaxPush", context)
         t.start()
         result = t.wait()
-        print(result)
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Surface"], cost_function, result)
@@ -189,12 +189,12 @@ class PressButtonTest(BaseTest):
         reset_default_contexts["move_joint"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         s = ServerProxy("http://collective-control-001:8000", allow_none=True)
-        s.subscribe_to_event("button_press", "collective-panda-008.local", "12000")
+        s.subscribe_to_event("button_press", self.robot, "12000")
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Button": args["Button"],
             "Approach": args["Approach"]
@@ -237,11 +237,11 @@ class SlideObjectTest(BaseTest):
         reset_default_contexts["move_contact"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Slidable"]})
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Surface": args["Surface"],
             "Slidable": args["Slidable"],
@@ -252,6 +252,8 @@ class SlideObjectTest(BaseTest):
         t.add_skill(self.skill_class, "TaxSlideObject", context)
         t.start()
         result = t.wait()
+
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Slidable"], cost_function, result)
@@ -336,12 +338,14 @@ class GrabTest(BaseTest):
         reset_default_contexts = dict()
         f = open(self.path_to_default_context + "place.json")
         reset_default_contexts["place"] = json.load(f)
+        f = open(self.path_to_default_context + "move_joint.json")
+        reset_default_contexts["move"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Grabbable": args["Grabbable"],
             "Approach": args["Approach"],
@@ -352,6 +356,7 @@ class GrabTest(BaseTest):
         t.add_skill(self.skill_class, "TaxGrab", context)
         t.start()
         result = t.wait()
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Grabbable"], cost_function, result)
@@ -364,6 +369,9 @@ class GrabTest(BaseTest):
         context["skill"]["objects"]["Approach"] = args["Approach"]
         context["skill"]["objects"]["Retract"] = args["Retract"]
         t.add_skill("place", "TaxPlace", context)
+        context = self.reset_default_contexts["move"]
+        context["skill"]["objects"]["goal_pose"] = args["Retract"]
+        t.add_skill("move", "MoveToPoseJoint", context)
         t.start()
         t.wait()
 
@@ -384,12 +392,15 @@ class PlaceTest(BaseTest):
         reset_default_contexts = dict()
         f = open(self.path_to_default_context + "grab.json")
         reset_default_contexts["grab"] = json.load(f)
+        f = open(self.path_to_default_context + "move_joint.json")
+        reset_default_contexts["move"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
+        call_method(self.robot, 12000, "set_grasped_object", {"object": args["Placeable"]})
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Placeable": args["Placeable"],
             "Surface": args["Surface"],
@@ -401,6 +412,7 @@ class PlaceTest(BaseTest):
         t.add_skill(self.skill_class, "TaxPlace", context)
         t.start()
         result = t.wait()
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Placeable"], cost_function, result)
@@ -412,6 +424,9 @@ class PlaceTest(BaseTest):
         context["skill"]["objects"]["Approach"] = args["Approach"]
         context["skill"]["objects"]["Retract"] = args["Retract"]
         t.add_skill("grab", "TaxGrab", context)
+        context = self.reset_default_contexts["move"]
+        context["skill"]["objects"]["goal_pose"] = args["Retract"]
+        t.add_skill("move", "MoveToPoseJoint", context)
         t.start()
         t.wait()
 
@@ -481,10 +496,10 @@ class MoveTest(BaseTest):
         reset_default_contexts["move_joint"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "GoalPose": args["GoalPose"]
         }
@@ -522,11 +537,11 @@ class DragTest(BaseTest):
         reset_default_contexts["move_joint"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Draggable"]})
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Draggable": args["Draggable"],
             "GoalPose": args["GoalPose"]
@@ -565,10 +580,10 @@ class ShoveTest(BaseTest):
         reset_default_contexts["move_joint"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Shovable": args["Shovable"],
             "Approach": args["Approach"],
@@ -579,6 +594,7 @@ class ShoveTest(BaseTest):
         t.add_skill(self.skill_class, "TaxShove", context)
         t.start()
         result = t.wait()
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Shovable"], cost_function, result)
@@ -611,11 +627,11 @@ class TurnTest(BaseTest):
         reset_default_contexts["turn_back"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance=record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Turnable"]})
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Turnable": args["Turnable"],
             "GoalOrientation": args["GoalOrientation"]
@@ -625,6 +641,7 @@ class TurnTest(BaseTest):
         t.add_skill(self.skill_class, "TaxTurn", context)
         t.start()
         result = t.wait()
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Turnable"], cost_function, result)
@@ -704,10 +721,10 @@ class SlideOpenTest(BaseTest):
         reset_default_contexts["move_joint"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance=record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Container": args["Container"],
             "Approach": args["Approach"],
@@ -720,6 +737,7 @@ class SlideOpenTest(BaseTest):
         result = t.wait()
 
         ask_for_result(result)
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Container"], cost_function, result)
@@ -801,11 +819,11 @@ class SwipeTest(BaseTest):
         reset_default_contexts["swipe"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance=record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Stylus"]})
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "SwipeStart": args["SwipeStart"],
             "SwipeEnd": args["SwipeEnd"],
@@ -820,6 +838,7 @@ class SwipeTest(BaseTest):
         result = t.wait()
 
         ask_for_result(result)
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Stylus"], cost_function, result)
@@ -959,11 +978,11 @@ class CutTest(BaseTest):
         reset_default_contexts["move"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance=record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Knife"]})
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "CutStart": args["CutStart"],
             "CutEnd": args["CutEnd"],
@@ -978,6 +997,7 @@ class CutTest(BaseTest):
         result = t.wait()
 
         ask_for_result(result)
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Knife"], cost_function, result)
@@ -1068,11 +1088,11 @@ class ScrewTest(BaseTest):
         reset_default_contexts["move"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance=record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
-        call_method(self.robot, 12000, "set_grasped_object", {"object": args["Screwdriver"]})
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
+        call_method(self.robot, 12002, "set_grasped_object", {"object": args["Screwdriver"]})
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Screw": args["Screw"],
             "Approach": args["Approach"],
@@ -1083,6 +1103,7 @@ class ScrewTest(BaseTest):
         t.add_skill(self.skill_class, "TaxScrew", context)
         t.start()
         result = t.wait()
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Screw"], cost_function, result)
@@ -1096,15 +1117,72 @@ class ScrewTest(BaseTest):
         t.add_skill("move", "MoveToPoseJoint", context)
         t.start()
         t.wait()
+        input("Press enter to continue.")
 
     def teach(self, args: dict):
+        call_method(self.robot, 12002, "set_grasped_object", {"object": args["Screwdriver"]})
         input("Press enter to teach the screwdriver.")
         teach_object(self.robot, args["Screwdriver"])
-        call_method(self.robot, 12000, "set_grasped_object", {"object": args["Screwdriver"]})
         input("Press enter to teach the approach pose.")
         teach_object(self.robot, args["Approach"])
         input("Press enter to teach the screw pose.")
         teach_object(self.robot, args["Screw"])
+
+
+class ScrewOutTest(BaseTest):
+    def __init__(self, robot: str, record_performance: bool = True):
+        super().__init__(robot, "screw_out")
+        f = open(self.path_to_default_context + "screw_out.json")
+        default_context = json.load(f)
+        reset_default_contexts = dict()
+        f = open(self.path_to_default_context + "move_joint.json")
+        reset_default_contexts["move"] = json.load(f)
+        self.initialize(default_context, reset_default_contexts, record_performance=record_performance)
+
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
+        call_method(self.robot, 12002, "set_grasped_object", {"object": args["Screwdriver"]})
+        context = self.default_context
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
+        context["skill"]["objects"] = {
+            "Screw": args["Screw"],
+            "Approach": args["Approach"],
+            "Screwdriver": args["Screwdriver"],
+            "GoalPosition": args["GoalPosition"]
+        }
+
+        t = Task(self.robot)
+        t.add_skill(self.skill_class, "TaxScrewOut", context)
+        t.start()
+        result = t.wait()
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
+
+        if self.record_performance is True:
+            upload_result(self.db_host, self.skill_class, args["Screw"], cost_function, result)
+
+    def reset(self, args: dict):
+        t = Task(self.robot)
+        context = self.reset_default_contexts["move"]
+        context["skill"]["objects"] = {
+            "goal_pose": args["Retract"]
+        }
+        t.add_skill("move", "MoveToPoseJoint", context)
+        t.start()
+        t.wait()
+        input("Press enter to continue.")
+
+    def teach(self, args: dict):
+        input("Press enter to teach the screwdriver.")
+        teach_object(self.robot, args["Screwdriver"])
+        call_method(self.robot, 12002, "set_grasped_object", {"object": args["Screwdriver"]})
+        input("Press enter to teach the approach pose.")
+        teach_object(self.robot, args["Approach"])
+        input("Press enter to teach the screw pose.")
+        teach_object(self.robot, args["Screw"])
+        input("Press enter to teach the goal position.")
+        teach_object(self.robot, args["GoalPosition"])
+        input("Press enter to teach the retract pose.")
+        teach_object(self.robot, args["Retract"])
 
 
 class HammerTest(BaseTest):
@@ -1157,3 +1235,62 @@ class HammerTest(BaseTest):
         teach_object(self.robot, args["GoalPosition"])
         input("Press enter to teach the hammerable.")
         teach_object(self.robot, args["Hammerable"])
+
+
+class BendTest(BaseTest):
+    def __init__(self, robot: str, record_performance: bool = True):
+        super().__init__(robot, "bend")
+        f = open(self.path_to_default_context + "bend.json")
+        default_context = json.load(f)
+        reset_default_contexts = dict()
+        f = open(self.path_to_default_context + "bend.json")
+        reset_default_contexts["bend"] = json.load(f)
+        f = open(self.path_to_default_context + "move_joint.json")
+        reset_default_contexts["move"] = json.load(f)
+        self.initialize(default_context, reset_default_contexts, record_performance=record_performance)
+
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
+        call_method(self.robot, 12000, "set_grasped_object", {"object": args["Bendable"]})
+        context = self.default_context
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
+        context["skill"]["objects"] = {
+            "Bendable": args["Bendable"],
+            "GoalPose": args["GoalPose"]
+        }
+
+        t = Task(self.robot)
+        t.add_skill(self.skill_class, "TaxBend", context)
+        t.start()
+        result = t.wait()
+
+        if self.record_performance is True:
+            upload_result(self.db_host, self.skill_class, args["Bendable"], cost_function, result)
+
+    def reset(self, args: dict):
+        call_method(self.robot, 12000, "set_grasped_object", {"object": args["Bendable"]})
+        t = Task(self.robot)
+        context = self.reset_default_contexts["bend"]
+        context["skill"]["objects"] = {
+            "Bendable": args["Bendable"],
+            "GoalPose": args["GoalPose"]
+        }
+        context["skill"]["p0"]["dX_d"] = [0.1, 0.5]
+        context["skill"]["p0"]["ddX_d"] = [0.1, 1]
+        t.add_skill("bend", "TaxBend", context)
+        context = self.reset_default_contexts["move"]
+        context["skill"]["objects"] = {
+            "goal_pose": args["GoalPose"]
+        }
+        t.add_skill("move", "MoveToPoseJoint", context)
+        t.start()
+        t.wait()
+
+    def teach(self, args: dict):
+        input("Press enter to teach the bendable.")
+        teach_object(self.robot, args["Bendable"])
+        call_method(self.robot, 12000, "set_grasped_object", {"object": args["Bendable"]})
+        input("Press enter to teach the start pose.")
+        teach_object(self.robot, args["StartPose"])
+        input("Press enter to teach the goal pose.")
+        teach_object(self.robot, args["GoalPose"])

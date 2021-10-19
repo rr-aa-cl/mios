@@ -485,8 +485,9 @@ SkillCost Skill::measure_cost(const Percept &p){
     if(p.proprioception.K_F_ext_K.block<3,1>(3,0).norm()>m_memory->read_parameters()->user.F_ext_contact(1)){
         contact_r=true;
     }
-    m_cost_contact_forces_sum += p.proprioception.K_F_ext_K.block<3,1>(0,0).norm();
-    m_cost_contact_forces_sum += p.proprioception.K_F_ext_K.block<3,1>(3,0).norm();
+    m_cost_contact_forces_sum += p.proprioception.tau_ext.norm();
+//    m_cost_contact_forces_sum += p.proprioception.K_F_ext_K.block<3,1>(0,0).norm();
+//    m_cost_contact_forces_sum += p.proprioception.K_F_ext_K.block<3,1>(3,0).norm();
     cost.contact_forces = m_cost_contact_forces_sum / (m_contact_cnt + 1);
     m_contact_cnt++;
     if(contact_t || contact_r){

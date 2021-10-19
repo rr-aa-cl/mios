@@ -4,7 +4,9 @@
 		"Button": "Button",
 		"Approach": "Approach"
 	    },
-	    "time_max": 10,
+	    "condition_level_success": "External",
+	    "condition_level_error": "External",
+	    "time_max": 5,
 	    "p0": {
 			"K_x": [1000, 1000, 1000, 100, 100, 100],
 			"dX_d": [0.2, 0.5],

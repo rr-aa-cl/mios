@@ -1,14 +1,14 @@
 #include "mios/strategies/ff_strategy.hpp"
 #include "mios/strategies/cart_compliance_strategy.hpp"
 #include "mios/strategies/twist_strategy.hpp"
-#include "mios/skills/tax_screw.hpp"
+#include "mios/skills/tax_screw_out.hpp"
 #include "mios/strategies/desired_wrench_strategy.hpp"
 #include "mios/strategies/move_to_pose.hpp"
 #include "msrm_cpp_utils/math/math.hpp"
 
 namespace mios{
 
-bool SkillParametersTaxScrew::from_json(const nlohmann::json& parameters){
+bool SkillParametersTaxScrewOut::from_json(const nlohmann::json& parameters){
     if(parameters.find("p0")==parameters.end()){
         spdlog::error("Parameters for primitive 0 are missing.");
         return false;
@@ -63,10 +63,6 @@ bool SkillParametersTaxScrew::from_json(const nlohmann::json& parameters){
             spdlog::error("Missing parameter: p2.f_screw");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p2"],"m_max",p2.m_max)){
-            spdlog::error("Missing parameter: p2.m_max");
-            return false;
-        }
         if(!msrm_utils::read_json_param(parameters["p2"],"phi",p2.phi)){
             spdlog::error("Missing parameter: p2.phi");
             return false;
@@ -92,23 +88,23 @@ bool SkillParametersTaxScrew::from_json(const nlohmann::json& parameters){
     return true;
 }
 
-std::map<std::string, std::set<std::string> > SkillParametersTaxScrew::get_parameter_list(){
-    return {{"p0",{"K_x","dX_d","ddX_d"}},{"p1",{"K_x","dX_d","ddX_d"}},{"p2",{"K_x","dX_d","ddX_d","f_screw","m_max","phi"}},{"p3",{"K_x","dX_d","ddX_d"}}};
+std::map<std::string, std::set<std::string> > SkillParametersTaxScrewOut::get_parameter_list(){
+    return {{"p0",{"K_x","dX_d","ddX_d"}},{"p1",{"K_x","dX_d","ddX_d"}},{"p2",{"K_x","dX_d","ddX_d","f_screw","phi"}},{"p3",{"K_x","dX_d","ddX_d"}}};
 }
 
-TaxScrew::TaxScrew(const std::string& name, Memory* memory, Portal *portal):Skill("TaxScrew",{"Screw","Approach","Screwdriver"},name,memory,portal,{ControlMode::mCartTorque}){
+TaxScrewOut::TaxScrewOut(const std::string& name, Memory* memory, Portal *portal):Skill("TaxScrewOut",{"Screw","Approach","Screwdriver","GoalPosition"},name,memory,portal,{ControlMode::mCartTorque}){
 
 }
 
-Eigen::Matrix<double,3,3> TaxScrew::get_O_R_T_0(const Percept &p) const{
+Eigen::Matrix<double,3,3> TaxScrewOut::get_O_R_T_0(const Percept &p) const{
     return get_object("Screw")->O_T_OB.block<3,3>(0,0);
 }
 
-std::shared_ptr<ManipulationPrimitive> TaxScrew::get_initial_mp(const Percept& p){
+std::shared_ptr<ManipulationPrimitive> TaxScrewOut::get_initial_mp(const Percept& p){
     return create_approach_mp(p);
 }
 
-std::optional<std::shared_ptr<ManipulationPrimitive> > TaxScrew::graph_transition(const Percept &p){
+std::optional<std::shared_ptr<ManipulationPrimitive> > TaxScrewOut::graph_transition(const Percept &p){
     if(get_active_mp()->get_name()=="approach"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
             return create_contact_mp(p);
@@ -125,7 +121,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxScrew::graph_transitio
     }
     if(get_active_mp()->get_name()=="screw"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
-            m_current_approach_pose(2,3)-=m_current_screw_pose(2,3)-p.proprioception.T_T_EE(2,3);
+            m_current_approach_pose(2,3)+=p.proprioception.T_T_EE(2,3)-m_current_screw_pose(2,3);
             m_current_screw_pose(2,3)=p.proprioception.T_T_EE(2,3);
             return create_reset_mp(p);
         }else{
@@ -142,11 +138,11 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxScrew::graph_transitio
     return {};
 }
 
-std::shared_ptr<ManipulationPrimitive> TaxScrew::create_approach_mp(const Percept &p){
+std::shared_ptr<ManipulationPrimitive> TaxScrewOut::create_approach_mp(const Percept &p){
     spdlog::trace("TaxScrew::create_approach_mp");
     m_current_approach_pose=get_object_pose_T("Approach");
     m_current_screw_pose=get_object_pose_T("Screw");
-    std::shared_ptr<SkillParametersTaxScrew> skill_params = get_parameters<SkillParametersTaxScrew>();
+    std::shared_ptr<SkillParametersTaxScrewOut> skill_params = get_parameters<SkillParametersTaxScrewOut>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("approach",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
@@ -157,9 +153,9 @@ std::shared_ptr<ManipulationPrimitive> TaxScrew::create_approach_mp(const Percep
     return mp;
 }
 
-std::shared_ptr<ManipulationPrimitive> TaxScrew::create_contact_mp(const Percept &p){
+std::shared_ptr<ManipulationPrimitive> TaxScrewOut::create_contact_mp(const Percept &p){
     spdlog::trace("TaxScrew::create_contact_mp");
-    std::shared_ptr<SkillParametersTaxScrew> skill_params = get_parameters<SkillParametersTaxScrew>();
+    std::shared_ptr<SkillParametersTaxScrewOut> skill_params = get_parameters<SkillParametersTaxScrewOut>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("contact",p);
     mp->create_strategy<TwistStrategy>("move",1);
     std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
@@ -173,9 +169,9 @@ std::shared_ptr<ManipulationPrimitive> TaxScrew::create_contact_mp(const Percept
     return mp;
 }
 
-std::shared_ptr<ManipulationPrimitive> TaxScrew::create_screw_mp(const Percept &p){
+std::shared_ptr<ManipulationPrimitive> TaxScrewOut::create_screw_mp(const Percept &p){
     spdlog::trace("TaxScrew::create_screw_mp()");
-    std::shared_ptr<SkillParametersTaxScrew> skill_params = get_parameters<SkillParametersTaxScrew>();
+    std::shared_ptr<SkillParametersTaxScrewOut> skill_params = get_parameters<SkillParametersTaxScrewOut>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("screw",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     mp->create_strategy<FFStrategy>("push",1);
@@ -185,16 +181,16 @@ std::shared_ptr<ManipulationPrimitive> TaxScrew::create_screw_mp(const Percept &
     push->set_TF_F_ff(F_d,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
     Eigen::Matrix<double,4,4> goal_pose=p.proprioception.T_T_EE;
-    goal_pose.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(0,0,-skill_params->p2.phi)*get_object_pose_T("Approach").block<3,3>(0,0);
+    goal_pose.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(0,0,skill_params->p2.phi)*get_object_pose_T("Approach").block<3,3>(0,0);
     move->set_goal(goal_pose,skill_params->p2.dX_d,skill_params->p2.ddX_d);
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p2.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
 
-std::shared_ptr<ManipulationPrimitive> TaxScrew::create_reset_mp(const Percept &p){
+std::shared_ptr<ManipulationPrimitive> TaxScrewOut::create_reset_mp(const Percept &p){
     spdlog::trace("TaxScrew::create_reset_mp()");
-    std::shared_ptr<SkillParametersTaxScrew> skill_params = get_parameters<SkillParametersTaxScrew>();
+    std::shared_ptr<SkillParametersTaxScrewOut> skill_params = get_parameters<SkillParametersTaxScrewOut>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("reset",p);
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
@@ -205,23 +201,25 @@ std::shared_ptr<ManipulationPrimitive> TaxScrew::create_reset_mp(const Percept &
     return mp;
 }
 
-bool TaxScrew::check_local_pre_conditions(const Percept &p){
+bool TaxScrewOut::check_local_pre_conditions(const Percept &p){
     if(m_memory->get_live_context()->grasped_object->name!=get_object("Screwdriver")->name){
         return false;
     }
     return true;
 }
 
-bool TaxScrew::check_local_suc_conditions(const Percept &p){
-    std::shared_ptr<SkillParametersTaxScrew> skill_params = get_parameters<SkillParametersTaxScrew>();
-    if(fabs(p.proprioception.K_F_ext_K(5))>skill_params->p2.m_max){
-        return true;
+bool TaxScrewOut::check_local_suc_conditions(const Percept &p){
+    std::shared_ptr<SkillParametersTaxScrewOut> skill_params = get_parameters<SkillParametersTaxScrewOut>();
+    if(get_active_mp()->get_name()=="screw"){
+        if(is_in_env("GoalPosition",p,true)){
+            return true;
+        }
     }
     return false;
 }
 
-bool TaxScrew::check_local_ex_conditions(const Percept &p){
-    std::shared_ptr<SkillParametersTaxScrew> skill_params = get_parameters<SkillParametersTaxScrew>();
+bool TaxScrewOut::check_local_ex_conditions(const Percept &p){
+    std::shared_ptr<SkillParametersTaxScrewOut> skill_params = get_parameters<SkillParametersTaxScrewOut>();
     if(get_active_mp()->get_name()=="reset" && get_result().success){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
             return true;
@@ -230,7 +228,7 @@ bool TaxScrew::check_local_ex_conditions(const Percept &p){
     return false;
 }
 
-bool TaxScrew::check_local_err_conditions(const Percept &p){
+bool TaxScrewOut::check_local_err_conditions(const Percept &p){
     if(m_memory->get_live_context()->grasped_object->name!=get_object("Screwdriver")->name){
         return true;
     }

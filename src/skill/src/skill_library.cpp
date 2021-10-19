@@ -54,6 +54,7 @@
 #include "mios/skills/tax_displace.hpp"
 #include "mios/skills/tax_screw.hpp"
 #include "mios/skills/tax_wrench.hpp"
+#include "mios/skills/tax_screw_out.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -104,6 +105,7 @@ SkillLibrary::SkillLibrary(){
     m_skill_parameters.insert(std::make_pair("TaxDisplace",std::make_shared<SkillParametersTaxDisplace>()));
     m_skill_parameters.insert(std::make_pair("TaxScrew",std::make_shared<SkillParametersTaxScrew>()));
     m_skill_parameters.insert(std::make_pair("TaxWrench",std::make_shared<SkillParametersTaxWrench>()));
+    m_skill_parameters.insert(std::make_pair("TaxScrewOut",std::make_shared<SkillParametersTaxScrewOut>()));
 }
 
 const std::unordered_map<std::string,std::shared_ptr<Skill> >* SkillLibrary::get_skills() const{

@@ -132,6 +132,13 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxPressButton::graph_tra
     }
     if(get_active_mp()->get_name()=="contact"){
         if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
+            return create_push_down_mp(p);
+        }else{
+            return {};
+        }
+    }
+    if(get_active_mp()->get_name()=="push_down"){
+        if(m_press_started){
             return create_push_mp(p);
         }else{
             return {};
@@ -178,9 +185,9 @@ std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_contact_mp(const P
 std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_push_down_mp(const Percept &p){
     spdlog::trace("TaxPressButton::create_push_mp()");
     std::shared_ptr<SkillParametersTaxPressButton> skill_params = get_parameters<SkillParametersTaxPressButton>();
-    std::shared_ptr<ManipulationPrimitive> mp = create_mp("push",p);
-    mp->create_strategy<FFStrategy>("push",1);
-    std::shared_ptr<FFStrategy> move = mp->get_strategy<FFStrategy>("push");
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("push_down",p);
+    mp->create_strategy<FFStrategy>("push_down",1);
+    std::shared_ptr<FFStrategy> move = mp->get_strategy<FFStrategy>("push_down");
     Eigen::Matrix<double,6,1> F_d;
     F_d<<0,0,skill_params->p2.f_push,0,0,0;
     move->set_TF_F_ff(F_d,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
@@ -218,13 +225,6 @@ std::shared_ptr<ManipulationPrimitive> TaxPressButton::create_retract_mp(const P
 }
 
 bool TaxPressButton::check_local_pre_conditions(const Percept &p){
-    Eigen::Matrix<double,4,4> T_container = get_object_pose_T("Button");
-    std::shared_ptr<SkillParametersTaxPressButton> skill_params = get_parameters<SkillParametersTaxPressButton>();
-    for(unsigned i=0;i<3;i++){
-        if(p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)>T_container(3,i)+skill_params->ROI_x(i*2+1)){
-            return false;
-        }
-    }
     return true;
 }
 
@@ -307,14 +307,6 @@ bool TaxPressButton::check_local_err_conditions(const Percept &p){
 
             }
         }
-    }
-
-    const Eigen::Matrix<double,6,1>& ROI_x=get_parameters<SkillParametersTaxPressButton>()->ROI_x;
-    [[maybe_unused]] const Eigen::Matrix<double,6,1>& ROI_phi=get_parameters<SkillParametersTaxPressButton>()->ROI_phi;
-    [[maybe_unused]] double error_angle=acos(p.proprioception.T_T_EE.block<3,1>(0,2).dot(get_object_pose_T("Button").block<3,1>(0,2)));
-    Eigen::Matrix<double,3,1> dist = p.proprioception.T_T_EE.block<3,1>(0,3)-get_object_pose_T("Button").block<3,1>(0,3);
-    if(dist(0) < ROI_x(0) || dist(0) > ROI_x(1) || dist(1) < ROI_x(2) || dist(1) > ROI_x(3) || dist(2) < ROI_x(4) || dist(2) > ROI_x(5)){
-        return true;
     }
     return false;
 }

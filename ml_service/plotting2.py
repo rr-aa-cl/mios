@@ -249,7 +249,7 @@ def plot_experiment(host: str, skill_class: str, database: str, tags: list, max_
     fig, axes = plt.subplots(2, 1, sharex=True, sharey=False, gridspec_kw={'hspace': 0, 'wspace': 0})
 
     axes[0].set_xlim(0, 1500)
-    axes[0].set_xlim(0, 1500)
+    axes[1].set_xlim(0, 1500)
     axes[0].set_ylim(0, max_cost)
     axes[1].set_ylim(0, 1500)
     axes[0].grid()

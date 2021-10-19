@@ -367,17 +367,20 @@ bool Actuator::is_valid() const{
             return false;
         }
     }
-    for(unsigned i=0;i<4;i++){
-        for(unsigned j=0;j<4;j++){
-            if(TF_T_EE_d(i)!=TF_T_EE_d(i)){
-                spdlog::error("Detected NaN in skill command at TF_T_EE_d["+std::to_string(i)+","+std::to_string(j)+"].");
-                return false;
+    if(m_command_pattern.find(CommandPatternCartesianPose)!=m_command_pattern.end()){
+        for(unsigned i=0;i<4;i++){
+            for(unsigned j=0;j<4;j++){
+                if(TF_T_EE_d(i)!=TF_T_EE_d(i)){
+                    spdlog::error("Detected NaN in skill command at TF_T_EE_d["+std::to_string(i)+","+std::to_string(j)+"].");
+                    return false;
+                }
             }
         }
-    }
-    if(!msrm_utils::is_orthonormal(TF_T_EE_d.block<3,3>(0,0))){
-        spdlog::error("Rotation part of TF_T_EE_d is not orthonormal.");
-        return false;
+        if(!msrm_utils::is_orthonormal(TF_T_EE_d.block<3,3>(0,0))){
+            spdlog::error("Rotation part of TF_T_EE_d is not orthonormal.");
+            std::cout<<"TF_T_EE_d: "<<TF_T_EE_d<<std::endl;
+            return false;
+        }
     }
     return true;
 }
@@ -434,7 +437,7 @@ void Actuator::set_zero(const Percept &p_0){
     K_theta=p_0.controller.K_theta;
     xi_theta=p_0.controller.xi_theta;
 
-//    O_R_T.setIdentity();
+    //    O_R_T.setIdentity();
 }
 
 void Actuator::set_stop_factor(double stop_factor){

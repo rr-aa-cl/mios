@@ -219,6 +219,8 @@ class Engine:
         if trial.is_valid() is False:
             raise ProblemDefinitionError
 
+        trial.trial_number = self.cnt_trial
+        self.cnt_trial += 1
         trial.t_0 = time.time()
         for i in range(self.problem_definition.n_variations):
             print("Running variation " + str(i))
@@ -245,7 +247,8 @@ class Engine:
 
             trial.t_1 = time.time()
             trial.t_delta = trial.t_1 - trial.t_0
-            trial.trial_number = self.cnt_trial
+            print("#######################")
+            print(trial.trial_number)
 
             self.lock_data.acquire()
             if trial.task_result.q_metric.final_cost < 1:
@@ -264,7 +267,6 @@ class Engine:
         if trial.log is True:
             self.write_task_result(trial)
         logger.debug("Engine::_worker_loop.trial_done")
-        self.cnt_trial += 1
         self.queued_trials.task_done()
         self.completed_trials[trial.trial_uuid] = deepcopy(trial)
 
