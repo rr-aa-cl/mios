@@ -631,7 +631,7 @@ def var_agents_exp(agents: list, tags: list):
                               {"Insertable": "key_exp_key", "Container": "key_exp_container",
                                "Approach": "key_exp_approach"}).get_problem_definition("key_exp_key")
         sc = SVMLearner().get_configuration()
-        start_experiment(agents[0], agents[0:i+1], pd, sc, 1, tags=tags_tmp, keep_record=False)
+        start_experiment(agents[0], agents[0:i+1], pd, sc, 10, tags=tags_tmp, keep_record=False)
 
 
 def plot_var_agents_exp(host_data: str, db_data: str, tags: list):
