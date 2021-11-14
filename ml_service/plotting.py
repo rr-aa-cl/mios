@@ -24,19 +24,19 @@ def plot_single_experiment(host: str, task_type: str, database: str, tags: list 
     cost, confidence = result.get_cost_per_time()
     cost_mono = p.get_monotonically_decreasing_cost(cost)
     plt.plot(cost_mono)
-    plt.ylim((0,10))
+    plt.ylim((0, 10))
     plt.show()
-    #plot.plot_cost_over_trials())
+    # plot.plot_cost_over_trials())
 
 
-def average_experiment(host: str, task_type: str, database: str, tags: list, agent = None):
+def average_experiment(host: str, task_type: str, database: str, tags: list, agent=None):
     p = DataProcessor()
 
     results = get_multiple_experiment_data(host, task_type, results_db=database, filter={"meta.tags": {"$all": tags}})
     # cost = p.get_average_cost_over_time(results, 1500, True)
     cost, confidence = p.get_average_cost(results, True, 1, agent)
     plt.plot(cost)
-    plt.ylim([0,2.5])
+    plt.ylim([0, 2.5])
     plt.show()
 
 
@@ -55,7 +55,7 @@ def plot_experiment(host: str, skill_class: str, database: str, tags: list, max_
     plt.show()
 
 
-def agent_learning(tags, hosts = ["collective-panda-002.local"]):
+def agent_learning(tags, hosts=["collective-panda-002.local"]):
     filter = {"meta.tags": tags}
     knowledge_mode = "global"
     task_type = "insert_object"
@@ -81,62 +81,68 @@ def ler_explanation2(host: str, db: str, tags: list):
     # first leaning curve
     results_a = get_multiple_experiment_data(host, skill_class, results_db=db, filter={"meta.tags": tags})[0]
     cost, time = results_a.get_cost_per_time()
-    cost = [c * 10 for c in cost]
+    cost = [c * 10 / 10 for c in cost]
 
-    plt.plot(time, cost, color="#4264ff", label="Cost function", linewidth=0.85)
+    plt.plot(time, cost, color="blue", linestyle="solid", label="Cost function", linewidth=0.85)
     cost_dec = p.get_monotonically_decreasing_cost(cost)
-    plt.plot(time, cost_dec, color="#052fff", label="Monotonically decreasing cost function")
+    plt.plot(time, cost_dec, color="red", linestyle="dashed", label="Monotonically decreasing cost function")
 
-    plt.xlim(0, 1500)
-    plt.ylim(0, 10)
-    plt.ylabel("Cost")
-    plt.xlabel("Time [s]")
-    plt.legend(loc=1)
-    plt.gcf().set_size_inches(9, 5)
+    plt.xlim(0, 1400)
+    plt.ylim(0, 1)
+    plt.ylabel("Cost []", fontsize=12)
+    plt.xlabel("Learning Time [s]", fontsize=12)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.legend(loc=1, fontsize=12)
+    plt.gcf().set_size_inches(5, 3)
     plt.savefig("cost_explain.png", bbox_inches='tight', dpi=600)  # , pad_inches = 0
     plt.show()
 
 
 def ler_explanation(host, tags_a, tags_b):
     task_type = "insert_object"
-    database_a = "results_tl_base"
+    database_a = "transfer_all_v2"
     database_b = "transfer_all_v2"
     min_length = 1500
     p = DataProcessor()
-    #first leaning curve
+    # first leaning curve
     results_a = get_multiple_experiment_data(host, task_type, results_db=database_a, filter={"meta.tags": tags_a})[0]
     print("len results_a", len(results_a.trials))
     cost_a, time_a = results_a.get_cost_per_time()
-    cost_a = [c *10 for c in cost_a]
-    print("len cost_a, time_a",len(cost_a),len(time_a))
+    cost_a = [c * 10 / 10 for c in cost_a]
+    print("len cost_a, time_a", len(cost_a), len(time_a))
 
-    plt.plot(time_a, cost_a, color="#4264ff", label="Cost function task A",linewidth=0.85)
+    plt.plot(time_a, cost_a, color="blue", linestyle="solid", label="Cost function (task A)", linewidth=0.85)
     cost_a_dec = p.get_monotonically_decreasing_cost(cost_a)
-    plt.plot(time_a, cost_a_dec, color="#052fff", label= "Monocally decreasing cost function task A")
-    plt.fill_between(time_a, cost_a_dec, facecolor="#e3e8ff", zorder=0, interpolate=True, label="LE task A")  # , hatch = "///"
-    #second learning curve
+    plt.plot(time_a, cost_a_dec, color="red", linestyle="dashed", label="Monocally decreasing cost function (task A)")
+    plt.fill_between(time_a, cost_a_dec, facecolor="#e3e8ff", zorder=0, interpolate=True,
+                     label="LE task A")  # , hatch = "///"
+    # second learning curve
     results_b = get_multiple_experiment_data(host, task_type, results_db=database_b, filter={"meta.tags": tags_b})[0]
     cost_b, time_b = results_b.get_cost_per_time()
-    cost_b = [c*10 for c in cost_b]
+    cost_b = [c * 10 / 10 for c in cost_b]
     cost_b_dec = p.get_monotonically_decreasing_cost(cost_b)
-    plt.plot(time_b, cost_b_dec, color = "#ff7912", label="Monocally decreasing cost function task B")
-    #plt.fill_between(time_b, cost_b_dec, color="#ffffff", zorder=1, interpolate=True)
-    plt.fill_between(time_b, cost_b_dec, facecolor="#ffd2b0", zorder=2, label="LE task B")  #, hatch = "\\\\"
+    plt.plot(time_b, cost_b_dec, color="green", linestyle="dotted", label="Monocally decreasing cost function (task B)")
+    # plt.fill_between(time_b, cost_b_dec, color="#ffffff", zorder=1, interpolate=True)
+    plt.fill_between(time_b, cost_b_dec, facecolor="#ffd2b0", zorder=2, label="LE task B")  # , hatch = "\\\\"
 
-    #additional stuff
-    #red bar
-    plt.plot([time_b[-1],time_b[-1]+20],[cost_b[-1],cost_b[-1]],color='r')
-    plt.plot([time_b[-1],time_b[-1]+20],[0,0],color='r')
-    plt.plot([time_b[-1]+10, time_b[-1]+10], [cost_b[-1], 0], color='r', label="b")
-    
-    plt.xlim(0,1500)
-    plt.ylim(0,10)
-    plt.ylabel("Execution Time [s]")
-    plt.xlabel("Time [s]")
-    plt.legend(loc=1)
-    plt.gcf().set_size_inches(9, 5)
-    plt.savefig("ler_explain.png", bbox_inches='tight', dpi=600) #, pad_inches = 0
+    # additional stuff
+    # red bar
+    plt.plot([time_b[-1], time_b[-1] + 20], [cost_b[-1], cost_b[-1]], color='r')
+    plt.plot([time_b[-1], time_b[-1] + 20], [0, 0], color='r')
+    plt.plot([time_b[-1] + 10, time_b[-1] + 10], [cost_b[-1], 0], color='r', label="b")
+
+    plt.xlim(0, 1400)
+    plt.ylim(0, 1)
+    plt.ylabel("Cost []", fontsize=12)
+    plt.xlabel("Learning Time [s]", fontsize=12)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.legend(loc=1, fontsize=12)
+    plt.gcf().set_size_inches(8, 5)
+    plt.savefig("ler_explain.png", bbox_inches='tight', dpi=600)  # , pad_inches = 0
     plt.show()
+
 
 def plot_collective_learning(tags, data_src):
     filter = {"meta.tags": tags}
@@ -171,9 +177,10 @@ def plot_transfer_learning(db: str):
             axes[i, j].tick_params(axis="both", which="both", length=0)
             try:
                 if i == j:
-                    print("Processing plot " + str(i * 10 + j +1), end="\r")
+                    print("Processing plot " + str(i * 10 + j + 1), end="\r")
                     tags = ["transfer_learning", tasks[i]]
-                    results = get_multiple_experiment_data("collective-control-001.local", "insert_object", results_db="results_tl_base",
+                    results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+                                                           results_db="results_tl_base",
                                                            filter={"meta.tags": {"$all": tags}})
                     cost = p.get_average_cost(results, True)
                     axes[i, j].plot(cost)
@@ -188,13 +195,13 @@ def plot_transfer_learning(db: str):
                 print("No data found for experiment (" + str(i) + "," + str(j) + ")")
             if i == 0:
                 axes[i, j].annotate("t" + str(j), xy=(0.5, 1), xytext=(0, 5),
-                            xycoords='axes fraction', textcoords='offset points',
-                            size='large', ha='center', va='baseline')
+                                    xycoords='axes fraction', textcoords='offset points',
+                                    size='large', ha='center', va='baseline')
             if j == 0:
                 axes[i, j].annotate("t" + str(i), xy=(0, 0.5), xytext=(-axes[i, j].yaxis.labelpad - 5, 0),
-                            xycoords=axes[i, j].yaxis.label, textcoords='offset points',
-                            size='large', ha='right', va='center')
-                axes[i ,j].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1])
+                                    xycoords=axes[i, j].yaxis.label, textcoords='offset points',
+                                    size='large', ha='right', va='center')
+                axes[i, j].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1])
                 axes[i, j].set_yticklabels([''] * 6)
             if i == len(tasks) - 1:
                 axes[i, j].set_xticks([0, 25, 50, 75, 100])
@@ -207,11 +214,13 @@ def plot_transfer_learning(db: str):
 
 
 def plot_transfer_learning_2(task: str):
-    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_pad", "key_hatch", "key_old"]
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_pad",
+             "key_hatch", "key_old"]
     p = DataProcessor()
     plot = Plotter()
     tags = ["transfer_learning", task]
-    results = get_multiple_experiment_data("collective-control-001.local", "insert_object", results_db="transfer_base_v2",
+    results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+                                           results_db="transfer_base_v2",
                                            filter={"meta.tags": {"$all": tags}})
     cost = p.get_average_cost(results, True, 13)
     cost = np.insert(cost, 0, 1)
@@ -229,7 +238,6 @@ def plot_transfer_learning_2(task: str):
             legend.append(tasks[i])
         except (DataNotFoundError, DataError):
             print("No data found for experiment (" + str(i) + ")")
-
 
     plt.ylabel("Normed execution time [s/10]")
     plt.xlabel("Episodes [1]")
@@ -310,7 +318,7 @@ def plot_transfer_learning_3():
                 continue
             for t in range(len(tasks)):
                 try:
-                    tags = ["transfer_learning", tasks[i * n_rows +j], "from_" + tasks[t]]
+                    tags = ["transfer_learning", tasks[i * n_rows + j], "from_" + tasks[t]]
                     results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
                                                            results_db="transfer_all_v2",
                                                            filter={"meta.tags": {"$all": tags}})
@@ -345,10 +353,10 @@ def plot_transfer_learning_3():
                     le_transfer = np.sum(cost) - baseline
                     le_ratio_matrix[i * n_rows + j][t] = le_transfer / le_base
                     kl_matrix[i * n_rows + j][t] = calculate_kl_divence(base_cost, cost)
-                    casr_matrix[i * n_rows + j][t] = np.sum(casr)/np.sum(base_casr)
+                    casr_matrix[i * n_rows + j][t] = np.sum(casr) / np.sum(base_casr)
 
                     speedup_matrix[i * n_rows + j][t] = calculate_speedup(base_cost, cost)
-                    axes[i, j].plot(cost, zorder=1, color = task_colors[t])
+                    axes[i, j].plot(cost, zorder=1, color=task_colors[t])
                     axes_casr[i, j].plot(casr, zorder=1, color=task_colors[t])
 
                     legend.append("from_" + tasks[t])
@@ -401,9 +409,9 @@ def plot_transfer_learning_3():
             ax.xlabel("Trial [1]")
             ax_casr.xlabel("Episode [1]")
     else:
-        ax.set_xlabel("Time [s]", fontsize = 12)
+        ax.set_xlabel("Time [s]", fontsize=12)
         ax_casr.set_xlabel("Time [s]")
-    ax.set_ylabel("Execution time [s]", fontsize = 12)
+    ax.set_ylabel("Execution time [s]", fontsize=12)
     ax_casr.set_ylabel("CASR [1]", fontsize=12)
 
     fig.set_size_inches(16, 9)
@@ -437,7 +445,7 @@ def plot_transfer_learning_3():
 
     header = np.insert(header, 0, "")
 
-    es_matrix = np.hstack((header.reshape(-1,1), es_matrix))
+    es_matrix = np.hstack((header.reshape(-1, 1), es_matrix))
     speedup_matrix = np.hstack((header.reshape(-1, 1), speedup_matrix))
     le_ratio_matrix = np.hstack((header.reshape(-1, 1), le_ratio_matrix))
     casr_matrix = np.hstack((header.reshape(-1, 1), casr_matrix))
@@ -536,8 +544,10 @@ def count_transfer_learning(host: str, db: str, task_type: str):
             if len(docs) != 10:
                 print("Experiment with tags [" + t1 + ", " + t2 + "] has " + str(len(docs)) + " documents.")
 
+
 def cm2inch(value):
-    return value/2.54
+    return value / 2.54
+
 
 def plot_ler_matrix():
     ler_matrix_csv = open('ler_matrix.csv', 'r')
@@ -545,9 +555,10 @@ def plot_ler_matrix():
     ler_matrx = np.zeros((9, 9))
     ler_matrix_sorted = np.zeros((9, 9))
     ler_matrix_tasks = np.zeros((9, 9))
-    #bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "pink", "saddlebrown", "lavender"]
+    # bar_colors = ["blue", "red", "green", "yellow", "orange", "cyan", "pink", "saddlebrown", "lavender"]
     bar_colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]
-    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_pad", "key_old", "key_hatch"]
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_pad",
+             "key_old", "key_hatch"]
     tasks_short = ["$t_1$", "$t_2$", "$t_3$", "$t_4$", "$t_5$", "$t_6$", "$t_7$", "$t_8$", "$t_9$"]
     cnt_row = 0
 
@@ -558,13 +569,13 @@ def plot_ler_matrix():
         for i in range(len(row)):
             if i == 0:
                 continue
-            ler_matrx[cnt_row-1, i-1] = float(row[i])
-        ler_matrix_sorted[cnt_row-1] = np.sort(ler_matrx[cnt_row-1])
+            ler_matrx[cnt_row - 1, i - 1] = float(row[i])
+        ler_matrix_sorted[cnt_row - 1] = np.sort(ler_matrx[cnt_row - 1])
         ler_matrix_tasks[cnt_row - 1] = np.argsort(ler_matrx[cnt_row - 1])
         cnt_row += 1
- # single axes
+    # single axes
     fig, ax = plt.subplots(num="fig_ler")
-    fig.subplots_adjust(left=0,right=1,bottom=0,top=1)
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
     bar_width = 0.6  # standard
     dimw = bar_width / len(tasks)
     x = np.arange(len(tasks))
@@ -575,25 +586,26 @@ def plot_ler_matrix():
         for row in range(len(tasks)):
             if row == 0:
                 legend = tasks[int(ler_matrix_tasks[row, col])]
-                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row], label = legend)   
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color=colors[row], label=legend)
             else:
-                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row])   
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color=colors[row])
     handles, labels = ax.get_legend_handles_labels()
-    _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :],labels, handles), key=lambda t: t[0]))
-    fig.set_size_inches(cm2inch(30),cm2inch(10))
+    _, labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :], labels, handles), key=lambda t: t[0]))
+    fig.set_size_inches(cm2inch(30), cm2inch(10))
     fontsize = 12
-    ax.set_xticks(x + len(tasks) * dimw / 2) 
-    ax.set_xticklabels(tasks, fontsize=fontsize) 
+    ax.set_xticks(x + len(tasks) * dimw / 2)
+    ax.set_xticklabels(tasks, fontsize=fontsize)
     ax.set_ylim(0, 2.1)
-    ax.set_yticks([0, 0.4, 0.8, 1.2, 1.6, 2]) 
+    ax.set_yticks([0, 0.4, 0.8, 1.2, 1.6, 2])
     ax.grid(axis="y")
     ax.set_ylabel("LER [1]", fontsize=fontsize)
     ax.tick_params(labelsize=fontsize)
-    legend = ax.legend(handles, labels, loc="upper left",title="knowledge sources", fontsize=fontsize-2)
-    plt.setp(legend.get_title(), fontsize = fontsize-2)
+    legend = ax.legend(handles, labels, loc="upper left", title="knowledge sources", fontsize=fontsize - 2)
+    plt.setp(legend.get_title(), fontsize=fontsize - 2)
     plt.tight_layout()
     fig.savefig('fig_ler.png', bbox_inches='tight', dpi=500)
     plt.show(block=True)
+
 
 def plot_es_matrix():
     ler_matrix_csv = open('es_matrix.csv', 'r')
@@ -612,12 +624,12 @@ def plot_es_matrix():
         for i in range(len(row)):
             if i == 0:
                 continue
-            ler_matrx[cnt_row-1, i-1] = float(row[i])
-        ler_matrix_sorted[cnt_row-1] = np.sort(ler_matrx[cnt_row-1])
+            ler_matrx[cnt_row - 1, i - 1] = float(row[i])
+        ler_matrix_sorted[cnt_row - 1] = np.sort(ler_matrx[cnt_row - 1])
         ler_matrix_tasks[cnt_row - 1] = np.argsort(ler_matrx[cnt_row - 1])
         cnt_row += 1
 
- # single axes
+    # single axes
     fig, ax = plt.subplots(num="fig_es")
     bar_width = 0.6  # standard
     dimw = bar_width / len(tasks)
@@ -629,23 +641,23 @@ def plot_es_matrix():
         for row in range(len(tasks)):
             if row == 0:
                 legend = tasks[int(ler_matrix_tasks[row, col])]
-                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row], label = legend)   
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color=colors[row], label=legend)
             else:
-                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row])   
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color=colors[row])
     handles, labels = ax.get_legend_handles_labels()
-    _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :],labels, handles), key=lambda t: t[0]))
-    fig.set_size_inches(cm2inch(30),cm2inch(10))
+    _, labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :], labels, handles), key=lambda t: t[0]))
+    fig.set_size_inches(cm2inch(30), cm2inch(10))
     fontsize = 12
-    ax.set_xticks(x + len(tasks) * dimw / 2) 
+    ax.set_xticks(x + len(tasks) * dimw / 2)
     ax.set_xticklabels(tasks, fontsize=fontsize)
-    ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1]) 
+    ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1])
     ax.set_ylim(0, 1.02)
     ax.grid(axis="y")
     ax.set_ylabel("ES []", fontsize=fontsize)
-    legend = ax.legend(handles, labels, loc="upper left",title="knowledge sources", fontsize=fontsize-2)
-    plt.setp(legend.get_title(), fontsize = fontsize-2)
+    legend = ax.legend(handles, labels, loc="upper left", title="knowledge sources", fontsize=fontsize - 2)
+    plt.setp(legend.get_title(), fontsize=fontsize - 2)
     plt.tight_layout()
-    fig.savefig('fig_es.png',  dpi=500)
+    fig.savefig('fig_es.png', dpi=500)
     plt.show()
 
 
@@ -666,12 +678,12 @@ def plot_speedup_matrix():
         for i in range(len(row)):
             if i == 0:
                 continue
-            ler_matrx[cnt_row-1, i-1] = float(row[i])
-        ler_matrix_sorted[cnt_row-1] = np.sort(ler_matrx[cnt_row-1])
+            ler_matrx[cnt_row - 1, i - 1] = float(row[i])
+        ler_matrix_sorted[cnt_row - 1] = np.sort(ler_matrx[cnt_row - 1])
         ler_matrix_tasks[cnt_row - 1] = np.argsort(ler_matrx[cnt_row - 1])
         cnt_row += 1
 
- # single axes
+    # single axes
     fig, ax = plt.subplots(num="fig_speedup")
     bar_width = 0.6  # standard
     dimw = bar_width / len(tasks)
@@ -683,23 +695,23 @@ def plot_speedup_matrix():
         for row in range(len(tasks)):
             if row == 0:
                 legend = tasks[int(ler_matrix_tasks[row, col])]
-                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row], label = legend)   
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color=colors[row], label=legend)
             else:
-                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color = colors[row])   
+                bar = ax.bar(x[row] + col * (dimw + 0.02), y[row], dimw, color=colors[row])
     handles, labels = ax.get_legend_handles_labels()
-    _,labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :],labels, handles), key=lambda t: t[0]))
-    fig.set_size_inches(cm2inch(30),cm2inch(10))
+    _, labels, handles = zip(*sorted(zip(ler_matrix_tasks[0, :], labels, handles), key=lambda t: t[0]))
+    fig.set_size_inches(cm2inch(30), cm2inch(10))
     fontsize = 12
-    ax.set_xticks(x + len(tasks) * dimw / 2) 
-    ax.set_xticklabels(tasks, fontsize=fontsize) 
-    ax.set_yscale('log') 
+    ax.set_xticks(x + len(tasks) * dimw / 2)
+    ax.set_xticklabels(tasks, fontsize=fontsize)
+    ax.set_yscale('log')
     ax.grid(axis="y")
     ax.set_ylabel("speedup [s]", fontsize=fontsize)
     ax.tick_params(labelsize=fontsize)
-    legend = ax.legend(handles, labels, loc="upper right",title="knowledge sources", fontsize=fontsize-2)
-    plt.setp(legend.get_title(), fontsize = fontsize-2)
+    legend = ax.legend(handles, labels, loc="upper right", title="knowledge sources", fontsize=fontsize - 2)
+    plt.setp(legend.get_title(), fontsize=fontsize - 2)
     plt.tight_layout()
-    fig.savefig('fig_speedup.png',  dpi=500)
+    fig.savefig('fig_speedup.png', dpi=500)
     plt.show()
 
 
@@ -745,7 +757,7 @@ def transfer_learning_test():
     plt.show()
 
 
-def knowledge_quality(tags, hosts = ["localhost"], legend = None):
+def knowledge_quality(tags, hosts=["localhost"], legend=None):
     filter = {"meta.tags": tags}
     knowledge_mode = "global"
     # task_type = "insert_object"
@@ -758,7 +770,7 @@ def knowledge_quality(tags, hosts = ["localhost"], legend = None):
         results.extend(get_multiple_experiment_data(host, task_type, knowledge_mode, filter=filter))
     results = p.sort_over_time(results)
 
-    print("number of results: ",len(results))
+    print("number of results: ", len(results))
 
     distances = []
     for r in results:
@@ -768,17 +780,19 @@ def knowledge_quality(tags, hosts = ["localhost"], legend = None):
             init_knowledge = r.get_theta_per_trial()[0]  # take first trial if no initial knowledge available
         init_knowledge = p.dict_to_list(init_knowledge)
         best_theta = p.dict_to_list(r.get_best_theta())
-        created_knowledge = get_multiple_knowledge_data(hosts[0],task_type,knowledge_mode,{"meta.knowledge_source": r.uuid, "meta.tags": tags})[0]
+        created_knowledge = get_multiple_knowledge_data(hosts[0], task_type, knowledge_mode,
+                                                        {"meta.knowledge_source": r.uuid, "meta.tags": tags})[0]
         created_theta = created_knowledge.get_theta()
 
         dist = np.linalg.norm(np.array(created_theta) - np.array(init_knowledge))
         distances.append(dist)
     plot.plot_knowledge_error(distances, legend)
-        
 
-def transfer_learning_parameters(filter, host, result_db = "transfer_all_v2"):
-    #calculate the mean distance between optimas and their initial knowledges
-    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_pad", "key_old", "key_hatch"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
+
+def transfer_learning_parameters(filter, host, result_db="transfer_all_v2"):
+    # calculate the mean distance between optimas and their initial knowledges
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_pad",
+             "key_old", "key_hatch"]  # ,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
     p = DataProcessor()
     from knowledge_processor.knowledge_manager import KnowledgeManager
     from mongodb_client.mongodb_client import MongoDBClient
@@ -792,8 +806,8 @@ def transfer_learning_parameters(filter, host, result_db = "transfer_all_v2"):
             try:
                 tags = ["transfer_learning", task, "from_" + tasks[i]]
                 results = get_multiple_experiment_data(host, "insert_object",
-                                                    results_db=result_db,
-                                                    filter={"meta.tags":  tags})
+                                                       results_db=result_db,
+                                                       filter={"meta.tags": tags})
             except (DataNotFoundError, DataError):
                 print("No data found for experiment (" + str(i) + ")")
                 continue
@@ -808,7 +822,7 @@ def transfer_learning_parameters(filter, host, result_db = "transfer_all_v2"):
                 optimum = manager.get_knowledge_by_identity(client, task_identity, result_db, None)
                 optimum = r.normalize_result(optimum["parameters"])
                 init_knowledge = r.get_knowledge_norm()
-                #optimum = r.get_best_theta_norm()
+                # optimum = r.get_best_theta_norm()
                 if init_knowledge is None:
                     continue
                 dist = np.linalg.norm(np.array(p.dict_to_list(init_knowledge)) - np.array(p.dict_to_list(optimum)))
@@ -835,24 +849,26 @@ def transfer_learning_parameters(filter, host, result_db = "transfer_all_v2"):
         stds_mtx.append(task_stds)
     means_mtx = np.array(means_mtx)
     means_mtx = np.transpose(means_mtx)
-    
+
     stds_mtx = np.array(stds_mtx)
     means_mtx = means_mtx.astype('|S4')
     stds_mtx = stds_mtx.astype('|S4')
     means_mtx = np.vstack((header, means_mtx))
     stds_mtx = np.vstack((header, stds_mtx))
 
-    header = np.array(["from_"+task for task in header])
+    header = np.array(["from_" + task for task in header])
     header = np.insert(header, 0, "")
 
-    means_mtx = np.hstack((header.reshape(-1,1), means_mtx))
-    stds_mtx = np.hstack((header.reshape(-1,1), stds_mtx))
+    means_mtx = np.hstack((header.reshape(-1, 1), means_mtx))
+    stds_mtx = np.hstack((header.reshape(-1, 1), stds_mtx))
 
     np.savetxt("optima_knowledge_distance_mean.csv", means_mtx, delimiter=",", fmt="%s")
     np.savetxt("optima_knowledge_distance_std.csv", stds_mtx, delimiter=",", fmt="%s")
 
+
 def no_transfer_learning_parameters(filter, host):
-    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50",
+             "cylinder_60"]  # ,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
     p = DataProcessor()
     data = {}
     for task in tasks:
@@ -860,8 +876,8 @@ def no_transfer_learning_parameters(filter, host):
         try:
             tags = ["transfer_learning", task]
             results = get_multiple_experiment_data(host, "insert_object",
-                                                results_db="results_tl_base",
-                                                filter={"meta.tags":  tags})
+                                                   results_db="results_tl_base",
+                                                   filter={"meta.tags": tags})
         except (DataNotFoundError, DataError):
             print("No data found for experiment (" + str(i) + ")")
             continue
@@ -879,8 +895,10 @@ def no_transfer_learning_parameters(filter, host):
         data[task]["default centroid"] = {"mean_dist": mean_dist, "std_dist": std_dist}
     plot.plot_default_centroid_dist(data)
 
+
 def optima_distances(filter, host, results_db):
-    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60"] #,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50",
+             "cylinder_60"]  # ,"key_abus_e30", "key_pad", "key_old", "key_hatch"]
     p = DataProcessor()
     from knowledge_processor.knowledge_manager import KnowledgeManager
     from mongodb_client.mongodb_client import MongoDBClient
@@ -892,8 +910,8 @@ def optima_distances(filter, host, results_db):
         try:
             tags = ["transfer_learning_test", task]
             results = get_multiple_experiment_data(host, "insert_object",
-                                                results_db=results_db,
-                                                filter={"meta.tags":  tags})
+                                                   results_db=results_db,
+                                                   filter={"meta.tags": tags})
         except (DataNotFoundError, DataError):
             print("No data found for experiment (" + str(task) + ")")
             continue
@@ -903,11 +921,11 @@ def optima_distances(filter, host, results_db):
             if r.meta_data["init_knowledge"]["content"]:
                 continue
             task_identity = {
-                    "task_type": r.meta_data["task_type"],
-                    "optimum_weights": r.meta_data["cost_function"]["optimum_weights"],
-                    "geometry_factor": r.meta_data["cost_function"]["geometry_factor"],
-                    "tags": r.tags
-                            }
+                "task_type": r.meta_data["task_type"],
+                "optimum_weights": r.meta_data["cost_function"]["optimum_weights"],
+                "geometry_factor": r.meta_data["cost_function"]["geometry_factor"],
+                "tags": r.tags
+            }
             optimum = manager.get_knowledge_by_identity(client, task_identity, results_db, None)
             optimum = r.normalize_result(optimum["parameters"])
             optimum = p.dict_to_list(r.get_best_theta_norm())
@@ -919,7 +937,7 @@ def optima_distances(filter, host, results_db):
                 dist = np.linalg.norm(np.array(optimum_a) - np.array(optimum_b))
                 dinstances.append(dist)
             optima_matrix.append(dinstances)
-        print(task," mean_distance: ",np.mean(optima_matrix))
+        print(task, " mean_distance: ", np.mean(optima_matrix))
         plot.plot_table(optima_matrix, task)
 
 
@@ -953,16 +971,16 @@ def print_cost_grid():
     plt.show()
 
 
-def color_matrix(name = "es_matrix.csv"):
+def color_matrix(name="es_matrix.csv"):
     from matplotlib import cm
     from matplotlib.colors import ListedColormap, LinearSegmentedColormap
-    
+
     data = np.genfromtxt(name, delimiter=',')
-    data = np.delete(data,0,0)  # deleting names
-    data = np.delete(data,0,1)
+    data = np.delete(data, 0, 0)  # deleting names
+    data = np.delete(data, 0, 1)
     min_value = min(data.flatten())
     max_value = max(data.flatten())
-    cmap = cm.get_cmap('turbo', (max_value-min_value)*100)
+    cmap = cm.get_cmap('turbo', (max_value - min_value) * 100)
     print(data)
     print(min_value)
     print(max_value)
@@ -981,7 +999,8 @@ def plot_collective_benchmark():
     p = DataProcessor()
 
     print("Plotting single_ind_5")
-    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
+                                           filter={"meta.tags": {"$all": tags}})
     # cost = p.get_average_cost_over_time(results, 1500, True)
     cost = p.get_average_cost(results, True, 5)
     plt.plot(cost)
@@ -1012,14 +1031,14 @@ def plot_collective_benchmark():
 
     plt.legend(("Single_5", "Single_10", "Shared_10", "Shared_15"))
 
-    plt.ylim([0,1])
+    plt.ylim([0, 1])
     plt.show()
 
 
 def plot_difference_curve():
     host = "collective-panda-002.local"
     results1 = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
-                                           filter={"meta.tags": {"$all": ["collective_learning_benchmark_single_t0"]}})
+                                            filter={"meta.tags": {"$all": ["collective_learning_benchmark_single_t0"]}})
     results2 = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
                                             filter={"meta.tags": {"$all": ["collective_learning_benchmark_share_t"]}})
     p = DataProcessor()
@@ -1040,7 +1059,8 @@ def plot_collective_benchmark_2():
         print("Plotting " + str(tags[i]))
         add_plot_over_trials(host, tags[i], p, episode_length[i])
 
-    plt.legend(("Task_0_single", "Task_01_single", "Task_02_single", "Task_0_shared", "Task_01_shared", "Task_02_shared"))
+    plt.legend(
+        ("Task_0_single", "Task_01_single", "Task_02_single", "Task_0_shared", "Task_01_shared", "Task_02_shared"))
 
     plt.ylim([0, 0.4])
     plt.xlabel("Trial [1]")
@@ -1070,13 +1090,15 @@ def plot_collective_benchmark_3():
 
 
 def add_plot_over_trials(host: str, tags: list, data_processor: DataProcessor, episode_length: int):
-    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
+                                           filter={"meta.tags": {"$all": tags}})
     cost = data_processor.get_average_cost(results, True, episode_length)
     plt.plot(cost)
 
 
 def add_plot_over_time(host: str, tags: list, data_processor: DataProcessor):
-    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    results = get_multiple_experiment_data(host, "benchmark_rastrigin", results_db="ml_results",
+                                           filter={"meta.tags": {"$all": tags}})
     cost, confidence = data_processor.get_average_cost_over_time(results, decreasing=True)
     plt.plot(cost)
 
@@ -1085,28 +1107,29 @@ def plot_stuff_1():
     p = DataProcessor()
 
     tags = ["collective_learning_experiment_multi"]
-    results = get_multiple_experiment_data("collective-panda-007.local", "insert_object", results_db="ml_results", filter={"meta.tags": {"$all": tags}})
+    results = get_multiple_experiment_data("collective-panda-007.local", "insert_object", results_db="ml_results",
+                                           filter={"meta.tags": {"$all": tags}})
     agent = "collective-panda-008"
     cost = p.get_average_cost_over_time(results, 2000, True, agent)
     # cost = p.get_average_cost(results, True, 1, agent)
     plt.plot(cost)
 
     tags = ["transfer_learning", "cylinder_60"]
-    results = get_multiple_experiment_data("collective-control-001.local", "insert_object", results_db="transfer_base_v2", filter={"meta.tags": {"$all": tags}})
+    results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+                                           results_db="transfer_base_v2", filter={"meta.tags": {"$all": tags}})
     cost = p.get_average_cost_over_time(results, 2000, True)
     # cost = p.get_average_cost(results, True, 1)
     plt.plot(cost)
 
-    plt.legend(("Shared","Single"))
+    plt.legend(("Shared", "Single"))
 
-    plt.ylim([0,1])
+    plt.ylim([0, 1])
     plt.xlabel("Trial [1]")
     plt.ylabel("Normed Cost [1]")
     plt.show()
 
 
 def plot_iros_learning(host="collective-control-001.local"):
-
     expert = {
         "move": {
             "cost": [5.8, 5.02, 0.37],
@@ -1147,16 +1170,17 @@ def plot_iros_learning(host="collective-control-001.local"):
     for i in range(len(skills)):
         print("Fetching data for skill:" + skills[i])
         tags = [tags2[i]]
-        results = get_multiple_experiment_data(host, skills[i], results_db="iros2021", filter={"meta.tags": {"$all": tags}})
+        results = get_multiple_experiment_data(host, skills[i], results_db="iros2021",
+                                               filter={"meta.tags": {"$all": tags}})
         cost, confidence = p.get_average_cost_over_time(results, decreasing=True)
         cost = cost * 5
-        axes[i].fill_between(np.linspace(0, len(cost), len(cost)), cost-confidence, cost+confidence*5, alpha=0.2)
+        axes[i].fill_between(np.linspace(0, len(cost), len(cost)), cost - confidence, cost + confidence * 5, alpha=0.2)
         axes[i].plot(cost, linewidth=2)
-        axes[i].plot([0, len(cost)], [5, 5],  color="black", linestyle="dashed")
+        axes[i].plot([0, len(cost)], [5, 5], color="black", linestyle="dashed")
 
         time = [expert[tags2[i]]["time"][0]]
         for j in range(1, len(expert[tags2[i]]["time"])):
-            time.append(expert[tags2[i]]["time"][j] + time[j-1])
+            time.append(expert[tags2[i]]["time"][j] + time[j - 1])
 
         axes[i].plot(time, expert[tags2[i]]["cost"], "r^")
 
@@ -1175,14 +1199,15 @@ def plot_iros_learning(host="collective-control-001.local"):
     plt.suptitle("Skill Learning")
     plt.show()
 
+
 def live_plotting():
     from plotting.live_plotter import live_plot
-    #lp = LivePlotter([],[])
-    #lp.start_plot()
-    robots = [  "collective-panda-001.local", "collective-panda-002.local",
-                 "collective-panda-003.local", "collective-panda-009.local"]
+    # lp = LivePlotter([],[])
+    # lp.start_plot()
+    robots = ["collective-panda-001.local", "collective-panda-002.local",
+              "collective-panda-003.local", "collective-panda-009.local"]
     tags = ["live_plotting_test"]
-    live_plot(robots,tags)
+    live_plot(robots, tags)
 
 
 def print_std(host: str, task_type: str, database: str, tags: list):

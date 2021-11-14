@@ -283,11 +283,13 @@ def read_data(host: str, skill_class: str, skill_instance: str, cost_function: s
             cost += r["cost"]
             cost2.append(r["cost"])
 
-    print(np.std(cost2))
+    cost_std = np.std(cost2)
+    z = 0.475
+    ci = z * cost_std / np.sqrt(len(cost2))
     success_rate /= n_total_results
     cost /= n_success_results
 
-    print("Success rate: " + str(success_rate) + ", cost: " + str(cost))
+    print("Success rate: " + str(success_rate) + ", cost: " + str(cost) + " +- " + str(ci))
 
 
 def ask_for_result(result):
