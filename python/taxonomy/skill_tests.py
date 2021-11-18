@@ -950,21 +950,54 @@ class WipeTest(BaseTest):
         reset_default_contexts["move_up"] = json.load(f)
         f = open(self.path_to_default_context + "move_joint.json")
         reset_default_contexts["move_joint"] = json.load(f)
-        self.initialize(default_context, reset_default_contexts, record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+        object_modifier = {
+            "wipe": {
+                "Wipeable": {
+                    "T_T_OB": {
+                        "x": (-0.005, 0.005),
+                        "y": (-0.005, 0.005),
+                        "z": (-0.005, 0.005)
+                    }
+                },
+                "Approach": {
+                    "T_T_OB": {
+                        "x": (-0.005, 0.005),
+                        "y": (-0.005, 0.005),
+                        "z": (-0.005, 0.005)
+                    }
+                },
+                "Direction": {
+                    "T_T_OB": {
+                        "x": (-0.005, 0.005),
+                        "y": (-0.005, 0.005),
+                        "z": (-0.005, 0.005)
+                    }
+                }
+            }
+        }
+
+        self.initialize(default_context, reset_default_contexts, record_performance, object_modifier)
+
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Wipeable": args["Wipeable"],
-            "Approach": args["Approach"]
+            "Approach": args["Approach"],
+            "Wiper": args["Wiper"],
+            "Direction": args["Direction"]
         }
 
         t = Task(self.robot)
         t.add_skill(self.skill_class, "TaxWipe", context)
+        self.apply_object_modifiers(t.context)
         t.start()
         result = t.wait()
+
+        ask_for_result(result)
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Wipeable"], cost_function, result)
@@ -979,10 +1012,15 @@ class WipeTest(BaseTest):
         input("Press enter to continue")
 
     def teach(self, args: dict):
-        input("Press enter to teach the wipeable.")
-        teach_object(self.robot, args["Wipeable"])
+        input("Press enter to teach the wiper.")
+        call_method(self.robot, 12000, "set_grasped_object", {"object": args["Wiper"]})
+        teach_object(self.robot, args["Wiper"])
         input("Press enter to teach the approach pose.")
         teach_object(self.robot, args["Approach"])
+        input("Press enter to teach the wipeable.")
+        teach_object(self.robot, args["Wipeable"])
+        input("Press enter to teach the wipe direction.")
+        teach_object(self.robot, args["Direction"])
 
 
 class SwipeTest(BaseTest):
@@ -1069,8 +1107,8 @@ class SwipeTest(BaseTest):
         t.wait()
 
     def teach(self, args: dict):
-        call_method(self.robot, 12000, "set_grasped_object", {"object": args["Stylus"]})
         input("Press enter to teach the stylus.")
+        call_method(self.robot, 12000, "set_grasped_object", {"object": args["Stylus"]})
         teach_object(self.robot, args["Stylus"])
         input("Press enter to teach the approach pose.")
         teach_object(self.robot, args["Approach"])
@@ -1416,13 +1454,39 @@ class HammerTest(BaseTest):
         reset_default_contexts = dict()
         f = open(self.path_to_default_context + "move_joint.json")
         reset_default_contexts["move"] = json.load(f)
-        self.initialize(default_context, reset_default_contexts, record_performance=record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+        object_modifier = {
+            "hammer": {
+                "Approach": {
+                    "T_T_OB": {
+                        "x": (-0.001, 0.001),
+                        "y": (-0.001, 0.001),
+                        "z": (-0.001, 0.001)
+                    }
+                },
+                "Hammerable": {
+                    "T_T_OB": {
+                        "x": (-0.001, 0.001),
+                        "y": (-0.001, 0.001),
+                        "z": (-0.001, 0.001)
+                    }
+                },
+                "GoalPosition": {
+                    "T_T_OB": {
+                        "x": (-0.001, 0.001),
+                        "y": (-0.001, 0.001)
+                    }
+                }
+            }
+        }
+
+        self.initialize(default_context, reset_default_contexts, record_performance, object_modifier)
+
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Hammer"]})
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Hammer": args["Hammer"],
             "Approach": args["Approach"],
@@ -1432,8 +1496,12 @@ class HammerTest(BaseTest):
 
         t = Task(self.robot)
         t.add_skill(self.skill_class, "TaxHammer", context)
+        self.apply_object_modifiers(t.context)
         t.start()
         result = t.wait()
+
+        ask_for_result(result)
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Hammerable"], cost_function, result)
@@ -1447,6 +1515,7 @@ class HammerTest(BaseTest):
         t.add_skill("move", "MoveToPoseJoint", context)
         t.start()
         t.wait()
+        input("Press enter to continue.")
 
     def teach(self, args: dict):
         input("Press enter to teach the hammer.")
@@ -1594,3 +1663,97 @@ class CrankTest(BaseTest):
         teach_object(self.robot, args["StartPose"])
         input("Press enter to teach the center.")
         teach_object(self.robot, args["Center"])
+
+
+class FileTest(BaseTest):
+    def __init__(self, robot: str, record_performance: bool = True):
+        super().__init__(robot, "file")
+        f = open(self.path_to_default_context + "file.json")
+        default_context = json.load(f)
+        reset_default_contexts = dict()
+        f = open(self.path_to_default_context + "move_joint.json")
+        reset_default_contexts["move"] = json.load(f)
+
+        object_modifier = {
+            "swipe": {
+                "Approach": {
+                    "T_T_OB": {
+                        "x": (-0.005, 0.005),
+                        "y": (-0.005, 0.005),
+                        "z": (-0.005, 0.005)
+                    }
+                },
+                "FileStart": {
+                    "T_T_OB": {
+                        "x": (-0.005, 0.005),
+                        "y": (-0.005, 0.005),
+                        "z": (-0.005, 0.005)
+                    }
+                },
+                "FileEnd": {
+                    "T_T_OB": {
+                        "x": (-0.005, 0.005),
+                        "y": (-0.005, 0.005),
+                        "z": (-0.005, 0.005)
+                    }
+                },
+                "Retract": {
+                    "T_T_OB": {
+                        "x": (-0.005, 0.005),
+                        "y": (-0.005, 0.005),
+                        "z": (-0.005, 0.005)
+                    }
+                }
+            }
+        }
+
+        self.initialize(default_context, reset_default_contexts, record_performance, object_modifier)
+
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
+        call_method(self.robot, 12000, "set_grasped_object", {"object": args["File"]})
+        context = self.default_context
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
+        context["skill"]["objects"] = {
+            "FileStart": args["FileStart"],
+            "FileEnd": args["FileEnd"],
+            "Approach": args["Approach"],
+            "Retract": args["Retract"],
+            "File": args["File"],
+        }
+
+        t = Task(self.robot)
+        t.add_skill(self.skill_class, "TaxFile", context)
+        self.apply_object_modifiers(t.context)
+        t.start()
+        result = t.wait()
+
+        ask_for_result(result)
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
+
+        if self.record_performance is True:
+            upload_result(self.db_host, self.skill_class, args["Edge"], cost_function, result)
+
+    def reset(self, args: dict):
+        input("Press enter to continue")
+        t = Task(self.robot)
+        context = self.reset_default_contexts["move"]
+        context["skill"]["objects"] = {
+            "goal_pose": args["GoalPose"]
+        }
+        t.add_skill("move", "MoveToPoseJoint", context)
+        t.start()
+        t.wait()
+
+    def teach(self, args: dict):
+        call_method(self.robot, 12000, "set_grasped_object", {"object": args["File"]})
+        input("Press enter to teach the file.")
+        teach_object(self.robot, args["File"])
+        input("Press enter to teach the approach pose.")
+        teach_object(self.robot, args["Approach"])
+        input("Press enter to teach the file start.")
+        teach_object(self.robot, args["FileStart"])
+        input("Press enter to teach the file end.")
+        teach_object(self.robot, args["FileEnd"])
+        input("Press enter to teach the retract pose.")
+        teach_object(self.robot, args["Retract"])

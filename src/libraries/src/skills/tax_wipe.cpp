@@ -77,7 +77,7 @@ std::map<std::string, std::set<std::string> > SkillParametersTaxWipe::get_parame
     return {{"p0",{"K_x","dX_d","ddX_d"}},{"p1",{"K_x","dX_d","ddX_d","f_wipe"}},{"p2",{"K_x","dX_d","ddX_d","f_wipe"}}};
 }
 
-TaxWipe::TaxWipe(const std::string& name, Memory* memory, Portal* portal):Skill("TaxWipe",{"Approach","Wipeable"},name,memory,portal,{ControlMode::mCartTorque}){
+TaxWipe::TaxWipe(const std::string& name, Memory* memory, Portal* portal):Skill("TaxWipe",{"Approach","Wipeable","Wiper","Direction"},name,memory,portal,{ControlMode::mCartTorque}){
 
 }
 
@@ -127,7 +127,7 @@ std::shared_ptr<ManipulationPrimitive> TaxWipe::create_contact_mp(const Percept 
     mp->create_strategy<TwistStrategy>("move",1);
     std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
     Eigen::Matrix<double,6,1> dX_d;
-    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Surface").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);;
+    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Wipeable").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);;
     dir/=dir.norm();
     dX_d<<dir*skill_params->p1.dX_d(0),0,0,0;
     move->set_TF_dX_d(dX_d,skill_params->p1.ddX_d);
@@ -137,13 +137,13 @@ std::shared_ptr<ManipulationPrimitive> TaxWipe::create_contact_mp(const Percept 
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxWipe::create_wipe_mp(const Percept &p){
-    spdlog::trace("TaxWipe::create_slide_mp()");
+    spdlog::trace("TaxWipe::create_wipe_mp()");
     std::shared_ptr<SkillParametersTaxWipe> skill_params = get_parameters<SkillParametersTaxWipe>();
-    std::shared_ptr<ManipulationPrimitive> mp = create_mp("pull",p);
-    mp->create_strategy<MoveToPoseStrategy>("slide",1);
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("wipe",p);
+    mp->create_strategy<MoveToPoseStrategy>("move",1);
     mp->create_strategy<FFStrategy>("push",1);
-    std::shared_ptr<MoveToPoseStrategy> slide = mp->get_strategy<MoveToPoseStrategy>("slide");
-    slide->set_goal(get_object_pose_T("GoalPose"),skill_params->p2.dX_d,skill_params->p2.ddX_d);
+    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
+    move->set_goal(get_object_pose_T("Direction"),skill_params->p2.dX_d,skill_params->p2.ddX_d);
     std::shared_ptr<FFStrategy> push = mp->get_strategy<FFStrategy>("push");
     Eigen::Matrix<double,6,1> F_d;
     F_d<<0,0,skill_params->p2.f_wipe,0,0,0;
@@ -154,28 +154,30 @@ std::shared_ptr<ManipulationPrimitive> TaxWipe::create_wipe_mp(const Percept &p)
 }
 
 bool TaxWipe::check_local_pre_conditions(const Percept &p){
+    if(m_memory->get_live_context()->grasped_object->name!=get_object("Wiper")->name){
+        return false;
+    }
     return true;
 }
 
 bool TaxWipe::check_local_err_conditions(const Percept &p){
-    return false;
-}
-
-void TaxWipe::update_internal_models(const Percept &p){
-    if(p.proprioception.TF_F_ext_K.block<3,1>(0,0).norm()>m_memory->read_parameters()->user.F_ext_contact(0)){
-        m_memory->get_object("Wipeable")->set_pose(p.proprioception.O_T_EE(0,3),p.proprioception.O_T_EE(1,3),p.proprioception.O_T_EE(2,3),{});
+    if(m_memory->get_live_context()->grasped_object->name!=get_object("Wiper")->name){
+        return true;
     }
+    if(get_active_mp()->get_name()=="wipe"){
+        if(p.proprioception.TF_F_ext_K(2)<m_memory->read_parameters()->user.F_ext_contact(0)){
+            return true;
+        }
+    }
+    return false;
 }
 
 bool TaxWipe::check_local_suc_conditions(const Percept &p){
-    return true;
+    return is_in_env("Direction",p,true);
 }
 
 bool TaxWipe::check_local_ex_conditions(const Percept &p){
-    if(get_active_mp()->get_name()=="wipe"){
-        return get_active_mp()->get_strategy_interface("move")->finished();
-    }
-    return false;
+    return true;
 }
 
 }

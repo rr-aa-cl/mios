@@ -118,7 +118,7 @@ def slide_open_test(robot: str, container: str, approach: str, goal: str, cf: st
 def crank_test(robot: str, crank: str, center: str, start: str, cf: str):
     t = SlideOpenTest(robot)
     start_experiment(t, {"Crank": crank, "Center": center}, {"GoalPose": start}, 50, cf,
-                     "collective-control-001", "skill_data", container)
+                     "collective-control-001", "skill_data", crank)
 
 
 def push_surface_test(robot: str, surface: str, approach: str, cf: str):
@@ -126,6 +126,29 @@ def push_surface_test(robot: str, surface: str, approach: str, cf: str):
     start_experiment(t, {"Surface": surface, "Approach": approach},
                      {"GoalPose": approach}, 50, cf, "collective-control-001", "skill_data",
                      surface)
+
+
+def file_test(robot: str, file: str, approach: str, start: str, end: str, retract: str, edge: str, cf: str):
+    t = FileTest(robot)
+    start_experiment(t, {"File": file, "Approach": approach, "FileStart": start,
+                         "FileEnd": end, "Retract": retract},
+                     {"File": file, "Approach": retract, "FileStart": end,
+                      "FileEnd": start, "Retract": approach}, 50, cf,
+                     "collective-control-001", "skill_data", edge)
+
+
+def hammer_test(robot: str, hammer: str, approach: str, hammerable: str, goal: str, cf: str):
+    t = HammerTest(robot)
+    start_experiment(t, {"Hammer": hammer, "Approach": approach, "Hammerable": hammerable, "GoalPosition": goal},
+                     {"Approach": approach}, 50, cf, "collective-control-001", "skill_data",
+                     hammerable)
+
+
+def wipe_test(robot: str, wiper: str, approach: str, wipeable: str, direction: str, cf: str):
+    t = WipeTest(robot)
+    start_experiment(t, {"Wiper": wiper, "Approach": approach, "Wipeable": wipeable, "Direction": direction},
+                     {"Approach": approach}, 50, cf, "collective-control-001", "skill_data",
+                     wipeable)
 
 
 def carry_test_item():

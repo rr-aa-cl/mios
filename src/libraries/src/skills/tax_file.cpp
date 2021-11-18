@@ -74,7 +74,7 @@ bool SkillParametersTaxFile::from_json(const nlohmann::json& parameters){
         }
     }
     if(parameters.find("p3")==parameters.end()){
-        spdlog::error("Parameters for primitive 1 are missing.");
+        spdlog::error("Parameters for primitive 3 are missing.");
         return false;
     }else if(parameters.find("p3")!=parameters.end()){
         if(!msrm_utils::read_json_param<double,6,1>(parameters["p3"],"K_x",p3.K_x)){
@@ -203,13 +203,6 @@ std::shared_ptr<ManipulationPrimitive> TaxFile::create_retract_mp(const Percept 
 bool TaxFile::check_local_pre_conditions(const Percept &p){
     if(m_memory->get_live_context()->grasped_object->name!=get_object("File")->name){
         return false;
-    }
-    Eigen::Matrix<double,4,4> T_container = get_object_pose_T("FileStart");
-    std::shared_ptr<SkillParametersTaxFile> skill_params = get_parameters<SkillParametersTaxFile>();
-    for(unsigned i=0;i<3;i++){
-        if(p.proprioception.T_T_EE(3,i)<T_container(3,i)+skill_params->ROI_x(i*2) || p.proprioception.T_T_EE(3,i)>T_container(3,i)+skill_params->ROI_x(i*2+1)){
-            return false;
-        }
     }
     return true;
 }

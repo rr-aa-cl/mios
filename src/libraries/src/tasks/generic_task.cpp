@@ -34,6 +34,8 @@
 #include "mios/skills/tax_turn_lever.hpp"
 #include "mios/skills/tax_slide_object.hpp"
 #include "mios/skills/tax_swipe.hpp"
+#include "mios/skills/tax_wipe.hpp"
+#include "mios/skills/tax_file.hpp"
 #include "mios/skills/tax_bend.hpp"
 #include "mios/skills/tax_hammer.hpp"
 #include "mios/skills/tax_slide_open.hpp"
@@ -243,6 +245,12 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("TaxSwipe"):
         execute_skill<TaxSwipe,SkillParametersTaxSwipe>(name);
+        break;
+    case msrm_utils::str_to_int("TaxWipe"):
+        execute_skill<TaxWipe,SkillParametersTaxWipe>(name);
+        break;
+    case msrm_utils::str_to_int("TaxFile"):
+        execute_skill<TaxFile,SkillParametersTaxFile>(name);
         break;
     case msrm_utils::str_to_int("TaxBend"):
         execute_skill<TaxBend,SkillParametersTaxBend>(name);
