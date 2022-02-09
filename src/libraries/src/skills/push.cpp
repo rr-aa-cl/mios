@@ -1,5 +1,6 @@
 #include "mios/skills/push.hpp"
-#include "mios/strategies/desired_wrench_strategy.hpp"
+//#include "mios/strategies/desired_wrench_strategy.hpp"
+#include "mios/strategies/ff_strategy.hpp"
 #include "msrm_cpp_utils/math/math.hpp"
 
 namespace mios{
@@ -37,10 +38,11 @@ std::shared_ptr<ManipulationPrimitive> Push::get_initial_mp(const Percept& p){
 
     std::shared_ptr<SkillParametersPush> skill_params = get_parameters<SkillParametersPush>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("push",p);
-    mp->create_strategy<DesiredWrenchStrategy>("wrench",1);
+    mp->create_strategy<FFStrategy>("wrench",1);
     Eigen::Matrix<double,6,1> TF_F_d;
     TF_F_d<<skill_params->F_push,0,0,0;
-    mp->get_strategy<DesiredWrenchStrategy>("wrench")->set_TF_F_d(TF_F_d,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+    std::cout << "F_push:  " << TF_F_d << std::endl;
+    mp->get_strategy<FFStrategy>("wrench")->set_TF_F_ff(TF_F_d,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
     return mp;
 }
 

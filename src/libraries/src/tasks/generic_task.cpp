@@ -20,6 +20,7 @@
 #include "mios/skills/wipe.hpp"
 
 #include "mios/skills/tax_insertion.hpp"
+#include "mios/skills/tax_push.hpp"
 #include "mios/skills/tax_extraction.hpp"
 #include "mios/skills/tax_move.hpp"
 #include "mios/skills/tax_grab.hpp"
@@ -64,6 +65,9 @@ void GenericTask::add_any_skill(unsigned int index){
         break;
     case msrm_utils::str_to_int("HoldPose"):
         add_skill<HoldPose,SkillParametersHoldPose>(name);
+        break;
+    case msrm_utils::str_to_int("TaxPush"):
+        add_skill<TaxMove,SkillParametersTaxPush>(name);
         break;
     case msrm_utils::str_to_int("TaxMove"):
         add_skill<TaxMove,SkillParametersTaxMove>(name);
@@ -158,6 +162,9 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case msrm_utils::str_to_int("TaxMove"):
         execute_skill<TaxMove,SkillParametersTaxMove>(name);
+        break;
+    case msrm_utils::str_to_int("TaxPush"):
+        execute_skill<TaxMove,SkillParametersTaxPush>(name);
         break;
     case msrm_utils::str_to_int("TaxGrab"):
         execute_skill<TaxGrab,SkillParametersTaxGrab>(name);
