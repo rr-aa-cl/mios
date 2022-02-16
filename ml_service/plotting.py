@@ -5,6 +5,8 @@ from plotting.data_processor import DataProcessor
 from plotting.data_processor import DataError
 from plotting.plotter import Plotter
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 import csv
 import scipy.stats
@@ -282,7 +284,7 @@ def plot_transfer_learning_3():
                     axes[i, j].set_xlim(0, 130)
             else:
                 axes[i, j].set_xlim(0, 1500)
-            axes[i, j].set_ylim(0, 10)
+            axes[i, j].set_ylim(0, 3)
             axes_casr[i, j].set_ylim(0, 1500)
             axes[i, j].grid()
             axes[i, j].tick_params(axis="both", which="both", length=0)
@@ -290,7 +292,7 @@ def plot_transfer_learning_3():
             legend = []
             try:
                 tags = ["transfer_learning", tasks[i * n_rows + j]]
-                results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+                results = get_multiple_experiment_data("localhost", "insert_object",
                                                        results_db="transfer_base_v2",
                                                        filter={"meta.tags": {"$all": tags}})
                 if trial_wise is True:
@@ -303,12 +305,16 @@ def plot_transfer_learning_3():
                     base_casr = base_casr[0:1500]
                 base_cost = np.insert(base_cost, 0, 10)
                 base_cost = base_cost * 10
+                base_cost_log = np.log10(base_cost + 1)
+                time_log = []
+                for k in range(len(base_cost_log)):
+                    time_log.append(np.log(k))
                 base_casr = np.insert(base_casr, 0, 0)
 
                 for k in range(1, len(base_casr)):
                     base_casr[k] += base_casr[k - 1]
 
-                axes[i, j].plot(base_cost, linestyle="dashed", zorder=2, linewidth=4)
+                axes[i, j].plot(base_cost_log, linestyle="dashed", zorder=2, linewidth=4)
                 axes_casr[i, j].plot([0, len(base_casr)], [0, len(base_casr)], color="black", linestyle="dashed")
                 axes_casr[i, j].plot(base_casr, linestyle="dashed", zorder=2, linewidth=4)
                 legend = [tasks[i * n_rows + j]]
@@ -319,7 +325,7 @@ def plot_transfer_learning_3():
             for t in range(len(tasks)):
                 try:
                     tags = ["transfer_learning", tasks[i * n_rows + j], "from_" + tasks[t]]
-                    results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+                    results = get_multiple_experiment_data("localhost", "insert_object",
                                                            results_db="transfer_all_v2",
                                                            filter={"meta.tags": {"$all": tags}})
                     if trial_wise is True:
@@ -332,6 +338,7 @@ def plot_transfer_learning_3():
                         casr = casr[0:1500]
                     cost = np.insert(cost, 0, 10)
                     cost = cost * 10
+                    cost_log = np.log10(cost + 1)
                     casr = np.insert(casr, 0, 0)
 
                     for k in range(1, len(casr)):
@@ -356,7 +363,7 @@ def plot_transfer_learning_3():
                     casr_matrix[i * n_rows + j][t] = np.sum(casr) / np.sum(base_casr)
 
                     speedup_matrix[i * n_rows + j][t] = calculate_speedup(base_cost, cost)
-                    axes[i, j].plot(cost, zorder=1, color=task_colors[t])
+                    axes[i, j].plot(cost_log, zorder=1, color=task_colors[t])
                     axes_casr[i, j].plot(casr, zorder=1, color=task_colors[t])
 
                     legend.append("from_" + tasks[t])
@@ -454,6 +461,547 @@ def plot_transfer_learning_3():
     np.savetxt("speedup_matrix.csv", speedup_matrix, delimiter=",", fmt="%s")
     np.savetxt("ler_matrix.csv", le_ratio_matrix, delimiter=",", fmt="%s")
     np.savetxt("casr_matrix.csv", casr_matrix, delimiter=",", fmt="%s")
+    plt.show()
+
+
+color_level_0 = "#007474"
+color_level_1 = "#0e5477"
+color_level_2 = "#54b4d3"
+
+
+def plot_transfer_learning_4():
+    plt.rcParams.update({
+        "text.usetex": True,
+        'text.latex.preamble': [r'\usepackage{amssymb}',r'\usepackage{amsmath}',r'\usepackage{mathbbol}'],
+        "font.family": 'serif',
+        "font.size": 16
+    })
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
+             "key_pad", "key_old", "key_hatch"]
+    task_colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]
+
+    best_task = {
+        "cylinder_10": "cylinder_20",
+        "cylinder_20": "cylinder_10",
+        "cylinder_30": "cylinder_10",
+        "cylinder_40": "cylinder_60",
+        "cylinder_50": "cylinder_40",
+        "cylinder_60": "cylinder_30",
+        "key_pad": "cylinder_10",
+        "key_old": "key_pad",
+        "key_hatch": "key_pad",
+    }
+
+    task_title = {
+        "cylinder_10": r"$\mathbb{t}_1$",
+        "cylinder_20": r"$\mathbb{t}_2$",
+        "cylinder_30": r"$\mathbb{t}_3$",
+        "cylinder_40": r"$\mathbb{t}_4$",
+        "cylinder_50": r"$\mathbb{t}_5$",
+        "cylinder_60": r"$\mathbb{t}_6$",
+        "key_pad": r"$\mathbb{t}_7$",
+        "key_old": r"$\mathbb{t}_8$",
+        "key_hatch": r"$\mathbb{t}_9$",
+    }
+
+    n_cols = 3
+    n_rows = 3
+
+    episode_wise = False
+    trial_wise = False
+    if episode_wise is True:
+        episode_size = 13
+    else:
+        episode_size = 1
+
+    p = DataProcessor()
+    fig, axes = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0})
+    fig_casr, axes_casr = plt.subplots(n_rows, n_cols, sharex=True, sharey=True, gridspec_kw={'hspace': 0, 'wspace': 0})
+    fig.set_size_inches(16, 9)
+
+    fig_dcasr, axes_dcasr = plt.subplots()
+
+    dcasr_set = [[],[],[],[],[],[],[],[],[]]
+
+    for i in range(n_rows):
+        for j in range(n_cols):
+            if trial_wise is True:
+                if episode_wise is True:
+                    axes[i, j].set_xlim(0, 10)
+                else:
+                    axes[i, j].set_xlim(0, 130)
+            else:
+                axes[i, j].set_xlim(1, np.log10(1500))
+                axes_casr[i, j].set_xlim(0, 7)
+            axes[i, j].set_ylim(0, 1.2)
+            axes_casr[i, j].set_ylim(0, 1)
+            axes[i, j].grid()
+            axes[i, j].tick_params(axis="both", which="both", length=0)
+            axes[i, j].set_title("Task: " + task_title[tasks[i * n_rows + j]], x=0.1, y=0.13, pad=-14, fontsize=16)
+            axes_casr[i, j].set_title("Task: " + task_title[tasks[i * n_rows + j]], y=1.0, pad=-14, fontsize=16)
+            try:
+                tags = ["transfer_learning", tasks[i * n_rows + j]]
+                results = get_multiple_experiment_data("localhost", "insert_object",
+                                                       results_db="transfer_base_v2",
+                                                       filter={"meta.tags": {"$all": tags}})
+                if trial_wise is True:
+                    base_cost, _ = p.get_average_cost(results, True, episode_size)
+                    base_casr, _ = p.get_average_success(results)
+                else:
+                    base_cost, _ = p.get_average_cost_over_time(results, 1500, True)
+                    base_cost = base_cost[0:1500]
+                    base_casr, _ = p.get_average_success_over_time(results)
+                    base_casr = base_casr[0:1500]
+                base_cost = np.insert(base_cost, 0, 10)
+                base_cost = base_cost * 10
+                base_casr = np.insert(base_casr, 0, 0)
+                base_dcasr = np.diff(base_casr)
+                dcasr_set[i * n_rows + j].append(base_dcasr)
+                base_cost_log = np.log10(base_cost + 1)
+                time_log = []
+                for k in range(len(base_cost_log)):
+                    time_log.append(np.log10(k))
+                if len(base_casr) < 1500:
+                    base_casr = np.pad(base_casr, ((0, 1500 - len(base_casr))), mode='constant',
+                                       constant_values=np.mean(base_casr[len(base_casr) - 100:]))
+
+                for k in range(1, len(base_casr)):
+                    base_casr[k] += base_casr[k - 1]
+
+                axes[i, j].plot(time_log, base_cost_log, linestyle="solid", zorder=2, label='None-Transfer', linewidth=2)
+                # axes_casr[i, j].plot([0, len(base_casr)], [0, len(base_casr)], linewidth=1, color="gray", linestyle="solid")
+                base_asr_mean, base_asr_std = get_mean_over_window(np.diff(base_casr))
+                axes_casr[i, j].stairs(base_asr_mean, linestyle="solid", zorder=2, label="None-Transfer", linewidth=2)
+                #legend = ["None-Transfer"]
+                #legend_casr = ["Optimal CALSC", "Raw Learning"]
+            except (DataNotFoundError, DataError):
+                print("Base cost for task " + tasks[i] + " not found.")
+                continue
+
+            cost_cylinders = []
+            casr_cylinders = []
+            cost_keys = []
+            casr_keys = []
+            for t in range(len(tasks)):
+                try:
+                    tags = ["transfer_learning", tasks[i * n_rows + j], "from_" + tasks[t]]
+                    results = get_multiple_experiment_data("localhost", "insert_object",
+                                                           results_db="transfer_all_v2",
+                                                           filter={"meta.tags": {"$all": tags}})
+                    if trial_wise is True:
+                        cost, _ = p.get_average_cost(results, True, episode_size)
+                        casr, _ = p.get_average_success(results)
+                    else:
+                        cost, _ = p.get_average_cost_over_time(results, 1500, True)
+                        cost = cost[0:1500]
+                        casr, _ = p.get_average_success_over_time(results)
+                        casr = casr[0:1500]
+
+                    cost = np.insert(cost, 0, 10)
+                    cost = cost * 10
+                    cost_log = np.log10(cost + 1)
+                    time_log = []
+                    for k in range(len(cost_log)):
+                        time_log.append(np.log10(k))
+                    casr = np.insert(casr, 0, 0)
+                    if len(casr) < 1500:
+                        casr = np.pad(casr, ((0, 1500 - len(casr))), mode='constant',
+                                      constant_values=np.mean(casr[len(casr) - 100:]))
+
+                    for k in range(1, len(casr)):
+                        casr[k] += casr[k - 1]
+
+                    if tasks[t] == tasks[i * n_rows + j]:
+                        axes[i, j].plot(time_log, cost_log, zorder=1, color=color_level_0, linestyle="dashed", label="Level-0-Transfer", linewidth=2)
+                        asr_mean, asr_std = get_mean_over_window(np.diff(casr))
+                        axes_casr[i, j].stairs(asr_mean, zorder=1, color=color_level_0, linestyle="dashed", label="Level-0-Transfer", linewidth=2)
+                        #legend.append("Level-0-Transfer")#: " + tasks[t])
+                        dcasr_set[i * n_rows + j].append(np.diff(casr))
+                    else:
+                        if tasks[t].split("_")[0] == "cylinder":
+                            cost_cylinders.append(cost_log)
+                            casr_cylinders.append(casr)
+                        if tasks[t].split("_")[0] == "key":
+                            cost_keys.append(cost_log)
+                            casr_keys.append(casr)
+
+                except (DataNotFoundError, DataError):
+                    pass
+
+            mean_cost_cylinders = [0] * 1500
+            mean_casr_cylinders = [0] * 1500
+            mean_cost_keys = [0] * 1500
+            mean_casr_keys = [0] * 1500
+            std_cost_cylinders = [0] * 1500
+            std_casr_cylinders = [0] * 1500
+            std_cost_keys = [0] * 1500
+            std_casr_keys = [0] * 1500
+            for k in range(1500):
+                mean_cost = 0
+                mean_casr = 0
+                std_cost = 0
+                std_casr = 0
+                for m in range(len(cost_cylinders)):
+                    mean_cost += cost_cylinders[m][k]
+                    mean_casr += casr_cylinders[m][k]
+                mean_cost_cylinders[k] = mean_cost / len(cost_cylinders)
+                mean_casr_cylinders[k] = mean_casr / len(cost_cylinders)
+                mean_dcasr_cylinders = np.diff(mean_casr_cylinders)
+                for m in range(len(cost_keys)):
+                    std_cost += np.power(cost_keys[m][k] - mean_cost, 2)
+                    std_casr += np.power(casr_keys[m][k] - mean_casr, 2)
+
+                std_cost_cylinders[k] = np.sqrt(std_cost / len(cost_keys))
+                std_casr_cylinders = np.sqrt(std_casr / len(casr_keys))
+
+            for k in range(1500):
+                mean_cost = 0
+                mean_casr = 0
+                std_cost = 0
+                std_casr = 0
+                for m in range(len(cost_keys)):
+                    mean_cost += cost_keys[m][k]
+                    mean_casr += casr_keys[m][k]
+                mean_cost_keys[k] = mean_cost / len(cost_keys)
+                mean_casr_keys[k] = mean_casr / len(cost_keys)
+                mean_dcasr_keys = np.diff(mean_casr_cylinders)
+                for m in range(len(cost_keys)):
+                    std_cost += np.power(cost_keys[m][k] - mean_cost, 2)
+                    std_casr += np.power(casr_keys[m][k] - mean_casr, 2)
+
+                std_cost_keys[k] = np.sqrt(std_cost / len(cost_keys))
+                std_casr_keys[k] = np.sqrt(std_casr / len(casr_keys))
+
+            std_cost_cylinders = np.asarray(std_cost_cylinders)
+            std_casr_cylinders = np.asarray(std_casr_cylinders)
+            std_cost_keys = np.asarray(std_cost_keys)
+            std_casr_keys = np.asarray(std_casr_keys)
+
+            time_log = []
+            for k in range(1500):
+                time_log.append(np.log10(k))
+
+            cylinder_asr_mean, cylinder_asr_std = get_mean_over_window(np.diff(mean_casr_cylinders))
+            keys_asr_mean, keys_asr_std = get_mean_over_window(np.diff(mean_casr_keys))
+            if tasks[i * n_rows + j].split("_")[0] == "cylinder":
+                dcasr_set[i * n_rows + j].append(mean_dcasr_cylinders)
+                dcasr_set[i * n_rows + j].append(mean_dcasr_keys)
+                axes[i, j].plot(time_log, mean_cost_cylinders, zorder=1, color=color_level_1, linestyle="dotted", label="Level-1-Transfer", linewidth=2)
+                axes[i, j].plot(time_log, mean_cost_keys, zorder=1, color=color_level_2, linestyle="dashdot",  label="Level-2-Transfer", linewidth=2)
+                axes_casr[i, j].stairs(cylinder_asr_mean, linestyle="dotted", zorder=1, color=color_level_1, label="Level-1-Transfer", linewidth=2)
+                axes_casr[i, j].stairs(keys_asr_std, linestyle="dashdot", zorder=1, color=color_level_2, label="Level-2-Transfer", linewidth=2)
+            else:
+                dcasr_set[i * n_rows + j].append(mean_dcasr_keys)
+                dcasr_set[i * n_rows + j].append(mean_dcasr_cylinders)
+                axes[i, j].plot(time_log, mean_cost_cylinders, zorder=1, color=color_level_2, linestyle="dotted",
+                                label="Level-2-Transfer")
+                axes[i, j].plot(time_log, mean_cost_keys, zorder=1, color=color_level_1, linestyle="dashdot",
+                                label="Level-1-Transfer")
+                axes_casr[i, j].stairs(keys_asr_mean, linestyle="dashdot", zorder=1, color=color_level_1, label="Level-1-Transfer", linewidth=2)
+                axes_casr[i, j].stairs(cylinder_asr_mean, linestyle="dotted", zorder=1, color=color_level_2, label="Level-2-Transfer", linewidth=2)
+
+            if i == 0 and j == 0:
+                current_handles, current_labels = axes[i, j].get_legend_handles_labels()
+                new_lables = [current_labels[1], current_labels[2], current_labels[3], current_labels[0]]
+                new_handles = [current_handles[1], current_handles[2], current_handles[3], current_handles[0]]
+                axes[i, j].legend(new_handles, new_lables, fontsize=16, loc="center left", bbox_to_anchor=(0, 1.15), ncol=4)
+                axes_casr[i, j].legend(new_handles, new_lables, fontsize=16, loc='center left', bbox_to_anchor=(0, 1.15), ncol=4)
+
+            # if i == 0:
+            #     pass
+            #     axes[i, j].annotate("t" + str(j), xy=(0.5, 1), xytext=(0, 5),
+            #                         xycoords='axes fraction', textcoords='offset points',
+            #                         size='large', ha='center', va='baseline')
+            if j == 0:
+                ticks = [0.2, 0.4, 0.6, 0.8, 1, 1.2]
+                axes[i, j].set_yticks(ticks)
+                axes[i, j].set_yticklabels(list(map(str, ticks)))
+                ticks = [0.2, 0.4, 0.6, 0.8, 1]
+                axes_casr[i, j].set_yticks(ticks)
+                axes_casr[i, j].set_yticklabels(list(map(str, ticks)))
+            #     pass
+            #     axes[i, j].annotate("t" + str(i), xy=(0, 0.5), xytext=(-axes[i, j].yaxis.labelpad - 5, 0),
+            #                         xycoords=axes[i, j].yaxis.label, textcoords='offset points',
+            #                         size='large', ha='right', va='center')
+            #     axes[i, j].set_yticks([0.0, 0.2, 0.4, 0.6, 0.8, 1])
+            #     axes[i, j].set_yticklabels([''] * 6)
+            if i == n_rows - 1:
+                if trial_wise is True:
+                    if episode_wise is True:
+                        axes[i, j].set_xticks([2, 4, 6, 8, 10])
+                        axes[i, j].set_xticklabels(["2", "4", "6", "8", "10"])
+                    else:
+                        axes[i, j].set_xticks([25, 50, 75, 100, 130])
+                        axes[i, j].set_xticklabels(["25", "50", "75", "100", "130"])
+                        axes_casr[i, j].set_xticks([25, 50, 75, 100, 130])
+                        axes_casr[i, j].set_xticklabels(["25", "50", "75", "100", "130"])
+                else:
+                    ticks = [1.5, 2.0, 2.5, 3]
+                    axes[i, j].set_xticks(ticks)
+                    axes[i, j].set_xticklabels(list(map(str, ticks)))
+                    ticks = [1, 2, 3, 4, 5, 6, 7]
+                    axes_casr[i, j].set_xticks(ticks)
+                    #axes_casr[i, j].set_xticks([250, 500, 750, 1000, 1250, 1500])
+                    axes_casr[i, j].set_xticklabels(["200", "400", "600", "800", "1000", "1200", "1400"])
+            axes[i, j].tick_params(axis='both', which='major', labelsize=12)
+            axes_casr[i, j].tick_params(axis='both', which='major', labelsize=12)
+
+    x_tasks = np.arange(9) + 1
+    axes_dcasr.bar(x_tasks - 0.3, 1, width=0.2, label="None-Transfer")
+    axes_dcasr.bar(x_tasks - 0.1, 1, width=0.2, label="Level-0-Transfer")
+    axes_dcasr.bar(x_tasks + 0.1, 1, width=0.2, label="Level-1-Transfer")
+    axes_dcasr.bar(x_tasks + 0.3, 1, width=0.2, label="Level-2-Transfer")
+    ticks = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    axes_dcasr.set_xticks(ticks)
+    axes_dcasr.set_xticklabels(["t_1", "t_2", "t_3", "t_4", "t_5", "t_6", "t_7", "t_8", "t_9"])
+
+    ax = fig.add_subplot(111, frame_on=False)
+    ax_casr = fig_casr.add_subplot(111, frame_on=False)
+    ax.tick_params(labelcolor="none", bottom=False, left=False)
+    ax_casr.tick_params(labelcolor="none", bottom=False, left=False)
+    if trial_wise is True:
+        if episode_wise is True:
+            ax.xlabel("Episode [1]")
+            ax_casr.xlabel("Episode [1]")
+        else:
+            ax.xlabel("Trial [1]")
+            ax_casr.xlabel("Trial [1]")
+    else:
+        ax.set_xlabel(r"Learning Time [$\text{log}_{10}$(s)]", fontsize=16)
+        ax_casr.set_xlabel(r"Learning Time [s]", fontsize=16)
+    ax.set_ylabel(r"Execution Time [$\text{log}_{10}$(s)]", fontsize=16)
+    ax_casr.set_ylabel(r"ALSR [1]", fontsize=16)
+    ax_casr.yaxis.set_label_coords(-0.05, 0.5)
+
+    fig.set_size_inches(16, 9)
+    fig_casr.set_size_inches(16, 9)
+    fig.savefig("results_cost.png", bbox_inches='tight', dpi=300)
+    fig_casr.savefig("results_calsc.png", bbox_inches='tight', dpi=300)
+
+    plt.show()
+
+
+def plot_ler_matrix2():
+
+    plt.rcParams.update({
+        "text.usetex": True,
+        'text.latex.preamble': [r'\usepackage{amssymb}',r'\usepackage{amsmath}',r'\usepackage{mathbbol}'],
+        "font.family": 'serif',
+        "font.size": 16
+    })
+
+    # opening the CSV file
+    data_ler = []
+    data_es = []
+    data_speedup = []
+
+    with open('ler_matrix.csv', mode='r') as file:
+        # reading the CSV file
+        csvFile = csv.reader(file)
+
+        # displaying the contents of the CSV file
+        for lines in csvFile:
+            tmp = []
+            try:
+                for i in range(1, len(lines)):
+                    tmp.append(float(lines[i]))
+            except ValueError:
+                continue
+            data_ler.append(tmp)
+
+    with open('es_matrix.csv', mode='r') as file:
+        # reading the CSV file
+        csvFile = csv.reader(file)
+
+        # displaying the contents of the CSV file
+        for lines in csvFile:
+            tmp = []
+            try:
+                for i in range(1, len(lines)):
+                    tmp.append(float(lines[i]))
+            except ValueError:
+                continue
+            data_es.append(tmp)
+
+    with open('speedup_matrix.csv', mode='r') as file:
+        # reading the CSV file
+        csvFile = csv.reader(file)
+
+        # displaying the contents of the CSV file
+        for lines in csvFile:
+            tmp = []
+            try:
+                for i in range(1, len(lines)):
+                    tmp.append(float(lines[i]))
+            except ValueError:
+                continue
+            data_speedup.append(tmp)
+
+    x = np.linspace(1, 9, 9)
+    y = np.linspace(1, 9, 9)
+    Z_ler = np.zeros((len(x), len(y)))
+    Z_es = np.zeros((len(x), len(y)))
+    Z_speedup = np.zeros((len(x), len(y)))
+
+    for i in range(len(x)):
+        for j in range(len(y)):
+            Z_ler[i, j] = data_ler[i][j]
+            Z_es[i, j] = data_es[i][j]
+            Z_speedup[i, j] = np.log10(data_speedup[i][j])
+
+    Z_ler = Z_ler.transpose()
+    Z_es = Z_es.transpose()
+    Z_speedup = Z_speedup.transpose()
+
+    fig, axes = plt.subplots(1, 3, sharex=True, sharey=True, gridspec_kw={'hspace': 0.2, 'wspace': 0.2})
+    fig_legend, axes_legend = plt.subplots()
+    colormap = "Oranges"
+    Zs = [Z_es, Z_speedup, Z_ler]
+    i = 0
+    for ax in axes:
+        im = ax.imshow(Zs[i], cmap=colormap)
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        fig.colorbar(im, cax=cax, orientation='vertical')
+        i += 1
+
+    # im1 = axes[0, 0].imshow(Z_ler, cmap=colormap)
+    # divider = make_axes_locatable(axes[0, 0])
+    # cax = divider.append_axes('right', size='5%', pad=0.05)
+    # fig.colorbar(im1, cax=cax, orientation='vertical')
+    #
+    # im2 = axes[0, 1].imshow(Z_es, cmap=colormap)
+    # divider = make_axes_locatable(axes[0, 1])
+    # cax = divider.append_axes('right', size='5%', pad=0.05)
+    # fig.colorbar(im2, cax=cax, orientation='vertical')
+    #
+    # im3 = axes[1, 0].imshow(Z_speedup, cmap=colormap)
+    # divider = make_axes_locatable(axes[1, 0])
+    # cax = divider.append_axes('right', size='5%', pad=0.05)
+    # fig.colorbar(im3, cax=cax, orientation='vertical')
+
+    ler_level_0 = []
+    ler_level_1 = []
+    ler_level_2 = []
+
+    et_level_0 = []
+    et_level_1 = []
+    et_level_2 = []
+
+    speedup_level_0 = []
+    speedup_level_1 = []
+    speedup_level_2 = []
+
+    data_legend = np.zeros((9, 9))
+
+    for i in range(9):
+        for j in range(9):
+            if i == j:
+                ler_level_0.append(Z_ler[i, j])
+                et_level_0.append(Z_es[i, j])
+                speedup_level_0.append(Z_speedup[i, j])
+                data_legend[i, j] = 1
+            elif i < 6 and j < 6:
+                ler_level_1.append(Z_ler[i, j])
+                et_level_1.append(Z_es[i, j])
+                speedup_level_1.append(Z_speedup[i, j])
+                data_legend[i, j] = 0.5
+            elif i >= 6 and j >= 6:
+                ler_level_1.append(Z_ler[i, j])
+                et_level_1.append(Z_es[i, j])
+                speedup_level_1.append(Z_speedup[i, j])
+                data_legend[i, j] = 0.5
+            else:
+                ler_level_2.append(Z_ler[i, j])
+                et_level_2.append(Z_es[i, j])
+                speedup_level_2.append(Z_speedup[i, j])
+                data_legend[i, j] = 0
+
+    im = axes_legend.imshow(data_legend, cmap="binary")
+    # divider = make_axes_locatable(axes[1, 1])
+    # cax = divider.append_axes('right', size='5%', pad=0.05)
+    # fig.colorbar(im4, cax=cax, orientation='vertical')
+
+    mean_ler_level_0 = np.mean(ler_level_0)
+    mean_ler_level_1 = np.mean(ler_level_1)
+    mean_ler_level_2 = np.mean(ler_level_2)
+
+    mean_et_level_0 = np.mean(et_level_0)
+    mean_et_level_1 = np.mean(et_level_1)
+    mean_et_level_2 = np.mean(et_level_2)
+
+    mean_speedup_level_0 = np.mean(speedup_level_0)
+    mean_speedup_level_1 = np.mean(speedup_level_1)
+    mean_speedup_level_2 = np.mean(speedup_level_2)
+
+    std_ler_level_0 = np.std(ler_level_0)
+    std_ler_level_1 = np.std(ler_level_1)
+    std_ler_level_2 = np.std(ler_level_2)
+
+    std_et_level_0 = np.std(et_level_0)
+    std_et_level_1 = np.std(et_level_1)
+    std_et_level_2 = np.std(et_level_2)
+
+    std_speedup_level_0 = np.std(speedup_level_0)
+    std_speedup_level_1 = np.std(speedup_level_1)
+    std_speedup_level_2 = np.std(speedup_level_2)
+
+    print("MEAN: 0-LER: " + str(mean_ler_level_0) + ", 1-LER: " + str(mean_ler_level_1) + ", 2-LER:" + str(mean_ler_level_2))
+    print("STD: 0-LER: " + str(std_ler_level_0) + ", 1-LER: " + str(std_ler_level_1) + ", 2-LER:" + str(std_ler_level_2))
+
+    print("MEAN: 0-ET: " + str(mean_et_level_0) + ", 1-ET: " + str(mean_et_level_1) + ", 2-ET:" + str(
+        mean_et_level_2))
+    print(
+        "STD: 0-ET: " + str(std_et_level_0) + ", 1-ET: " + str(std_et_level_1) + ", 2-ET:" + str(std_et_level_2))
+
+    print("MEAN: 0-SPEEDUP: " + str(mean_speedup_level_0) + ", 1-SPEEDUP: " + str(mean_speedup_level_1) + ", 2-SPEEDUP:" + str(
+        mean_speedup_level_2))
+    print(
+        "STD: 0-SPEEDUP: " + str(std_speedup_level_0) + ", 1-SPEEDUP: " + str(std_speedup_level_1) + ", 2-SPEEDUP:" + str(std_speedup_level_2))
+
+    for ax in axes.reshape(-1):
+        ax.plot([-0.5, 8.5], [5.5, 5.5], color="white", linewidth=4)
+        ax.plot([5.5, 5.5], [-0.5, 8.5], color="white", linewidth=4)
+        # axes[i].text(0, 3, "Level-1-Transfers", ha='left', rotation=0, wrap=True, fontsize=16, color="gray")
+        # axes[i].text(7, 4.5, "Level-2-Transfers", ha='left', rotation=90, wrap=True, fontsize=16, color="gray")
+        # axes[i].text(0, 7, "Level-2-Transfers", ha='left', rotation=0, wrap=True, fontsize=16, color="gray")
+
+        ax.set_xticks(x-1)
+        ax.set_xticklabels(["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"], fontsize=16)
+
+    axes[0].set_yticks(y-1)
+    axes[0].set_yticklabels(["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"], fontsize=16)
+
+    axes[0].set_title("Empirical Transferability (ET)", fontsize=16)
+    axes[1].set_title("Speedup Factor (log base 10)", fontsize=16)
+    axes[2].set_title("Learning Effort Ratio (LER)", fontsize=16)
+
+    white_patch = mpatches.Patch(color='white', label='Level-2-Transfer')
+    gray_patch = mpatches.Patch(color='gray', label='Level-1-Transfer')
+    black_patch = mpatches.Patch(color='black', label='Level-0-Transfer')
+    # axes_legend.legend(handles=[black_patch, gray_patch, white_patch], bbox_to_anchor=(1.2, 1.1), ncol=3)
+    axes_legend.set_xticks(x-1)
+    axes_legend.set_xticklabels(["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"], fontsize=16)
+    axes_legend.set_yticks(y-1)
+    axes_legend.set_yticklabels(["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"], fontsize=16)
+
+    fig.set_size_inches(16, 9)
+    fig.savefig("results_matrices.png", bbox_inches='tight', dpi=300)
+    fig_legend.set_size_inches(16, 9)
+    fig_legend.savefig("results_matrices_legend.png", bbox_inches='tight', dpi=300)
+
+    X = np.arange(3)+1
+    fig_means, axes_means = plt.subplots(1, 1, sharex=True, sharey=True, gridspec_kw={'hspace': 0.2, 'wspace': 0.1})
+    axes_means.bar(X-0.25, [mean_et_level_0, mean_speedup_level_0, mean_ler_level_0], label="Level-0-Transfer", color=color_level_0, width=0.25, hatch="\\\\//")
+    axes_means.bar(X, [mean_et_level_1, mean_speedup_level_1, mean_ler_level_1], label="Level-1-Transfer", color=color_level_1, width=0.25, hatch="//")
+    axes_means.bar(X+0.25, [mean_et_level_2, mean_speedup_level_2, mean_ler_level_2], label="Level-2-Transfer", color=color_level_2, width=0.25, hatch="\\\\")
+    axes_means.legend(bbox_to_anchor=(1.1, 1.17), ncol=3)
+    axes_means.set_ylabel("Mean")
+    axes_means.set_xticks([1, 2, 3])
+    axes_means.set_xticklabels(["ET", "Speedup Factor (log base 10)", "LER"])
+    fig_means.set_size_inches(8, 4.5)
+    fig_means.savefig("results_means.png", bbox_inches='tight', dpi=300)
+
     plt.show()
 
 
@@ -1214,3 +1762,75 @@ def print_std(host: str, task_type: str, database: str, tags: list):
     p = DataProcessor()
     results = get_multiple_experiment_data(host, task_type, results_db=database, filter={"meta.tags": {"$all": tags}})
     cost = p.get_average_cost_over_time(results, 1500, True)
+
+
+def smooth(x, window_len=100, window='blackman'):
+    """smooth the data using a window with requested size.
+
+    This method is based on the convolution of a scaled window with the signal.
+    The signal is prepared by introducing reflected copies of the signal
+    (with the window size) in both ends so that transient parts are minimized
+    in the begining and end part of the output signal.
+
+    input:
+        x: the input signal
+        window_len: the dimension of the smoothing window; should be an odd integer
+        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
+            flat window will produce a moving average smoothing.
+
+    output:
+        the smoothed signal
+
+    example:
+
+    t=linspace(-2,2,0.1)
+    x=sin(t)+randn(len(t))*0.1
+    y=smooth(x)
+
+    see also:
+
+    np.hanning, np.hamming, np.bartlett, np.blackman, np.convolve
+    scipy.signal.lfilter
+
+    TODO: the window parameter could be the window itself if an array instead of a string
+    NOTE: length(output) != length(input), to correct this: return y[(window_len/2-1):-(window_len/2)] instead of just y.
+    """
+
+    if x.ndim != 1:
+        raise ValueError("smooth only accepts 1 dimension arrays.")
+
+    if x.size < window_len:
+        raise ValueError("Input vector needs to be bigger than window size.")
+
+    if window_len < 3:
+        return x
+
+    if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+        raise ValueError("Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
+
+    s = np.r_[x[window_len - 1:0:-1], x, x[-2:-window_len - 1:-1]]
+    # print(len(s))
+    if window == 'flat':  # moving average
+        w = np.ones(window_len, 'd')
+    else:
+        w = eval('np.' + window + '(window_len)')
+
+    y = np.convolve(w / w.sum(), s, mode='valid')
+    return y
+
+
+def get_mean_over_window(x: np.ndarray, width: float = 200) -> (np.ndarray, np.ndarray):
+    rest = len(x) % width
+    n_windows = int(np.floor(len(x) / width))
+    x_mean = []
+    x_std = []
+    for i in range(n_windows):
+        if i == n_windows - -1:
+            x_mean.append(np.mean(x[i * width:]))
+            x_std.append(np.mean(x[i * width:]))
+        else:
+            x_mean.append(np.mean(x[i*width:i*width + width]))
+            x_std.append(np.mean(x[i * width:i * width + width]))
+
+    print(x_mean)
+    return np.asarray(x_mean), np.asarray(x_std)
