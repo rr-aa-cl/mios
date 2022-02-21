@@ -10,10 +10,10 @@ cost_types = ["time", "contact_forces", "effort_avg", "effort_total", "distance"
 
 class QMetric:
     def __init__(self):
-        self.final_cost = None
-        self.success = None
+        self.final_cost = float("inf")
+        self.success = False
         self.cost = dict()
-        self.heuristic = None
+        self.heuristic = float("inf")
         self.optimal = False
         self.success_rate = 0
 

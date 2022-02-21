@@ -134,6 +134,8 @@ class KnowledgeManager:
             "skill_class": doc[0]["meta"]["skill_class"],
             "tags": doc[0]["meta"]["tags"]
         }
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print(task_identity)
 
         successful_trials, vector_mapping, mean_optimum_weights, confidence = self.get_successful_trials(doc)
         self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, mean_optimum_weights, confidence)

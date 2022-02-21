@@ -8,7 +8,7 @@ from mongodb_client.mongodb_client import MongoDBClient
 
 
 def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service: ServiceConfiguration, n_eval: int = 1,
-                     tags: list = None, knowledge: dict = None, keep_record: bool = True):
+                     tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True):
     if tags is None:
         tags = []
 
@@ -24,6 +24,7 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
         if keep_record is True and len(client.read("ml_results", problem_def.skill_class, {"meta.tags": {"$all": problem_def.tags}})) != 0:
             print("Continue at n" + str(i+1))
             continue
+        print(learner)
         s = ServerProxy("http://" + learner + ":8000", allow_none=True)
         if knowledge is not None:
             if "scope" not in knowledge:
@@ -32,7 +33,8 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
                 knowledge["scope"].remove("n" + str(i))
             knowledge["scope"].append("n" + str(i+1))
         uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge)
-        s.wait_for_service()
+        if wait is True:
+            s.wait_for_service()
         # backup_result(agent, "collective-control-001.local", problem_def.skill_class, uuid)
 
 

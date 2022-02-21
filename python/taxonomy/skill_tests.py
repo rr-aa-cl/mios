@@ -1312,7 +1312,7 @@ class ScrewInTest(BaseTest):
         self.initialize(default_context, reset_default_contexts, record_performance=record_performance)
 
     def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
-        call_method(self.robot, 12000, "set_grasped_object", {"object": args["Screwdriver"]})
+        call_method(self.robot, 12002, "set_grasped_object", {"object": args["Screwdriver"]})
         context = self.default_context
         if host is not None and database is not None and task is not None:
             context = download_result2(host, database, self.skill_class, task, cost_function)
@@ -1397,7 +1397,7 @@ class ScrewOutTest(BaseTest):
     def teach(self, args: dict):
         input("Press enter to teach the screwdriver.")
         teach_object(self.robot, args["Screwdriver"])
-        call_method(self.robot, 12002, "set_grasped_object", {"object": args["Screwdriver"]})
+        call_method(self.robot, 12000, "set_grasped_object", {"object": args["Screwdriver"]})
         input("Press enter to teach the approach pose.")
         teach_object(self.robot, args["Approach"])
         input("Press enter to teach the screw pose.")
@@ -1418,11 +1418,11 @@ class HammerTest(BaseTest):
         reset_default_contexts["move"] = json.load(f)
         self.initialize(default_context, reset_default_contexts, record_performance=record_performance)
 
-    def run(self, args: dict, cost_function: str, result_uuid: str = None, result_trial: int = None):
+    def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Hammer"]})
         context = self.default_context
-        if result_uuid is not None and result_trial is not None:
-            context = download_result(self.robot, "ml_results", self.skill_class, result_uuid, result_trial)
+        if host is not None and database is not None and task is not None:
+            context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Hammer": args["Hammer"],
             "Approach": args["Approach"],
@@ -1434,6 +1434,7 @@ class HammerTest(BaseTest):
         t.add_skill(self.skill_class, "TaxHammer", context)
         t.start()
         result = t.wait()
+        print(result["result"]["task_result"]["skill_results"][self.skill_class]["cost"][cost_function])
 
         if self.record_performance is True:
             upload_result(self.db_host, self.skill_class, args["Hammerable"], cost_function, result)

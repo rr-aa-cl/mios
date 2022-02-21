@@ -131,9 +131,7 @@ std::shared_ptr<ManipulationPrimitive> TaxHammer::create_down_mp(const Percept &
     mp->create_strategy<TwistStrategy>("move",1);
     std::shared_ptr<TwistStrategy> move = mp->get_strategy<TwistStrategy>("move");
     Eigen::Matrix<double,6,1> dX_d;
-    Eigen::Matrix<double,3,1> dir=get_object_pose_T("Hammerable").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);
-    dir/=dir.norm();
-    dX_d<<dir*skill_params->p1.dX_d(0),0,0,0;
+    dX_d<<0,0,skill_params->p1.dX_d(0),0,0,0;
     move->set_TF_dX_d(dX_d,skill_params->p1.ddX_d);
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p1.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);

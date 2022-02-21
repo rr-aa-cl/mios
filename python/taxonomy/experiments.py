@@ -139,12 +139,12 @@ def move_test():
                      "skill_data", "move")
 
 
-def screw_user_stop_test():
-    t = ScrewTest("collective-panda-009")
-    t.reset({"Approach": "screw_approach"})
-    start_experiment(t, {"Screwdriver": "screwdriver", "Approach": "screw_approach", "Screw": "screw_user_stop"},
-                     {"Approach": "screw_approach"}, 1, "time",
-                     "collective-control-001", "skill_data", "screw_user_stop")
+def screw_in_test(robot: str, screwdriver: str, approach: str, screw: str, cf: str):
+    t = ScrewInTest(robot)
+    t.reset({"Approach": approach})
+    start_experiment(t, {"Screwdriver": screwdriver, "Approach": approach, "Screw": screw},
+                     {"Approach": approach}, 1, cf,
+                     "collective-control-001", "skill_data", "screw_in_user_stop")
 
 
 def screw_out_user_stop_test():
