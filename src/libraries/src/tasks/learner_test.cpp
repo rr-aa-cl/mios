@@ -8,8 +8,8 @@ LearnerTest::LearnerTest(Core *core):Task("LearnerTest",core){
 
 void LearnerTest::initialize_context(){
     reserve_skill("ml_test");
-    overwrite_context("ml_test","skill","x",msrm_utils::from_eigen<double,6,1>(m_x));
-    overwrite_context("ml_test","skill","weights",msrm_utils::from_eigen<double,2,1>(m_weights));
+    overwrite_context("ml_test","skill","x",mirmi_utils::from_eigen<double,6,1>(m_x));
+    overwrite_context("ml_test","skill","weights",mirmi_utils::from_eigen<double,2,1>(m_weights));
 }
 
 void LearnerTest::execute(){
@@ -17,7 +17,7 @@ void LearnerTest::execute(){
 }
 
 bool LearnerTest::read_parameters(const nlohmann::json& params){
-    if(!msrm_utils::read_json_param<double,6,1>(params,"x",m_x)){
+    if(!mirmi_utils::read_json_param<double,6,1>(params,"x",m_x)){
         spdlog::error("Missing parameter: x [6x1]");
         return false;
     }

@@ -1,7 +1,7 @@
 #include "mios/panda/panda_body.hpp"
 #include "mios/memory/memory.hpp"
-#include "msrm_cpp_utils/network/network.hpp"
-#include "msrm_cpp_utils/conversion/conversion.hpp"
+#include "mirmi_cpp_utils/network/network.hpp"
+#include "mirmi_cpp_utils/conversion/conversion.hpp"
 #include "conv_vel2pose/conv_vel2pose_wrapper.hpp"
 
 #include "spdlog/spdlog.h"
@@ -56,7 +56,7 @@ std::optional<std::string> PandaBody::get_robot_ip(const std::optional<std::stri
     std::optional<std::string> new_ip={};
     spdlog::debug("PandaBody: get_robot_ip("+last_ip.value_or("127.0.0.1")+")");
     if(last_ip.has_value()){
-        if(msrm_utils::ping(last_ip.value().c_str())==false){
+        if(mirmi_utils::ping(last_ip.value().c_str())==false){
             spdlog::warn("IP was set to "+last_ip.value()+" but no device has been found. Searching for new connection...");
         }else{
             if(!is_robot(last_ip.value())){
@@ -218,14 +218,14 @@ std::optional<std::string> PandaBody::find_robot(){
     std::optional<std::string> robot_address={};
     std::string robot_iface="none";
 
-    std::map<std::string,std::string> ifaces = msrm_utils::get_subnets();
+    std::map<std::string,std::string> ifaces = mirmi_utils::get_subnets();
     for(const auto& i : ifaces){
         if(i.first=="lo" || i.first=="docker0" || i.first=="tap0"){
             continue;
         }
         for(unsigned j=1;j<255;j++){
             std::string address=i.second+std::to_string(j);
-            if(!msrm_utils::ping(address.c_str())){
+            if(!mirmi_utils::ping(address.c_str())){
                 continue;
             }else{
                 if(is_robot(address)){
@@ -427,7 +427,7 @@ void PandaBody::dummy_control(std::function<franka::CartesianVelocities (const f
         conv.u.TF_T_EE=Eigen::Matrix<double,4,4>(m_robot_state.O_T_EE.data());
         conv.u.TF_dX_d=Eigen::Matrix<double,6,1>(dX_d.O_dP_EE.data());
         conv.step();
-        m_robot_state.O_T_EE=msrm_utils::convert_to_array<double,4,4>(conv.y.TF_T_EE_d);
+        m_robot_state.O_T_EE=mirmi_utils::convert_to_array<double,4,4>(conv.y.TF_T_EE_d);
         auto t_s_end = std::chrono::system_clock::now();
         double t=std::chrono::duration_cast<std::chrono::microseconds>(t_s_end-t_s_start).count();
         duration=franka::Duration(t);
@@ -509,16 +509,16 @@ bool PandaBody::set_robot_parameters(){
     UserParameters user= m_memory->read_parameters()->user;
     FramesParameters frames =m_memory->read_parameters()->frames;
 
-    std::array<double,3> load_com = msrm_utils::convert_to_array<double,3,1>(user.load_com);
-    std::array<double,9> load_I = msrm_utils::convert_to_array<double,3,3>(user.load_I);
-    std::array<double,7> tau_ext_contact = msrm_utils::convert_to_array<double,7,1>(user.tau_ext_contact);
-    std::array<double,7> tau_ext_max = msrm_utils::convert_to_array<double,7,1>(user.tau_ext_max);
+    std::array<double,3> load_com = mirmi_utils::convert_to_array<double,3,1>(user.load_com);
+    std::array<double,9> load_I = mirmi_utils::convert_to_array<double,3,3>(user.load_I);
+    std::array<double,7> tau_ext_contact = mirmi_utils::convert_to_array<double,7,1>(user.tau_ext_contact);
+    std::array<double,7> tau_ext_max = mirmi_utils::convert_to_array<double,7,1>(user.tau_ext_max);
     std::array<double,6> F_ext_K_contact = {user.F_ext_contact(0),user.F_ext_contact(0),user.F_ext_contact(0),user.F_ext_contact(1),user.F_ext_contact(1),user.F_ext_contact(1)};
     std::array<double,6> F_ext_K_max = {user.F_ext_max(0),user.F_ext_max(0),user.F_ext_max(0),user.F_ext_max(1),user.F_ext_max(1),user.F_ext_max(1)};
-    std::array<double,16> EE_T_K = msrm_utils::convert_to_array<double,4,4>(frames.EE_T_K);
-    std::array<double,7> K_theta = msrm_utils::convert_to_array<double,7,1>(control.joint_imp.K_theta);
-    std::array<double,6> K_x = msrm_utils::convert_to_array<double,6,1>(control.cart_imp.K_x);
-    std::array<double,16> NE_T_TCP = msrm_utils::convert_to_array<double,4,4>(frames.EE_T_TCP);
+    std::array<double,16> EE_T_K = mirmi_utils::convert_to_array<double,4,4>(frames.EE_T_K);
+    std::array<double,7> K_theta = mirmi_utils::convert_to_array<double,7,1>(control.joint_imp.K_theta);
+    std::array<double,6> K_x = mirmi_utils::convert_to_array<double,6,1>(control.cart_imp.K_x);
+    std::array<double,16> NE_T_TCP = mirmi_utils::convert_to_array<double,4,4>(frames.EE_T_TCP);
 
     try{
         m_panda_arm->setLoad(user.load_m,load_com,load_I);

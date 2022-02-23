@@ -28,10 +28,10 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_options
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
-    msrm_cpp_utils::math
-    msrm_cpp_utils::conversion
-    msrm_cpp_utils::json
-    msrm_cpp_utils::system
+    mirmi_cpp_utils::math
+    mirmi_cpp_utils::conversion
+    mirmi_cpp_utils::json
+    mirmi_cpp_utils::system
     PUBLIC
     ${PROJECT_NAME}::controller_pipeline
     ${PROJECT_NAME}::interface

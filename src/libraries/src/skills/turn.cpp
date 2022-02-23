@@ -4,11 +4,11 @@
 
 namespace mios{
 bool SkillParametersTurn::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param(parameters,"phi",phi)){
+    if(!mirmi_utils::read_json_param(parameters,"phi",phi)){
         spdlog::error("Parameter phi could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"dphi",dphi)){
+    if(!mirmi_utils::read_json_param(parameters,"dphi",dphi)){
         spdlog::error("Parameter dphi could not be loaded but is mandatory.");
         return false;
     }

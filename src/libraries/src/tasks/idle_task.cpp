@@ -3,7 +3,7 @@
 #include "mios/skills/hold_pose.hpp"
 #include "mios/skills/move_to_pose_joint.hpp"
 
-#include "msrm_cpp_utils/files/files.hpp"
+#include "mirmi_cpp_utils/files/files.hpp"
 #include <spdlog/spdlog.h>
 
 namespace mios {
@@ -16,17 +16,17 @@ void IdleTask::initialize_context(){
     reserve_skill("move");
 }
 void IdleTask::execute(){
-    switch(msrm_utils::str_to_int(this->idle_mode.c_str())){
-    case msrm_utils::str_to_int("none"):
+    switch(mirmi_utils::str_to_int(this->idle_mode.c_str())){
+    case mirmi_utils::str_to_int("none"):
         this->sleep_1ms();
         break;
-    case msrm_utils::str_to_int("sleep"):
+    case mirmi_utils::str_to_int("sleep"):
 //        this->get_skill("move")->set_object("loc_goal","pose_sleep");
 //        this->execute_skill("move");
         execute_skill<GenericWiggleMotion,SkillParametersGenericWiggleMotion>("sleep");
         this->sleep_1ms();
         break;
-    case msrm_utils::str_to_int("hold"):
+    case mirmi_utils::str_to_int("hold"):
         execute_skill<HoldPose,SkillParametersHoldPose>("hold");
         break;
     default:
@@ -40,7 +40,7 @@ void IdleTask::recover_task(){
 }
 
 bool IdleTask::read_parameters(const nlohmann::json& params){
-    if(!msrm_utils::read_json_param(params,"idle_mode",idle_mode)){
+    if(!mirmi_utils::read_json_param(params,"idle_mode",idle_mode)){
         idle_mode="none";
     }
 return true;

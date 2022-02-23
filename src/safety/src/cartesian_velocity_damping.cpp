@@ -1,5 +1,5 @@
 #include "mios/safety_stage_2/cartesian_velocity_damping.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios{
 
@@ -20,7 +20,7 @@ void CartesianVelocityDampingSafetyModule::step(const Percept &p, franka::Finish
         F_damp.setZero();
         for(unsigned i=0;i<6;i++){
             if(fabs(p.proprioception.TF_dX_EE(i))>m_dX_thr(i)){
-                F_damp(i)=-msrm_utils::sgn(p.proprioception.TF_dX_EE(i))*(fabs(p.proprioception.TF_dX_EE(i))-m_dX_thr(i))*m_D_x(i);
+                F_damp(i)=-mirmi_utils::sgn(p.proprioception.TF_dX_EE(i))*(fabs(p.proprioception.TF_dX_EE(i))-m_dX_thr(i))*m_D_x(i);
             }
         }
         Eigen::Matrix<double,7,1> tau_damp = p.internal_model.B_J_EE.transpose()*F_damp;

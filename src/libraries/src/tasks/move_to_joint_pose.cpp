@@ -1,6 +1,6 @@
 #include "mios/tasks/move_to_joint_pose.hpp"
 #include "mios/skills/move_to_pose_joint.hpp"
-#include "msrm_cpp_utils/json/json.hpp"
+#include "mirmi_cpp_utils/json/json.hpp"
 
 namespace mios {
 
@@ -16,26 +16,26 @@ void MoveToJointPose::execute(){
     overwrite_context("move","control","control_mode",3);
     overwrite_context("move","skill","speed",m_speed);
     overwrite_context("move","skill","acc",m_acc);
-    overwrite_context("move","skill","q_g",msrm_utils::from_eigen<double,7,1>(m_q_g));
+    overwrite_context("move","skill","q_g",mirmi_utils::from_eigen<double,7,1>(m_q_g));
     write_skill_object("move","goal_pose",m_pose.value_or("NullObject"));
     execute_skill<MoveToPoseJoint,SkillParametersMoveToPoseJoint>("move");
 }
 
 bool MoveToJointPose::read_parameters(const nlohmann::json &params){
-    m_pose = msrm_utils::from_json<std::string>(params,"pose");
-//    msrm_utils::read_json_param(params,"pose",m_p);
-    if(!msrm_utils::read_json_param<double,7,1>(params,"q_g",m_q_g)){
+    m_pose = mirmi_utils::from_json<std::string>(params,"pose");
+//    mirmi_utils::read_json_param(params,"pose",m_p);
+    if(!mirmi_utils::read_json_param<double,7,1>(params,"q_g",m_q_g)){
         m_q_g.setZero();
     }
     if(m_q_g.isZero() && !m_pose.has_value()){
         spdlog::error("MoveToJointPose task requires either a location that exists in memory or an explicit joint pose.");
         return false;
     }
-    if(!msrm_utils::read_json_param(params,"speed",m_speed)){
+    if(!mirmi_utils::read_json_param(params,"speed",m_speed)){
         spdlog::error("Could not read parameter: speed");
         return false;
     }
-    if(!msrm_utils::read_json_param(params,"acc",m_acc)){
+    if(!mirmi_utils::read_json_param(params,"acc",m_acc)){
         spdlog::error("Could not read parameter: acc");
         return false;
     }

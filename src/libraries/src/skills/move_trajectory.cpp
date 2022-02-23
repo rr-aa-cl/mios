@@ -8,14 +8,14 @@
 namespace mios {
 
 bool SkillParametersMoveTrajectory::from_json(const nlohmann::json &p){
-    if(!msrm_utils::read_json_param(p,"file",file)){
+    if(!mirmi_utils::read_json_param(p,"file",file)){
         spdlog::error("Parameter file could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(p,"plane",plane)){
+    if(!mirmi_utils::read_json_param(p,"plane",plane)){
         plane=false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(p,"F_ff",F_ff)){
+    if(!mirmi_utils::read_json_param<double,6,1>(p,"F_ff",F_ff)){
         F_ff.setZero();
     }
     return true;

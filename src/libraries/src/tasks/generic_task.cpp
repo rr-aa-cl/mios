@@ -1,5 +1,5 @@
 #include "mios/tasks/generic_task.hpp"
-#include "msrm_cpp_utils/files/files.hpp"
+#include "mirmi_cpp_utils/files/files.hpp"
 
 #include "mios/skills/test_skill_1.hpp"
 #include "mios/skills/move_to_pose_cart.hpp"
@@ -77,67 +77,67 @@ void GenericTask::execute(){
 void GenericTask::add_any_skill(unsigned int index){
     std::string name = m_skills[index].first;
     std::string type = m_skills[index].second;
-    switch(msrm_utils::str_to_int(type.c_str())){
-    case msrm_utils::str_to_int("TestSkill1"):
+    switch(mirmi_utils::str_to_int(type.c_str())){
+    case mirmi_utils::str_to_int("TestSkill1"):
         add_skill<TestSkill1,SkillParametersTestSkill1>(name);
         break;
-    case msrm_utils::str_to_int("HoldPose"):
+    case mirmi_utils::str_to_int("HoldPose"):
         add_skill<HoldPose,SkillParametersHoldPose>(name);
         break;
-    case msrm_utils::str_to_int("GenericWiggleMotion"):
+    case mirmi_utils::str_to_int("GenericWiggleMotion"):
         add_skill<GenericWiggleMotion,SkillParametersGenericWiggleMotion>(name);
-    case msrm_utils::str_to_int("TaxMove"):
+    case mirmi_utils::str_to_int("TaxMove"):
         add_skill<TaxMove,SkillParametersTaxMove>(name);
         break;
-    case msrm_utils::str_to_int("TaxGrab"):
+    case mirmi_utils::str_to_int("TaxGrab"):
         add_skill<TaxGrab,SkillParametersTaxGrab>(name);
         break;
-    case msrm_utils::str_to_int("TaxPlace"):
+    case mirmi_utils::str_to_int("TaxPlace"):
         add_skill<TaxPlace,SkillParametersTaxPlace>(name);
         break;
-    case msrm_utils::str_to_int("TaxInsertion"):
+    case mirmi_utils::str_to_int("TaxInsertion"):
         add_skill<TaxInsertion,SkillParametersTaxInsertion>(name);
         break;
-    case msrm_utils::str_to_int("TaxExtraction"):
+    case mirmi_utils::str_to_int("TaxExtraction"):
         add_skill<TaxExtraction,SkillParametersTaxExtraction>(name);
         break;
-    case msrm_utils::str_to_int("TaxTurn"):
+    case mirmi_utils::str_to_int("TaxTurn"):
         add_skill<TaxTurn,SkillParametersTaxTurn>(name);
         break;
-    case msrm_utils::str_to_int("TaxPush"):
+    case mirmi_utils::str_to_int("TaxPush"):
         add_skill<TaxPush,SkillParametersTaxPush>(name);
         break;
-    case msrm_utils::str_to_int("TaxDrag"):
+    case mirmi_utils::str_to_int("TaxDrag"):
         add_skill<TaxDrag,SkillParametersTaxDrag>(name);
         break;
-    case msrm_utils::str_to_int("TaxPressButton"):
+    case mirmi_utils::str_to_int("TaxPressButton"):
         add_skill<TaxPressButton,SkillParametersTaxPressButton>(name);
         break;
-    case msrm_utils::str_to_int("TaxTip"):
+    case mirmi_utils::str_to_int("TaxTip"):
         add_skill<TaxTip,SkillParametersTaxTip>(name);
         break;
-    case msrm_utils::str_to_int("TaxCarry"):
+    case mirmi_utils::str_to_int("TaxCarry"):
         add_skill<TaxCarry,SkillParametersTaxCarry>(name);
         break;
-    case msrm_utils::str_to_int("TaxShove"):
+    case mirmi_utils::str_to_int("TaxShove"):
         add_skill<TaxShove,SkillParametersTaxShove>(name);
         break;
-    case msrm_utils::str_to_int("TaxTurnLever"):
+    case mirmi_utils::str_to_int("TaxTurnLever"):
         add_skill<TaxTurnLever,SkillParametersTaxTurnLever>(name);
         break;
-    case msrm_utils::str_to_int("TaxSlideObject"):
+    case mirmi_utils::str_to_int("TaxSlideObject"):
         add_skill<TaxSlideObject,SkillParametersTaxSlideObject>(name);
         break;
-    case msrm_utils::str_to_int("TaxSwipe"):
+    case mirmi_utils::str_to_int("TaxSwipe"):
         add_skill<TaxSwipe,SkillParametersTaxSwipe>(name);
         break;
-    case msrm_utils::str_to_int("TaxBend"):
+    case mirmi_utils::str_to_int("TaxBend"):
         add_skill<TaxBend,SkillParametersTaxBend>(name);
         break;
-//    case msrm_utils::str_to_int("TaxHold"):
+//    case mirmi_utils::str_to_int("TaxHold"):
 //        add_skill<TaxHold,SkillParametersTaxHold>(name);
 //        break;
-    case msrm_utils::str_to_int("TaxHammer"):
+    case mirmi_utils::str_to_int("TaxHammer"):
         add_skill<TaxHammer,SkillParametersTaxHammer>(name);
         break;
     default:
@@ -149,140 +149,140 @@ void GenericTask::add_any_skill(unsigned int index){
 void GenericTask::execute_any_skill(unsigned index){
     std::string name = m_skills[index].first;
     std::string type = m_skills[index].second;
-    switch(msrm_utils::str_to_int(type.c_str())){
-    case msrm_utils::str_to_int("TestSkill1"):
+    switch(mirmi_utils::str_to_int(type.c_str())){
+    case mirmi_utils::str_to_int("TestSkill1"):
         execute_skill<TestSkill1,SkillParametersTestSkill1>(name);
         break;
-    case msrm_utils::str_to_int("MoveToPoseJoint"):
+    case mirmi_utils::str_to_int("MoveToPoseJoint"):
         execute_skill<MoveToPoseJoint,SkillParametersMoveToPoseJoint>(name);
         break;
-    case msrm_utils::str_to_int("MoveToPoseCart"):
+    case mirmi_utils::str_to_int("MoveToPoseCart"):
         execute_skill<MoveToPoseCart,SkillParametersMoveToPoseCart>(name);
         break;
-    case msrm_utils::str_to_int("MoveToContact"):
+    case mirmi_utils::str_to_int("MoveToContact"):
         execute_skill<MoveToContact,SkillParametersMoveToContact>(name);
         break;
-    case msrm_utils::str_to_int("GenericWiggleMotion"):
+    case mirmi_utils::str_to_int("GenericWiggleMotion"):
         execute_skill<GenericWiggleMotion,SkillParametersGenericWiggleMotion>(name);
         break;
-    case msrm_utils::str_to_int("HoldPose"):
+    case mirmi_utils::str_to_int("HoldPose"):
         execute_skill<HoldPose,SkillParametersHoldPose>(name);
         break;
-    case msrm_utils::str_to_int("HandGuiding"):
+    case mirmi_utils::str_to_int("HandGuiding"):
         execute_skill<HandGuiding,SkillParametersHandGuiding>(name);
         break;
-    case msrm_utils::str_to_int("Telepresence"):
+    case mirmi_utils::str_to_int("Telepresence"):
         execute_skill<Telepresence,SkillParametersTelepresence>(name);
         break;
-    case msrm_utils::str_to_int("Push"):
+    case mirmi_utils::str_to_int("Push"):
         execute_skill<Push,SkillParametersPush>(name);
         break;
-    case msrm_utils::str_to_int("Tip"):
+    case mirmi_utils::str_to_int("Tip"):
         execute_skill<Tip,SkillParametersTip>(name);
         break;
-    case msrm_utils::str_to_int("Shove"):
+    case mirmi_utils::str_to_int("Shove"):
         execute_skill<Shove,SkillParametersShove>(name);
         break;
-    case msrm_utils::str_to_int("File"):
+    case mirmi_utils::str_to_int("File"):
         execute_skill<File,SkillParametersFile>(name);
         break;
-    case msrm_utils::str_to_int("Extraction"):
+    case mirmi_utils::str_to_int("Extraction"):
         execute_skill<Extraction,SkillParametersExtraction>(name);
         break;
-    case msrm_utils::str_to_int("Insertion"):
+    case mirmi_utils::str_to_int("Insertion"):
         execute_skill<Insertion,SkillParametersInsertion>(name);
         break;
-    case msrm_utils::str_to_int("Wipe"):
+    case mirmi_utils::str_to_int("Wipe"):
         execute_skill<Wipe,SkillParametersWipe>(name);
         break;
-    case msrm_utils::str_to_int("MoveTrajectory"):
+    case mirmi_utils::str_to_int("MoveTrajectory"):
         execute_skill<MoveTrajectory,SkillParametersMoveTrajectory>(name);
         break;
-    case msrm_utils::str_to_int("Turn"):
+    case mirmi_utils::str_to_int("Turn"):
         execute_skill<Turn,SkillParametersTurn>(name);
         break;
-    case msrm_utils::str_to_int("TaxInsertion"):
+    case mirmi_utils::str_to_int("TaxInsertion"):
         execute_skill<TaxInsertion,SkillParametersTaxInsertion>(name);
         break;
-    case msrm_utils::str_to_int("TaxExtraction"):
+    case mirmi_utils::str_to_int("TaxExtraction"):
         execute_skill<TaxExtraction,SkillParametersTaxExtraction>(name);
         break;
-    case msrm_utils::str_to_int("TaxMove"):
+    case mirmi_utils::str_to_int("TaxMove"):
         execute_skill<TaxMove,SkillParametersTaxMove>(name);
         break;
-    case msrm_utils::str_to_int("TaxGrab"):
+    case mirmi_utils::str_to_int("TaxGrab"):
         execute_skill<TaxGrab,SkillParametersTaxGrab>(name);
         break;
-    case msrm_utils::str_to_int("TaxPlace"):
+    case mirmi_utils::str_to_int("TaxPlace"):
         execute_skill<TaxPlace,SkillParametersTaxPlace>(name);
         break;
-    case msrm_utils::str_to_int("TaxPressButton"):
+    case mirmi_utils::str_to_int("TaxPressButton"):
         execute_skill<TaxPressButton,SkillParametersTaxPressButton>(name);
         break;
-    case msrm_utils::str_to_int("TaxTurn"):
+    case mirmi_utils::str_to_int("TaxTurn"):
         execute_skill<TaxTurn,SkillParametersTaxTurn>(name);
         break;
-    case msrm_utils::str_to_int("TaxPush"):
+    case mirmi_utils::str_to_int("TaxPush"):
         execute_skill<TaxPush,SkillParametersTaxPush>(name);
         break;
-    case msrm_utils::str_to_int("TaxDrag"):
+    case mirmi_utils::str_to_int("TaxDrag"):
         execute_skill<TaxDrag,SkillParametersTaxDrag>(name);
         break;
-    case msrm_utils::str_to_int("TaxTip"):
+    case mirmi_utils::str_to_int("TaxTip"):
         execute_skill<TaxTip,SkillParametersTaxTip>(name);
         break;
-    case msrm_utils::str_to_int("TaxShove"):
+    case mirmi_utils::str_to_int("TaxShove"):
         execute_skill<TaxShove,SkillParametersTaxShove>(name);
         break;
-    case msrm_utils::str_to_int("TaxCarry"):
+    case mirmi_utils::str_to_int("TaxCarry"):
         execute_skill<TaxCarry,SkillParametersTaxCarry>(name);
         break;
-    case msrm_utils::str_to_int("TaxTurnLever"):
+    case mirmi_utils::str_to_int("TaxTurnLever"):
         execute_skill<TaxTurnLever,SkillParametersTaxTurnLever>(name);
         break;
-    case msrm_utils::str_to_int("TaxSlideObject"):
+    case mirmi_utils::str_to_int("TaxSlideObject"):
         execute_skill<TaxSlideObject,SkillParametersTaxSlideObject>(name);
         break;
-    case msrm_utils::str_to_int("TaxSwipe"):
+    case mirmi_utils::str_to_int("TaxSwipe"):
         execute_skill<TaxSwipe,SkillParametersTaxSwipe>(name);
         break;
-    case msrm_utils::str_to_int("TaxWipe"):
+    case mirmi_utils::str_to_int("TaxWipe"):
         execute_skill<TaxWipe,SkillParametersTaxWipe>(name);
         break;
-    case msrm_utils::str_to_int("TaxFile"):
+    case mirmi_utils::str_to_int("TaxFile"):
         execute_skill<TaxFile,SkillParametersTaxFile>(name);
         break;
-    case msrm_utils::str_to_int("TaxBend"):
+    case mirmi_utils::str_to_int("TaxBend"):
         execute_skill<TaxBend,SkillParametersTaxBend>(name);
         break;
-//    case msrm_utils::str_to_int("TaxHold"):
+//    case mirmi_utils::str_to_int("TaxHold"):
 //        execute_skill<TaxHold,SkillParametersTaxHold>(name);
 //        break;
-    case msrm_utils::str_to_int("TaxHammer"):
+    case mirmi_utils::str_to_int("TaxHammer"):
         execute_skill<TaxHammer,SkillParametersTaxHammer>(name);
         break;
-    case msrm_utils::str_to_int("TaxSlideOpen"):
+    case mirmi_utils::str_to_int("TaxSlideOpen"):
         execute_skill<TaxSlideOpen,SkillParametersTaxSlideOpen>(name);
         break;
-    case msrm_utils::str_to_int("Draw"):
+    case mirmi_utils::str_to_int("Draw"):
         execute_skill<Draw,SkillParametersDraw>(name);
         break;
-    case msrm_utils::str_to_int("Crank"):
+    case mirmi_utils::str_to_int("Crank"):
         execute_skill<Crank,SkillParametersCrank>(name);
         break;
-    case msrm_utils::str_to_int("TaxCut"):
+    case mirmi_utils::str_to_int("TaxCut"):
         execute_skill<TaxCut,SkillParametersTaxCut>(name);
         break;
-    case msrm_utils::str_to_int("TaxDisplace"):
+    case mirmi_utils::str_to_int("TaxDisplace"):
         execute_skill<TaxDisplace,SkillParametersTaxDisplace>(name);
         break;
-    case msrm_utils::str_to_int("TaxScrew"):
+    case mirmi_utils::str_to_int("TaxScrew"):
         execute_skill<TaxScrew,SkillParametersTaxScrew>(name);
         break;
-    case msrm_utils::str_to_int("TaxWrench"):
+    case mirmi_utils::str_to_int("TaxWrench"):
         execute_skill<TaxWrench,SkillParametersTaxWrench>(name);
         break;
-    case msrm_utils::str_to_int("TaxScrewOut"):
+    case mirmi_utils::str_to_int("TaxScrewOut"):
         execute_skill<TaxScrewOut,SkillParametersTaxScrewOut>(name);
         break;
     default:
@@ -296,11 +296,11 @@ bool GenericTask::read_parameters(const nlohmann::json &params){
     std::vector<std::string> types;
     m_skills.resize(0);
 
-    if(!msrm_utils::read_json_param(params,"skill_names",names)){
+    if(!mirmi_utils::read_json_param(params,"skill_names",names)){
         spdlog::error("Missing parameter: skill_names.");
         return false;
     }
-    if(!msrm_utils::read_json_param(params,"skill_types",types)){
+    if(!mirmi_utils::read_json_param(params,"skill_types",types)){
         spdlog::error("Missing parameter: skill_types.");
         return false;
     }
@@ -315,7 +315,7 @@ bool GenericTask::read_parameters(const nlohmann::json &params){
     for(unsigned i=0;i<names.size();i++){
         m_skills.emplace_back(std::make_pair(names[i],types[i]));
     }
-    if(!msrm_utils::read_json_param(params,"as_queue",m_as_queue)){
+    if(!mirmi_utils::read_json_param(params,"as_queue",m_as_queue)){
         m_as_queue=false;
     }
     return true;

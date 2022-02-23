@@ -5,7 +5,7 @@
 #include <array>
 #include <memory>
 
-namespace msrm_utils{
+namespace mirmi_utils{
 class UDPStreamReceiver;
 }
 
@@ -28,7 +28,7 @@ private:
     void read_stream(std::vector<double> &data);
 
     std::deque<std::array<double,7> > m_tau_in;
-    std::shared_ptr<msrm_utils::UDPStreamReceiver> m_receiver;
+    std::shared_ptr<mirmi_utils::UDPStreamReceiver> m_receiver;
     Portal* m_portal;
     std::string m_stream_name;
     Eigen::Matrix<double,7,1> m_alpha;

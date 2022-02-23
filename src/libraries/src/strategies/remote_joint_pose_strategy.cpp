@@ -1,6 +1,6 @@
 #include "mios/strategies/remote_joint_pose_strategy.hpp"
 #include "mios/portal/portal.hpp"
-#include <msrm_cpp_utils/conversion/conversion.hpp>
+#include <mirmi_cpp_utils/conversion/conversion.hpp>
 #include <functional>
 
 namespace mios {
@@ -10,7 +10,7 @@ RemoteJointPoseStrategy::RemoteJointPoseStrategy():PrimitiveStrategy({CommandPat
 }
 
 void RemoteJointPoseStrategy::initialize(const Percept &p_0){
-    m_q_d_in[0]=msrm_utils::convert_to_array<double,7,1>(p_0.proprioception.q);
+    m_q_d_in[0]=mirmi_utils::convert_to_array<double,7,1>(p_0.proprioception.q);
     m_last_valid_q_d=p_0.proprioception.q;
 }
 

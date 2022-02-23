@@ -5,18 +5,18 @@
 namespace mios {
 
 bool SkillParametersMoveToPoseJoint::from_json(const nlohmann::json &p){
-    if(!msrm_utils::read_json_param(p,"t_settle",t_settle)){
+    if(!mirmi_utils::read_json_param(p,"t_settle",t_settle)){
         t_settle=0;
     }
-    if(!msrm_utils::read_json_param(p,"speed",speed)){
+    if(!mirmi_utils::read_json_param(p,"speed",speed)){
         spdlog::error("Parameter speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(p,"acc",acc)){
+    if(!mirmi_utils::read_json_param(p,"acc",acc)){
         spdlog::error("Parameter acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(p,"q_g_offset",q_g_offset)){
+    if(!mirmi_utils::read_json_param<double,7,1>(p,"q_g_offset",q_g_offset)){
         q_g_offset.setZero();
     }
     bool object_set=false;
@@ -26,7 +26,7 @@ bool SkillParametersMoveToPoseJoint::from_json(const nlohmann::json &p){
         }
     }
 
-    if(!msrm_utils::read_json_param<double,7,1>(p,"q_g",q_g) && !object_set){
+    if(!mirmi_utils::read_json_param<double,7,1>(p,"q_g",q_g) && !object_set){
         spdlog::error("Parameter q_g could not be loaded but is mandatory.");
         return false;
     }

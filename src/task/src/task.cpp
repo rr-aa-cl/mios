@@ -5,14 +5,14 @@
 #include "mios/tasks/null_task.hpp"
 
 #include "spdlog/spdlog.h"
-#include "msrm_cpp_utils/system/system.hpp"
+#include "mirmi_cpp_utils/system/system.hpp"
 
 #include <sstream>
 
 namespace mios {
 
 Task::Task(const std::string& id, Core* core):m_core(core),m_memory(core->get_memory()),m_portal(core->get_portal()),m_skill_engine(core->get_skill_engine()),m_flag_stop(false),m_flag_recover(false),m_flag_in_recovery(false),m_id(id),
-    m_uuid(msrm_utils::generate_uuid()),m_active_subtask(nullptr){
+    m_uuid(mirmi_utils::generate_uuid()),m_active_subtask(nullptr){
     spdlog::trace("Task::Task()");
 }
 
@@ -99,7 +99,7 @@ bool Task::load_context(const nlohmann::json &user_context){
                     spdlog::error("Task parameter "+el.key()+" given by user does not exist in default task context.");
                     return false;
                 }
-                msrm_utils::overwrite_valid_json(user_context["parameters"][el.key()],m_context["parameters"][el.key()]);
+                mirmi_utils::overwrite_valid_json(user_context["parameters"][el.key()],m_context["parameters"][el.key()]);
             }
         }
 

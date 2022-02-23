@@ -33,7 +33,7 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
     ${PROJECT_NAME}::core
     ${PROJECT_NAME}::portal
-    msrm_cpp_utils::network
+    mirmi_cpp_utils::network
     PUBLIC
     nlohmann_json::nlohmann_json
     Eigen3::Eigen

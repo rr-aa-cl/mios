@@ -3,28 +3,28 @@
 #include "mios/strategies/ff_strategy.hpp"
 #include "mios/strategies/move_to_pose.hpp"
 
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios{
 
 bool SkillParametersWipe::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param(parameters,"f_contact",f_contact)){
+    if(!mirmi_utils::read_json_param(parameters,"f_contact",f_contact)){
         spdlog::error("Parameter f_contact could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"speed",speed)){
+    if(!mirmi_utils::read_json_param(parameters,"speed",speed)){
         spdlog::error("Parameter speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"wipe_distance",wipe_distance)){
+    if(!mirmi_utils::read_json_param(parameters,"wipe_distance",wipe_distance)){
         spdlog::error("Parameter wipe_distance could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"t_contactless",t_contactless)){
+    if(!mirmi_utils::read_json_param(parameters,"t_contactless",t_contactless)){
         spdlog::error("Parameter t_contactless could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"wipe_dir",wipe_dir)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"wipe_dir",wipe_dir)){
         spdlog::error("Parameter wipe_dir could not be loaded but is mandatory.");
         return false;
     }

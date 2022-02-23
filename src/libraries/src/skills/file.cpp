@@ -6,27 +6,27 @@
 
 namespace mios{
 bool SkillParametersFile::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param(parameters,"f_contact",f_contact)){
+    if(!mirmi_utils::read_json_param(parameters,"f_contact",f_contact)){
         spdlog::error("Parameter f_contact could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"speed",speed)){
+    if(!mirmi_utils::read_json_param(parameters,"speed",speed)){
         spdlog::error("Parameter speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"distance",distance)){
+    if(!mirmi_utils::read_json_param(parameters,"distance",distance)){
         spdlog::error("Parameter distance could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"file_amp",file_amp)){
+    if(!mirmi_utils::read_json_param(parameters,"file_amp",file_amp)){
         spdlog::error("Parameter file_amp could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"file_freq",file_freq)){
+    if(!mirmi_utils::read_json_param(parameters,"file_freq",file_freq)){
         spdlog::error("Parameter file_freq could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"t_contactless",t_contactless)){
+    if(!mirmi_utils::read_json_param(parameters,"t_contactless",t_contactless)){
         t_contactless=0;
     }
     return true;

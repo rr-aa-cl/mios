@@ -10,7 +10,7 @@
 
 namespace mios {
 
-using msrm_utils::ArgPair;
+using mirmi_utils::ArgPair;
 
 CommandInterface::CommandInterface(Core *core, TaskEngine *task_engine,Portal* portal,Memory* memory):m_core(core),m_task_engine(task_engine),m_portal(portal),m_memory(memory){
     spdlog::trace("ComanndInterface::CommandInterface()");
@@ -387,8 +387,8 @@ nlohmann::json CommandInterface::get_state([[maybe_unused]] const nlohmann::json
         result=false;
     }
     const Percept* p = m_core->get_percept();
-    msrm_utils::write_json_array<double,7,1>(response["q"],p->proprioception.q);
-    msrm_utils::write_json_array<double,4,4>(response["O_T_EE"],p->proprioception.O_T_EE);
+    mirmi_utils::write_json_array<double,7,1>(response["q"],p->proprioception.q);
+    mirmi_utils::write_json_array<double,4,4>(response["O_T_EE"],p->proprioception.O_T_EE);
     response["grasped_object"]=m_memory->get_live_context()->grasped_object->name;
     if(p->robot_mode==franka::RobotMode::kIdle){
         response["status"]="Idle";
@@ -415,11 +415,11 @@ nlohmann::json CommandInterface::get_model([[maybe_unused]] const nlohmann::json
         result=false;
     }
     const Percept* p = m_core->get_percept();
-    msrm_utils::write_json_array<double,7,7>(response["M"],p->internal_model.M);
-    msrm_utils::write_json_array<double,7,1>(response["C"],p->internal_model.C);
-    msrm_utils::write_json_array<double,7,1>(response["G"],p->internal_model.G);
-    msrm_utils::write_json_array<double,6,7>(response["B_J_O"],p->internal_model.B_J_O);
-    msrm_utils::write_json_array<double,6,7>(response["B_J_EE"],p->internal_model.B_J_EE);
+    mirmi_utils::write_json_array<double,7,7>(response["M"],p->internal_model.M);
+    mirmi_utils::write_json_array<double,7,1>(response["C"],p->internal_model.C);
+    mirmi_utils::write_json_array<double,7,1>(response["G"],p->internal_model.G);
+    mirmi_utils::write_json_array<double,6,7>(response["B_J_O"],p->internal_model.B_J_O);
+    mirmi_utils::write_json_array<double,6,7>(response["B_J_EE"],p->internal_model.B_J_EE);
     response["result"]=result;
     response["error_message"]=error_message;
 

@@ -1,11 +1,11 @@
 #include "mios/skills/move_to_contact.hpp"
 #include "mios/strategies/move_to_pose.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios {
 
 bool SkillParametersMoveToContact::from_json(const nlohmann::json &p){
-    if(!msrm_utils::read_json_param(p,"speed",speed)){
+    if(!mirmi_utils::read_json_param(p,"speed",speed)){
         spdlog::error("Parameter speed could not be loaded but is mandatory.");
         return false;
     }
@@ -27,7 +27,7 @@ MoveToContact::MoveToContact(const std::string &id, Memory *memory, Portal* port
 //        if(object_dir.dot(tmp)<1e-3){
 //            tmp<<0,1,0;
 //        }
-//        return msrm_utils::build_rotation_matrix(object_dir,tmp);
+//        return mirmi_utils::build_rotation_matrix(object_dir,tmp);
 //    }else{
 //        throw SkillException("No valid object has been grounded.");
 //    }
@@ -40,7 +40,7 @@ std::shared_ptr<ManipulationPrimitive> MoveToContact::get_initial_mp(const Perce
 
     Eigen::Matrix<double,4,4> T_g;
 
-    T_g=msrm_utils::rotate_matrix(get_object("goal_pose")->O_T_OB,m_memory->read_parameters()->frames.O_R_T.transpose());
+    T_g=mirmi_utils::rotate_matrix(get_object("goal_pose")->O_T_OB,m_memory->read_parameters()->frames.O_R_T.transpose());
     T_g.block<3,3>(0,0)=p_0.proprioception.T_T_EE.block<3,3>(0,0);
     Eigen::Matrix<double,3,1> goal_dir=T_g.block<3,1>(0,3)-p_0.proprioception.T_T_EE.block<3,1>(0,3);
     goal_dir.normalize();

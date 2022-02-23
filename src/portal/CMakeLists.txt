@@ -30,9 +30,9 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_options
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
-    msrm_cpp_utils::system
+    mirmi_cpp_utils::system
     PUBLIC
-    msrm_cpp_utils::network
+    mirmi_cpp_utils::network
     nlohmann_json::nlohmann_json
     )
 

@@ -5,18 +5,18 @@
 namespace mios {
 
 bool SkillParametersMoveToPoseCart::from_json(const nlohmann::json &p){
-    if(!msrm_utils::read_json_param(p,"t_settle",t_settle)){
+    if(!mirmi_utils::read_json_param(p,"t_settle",t_settle)){
         t_settle=0;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(p,"speed",speed)){
+    if(!mirmi_utils::read_json_param<double,2,1>(p,"speed",speed)){
         spdlog::error("Parameter speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(p,"acc",acc)){
+    if(!mirmi_utils::read_json_param<double,2,1>(p,"acc",acc)){
         spdlog::error("Parameter acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,4,4>(p,"T_T_EE_g_offset",T_T_EE_g_offset)){
+    if(!mirmi_utils::read_json_param<double,4,4>(p,"T_T_EE_g_offset",T_T_EE_g_offset)){
         T_T_EE_g_offset.setIdentity();
     }
     bool object_set=false;
@@ -26,7 +26,7 @@ bool SkillParametersMoveToPoseCart::from_json(const nlohmann::json &p){
         }
     }
 
-    if(!msrm_utils::read_json_param<double,4,4>(p,"T_T_EE_g",T_T_EE_g) && !object_set){
+    if(!mirmi_utils::read_json_param<double,4,4>(p,"T_T_EE_g",T_T_EE_g) && !object_set){
         spdlog::error("Parameter T_T_EE_g could not be loaded but is mandatory.");
         return false;
     }

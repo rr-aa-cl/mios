@@ -1,5 +1,5 @@
 #include "mios/data_structures/percept.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios {
 
@@ -36,9 +36,9 @@ void Percept::update(std::unique_ptr<franka::Model> const& model, const franka::
     proprioception.K_F_ext_K=Eigen::Matrix<double,6,1>(robot_state.K_F_ext_hat_K.data());
 
     Eigen::Matrix<double,3,3> O_R_T_id = Eigen::Matrix<double,3,3>::Identity();
-    proprioception.T_T_EE=msrm_utils::rotate_matrix(proprioception.O_T_EE,O_R_T.value_or(O_R_T_id).transpose());
-    proprioception.TF_F_ext_K=msrm_utils::rotate_vector(proprioception.O_F_ext_K,O_R_T.value_or(O_R_T_id).transpose());
-    proprioception.TF_dX_EE=msrm_utils::rotate_vector(proprioception.O_dX_EE,O_R_T.value_or(O_R_T_id).transpose());
+    proprioception.T_T_EE=mirmi_utils::rotate_matrix(proprioception.O_T_EE,O_R_T.value_or(O_R_T_id).transpose());
+    proprioception.TF_F_ext_K=mirmi_utils::rotate_vector(proprioception.O_F_ext_K,O_R_T.value_or(O_R_T_id).transpose());
+    proprioception.TF_dX_EE=mirmi_utils::rotate_vector(proprioception.O_dX_EE,O_R_T.value_or(O_R_T_id).transpose());
 
     proprioception.finger_width=gripper_state.width;
     proprioception.finger_temperature=gripper_state.temperature;
