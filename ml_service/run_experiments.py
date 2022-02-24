@@ -25,7 +25,7 @@ def learn_insertion(robot: str, approach: str, insertable: str, container: str, 
     pd = InsertionFactory([robot], ContactForcesMetric("insertion", {"contact_forces": 175}),
                           {"Insertable": insertable, "Container": container,
                            "Approach": approach}).get_problem_definition(insertable)
-    sc = SVMLearner().get_configuration()
+    sc = CMAESLearner().get_configuration()
     learn_task(robot, pd, sc, tags, knowledge=knowledge)
 
 
@@ -111,6 +111,10 @@ def transfer_video_place_insertable(robot: str, insertable: str, container: str,
     insertion_context["skill"]["objects"]["Container"] = container
     insertion_context["skill"]["objects"]["Approach"] = approach
 
+    insertion_context["skill"]["p2"]["search_a"]= [10, 10, 0, 2, 2, 0]
+    insertion_context["skill"]["p2"]["search_f"] = [1, 0.75, 0, 1, 0.75, 0]
+    insertion_context["skill"]["p2"]["f_push"] = [0, 0, 20, 0, 0, 0]
+
     f = open(path_to_default_context + "move_cart.json")
     move_fine_context = json.load(f)
     move_fine_context["skill"]["objects"]["GoalPose"] = above
@@ -137,11 +141,19 @@ def transfer_video(robot: str):
     aboves = ["lock_old_above", "lock_hatch_above", "lock_pad_above", "container_10_above",
                    "container_20_above", "container_30_above", "container_40_above",
                    "container_50_above", "container_60_above"]
-    knowledge = {"type": "similar", "mode": "specific", "kb_location": "collective-panda-008",
-                         "kb_db": "ml_results", "kb_task_type": "insertion", "scope":
-                             ["insertion", "cylinder_30", "n8"]}
-    knowledge = None
+
+    # knowledge = None
+    insertables.reverse()
+    containers.reverse()
+    approaches.reverse()
+    aboves.reverse()
     for i in range(len(insertables)):
+        if i == 0:
+            knowledge = None
+        else:
+            knowledge = {"type": "similar", "mode": "specific", "kb_location": "collective-panda-008",
+                         "kb_db": "ml_results", "kb_task_type": "insertion", "scope":
+                             ["insertion", "cylinder_30", "n1", "diss_additional"]}
         transfer_video_grab_insertable(robot, insertables[i], containers[i], approaches[i], aboves[i])
         learn_insertion(robot, approaches[i], insertables[i], containers[i], ["transfer_video"],
                        knowledge , wait=False)

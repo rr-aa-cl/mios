@@ -104,6 +104,8 @@ class BaseService(metaclass=ABCMeta):
             if knowledge_source["mode"] == 'none':
                 self.centroid = None
             elif knowledge_source["mode"] == "specific":
+                print("#######################KNOWLEDGE############################")
+                print(knowledge_source["scope"])
                 client = MongoDBClient(knowledge_source["kb_location"])
                 self.knowledge = self.knowledge_manager.get_knowledge_by_filter(client, knowledge_source["kb_db"],
                                                                                 knowledge_source["kb_task_type"],

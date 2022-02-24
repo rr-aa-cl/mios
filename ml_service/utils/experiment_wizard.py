@@ -26,12 +26,12 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
             continue
         print(learner)
         s = ServerProxy("http://" + learner + ":8000", allow_none=True)
-        if knowledge is not None:
-            if "scope" not in knowledge:
-                knowledge["scope"] = []
-            if "n" + str(i) in knowledge["scope"]:
-                knowledge["scope"].remove("n" + str(i))
-            knowledge["scope"].append("n" + str(i+1))
+        # if knowledge is not None:
+        #     if "scope" not in knowledge:
+        #         knowledge["scope"] = []
+        #     if "n" + str(i) in knowledge["scope"]:
+        #         knowledge["scope"].remove("n" + str(i))
+        #     knowledge["scope"].append("n" + str(i+1))
         uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge)
         if wait is True:
             s.wait_for_service()

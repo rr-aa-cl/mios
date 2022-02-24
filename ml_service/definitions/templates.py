@@ -103,12 +103,12 @@ class InsertionFactory(ProblemDefinitionFactory):
         for p in self.limits:
             x_0[p] = 0.1
 
-        x_0["p0_offset_x"] = 0.5,
-        x_0["p0_offset_y"] = 0.5,
-        x_0["p0_offset_phi"] = 0.5,
-        x_0["p0_offset_chi"] = 0.5,
-        x_0["p2_f_push_x"] = 0.5,
-        x_0["p2_f_push_y"] = 0.5,
+        x_0["p0_offset_x"] = 0.5
+        x_0["p0_offset_y"] = 0.5
+        x_0["p0_offset_phi"] = 0.5
+        x_0["p0_offset_chi"] = 0.5
+        x_0["p2_f_push_x"] = 0.5
+        x_0["p2_f_push_y"] = 0.5
         return x_0
 
     def ground_skills(self):
