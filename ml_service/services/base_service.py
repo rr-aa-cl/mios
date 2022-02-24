@@ -188,11 +188,11 @@ class BaseService(metaclass=ABCMeta):
         ml_data[0]["meta"]["init_knowledge"]["source"] = self.knowledge_source
         ml_data[0]["final_results"]["confidence"] = self.confidence
 
-        knowledge = self.knowledge_manager.get_knowledge_by_identity(self.DBclient,
-                                                                     self.problem_definition.get_task_identifier())
-        print("################################################")
-        print(knowledge)
-        self.knowledge_manager.store_knowledge(self.DBclient, knowledge, self.knowledge_source["scope"])
+        # knowledge = self.knowledge_manager.get_knowledge_by_identity(self.DBclient,
+        #                                                             self.problem_definition.get_task_identifier())
+        # print("################################################")
+        # print(knowledge)
+        # self.knowledge_manager.store_knowledge(self.DBclient, knowledge, self.knowledge_source["scope"])
 
         if self.knowledge_source is not None:
             if self.knowledge_source["mode"] == "global":
