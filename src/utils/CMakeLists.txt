@@ -44,8 +44,8 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
     ${PROJECT_NAME}::skills
-    msrm_cpp_utils::math
-    msrm_cpp_utils::json
+    mirmi_cpp_utils::math
+    mirmi_cpp_utils::json
     CONAN_PKG::spdlog
     PUBLIC
     Eigen3::Eigen

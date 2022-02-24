@@ -4,28 +4,28 @@
 namespace mios {
 
 bool SkillParametersGenericWiggleMotion::from_json(const nlohmann::json &parameters){
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"dX_fourier_a_a",dX_fourier_a_a)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"dX_fourier_a_a",dX_fourier_a_a)){
         dX_fourier_a_a.setZero();
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"dX_fourier_b_a",dX_fourier_b_a)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"dX_fourier_b_a",dX_fourier_b_a)){
         dX_fourier_b_a.setZero();
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"dX_fourier_a_f",dX_fourier_a_f)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"dX_fourier_a_f",dX_fourier_a_f)){
         dX_fourier_a_f.setZero();
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"dX_fourier_b_f",dX_fourier_b_f)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"dX_fourier_b_f",dX_fourier_b_f)){
         dX_fourier_b_f.setZero();
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"dX_fourier_a_phi",dX_fourier_a_phi)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"dX_fourier_a_phi",dX_fourier_a_phi)){
         dX_fourier_a_phi.setZero();
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"dX_fourier_b_phi",dX_fourier_b_phi)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"dX_fourier_b_phi",dX_fourier_b_phi)){
         dX_fourier_b_phi.setZero();
     }
-    if(!msrm_utils::read_json_param(parameters,"use_EE",use_EE)){
+    if(!mirmi_utils::read_json_param(parameters,"use_EE",use_EE)){
         use_EE=false;
     }
-    if(!msrm_utils::read_json_param(parameters,"tap_to_finish",tap_to_finish)){
+    if(!mirmi_utils::read_json_param(parameters,"tap_to_finish",tap_to_finish)){
         tap_to_finish=false;
     }
     return true;

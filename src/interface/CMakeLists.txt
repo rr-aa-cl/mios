@@ -42,7 +42,7 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::memory
     ${PROJECT_NAME}::portal
     ${PROJECT_NAME}::task
-    msrm_cpp_utils::conversion
+    mirmi_cpp_utils::conversion
     ${roscpp_LIBRARIES}
     PUBLIC
     nlohmann_json::nlohmann_json

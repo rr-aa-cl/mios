@@ -13,7 +13,7 @@
 #include "spdlog/spdlog.h"
 #include "Eigen/Core"
 #include "nlohmann/json.hpp"
-#include "msrm_cpp_utils/json/json.hpp"
+#include "mirmi_cpp_utils/json/json.hpp"
 
 #include <unordered_map>
 #include <unordered_set>

@@ -13,35 +13,35 @@
 #include "mios/tasks/insert_object.hpp"
 #include "mios/tasks/extract_object.hpp"
 
-#include "msrm_cpp_utils/files/files.hpp"
+#include "mirmi_cpp_utils/files/files.hpp"
 #include "spdlog/spdlog.h"
 
 namespace mios{
 
 TaskName TaskFactory::get_task_name(const std::string& task){
     spdlog::debug("TaskFactory::get_task_name("+task+")");
-    switch(msrm_utils::str_to_int(task.c_str())){
-    case msrm_utils::str_to_int("NullTask"):
+    switch(mirmi_utils::str_to_int(task.c_str())){
+    case mirmi_utils::str_to_int("NullTask"):
         return TaskNameNullTask;
-    case msrm_utils::str_to_int("TestTask2"):
+    case mirmi_utils::str_to_int("TestTask2"):
         return TaskNameTestTask2;
-    case msrm_utils::str_to_int("LearnerTest"):
+    case mirmi_utils::str_to_int("LearnerTest"):
         return TaskNameLearnerTest;
-    case msrm_utils::str_to_int("MoveToCartPose"):
+    case mirmi_utils::str_to_int("MoveToCartPose"):
         return TaskNameMoveToCartPose;
-    case msrm_utils::str_to_int("MoveToJointPose"):
+    case mirmi_utils::str_to_int("MoveToJointPose"):
         return TaskNameMoveToJointPose;
-    case msrm_utils::str_to_int("TestTask3"):
+    case mirmi_utils::str_to_int("TestTask3"):
         return TaskNameTestTask3;
-    case msrm_utils::str_to_int("GenericTask"):
+    case mirmi_utils::str_to_int("GenericTask"):
         return TaskNameGenericTask;
-    case msrm_utils::str_to_int("TestTask1"):
+    case mirmi_utils::str_to_int("TestTask1"):
         return TaskNameTestTask1;
-    case msrm_utils::str_to_int("IdleTask"):
+    case mirmi_utils::str_to_int("IdleTask"):
         return TaskNameIdleTask;
-    case msrm_utils::str_to_int("InsertObject"):
+    case mirmi_utils::str_to_int("InsertObject"):
         return TaskNameInsertObject;
-    case msrm_utils::str_to_int("ExtractObject"):
+    case mirmi_utils::str_to_int("ExtractObject"):
         return TaskNameExtractObject;
     default:
         spdlog::error("Task with id " + task + " does not exist.");

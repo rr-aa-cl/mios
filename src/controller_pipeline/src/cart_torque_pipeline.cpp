@@ -1,6 +1,6 @@
 ﻿#include "mios/controller_pipeline/cart_torque_pipeline.hpp"
 #include "spdlog/spdlog.h"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios {
 
@@ -41,7 +41,7 @@ franka::Finishable *CartTorqueControllerPipeline::step(const Percept &p, const A
         m_cntr_aic.u.TF_T_EE_d=m_T_T_EE_0;
     }
 
-    m_O_T_EE_d=msrm_utils::rotate_matrix(m_cntr_aic.u.TF_T_EE_d,cmd.O_R_T);
+    m_O_T_EE_d=mirmi_utils::rotate_matrix(m_cntr_aic.u.TF_T_EE_d,cmd.O_R_T);
 
 
     m_cntr_aic.u.O_R_T=cmd.O_R_T;
@@ -105,7 +105,7 @@ void CartTorqueControllerPipeline::terminate(){
 void CartTorqueControllerPipeline::context_switch(const Percept &p){
     spdlog::trace("CartTorqueControllerPipeline::context_switch()");
     m_conv_vel2pose.u.TF_dX_d<<0,0,0,0,0,0;
-    m_conv_vel2pose.u.TF_T_EE=msrm_utils::rotate_matrix(m_O_T_EE_d,p.controller.O_R_T.transpose());
+    m_conv_vel2pose.u.TF_T_EE=mirmi_utils::rotate_matrix(m_O_T_EE_d,p.controller.O_R_T.transpose());
     m_conv_vel2pose.u.reset<<1;
     m_conv_vel2pose.step();
     m_conv_vel2pose.u.reset<<0;

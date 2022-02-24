@@ -39,17 +39,17 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::skills
     ${PROJECT_NAME}::core
     Franka::Franka
-    msrm_cpp_utils::benchmarking
-    msrm_cpp_utils::conversion
-    msrm_cpp_utils::files
-    msrm_cpp_utils::math
+    mirmi_cpp_utils::benchmarking
+    mirmi_cpp_utils::conversion
+    mirmi_cpp_utils::files
+    mirmi_cpp_utils::math
     Boost::filesystem
     PUBLIC
     ${PROJECT_NAME}::manipulation_primitive
     ${PROJECT_NAME}::memory
     ${PROJECT_NAME}::portal
     ${PROJECT_NAME}::utils
-    msrm_cpp_utils::json
+    mirmi_cpp_utils::json
     spdlog::spdlog
     nlohmann_json::nlohmann_json
     )

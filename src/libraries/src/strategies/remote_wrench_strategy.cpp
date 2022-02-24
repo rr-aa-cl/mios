@@ -1,6 +1,6 @@
 #include "mios/strategies/remote_wrench_strategy.hpp"
 #include "mios/portal/portal.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 #include <functional>
 
 namespace mios {
@@ -23,7 +23,7 @@ void RemoteWrenchStrategy::get_next_command(Actuator &cmd, const Percept &p){
         if(power_scale>p_thr)power_scale=0;
         if(power_scale<=0)power_scale=1;
         if(power_in<0){
-            cmd.TF_F_ff(i)-=m_alpha(i)*msrm_utils::sgn(p.proprioception.TF_dX_EE(i))*fabs(power_in);
+            cmd.TF_F_ff(i)-=m_alpha(i)*mirmi_utils::sgn(p.proprioception.TF_dX_EE(i))*fabs(power_in);
         }
     }
     cmd.TF_F_ff(3)=0;

@@ -5,7 +5,7 @@
 #include "mios/strategies/move_to_pose.hpp"
 #include "mios/strategies/twist_strategy.hpp"
 #include "mios/strategies/null_strategy.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios{
 
@@ -15,15 +15,15 @@ bool SkillParametersTaxPressButton::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameters for primitive 0 are missing.");
         return false;
     }else if(parameters.find("p0")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
             spdlog::error("Missing parameter: p0.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
             spdlog::error("Missing parameter: p0.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
             spdlog::error("Missing parameter: p0.ddX_d");
             return false;
         }
@@ -33,15 +33,15 @@ bool SkillParametersTaxPressButton::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameters for primitive 1 are missing.");
         return false;
     }else if(parameters.find("p1")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p1"],"K_x",p1.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p1"],"K_x",p1.K_x)){
             spdlog::error("Missing parameter: p1.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
             spdlog::error("Missing parameter: p1.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"ddX_d",p1.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p1"],"ddX_d",p1.ddX_d)){
             spdlog::error("Missing parameter: p1.ddX_d");
             return false;
         }
@@ -51,11 +51,11 @@ bool SkillParametersTaxPressButton::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameters for primitive 2 are missing.");
         return false;
     }else if(parameters.find("p2")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"K_x",p2.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"K_x",p2.K_x)){
             spdlog::error("Missing parameter: p2.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p2"],"f_push",p2.f_push)){
+        if(!mirmi_utils::read_json_param(parameters["p2"],"f_push",p2.f_push)){
             spdlog::error("Missing parameter: p2.f_push");
             return false;
         }
@@ -65,15 +65,15 @@ bool SkillParametersTaxPressButton::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameters for primitive 3 are missing.");
         return false;
     }else if(parameters.find("p3")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p3"],"K_x",p3.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p3"],"K_x",p3.K_x)){
             spdlog::error("Missing parameter: p3.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p3"],"f_push",p3.f_push)){
+        if(!mirmi_utils::read_json_param(parameters["p3"],"f_push",p3.f_push)){
             spdlog::error("Missing parameter: p3.f_push");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p3"],"duration",p3.duration)){
+        if(!mirmi_utils::read_json_param(parameters["p3"],"duration",p3.duration)){
             spdlog::error("Missing parameter: p3.duration");
             return false;
         }
@@ -83,15 +83,15 @@ bool SkillParametersTaxPressButton::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameters for primitive 4 are missing.");
         return false;
     }else if(parameters.find("p4")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p4"],"K_x",p4.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p4"],"K_x",p4.K_x)){
             spdlog::error("Missing parameter: p4.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p4"],"dX_d",p4.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p4"],"dX_d",p4.dX_d)){
             spdlog::error("Missing parameter: p4.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p4"],"ddX_d",p4.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p4"],"ddX_d",p4.ddX_d)){
             spdlog::error("Missing parameter: p4.ddX_d");
             return false;
         }

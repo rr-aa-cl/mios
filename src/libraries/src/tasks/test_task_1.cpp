@@ -60,32 +60,32 @@ void TestTask1::write_custom_results(nlohmann::json &custom_results){
     custom_results["result_code"]=m_result_code;
     custom_results["queue_number"]=m_queue_number;
     custom_results["recovered"]=recovered;
-    msrm_utils::write_json_array<double,3,1>(custom_results["a"],m_a);
+    mirmi_utils::write_json_array<double,3,1>(custom_results["a"],m_a);
     custom_results["b"]=m_b;
 }
 
 bool TestTask1::read_parameters(const nlohmann::json& params){
     spdlog::debug("Reading parameters for task "+this->get_id());
 
-    if(!msrm_utils::read_json_param(params,"b",m_b)){
+    if(!mirmi_utils::read_json_param(params,"b",m_b)){
         m_b=0;
     }
-    if(!msrm_utils::read_json_param<double,3,1>(params,"a",m_a)){
+    if(!mirmi_utils::read_json_param<double,3,1>(params,"a",m_a)){
         m_a.setZero();
     }
-    if(!msrm_utils::read_json_param(params,"success",m_success)){
+    if(!mirmi_utils::read_json_param(params,"success",m_success)){
         m_success=false;
     }
-    if(!msrm_utils::read_json_param(params,"exception",m_exception)){
+    if(!mirmi_utils::read_json_param(params,"exception",m_exception)){
         m_exception="none";
     }
-    if(!msrm_utils::read_json_param(params,"skill_test",m_skill_test)){
+    if(!mirmi_utils::read_json_param(params,"skill_test",m_skill_test)){
         m_skill_test=0;
     }
-    if(!msrm_utils::read_json_param(params,"queue_number",m_queue_number)){
+    if(!mirmi_utils::read_json_param(params,"queue_number",m_queue_number)){
         m_queue_number=0;
     }
-    if(!msrm_utils::read_json_param(params,"mp_sequence",m_mp_sequence)){
+    if(!mirmi_utils::read_json_param(params,"mp_sequence",m_mp_sequence)){
         m_mp_sequence.resize(0);
     }
     spdlog::debug("########## Task parameters ###########");

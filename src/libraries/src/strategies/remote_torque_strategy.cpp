@@ -1,6 +1,6 @@
 #include "mios/strategies/remote_torque_strategy.hpp"
 #include "mios/portal/portal.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 #include <functional>
 #include <math.h>
 
@@ -24,7 +24,7 @@ void RemoteTorqueStrategy::get_next_command(Actuator &cmd, const Percept &p){
         if(power_scale>p_thr)power_scale=0;
         if(power_scale<=0)power_scale=1;
         if(power_in<0){
-            cmd.tau_ff(i)-=m_alpha(i)*msrm_utils::sgn(p.proprioception.dq(i))*fabs(power_in);
+            cmd.tau_ff(i)-=m_alpha(i)*mirmi_utils::sgn(p.proprioception.dq(i))*fabs(power_in);
         }
     }
     if(!cmd.is_valid()){

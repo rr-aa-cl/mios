@@ -17,7 +17,7 @@
 #include "nlohmann/json.hpp"
 #include "Eigen/Core"
 
-namespace msrm_utils{
+namespace mirmi_utils{
 class UDPStreamSender;
 }
 
@@ -33,7 +33,7 @@ struct Subscriber{
     std::string address;
     std::vector<std::string> subscriptions;
     bool sendWithTerminatingNullCharacter;
-    std::shared_ptr<msrm_utils::UDPStreamSender> stream;
+    std::shared_ptr<mirmi_utils::UDPStreamSender> stream;
 };
 
 class TelemetryUDP{

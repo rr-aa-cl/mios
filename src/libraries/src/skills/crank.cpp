@@ -10,27 +10,27 @@ bool SkillParametersCrank::from_json(const nlohmann::json &parameters){
         spdlog::error("Parameters for primitive 0 are missing.");
         return false;
     }else if(parameters.find("p0")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
             spdlog::error("Missing parameter: p0.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
             spdlog::error("Missing parameter: p0.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
             spdlog::error("Missing parameter: p0.ddX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p0"],"radius",p0.radius)){
+        if(!mirmi_utils::read_json_param(parameters["p0"],"radius",p0.radius)){
             spdlog::error("Missing parameter: p0.radius");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p0"],"n_turns",p0.n_turns)){
+        if(!mirmi_utils::read_json_param(parameters["p0"],"n_turns",p0.n_turns)){
             spdlog::error("Missing parameter: p0.n_turns");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p0"],"clockwise",p0.clockwise)){
+        if(!mirmi_utils::read_json_param(parameters["p0"],"clockwise",p0.clockwise)){
             spdlog::error("Missing parameter: p0.clockwise");
             return false;
         }

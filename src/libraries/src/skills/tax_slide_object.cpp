@@ -3,7 +3,7 @@
 #include "mios/skills/tax_slide_object.hpp"
 #include "mios/strategies/desired_wrench_strategy.hpp"
 #include "mios/strategies/move_to_pose.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios{
 
@@ -12,19 +12,19 @@ bool SkillParametersTaxSlideObject::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameters for primitive 0 are missing.");
         return false;
     }else if(parameters.find("p0")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
             spdlog::error("Missing parameter: p0.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
             spdlog::error("Missing parameter: p0.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
             spdlog::error("Missing parameter: p0.ddX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p0"],"f_slide",p0.f_slide)){
+        if(!mirmi_utils::read_json_param(parameters["p0"],"f_slide",p0.f_slide)){
             spdlog::error("Missing parameter: p0.f_slide");
             return false;
         }

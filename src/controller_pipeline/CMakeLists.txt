@@ -46,7 +46,7 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}_project_options
     ${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}_project_deps
-    msrm_cpp_utils::math
+    mirmi_cpp_utils::math
     PUBLIC
     cntr_aic::cntr_aic
     cntr_force::cntr_force

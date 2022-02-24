@@ -1,29 +1,29 @@
 #include "mios/skills/hand_guiding.hpp"
 #include "mios/strategies/cart_compliance_strategy.hpp"
-#include "msrm_cpp_utils/conversion/conversion.hpp"
-#include "msrm_cpp_utils/files/files.hpp"
+#include "mirmi_cpp_utils/conversion/conversion.hpp"
+#include "mirmi_cpp_utils/files/files.hpp"
 
 
 namespace mios{
 
 bool SkillParametersHandGuiding::from_json(const nlohmann::json &parameters){
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"fix_dim",fix_dim)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"fix_dim",fix_dim)){
         fix_dim.setZero();
     }
-    if(!msrm_utils::read_json_param(parameters,"use_walls",use_walls)){
+    if(!mirmi_utils::read_json_param(parameters,"use_walls",use_walls)){
         use_walls=false;
     }
-    if(use_walls && !msrm_utils::read_json_param<double,6,1>(parameters,"dist_walls",dist_walls)){
+    if(use_walls && !mirmi_utils::read_json_param<double,6,1>(parameters,"dist_walls",dist_walls)){
         spdlog::error("Parameter dist_walls could not be loaded but is mandatory when walls are used.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"record_trajectory",record_trajectory)){
+    if(!mirmi_utils::read_json_param(parameters,"record_trajectory",record_trajectory)){
         record_trajectory=false;
     }
-    if(!msrm_utils::read_json_param(parameters,"recording_length",recording_length)){
+    if(!mirmi_utils::read_json_param(parameters,"recording_length",recording_length)){
         recording_length=0;
     }
-    if(!msrm_utils::read_json_param(parameters,"recording_name",recording_name)){
+    if(!mirmi_utils::read_json_param(parameters,"recording_name",recording_name)){
         recording_name="trajectory.txt";
     }
     return true;
@@ -52,7 +52,7 @@ HandGuiding::~HandGuiding(){
     std::string file = get_parameters<SkillParametersHandGuiding>()->recording_name;
     std::remove(file.c_str());
     for(unsigned long long i=0;i<m_recording.size();i++){
-        msrm_utils::write_data_to_file(m_recording[i],file,true);
+        mirmi_utils::write_data_to_file(m_recording[i],file,true);
     }
 }
 
@@ -102,7 +102,7 @@ std::shared_ptr<ManipulationPrimitive> HandGuiding::get_initial_mp(const Percept
 void HandGuiding::auxiliaries(const Percept &p){
     if(get_parameters<SkillParametersHandGuiding>()->record_trajectory){
         if(m_cnt_recording<m_recording.size()){
-            m_recording[m_cnt_recording]=msrm_utils::convert_to_array<double,4,4>(p.proprioception.T_T_EE);
+            m_recording[m_cnt_recording]=mirmi_utils::convert_to_array<double,4,4>(p.proprioception.T_T_EE);
             m_cnt_recording++;
         }
     }

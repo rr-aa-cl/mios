@@ -3,10 +3,10 @@
 #include "mios/utils/exceptions.hpp"
 #include "mios/data_structures/object.hpp"
 
-#include "msrm_cpp_utils/files/files.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
-#include "msrm_cpp_utils/json/json.hpp"
-#include "msrm_cpp_utils/benchmarking/benchmarking.hpp"
+#include "mirmi_cpp_utils/files/files.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/json/json.hpp"
+#include "mirmi_cpp_utils/benchmarking/benchmarking.hpp"
 #include "spdlog/spdlog.h"
 #include "franka/exception.h"
 
@@ -61,7 +61,7 @@ Eigen::Matrix<double,4,4> Skill::get_object_pose_T(const std::string &object_nam
         spdlog::error("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
         throw SkillException();
     }
-    return msrm_utils::rotate_matrix(m_grounded_objects.at(object_name).O_T_OB,m_memory->read_parameters()->frames.O_R_T.transpose());
+    return mirmi_utils::rotate_matrix(m_grounded_objects.at(object_name).O_T_OB,m_memory->read_parameters()->frames.O_R_T.transpose());
 }
 
 Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_T(const std::string &object_name) const{
@@ -69,7 +69,7 @@ Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_T(const std::string &obje
         spdlog::error("No object of type "+object_name+" in skill "+ get_id() +" of type "+m_type+" has been assigned. Check the task description or assign it manually in the task implementation.");
         throw SkillException();
     }
-    return msrm_utils::rotate_matrix(m_grounded_objects.at(object_name).O_T_OB*m_grounded_objects.at(object_name).OB_T_gp,m_memory->read_parameters()->frames.O_R_T.transpose());
+    return mirmi_utils::rotate_matrix(m_grounded_objects.at(object_name).O_T_OB*m_grounded_objects.at(object_name).OB_T_gp,m_memory->read_parameters()->frames.O_R_T.transpose());
 }
 
 Eigen::Matrix<double,4,4> Skill::get_object_grasp_pose_O(const std::string &object_name) const{
@@ -98,7 +98,7 @@ Object* Skill::update_object(const std::string &o){
 
 bool Skill::initialize([[maybe_unused]] const Percept &p){
     spdlog::trace("Skill::initialize");
-    if(!msrm_utils::is_orthonormal(m_memory->read_parameters()->frames.O_R_T)){
+    if(!mirmi_utils::is_orthonormal(m_memory->read_parameters()->frames.O_R_T)){
         spdlog::error("O_R_T of skill "+m_id+" is invalid. Aborting execution.");
         std::cout<<"O_R_T: "<<m_memory->read_parameters()->frames.O_R_T<<std::endl;
         return false;
@@ -420,7 +420,7 @@ bool Skill::modify_objects(){
             }
             if(modifier.find("O_T_OB")!=modifier.end()){
                 Eigen::Matrix<double,4,4> O_T_OB_mod;
-                if(!msrm_utils::read_json_param<double,4,4>(modifier["O_T_OB"],O_T_OB_mod)){
+                if(!mirmi_utils::read_json_param<double,4,4>(modifier["O_T_OB"],O_T_OB_mod)){
                     spdlog::error("Could not load object modifier for O_T_OB for object " + o + ".");
                     return false;
                 }
@@ -429,12 +429,12 @@ bool Skill::modify_objects(){
             }
             if(modifier.find("T_T_OB")!=modifier.end()){
                 Eigen::Matrix<double,4,4> T_T_OB_mod;
-                if(!msrm_utils::read_json_param<double,4,4>(modifier["T_T_OB"],T_T_OB_mod)){
+                if(!mirmi_utils::read_json_param<double,4,4>(modifier["T_T_OB"],T_T_OB_mod)){
                     spdlog::error("Could not load object modifier for T_T_OB for object " + o + ".");
                     return false;
                 }
                 update_object(o)->O_T_OB.block<3,1>(0,3)+=(m_memory->get_parameters()->frames.O_R_T*T_T_OB_mod.block<3,1>(0,3));
-                update_object(o)->O_T_OB.block<3,3>(0,0)=msrm_utils::rotate_matrix(T_T_OB_mod,m_memory->get_parameters()->frames.O_R_T).block<3,3>(0,0)*update_object(o)->O_T_OB.block<3,3>(0,0);
+                update_object(o)->O_T_OB.block<3,3>(0,0)=mirmi_utils::rotate_matrix(T_T_OB_mod,m_memory->get_parameters()->frames.O_R_T).block<3,3>(0,0)*update_object(o)->O_T_OB.block<3,3>(0,0);
             }
         }
     }
@@ -545,13 +545,13 @@ void Skill::write_logs(){
         for(const auto& el : m_data_log[0].items()){
             if(m_data_log[0][el.key()].is_array()){
                 for(unsigned i=0;i<m_data_log[0][el.key()].size();i++){
-                    msrm_utils::write_data_to_file(el.key(),log_file);
+                    mirmi_utils::write_data_to_file(el.key(),log_file);
                 }
             }else{
-                msrm_utils::write_data_to_file(el.key(),log_file);
+                mirmi_utils::write_data_to_file(el.key(),log_file);
             }
         }
-        msrm_utils::write_endl_to_file(log_file);
+        mirmi_utils::write_endl_to_file(log_file);
         if(m_log_cnt>=m_data_log.size()){
             m_log_cnt=static_cast<unsigned long>(m_data_log.size());
         }
@@ -559,13 +559,13 @@ void Skill::write_logs(){
             for(const auto& el : m_data_log[i].items()){
                 if(m_data_log[i][el.key()].is_array()){
                     for(unsigned j=0;j<m_data_log[i][el.key()].size();j++){
-                        msrm_utils::write_data_to_file(m_data_log[i][el.key()][j],log_file);
+                        mirmi_utils::write_data_to_file(m_data_log[i][el.key()][j],log_file);
                     }
                 }else{
-                    msrm_utils::write_data_to_file(m_data_log[i][el.key()],log_file);
+                    mirmi_utils::write_data_to_file(m_data_log[i][el.key()],log_file);
                 }
             }
-            msrm_utils::write_endl_to_file(log_file);
+            mirmi_utils::write_endl_to_file(log_file);
         }
     }catch(const nlohmann::json::exception& e){
         spdlog::debug(e.what());

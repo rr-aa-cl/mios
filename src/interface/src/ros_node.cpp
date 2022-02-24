@@ -3,7 +3,7 @@
 #include "mios/task/task_engine.hpp"
 #include "mios/portal/portal.hpp"
 #include "mios/memory/memory.hpp"
-#include "msrm_cpp_utils/conversion/conversion.hpp"
+#include "mirmi_cpp_utils/conversion/conversion.hpp"
 #include <functional>
 
 namespace mios {
@@ -271,8 +271,8 @@ bool RosNode::get_state([[maybe_unused]] mios_msg::GetState::Request &request, m
         response.result=false;
     }
     const Percept* p = m_core->get_percept();
-    std::array<double,7> q=msrm_utils::convert_to_array<double,7,1>(p->proprioception.q);
-    std::array<double,16> O_T_EE=msrm_utils::convert_to_array<double,4,4>(p->proprioception.O_T_EE);
+    std::array<double,7> q=mirmi_utils::convert_to_array<double,7,1>(p->proprioception.q);
+    std::array<double,16> O_T_EE=mirmi_utils::convert_to_array<double,4,4>(p->proprioception.O_T_EE);
     response.q=std::vector<float>(q.begin(),q.end());
     response.O_T_EE=std::vector<float>(O_T_EE.begin(),O_T_EE.end());
     response.grasped_object=m_memory->get_live_context()->grasped_object->name;
@@ -287,11 +287,11 @@ bool RosNode::get_model([[maybe_unused]] mios_msg::GetModel::Request &request, m
         response.result=false;
     }
     const Percept* p = m_core->get_percept();
-    std::array<double,49> M=msrm_utils::convert_to_array<double,7,7>(p->internal_model.M);
-    std::array<double,7> C=msrm_utils::convert_to_array<double,7,1>(p->internal_model.C);
-    std::array<double,7> G=msrm_utils::convert_to_array<double,7,1>(p->internal_model.G);
-    std::array<double,42> B_J_O=msrm_utils::convert_to_array<double,6,7>(p->internal_model.B_J_O);
-    std::array<double,42> B_J_EE=msrm_utils::convert_to_array<double,6,7>(p->internal_model.B_J_EE);
+    std::array<double,49> M=mirmi_utils::convert_to_array<double,7,7>(p->internal_model.M);
+    std::array<double,7> C=mirmi_utils::convert_to_array<double,7,1>(p->internal_model.C);
+    std::array<double,7> G=mirmi_utils::convert_to_array<double,7,1>(p->internal_model.G);
+    std::array<double,42> B_J_O=mirmi_utils::convert_to_array<double,6,7>(p->internal_model.B_J_O);
+    std::array<double,42> B_J_EE=mirmi_utils::convert_to_array<double,6,7>(p->internal_model.B_J_EE);
     response.M=std::vector<float>(M.begin(),M.end());
     response.C=std::vector<float>(C.begin(),C.end());
     response.G=std::vector<float>(G.begin(),G.end());

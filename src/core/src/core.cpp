@@ -1,9 +1,9 @@
 #include "mios/core/core.hpp"
 
-#include "msrm_cpp_utils/math/math.hpp"
-#include "msrm_cpp_utils/conversion/conversion.hpp"
-#include "msrm_cpp_utils/json/json.hpp"
-#include "msrm_cpp_utils/system/system.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/conversion/conversion.hpp"
+#include "mirmi_cpp_utils/json/json.hpp"
+#include "mirmi_cpp_utils/system/system.hpp"
 #include "mios/utils/exceptions.hpp"
 #include "mios/skill/skill.hpp"
 
@@ -327,9 +327,9 @@ bool Core::grasp_object(const std::string &name,double speed){
         m_memory.get_live_context()->grasped_object=object;
         m_memory.internal_update(m_percept);
         m_memory.get_parameters()->user.load_m=object->mass;
-        m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+        m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
-        m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+        m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
         if(!m_panda_body.set_robot_parameters()){
             return false;
         }
@@ -373,9 +373,9 @@ bool Core::grasp(double width, double speed, double force,double epsilon_inner,d
         spdlog::warn("Could not update datebase.");
     }
     m_memory.get_parameters()->user.load_m=object->mass;
-    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
     m_memory.get_parameters()->user.load_I=object->OB_I;
-    m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+    m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
     m_percept.internal_model.hand_activity_state=HandActivityState::hsFinished;
     return result;
 }
@@ -395,9 +395,9 @@ bool Core::move_gripper(double width, double speed){
         spdlog::warn("Could not update datebase.");
     }
     m_memory.get_parameters()->user.load_m=object->mass;
-    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
     m_memory.get_parameters()->user.load_I=object->OB_I;
-    m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+    m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
     m_percept.internal_model.hand_activity_state=HandActivityState::hsFinished;
     return result;
 }
@@ -428,9 +428,9 @@ bool Core::set_grasped_object(const std::string &name){
         spdlog::warn("Could not update datebase.");
     }
     m_memory.get_parameters()->user.load_m=object->mass;
-    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
     m_memory.get_parameters()->user.load_I=object->OB_I;
-    m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+    m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
     return m_panda_body.set_robot_parameters();
 }
 
@@ -457,9 +457,9 @@ bool Core::release_object(std::optional<double> width, double speed){
         m_memory.get_live_context()->grasped_object=object;
         m_memory.internal_update(m_percept);
         m_memory.get_parameters()->user.load_m=object->mass;
-        m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+        m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
-        m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+        m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
         m_panda_body.set_robot_parameters();
         return true;
     }else{

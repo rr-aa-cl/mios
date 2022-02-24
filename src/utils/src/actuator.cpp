@@ -1,6 +1,6 @@
 #include "mios/data_structures/actuator.hpp"
 #include "spdlog/spdlog.h"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios {
 
@@ -252,22 +252,22 @@ void Actuator::limit_output_rate(const LimitParameters &parameters){
         double diff_dF_ff_t = TF_F_ff(i)-m_TF_F_ff_limiter(i);
         double diff_dF_ff_r = TF_F_ff(i+3)-m_TF_F_ff_limiter(i+3);
         if(fabs(diff_dX_t)/0.001>parameters.cartesian_space.ddX_max(0)*m_stop_factor){
-            TF_dX_d(i)=m_TF_dX_d_limiter(i)+msrm_utils::sgn(diff_dX_t)*parameters.cartesian_space.ddX_max(0)*0.001*m_stop_factor;
+            TF_dX_d(i)=m_TF_dX_d_limiter(i)+mirmi_utils::sgn(diff_dX_t)*parameters.cartesian_space.ddX_max(0)*0.001*m_stop_factor;
         }
         if(fabs(diff_dX_r)/0.001>parameters.cartesian_space.ddX_max[1]*m_stop_factor){
-            TF_dX_d(i+3)=m_TF_dX_d_limiter(i+3)+msrm_utils::sgn(diff_dX_r)*parameters.cartesian_space.ddX_max(1)*0.001*m_stop_factor;
+            TF_dX_d(i+3)=m_TF_dX_d_limiter(i+3)+mirmi_utils::sgn(diff_dX_r)*parameters.cartesian_space.ddX_max(1)*0.001*m_stop_factor;
         }
         if(fabs(diff_dF_t)/0.001>parameters.cartesian_space.dF_J_max[0]*m_stop_factor){
-            TF_F_d(i)=m_TF_F_d_limiter(i)+msrm_utils::sgn(diff_dF_t)*parameters.cartesian_space.dF_J_max(0)*0.001*m_stop_factor;
+            TF_F_d(i)=m_TF_F_d_limiter(i)+mirmi_utils::sgn(diff_dF_t)*parameters.cartesian_space.dF_J_max(0)*0.001*m_stop_factor;
         }
         if(fabs(diff_dF_r)/0.001>parameters.cartesian_space.dF_J_max[1]*m_stop_factor){
-            TF_F_d(i+3)=m_TF_F_d_limiter(i+3)+msrm_utils::sgn(diff_dF_r)*parameters.cartesian_space.dF_J_max(1)*0.001*m_stop_factor;
+            TF_F_d(i+3)=m_TF_F_d_limiter(i+3)+mirmi_utils::sgn(diff_dF_r)*parameters.cartesian_space.dF_J_max(1)*0.001*m_stop_factor;
         }
         if(fabs(diff_dF_ff_t)/0.001>parameters.cartesian_space.dF_J_max[0]*m_stop_factor){
-            TF_F_ff(i)=m_TF_F_ff_limiter(i)+msrm_utils::sgn(diff_dF_ff_t)*parameters.cartesian_space.dF_J_max(0)*0.001*m_stop_factor;
+            TF_F_ff(i)=m_TF_F_ff_limiter(i)+mirmi_utils::sgn(diff_dF_ff_t)*parameters.cartesian_space.dF_J_max(0)*0.001*m_stop_factor;
         }
         if(fabs(diff_dF_ff_r)/0.001>parameters.cartesian_space.dF_J_max[1]*m_stop_factor){
-            TF_F_ff(i+3)=m_TF_F_ff_limiter(i+3)+msrm_utils::sgn(diff_dF_ff_r)*parameters.cartesian_space.dF_J_max(1)*0.001*m_stop_factor;
+            TF_F_ff(i+3)=m_TF_F_ff_limiter(i+3)+mirmi_utils::sgn(diff_dF_ff_r)*parameters.cartesian_space.dF_J_max(1)*0.001*m_stop_factor;
         }
     }
 
@@ -275,10 +275,10 @@ void Actuator::limit_output_rate(const LimitParameters &parameters){
         double diff_K_x = K_x(i)-m_K_x_limiter[i];
         double diff_xi_x = xi_x(i)-m_xi_x_limiter[i];
         if(fabs(diff_K_x)/0.001>parameters.cartesian_space.dK_x_max[i]){
-            K_x(i)=m_K_x_limiter(i)+msrm_utils::sgn(diff_K_x)*parameters.cartesian_space.dK_x_max(i)*0.001;
+            K_x(i)=m_K_x_limiter(i)+mirmi_utils::sgn(diff_K_x)*parameters.cartesian_space.dK_x_max(i)*0.001;
         }
         if(fabs(diff_xi_x)/0.001>parameters.cartesian_space.dxi_x_max[i]){
-            xi_x(i)=m_xi_x_limiter(i)+msrm_utils::sgn(diff_xi_x)*parameters.cartesian_space.dxi_x_max(i)*0.001;
+            xi_x(i)=m_xi_x_limiter(i)+mirmi_utils::sgn(diff_xi_x)*parameters.cartesian_space.dxi_x_max(i)*0.001;
         }
     }
     for(unsigned i=0;i<7;i++){
@@ -290,25 +290,25 @@ void Actuator::limit_output_rate(const LimitParameters &parameters){
         double diff_K_theta = K_theta(i)-m_K_theta_limiter(i);
         double diff_xi_theta = xi_theta(i)-m_xi_theta_limiter(i);
         if(fabs(diff_q)/0.001>parameters.joint_space.dq_max(i)*m_stop_factor){
-            q_d(i)=m_q_d_limiter(i)+msrm_utils::sgn(diff_q)*parameters.joint_space.dq_max(i)*0.001*m_stop_factor;
+            q_d(i)=m_q_d_limiter(i)+mirmi_utils::sgn(diff_q)*parameters.joint_space.dq_max(i)*0.001*m_stop_factor;
         }
         if(fabs(diff_q_nullspace)/0.001>parameters.joint_space.dq_max(i)*m_stop_factor){
-            q_d_nullspace(i)=m_q_d_nullspace_limiter(i)+msrm_utils::sgn(diff_q_nullspace)*parameters.joint_space.dq_max(i)*0.001*m_stop_factor;
+            q_d_nullspace(i)=m_q_d_nullspace_limiter(i)+mirmi_utils::sgn(diff_q_nullspace)*parameters.joint_space.dq_max(i)*0.001*m_stop_factor;
         }
         if(fabs(diff_dq)/0.001>parameters.joint_space.ddq_max(i)*m_stop_factor){
-            dq_d(i)=m_dq_d_limiter(i)+msrm_utils::sgn(diff_dq)*parameters.joint_space.ddq_max(i)*0.001*m_stop_factor;
+            dq_d(i)=m_dq_d_limiter(i)+mirmi_utils::sgn(diff_dq)*parameters.joint_space.ddq_max(i)*0.001*m_stop_factor;
         }
         if(fabs(diff_tau)/0.001>parameters.joint_space.tau_J_max(i)*m_stop_factor){
-            tau_d(i)=m_tau_d_limiter(i)+msrm_utils::sgn(diff_tau)*parameters.joint_space.tau_J_max(i)*0.001*m_stop_factor;
+            tau_d(i)=m_tau_d_limiter(i)+mirmi_utils::sgn(diff_tau)*parameters.joint_space.tau_J_max(i)*0.001*m_stop_factor;
         }
         if(fabs(diff_tau_ff)/0.001>parameters.joint_space.tau_J_max(i)*m_stop_factor){
-            tau_ff(i)=m_tau_ff_limiter(i)+msrm_utils::sgn(diff_tau_ff)*parameters.joint_space.tau_J_max(i)*0.001*m_stop_factor;
+            tau_ff(i)=m_tau_ff_limiter(i)+mirmi_utils::sgn(diff_tau_ff)*parameters.joint_space.tau_J_max(i)*0.001*m_stop_factor;
         }
         if(fabs(diff_K_theta)/0.001>parameters.joint_space.dK_theta_max(i)){
-            K_theta(i)=m_K_theta_limiter(i)+msrm_utils::sgn(diff_K_theta)*parameters.joint_space.dK_theta_max(i)*0.001;
+            K_theta(i)=m_K_theta_limiter(i)+mirmi_utils::sgn(diff_K_theta)*parameters.joint_space.dK_theta_max(i)*0.001;
         }
         if(fabs(diff_xi_theta)/0.001>parameters.joint_space.dxi_theta_max(i)){
-            xi_theta(i)=m_xi_theta_limiter(i)+msrm_utils::sgn(diff_xi_theta)*parameters.joint_space.dxi_theta_max(i)*0.001;
+            xi_theta(i)=m_xi_theta_limiter(i)+mirmi_utils::sgn(diff_xi_theta)*parameters.joint_space.dxi_theta_max(i)*0.001;
         }
     }
     refresh_limiter();
@@ -376,7 +376,7 @@ bool Actuator::is_valid() const{
                 }
             }
         }
-        if(!msrm_utils::is_orthonormal(TF_T_EE_d.block<3,3>(0,0))){
+        if(!mirmi_utils::is_orthonormal(TF_T_EE_d.block<3,3>(0,0))){
             spdlog::error("Rotation part of TF_T_EE_d is not orthonormal.");
             std::cout<<"TF_T_EE_d: "<<TF_T_EE_d<<std::endl;
             return false;

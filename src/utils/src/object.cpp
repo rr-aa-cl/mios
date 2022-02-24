@@ -1,5 +1,5 @@
 #include "mios/data_structures/object.hpp"
-#include "msrm_cpp_utils/json/json.hpp"
+#include "mirmi_cpp_utils/json/json.hpp"
 #include "spdlog/spdlog.h"
 
 namespace mios {
@@ -19,11 +19,11 @@ Object::Object(const std::string name_in):name(name_in){
 nlohmann::json Object::to_json() const{
     nlohmann::json obj;
     obj["name"]=name;
-    msrm_utils::write_json_array<double,4,4>(obj["O_T_OB"],O_T_OB);
-    msrm_utils::write_json_array<double,7,1>(obj["q"],q);
-    msrm_utils::write_json_array<double,4,4>(obj["OB_T_gp"],OB_T_gp);
-    msrm_utils::write_json_array<double,4,4>(obj["OB_T_TCP"],OB_T_TCP);
-    msrm_utils::write_json_array<double,3,3>(obj["OB_I"],OB_I);
+    mirmi_utils::write_json_array<double,4,4>(obj["O_T_OB"],O_T_OB);
+    mirmi_utils::write_json_array<double,7,1>(obj["q"],q);
+    mirmi_utils::write_json_array<double,4,4>(obj["OB_T_gp"],OB_T_gp);
+    mirmi_utils::write_json_array<double,4,4>(obj["OB_T_TCP"],OB_T_TCP);
+    mirmi_utils::write_json_array<double,3,3>(obj["OB_I"],OB_I);
     obj["grasp_width"]=grasp_width;
     obj["grasp_force"]=grasp_force;
     obj["mass"]=mass;
@@ -36,35 +36,35 @@ Object Object::from_json(const nlohmann::json& p){
         std::string name;
         p["name"].get_to(name);
         Object o(name);
-        if(!msrm_utils::read_json_param<double,7,1>(p,"q",o.q)){
+        if(!mirmi_utils::read_json_param<double,7,1>(p,"q",o.q)){
             spdlog::error("Object creation failed, missing parameter: q");
             return Object("NullObject");
         }
-        if(!msrm_utils::read_json_param<double,4,4>(p,"O_T_OB",o.O_T_OB)){
+        if(!mirmi_utils::read_json_param<double,4,4>(p,"O_T_OB",o.O_T_OB)){
             spdlog::error("Object creation failed, missing parameter: O_T_OB");
             return Object("NullObject");
         }
-        if(!msrm_utils::read_json_param<double,4,4>(p,"OB_T_gp",o.OB_T_gp)){
+        if(!mirmi_utils::read_json_param<double,4,4>(p,"OB_T_gp",o.OB_T_gp)){
             spdlog::error("Object creation failed, missing parameter: OB_T_gp");
             return Object("NullObject");
         }
-        if(!msrm_utils::read_json_param<double,4,4>(p,"OB_T_TCP",o.OB_T_TCP)){
+        if(!mirmi_utils::read_json_param<double,4,4>(p,"OB_T_TCP",o.OB_T_TCP)){
             spdlog::error("Object creation failed, missing parameter: OB_T_TCP");
             return Object("NullObject");
         }
-        if(!msrm_utils::read_json_param(p,"grasp_width",o.grasp_width)){
+        if(!mirmi_utils::read_json_param(p,"grasp_width",o.grasp_width)){
             spdlog::error("Object creation failed, missing parameter: grasp_width");
             return Object("NullObject");
         }
-        if(!msrm_utils::read_json_param(p,"grasp_force",o.grasp_force)){
+        if(!mirmi_utils::read_json_param(p,"grasp_force",o.grasp_force)){
             spdlog::error("Object creation failed, missing parameter: grasp_force");
             return Object("NullObject");
         }
-        if(!msrm_utils::read_json_param(p,"mass",o.mass)){
+        if(!mirmi_utils::read_json_param(p,"mass",o.mass)){
             spdlog::error("Object creation failed, missing parameter: mass");
             return Object("NullObject");
         }
-        if(!msrm_utils::read_json_param<double,3,3>(p,"OB_I",o.OB_I)){
+        if(!mirmi_utils::read_json_param<double,3,3>(p,"OB_I",o.OB_I)){
             spdlog::error("Object creation failed, missing parameter: OB_I");
             return Object("NullObject");
         }
@@ -96,14 +96,14 @@ void Object::set_pose(std::optional<double> x, std::optional<double> y, std::opt
 }
 
 void Object::update(const nlohmann::json &p){
-    msrm_utils::read_json_param<double,7,1>(p,"q",q);
-    msrm_utils::read_json_param<double,4,4>(p,"O_T_OB",O_T_OB);
-    msrm_utils::read_json_param<double,4,4>(p,"OB_T_gp",OB_T_gp);
-    msrm_utils::read_json_param<double,4,4>(p,"OB_T_TCP",OB_T_TCP);
-    msrm_utils::read_json_param(p,"grasp_width",grasp_width);
-    msrm_utils::read_json_param(p,"grasp_force",grasp_force);
-    msrm_utils::read_json_param(p,"mass",mass);
-    msrm_utils::read_json_param<double,3,3>(p,"OB_I",OB_I);
+    mirmi_utils::read_json_param<double,7,1>(p,"q",q);
+    mirmi_utils::read_json_param<double,4,4>(p,"O_T_OB",O_T_OB);
+    mirmi_utils::read_json_param<double,4,4>(p,"OB_T_gp",OB_T_gp);
+    mirmi_utils::read_json_param<double,4,4>(p,"OB_T_TCP",OB_T_TCP);
+    mirmi_utils::read_json_param(p,"grasp_width",grasp_width);
+    mirmi_utils::read_json_param(p,"grasp_force",grasp_force);
+    mirmi_utils::read_json_param(p,"mass",mass);
+    mirmi_utils::read_json_param<double,3,3>(p,"OB_I",OB_I);
     if(p.find("geometry")!=p.end()){
         if(!p["geometry"].is_null()){
             geometry.update(p["geometry"]);

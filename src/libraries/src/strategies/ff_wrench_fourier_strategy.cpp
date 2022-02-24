@@ -1,5 +1,5 @@
 #include "mios/strategies/ff_wrench_fourier_strategy.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios {
 

@@ -1,6 +1,6 @@
 #include "mios/portal/portal.hpp"
 
-#include "msrm_cpp_utils/system/system.hpp"
+#include "mirmi_cpp_utils/system/system.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -10,9 +10,9 @@ Portal::Portal(const std::string &websocket_address, unsigned websocket_port, co
     m_keep_running(false),m_websocket_address(websocket_address),m_websocket_port(websocket_port),m_websocket_endpoint(websocket_endpoint),m_rpc_address(rpc_address),m_rpc_port(rpc_port),
     m_udp_port(udp_port){
     spdlog::trace("Portal::Portal");
-    m_servers.insert(std::make_pair(JsonServers::Websocket,std::make_unique<msrm_utils::JsonWebsocketServer>("mios-interface",m_websocket_address,m_websocket_port,m_websocket_endpoint)));
-    //    m_servers.insert(std::make_pair(JsonServers::RPC,std::make_unique<msrm_utils::JsonRPCServer>(m_rpc_address,m_rpc_port)));
-    m_servers.insert(std::make_pair(JsonServers::UDP,std::make_unique<msrm_utils::JsonUDPServer>("mios-interface",m_udp_port)));
+    m_servers.insert(std::make_pair(JsonServers::Websocket,std::make_unique<mirmi_utils::JsonWebsocketServer>("mios-interface",m_websocket_address,m_websocket_port,m_websocket_endpoint)));
+    //    m_servers.insert(std::make_pair(JsonServers::RPC,std::make_unique<mirmi_utils::JsonRPCServer>(m_rpc_address,m_rpc_port)));
+    m_servers.insert(std::make_pair(JsonServers::UDP,std::make_unique<mirmi_utils::JsonUDPServer>("mios-interface",m_udp_port)));
 }
 
 Portal::~Portal(){
@@ -53,22 +53,22 @@ bool Portal::initialize(){
 }
 
 void Portal::bind_method_to_websocket_server(const char *method_name, std::function<nlohmann::json (const nlohmann::json &)> method_callback,
-                                             const std::vector<msrm_utils::ArgPair> &method_arguments){
+                                             const std::vector<mirmi_utils::ArgPair> &method_arguments){
     spdlog::trace("Portal::bind_method_to_websocket_server");
     m_servers[JsonServers::Websocket]->bind_method(method_name,method_callback,method_arguments);
 }
 
-void Portal::bind_method_to_rpc_server(const char *method_name, std::function<nlohmann::json (const nlohmann::json &)> method_callback,const std::vector<msrm_utils::ArgPair> &method_arguments){
+void Portal::bind_method_to_rpc_server(const char *method_name, std::function<nlohmann::json (const nlohmann::json &)> method_callback,const std::vector<mirmi_utils::ArgPair> &method_arguments){
     spdlog::trace("Portal::bind_method_to_rpc_server");
     m_servers[JsonServers::RPC]->bind_method(method_name,method_callback,method_arguments);
 }
 
-void Portal::bind_method_to_udp_server(const char *method_name, std::function<nlohmann::json (const nlohmann::json &)> method_callback,const std::vector<msrm_utils::ArgPair> &method_arguments){
+void Portal::bind_method_to_udp_server(const char *method_name, std::function<nlohmann::json (const nlohmann::json &)> method_callback,const std::vector<mirmi_utils::ArgPair> &method_arguments){
     spdlog::trace("Portal::bind_method_to_udp_server");
     m_servers[JsonServers::UDP]->bind_method(method_name,method_callback,method_arguments);
 }
 
-void Portal::bind_method_to_all(const char *method_name, std::function<nlohmann::json (const nlohmann::json &)> method_callback,const std::vector<msrm_utils::ArgPair> &method_arguments){
+void Portal::bind_method_to_all(const char *method_name, std::function<nlohmann::json (const nlohmann::json &)> method_callback,const std::vector<mirmi_utils::ArgPair> &method_arguments){
     spdlog::trace("Portal::bind_method_to_all");
     for(const auto& s : m_servers){
         if(!s.second->bind_method(method_name,method_callback,method_arguments)){
@@ -85,23 +85,23 @@ void Portal::bind_method_to_all(const char *method_name, std::function<nlohmann:
     }
 }
 
-std::shared_ptr<msrm_utils::UDPStreamSender> Portal::open_udp_outstream(const std::string &name, const std::string &address, unsigned int port){
+std::shared_ptr<mirmi_utils::UDPStreamSender> Portal::open_udp_outstream(const std::string &name, const std::string &address, unsigned int port){
     spdlog::trace("Portal::open_udp_outstream");
     if(m_outstreams.find(name)!=m_outstreams.end()){
         spdlog::error("A UDP channel with name " + name + " already exists.");
         return nullptr;
     }
-    m_outstreams.insert(std::make_pair(name,std::make_shared<msrm_utils::UDPStreamSender>(name,address,port)));
+    m_outstreams.insert(std::make_pair(name,std::make_shared<mirmi_utils::UDPStreamSender>(name,address,port)));
     return m_outstreams[name];
 }
 
-std::shared_ptr<msrm_utils::UDPStreamReceiver> Portal::open_udp_instream(const std::string &name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us, unsigned max_lost_packet, std::function<void(std::vector<double>&)> callback, bool multicast){
+std::shared_ptr<mirmi_utils::UDPStreamReceiver> Portal::open_udp_instream(const std::string &name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us, unsigned max_lost_packet, std::function<void(std::vector<double>&)> callback, bool multicast){
     spdlog::trace("Portal::open_udp_instream");
     if(m_instreams.find(name)!=m_instreams.end()){
         spdlog::error("A UDP channel with name " + name + " already exists.");
         return nullptr;
     }
-    m_instreams.insert(std::make_pair(name,std::make_shared<msrm_utils::UDPStreamReceiver>(name,port,buffer_size,timeout_s,timeout_us,max_lost_packet,callback,multicast)));
+    m_instreams.insert(std::make_pair(name,std::make_shared<mirmi_utils::UDPStreamReceiver>(name,port,buffer_size,timeout_s,timeout_us,max_lost_packet,callback,multicast)));
     return m_instreams[name];
 }
 
@@ -122,7 +122,7 @@ void Portal::close_udp_instream(const std::string &name){
 std::string Portal::send_message(const std::string &address, unsigned int port, const std::string &method, const nlohmann::json request, std::string protocol, double timeout, bool repeat){
     spdlog::trace("Portal::send_message");
     std::scoped_lock<std::mutex> lock(m_mtx_message);
-    std::string msg_uuid = msrm_utils::generate_uuid();
+    std::string msg_uuid = mirmi_utils::generate_uuid();
     m_message_queue.insert(std::pair<std::string,Message>(msg_uuid,Message{address,port,method,request,msg_uuid,protocol,timeout,repeat}));
     return msg_uuid;
 }
@@ -163,13 +163,13 @@ void Portal::send_messages(){
             spdlog::debug("Sending message to " + m.second.address + ":" + std::to_string(m.second.port));
             result=true;
             if(m.second.protocol=="websocket"){
-                if(!msrm_utils::JsonWebsocketClient::call_method(m.second.address,m.second.port,"mios/core",m.second.method,m.second.request,response,m.second.timeout)){
+                if(!mirmi_utils::JsonWebsocketClient::call_method(m.second.address,m.second.port,"mios/core",m.second.method,m.second.request,response,m.second.timeout)){
                     result=false;
                     response=false;
                 }
             }
             else if(m.second.protocol=="udp"){
-                if(!msrm_utils::JsonUDPClient::call_method(m.second.address,m.second.port,m.second.method,m.second.request,response,static_cast<int>(m.second.timeout))){
+                if(!mirmi_utils::JsonUDPClient::call_method(m.second.address,m.second.port,m.second.method,m.second.request,response,static_cast<int>(m.second.timeout))){
                     result=false;
                     response=false;
                 }
@@ -199,13 +199,13 @@ void Portal::send_messages(){
         //                spdlog::debug("Sending message to " + m.address + ":" + std::to_string(m.port));
         //                result=true;
         //                if(m.protocol=="websocket"){
-        //                    if(!msrm_utils::JsonWebsocketClient::call_method(m.address,m.port,"mios/core",m.method,m.request,response,m.timeout)){
+        //                    if(!mirmi_utils::JsonWebsocketClient::call_method(m.address,m.port,"mios/core",m.method,m.request,response,m.timeout)){
         //                        result=false;
         //                        response=false;
         //                    }
         //                }
         //                else if(m.protocol=="udp"){
-        //                    if(!msrm_utils::JsonUDPClient::call_method(m.address,m.port,m.method,m.request,response,static_cast<int>(m.timeout))){
+        //                    if(!mirmi_utils::JsonUDPClient::call_method(m.address,m.port,m.method,m.request,response,static_cast<int>(m.timeout))){
         //                        result=false;
         //                        response=false;
         //                    }

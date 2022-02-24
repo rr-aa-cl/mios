@@ -10,7 +10,7 @@
 #include "mios/skill/skill.hpp"
 #include "mios/utils/types.hpp"
 
-#include "msrm_cpp_utils/json/json.hpp"
+#include "mirmi_cpp_utils/json/json.hpp"
 #include "spdlog/spdlog.h"
 #include "nlohmann/json.hpp"
 

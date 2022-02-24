@@ -4,7 +4,7 @@
 #include "mios/skills/tax_screw.hpp"
 #include "mios/strategies/desired_wrench_strategy.hpp"
 #include "mios/strategies/move_to_pose.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios{
 
@@ -13,15 +13,15 @@ bool SkillParametersTaxScrew::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameters for primitive 0 are missing.");
         return false;
     }else if(parameters.find("p0")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
             spdlog::error("Missing parameter: p0.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
             spdlog::error("Missing parameter: p0.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
             spdlog::error("Missing parameter: p0.ddX_d");
             return false;
         }
@@ -30,15 +30,15 @@ bool SkillParametersTaxScrew::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameters for primitive 1 are missing.");
         return false;
     }else if(parameters.find("p1")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p1"],"K_x",p1.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p1"],"K_x",p1.K_x)){
             spdlog::error("Missing parameter: p1.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
             spdlog::error("Missing parameter: p1.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"ddX_d",p1.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p1"],"ddX_d",p1.ddX_d)){
             spdlog::error("Missing parameter: p1.ddX_d");
             return false;
         }
@@ -47,27 +47,27 @@ bool SkillParametersTaxScrew::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameters for primitive 2 are missing.");
         return false;
     }else if(parameters.find("p2")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"K_x",p2.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"K_x",p2.K_x)){
             spdlog::error("Missing parameter: p2.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p2"],"dX_d",p2.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p2"],"dX_d",p2.dX_d)){
             spdlog::error("Missing parameter: p1.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p2"],"ddX_d",p2.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p2"],"ddX_d",p2.ddX_d)){
             spdlog::error("Missing parameter: p2.ddX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p2"],"f_screw",p2.f_screw)){
+        if(!mirmi_utils::read_json_param(parameters["p2"],"f_screw",p2.f_screw)){
             spdlog::error("Missing parameter: p2.f_screw");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p2"],"m_max",p2.m_max)){
+        if(!mirmi_utils::read_json_param(parameters["p2"],"m_max",p2.m_max)){
             spdlog::error("Missing parameter: p2.m_max");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p2"],"phi",p2.phi)){
+        if(!mirmi_utils::read_json_param(parameters["p2"],"phi",p2.phi)){
             spdlog::error("Missing parameter: p2.phi");
             return false;
         }
@@ -76,15 +76,15 @@ bool SkillParametersTaxScrew::from_json(const nlohmann::json& parameters){
         spdlog::error("Parameters for primitive 1 are missing.");
         return false;
     }else if(parameters.find("p3")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p3"],"K_x",p3.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p3"],"K_x",p3.K_x)){
             spdlog::error("Missing parameter: p3.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"dX_d",p3.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p3"],"dX_d",p3.dX_d)){
             spdlog::error("Missing parameter: p3.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"ddX_d",p3.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p3"],"ddX_d",p3.ddX_d)){
             spdlog::error("Missing parameter: p3.ddX_d");
             return false;
         }
@@ -185,7 +185,7 @@ std::shared_ptr<ManipulationPrimitive> TaxScrew::create_screw_mp(const Percept &
     push->set_TF_F_ff(F_d,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
     Eigen::Matrix<double,4,4> goal_pose=p.proprioception.T_T_EE;
-    goal_pose.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(0,0,-skill_params->p2.phi)*get_object_pose_T("Approach").block<3,3>(0,0);
+    goal_pose.block<3,3>(0,0)=mirmi_utils::eulerRPY_to_mat(0,0,-skill_params->p2.phi)*get_object_pose_T("Approach").block<3,3>(0,0);
     move->set_goal(goal_pose,skill_params->p2.dX_d,skill_params->p2.ddX_d);
     mp->create_strategy<CartComplianceStrategy>("compliance",1);
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p2.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);

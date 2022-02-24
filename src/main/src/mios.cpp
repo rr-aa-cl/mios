@@ -11,7 +11,7 @@
 
 #include "pybind11/pybind11.h"
 #include "mios/core/core.hpp"
-#include "msrm_cpp_utils/network/network.hpp"
+#include "mirmi_cpp_utils/network/network.hpp"
 #include "cxxopts.hpp"
 #include "commons/config.hpp"
 
@@ -67,7 +67,7 @@ int main(int argc, char** argv){
     spdlog::info("Version: " + std::to_string(PROJECT_VERSION_MAJOR) + "." + std::to_string(PROJECT_VERSION_MINOR) + "." + std::to_string(PROJECT_VERSION_PATCH));
 
     unsigned port=12000;
-    if(!msrm_utils::is_port_available("localhost",port)){
+    if(!mirmi_utils::is_port_available("localhost",port)){
         spdlog::error("Port "+std::to_string(port)+" is blocked by another process. You can check which process is blocking the port"
                                                    "by typing 'netstat -ntlup | grep "+std::to_string(port)+"' in a terminal. Terminating...");
         return -1;

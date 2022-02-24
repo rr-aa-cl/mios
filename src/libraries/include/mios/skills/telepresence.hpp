@@ -54,7 +54,7 @@ private:
     void auxiliaries(const Percept &p) override;
 
 private:
-    std::shared_ptr<msrm_utils::UDPStreamSender> m_udp_sender;
+    std::shared_ptr<mirmi_utils::UDPStreamSender> m_udp_sender;
 
     unsigned m_handshake_stage;
     std::string m_handshake_message_uuid;
