@@ -22,10 +22,10 @@ def test_learning():
 
 def learn_insertion(robot: str, approach: str, insertable: str, container: str, tags: list, knowledge=None,
                     wait: bool=True):
-    pd = InsertionFactory([robot], ContactForcesMetric("insertion", {"contact_forces": 175}),
+    pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
                           {"Insertable": insertable, "Container": container,
                            "Approach": approach}).get_problem_definition(insertable)
-    sc = CMAESLearner().get_configuration()
+    sc = SVMLearner().get_configuration()
     learn_task(robot, pd, sc, tags, knowledge=knowledge)
 
 
@@ -153,9 +153,9 @@ def transfer_video(robot: str):
         else:
             knowledge = {"type": "similar", "mode": "specific", "kb_location": "collective-panda-008",
                          "kb_db": "ml_results", "kb_task_type": "insertion", "scope":
-                             ["insertion", "cylinder_30", "n1", "diss_additional"]}
+                             ["insertion", "cylinder_40", "n1", "video_prior"]}
         transfer_video_grab_insertable(robot, insertables[i], containers[i], approaches[i], aboves[i])
-        learn_insertion(robot, approaches[i], insertables[i], containers[i], ["transfer_video"],
+        learn_insertixon(robot, approaches[i], insertables[i], containers[i], ["transfer_video"],
                        knowledge , wait=False)
         s = ServerProxy("http://" + robot + ":8000", allow_none=True)
         input("Press Enter to stop learning.")
