@@ -102,6 +102,7 @@ def transfer_video_grab_insertable(robot: str, insertable: str, container: str, 
 def transfer_video_place_insertable(robot: str, insertable: str, container: str, approach: str, above: str):
     # call_method(robot, 12000, "grasp_object", {"object": insertable})
     path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
+    t0 = Task(robot)
     t1 = Task(robot)
     t2 = Task(robot)
 
@@ -120,25 +121,32 @@ def transfer_video_place_insertable(robot: str, insertable: str, container: str,
     move_fine_context["skill"]["objects"]["GoalPose"] = above
     f = open(path_to_default_context + "move_joint.json")
     move_context = json.load(f)
-    move_context["skill"]["objects"]["goal_pose"] = above
+    move_context["skill"]["objects"]["goal_pose"] = approach
+    #t0.add_skill("move", "MoveToPoseJoint", move_context)
+    #t0.add_skill("move_fine", "TaxMove", move_fine_context)
+    #t0.start()
+    #result = t0.wait()
+
     t1.add_skill("insertion", "TaxInsertion", insertion_context)
     t1.start()
-    t1.wait()
-    call_method(robot, 12000, "release_object")
+    result = t1.wait()
+    print(result)
+    if result["result"]["task_result"]["success"] == True:
+        call_method(robot, 12000, "release_object")
     t2.add_skill("move_fine", "TaxMove", move_fine_context)
     t2.add_skill("move", "MoveToPoseJoint", move_context)
     t2.start()
-    t2.wait()
+    print(t2.wait())
 
 
 def transfer_video(robot: str):
-    insertables = ["key_old", "key_hatch", "key_pad", "cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40",
+    insertables = ["key_old", "key_hatch", "key_pad2", "cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40",
                    "cylinder_50", "cylinder_60"]
-    containers = ["lock_old", "lock_hatch", "lock_pad", "container_10", "container_20", "container_30", "container_40",
+    containers = ["lock_old", "lock_hatch", "lock_pad2", "container_10", "container_20", "container_30", "container_40",
                    "container_50", "container_60"]
-    approaches = ["lock_old_approach", "lock_hatch_approach", "lock_pad_approach", "container_10_approach", "container_20_approach", "container_30_approach", "container_40_approach",
+    approaches = ["lock_old_approach", "lock_hatch_approach", "lock_pad_approach2", "container_10_approach", "container_20_approach", "container_30_approach", "container_40_approach",
                    "container_50_approach", "container_60_approach"]
-    aboves = ["lock_old_above", "lock_hatch_above", "lock_pad_above", "container_10_above",
+    aboves = ["lock_old_above", "lock_hatch_above", "lock_pad_above2", "container_10_above",
                    "container_20_above", "container_30_above", "container_40_above",
                    "container_50_above", "container_60_above"]
 
@@ -187,10 +195,10 @@ def transfer_video(robot: str):
     }
 
     for i in range(len(insertables)):
-        # if i == 0:
-        #     knowledge = None
-        # else:
-        knowledge = {"type": "similar", "mode": "parameters", "kb_location": "collective-panda-008",
+        if i == 0:
+            knowledge = None
+        else:
+            knowledge = {"type": "similar", "mode": "parameters", "kb_location": "collective-panda-008",
                          "kb_db": "ml_results", "kb_task_type": "insertion", "scope":
                              ["insertion", "cylinder_40", "n1", "video_prior"], "parameters": knowledge_parameters}
         transfer_video_grab_insertable(robot, insertables[i], containers[i], approaches[i], aboves[i])
