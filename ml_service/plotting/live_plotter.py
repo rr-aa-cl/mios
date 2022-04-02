@@ -41,10 +41,22 @@ def live_plot(robots, tags):
     def get_results( host: str, skill_class: str, tags: list):
             p = DataProcessor()
             try:
-                results = get_experiment_data(host, skill_class, "ml_results", filter={"meta.tags": {"$all": tags}})
+                data = get_multiple_experiment_data(host, skill_class, "ml_results", filter={"meta.tags": {"$all": tags}})
             except DataNotFoundError:
+                print("DataNotFoundError: host", host, " skill_class: ", skill_class, " tags: ", tags)
                 return False, False
+            if len(data) == 1:
+                results = data[0]
+            if len(data) > 1:
+                most_recent_time = 0
+                results = Result
+                for r in data:
+                    if r.starting_time > most_recent_time:
+                        most_recent_time = r.starting_time
+                        results = r
+
             if len(results.trials) == 0:
+                print("TrialsNotFound: host", host, " skill_class: ", skill_class, " tags: ", tags)
                 return False, False
             cost, time = results.get_cost_per_time()
             cost_mon = p.get_monotonically_decreasing_cost(cost)
@@ -55,7 +67,7 @@ def live_plot(robots, tags):
 
     def animate(data):
         for i in range(len(robots)):
-            cost,time = get_results(robots[i],"insert_object", tags)
+            cost,time = get_results(robots[i],"insertion", tags)
             if cost == False:
                 continue
             current_data_sets[i]["x"] = time
