@@ -12,7 +12,8 @@ from definitions.cost_functions import *
 from definitions.service_configs import *
 
 
-robots = [  "collective-panda-prime", 
+robots = [  "test",
+            "collective-panda-prime", 
             #"collective-panda-001", 
             "collective-panda-002",
             "collective-panda-003",
@@ -52,8 +53,8 @@ class Task:
             },
             "skills": self.skill_context
         }
-        print(self.skill_context)
-        print("DONE")
+        #print(self.skill_context)
+        print("start ", self.skill_names, " at ", self.robot)
         response = start_task(self.robot, "GenericTask", parameters)
 
         self.task_uuid = response["result"]["task_uuid"]
@@ -77,6 +78,94 @@ def learn_task(robot:str, problem_definition: ProblemDefinition, service_config:
                n_iterations: int = 10, keep_record: bool = False, knowledge = None, wait: bool = False):
     start_experiment(robot, [robot], problem_definition, service_config, 10, knowledge=knowledge, tags=tags,
                      keep_record=False, wait=wait)
+
+def grab_insertable(robot:str):
+        # call_method(robot, 12000, "release_object")
+    path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
+    t1 = Task(robot)
+    t2 = Task(robot)
+    f = open(path_to_default_context + "move_joint.json")
+    move_context = json.load(f)
+    move_context["skill"]["objects"]["goal_pose"] = "generic_container_above"
+    f = open(path_to_default_context + "move_cart.json")
+    move_fine_context = json.load(f)
+    move_fine_context["skill"]["objects"]["GoalPose"] = "generic_insertable"
+
+    f = open(path_to_default_context + "extraction.json")
+    extraction_context = json.load(f)
+    extraction_context["skill"]["objects"]["Extractable"] = "generic_insertable"
+    extraction_context["skill"]["objects"]["Container"] = "generic_container"
+    extraction_context["skill"]["objects"]["ExtractTo"] = "generic_container_approach"
+
+
+    #execution
+    t1.add_skill("move", "MoveToPoseJoint", move_context)
+    t1.add_skill("move_fine", "TaxMove", move_fine_context)
+    success_moving = False
+    success_grasping = False
+    while success_grasping == False:
+        while success_moving == False:
+            t1.start()
+            success_moving = t1.wait()["result"]["task_result"]["success"]
+            if not success_moving:
+                print(robot, ": moving success = ", success_moving)
+        success_moving = False
+        result = call_method(robot, 12000, "grasp", {"width":1,"force":100,"speed":1,"epsilon_inner":1,"epsilon_outer":1})
+        call_method(robot, 12000,"set_grasped_object", {"object": "generic_insertable"})
+        success_grasping  = result["result"]["result"]
+        if not success_grasping:
+            print(robot, " grasping success = ", success_grasping)
+
+
+    t2.add_skill("extraction", "TaxExtraction", extraction_context)
+    t2.start()
+    print(t2.wait())
+    return True
+    success_extraction = False
+    while success_extraction == False:
+        t2.start()
+        success_extraction = t2.wait()["result"]["task_result"]["success"]
+        if not success_extraction:
+            print(robot, " extraction success: ", success_extraction)
+
+def place_insertable(robot):
+    path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
+    t0 = Task(robot)
+    t1 = Task(robot)
+    t2 = Task(robot)
+
+    f = open(path_to_default_context + "insertion.json")
+    insertion_context = json.load(f)
+    insertion_context["skill"]["objects"]["Insertable"] = "generic_insertable"
+    insertion_context["skill"]["objects"]["Container"] = "generic_container"
+    insertion_context["skill"]["objects"]["Approach"] = "generic_container_approach"
+
+    insertion_context["skill"]["p2"]["search_a"]= [10, 10, 0, 2, 2, 0]
+    insertion_context["skill"]["p2"]["search_f"] = [1, 0.75, 0, 1, 0.75, 0]
+    insertion_context["skill"]["p2"]["f_push"] = [0, 0, 20, 0, 0, 0]
+
+    f = open(path_to_default_context + "move_cart.json")
+    move_fine_context = json.load(f)
+    move_fine_context["skill"]["objects"]["GoalPose"] = "generic_container_above"
+    f = open(path_to_default_context + "move_joint.json")
+    move_context = json.load(f)
+    move_context["skill"]["objects"]["goal_pose"] = "generic_approach"
+    #t0.add_skill("move", "MoveToPoseJoint", move_context)
+    #t0.add_skill("move_fine", "TaxMove", move_fine_context)
+    #t0.start()
+    #result = t0.wait()
+
+    t1.add_skill("insertion", "TaxInsertion", insertion_context)
+    t1.start()
+    result = t1.wait()
+    if result["result"]["task_result"]["success"] == True:
+        call_method(robot, 12000, "release_object")
+    else:
+        return False
+    t2.add_skill("move_fine", "TaxMove", move_fine_context)
+    #t2.add_skill("move", "MoveToPoseJoint", move_context)
+    t2.start()
+    t2.wait()
 
 
 def run_demo():
@@ -305,22 +394,17 @@ def demo_part_3():
     base_batch_size_experiment = 5
     n_trials_experiment = 180
     agents = robots[1:]
-    #for a in agents:
-    #    call_method(a, 12000, "set_grasped_object", {"object": "generic_insertable"})
-#
-#    service_config = SVMConfiguration()
-#    service_config.exploration_mode = True
-#    service_config.n_trials = n_trials_experiment
-#    service_config.batch_width = base_batch_size_experiment * len(agents)
-#    print(service_config.batch_width)
-#    service_config.n_immigrant = service_config.batch_width - base_batch_size_experiment
-#    tag = "collective_experiment_shared"
-#    knowledge = {"mode": "none", "kb_location": agents[0], "kb_tags": [tag]}
-
-#    pd = insertion({"Insertable":"generic_insertable", "Container":"generic_container", "Approach":"generic_container_approach"}, "time", 6)
-#    s = ServerProxy("http://" + agents[0] + ":8001", allow_none=True)
-#    s.clear_memory()
-#    j = 0
+    # threads = []
+    # for r in robots:
+    #     threads.append(
+    #         Thread(target=grab_insertable, args=(r,))
+    #     )
+    #     threads[-1].start()
+    # print("grabbing insertables...")
+    # for t in threads:
+    #     t.join()
+    # print("all insertables grabbed.")
+    # input("continue")
     tag = "demo_learning"
     knowledge = {"mode": "none", "kb_location": agents[0], "kb_tags": [tag]}
     learning_services = []
@@ -474,21 +558,56 @@ def demo_part_4():
 
 
 def teach_insertable(robot: str):
-    input("Press key to start teaching.")
+    input("Press key to start teaching. [Pose above container, without object]")
+    call_method(robot, 12000, "teach_object", {"object": "generic_container_above"})
+    input("Teach where to grab object. ")
     call_method(robot, 12000, "teach_object", {"object": "generic_insertable"})
     call_method(robot, 12000, "set_grasped_object", {"object": "generic_insertable"})
-    input("Teach approach")
+    input("Teach approach, with grabbed object")
     call_method(robot, 12000, "teach_object", {"object": "generic_container_approach"})
-    input("Teach container")
+    input("Teach container, with grabbed object")
     call_method(robot, 12000, "teach_object", {"object": "generic_container"})
 
 
-def command_collective(cmd: str):
+def command_collective(cmd: str, args: dict = {}):
     threads = []
     for r in robots:
         robot = r
-        threads.append(Thread(target=call_method, args=(robot, 12000, cmd,)))
+        threads.append(Thread(target=call_method, args=(robot, 12000, cmd, args,)))
         threads[-1].start()
 
     for t in threads:
         t.join()
+
+def move_collective(location):
+    threads = []
+    for r in robots:
+        robot = r
+        threads.append(Thread(target=move, args=(robot, location,)))
+        threads[-1].start()
+
+    for t in threads:
+        t.join()
+
+def move(robot, location):
+    context = {
+        "skill": {
+            "p0":{
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "K_x": [2000, 2000, 2000, 250, 250, 250],
+
+            },
+            "objects": {
+                    "GoalPose": location
+                }
+        },
+        "control": {
+            "control_mode": 2
+        }
+    }
+    t = Task(robot)
+    t.add_skill("move", "TaxMove", context)
+    t.start()
+    result = t.wait()
+    print("Result: " + str(result))
