@@ -12,7 +12,7 @@ from definitions.cost_functions import *
 from definitions.service_configs import *
 
 
-robots = [  "test",
+robots = [ 
             "collective-panda-prime", 
             #"collective-panda-001", 
             "collective-panda-002",
@@ -80,7 +80,7 @@ def learn_task(robot:str, problem_definition: ProblemDefinition, service_config:
                      keep_record=False, wait=wait)
 
 def grab_insertable(robot:str):
-        # call_method(robot, 12000, "release_object")
+    call_method(robot, 12000, "release_object")
     path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
     t1 = Task(robot)
     t2 = Task(robot)
@@ -110,8 +110,8 @@ def grab_insertable(robot:str):
             if not success_moving:
                 print(robot, ": moving success = ", success_moving)
         success_moving = False
-        result = call_method(robot, 12000, "grasp", {"width":1,"force":100,"speed":1,"epsilon_inner":1,"epsilon_outer":1})
-        call_method(robot, 12000,"set_grasped_object", {"object": "generic_insertable"})
+        result = call_method(robot, 12000, "grasp_object", {"object": "generic_insertable"})
+        #call_method(robot, 12000,"set_grasped_object", {"object": "generic_insertable"})
         success_grasping  = result["result"]["result"]
         if not success_grasping:
             print(robot, " grasping success = ", success_grasping)
@@ -394,19 +394,19 @@ def demo_part_3():
     base_batch_size_experiment = 5
     n_trials_experiment = 180
     agents = robots[1:]
-    # threads = []
-    # for r in robots:
-    #     threads.append(
-    #         Thread(target=grab_insertable, args=(r,))
-    #     )
-    #     threads[-1].start()
-    # print("grabbing insertables...")
-    # for t in threads:
-    #     t.join()
-    # print("all insertables grabbed.")
-    # input("continue")
+    threads = []
+    for a in agents:
+        threads.append(
+            Thread(target=grab_insertable, args=(a,))
+        )
+        threads[-1].start()
+    print("grabbing insertables...")
+    for t in threads:
+        t.join()
+    print("all insertables grabbed.")
+    input("continue")
     tag = "demo_learning"
-    knowledge = {"mode": "none", "kb_location": agents[0], "kb_tags": [tag]}
+    knowledge = {"mode": "none", "kb_location": robots[0], "kb_tags": [tag]}
     learning_services = []
     threads = []
     for a in agents:
