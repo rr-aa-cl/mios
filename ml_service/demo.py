@@ -103,30 +103,33 @@ def grab_insertable(robot:str):
     t1.add_skill("move_fine", "TaxMove", move_fine_context)
     success_moving = False
     success_grasping = False
+    count = 0
     while success_grasping == False:
         while success_moving == False:
+            call_method(robot, 12000, "move_gripper",{"width":0.05,"speed":1,"force":100})
             t1.start()
             success_moving = t1.wait()["result"]["task_result"]["success"]
             if not success_moving:
                 print(robot, ": moving success = ", success_moving)
+            count += 1
+            if count > 2:
+                continue
         success_moving = False
         result = call_method(robot, 12000, "grasp_object", {"object": "generic_insertable"})
         #call_method(robot, 12000,"set_grasped_object", {"object": "generic_insertable"})
         success_grasping  = result["result"]["result"]
         if not success_grasping:
             print(robot, " grasping success = ", success_grasping)
+        count += 1
+        if count > 12:
+            continue
 
 
     t2.add_skill("extraction", "TaxExtraction", extraction_context)
     t2.start()
     print(t2.wait())
     return True
-    success_extraction = False
-    while success_extraction == False:
-        t2.start()
-        success_extraction = t2.wait()["result"]["task_result"]["success"]
-        if not success_extraction:
-            print(robot, " extraction success: ", success_extraction)
+
 
 def place_insertable(robot):
     path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
@@ -562,7 +565,7 @@ def teach_insertable(robot: str):
     call_method(robot, 12000, "teach_object", {"object": "generic_container_above"})
     input("Teach where to grab object. ")
     call_method(robot, 12000, "teach_object", {"object": "generic_insertable"})
-    call_method(robot, 12000, "set_grasped_object", {"object": "generic_insertable"})
+    call_method(robot, 12000, "grasp_object", {"object": "generic_insertable"})
     input("Teach approach, with grabbed object")
     call_method(robot, 12000, "teach_object", {"object": "generic_container_approach"})
     input("Teach container, with grabbed object")
