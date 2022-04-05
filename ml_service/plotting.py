@@ -1748,13 +1748,13 @@ def plot_iros_learning(host="collective-control-001.local"):
     plt.show()
 
 
-def live_plotting():
+def live_plotting(tags=["demo_learning"]):
     from plotting.live_plotter import live_plot
     # lp = LivePlotter([],[])
     # lp.start_plot()
-    robots = ["collective-panda-001.local", "collective-panda-002.local",
-              "collective-panda-003.local", "collective-panda-009.local"]
-    tags = ["live_plotting_test"]
+    robots = ["collective-panda-004", "collective-panda-002",
+              "collective-panda-003", "collective-panda-008"]
+
     live_plot(robots, tags)
 
 
