@@ -1,4 +1,5 @@
 import logging
+from types import NoneType
 
 
 logger = logging.getLogger("ml_service")
@@ -67,6 +68,8 @@ class TaskResult:
         self.q_metric.heuristic = 0
         for skill, r in result["skill_results"].items():
             for cost_type, cost_value in r["cost"].items():
+                if r["cost"][cost_type] is None:
+                    return False
                 self.q_metric.cost[cost_type] += r["cost"][cost_type]
                 if r["heuristic"] is not None:
                     self.q_metric.heuristic += r["heuristic"]
