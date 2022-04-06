@@ -9,6 +9,7 @@ from plotting.data_acquisition import *
 from plotting.data_processor import DataProcessor
 
 from xmlrpc.client import ServerProxy
+from xmlrpc.client import Fault
 import socket
 
 def live_plot(robots, tags):
@@ -107,24 +108,21 @@ def live_plot(robots, tags):
             plot_lines[2*i].set_data(current_data_sets[i]["x"], current_data_sets[i]["y"])
             plot_lines[2*i].axes.set_xlim(0,max(time))
 
-            with ServerProxy("http://" + robots[i] + ":8001") as service_server:
+            idx = robots[i].find("-")
+
+            with ServerProxy("http://" + robots[i] + ":8000", allow_none=True) as service_server:
                 try:
                     busy = service_server.is_busy()
+                    if busy:
+                        plot_lines[2*i+1].set_text(robots[i][idx+1:]+" is learning")
+                    else:
+                        plot_lines[2*i+1].set_text(robots[i][idx+1:]+" is online")
                 except socket.timeout:
                     logger.error("base_service: global Database is not reachable!")
                 except ConnectionRefusedError:
                     pass
-
-                if busy:
-                    plot_lines[2*i+1].set_text("Robot is learning")
-                else:
-                    plot_lines[2*i+1].set_text("Robot is online")
-
-            
-            #if cost[-1] < 1:
-            #    plot_lines[i].axes.set_ylim(0,1)
-            #else:
-            #    plot_lines[i].axes.set_ylim(0,max(cost))
+                except Fault:
+                    plot_lines[2*i+1].set_text(robots[i][idx+1:]+" is offline")
             
         return plot_lines
 
