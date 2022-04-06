@@ -1,5 +1,4 @@
 import logging
-from types import NoneType
 
 
 logger = logging.getLogger("ml_service")
