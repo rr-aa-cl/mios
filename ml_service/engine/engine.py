@@ -234,6 +234,7 @@ class Engine:
                     self._reset_task(agent, trial)
                     return
             else:
+                self._reset_task(agent, trial)
                 break
 
             theta = np.zeros((1, (len(self.problem_definition.domain.limits))))

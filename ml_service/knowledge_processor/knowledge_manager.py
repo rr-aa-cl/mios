@@ -355,14 +355,15 @@ class KnowledgeManager:
             for d in doc:
                 metainfo.append(d["meta"])
                 # get raw ml data:
-                trials = self.get_raw_data(d)
-                if len(trials) > 0:
-                    optimum_weights.append(d["meta"]["cost_function"]["optimum_weights"])
+                trials = self.get_raw_data(d)  # successful trials
+                # if len(trials) > 0:
+                    # optimum_weights.append(d["meta"]["cost_function"]["optimum_weights"])
                 for t in trials:
                     alltrials.append(t)
             successful_trials = alltrials
+            optimum_weights = d["meta"]["cost_function"]["optimum_weights"]
             print(optimum_weights)
-            optimum_weights = list(np.mean(optimum_weights, axis=0))
+            #optimum_weights = list(np.mean(optimum_weights, axis=0))  ## Todo: find optimum weights mean!
         else:
             doc = doc[0]
             # get raw ml data:

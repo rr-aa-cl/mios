@@ -4,12 +4,12 @@ from services.cmaes import CMAESConfiguration
 
 
 class SVMLearner(LearnerFactory):
-    def __init__(self, n_trials: int = 130, batch_width: int = 10, exploration_mode = True):
+    def __init__(self, n_trials: int = 130, batch_width: int = 10, n_immigrant: int = 0,  exploration_mode = True):
         super().__init__(SVMConfiguration())
         self.configuration.exploration_mode = exploration_mode
         self.configuration.n_trials = n_trials
         self.configuration.batch_width = batch_width
-        self.configuration.n_immigrant = 3
+        self.configuration.n_immigrant = n_immigrant
 
 
 class CMAESLearner(LearnerFactory):

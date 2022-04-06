@@ -71,6 +71,8 @@ def learn_insertion(robot: str, approach: str, insertable: str, container: str, 
                           {"Insertable": insertable, "Container": container,
                            "Approach": approach}).get_problem_definition(insertable)
     sc = SVMLearner().get_configuration()
+    sc.n_immigrant = 2
+    # sc = CMAESLearner().get_configuration()
     learn_task(robot, pd, sc, tags, knowledge=knowledge)
 
 
@@ -132,6 +134,7 @@ def grab_insertable(robot:str):
 
 
 def place_insertable(robot):
+    call_method(robot, 12000, "set_grasped_object", {"object": "generic_insertable"})
     path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
     t0 = Task(robot)
     t1 = Task(robot)
@@ -146,6 +149,8 @@ def place_insertable(robot):
     insertion_context["skill"]["p2"]["search_a"]= [10, 10, 0, 2, 2, 0]
     insertion_context["skill"]["p2"]["search_f"] = [1, 0.75, 0, 1, 0.75, 0]
     insertion_context["skill"]["p2"]["f_push"] = [0, 0, 20, 0, 0, 0]
+    if robot == "collective-panda-002":
+        insertion_context["skill"]["p2"]["f_push"] = [0, 0, 8, 0, 0, 0]
 
     f = open(path_to_default_context + "move_cart.json")
     move_fine_context = json.load(f)
@@ -169,6 +174,7 @@ def place_insertable(robot):
     #t2.add_skill("move", "MoveToPoseJoint", move_context)
     t2.start()
     t2.wait()
+    call_method(robot, 12000, "home_gripper")
 
 
 def run_demo():
@@ -409,7 +415,24 @@ def demo_part_3():
     print("all insertables grabbed.")
     input("continue")
     tag = "demo_learning"
-    knowledge = {"mode": "similar", "kb_location": robots[0], "kb_tags": [tag]}
+    knowledge = {"mode": "none", "type": "similar", "kb_location": robots[0], "kb_tags": [tag], "scope":[tag]}
+    learning_services = []
+    threads = []
+    for a in agents:
+        threads.append(
+            Thread(target=learn_insertion, args=(a, "generic_container_approach", "generic_insertable", "generic_container", ["demo"],
+                       knowledge , False, )))
+        threads[-1].start()
+        learning_services.append(ServerProxy("http://" + a + ":8000", allow_none=True))
+
+    input("Press Enter to stop learning. part 1")
+    for s in learning_services:
+        s.stop_service()
+    for s in learning_services:
+        while s.is_busy() is True:
+            time.sleep(1)
+
+    knowledge = {"mode": "local", "type": "similar", "kb_location": robots[0], "kb_tags": [tag], "scope":[tag]}
     learning_services = []
     threads = []
     for a in agents:
@@ -577,6 +600,16 @@ def command_collective(cmd: str, args: dict = {}):
     for r in robots:
         robot = r
         threads.append(Thread(target=call_method, args=(robot, 12000, cmd, args,)))
+        threads[-1].start()
+
+    for t in threads:
+        t.join()
+
+def place_insertable_collective():
+    threads = []
+    for r in robots[1:]:
+        robot = r
+        threads.append(Thread(target=place_insertable, args=(robot,)))
         threads[-1].start()
 
     for t in threads:
