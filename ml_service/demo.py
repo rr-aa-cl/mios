@@ -409,7 +409,7 @@ def demo_part_3():
     print("all insertables grabbed.")
     input("continue")
     tag = "demo_learning"
-    knowledge = {"mode": "none", "kb_location": robots[0], "kb_tags": [tag]}
+    knowledge = {"mode": "similar", "kb_location": robots[0], "kb_tags": [tag]}
     learning_services = []
     threads = []
     for a in agents:

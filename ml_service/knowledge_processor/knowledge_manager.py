@@ -420,6 +420,7 @@ class KnowledgeManager:
         return l
 
     def push_trial(self, agent: str, theta: list, cost: float, keep_size: int):
+        logger.debug("push_trial: store trial from"+agent)
         if agent not in self.data_storage:
             self.data_storage[agent] = []
         if len(self.data_storage[agent]) >= keep_size:
@@ -427,6 +428,7 @@ class KnowledgeManager:
         self.data_storage[agent].append((theta, cost))
 
     def request_trials(self, n_trials: int):
+        logger.debug("request trials" + str(n_trials))
         n_available = 0
         n_per_agent = int(np.floor(n_trials / len(self.data_storage)))
         for a in self.data_storage.keys():
