@@ -9,6 +9,7 @@ class SVMLearner(LearnerFactory):
         self.configuration.exploration_mode = exploration_mode
         self.configuration.n_trials = n_trials
         self.configuration.batch_width = batch_width
+        self.configuration.n_immigrant = 3
 
 
 class CMAESLearner(LearnerFactory):
