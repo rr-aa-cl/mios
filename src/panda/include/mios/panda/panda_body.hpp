@@ -45,7 +45,7 @@ public:
 
     bool grasp(double width,double speed,double force,double epsilon_inner,double epsilon_outer) const;
     bool move_to_finger_position(double width, double speed) const;
-    bool stop_gripper();
+    bool stop_gripper() const;
     bool home_gripper() const;
     bool is_hand_active();
 

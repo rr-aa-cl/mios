@@ -832,7 +832,7 @@ bool PandaBody::move_to_finger_position(double width, double speed) const{
     return false;
 }
 
-bool PandaBody::stop_gripper(){
+bool PandaBody::stop_gripper() const{
     spdlog::trace("PandaBody::stop_gripper");
 //    std::scoped_lock<std::mutex> lock(m_mtx_hand_active);
     if(!m_hand_connected){
