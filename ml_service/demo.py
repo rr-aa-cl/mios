@@ -11,6 +11,7 @@ from definitions.templates import *
 from definitions.cost_functions import *
 from definitions.service_configs import *
 
+import random
 
 robots = [ 
             "collective-panda-prime", 
@@ -415,32 +416,54 @@ def demo_part_3():
     print("all insertables grabbed.")
     input("continue")
     tag = "demo_learning"
-    knowledge = {"mode": "none", "type": "similar", "kb_location": robots[0], "kb_tags": [tag], "scope":[tag]}
+    knowledge_1 = {"mode": "none", "type": "similar", "kb_location": robots[0], "kb_tags": [tag], "scope":[tag]}
+    knowledge_2 = {"mode": "local", "type": "similar", "kb_location": robots[0], "kb_tags": [tag], "scope":[tag]}
     learning_services = []
-    threads = []
+    threads_1 = []
+    threads_2 = []
     for a in agents:
-        threads.append(
+        threads_1.append(
             Thread(target=learn_insertion, args=(a, "generic_container_approach", "generic_insertable", "generic_container", ["demo"],
-                       knowledge , False, )))
-        threads[-1].start()
+                       knowledge_1 , False, )))
+        threads_1[-1].start()
         learning_services.append(ServerProxy("http://" + a + ":8000", allow_none=True))
 
-    input("Press Enter to stop learning. part 1")
-    for s in learning_services:
-        s.stop_service()
-    for s in learning_services:
-        while s.is_busy() is True:
-            time.sleep(1)
+    #input("Press Enter to stop learning. part 1")
+    try:
+        time.sleep(45)
+        indexes = list(range(len(learning_services)))
+        random.shuffle(indexes)
+        count = 0
+        for i in indexes:
+            learning_services[i].stop_service()
+            if count == 0:
+                time.sleep(random.randint(12, 15))
+                count += 1
+            else:
+                time.sleep(random.randint(5,15))
+            while learning_services[i].is_busy() is True:
+                time.sleep(1)
 
-    knowledge = {"mode": "local", "type": "similar", "kb_location": robots[0], "kb_tags": [tag], "scope":[tag]}
-    learning_services = []
-    threads = []
-    for a in agents:
-        threads.append(
-            Thread(target=learn_insertion, args=(a, "generic_container_approach", "generic_insertable", "generic_container", ["demo"],
-                       knowledge , False, )))
-        threads[-1].start()
-        learning_services.append(ServerProxy("http://" + a + ":8000", allow_none=True))
+            threads_2.append(
+                Thread(target=learn_insertion, args=(a, "generic_container_approach", "generic_insertable", "generic_container", ["demo"],
+                        knowledge_2 , False, )))
+            threads_2[-1].start()
+    except KeyboardInterrupt:
+        pass
+
+    # for s in learning_services:
+    #     while s.is_busy() is True:
+    #         time.sleep(1)
+
+    # knowledge = {"mode": "local", "type": "similar", "kb_location": robots[0], "kb_tags": [tag], "scope":[tag]}
+    # learning_services = []
+    # threads = []
+    # for a in agents:
+    #     threads.append(
+    #         Thread(target=learn_insertion, args=(a, "generic_container_approach", "generic_insertable", "generic_container", ["demo"],
+    #                    knowledge , False, )))
+    #     threads[-1].start()
+    #     learning_services.append(ServerProxy("http://" + a + ":8000", allow_none=True))
 
     input("Press Enter to stop learning.")
     for s in learning_services:

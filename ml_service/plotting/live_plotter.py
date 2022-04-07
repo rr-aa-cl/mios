@@ -114,15 +114,15 @@ def live_plot(robots, tags):
                 try:
                     busy = service_server.is_busy()
                     if busy:
-                        plot_lines[2*i+1].set_text(robots[i][idx+1:]+" is learning")
+                        plot_lines[2*i+1].set_text(robots[i][idx+1:]+"\n is learning.")
                     else:
-                        plot_lines[2*i+1].set_text(robots[i][idx+1:]+" is online")
+                        plot_lines[2*i+1].set_text(robots[i][idx+1:]+"\n is ready.")
                 except socket.timeout:
                     logger.error("base_service: global Database is not reachable!")
                 except ConnectionRefusedError:
                     pass
                 except Fault:
-                    plot_lines[2*i+1].set_text(robots[i][idx+1:]+" is offline")
+                    plot_lines[2*i+1].set_text(robots[i][idx+1:]+"\n is offline.")
             
         return plot_lines
 
