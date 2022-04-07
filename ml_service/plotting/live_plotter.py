@@ -65,6 +65,7 @@ def live_plot(robots, tags):
 
     def get_results( host: str, skill_class: str, tags: list):
             p = DataProcessor()
+            first_id = 0
             try:
                 data = get_multiple_experiment_data(host, skill_class, "ml_results", filter={"meta.tags": {"$all": tags}})
             except DataNotFoundError:
@@ -79,12 +80,22 @@ def live_plot(robots, tags):
                     if r.starting_time > most_recent_time:
                         most_recent_time = r.starting_time
                         results = r
+                if first_id == 0:
+                    first_id = results.id
 
             if len(results.trials) == 0:
                 print("TrialsNotFound: host", host, " skill_class: ", skill_class, " tags: ", tags)
-                return False, False                    
-
-            cost, time = results.get_cost_per_time()
+                return False, False         
+            cost = []
+            time = []         
+            if results.id == first_id:
+                cost_1, time_1 = results.get_cost_per_time()
+                cost = cost_1
+                time = time_1
+            else:
+                cost_2, time_2= results.get_cost_per_time()
+                cost = cost_1+cost_2
+                time = time_1 + time_2
             cost = [c * 5 for c in cost]
             for i in range(len(cost)):
                 if cost[i] > 5.0:

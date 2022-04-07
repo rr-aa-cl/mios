@@ -6,6 +6,7 @@ import numpy as np
 class Result:
     def __init__(self, data: dict):
         data_tmp = copy.deepcopy(data)
+        id = copy.deepcopy(data_tmp["_id"])
         del data_tmp["_id"]
         n_trials = len(data_tmp) - 2
         self.trials = []

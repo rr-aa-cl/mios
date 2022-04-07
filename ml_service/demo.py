@@ -431,11 +431,13 @@ def demo_part_3():
     #input("Press Enter to stop learning. part 1")
     try:
         time.sleep(45)
+        print("start knowledge sharing")
         indexes = list(range(len(learning_services)))
         random.shuffle(indexes)
         count = 0
         for i in indexes:
             learning_services[i].stop_service()
+            print("stopping ",i)
             if count == 0:
                 time.sleep(random.randint(12, 15))
                 count += 1
@@ -445,7 +447,7 @@ def demo_part_3():
                 time.sleep(1)
 
             threads_2.append(
-                Thread(target=learn_insertion, args=(a, "generic_container_approach", "generic_insertable", "generic_container", ["demo"],
+                Thread(target=learn_insertion, args=(agents[i], "generic_container_approach", "generic_insertable", "generic_container", ["demo"],
                         knowledge_2 , False, )))
             threads_2[-1].start()
     except KeyboardInterrupt:
