@@ -70,7 +70,7 @@ def live_plot(robots, tags):
                 data = get_multiple_experiment_data(host, skill_class, "ml_results", filter={"meta.tags": {"$all": tags}})
             except DataNotFoundError:
                 print("DataNotFoundError: host", host, " skill_class: ", skill_class, " tags: ", tags)
-                return False, False
+                return [0], [0]
             if len(data) == 1:
                 results = data[0]
             if len(data) > 1:
@@ -85,7 +85,7 @@ def live_plot(robots, tags):
 
             if len(results.trials) == 0:
                 print("TrialsNotFound: host", host, " skill_class: ", skill_class, " tags: ", tags)
-                return False, False         
+                return [0], [0]         
             cost = []
             time = []         
             if results.id == first_id:
@@ -115,7 +115,7 @@ def live_plot(robots, tags):
             print("len current_data_set_time: ",len(current_data_sets))
             current_data_sets[i]["x"] = time
             current_data_sets[i]["y"] = cost
-
+            
             plot_lines[2*i].set_data(current_data_sets[i]["x"], current_data_sets[i]["y"])
             plot_lines[2*i].axes.set_xlim(0,max(time))
 
@@ -131,7 +131,7 @@ def live_plot(robots, tags):
                 except socket.timeout:
                     logger.error("base_service: global Database is not reachable!")
                 except ConnectionRefusedError:
-                    pass
+                    plot_lines[2*i+1].set_text(robots[i][idx+1:]+"\n is offline.")
                 except Fault:
                     plot_lines[2*i+1].set_text(robots[i][idx+1:]+"\n is offline.")
             
