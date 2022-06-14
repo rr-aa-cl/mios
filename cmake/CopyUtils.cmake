@@ -1,5 +1,6 @@
 configure_file(${CMAKE_SOURCE_DIR}/utils/mios.sh ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/bin/mios.sh COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/python/desk/desk_client.py ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/python/desk/desk_client.py COPYONLY)
+configure_file(${CMAKE_SOURCE_DIR}/python/desk/mongodb_client.py ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/python/desk/mongodb_client.py COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/python/utils/udp_client.py ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/python/utils/udp_client.py COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/python/utils/ws_client.py ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/python/utils/ws_client.py COPYONLY)
 configure_file(${CMAKE_SOURCE_DIR}/python/utils/rpc_client.py ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/python/utils/rpc_client.py COPYONLY)

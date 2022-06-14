@@ -120,6 +120,9 @@ public:
 
     bool has_robot;
     PandaHand gripper;
+
+    std::string spoc_token;
+    bool spoc_in_control;
 };
 
 class SafetyParameters : public IParameters{

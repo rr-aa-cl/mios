@@ -45,7 +45,7 @@ public:
 
     bool grasp(double width,double speed,double force,double epsilon_inner,double epsilon_outer) const;
     bool move_to_finger_position(double width, double speed) const;
-    bool stop_gripper() const;
+    bool stop_gripper();
     bool home_gripper() const;
     bool is_hand_active();
 
@@ -77,6 +77,8 @@ private:
     std::optional<std::string> get_robot_ip(const std::optional<std::string>& last_ip);
     bool is_robot(const std::string& ip);
     std::optional<std::string> find_robot();
+    std::optional<std::string> find_device(const std::string &network_interface);
+    std::optional<std::string> ping_robot(const std::optional<std::string> &last_ip);
     void get_default_robot_state(franka::RobotState& state) const;
     void get_default_gripper_state(franka::GripperState& state) const;
 

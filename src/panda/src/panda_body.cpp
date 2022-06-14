@@ -24,8 +24,47 @@ bool PandaBody::initialize(){
     spdlog::trace("PandaBody::initialize()");
     m_has_arm=m_memory->read_parameters()->system.has_robot;
     m_hand=m_memory->read_parameters()->system.gripper;
-    m_memory->get_parameters()->system.robot_ip = get_robot_ip(m_memory->read_parameters()->system.robot_ip).value_or("127.0.0.1");
+    
+    std::optional<std::string> ip;
+    //request control and activate FCI
+    for(int count=0; count < 3; count++){
+        spdlog::debug("PandaBody::initialize()  Requesting control, acitvating FCI (count="+std::to_string(count+1)+"/3).");
+        ip = PandaBody::ping_robot(m_memory->get_parameters()->system.robot_ip);
+        bool tokenForceTimeout = false;
+        try{
+            pybind11::module desk_client = pybind11::module::import("desk_client");
+            pybind11::object py_result = desk_client.attr("take_control")(ip.value(), "franka", "frankaRSI");
+            tokenForceTimeout = py_result.cast<bool>();
+            spdlog::warn("Please verify that you are in control of the robot: Press the Button with the cyrcle on the Pilot! "+std::to_string(tokenForceTimeout));
+            std::this_thread::sleep_for(std::chrono::milliseconds(30000));
+        }catch(const pybind11::error_already_set& e){
+            spdlog::debug(e.what());
+            spdlog::warn("Cannot take control of the robot, error when calling the python desk client.");
+            continue;
+        }
+        
+        m_memory->set_default_parameters();
+        if(!m_memory->read_parameters()->system.spoc_in_control){
+            spdlog::warn("Cannot take control over the robot (single point of control). Check desk_client.");
+            if(count<2){
+                continue;
+            }else{
+                return false;
+            }
+        }
+        try{
+            pybind11::module desk_client = pybind11::module::import("desk_client");
+            pybind11::object py_result = desk_client.attr("activate_fci")(ip.value(), "franka", "frankaRSI");
+        }catch(const pybind11::error_already_set& e){
+            spdlog::debug(e.what());
+            spdlog::warn("Cannot activate FCI, error when calling the python desk client.");
+            continue;
+        }
+        spdlog::debug("Successfully activated FCI");
+        break;
 
+    }
+    m_memory->get_parameters()->system.robot_ip = get_robot_ip(ip.value()).value_or("127.0.0.1");
     if(!connect_to_robot(m_memory->read_parameters()->system.robot_ip)){
         return false;
     }
@@ -46,6 +85,28 @@ bool PandaBody::initialize(){
         spdlog::warn("Could not set robot parameters in current mode.");
     }
     return true;
+}
+
+std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string> &last_ip){
+    spdlog::trace("PandaBody::ping_robot("+last_ip.value()+")");
+    std::optional<std::string> new_ip={};
+    spdlog::debug("PandaBody: ping_robot("+last_ip.value_or("127.0.0.1")+")");
+    if(last_ip.has_value()){
+        if(mirmi_utils::ping(last_ip.value().c_str())==false){
+            spdlog::warn("IP was set to "+last_ip.value()+" but no device has been found. Searching for new connection...");
+        }else{
+            if(!is_robot(last_ip.value())){
+                spdlog::warn("IP was set to "+last_ip.value()+" but no compatible robot seems to be connected. Searching for new connection...");
+            }else{
+                new_ip=last_ip;
+            }
+        }
+    }
+    if(!new_ip.has_value()){
+        new_ip=this->find_device("eno1");
+    }
+    return new_ip;
+
 }
 
 std::optional<std::string> PandaBody::get_robot_ip(const std::optional<std::string>& last_ip){
@@ -246,6 +307,29 @@ std::optional<std::string> PandaBody::find_robot(){
         spdlog::info("Found robot at ip "+robot_address.value()+" at interface "+robot_iface+".");
     }
     return robot_address;
+}
+
+std::optional<std::string> PandaBody::find_device(const std::string &network_interface){
+    spdlog::trace("PandaBody::find_robot("+network_interface+")");
+    std::map<std::string,std::string> ifaces = mirmi_utils::get_subnets();
+    auto it_interfaces=ifaces.find(network_interface);
+    if(it_interfaces==ifaces.end()){
+        spdlog::error("Cannot find network interface"+network_interface);
+        return "";
+    }
+    std::string address;
+    for(unsigned j=2;j<255;j++){
+        address=it_interfaces->second +std::to_string(j);
+        if(!mirmi_utils::ping(address.c_str())){
+            spdlog::debug("Cannot find device at "+address+" on interface "+network_interface+".");
+            continue;
+        }else{
+            spdlog::info("Found device at ip "+address+" at interface "+network_interface+".");
+            return address;
+        }
+    }
+    spdlog::error("Cannot find device on interface "+network_interface);
+    return "";
 }
 
 ControlReturnType PandaBody::control(std::function<franka::Torques (const franka::RobotState&,franka::Duration)> controller_callback){
@@ -832,7 +916,7 @@ bool PandaBody::move_to_finger_position(double width, double speed) const{
     return false;
 }
 
-bool PandaBody::stop_gripper() const{
+bool PandaBody::stop_gripper(){
     spdlog::trace("PandaBody::stop_gripper");
 //    std::scoped_lock<std::mutex> lock(m_mtx_hand_active);
     if(!m_hand_connected){

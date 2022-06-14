@@ -344,6 +344,9 @@ SystemParameters::SystemParameters(){
 
     has_robot=false;
     gripper=PandaHandNone;
+
+    spoc_token = "";
+    spoc_in_control = false;
 }
 
 bool SystemParameters::from_json(const nlohmann::json &parameters){
@@ -361,6 +364,14 @@ bool SystemParameters::from_json(const nlohmann::json &parameters){
     }
     if(!mirmi_utils::read_json_param(parameters,"has_robot",has_robot)){
         spdlog::error("Could not read has_robot.");
+        return false;
+    }
+    if(!mirmi_utils::read_json_param(parameters,"spoc_token",spoc_token)){
+        spdlog::error("Could not read spoc_token.");
+        return false;
+    }
+    if(!mirmi_utils::read_json_param(parameters,"spoc_in_control",spoc_in_control)){
+        spdlog::error("Could not read spoc_in_control.");
         return false;
     }
     std::string gripper_tmp;
@@ -384,6 +395,8 @@ nlohmann::json SystemParameters::to_json() const{
     json_object["desk_name"]=desk_user;
     json_object["desk_pwd"]=desk_pwd;
     json_object["has_robot"]=has_robot;
+    json_object["spoc_token"]=spoc_token;
+    json_object["spoc_in_control"]=spoc_in_control;
     std::string gripper_tmp;
     if(gripper==PandaHandNone){
         gripper_tmp="None";
