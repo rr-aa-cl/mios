@@ -41,7 +41,6 @@ def get_multiple_experiment_data(host: str, task_type: str, results_db: str = "m
     results = []
     for d in docs:
         results.append(Result(d))
-
     return results
 
 def get_multiple_knowledge_data(host: str, task_type: str, type: str = "local", filter: dict = None):

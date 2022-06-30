@@ -46,6 +46,7 @@ class Interface:
         self.rpc_server.register_function(self.wait_for_service, "wait_for_service")
         self.rpc_server.register_function(self.is_ready, "is_ready")
         self.rpc_server.register_function(self.stop_service, "stop_service")
+        self.rpc_server.register_function(self.status, "status")
         self.rpc_server.serve_forever()
         logger.debug("Interface::start_rpc_server.server_stopped")
 
@@ -134,6 +135,19 @@ class Interface:
     def is_busy(self) -> bool:
         logger.debug("Interface::is_busy.locked: " + str(self.service_lock.locked()))
         return self.service_lock.locked()
+    
+    def status(self, agent: str = "localhost") -> dict:
+        """"return status of service: [learning, thinking, ready, ]"""
+        response = {}
+        response["is_busy"] = self.service_lock.locked()
+        mios_state = call_method(agent, 12000, "get_state")
+        if mios_state is not None:
+            if "current_task" in mios_state["result"]:
+                response["current_task"] = mios_state["result"]["current_task"]
+            else:
+                response["current_task"] = "INVALID"
+        return response
+
 
     def wait_for_service(self):
         logger.debug("Interface::wait_for_service")

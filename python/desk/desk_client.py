@@ -10,6 +10,12 @@ import socket
 import time
 
 from mongodb_client import MongoDBClient
+<<<<<<< Updated upstream
+=======
+from urllib.parse import urlencode, quote_plus
+
+
+>>>>>>> Stashed changes
 
 
 class FrankaAPI:
@@ -50,7 +56,40 @@ class FrankaAPI:
                              headers={'content-type': 'application/x-www-form-urlencoded',
                                       'Cookie': 'authorization=%s' % self._token})
         return self._client.getresponse().read()
+        
+    def clear_position_error(self, forever=True):
+        self._client.request('GET', '/desk/api/robot/shutdown-position-error',
+                             headers={'content-type': 'application/x-www-form-urlencoded',
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+        response = self._client.getresponse()
+        response_content = response.read()
+        response_status = response.status
+        if response_status == 200 and forever==True:
+            self._client.request('DELETE', '/desk/api/robot/shutdown-position-error/0',
+                             headers={'content-type': 'application/x-www-form-urlencoded',
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+            self._client.request('DELETE', '/desk/api/robot/shutdown-position-error/1',
+                             headers={'content-type': 'application/x-www-form-urlencoded',
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+            self._client.request('DELETE', '/desk/api/robot/shutdown-position-error/2',
+                             headers={'content-type': 'application/x-www-form-urlencoded',
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+            self._client.request('DELETE', '/desk/api/robot/shutdown-position-error/3',
+                             headers={'content-type': 'application/x-www-form-urlencoded',
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+            self._client.request('DELETE', '/desk/api/robot/shutdown-position-error/4',
+                             headers={'content-type': 'application/x-www-form-urlencoded',
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+            self._client.request('DELETE', '/desk/api/robot/shutdown-position-error/5',
+                             headers={'content-type': 'application/x-www-form-urlencoded',
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+            self._client.request('DELETE', '/desk/api/robot/shutdown-position-error/6',
+                             headers={'content-type': 'application/x-www-form-urlencoded',
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+        return self._client.getresponse().read()
 
+
+<<<<<<< Updated upstream
     # def unlock_brakes(self):
     #     self._client.request('POST', '/desk/api/robot/open-brakes',
     #                          headers={'content-type': 'application/x-www-form-urlencoded',
@@ -61,6 +100,20 @@ class FrankaAPI:
         self._client.request('POST', '/desk/api/robot/open-brakes',
                              headers={'content-type': 'application/x-www-form-urlencoded',
                                       'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+=======
+    def unfold(self):
+        self._client.request('POST', '/desk/api/robot/reset-errors',
+                             headers={'content-type': 'application/x-www-form-urlencoded',
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+        return self._client.getresponse().read()
+
+    def unlock_brakes(self): 
+        payload = {'force':'false'}
+        temp_body = urlencode(payload, quote_via=quote_plus)  # force=false
+        self._client.request('POST', '/desk/api/robot/open-brakes', temp_body,
+                             headers={'content-type': 'application/x-www-form-urlencoded',
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+>>>>>>> Stashed changes
         return self._client.getresponse().read()
 
     def lock_brakes(self):
@@ -76,7 +129,7 @@ class FrankaAPI:
     def pack_pose(self):
         self._client.request('POST', '/desk/api/robot/fold',
                              headers={'content-type': 'application/x-www-form-urlencoded',
-                                      'Cookie': 'authorization=%s' % self._token})
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
         return self._client.getresponse().read()
 
     def timeline_has_finished(self):
@@ -226,6 +279,15 @@ def pack_pose(ip, user, pwd):
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
         return False
 
+def unfold(ip, user, pwd):
+    try:
+        with FrankaAPI(ip, user, pwd) as api:
+            api.unfold()
+            return True
+    except socket.error as e:
+        print(e)
+        print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
+        return False
 
 def stop_task(ip, user, pwd):
     try:

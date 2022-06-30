@@ -82,11 +82,13 @@ class Result:
         return parameters
 
     def get_cost_per_time(self, cost_type: str = None, agent: str = None) -> Tuple[list, list]:
+        #print("get cost per time")
         cost = []
         time = []
         try:
             t_0 = self.trials[0]["t_0"]
             for t in self.trials:
+                #print("t = !!!\n",t)
                 if agent is not None:
                     if agent == t["agent"]:
                         if cost_type is None:
@@ -96,7 +98,11 @@ class Result:
                                 cost.append(t["q_metric"]["final_cost"])
                         else:
                             cost.append(t["q_metric"]["cost"][cost_type])
-                        time.append(t["t_1"] - t_0)
+                        #time.append(t["t_1"] - t_0)
+                        if t["t_1"] == None:    
+                            time.append(time[-1]+5.0)
+                        else:
+                            time.append(t["t_1"] - t_0)
                     else:
                         continue
                 else:
@@ -107,7 +113,11 @@ class Result:
                             cost.append(t["q_metric"]["final_cost"])
                     else:
                         cost.append(t["q_metric"]["cost"][cost_type])
-                    time.append(t["t_1"] - t_0)
+                    if t["t_1"] == None:    
+                        time.append(time[-1]+5.0)
+                    else:
+                        time.append(t["t_1"] - t_0)
+            #print(cost, time)
             return cost, time
         except Exception as e:
             print(e)

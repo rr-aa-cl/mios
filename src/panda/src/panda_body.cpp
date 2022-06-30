@@ -25,6 +25,7 @@ bool PandaBody::initialize(){
     m_has_arm=m_memory->read_parameters()->system.has_robot;
     m_hand=m_memory->read_parameters()->system.gripper;
     
+<<<<<<< Updated upstream
     std::optional<std::string> ip;
     //request control and activate FCI
     for(int count=0; count < 3; count++){
@@ -56,6 +57,10 @@ bool PandaBody::initialize(){
 
     }
     m_memory->get_parameters()->system.robot_ip = get_robot_ip(ip.value()).value_or("127.0.0.1");
+=======
+
+    m_memory->get_parameters()->system.robot_ip = get_robot_ip(m_memory->read_parameters()->system.robot_ip).value_or("127.0.0.1");
+>>>>>>> Stashed changes
     if(!connect_to_robot(m_memory->read_parameters()->system.robot_ip)){
         return false;
     }
@@ -120,7 +125,17 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
         }
     }
     if(!new_ip.has_value()){
+<<<<<<< Updated upstream
         new_ip=this->find_device("eno1");
+=======
+        std::map<std::string,std::string> ifaces = mirmi_utils::get_subnets();
+        for(const auto& i : ifaces){
+            if(i.first=="lo" || i.first=="docker0" || i.first=="tap0" || i.first=="flannel.1" || i.first.substr(0,3)=="enx" || i.first.substr(0,3)=="wlp" || i.first.substr(0,2)=="br"){
+                continue;
+            }
+            new_ip=this->find_device(i.first);
+        } 
+>>>>>>> Stashed changes
     }
     return new_ip;
 
@@ -277,6 +292,37 @@ bool PandaBody::pre_run_checks() const{
 
 bool PandaBody::is_robot(const std::string &ip){
     spdlog::trace("PandaBody::is_robot()");
+
+    //request control and activate FCI
+    /*
+    for(int count=0; count < 3; count++){
+        spdlog::debug("PandaBody::is_robot()  Requesting control, acitvating FCI (count="+std::to_string(count+1)+"/3).");
+        bool tokenForceTimeout = false;
+        try{
+            pybind11::module desk_client = pybind11::module::import("desk_client");
+            pybind11::object py_result = desk_client.attr("take_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd);
+            tokenForceTimeout = py_result.cast<bool>();
+            spdlog::warn("Please verify that you are in control of the robot: Press the Button with the cyrcle on the Pilot! "+std::to_string(tokenForceTimeout));
+            std::this_thread::sleep_for(std::chrono::milliseconds(30000));
+        }catch(const pybind11::error_already_set& e){
+            spdlog::debug(e.what());
+            spdlog::warn("Cannot take control of the robot, error when calling the python desk client.");
+            return false;
+        }
+        m_memory->set_default_parameters();
+        if(!m_memory->read_parameters()->system.spoc_in_control){
+            spdlog::warn("Cannot take control over the robot (single point of control). Check desk_client.");
+            if(count<2){
+                continue;
+            }else{
+                return false;
+            }
+        }
+        activate_fci();
+        break;
+    }
+    */
+    //check if mios can connecti to fci
     try{
         std::unique_ptr<franka::Robot> robot =  std::make_unique<franka::Robot>(ip);
         return true;
@@ -298,7 +344,7 @@ std::optional<std::string> PandaBody::find_robot(){
 
     std::map<std::string,std::string> ifaces = mirmi_utils::get_subnets();
     for(const auto& i : ifaces){
-        if(i.first=="lo" || i.first=="docker0" || i.first=="tap0"){
+        if(i.first=="lo" || i.first=="docker0" || i.first=="tap0" || i.first=="flannel.1" || i.first.substr(0,3)=="enx" || i.first.substr(0,3)=="wlp" || i.first.substr(0,2)=="br"){
             continue;
         }
         for(unsigned j=1;j<255;j++){
@@ -331,7 +377,11 @@ std::optional<std::string> PandaBody::find_device(const std::string &network_int
     std::map<std::string,std::string> ifaces = mirmi_utils::get_subnets();
     auto it_interfaces=ifaces.find(network_interface);
     if(it_interfaces==ifaces.end()){
+<<<<<<< Updated upstream
         spdlog::error("Cannot find network interface"+network_interface);
+=======
+        spdlog::error("Cannot find network interface "+network_interface);
+>>>>>>> Stashed changes
         return "";
     }
     std::string address;
