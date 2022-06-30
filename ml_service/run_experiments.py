@@ -142,13 +142,17 @@ def transfer_video_place_insertable(robot: str, insertable: str, container: str,
 def transfer_video(robot: str):
     insertables = ["key_old", "key_hatch", "key_pad2", "cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40",
                    "cylinder_50", "cylinder_60"]
-    containers = ["lock_old", "lock_hatch", "lock_pad2", "container_10", "container_20", "container_30", "container_40",
-                   "container_50", "container_60"]
-    approaches = ["lock_old_approach", "lock_hatch_approach", "lock_pad_approach2", "container_10_approach", "container_20_approach", "container_30_approach", "container_40_approach",
-                   "container_50_approach", "container_60_approach"]
-    aboves = ["lock_old_above", "lock_hatch_above", "lock_pad_above2", "container_10_above",
-                   "container_20_above", "container_30_above", "container_40_above",
-                   "container_50_above", "container_60_above"]
+    #containers = ["lock_old", "lock_hatch", "lock_pad2", "container_10", "container_20", "container_30", "container_40",
+    #               "container_50", "container_60"]
+    
+    #approaches = ["lock_old_approach", "lock_hatch_approach", "lock_pad_approach2", "container_10_approach", "container_20_approach", "container_30_approach", "container_40_approach",
+    #               "container_50_approach", "container_60_approach"]
+    #aboves = ["lock_old_above", "lock_hatch_above", "lock_pad_above2", "container_10_above",
+    #               "container_20_above", "container_30_above", "container_40_above",
+    #               "container_50_above", "container_60_above"]
+    containers = [i+"_container" for i in insertables]
+    approaches = [i+"_container_approach" for i in insertables]
+    aboves = [i+"_container_above" for i in insertables]
 
     # knowledge = None
     insertables.reverse()
@@ -211,3 +215,15 @@ def transfer_video(robot: str):
             time.sleep(1)
         input("Press Enter to continue")
         transfer_video_place_insertable(robot, insertables[i], containers[i], approaches[i], aboves[i])
+
+    def teach_video_poses(robot:str, insertable:str):
+        input("Press key to start teaching. [Pose above container, without object]")
+        call_method(robot, 12000, "teach_object", {"object": insertable+"_container_above"})
+        input("Teach where to grab object")
+        call_method(robot, 12000, "teach_object", {"object": insertable})
+        call_method(robot, 12000, "grasp", {"width":0,"speed":1,"forece":100,"epsilon_outer":1})
+        call_method(robot, 12000, "set_grasped_object", {"object": insertable})
+        input("Teach approach [with object]")
+        call_method(robot, 12000, "teach_object", {"object": insertable+"_contaienr_approach"})
+        input("Teach container [with object]")
+        call_method(robot, 12000, "teach_object", {"object": insertable+"_contaienr"})
