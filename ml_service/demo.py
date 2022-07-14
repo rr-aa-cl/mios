@@ -15,13 +15,6 @@ from knowledge_processor.knowledge_manager import KnowledgeManager
 
 from utils.taxonomy_utils import download_best_result
 
-<<<<<<< Updated upstream
-=======
-import run_experiments
-
-
-from mongodb_client.mongodb_client import MongoDBClient
->>>>>>> Stashed changes
 import random
 
 from xmlrpc.server import SimpleXMLRPCServer
@@ -33,17 +26,10 @@ from socketserver import ThreadingMixIn
 robots = [ 
             "10.14.55.109", #"collective-panda-prime", 
             #"collective-panda-001", 
-<<<<<<< HEAD
             "collective-panda-002",
             "collective-panda-003",
             "collective-panda-004", 
             "collective-panda-008"
-=======
-            "10.14.55.147",  #"collective-panda-002",
-            "10.14.55.102",  #"collective-panda-003",
-            "10.14.55.20",#"collective-panda-004", 
-            "10.14.55.21",#"collective-panda-008",
->>>>>>> 98f94debecdc8e19b652e925641a32d1736f32d6
             #"collective-panda-009"
             ]
 
