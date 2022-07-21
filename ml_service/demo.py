@@ -250,7 +250,7 @@ def run_demo_looped():
     try:
         while(True):
             demo_part_1()
-            demo_part_2_looped()
+            #demo_part_2_looped()
             demo_part_3_looped()
             demo_part_4()
     except KeyboardInterrupt:
@@ -273,7 +273,7 @@ def stop_services():
 def demo_part_1():
     #for r in robots:
     #    publisher.push_status(r,"delete knowledge")
-    grab_insertable(robots[0])
+   # grab_insertable(robots[0])
 
     km = KnowledgeManager("collective-panda-003.local")
     client = MongoDBClient("collective-panda-003.local")
@@ -398,7 +398,7 @@ def demo_part_1():
             "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
             "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
             "use_EE": True,
-            "time_max": 2.5
+            "time_max": 5
         },
         "control": {
             "control_mode": 0
@@ -901,7 +901,7 @@ def demo_part_4():
         }
         }
         t = Task(robots[0])
-        t.add_skill("fail", "GenericWiggleMotion", wiggle_context)
+        t.add_skill("success", "GenericWiggleMotion", wiggle_context)
         t.start(False)
     
         result = t.wait()
