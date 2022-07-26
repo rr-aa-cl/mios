@@ -610,7 +610,7 @@ def demo_part_3():
 
     #input("Press Enter to stop learning. part 1")
     try:
-        time.sleep(45)
+        time.sleep(60)
         # print("start knowledge sharing")
         indexes = list(range(len(learning_services)))
         random.shuffle(indexes)
@@ -622,7 +622,7 @@ def demo_part_3():
                 time.sleep(random.randint(10, 15))
                 count += 1
             else:
-                time.sleep(random.randint(15,20))
+                time.sleep(random.randint(15,25))
 
             learning_services[i].stop_service()
             while learning_services[i].is_busy() is True:

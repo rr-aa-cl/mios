@@ -71,7 +71,7 @@ def upload_result(host: str, skill_class: str, skill_instance: str, cost_functio
         "success": result["result"]["task_result"]["success"]
     }
 
-    client = MongoClient('mongodb://' + host + ':27005')
+    client = MongoClient('mongodb://' + host + ':27017')
     performance_data = client.taxonomy.performance
     skill_performance = performance_data.find_one({'name': skill_class})
     found = False
@@ -95,7 +95,7 @@ def upload_result(host: str, skill_class: str, skill_instance: str, cost_functio
 
 
 def download_result(host: str, db: str, skill_class: str, uuid: str, trial: int):
-    client = MongoClient('mongodb://' + host + ':27005')
+    client = MongoClient('mongodb://' + host + ':27017')
     result_db = client[db]
     skill_collection = result_db[skill_class]
     results = skill_collection.find_one({"meta.uuid": uuid})
@@ -118,7 +118,7 @@ def download_result(host: str, db: str, skill_class: str, uuid: str, trial: int)
 
 
 def download_result2(host: str, db: str, skill_class: str, task: str, cost_function: str):
-    client = MongoClient('mongodb://' + host + ':27005')
+    client = MongoClient('mongodb://' + host + ':27017')
     result_db = client[db]
     skill_collection = result_db[skill_class]
     results = skill_collection.find_one({"task": task, "cost_function": cost_function})
@@ -127,7 +127,7 @@ def download_result2(host: str, db: str, skill_class: str, task: str, cost_funct
 
 def copy_result(host_src: str, db_src: str, skill_class: str, uuid: str, trial: int, host_dst: str, db_dst: str,
                 task: str, cost_function: str):
-    client = MongoClient('mongodb://' + host_src + ':27005')
+    client = MongoClient('mongodb://' + host_src + ':27017')
     result_db = client[db_src]
     skill_collection = result_db[skill_class]
     results = skill_collection.find_one({"meta.uuid": uuid})
@@ -139,12 +139,12 @@ def copy_result(host_src: str, db_src: str, skill_class: str, uuid: str, trial: 
         "cost_function": cost_function
     }
 
-    client_dst = MongoClient('mongodb://' + host_dst + ':27005')
+    client_dst = MongoClient('mongodb://' + host_dst + ':27017')
     client_dst[db_dst][skill_class].insert_one(results_dst)
 
 
 def download_best_result(host: str, db: str, skill_class: str, skill_instance: str, cost_function: str):
-    client = MongoClient('mongodb://' + host + ':27005')
+    client = MongoClient('mongodb://' + host + ':27017')
     result_db = client[db]
     skill_collection = result_db[skill_class]
     results = skill_collection.find({"meta.skill_instance": skill_instance})
@@ -239,7 +239,7 @@ def dict_to_list(d):
 
 
 def create_result_table(host: str, db: str):
-    client = MongoClient('mongodb://' + host + ':27005')
+    client = MongoClient('mongodb://' + host + ':27017')
     result_db = client[db]
     performance_docs = result_db.performance.find({})
     skills = dict()
@@ -269,7 +269,7 @@ def create_result_table(host: str, db: str):
 
 
 def read_data(host: str, skill_class: str, skill_instance: str, cost_function: str):
-    client = MongoClient('mongodb://' + host + ':27005')
+    client = MongoClient('mongodb://' + host + ':27017')
     doc = client.taxonomy.performance.find_one({"name": skill_class})
     results = doc["results"][skill_instance][cost_function]
     success_rate = 0

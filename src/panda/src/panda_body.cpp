@@ -25,7 +25,6 @@ bool PandaBody::initialize(){
     m_has_arm=m_memory->read_parameters()->system.has_robot;
     m_hand=m_memory->read_parameters()->system.gripper;
     
-<<<<<<< Updated upstream
     std::optional<std::string> ip;
     //request control and activate FCI
     for(int count=0; count < 3; count++){
@@ -57,10 +56,6 @@ bool PandaBody::initialize(){
 
     }
     m_memory->get_parameters()->system.robot_ip = get_robot_ip(ip.value()).value_or("127.0.0.1");
-=======
-
-    m_memory->get_parameters()->system.robot_ip = get_robot_ip(m_memory->read_parameters()->system.robot_ip).value_or("127.0.0.1");
->>>>>>> Stashed changes
     if(!connect_to_robot(m_memory->read_parameters()->system.robot_ip)){
         return false;
     }
@@ -125,9 +120,6 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
         }
     }
     if(!new_ip.has_value()){
-<<<<<<< Updated upstream
-        new_ip=this->find_device("eno1");
-=======
         std::map<std::string,std::string> ifaces = mirmi_utils::get_subnets();
         for(const auto& i : ifaces){
             if(i.first=="lo" || i.first=="docker0" || i.first=="tap0" || i.first=="flannel.1" || i.first.substr(0,3)=="enx" || i.first.substr(0,3)=="wlp" || i.first.substr(0,2)=="br"){
@@ -135,7 +127,6 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
             }
             new_ip=this->find_device(i.first);
         } 
->>>>>>> Stashed changes
     }
     return new_ip;
 
@@ -377,11 +368,7 @@ std::optional<std::string> PandaBody::find_device(const std::string &network_int
     std::map<std::string,std::string> ifaces = mirmi_utils::get_subnets();
     auto it_interfaces=ifaces.find(network_interface);
     if(it_interfaces==ifaces.end()){
-<<<<<<< Updated upstream
-        spdlog::error("Cannot find network interface"+network_interface);
-=======
         spdlog::error("Cannot find network interface "+network_interface);
->>>>>>> Stashed changes
         return "";
     }
     std::string address;

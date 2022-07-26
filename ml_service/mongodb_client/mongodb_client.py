@@ -10,7 +10,7 @@ logger = logging.getLogger("ml_service")
 class MongoDBClient():
     """Simple Client for MongoDB interaction"""
 
-    def __init__(self, host: str='localhost', port: int=27005, max_retry: int=3):
+    def __init__(self, host: str='localhost', port: int=27017, max_retry: int=3):
         self.client = MongoClient(host, port)
         self.max_retry = max_retry
         logger.info("MongoDB is initialized at " + host + ":" + str(port))

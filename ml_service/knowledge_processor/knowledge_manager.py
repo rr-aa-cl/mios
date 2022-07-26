@@ -19,7 +19,7 @@ logger = logging.getLogger("ml_service")
 
 
 class KnowledgeManager:
-    def __init__(self, host='localhost', port=27005):
+    def __init__(self, host='localhost', port=27017):
         self.DBclient = MongoDBClient(host, port)
         self.data_db = "ml_results"
         self.knowledge_db = "local_knowledge"
