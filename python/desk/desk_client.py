@@ -10,12 +10,10 @@ import socket
 import time
 
 from mongodb_client import MongoDBClient
-<<<<<<< Updated upstream
-=======
+
 from urllib.parse import urlencode, quote_plus
 
 
->>>>>>> Stashed changes
 
 
 class FrankaAPI:
@@ -89,18 +87,11 @@ class FrankaAPI:
         return self._client.getresponse().read()
 
 
-<<<<<<< Updated upstream
-    # def unlock_brakes(self):
-    #     self._client.request('POST', '/desk/api/robot/open-brakes',
-    #                          headers={'content-type': 'application/x-www-form-urlencoded',
-    #                                   'Cookie': 'authorization=%s' % self._token})
-    #     return self._client.getresponse().read()
-
     def unlock_brakes(self):
         self._client.request('POST', '/desk/api/robot/open-brakes',
                              headers={'content-type': 'application/x-www-form-urlencoded',
                                       'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
-=======
+
     def unfold(self):
         self._client.request('POST', '/desk/api/robot/reset-errors',
                              headers={'content-type': 'application/x-www-form-urlencoded',
@@ -113,7 +104,6 @@ class FrankaAPI:
         self._client.request('POST', '/desk/api/robot/open-brakes', temp_body,
                              headers={'content-type': 'application/x-www-form-urlencoded',
                                       'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
->>>>>>> Stashed changes
         return self._client.getresponse().read()
 
     def lock_brakes(self):
@@ -319,7 +309,7 @@ def check_task(ip, name, pwd):
     try:
         with FrankaAPI(ip, name, pwd) as api:
             return api.check_timeline()
-    except (socket.error):
+    except (socket.error) as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip,', name: ', name,' and password: ', pwd)
 

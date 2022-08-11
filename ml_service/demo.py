@@ -15,6 +15,10 @@ from knowledge_processor.knowledge_manager import KnowledgeManager
 
 from utils.taxonomy_utils import download_best_result
 
+import run_experiments
+
+
+from mongodb_client.mongodb_client import MongoDBClient
 import random
 
 from xmlrpc.server import SimpleXMLRPCServer
@@ -250,7 +254,7 @@ def run_demo_looped():
     try:
         while(True):
             demo_part_1()
-            #demo_part_2_looped()
+            demo_part_2_looped()
             demo_part_3_looped()
             demo_part_4()
     except KeyboardInterrupt:
@@ -585,15 +589,15 @@ def demo_part_3():
     n_trials_experiment = 180
     agents = robots[1:]
     threads = []
-    #for a in agents:
-    #    threads.append(
-    #        Thread(target=grab_insertable, args=(a,))
-    #    )
-    #    threads[-1].start()
-    #print("grabbing insertables...")
-    #for t in threads:
-    #    t.join()
-    #print("all insertables grabbed.")
+    # for a in agents:
+    #     threads.append(
+    #         Thread(target=grab_insertable, args=(a,))
+    #     )
+    #     threads[-1].start()
+    # print("grabbing insertables...")
+    # for t in threads:
+    #     t.join()
+    # print("all insertables grabbed.")
     #input("continue")
     tag = "demo_learning"
     knowledge_1 = {"mode": "global", "type": "similar", "kb_location": robots[0], "kb_tags": [tag], "scope":[tag]}
@@ -776,12 +780,13 @@ def demo_part_3_looped():
 #        stop_task(a)
 
 def demo_part_4():
+    #publisher.push_status(robots[0],"learning")
+    #for r in robots[1:]:
+    #    publisher.push_status(r, "IdleTask")
+        
     tag = "demo_learning"
     #insertion_context = download_best_result("collective-panda-002","ml_results","insertion","generic_insertable",[])
     
-    
-
-
     call_method(robots[0], 12000, "set_grasped_object", {"object": "generic_insertable"})
     result = start_task(robots[0], "MoveToJointPose", {
         "parameters": {
@@ -906,11 +911,14 @@ def demo_part_4():
     
         result = t.wait()
     
+    #place_insertable_collective()
+    #place_insertable(robots[0])
+    #command_collective("release_object")
+
     move_collective("default_pose")
     delete_local_results(robots, "ml_results","insertion",["demo2"])
     #command_collective("home_gripper")
-
-
+    
 def stop_service_collective():
     learning_services = []
     for r in robots:
