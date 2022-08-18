@@ -49,7 +49,7 @@ bool PandaBody::initialize(){
         activate_fci();
     }
 
-    m_memory->get_parameters()->system.robot_ip = get_robot_ip(ip.value()).value_or("127.0.0.1");
+    m_memory->get_parameters()->system.robot_ip = get_robot_ip(m_memory->read_parameters()->system.robot_ip).value_or("127.0.0.1");
     if(!connect_to_robot(m_memory->read_parameters()->system.robot_ip)){
         return false;
     }
