@@ -96,7 +96,7 @@ class Database():
         logger.debug("database.stop_server")
         self.stop = True
 
-    def push_trial(self, agent: str, theta: list, cost: float, keep_size: int):
+    def push_trial(self, agent: str, theta: list, cost: float, keep_size: int = 25):
         self.knowledge_manager.push_trial(agent, theta, cost, keep_size)
 
     def request_trials(self, agent: str, n_trials: int):

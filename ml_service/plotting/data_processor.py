@@ -1,7 +1,7 @@
 from plotting.result import Result
 import numpy as np
-from typing import Tuple
 import scipy.stats
+from typing import Tuple
 
 
 class DataError(Exception):
@@ -58,13 +58,13 @@ class DataProcessor:
                 success_over_time[i].extend([success_over_time[i][-1]] * (min_length - len(success_over_time[i])))
         return success_over_time
 
-    def get_collection_of_costs(self, results: list, decreasing: bool = False, episode_length: int = 1, agent=None) -> list:
+    def get_collection_of_costs(self, results: list, decreasing: bool = False, episode_length: int = 1, agent:str=None, specification: str = "all", cost_type:str=None) -> list:
         costs = []
         for r in results:
             if decreasing is True:
-                costs.append(self.get_monotonically_decreasing_cost(r.get_cost_per_trial(episode_length, agent)))
+                costs.append(self.get_monotonically_decreasing_cost(r.get_cost_per_trial(episode_length, cost_type, agent, specification)))
             else:
-                costs.append(r.get_cost_per_trial(episode_length))
+                costs.append(r.get_cost_per_trial(episode_length, cost_type, agent, specification))
 
         n_trials = self.find_maximum_length(costs)
 
@@ -142,6 +142,28 @@ class DataProcessor:
     def get_average_cost_over_time(self, results: list, min_length: int = False, decreasing: bool = False, agent=None) -> Tuple[np.ndarray, np.ndarray]:
         cost = np.asarray(self.get_collection_of_costs_over_time(results, min_length, decreasing, agent))
         print(np.std(cost))
+        confidence = 0.95
+        interval = []
+        for i in range(cost.shape[1]):
+            se = scipy.stats.sem(cost[:, i])
+            h = se * scipy.stats.t.ppf((1 + confidence) / 2., cost.shape[0] - 1)
+            interval.append(h)
+        return np.average(cost, 0), np.asarray(interval)
+    
+    def get_average_cost_over_trials(self, results: list, decreasing: bool = False, episode_length: int = 1, agent=None, specification: str = "all") -> Tuple[np.ndarray, np.ndarray]:
+        cost = np.asarray(self.get_collection_of_costs(results, decreasing, episode_length, agent, specification=specification))
+        print(cost)
+        confidence = 0.95
+        interval = []
+        for i in range(cost.shape[1]):
+            se = scipy.stats.sem(cost[:, i])
+            h = se * scipy.stats.t.ppf((1 + confidence) / 2., cost.shape[0] - 1)
+            interval.append(h)
+        return np.average(cost, 0), np.asarray(interval)
+    
+    def get_average_cost_over_batch(self, results: list, decreasing: bool = False, episode_length: int = 1, agent=None) -> Tuple[np.ndarray, np.ndarray]:
+        cost = np.asarray(self.get_collection_of_costs(results, decreasing, episode_length, agent))
+        print(cost)
         confidence = 0.95
         interval = []
         for i in range(cost.shape[1]):
@@ -235,6 +257,13 @@ class DataProcessor:
             l.append(d[key])
         return l
 
+    def mean_confidence_interval(data, confidence=0.95):
+        a = 1.0 * np.array(data)
+        n = len(a)
+        m, se = np.mean(a), scipy.stats.sem(a)
+        h = se * scipy.stats.t.ppf((1 + confidence) / 2., n-1)
+        return m, h
+    
     def get_cost_difference_curve(self, results_1, results_2):
         cost1 = self.get_average_cost(results_1, True)
         cost2 = self.get_average_cost(results_2, True)

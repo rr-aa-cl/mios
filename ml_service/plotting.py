@@ -1,3 +1,5 @@
+from ast import Num
+from cProfile import label
 from math import isclose
 import numpy as np
 from plotting.data_acquisition import *
@@ -1830,3 +1832,72 @@ def get_mean_over_window(x: np.ndarray, width: float = 200) -> (np.ndarray, np.n
 
     print(x_mean)
     return np.asarray(x_mean), np.asarray(x_std)
+
+def plot_horizontal_learning():
+    robots = ["collective-panda-002","collective-panda-003","collective-panda-004","collective-panda-008","collective-panda-prime"]
+    p = DataProcessor()
+
+    tags = ["horizontal_learning"]
+    experiments = ["n_immigrants="+str(n) for n in [0,2,4,6,8]]
+    colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"][:len(experiments)]
+    legend_handles1 = []
+    legend_handles2 = []
+    fig1, axes1 = plt.subplots(len(robots), 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
+    fig2, axes2 = plt.subplots(len(robots), 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=2)
+    for r in range(len(robots)):
+        for e in range(len(experiments)):
+            filters = []
+            filters.extend(tags)
+            filters.append(experiments[e])
+            print("tags = ", filters)
+            results = get_multiple_experiment_data(robots[r], "insertion", filter={"meta.tags": {"$all": filters}})
+            indexes2pop = []
+            for i in range(len(results)):
+                if len(results[i].trials) < 130:
+                    #print("no complete set. ",len(results[i].trials))
+                    #print(results[i].tags)
+                    indexes2pop.append(i)
+            indexes2pop.reverse()
+            for i in indexes2pop:
+                results.pop(i)
+            print("number of experiments = ", len(results))
+            #mean_cost, confidence = p.get_average_cost(results, True, 10)
+
+            # monocally decreasing cost:
+            mean_cost, confidence = p.get_average_cost_over_trials(results, True, 1, specification="all")
+            axes1[r].fill_between(np.linspace(1, len(mean_cost), len(mean_cost)), mean_cost - confidence, mean_cost + confidence * 5, alpha=0.2, color=colors[e])
+            legend_handle1, = axes1[r].plot([i+1 for i in range(len(mean_cost))], mean_cost, linewidth=2, color=colors[e], label=experiments[e])
+            legend_handles1.append(legend_handle1)
+            #axes[r].plot([0, len(mean_cost)], [5, 5], color="black", linestyle="dashed")
+
+            axes1[r].set_ylim(0, 2.4)
+            axes1[r].set_xlim(1, len(mean_cost))
+            axes1[r].grid()
+            axes1[r].tick_params(axis="both", which="both", length=0)
+            xticks = [i*10 for i in range(1,(int(len(mean_cost)/10)) +1)]
+            xticks.insert(0,1)
+            axes1[r].set_xticks(xticks)
+            axes1[r].set_title(results[0].tags[1], y=1.0, pad=-14)
+            axes1[r].set_xlabel("Trial [1]")
+            if r == 0:
+                axes1[r].set_ylabel("Cost [1]")
+                axes1[r].legend(legend_handles1, experiments, loc='upper right')#, experiments)
+            
+            # batchwise plot:
+            mean_cost, confidence = p.get_average_cost_over_trials(results, False, 10, specification="all")
+            axes2[r].fill_between(np.linspace(1, len(mean_cost), len(mean_cost)), mean_cost - confidence, mean_cost + confidence * 5, alpha=0.2, color=colors[e])
+            legend_handle2, = axes2[r].plot([i+1 for i in range(len(mean_cost))], mean_cost, linewidth=2, color=colors[e], label=experiments[e])
+            legend_handles2.append(legend_handle2)
+            #axes[r].plot([0, len(mean_cost)], [5, 5], color="black", linestyle="dashed")
+
+            axes2[r].set_ylim(0, 2.4)
+            axes2[r].set_xlim(1, len(mean_cost))
+            axes2[r].grid()
+            axes2[r].tick_params(axis="both", which="both", length=0)
+            axes2[r].set_title(results[0].tags[1], y=1.0, pad=-14)
+            axes2[r].set_xlabel("Trial [1]")
+            if r == 0:
+                axes2[r].set_ylabel("Cost [1]")
+                axes2[r].legend(legend_handles2, experiments, loc='upper right')#, experiments)
+
+    plt.show()

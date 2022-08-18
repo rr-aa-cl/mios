@@ -424,38 +424,44 @@ class KnowledgeManager:
         logger.debug("push_trial: store trial from"+agent)
         if agent not in self.data_storage:
             self.data_storage[agent] = []
-        if len(self.data_storage[agent]) >= keep_size:
-            self.data_storage[agent].pop(0)
+        if len(self.data_storage[agent]) >= keep_size:  # delte the trial that was requested the most already
+            index = -1
+            requested_from_n_others = 0
+            for i in range(len(self.data_storage[agent])):
+                if len(self.data_storage[agent][i])>requested_from_n_others:
+                    index = i
+                    requested_from_n_others = len(self.data_storage[agent][i])
+            self.data_storage[agent].pop(index)
         self.data_storage[agent].append((theta, cost, []))
         self.data_storage[agent] = sorted(self.data_storage[agent], key=lambda t: (t[1]) )  # sort according to cost
         
-    
-    def reset_data_storage(self):
-        self.data_storage = dict()
 
     def request_trials(self, agent:str, n_trials: int):
+        print("knowledge_manager.request_trials: These agent uploaded successfull trials: ", list(self.data_storage.keys()))
         if n_trials<1:
             logger.debug("KnowledgeManager.request_trials: requested less than 1 trial -> return False")
-            return False
-
-        data_storage_keys = random.shuffle(list(self.data_storage.keys()))
+            return []
+        print("knowledge_manager.request_trials: ",agent, " is requesting ",n_trials, " trials.")
+        data_storage_keys = list(self.data_storage.keys())
+        random.shuffle(data_storage_keys)
+        if data_storage_keys == []:
+            return []
         try:
-            data_storage_keys.pop(data_storage_keys.index(agent))
+            data_storage_keys.pop(data_storage_keys.index(agent))  # neglet requesting agent
         except ValueError:
             pass 
-
         trials=[]
         n_available_trials = 0
-        for a in len(data_storage_keys):
+        for a in range(len(data_storage_keys)):
             for t in self.data_storage[data_storage_keys[a]]:
-                if agent in t[3]:
+                if agent in t[2]:
                     continue
                 n_available_trials += 1
-        
+        print("knowledge_manager.request_trials: Number of available trials: ", n_available_trials)
         if n_available_trials < n_trials:  # we dont have enougth trials -> take everything
-            for a in len(data_storage_keys):
+            for a in range(len(data_storage_keys)):
                 for t in self.data_storage[data_storage_keys[a]]:
-                    if agent not in t[3]:  # if trials wasn't already sent to agent
+                    if agent not in t[2]:  # if trials wasn't already sent to agent
                         trials.append(t[:2])
                         t[2].append(agent)  # save agent name for this trial
         else:
@@ -465,10 +471,11 @@ class KnowledgeManager:
                     index += 1
                     if index >= len(data_storage_keys): 
                         index = 0
-                    if agent not in t[3]:  # if trials wasn't already sent to agent
+                    if agent not in t[2]:  # if trials wasn't already sent to agent
                         trials.append(t[:2])
                         t[2].append(agent)  # save agent name for this trial
                         break  # break after one trial is found and recheck
+        print("knowledge_manager.request_trials: Sending ",len(trials), " trials to ", agent)
         return trials
 
     # def request_trials(self, agent:str, n_trials: int):

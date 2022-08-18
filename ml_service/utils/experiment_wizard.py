@@ -1,5 +1,7 @@
+from pydoc import doc
 from xmlrpc.client import ServerProxy
 import copy
+import time
 
 from utils.database import backup_result
 from problem_definition.problem_definition import ProblemDefinition
@@ -64,5 +66,19 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
         knowledge_tmp["scope"].append("n" + str(iter+1))
         print(knowledge_tmp)
     uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge_tmp)
-    s.wait_for_service()
+    while s.is_busy():
+        time.sleep(15)
+    
         # backup_result(agent, "collective-control-001.local", problem_def.skill_class, uuid)
+
+def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion", db: str ="ml_results", min_size: int =0):
+    for robot in robots:
+        mongo_client = MongoDBClient(robot)
+        documents = mongo_client.read(db, task_class, {"meta.tags":tags})
+        ids = []
+        for d in documents:
+            if len(d) > min_size:
+                ids.append(d["_id"])
+        
+        for id in ids:
+            mongo_client.remove(db, task_class, {"_id":id})

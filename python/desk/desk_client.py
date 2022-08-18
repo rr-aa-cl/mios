@@ -25,7 +25,7 @@ class FrankaAPI:
         self._token = False
         self._in_control = False
         self.mongodb_client = MongoDBClient()
-        self._in_control = self.mongodb_client.read("mios", "parameters", {"name":"system"})[0]["spoc_in_control"]
+        self._in_control = self.mongodb_client.read("mios", "parameters", {"name":"system"})[0].get("spoc_in_control", False)
         if self._in_control:
             self._spoc_token = self.mongodb_client.read("mios", "parameters", {"name":"system"})[0]["spoc_token"]
 
@@ -87,11 +87,6 @@ class FrankaAPI:
         return self._client.getresponse().read()
 
 
-    def unlock_brakes(self):
-        self._client.request('POST', '/desk/api/robot/open-brakes',
-                             headers={'content-type': 'application/x-www-form-urlencoded',
-                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
-
     def unfold(self):
         self._client.request('POST', '/desk/api/robot/reset-errors',
                              headers={'content-type': 'application/x-www-form-urlencoded',
@@ -144,6 +139,18 @@ class FrankaAPI:
                              headers={})
         return self._client.getresponse().read()
 
+    def in_control(self):
+        self._client.request('POST', '/desk/api/robot/reset-errors',
+                             headers={'content-type': 'application/x-www-form-urlencoded',
+                                      'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
+        response = self._client.getresponse()
+        print(response)
+        response_status = response.status
+        if response_status == 200:
+            return True
+        else:
+            return False
+
     def take_control(self):
         if not self._in_control:
             response = -1
@@ -159,7 +166,11 @@ class FrankaAPI:
                 #print("1. request:",response_content)
                 self._spoc_token = temp["token"]
                 #print(test["token"])
-                temp_body = json.dumps({'requestedBy':'franka'})  #pinakothek
+                if self.in_control():
+                    self.mongodb_client.update("mios","parameters",{"name":"system"},{"spoc_token":self._spoc_token})
+                    self.mongodb_client.update("mios","parameters",{"name":"system"},{"spoc_in_control":True})
+                    return True
+                temp_body = json.dumps({'requestedBy':self._user})  #pinakothek
                 self._client.request('POST', '/admin/api/control-token/request?force=', temp_body,
                                  headers={'content-type': 'application/json',
                                           'Cookie': 'authorization=%s' % self._token})
@@ -169,13 +180,14 @@ class FrankaAPI:
                 if response_status == 200:
                     temp = json.loads(response_content)
                     #print("2. request:",response_content)
-                    self._spoc_token = temp["token"]
                     self._client.request('GET', '/admin/api/safety',
                                     headers={'content-type': 'application/json',
-                                            'Cookie': 'authorization=%s' % self._token})
+                                            'Cookie': 'authorization=%s' % self._token,
+                                            "X-Control-Token":self._spoc_token})
                     response = self._client.getresponse()
                     response_content = response.read()
                     response_status = response.status
+                    self._spoc_token = temp["token"]  # has to be after safty request
                     if response_status == 200:
                         response = json.loads(response_content)
                         #print("3. request:",response_content)

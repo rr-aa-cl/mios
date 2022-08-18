@@ -1,7 +1,7 @@
 from definitions.templates import *
 from definitions.cost_functions import *
 from definitions.service_configs import *
-from utils.experiment_wizard import start_experiment
+from utils.experiment_wizard import *
 from utils.taxonomy_utils import *
 import os
 
@@ -10,7 +10,9 @@ def learn_task(robot:str, problem_definition: ProblemDefinition, service_config:
                n_iterations: int = 10, keep_record: bool = False, knowledge = None, wait: bool = False):
     start_experiment(robot, [robot], problem_definition, service_config, n_iterations, knowledge=knowledge, tags=tags,
                      keep_record=False, wait=wait)
-
+def learn_single_task(robot:str, problem_definition: ProblemDefinition, service_config: ServiceConfiguration, tags: list,
+               current_number_iterations: int=0, keep_record: bool = False, knowledge = None, wait: bool = False):
+    start_single_experiment(robot, [robot], problem_definition, service_config, current_number_iterations, tags, knowledge, keep_record)
 
 def test_learning():
     pd = InsertionFactory("collective-panda-001", ContactForcesMetric("insertion", {"contact_forces": 175}),
@@ -79,27 +81,36 @@ def horizontal_learning_experiment():
                 "collective-panda-004",
                 "collective-panda-008"]
     insertables = ["key_door","key_abus_e30","key_padlock","cylinder_30","HDMI_plug"]
-    containers = [k+"_contaienr" for k in insertables]
-    approaches = [k+"_contaienr_approach" for k in insertables]
-    n_immigrants_vector = [0, 2, 4, 6, 8]
+    containers = [k+"_container" for k in insertables]
+    approaches = [k+"_container_approach" for k in insertables]
+    n_immigrants_vector = [2, 4, 6, 8, 0]
     knowledge_source = {"kb_location": robots[0]}
-    tags = ["horizontal_learning"]
-    for n_immigrant in n_immigrants_vector:
-        threads = []
-        tags.append("n_immigrants="+str(n_immigrant))
-        for i in range(len(robots)):
-            pd = InsertionFactory([robots[i]], TimeMetric("insertion", {"time": 5}),
-                                {"Insertable": insertables[i], "Container": containers[i],
-                                "Approach": approaches[i]}).get_problem_definition(insertables[i])
-            sc = SVMLearner().get_configuration()
-            sc.n_immigrant = n_immigrant
-            print(sc)
-            threads.append(Thread(target=learn_task, args=(robots[i], pd, sc, tags, 10, True, knowledge_source, True)))
-            threads[-1].start()
-        for t in threads:
-            t.join()
-        tags.pop(-1)
-        
+    tags = ["horizontal_learning_2"]
+    for n_current_iter in range(10):
+        for n_immigrant in n_immigrants_vector:
+            threads = []
+            tags.append("n_immigrants="+str(n_immigrant))
+            for i in range(len(robots)):
+                pd = InsertionFactory([robots[i]], TimeMetric("insertion", {"time": 5}),
+                                    {"Insertable": insertables[i], "Container": containers[i],
+                                    "Approach": approaches[i]}).get_problem_definition(insertables[i])
+                sc = SVMLearner().get_configuration()
+                sc.n_immigrant = n_immigrant
+                print(sc.to_dict())
+                threads.append(Thread(target=learn_single_task, args=(robots[i], pd, sc, tags, int(n_current_iter), True, knowledge_source, True)))
+                threads[-1].start()
+            for t in threads:
+                t.join()
+            tags.pop(-1)
+            kb = ServerProxy("http://" + knowledge_source["kb_location"] + ":8001", allow_none=True)
+            kb.clear_memory()
+    print("\nfinished :)\n")
+
+def stop_services(robots:list =[ "collective-panda-prime","collective-panda-002","collective-panda-003","collective-panda-004","collective-panda-008"]):
+    for r in robots:
+        s = ServerProxy("http://" + r + ":8000", allow_none=True)
+        s.stop_service()
+
 
 def transfer_video_grab_insertable(robot: str, insertable: str, container: str, approach: str, above: str):
     # call_method(robot, 12000, "release_object")

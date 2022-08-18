@@ -156,10 +156,12 @@ class SVMService(BaseService):
         if self.knowledge_source is None:
             kb = None
         else:
+            print("kb_location = ",self.knowledge_source["kb_location"])
             kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
 
+        x_set_external = []
         if kb is not None:
-            new_set = kb.request_trials(self.configuration.n_immigrant)
+            new_set = kb.request_trials(self.host_name, self.configuration.n_immigrant)
             if len(new_set) > 0:
                 x_set_external = x_set[len(x_set) - len(new_set):]
                 x_set = x_set[:len(x_set) - len(new_set)]
@@ -175,10 +177,16 @@ class SVMService(BaseService):
                 for i in new_set:
                     x_set.append(i[0])
                     #costs.append((i[1],))    # we evaluate the cost on this robot again.
+        else:
+            print("no external trials")
 
-        for x in x_set:
-            uuid = self.push_trial(x)  # evalutae the trials (->engine->mios)
-            trial_uuids[uuid] = x
+        x_set.reverse() # so the external trials come first
+        for i in range(len(x_set)):
+            external = False
+            if i<len(x_set_external):  # mark the first trials as external 
+                external=True
+            uuid = self.push_trial(x_set[i], external=external)  # evalutae the trials (->engine->mios)
+            trial_uuids[uuid] = x_set[i]
 
         costs = []
         self.success_ratio = 0
@@ -191,6 +199,8 @@ class SVMService(BaseService):
             else:
                 self.success_ratio += result.q_metric.success
                 costs.append((result.q_metric.final_cost,))
+
+            print("result.q_metric.success: ",result.q_metric.success)
             if result.q_metric.success:
                 if kb is not None:
                     theta = []
@@ -366,9 +376,10 @@ class SVMService(BaseService):
             tt = 0
             if self.neglect_samples > 0:
                 print("sucess:",self.success,"\n","svm_samples:",self.svm_samples)
-            clf = SVC(C=100000)
-            clf.fit(self.svm_samples, self.success)
-            temp = np.abs(clf.decision_function(self.svm_samples))
+            if len(np.unique(self.success)) > 1:  # number of classes has to be greater than 1
+                clf = SVC(C=100000)
+                clf.fit(self.svm_samples, self.success)
+                temp = np.abs(clf.decision_function(self.svm_samples))
             # print(clf.decision_function(self.svm_samples))
 
             if tt < temp.min():
@@ -390,7 +401,7 @@ class SVMService(BaseService):
                 maxcomponents = 8
                 if maxcomponents > len(self.gmm_samples):
                     maxcomponents = len(self.gmm_samples)
-                maxcomponents = 1
+                #maxcomponents = 1
                 self.sampling_gmm = mixture.BayesianGaussianMixture(n_components=maxcomponents, covariance_type='diag', n_init=3)
                 self.sampling_gmm.fit(np.asarray(self.gmm_samples))
 

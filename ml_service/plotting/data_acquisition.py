@@ -34,7 +34,7 @@ def get_multiple_experiment_data(host: str, task_type: str, results_db: str = "m
     if filter is None:
         filter = {}
     docs = db_client.read(results_db, task_type, filter)
-
+    
     if len(docs) == 0:
         raise DataNotFoundError
 

@@ -101,7 +101,7 @@ class BaseService(metaclass=ABCMeta):
             logger.debug("BaseService::initialize: Contacting database at " + "http://" + knowledge_source[
                 "kb_location"] + ":8001")
             knowledge_type = knowledge_source.get("type", "similar")
-            if knowledge_source["mode"] == 'none':
+            if knowledge_source.get("mode",'none') == 'none':
                 self.centroid = None
             elif knowledge_source["mode"] == "specific":
                 print("#######################KNOWLEDGE############################")
@@ -143,13 +143,15 @@ class BaseService(metaclass=ABCMeta):
                         logger.error("base_service: global Database is not reachable!")
                     except ConnectionRefusedError:
                         pass
-            elif knowledge_source["parameters"]:
+            else:
+                logger.error("base_service::initialize(): Unknown knowledge mode " + str(knowledge_source["mode"]))
+
+            if "parameters" in knowledge_source:
                 self.knowledge = dict()
                 self.knowledge["parameters"] = knowledge_source["parameters"]
                 self.knowledge["meta"] = dict()
                 self.knowledge["meta"]["confidence"] = 0.04
-            else:
-                logger.error("base_service::initialize(): Unknown knowledge mode " + str(knowledge_source["mode"]))
+
 
             if self.knowledge:
                 self.centroid = []
@@ -221,7 +223,7 @@ class BaseService(metaclass=ABCMeta):
         if self.engine is not None:
             self.engine.stop()
 
-    def push_trial(self, x) -> str:
+    def push_trial(self, x, external: bool = False) -> str:
         for i in range(len(x)):
             if x[i] > 1:
                 x[i] = 1
@@ -233,7 +235,7 @@ class BaseService(metaclass=ABCMeta):
         x_real = list(self.problem_definition.domain.denormalize(x))
         return self.engine.push_trial(
             Trial(self.update_default_context(x_real), self.problem_definition.reset_instructions,
-                  self.get_theta(x_real)))
+                  self.get_theta(x_real), external=external))
 
     def wait_for_result(self, uuid: str) -> TaskResult:
         return self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations).task_result

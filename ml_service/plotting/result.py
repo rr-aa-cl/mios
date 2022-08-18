@@ -7,12 +7,18 @@ class Result:
     def __init__(self, data: dict):
         data_tmp = copy.deepcopy(data)
         self.id = copy.deepcopy(data_tmp["_id"])
+        self.uuid = data_tmp["meta"]["uuid"]
+        self.tags = data_tmp["meta"]["tags"]
+        print(self.tags)
         del data_tmp["_id"]
         n_trials = len(data_tmp) - 2
         self.trials = []
         for i in range(n_trials):
-            if data_tmp["n" + str(i+1)]["t_1"] is not None:
-                self.trials.append(data_tmp["n" + str(i+1)])
+            try:
+                if data_tmp["n" + str(i+1)]["t_1"] is not None:
+                    self.trials.append(data_tmp["n" + str(i+1)])
+            except KeyError:
+                continue
         self.meta_data = data_tmp["meta"]
         if data_tmp.get("final_results",False):
             self.total_time = data_tmp["final_results"]["time"]
@@ -26,8 +32,7 @@ class Result:
             self.knowledge = data_tmp["meta"]["init_knowledge"]["content"]["parameters"]
         else:
             self.knowledge = None
-        self.uuid = data_tmp["meta"]["uuid"]
-        self.tags = data_tmp["meta"]["tags"]
+
 
     def get_successes_per_trial(self):
         success = []
@@ -47,30 +52,85 @@ class Result:
             time.append(t["t_1"] - t_0)
         return success, time
 
-    def get_cost_per_trial(self, episode_length: int = 1, cost_type: str = None, agent: str = None) -> list:
+    def get_cost_per_trial(self, episode_length: int = 1, cost_type: str = None, agent: str = None, specification: str = "all") -> list:
+        '''
+        episode_length: if you want it batchwise enter batchsize here, else use 1
+        specification can be "all" (use all trials), "local" (for trials produced by local learning agent) or "external" (just use trials from external learning agents)
+        '''
+        print("specification = ", specification)
         cost_raw = []
         cost = []
         if len(self.trials) % episode_length != 0:
             print("Number of trials and episode length do not fit.")
             return []
         n_episodes = len(self.trials) / episode_length
-        for t in self.trials:
-            if agent is not None:
-                if agent == t["agent"]:
+        actual_episode_length = []
+        episode_size_counter = 0  # count the actual size of the episode/batch (because some trials are sorted out <-- specification)
+        for i,t in enumerate(self.trials):
+            if specification == "all":
+                if agent is not None:
+                    if agent == t["agent"]:
+                        episode_size_counter += 1
+                        if cost_type is None:
+                            cost_raw.append(t["q_metric"]["final_cost"])
+                        else:
+                            cost_raw.append(t["q_metric"]["cost"][cost_type])
+                    else:
+                        continue
+                else:
+                    episode_size_counter += 1
                     if cost_type is None:
                         cost_raw.append(t["q_metric"]["final_cost"])
                     else:
                         cost_raw.append(t["q_metric"]["cost"][cost_type])
+            elif specification == "local" and not t["external"]:
+                if agent is not None:
+                    if agent == t["agent"]:
+                        episode_size_counter += 1
+                        if cost_type is None:
+                            cost_raw.append(t["q_metric"]["final_cost"])
+                        else:
+                            cost_raw.append(t["q_metric"]["cost"][cost_type])
+                    else:
+                        continue
                 else:
-                    continue
-            else:
-                if cost_type is None:
-                    cost_raw.append(t["q_metric"]["final_cost"])
+                    episode_size_counter += 1
+                    if cost_type is None:
+                        cost_raw.append(t["q_metric"]["final_cost"])
+                    else:
+                        cost_raw.append(t["q_metric"]["cost"][cost_type])
+            elif specification == "external" and t["external"]:
+                if agent is not None:
+                    if agent == t["agent"]:
+                        episode_size_counter += 1
+                        if cost_type is None:
+                            cost_raw.append(t["q_metric"]["final_cost"])
+                        else:
+                            cost_raw.append(t["q_metric"]["cost"][cost_type])
+                    else:
+                        continue
                 else:
-                    cost_raw.append(t["q_metric"]["cost"][cost_type])
-        for i in range(int(n_episodes)):
-            cost.append(np.min(np.asarray(cost_raw[i * episode_length : i * episode_length + episode_length])))
+                    episode_size_counter += 1
+                    if cost_type is None:
+                        cost_raw.append(t["q_metric"]["final_cost"])
+                    else:
+                        cost_raw.append(t["q_metric"]["cost"][cost_type])
 
+            if (i+1) % episode_length == 0:
+                actual_episode_length.append(episode_size_counter)
+                episode_size_counter = 0
+            
+#        for i in range(int(n_episodes)):
+#            cost.append(np.min(np.asarray(cost_raw[i * episode_length : i * episode_length + episode_length])))
+        #print("actual episode length = ",actual_episode_length, "\n n_episodes ",n_episodes)
+        if len(actual_episode_length) != n_episodes:
+            print("number of episodes is not eqal to found found number of episodes")
+            print("actual_episode_lengthes ",actual_episode_length, "  given episode number of episodes", n_episodes)
+            return []
+        for i in range(len(actual_episode_length)):
+            episode_from, episode_to = sum(actual_episode_length[:i]), sum(actual_episode_length[:i+1])
+            print("from ",episode_from, "  to ",episode_to)
+            cost.append(np.min(np.asarray(cost_raw[episode_from:episode_to])))
         return cost
 
     def get_parameters(self) -> set:
