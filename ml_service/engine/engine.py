@@ -284,8 +284,6 @@ class Engine:
                 logger.error("Result was False after start_task")
                 return False, None
             result, variation_result = self._wait_for_task(agent, task_uuid)
-            variation_result.q_metric = self.problem_definition.calculate_cost(variation_result)
-            print(variation_result.q_metric.final_cost)
             if result is False:
                 logger.error("Result was False after wait_for_task")
                 return False, None
@@ -301,7 +299,8 @@ class Engine:
                 logger.warning("Received a user stop error, trial will be repeated.")
                 time.sleep(1)
                 return False, None
-
+            variation_result.q_metric = self.problem_definition.calculate_cost(variation_result)
+            print(variation_result.q_metric.final_cost)
             break
         logger.debug("Engine::_execute_task.end")
         return cnt_repeat < self.max_trial_repeats and self.keep_running is True, variation_result

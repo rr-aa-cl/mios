@@ -204,7 +204,7 @@ class BaseService(metaclass=ABCMeta):
         self.knowledge_manager.store_knowledge(self.DBclient, knowledge, self.knowledge_source["scope"])
 
         if self.knowledge_source is not None:
-            if self.knowledge_source["mode"] == "global":
+            if self.knowledge_source.get("mode", "local") == "global":
                 logger.debug("base_service.learn_task: store ml_results to global database at " + str(
                     "http://" + self.knowledge_source["kb_location"] + ":8001"))
                 with ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001", allow_none=True) as kb:

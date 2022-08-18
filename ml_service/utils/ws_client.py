@@ -62,6 +62,12 @@ async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout
             print(e)
             print("Hostname: " + hostname + ", port: " + str(port) + ", endpoint: " + endpoint)
         return None
+    except asyncio.exceptions.TimeoutError as e:  # mios is taking to long for response
+        if silent is False:
+            print("asyncio.exceptions.TimeoutError: ")
+            print(e)
+            print("Hostname: " + hostname + ", port: " + str(port) + ", endpoint: " + endpoint)
+        return None
 
 
 def call_server(hostname, port, endpoint, request, timeout):
@@ -70,7 +76,7 @@ def call_server(hostname, port, endpoint, request, timeout):
                                                             endpoint=endpoint, timeout=timeout))
 
 
-def call_method(hostname: str, port: int, method, payload=None, endpoint="mios/core", timeout=10, silent=False):
+def call_method(hostname: str, port: int, method, payload=None, endpoint="mios/core", timeout=100, silent=False):
     try:
         request = {
             "method": method,
@@ -82,9 +88,6 @@ def call_method(hostname: str, port: int, method, payload=None, endpoint="mios/c
     except socket.gaierror as e:
         print(e)
         print("Hostname: " + hostname + ", port:" + str(port) + ", endpoint: " + endpoint)
-        return None
-    except asyncio.TimeoutError as e:
-        print(e)
         return None
 
 
