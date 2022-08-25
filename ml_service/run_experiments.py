@@ -132,6 +132,7 @@ def horizontal_learning_experiment():
                                     "Approach": approaches[i]}).get_problem_definition(insertables[i])
                 sc = SVMLearner().get_configuration()
                 sc.n_immigrant = n_immigrant
+                sc.batch_synchronisation = True
                 print(sc.to_dict())
                 threads.append(Thread(target=learn_single_task, args=(robots[i], pd, sc, tags, int(n_current_iter), True, knowledge_source.to_dict(), True)))
                 threads[-1].start()

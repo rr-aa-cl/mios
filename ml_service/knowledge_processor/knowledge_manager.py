@@ -471,7 +471,7 @@ class KnowledgeManager:
                 if agent in t[2]:
                     continue
                 n_available_trials += 1
-        print("knowledge_manager.request_trials: Number of available trials: ", n_available_trials)
+        #print("knowledge_manager.request_trials: Number of available trials: ", n_available_trials)
         if n_available_trials < n_trials:  # we dont have enougth trials -> take everything
             for a in range(len(data_storage_keys)):
                 for t in self.data_storage[data_storage_keys[a]]:
@@ -586,6 +586,7 @@ class KnowledgeManager:
         for r in self.batch_count.keys():
             if self.batch_count[r] != batch:
                 wait = True
+        logger.debug(agent+" is at batch "+str(batch)+". Waiting="+str(wait))
         return wait
 
 

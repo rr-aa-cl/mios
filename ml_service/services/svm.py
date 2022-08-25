@@ -29,6 +29,7 @@ class SVMConfiguration(ServiceConfiguration):
         self.n_trials = 400
         self.batch_width = 1  # retrain after every trial
         self.n_immigrant = 0
+        self.batch_synchronisation = False
 
     def __del__(self):
         print("DESTRUCTOR")
@@ -39,7 +40,8 @@ class SVMConfiguration(ServiceConfiguration):
             "n_trials": self.n_trials,
             "target_cost": self.target_cost,
             "batch_width": self.batch_width,
-            "n_immigrant": self.n_immigrant
+            "n_immigrant": self.n_immigrant,
+            "batch_synchronisation": self.batch_synchronisation
         }
         return config
 
@@ -49,6 +51,7 @@ class SVMConfiguration(ServiceConfiguration):
         self.target_cost = config_dict["target_cost"]
         self.batch_width = config_dict["batch_width"]
         self.n_immigrant = config_dict["n_immigrant"]
+        self.batch_synchronisation = config_dict["batch_synchronisation"]
 
 
 class SVMService(BaseService):
