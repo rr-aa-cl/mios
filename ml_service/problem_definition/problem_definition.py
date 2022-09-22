@@ -87,7 +87,10 @@ class ProblemDefinition:
         return healthy
 
     def get_task_identifier(self) -> dict:
-        return {"skill_class": self.skill_class, "tags": self.tags, "identity": self.identity}
+        return {"skill_class": self.skill_class, "tags": self.tags, "identity": self.identity,"instance":self.skill_instance}
+
+    def get_identification_name(self) -> str:
+        return str(self.get_task_identifier())
 
     def to_dict(self) -> dict:
         problem_definition = {

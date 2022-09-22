@@ -1844,6 +1844,7 @@ def plot_horizontal_learning():
     legend_handles2 = []
     fig1, axes1 = plt.subplots(len(robots), 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
     fig2, axes2 = plt.subplots(len(robots), 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=2)
+    fig3, axes3 = plt.subplots(len(robots), len(experiments), num=3)
     for r in range(len(robots)):
         for e in range(len(experiments)):
             filters = []
@@ -1854,15 +1855,43 @@ def plot_horizontal_learning():
             indexes2pop = []
             for i in range(len(results)):
                 if len(results[i].trials) < 130:
-                    #print("no complete set. ",len(results[i].trials))
-                    #print(results[i].tags)
+                    print("no complete set. ",len(results[i].trials))
+                    print(results[i].tags)
                     indexes2pop.append(i)
             indexes2pop.reverse()
             for i in indexes2pop:
                 results.pop(i)
-            print("number of experiments = ", len(results))
-            #mean_cost, confidence = p.get_average_cost(results, True, 10)
+            #print("number of experiments = ", len(results))
+            #statistic:
+            statistic_dict = {}
+            for agent in robots:
+                statistic_dict[agent] = 0
+            successes = []
+            for res in results:
+                for trial in res.trials:
+                    if trial["q_metric"]["success"]:
+                        successes.append(trial)
+            for s in successes:
+                if not s["external"]:
+                    s["external"] = robots[r]
+                statistic_dict[s["external"]] += 1
+            pie_label = []
+            pie_sizes = []
+            for key in statistic_dict.keys():
+                statistic_dict[key] = statistic_dict[key] / len(successes)
+                if key == robots[r]:
+                    pie_label.append("self")
+                elif key[-3:] == "ime":
+                    pie_label.append(key[-5:])
+                else:
+                    pie_label.append(key[-3:])
+                pie_sizes.append(statistic_dict[key])
+            print(statistic_dict)
 
+            axes3[r,e].pie(pie_sizes, labels=pie_label, autopct='%1.1f%%')
+            axes3[r,e].set_title(results[0].tags[1] + "\n" + experiments[e])
+
+            
             # monocally decreasing cost:
             mean_cost, confidence = p.get_average_cost_over_trials(results, True, 1, specification="all")
             axes1[r].fill_between(np.linspace(1, len(mean_cost), len(mean_cost)), mean_cost - confidence, mean_cost + confidence * 5, alpha=0.2, color=colors[e])
@@ -1897,7 +1926,9 @@ def plot_horizontal_learning():
             if r == 0:
                 axes2[r].set_ylabel("Cost [1]")
                 axes2[r].legend(legend_handles2, experiments, loc='upper right')#, experiments)
-
+    fig3.tight_layout()
+    fig2.tight_layout()
+    fig1.tight_layout()
     plt.show()
 
 def plot_simple_learning():
