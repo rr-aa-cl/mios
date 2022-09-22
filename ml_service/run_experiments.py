@@ -106,7 +106,7 @@ def check_poses(robot_dict):
         for pose in robot_dict[robot]:
             move_joint(robot,pose+"_container_above")
             move_joint(robot,pose+"_container_approach")
-            move(robot, pose)
+            move(robot, pose,[0,0,0])
             result = call_method(robot, 12000, "grasp_object",{"object":pose})
             if not result["result"]["result"]:
                 print(pose, "not working")
@@ -114,7 +114,7 @@ def check_poses(robot_dict):
                 error.append(pose)
             else:
                 call_method(robot,12000,"release_object")
-            move(robot,pose+"_container_approach")
+            move(robot,pose+"_container_approach",[0,0,0])
             move_joint(robot,pose+"_container_above")
     return error            
 
