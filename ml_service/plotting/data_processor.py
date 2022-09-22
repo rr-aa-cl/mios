@@ -276,5 +276,4 @@ class DataProcessor:
         difference = []
         for i in range(len(cost_space)):
             difference.append(abs(curve1[i] - curve2[i]))
-
         print(difference)

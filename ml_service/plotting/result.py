@@ -57,7 +57,7 @@ class Result:
         episode_length: if you want it batchwise enter batchsize here, else use 1
         specification can be "all" (use all trials), "local" (for trials produced by local learning agent) or "external" (just use trials from external learning agents)
         '''
-        print("specification = ", specification)
+        #print("specification = ", specification)
         cost_raw = []
         cost = []
         if len(self.trials) % episode_length != 0:
