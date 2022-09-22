@@ -14,6 +14,7 @@ public:
     bool record_trajectory;
     long recording_length;
     std::string recording_name;
+    bool joint_mode;
 };
 
 class HandGuiding : public Skill{
@@ -26,6 +27,8 @@ private:
     void auxiliaries(const Percept &p) override;
 
     std::vector<std::array<double,16> > m_recording;
+    std::vector<std::array<double,7> > m_recording_joint;
+    
     long m_cnt_recording;
 
 };

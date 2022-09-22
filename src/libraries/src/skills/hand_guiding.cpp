@@ -2,6 +2,7 @@
 #include "mios/strategies/cart_compliance_strategy.hpp"
 #include "mirmi_cpp_utils/conversion/conversion.hpp"
 #include "mirmi_cpp_utils/files/files.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 
 namespace mios{
@@ -26,11 +27,14 @@ bool SkillParametersHandGuiding::from_json(const nlohmann::json &parameters){
     if(!mirmi_utils::read_json_param(parameters,"recording_name",recording_name)){
         recording_name="trajectory.txt";
     }
+    if(!mirmi_utils::read_json_param(parameters,"joint_mode",joint_mode)){
+        joint_mode=false;
+    }
     return true;
 }
 
 std::map<std::string, std::set<std::string> > SkillParametersHandGuiding::get_parameter_list(){
-    return {{"fix_dim",{}},{"use_walls",{}},{"dist_walls",{}},{"record_trajectory",{}},{"recording_length",{}},{"recording_name",{}}};
+    return {{"fix_dim",{}},{"use_walls",{}},{"dist_walls",{}},{"record_trajectory",{}},{"recording_length",{}},{"recording_name",{}},{"joint_mode",{}}};
 }
 
 HandGuiding::HandGuiding(const std::string &id, Memory *memory, Portal* portal):Skill("HandGuiding",{},id,memory,portal,{ControlMode::mCartTorque}){
@@ -44,15 +48,24 @@ HandGuiding::HandGuiding(const std::string &id, Memory *memory, Portal* portal):
     m_memory->get_parameters()->safety.virtual_cube.f_max=30;
 
     m_recording.resize(get_parameters<SkillParametersHandGuiding>()->recording_length);
+    m_recording_joint.resize(get_parameters<SkillParametersHandGuiding>()->recording_length);
     m_cnt_recording=0;
 
 }
 
 HandGuiding::~HandGuiding(){
-    std::string file = get_parameters<SkillParametersHandGuiding>()->recording_name;
+    std::shared_ptr<SkillParametersHandGuiding> skill_params = get_parameters<SkillParametersHandGuiding>();
+    std::string file = skill_params->recording_name;
     std::remove(file.c_str());
-    for(unsigned long long i=0;i<m_recording.size();i++){
-        mirmi_utils::write_data_to_file(m_recording[i],file,true);
+    if(skill_params->joint_mode){
+        for(unsigned long long i=0;i<m_recording_joint.size();i++){
+            mirmi_utils::write_data_to_file(m_recording_joint[i],file,true);
+        }
+    }
+    else{
+        for(unsigned long long i=0;i<m_recording.size();i++){
+            mirmi_utils::write_data_to_file(m_recording[i],file,true);
+        }
     }
 }
 
@@ -100,9 +113,19 @@ std::shared_ptr<ManipulationPrimitive> HandGuiding::get_initial_mp(const Percept
 }
 
 void HandGuiding::auxiliaries(const Percept &p){
-    if(get_parameters<SkillParametersHandGuiding>()->record_trajectory){
+    std::shared_ptr<SkillParametersHandGuiding> skill_params = get_parameters<SkillParametersHandGuiding>();
+    if(skill_params->record_trajectory){
         if(m_cnt_recording<m_recording.size()){
-            m_recording[m_cnt_recording]=mirmi_utils::convert_to_array<double,4,4>(p.proprioception.T_T_EE);
+            if(skill_params->joint_mode){
+                m_recording_joint[m_cnt_recording]=mirmi_utils::convert_to_array<double,7,1>(p.proprioception.q);
+            }
+            else{
+                m_recording[m_cnt_recording]=mirmi_utils::convert_to_array<double,4,4>(p.proprioception.T_T_EE);
+                if(!mirmi_utils::is_orthonormal(p.proprioception.T_T_EE.block<3,3>(0,0))){
+                    //m_recording[m_cnt_recording] = 
+                }
+            }
+            
             m_cnt_recording++;
         }
     }
