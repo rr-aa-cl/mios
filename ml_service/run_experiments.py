@@ -1,4 +1,5 @@
 from itertools import count
+from subprocess import call
 from definitions.templates import *
 from definitions.cost_functions import *
 from definitions.service_configs import *
@@ -99,6 +100,23 @@ def delete_results(robot:str, tags:list):
     client = MongoDBClient(robot)
     client.remove("ml_results", "insertion", {"meta.tags":tags})
 
+def check_poses(robot_dict):
+    error = []
+    for robot in robot_dict.keys():
+        for pose in robot_dict[robot]:
+            move_joint(robot,pose+"_container_above")
+            move_joint(robot,pose+"_container_approach")
+            move(robot, pose)
+            result = call_method(robot, 12000, "grasp_object",{"object":pose})
+            if not result["result"]["result"]:
+                print(pose, "not working")
+                call_method(robot, 12000, "home_gripper")
+                error.append(pose)
+            else:
+                call_method(robot,12000,"release_object")
+            move(robot,pose+"_container_approach")
+            move_joint(robot,pose+"_container_above")
+    return error            
 
 def collective_experiment():
     '''
@@ -106,13 +124,15 @@ def collective_experiment():
     '''
     robots = {  "collective-panda-prime": ["key_door"],
                 "collective-panda-002": ["key_abus_e30"],
-                #"collective-panda-003": ["key_padlock","key_2"],
-                #"collective-panda-004": ["cylinder_40", "cylinder_10", "cylinder_20", "cylinder_30", "cylinder_50", "cylinder_60"],
-                #"collective-panda-008": ["HDMI_plug", "key_padlock_2", "key_hatch", "key_old"]
+                "collective-panda-003": ["key_padlock","key_2"],
+                "collective-panda-004": ["cylinder_40", "cylinder_10", "cylinder_20", "cylinder_30", "cylinder_50", "cylinder_60"],
+                "collective-panda-008": ["HDMI_plug", "key_padlock_2", "key_hatch", "key_old"]
              }
 
     sc = SVMLearner(12,3,0,True,False, 0.9,True).get_configuration()
 
+    return "error: ", check_poses(robots)
+    
     tags = ["collective_learning_test"]
     for n_current_iter in range(1):
         threads = []
@@ -342,3 +362,4 @@ def transfer_video_teach(robot:str, insertable:str):
     call_method(robot, 12000, "teach_object", {"object": insertable+"_container_approach"})
     input("Teach container [with object]")
     call_method(robot, 12000, "teach_object", {"object": insertable+"_container"})        
+
