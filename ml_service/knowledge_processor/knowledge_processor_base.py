@@ -25,12 +25,14 @@ class KnowledgeProcessorBase(metaclass=ABCMeta):
             parameter_dict[key_name] = float(parameter)  # use python float because of rpc restrictions
 
         knowledge = Knowledge()
+        knowledge.parameters = parameter_dict
         knowledge.expected_cost = expected_cost
         knowledge.identity = self.task_identfier["identity"]
         knowledge.skill_class = self.task_identfier["skill_class"]
         knowledge.tags = self.task_identfier["tags"]
         knowledge.time = time.ctime()
         knowledge.confidence = self.confidence
+        print("knowledge_procsessing: wrap_informtaion: ", knowledge.to_dict())
         return knowledge.to_dict()
 
     def get_raw_data(self, d):

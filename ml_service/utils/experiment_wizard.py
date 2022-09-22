@@ -35,14 +35,14 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
         #     knowledge["scope"].append("n" + str(i+1))
         uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge)
         while s.is_busy():
-            time.sleep(10)
+            time.sleep(2)
         #if wait is True:
         #    s.wait_for_service()
         print(problem_def.tags, " finished.")
 
 
 def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, service: ServiceConfiguration, iter: int = 1,
-                     tags: list = None, knowledge: dict = None, keep_record: bool = True):
+                     tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True):
     if tags is None:
         tags = []
 
@@ -61,15 +61,16 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
         return
     s = ServerProxy("http://" + learner + ":8000", allow_none=True)
     if knowledge_tmp is not None:
-        if "scope" not in knowledge_tmp:
-            knowledge_tmp["scope"] = []
-        if "n" + str(iter) in knowledge_tmp["scope"]:
-            knowledge_tmp["scope"].remove("n" + str(iter))
-        knowledge_tmp["scope"].append("n" + str(iter+1))
+        #if "scope" not in knowledge_tmp:
+        #    knowledge_tmp["scope"] = []
+        #if "n" + str(iter) in knowledge_tmp["scope"]:
+        #    knowledge_tmp["scope"].remove("n" + str(iter))
+        #knowledge_tmp["scope"].append("n" + str(iter+1))
         print(knowledge_tmp)
     uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge_tmp)
-    while s.is_busy():
-        time.sleep(15)
+    if wait:
+        while s.is_busy():
+            time.sleep(15)
     
         # backup_result(agent, "collective-control-001.local", problem_def.skill_class, uuid)
 

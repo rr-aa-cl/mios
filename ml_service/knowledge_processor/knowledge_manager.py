@@ -121,7 +121,7 @@ class KnowledgeManager:
             logger.error("KnowledgeManager.process_knowledge: Knowledge cant be processed!")
             return None
 
-        knowledge["meta"]["knowledge_source"] = uuids
+        knowledge["meta"]["source"] = uuids
         knowledge["meta"]["prediction"] = False
 
         return knowledge
@@ -323,7 +323,7 @@ class KnowledgeManager:
 
         return knowledge.to_dict()
 
-    def get_similar_knowledge(self, task_identifier: dict, scope: dict, knowledge_db: str = "local_knowledge",
+    def get_similar_knowledge(self, task_identifier: dict, scope: list, knowledge_db: str = "local_knowledge",
                               data_db: str = "ml_results"):
         '''searches for most similar knowledge / creates knowledge from similar results'''
         collection = task_identifier["skill_class"]
@@ -346,6 +346,17 @@ class KnowledgeManager:
                      str(task_identifier) + " under scope " + str(scope) + " at " + str(collection))
 
         return knowledge.to_dict()
+
+    def get_knowledge(self, task_identifier: dict, scope: list, knowledge_db: str = "local_knowledge"):
+        '''searches for all knowledge entries and returns them in a list'''
+        
+        knowledge_filter = {"meta.skill_class": task_identifier["skill_class"],
+                            "meta.tags": scope
+        }
+        docs = self.DBclient.read(knowledge_db, task_identifier["skill_class"], knowledge_filter)
+        docs.sort(key=lambda t: abs(t["meta"]["identity"] - task_identifier["identity"]))
+        logger.debug("knoweldge_manger.get_knowledge: search for "+str(scope)+" on "+str(knowledge_db)+". Found "+str(len(docs)))
+        return docs
 
     def get_successful_trials(self, doc):
         metainfo = []
@@ -422,28 +433,29 @@ class KnowledgeManager:
             l.append(d[key])
         return l
 
-    def push_trial(self, agent: str, theta: list, cost: float, keep_size: int):
+    def push_trial(self, task: str, theta: list, cost: float, keep_size: int = 250):
         '''
-        the trial (theta) will be stored in self.data_storage under key "<agent>" {"<name of origin>": Tuple(Theta, Cost, list(already requested by agents))}
+        the trial (theta) will be stored in self.data_storage under key "<task>" {"<name of origin>": Tuple(Theta, Cost, list(already requested by agents))}
         the stored trials will not exceed keep_size
         always the trial which was used by the most agents will be poped
         '''
-        logger.debug("push_trial: store trial from"+agent)
-        if agent not in self.data_storage:
-            self.data_storage[agent] = []
-        if len(self.data_storage[agent]) >= keep_size:  # delte the trial that was requested the most already
+        logger.debug("push_trial: store trial from "+task)
+        if task not in self.data_storage:
+            self.data_storage[task] = []
+        if len(self.data_storage[task]) >= keep_size:  # delte the trial that was requested the most already
             index = -1
             requested_from_n_others = 0
-            for i in range(len(self.data_storage[agent])):  # pop the trial which was already requested by the most other agents
-                if len(self.data_storage[agent][i])>requested_from_n_others:
+            for i in range(len(self.data_storage[task])):  # pop the trial which was already requested by the most other agents
+                if len(self.data_storage[task][i])>requested_from_n_others:
                     index = i
-                    requested_from_n_others = len(self.data_storage[agent][i])
-            self.data_storage[agent].pop(index)
-        self.data_storage[agent].append((theta, cost, []))
-        self.data_storage[agent] = sorted(self.data_storage[agent], key=lambda t: (t[1]) )  # sort according to cost
+                    requested_from_n_others = len(self.data_storage[task][i])
+            logger.warning("knowlege_manager.push_trial: Delete Trial fromo Datastroage because of keep_size="+str(keep_size)+". Trial was forwarded to "+str(requested_from_n_others)+" others.")
+            self.data_storage[task].pop(index)
+        self.data_storage[task].append((theta, cost, []))
+        self.data_storage[task].sort(key=lambda t: t[1] )  # sort according to cost
         
 
-    def request_trials(self, agent:str, n_trials: int):
+    def request_trials(self, task:str, n_trials: int, similarity: dict = {}) -> list:
         '''
         self.data_storage: {"<name of origin>": Tuple(Theta, Cost, list(already requested by agents))}
         
@@ -451,45 +463,65 @@ class KnowledgeManager:
         the list will be of size n_trials
 
         '''
+        data_storage_keys = list(self.data_storage.keys())
+
         print("knowledge_manager.request_trials: These agent uploaded successfull trials: ", list(self.data_storage.keys()))
         if n_trials<1:
             logger.debug("KnowledgeManager.request_trials: requested less than 1 trial -> return False")
             return []
-        print("knowledge_manager.request_trials: ",agent, " is requesting ",n_trials, " trials.")
-        data_storage_keys = list(self.data_storage.keys())
+        print("knowledge_manager.request_trials: ", task, " is requesting ", n_trials, " trials.")
+        
         random.shuffle(data_storage_keys)
         if data_storage_keys == []:
             return []
         try:
-            data_storage_keys.pop(data_storage_keys.index(agent))  # neglet requesting agent
+            data_storage_keys.pop(data_storage_keys.index(task))  # neglet requesting agent
         except ValueError:
             pass 
+        if not similarity:  # if no similarity is given: initialise with equal probability
+            for key in data_storage_keys:
+                similarity[key] = 1  # assume good similarity at first
+        
         trials=[]
         n_available_trials = 0
         for a in range(len(data_storage_keys)):
             for t in self.data_storage[data_storage_keys[a]]:
-                if agent in t[2]:
+                if task in t[2]:  # check if trial was already forwarded to agent
                     continue
                 n_available_trials += 1
         #print("knowledge_manager.request_trials: Number of available trials: ", n_available_trials)
         if n_available_trials < n_trials:  # we dont have enougth trials -> take everything
             for a in range(len(data_storage_keys)):
                 for t in self.data_storage[data_storage_keys[a]]:
-                    if agent not in t[2]:  # if trials wasn't already sent to agent
+                    if task not in t[2]:  # if trials wasn't already sent to agent
                         trials.append((t[0],t[1],data_storage_keys[a]))
-                        t[2].append(agent)  # save agent name for this trial
+                        t[2].append(task)  # save agent name for this trial
         else:
+            for key in data_storage_keys:
+                if similarity[key] <= 0:
+                    similarity[key] = 0.01 
+                similarity[key] = similarity[key] / sum(similarity.values())  # calculate probability for picking trial from this agent (=key)
             index = 0  # go throu the data_storage and add one trial from every agent, repeat afterwards
             while(n_trials > len(trials)):
-                for t in self.data_storage[data_storage_keys[index]]:
-                    index += 1
-                    if index >= len(data_storage_keys): 
-                        index = 0
-                    if agent not in t[2]:  # if trials wasn't already sent to agent
-                        trials.append((t[0],t[1],data_storage_keys[index]))
-                        t[2].append(agent)  # save agent name for this trial
-                        break  # break after one trial is found and recheck
-        print("knowledge_manager.request_trials: Sending ",len(trials), " trials to ", agent)
+                source_agent = str(np.random.choice(data_storage_keys, p=[similarity[key] for key in data_storage_keys]))  # random pick an agent according to probability
+                for t in self.data_storage[source_agent]:
+                    if task not in t[2]:
+                        trials.append((t[0],t[1],source_agent))
+                        break
+                if index < 100:  # index = count
+                    index +=1
+                else:
+                    break
+                
+                #for t in self.data_storage[data_storage_keys[index]]:  #old (without probability)
+                #    if agent not in t[2]:  # if trials wasn't already sent to agent
+                #        trials.append((t[0],t[1], data_storage_keys[index]))
+                #        t[2].append(agent)  # save agent name for this trial
+                #        break  # break after one trial is found and re-check
+                #index += 1
+                #if index >= len(data_storage_keys): 
+                #    index = 0
+        print("knowledge_manager.request_trials: Sending ",len(trials), " trials to ", task)
         return trials
 
     # def request_trials(self, agent:str, n_trials: int):

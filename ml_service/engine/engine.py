@@ -19,7 +19,7 @@ logger = logging.getLogger("ml_service")
 
 
 class Trial:
-    def __init__(self, task_context: dict, reset_instructions: list, theta: dict, log: bool = True, external: str = False):
+    def __init__(self, task_context: dict, reset_instructions: list, theta: dict, log: bool = True, external = False):
         self.task_context = task_context
         self.reset_instructions = reset_instructions
         self.theta = theta

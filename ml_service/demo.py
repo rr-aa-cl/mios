@@ -2,6 +2,8 @@
 import time
 import socket
 from threading import Thread
+from utils.database import delete_local_knowledge
+from services.knowledge import Knowledge
 #from ml_service.utils.database import delete_local_knowledge, delete_local_results
 from utils.ws_client import *
 from utils.experiment_wizard import *
@@ -13,7 +15,7 @@ from definitions.cost_functions import *
 from definitions.service_configs import *
 from knowledge_processor.knowledge_manager import KnowledgeManager
 
-from utils.taxonomy_utils import download_best_result
+from utils.taxonomy_utils import download_best_result, download_best_result_2
 
 import run_experiments
 
@@ -132,11 +134,21 @@ def learn_insertion(robot: str, approach: str, insertable: str, container: str, 
 
 
 def learn_task(robot:str, problem_definition: ProblemDefinition, service_config: ServiceConfiguration, tags: list,
-               n_iterations: int = 10, keep_record: bool = False, knowledge = None, wait: bool = False):
-    start_experiment(robot, [robot], problem_definition, service_config, 10, knowledge=knowledge, tags=tags,
+               n_iterations: int = 1, keep_record: bool = False, knowledge = None, wait: bool = False):
+    start_experiment(robot, [robot], problem_definition, service_config, 1, knowledge=knowledge, tags=tags,
                      keep_record=False, wait=wait)
 
-def grab_insertable(robot:str, insertable = "generic_insertable"):
+def grasp_insertable_collective():
+    threads = []
+    for r in robots:
+        robot = r
+        threads.append(Thread(target=grasp_insertable, args=(robot,)))
+        threads[-1].start()
+
+    for t in threads:
+        t.join()
+
+def grasp_insertable(robot:str, insertable = "generic_insertable"):
     print("current object grasped: ",call_method(robot,12000,"get_state")["result"]['grasped_object'] )
     if call_method(robot,12000,"get_state")["result"]['grasped_object'] == 'NullObject':
         call_method(robot, 12000, "release_object")
@@ -274,15 +286,56 @@ def stop_services():
         while s.is_busy() is True:
             time.sleep(1)
 
+def preparation():
+    
+    robots = [  "collective-panda-prime",
+                "collective-panda-002",
+                "collective-panda-003",
+                "collective-panda-004",
+                "collective-panda-008"]
+    tags = ["demo_learning"]
+    delete_local_knowledge(robots, "local_knowledge", "insertion", tags)
+    insertables = ["generic_insertable","generic_insertable","generic_insertable","generic_insertable","generic_insertable"]
+    containers = ["generic_container","generic_container","generic_container","generic_container","generic_container"]
+    approaches = [k+"_approach" for k in containers]
+    n_immigrants_vector = [4]
+
+    
+    knowledge_source = Knowledge()
+    knowledge_source.kb_location = "collective-dev-001"
+    # delete results with same tags:
+    for n_immigrant in n_immigrants_vector:
+            threads = []
+            tags.append("n_immigrants="+str(n_immigrant))
+            for i in range(len(robots)):
+                pd = InsertionFactory([robots[i]], TimeMetric("insertion", {"time": 5}),
+                                    {"Insertable": insertables[i], "Container": containers[i],
+                                    "Approach": approaches[i]}).get_problem_definition(insertables[i])
+                if robots[i] == "collective-panda-008":  # increase the limits for HDMI_plug
+                    pd.domain.limits["p2_f_push_z"] = (0, 25)
+                sc = SVMLearner().get_configuration()
+                sc.n_immigrant = n_immigrant
+                sc.batch_synchronisation = False
+                print(sc.to_dict())
+                threads.append(Thread(target=learn_task, args=(robots[i], pd, sc, tags, 1, True, knowledge_source.to_dict(), True)))
+                threads[-1].start()
+            for t in threads:
+                t.join()
+            tags.pop(-1)
+            kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
+            kb.clear_memory()
+    print("\nfinished :)\n")
+
+
 def demo_part_1():
     #for r in robots:
     #    publisher.push_status(r,"delete knowledge")
    # grab_insertable(robots[0])
 
-    km = KnowledgeManager("collective-panda-003.local")
-    client = MongoDBClient("collective-panda-003.local")
-    knowledge = km.get_knowledge_by_filter(client, "ml_results", "insertion", {"meta.tags": {"$all": ["eth_plut", "contact_forces", "n7"]}})
-    print(knowledge)
+    #km = KnowledgeManager("collective-panda-003.local")
+    #client = MongoDBClient("collective-panda-003.local")
+    #knowledge = km.get_knowledge_by_filter(client, "ml_results", "insertion", {"meta.tags": {"$all": ["eth_plut", "contact_forces", "n7"]}})
+    #print(knowledge)
     #call_method(robots[0], 12000, "set_grasped_object", {"object": "generic_insertable"})
     insertion_context = {
         "skill": {
@@ -416,8 +469,8 @@ def demo_part_1():
     t.add_skill("insertion2", "TaxInsertion", insertion_context2)
     t.add_skill("extraction2", "TaxExtraction", extraction_context)
     t.add_skill("move2", "TaxMove", move_up_context)
-    #t.add_skill("insertion3", "TaxInsertion", insertion_context3)
-    #t.add_skill("extraction3", "TaxExtraction", extraction_context)
+    t.add_skill("insertion3", "TaxInsertion", insertion_context3)
+    t.add_skill("extraction3", "TaxExtraction", extraction_context)
     move_up_context2 = copy.deepcopy(move_up_context)
     move_up_context2["skill"]["p0"]["T_T_EE_g_offset"][14] = 0.2
     #t.add_skill("move3", "TaxMove", move_up_context2)
@@ -599,9 +652,13 @@ def demo_part_3():
     #     t.join()
     # print("all insertables grabbed.")
     #input("continue")
-    tag = "demo_learning"
-    knowledge_1 = {"mode": "global", "type": "similar", "kb_location": robots[0], "kb_tags": [tag], "scope":[tag]}
-    knowledge_2 = {"mode": "local", "type": "similar", "kb_location": robots[0], "kb_tags": [tag], "scope":[tag]}
+    knowledge_1 = Knowledge()
+    knowledge_1.mode = "global"
+    knowledge_1.scope = ["demo2"]  #
+    knowledge_1.kb_location = robots[0]
+    knowledge_2 = Knowledge()
+    knowledge_2.mode = "local"
+    knowledge_2.scope = "demo_learning"
     learning_services = []
     threads_1 = []
     threads_2 = []
@@ -614,31 +671,26 @@ def demo_part_3():
 
     #input("Press Enter to stop learning. part 1")
     try:
-        time.sleep(60)
-        # print("start knowledge sharing")
+        time.sleep(30)
+        print("start knowledge sharing")
         indexes = list(range(len(learning_services)))
         random.shuffle(indexes)
-        count = 0
         for i in indexes:
-            
-            # print("stopping ",i)
-            if count == 0:
-                time.sleep(random.randint(10, 15))
-                count += 1
-            else:
-                time.sleep(random.randint(15,25))
-
+            print("stopping ",i)
+            time.sleep(random.randint(10, 15))
+            print("here")
             learning_services[i].stop_service()
+            print("agent stopped",i)
             while learning_services[i].is_busy() is True:
                 time.sleep(1)
-
+                print("waiting for",i)
+            print("starting",i)
             threads_2.append(
                 Thread(target=learn_insertion, args=(agents[i], "generic_container_approach", "generic_insertable", "generic_container", ["demo2"],
                         knowledge_2 , False, )))
             threads_2[-1].start()
     except KeyboardInterrupt:
         pass
-
     # for s in learning_services:
     #     while s.is_busy() is True:
     #         time.sleep(1)
@@ -843,6 +895,7 @@ def demo_part_4():
 
     #insertion_context = download_best_result("collective-panda-002","ml_results","insertion","generic_insertable",[])
     insertion_context = download_best_result("collective-panda-prime","ml_results","insertion","generic_insertable",[])
+
     print(insertion_context)
 
     extraction_context = {

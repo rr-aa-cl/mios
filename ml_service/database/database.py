@@ -34,6 +34,7 @@ class Database():
         self.rpc_server.register_function(self.store_result, "store_result")
         self.rpc_server.register_function(self.get_similar_knowledge, "get_similar_knowledge")
         self.rpc_server.register_function(self.get_predicted_knowledge, "get_predicted_knowledge")
+        self.rpc_server.register_function(self.get_knowledge, "get_knowledge")
         self.rpc_server.register_function(self.process_knowledge, "process_knowledge")
         self.rpc_server.register_function(self.stop_server, "stop_server")
         self.rpc_server.register_function(self.push_trial, "push_trial")
@@ -91,6 +92,11 @@ class Database():
                                                                  data_db=self.results_db_name)
         return knowledge
 
+    def get_knowledge(self, task_identity: dict, scope: list):
+        """return knowledge list from multiple tasks found on database"""
+        knowledge = self.knowledge_manager.get_knowledge(task_identity, scope, knowledge_db=self.task_knowledge_db_name)
+        return knowledge
+
     def process_knowledge(self, task_identity: dict):
         """process raw ml data on the database to knowledge and saves it on the database"""
         knowledge = self.knowledge_manager.get_knowledge_by_identity(self.db_client, task_identity,
@@ -109,8 +115,8 @@ class Database():
     def push_trial(self, agent: str, theta: list, cost: float, keep_size: int = 25):
         self.knowledge_manager.push_trial(agent, theta, cost, keep_size)
 
-    def request_trials(self, agent: str, n_trials: int):
-        return self.knowledge_manager.request_trials(agent, n_trials)
+    def request_trials(self, agent: str, n_trials: int, similarity: dict):
+        return self.knowledge_manager.request_trials(agent, n_trials, similarity)
 
     def push_trial_2(self, theta, cost, task_parameter):
         self.knowledge_manager.push_trial_2(theta, cost, task_parameter)

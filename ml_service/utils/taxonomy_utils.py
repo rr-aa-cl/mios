@@ -52,12 +52,12 @@ class Task:
 
     def wait(self):
         result = wait_for_task(self.robot, self.task_uuid)
-        print("Task execution took " + str(time.time() - self.t_0) + " s.")
+        #print("Task execution took " + str(time.time() - self.t_0) + " s.")
         return result
 
     def stop(self):
         result = stop_task(self.robot)
-        print("Task execution took " + str(time.time() - self.t_0) + " s.")
+        #print("Task execution took " + str(time.time() - self.t_0) + " s.")
         return result
 
 
@@ -163,6 +163,32 @@ def download_best_result(host: str, db: str, skill_class: str, skill_instance: s
                 context["skill"][mapping_arr[3]][param_arr[0]][int(param_arr[1]) - 1] = successful_trials[0]["theta"][p]
             else:
                 context["skill"][mapping_arr[3]][param_arr[0]] = successful_trials[0]["theta"][p]
+
+    return context
+
+def download_best_result_2(host: str, db: str, skill_class: str, skill_instance: str, cost_function: str):
+    client = MongoClient('mongodb://' + host + ':27017')
+    result_db = client[db]
+    skill_collection = result_db[skill_class]
+    results = skill_collection.find({"meta.skill_instance": skill_instance})
+    trials, context_map, default_context = get_successful_trials(results)
+    best_trial = {}
+    best_cost = 10000
+    for t in trials:
+        if t["q_metric"]["final_cost"] < best_cost:
+            best_trial = t
+            best_cost = t["q_metric"]["final_cost"]
+        context = default_context["skills"][skill_class]
+
+    for p in best_trial["theta"].keys():
+        mapping = context_map[p]
+        for m in mapping:
+            mapping_arr = m.split(".")
+            param_arr = mapping_arr[-1].split("-")
+            if len(param_arr) == 2:
+                context["skill"][mapping_arr[3]][param_arr[0]][int(param_arr[1]) - 1] = best_trial["theta"][p]
+            else:
+                context["skill"][mapping_arr[3]][param_arr[0]] = best_trial["theta"][p]
 
     return context
 

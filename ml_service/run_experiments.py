@@ -2,10 +2,13 @@ from itertools import count
 from definitions.templates import *
 from definitions.cost_functions import *
 from definitions.service_configs import *
+from utils.database import delete_global_knowledge
 from utils.experiment_wizard import *
 from utils.taxonomy_utils import *
 from services.knowledge import Knowledge
+from utils.helper_functions import *
 import os
+from threading import Thread
 
 
 def learn_task(robot:str, problem_definition: ProblemDefinition, service_config: ServiceConfiguration, tags: list,
@@ -14,7 +17,7 @@ def learn_task(robot:str, problem_definition: ProblemDefinition, service_config:
                      keep_record=keep_record, wait=wait)
 def learn_single_task(robot:str, problem_definition: ProblemDefinition, service_config: ServiceConfiguration, tags: list,
                current_number_iterations: int=0, keep_record: bool = False, knowledge = None, wait: bool = False):
-    start_single_experiment(robot, [robot], problem_definition, service_config, current_number_iterations, tags, knowledge, keep_record)
+    start_single_experiment(robot, [robot], problem_definition, service_config, current_number_iterations, tags, knowledge, keep_record, wait)
 
 def test_learning():
     pd = InsertionFactory("collective-panda-001", ContactForcesMetric("insertion", {"contact_forces": 175}),
@@ -75,38 +78,65 @@ def learn_bend(robot: str, start_pose: str, goal_pose: str, bendable: str, tags:
     sc = SVMLearner().get_configuration()
     learn_task(robot, pd, sc, tags)
 
-def simple_learning():
-    knowledge = Knowledge()
-    knowledge.kb_location = "collective-panda-004"
-    knowledge.equal_start = True
-    knowledge.equal_tags = ["simple_learning2", "n10", "with_Kfold","renamed"]
-    learn_insertion("collective-panda-004","cylinder_30_container_approach","cylinder_30","cylinder_30_container", ["simple_learning2","with_Kfold"], knowledge.to_dict(), True, 20)
 
-def check():
-    client = MongoDBClient("collective-panda-004")
-    docs = client.read("ml_results","insertion",{"meta.tags":["simple_learning2"]})
-    print("found ", len(docs), " results")
-    thetas = []
-    suc = []
-    count_different_thetas = 0
-    for doc in docs:
-        for i in range(1,11):
-            if len(suc) < 11:
-                suc.append(doc["n"+str(i)]["q_metric"]["success"])
-            elif doc["n"+str(i)]["q_metric"]["success"] != suc[i-1]:
-                print("different success at n"+str(i))
-            if doc["n"+str(i)]["theta"] not in thetas:
-                count_different_thetas += 1
-                print(count_different_thetas)
-                thetas.append(doc["n"+str(i)]["theta"])
+def learn_multiple_tasks(robot: str, task_instances: list, service_config: ServiceConfiguration, knowledge_configuration: Knowledge, tags: list, iteration = 0):
+    for insertable in task_instances:
+        container = insertable+"_container"
+        approach = container+"_approach"
+        if not grasp_insertable(robot, insertable, container, approach, container+"_above"):
+            print("cannot grasp "+insertable+". Contiuing with next Task.")
+            continue
+        pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
+                                    {"Insertable": insertable, "Container": container,
+                                    "Approach": approach}).get_problem_definition(insertable)
+        if insertable == "HDMI_plug":  # increase the limits for HDMI_plug
+            pd.domain.limits["p2_f_push_z"] = (0, 25)
+        learn_single_task(robot, pd, service_config, tags, iteration, False, knowledge_configuration, True)
+        place_insertable(robot, insertable, container, approach, container+"_above")
+
 
 def delete_results(robot:str, tags:list):
     client = MongoDBClient(robot)
     client.remove("ml_results", "insertion", {"meta.tags":tags})
 
 
+def collective_experiment():
+    '''
+    ToDo: Teach other tasks (all cylinders, USB-C, Keys for 003 and 008)
+    '''
+    robots = {  "collective-panda-prime": ["key_door"],
+                "collective-panda-002": ["key_abus_e30"],
+                #"collective-panda-003": ["key_padlock","key_2"],
+                #"collective-panda-004": ["cylinder_40", "cylinder_10", "cylinder_20", "cylinder_30", "cylinder_50", "cylinder_60"],
+                #"collective-panda-008": ["HDMI_plug", "key_padlock_2", "key_hatch", "key_old"]
+             }
+
+    sc = SVMLearner(12,3,0,True,False, 0.9,True).get_configuration()
+
+    tags = ["collective_learning_test"]
+    for n_current_iter in range(1):
+        threads = []
+        print("Number of iteration: ", n_current_iter+1,"/10")
+        for robot in robots.keys():
+            knowledge_source = Knowledge()
+            knowledge_source.kb_location = "collective-dev-001"
+            knowledge_source.mode = "global"
+            knowledge_source.scope.extend(tags)
+            knowledge_source.scope.append("n"+str(n_current_iter+1))
+            knowledge_source.type = "all"
+            threads.append(Thread(target=learn_multiple_tasks, args=(robot, robots[robot], sc, knowledge_source, tags, n_current_iter)))
+            threads[-1].start()
+        for t in threads:
+            t.join()
+        kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
+        kb.clear_memory()
+    delete_experiment_data(robots,tags)
+    #delete_global_knowledge("collective-dev-001","global_knowledge_db","insertion",tags)
+
+
+
 def horizontal_learning_experiment():
-    from threading import Thread
+
     robots = [  "collective-panda-prime",
                 "collective-panda-002",
                 "collective-panda-003",
@@ -116,9 +146,10 @@ def horizontal_learning_experiment():
     containers = [k+"_container" for k in insertables]
     approaches = [k+"_container_approach" for k in insertables]
     n_immigrants_vector = [2, 4, 6, 8, 0]
-    knowledge_source = Knowledge()
-    knowledge_source.kb_location = "collective-control-001"
+
     tags = ["horizontal_learning_2"]
+    knowledge_source = Knowledge()
+    knowledge_source.kb_location = "collective-dev-001"
     # delete results with same tags:
     for r in robots:
         delete_results(r,tags)
