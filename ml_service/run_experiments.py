@@ -382,6 +382,8 @@ def transfer_video_teach(robot:str, insertable:str):
     input("Teach where to grab object")
     call_method(robot, 12000, "grasp", {"width":0,"speed":1,"force":100})
     call_method(robot, 12000, "teach_object", {"object": insertable, "teach_width":True})
+    current_finger_width = call_method(robot,12000,"get_state")["result"]["gripper_width"]
+    call_method(robot,12000,"move_gripper",{"speed":1,"force":100,"width":current_finger_width+0.005})
     #call_method(robot, 12000, "grasp", {"width":0,"speed":1,"force":100,"epsilon_outer":1})
     #call_method(robot, 12000, "set_grasped_object", {"object": insertable})
     time.sleep(1)
