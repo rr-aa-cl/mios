@@ -474,6 +474,7 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
         return true;
     }
     bool read_successful=false;
+    int count=0;
     if(wait){
         while(!read_successful){
             if(is_busy()){
@@ -494,6 +495,12 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
             }else{
                 break;
             }
+            if(count>6){
+                count = 0;
+                spdlog::debug("reconnecting to Gripper");
+                m_panda_body.connect_to_gripper(m_memory.get_parameters()->system.robot_ip);
+            }
+            count++;
         }
     }else{
         if(!m_panda_body.get_robot_state(robot_state)){

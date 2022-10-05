@@ -1950,7 +1950,7 @@ def plot_collective_experiment():
         robots = {  "collective-panda-prime": ["key_door"],
                     "collective-panda-002": ["key_abus_e30"],
                     "collective-panda-003": ["key_padlock", "key_2"], #
-                    "collective-panda-004": [ "cylinder_30","cylinder_60", "cylinder_40", "cylinder_10"], #, "cylinder_20"  ,"cylinder_50"], #  
+                    "collective-panda-004": [ "cylinder_30","cylinder_60", "cylinder_40", "cylinder_10", "cylinder_20"  ,"cylinder_50"], #, "cylinder_20"  ,"cylinder_50"], #  
                     "collective-panda-008": [ "HDMI_plug", "key_padlock_2", "key_hatch", "key_old"] # 
                 }
     # cutoff = {  "key_door":0.25,

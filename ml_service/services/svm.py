@@ -285,8 +285,8 @@ class SVMService(BaseService):
                 if i<len(x_set_external):  # mark the first trials as external (if n_immigrants is used, wont happen for request_probability)
                     external=new_set[i][2]  # agent name of trial origin
                 print("\n\n request_probability",self.request_probability)
-                if self.configuration.request_probability > 0:
-                    if random.random() < self.configuration.request_probability:
+                if self.request_probability > 0:
+                    if random.random() < self.request_probability:
                         print("requesting 1 trial with ", self.similarity_estimate, " \nfrom ",self.task_identity_name)
                         try:
                             new_trial = self.kb.request_trials(str(self.task_identity_name), 1, self.similarity_estimate)[0]  # take first Tuple of the list

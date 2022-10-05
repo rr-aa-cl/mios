@@ -530,7 +530,7 @@ class KnowledgeManager:
                     continue
                 n_available_trials += 1
         #print("knowledge_manager.request_trials: Number of available trials: ", n_available_trials)
-        if n_available_trials < n_trials:  # we dont have enougth trials -> take everything
+        if n_available_trials <= n_trials:  # we dont have enougth trials -> take everything
             for a in range(len(data_storage_keys)):
                 for t in self.data_storage[data_storage_keys[a]]:
                     if task not in t[2]:  # if trials wasn't already sent to agent
@@ -546,10 +546,11 @@ class KnowledgeManager:
             index = 0  # go throu the data_storage and add one trial from every agent, repeat afterwards
             #print(task, "similartiy= ",similarity, ",  sum= ",sum(similarity.values()))
             while(n_trials > len(trials)):
-                source_agent = str(np.random.choice(data_storage_keys, p=[similarity[key] for key in similarity.keys()]))  # random pick an agent according to probability
-                for t in self.data_storage[source_agent]:
+                source_task = str(np.random.choice(data_storage_keys, p=[similarity[key] for key in similarity.keys()]))  # random pick an agent according to probability
+                for t in self.data_storage[source_task]:
                     if task not in t[2]:
-                        trials.append((t[0],t[1],source_agent))
+                        trials.append((t[0],t[1],source_task))
+                        t[2].append(task)
                         break
                 if index < 100:  # index = count
                     index +=1

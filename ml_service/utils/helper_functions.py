@@ -103,7 +103,8 @@ def place_insertable(robot, insertable="generic_insertable", container="generic_
         result = t1.wait()
 
         if result["result"]["task_result"]["success"] == True:
-            call_method(robot, 12000, "release_object")
+            if not call_method(robot, 12000, "release_object")["result"]["result"]:
+                call_method(robot,12000,"home_gripper")
             if above is None:
                 move(robot, approach, [0,0,0.1])
             else:
@@ -145,7 +146,7 @@ def grasp_insertable(robot:str, insertable = "generic_insertable", container = "
         f = open(path_to_default_context + "move_cart.json")
         move_fine_context = json.load(f)
         move_fine_context["skill"]["objects"]["GoalPose"] = insertable
-
+        move_fine_context["skill"]["p0"]["K_x"] = [2000, 2000, 2000, 200, 200, 200]
         f = open(path_to_default_context + "extraction.json")
         extraction_context = json.load(f)
         extraction_context["skill"]["objects"]["Extractable"] = insertable
@@ -155,27 +156,30 @@ def grasp_insertable(robot:str, insertable = "generic_insertable", container = "
         t1.add_skill("move_fine", "TaxMove", move_fine_context)
         success_moving = False
         success_grasping = False
-        count = 0
+        grasp_count = 0
         while success_grasping == False:
+            count = 0
             while success_moving == False:
-                call_method(robot, 12000, "move_gripper",{"width":0.07,"speed":1,"force":100})
+                #call_method(robot, 12000, "move_gripper",{"width":0.07,"speed":1,"force":100})
                 t1.start()
                 success_moving = t1.wait()["result"]["task_result"]["success"]
                 if not success_moving:
                     print(robot, ": moving success = ", success_moving)
                 count += 1
                 if count > 2:
-                    continue
+                    break
             success_moving = False
-            result = call_method(robot,12000,"grasp",{"width":0,"force":100,"epsilon_outer":1,"speed":100}) #call_method(robot, 12000, "grasp_object", {"object": "generic_insertable"})
-            call_method(robot,12000,"set_grasped_object",{"object":insertable})
-            #call_method(robot, 12000,"set_grasped_object", {"object": "generic_insertable"})
+            result = call_method(robot, 12000, "grasp_object", {"object": insertable}) # call_method(robot,12000,"grasp",{"width":0,"force":100,"epsilon_outer":1,"speed":100}) #
+            #call_method(robot,12000,"set_grasped_object",{"object":insertable})
             success_grasping  = result["result"]["result"]
             if not success_grasping:
+                call_method(robot, 12000, "release_object")
                 print(robot, " grasping success = ", success_grasping)
-            count += 1
-            if count > 12:
-                continue
+            if grasp_count > 3:
+                break
+            grasp_count += 1
+        if not success_grasping:
+            continue
         result = False
         t2.add_skill("extraction", "TaxExtraction", extraction_context)
         t2.start()
