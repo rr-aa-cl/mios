@@ -210,7 +210,7 @@ def demo_part_3():
     for t in threads:
         t.join()
     
-    #delete_experiment_data(robots, ["demo_collective"])
+    delete_experiment_data(robots, ["demo_collective"])
 
 def demo_part_4():
     approach = robots[robots_list[0]][0] + "_container_approach"
@@ -224,53 +224,67 @@ def demo_part_4():
     f = open(path_to_default_context + "insertion.json")
     insertion_context = json.load(f)
     
-    context_map = InsertionFactory([robots_list[0]], TimeMetric("insertion", {"time": 5}), 
-                                        {"Insertable":robots[robots_list[0]][0],"Container":container,"Approach":approach}).get_mapping()
-    #insertion_context = download_knowldge_to_context("collective-dev-001.local","global_knowledge","insertion",["collective_learning","key_door"],insertion_context, context_map)
-    #print(insertion_context)
-    insertion_context["skill"]["objects"]["Container"] = container
-    insertion_context["skill"]["objects"]["Approach"] = approach
-    insertion_context["skill"]["objects"]["Insertable"] = robots[robots_list[0]][0]
-    insertion_context["skill"]["p2"]["f_push"] = [0,0,20,0,0,0]
-    f = open(path_to_default_context + "extraction.json")
-    extraction_context = json.load(f)
-    extraction_context["skill"]["objects"]["Container"] = container
-    extraction_context["skill"]["objects"]["ExtractTo"] = approach
-    extraction_context["skill"]["objects"]["Extractable"] = robots[robots_list[0]][0]
-    t = Task(robots_list[0])
-    t.add_skill("insertion", "TaxInsertion", insertion_context)
-    t.add_skill("extraction", "TaxExtraction", extraction_context)
-    t.start()
-    insertion_result = t.wait()
+    # context_map = InsertionFactory([robots_list[0]], TimeMetric("insertion", {"time": 5}), 
+    #                                     {"Insertable":robots[robots_list[0]][0],"Container":container,"Approach":approach}).get_mapping()
+    # insertion_context = download_knowldge_to_context("collective-panda-prime.local","local_knowledge","insertion",["demo_learning","key_door"], insertion_context, context_map)
+    # print(insertion_context)
 
-    # sc = SVMLearner(130,10,0,True,False, 0.9,True).get_configuration()
-    # tags = ["demo_collective"]
-    # threads = []
-    # knowledge_source = Knowledge()
-    # knowledge_source.kb_location = "collective-panda-prime"
-    # knowledge_source.mode = "global"
-    # knowledge_source.scope = []
-    # knowledge_source.scope.extend(tags)
-    # knowledge_source.type = "all"
-    # pd = InsertionFactory([robots_list[0]], TimeMetric("insertion", {"time": 5}),
-    #                                 {"Insertable": robots[robots_list[0]][0], "Container": container,
-    #                                 "Approach": approach}).get_problem_definition(robots[robots_list[0]][0])
-    # try:
-    #     learn_single_task(robots_list[0][:-6], pd, sc, tags, 0, False, knowledge_source.to_dict(), True)
-    # except KeyboardInterrupt:
-    #     pass
-    # stop_service_collective()
+    # insertion_context["skill"]["objects"]["Container"] = container
+    # insertion_context["skill"]["objects"]["Approach"] = approach
+    # insertion_context["skill"]["objects"]["Insertable"] = robots[robots_list[0]][0]
+    # insertion_context["skill"]["p2"]["f_push"] = [0,0,20,0,0,0]
+    # f = open(path_to_default_context + "extraction.json")
+    # extraction_context = json.load(f)
+    # extraction_context["skill"]["objects"]["Container"] = container
+    # extraction_context["skill"]["objects"]["ExtractTo"] = approach
+    # extraction_context["skill"]["objects"]["Extractable"] = robots[robots_list[0]][0]
+    # t = Task(robots_list[0])
+    # t.add_skill("insertion", "TaxInsertion", insertion_context)
+    # t.add_skill("extraction", "TaxExtraction", extraction_context)
+    # t.start()
+    # insertion_result = t.wait()
+
+    sc = SVMLearner(130,10,0,True,False, 0.9,True).get_configuration()
+    tags = ["demo_collective","key_door"]
+    #tags = ["demo_learning"]
+    threads = []
+    knowledge_source = Knowledge()
+    knowledge_source.kb_location = robots_list[0][:-6]  # "collective-dev-001"  #"collective-panda-prime" 
+    knowledge_source.mode = "local"
+    knowledge_source.scope = []
+    knowledge_source.scope.extend(tags)
+    knowledge_source.type = "all"
+    pd = InsertionFactory([robots_list[0]], TimeMetric("insertion", {"time": 5}),
+                                    {"Insertable": robots[robots_list[0]][0], "Container": container,
+                                    "Approach": approach}).get_problem_definition(robots[robots_list[0]][0])
+
+    if robots_list[0][-6:] == ".local":
+        learn_single_task(robots_list[0][:-6], pd, sc, tags, 0, False, knowledge_source.to_dict(), False)
+    else:
+        learn_single_task(robots_list[0], pd, sc, tags, 0, False, knowledge_source.to_dict(), False)
+    input("Press any key to stop learning.")
     
-    result = start_task(robots_list[0], "MoveToJointPose", {
+    stop_service_collective()
+
+    while call_method(robots_list[0][:-6],12000,"is_busy")["result"]["busy"]:
+        time.sleep(2)
+
+    result = start_task_and_wait(robots_list[0][:-6], "MoveToJointPose", {
             "parameters": {
                 "pose": "telepresence_init",
                 "speed": 1,
                 "acc": 2
             }
         })
-    wait_for_task(robots_list[0], result["result"]["task_uuid"])
 
-    if insertion_result["result"]["task_result"]["success"]:
+    results = MongoDBClient(robots_list[0]).read("ml_results","insertion",{"meta.tags":tags})
+    success = False
+    for r in results:
+        for i in range(1,len(r)-3 +1):
+            if r["n"+str(i)]["q_metric"]["success"]:
+                success = True
+    if success:
+        print("here4")
         wiggle_context = {
             "skill": {
                 "dX_fourier_a_a": [0, 0.05, 0.05, 0, 0, 0],
@@ -283,12 +297,11 @@ def demo_part_4():
             },
             "control": {
                 "control_mode": 0
+            }
         }
-        }
-        t = Task(robots_list[0])
+        t = Task(robots_list[0][:-6])
         t.add_skill("success", "GenericWiggleMotion", wiggle_context)
         t.start(False)
-    
         result = t.wait()
     delete_experiment_data(robots_list, ["demo_collective"])
 

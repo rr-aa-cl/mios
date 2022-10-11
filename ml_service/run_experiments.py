@@ -95,7 +95,7 @@ def learn_multiple_tasks(robot: str, task_instances: list, service_config: Servi
             service_config.finish_cost = finish_threshold[insertable]
         if insertable == "HDMI_plug":  # increase the limits for HDMI_plug
             pd.domain.limits["p2_f_push_z"] = (0, 25)
-        learn_single_task(robot, pd, service_config, tags, iteration, False, knowledge_configuration, True)
+        #learn_single_task(robot, pd, service_config, tags, iteration, False, knowledge_configuration, True)
         print("finished learning ", pd.tags, "\nplacing...")
         place_insertable(robot, insertable, container, approach, container+"_above")
 
@@ -133,11 +133,11 @@ def collective_experiment():
     '''
     ToDo: Teach other tasks (all cylinders, USB-C, Keys for 003 and 008)
     '''
-    robots = {  "collective-panda-prime": ["key_door"],
-                "collective-panda-002": ["key_abus_e30"],
-                "collective-panda-003": ["key_padlock", "key_2"], #
-                "collective-panda-004": [ "cylinder_30","cylinder_60", "cylinder_40", "cylinder_10", "cylinder_20"  ,"cylinder_50"], #  
-                "collective-panda-008": [ "HDMI_plug", "key_padlock_2", "key_hatch", "key_old"] # 
+    robots = {  #"collective-panda-prime": ["key_door"],
+                #"collective-panda-002": ["key_abus_e30"],
+                #"collective-panda-003": ["key_padlock", "key_2"], #
+                "collective-panda-004": [  "cylinder_50"], #  "cylinder_30","cylinder_60", "cylinder_40", "cylinder_10", "cylinder_20",
+                #"collective-panda-008": [ "HDMI_plug", "key_padlock_2", "key_hatch", "key_old"] # 
              }
     cutoff = {  "key_door":0.25,
                 "key_abus_e30": 0.25,
@@ -157,7 +157,7 @@ def collective_experiment():
     sc = SVMLearner(130,10,0,True,False, 0.9,True).get_configuration()
     #return check_poses(robots)
     tags = ["collective_learning_alt"]
-    for n_current_iter in range(5,11):
+    for n_current_iter in range(7,11):
     #for n_current_iter in [3]:
         #check_poses(robots)
         threads = []

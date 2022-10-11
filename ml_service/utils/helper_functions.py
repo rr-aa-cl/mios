@@ -104,7 +104,7 @@ def place_insertable(robot, insertable="generic_insertable", container="generic_
 
         insertion_context["skill"]["p2"]["search_a"]= [10, 10, 0, 2, 2, 0]
         insertion_context["skill"]["p2"]["search_f"] = [1, 0.75, 0, 1, 0.75, 0]
-        if insertable == "HDMI_plug":
+        if insertable == "HDMI_plug" or insertable == "cylinder_50":
             insertion_context["skill"]["p2"]["f_push"] = [0, 0, 25, 0, 0, 0]
         elif insertable == "cylinder_10" or insertable == "cylinder_20" or insertable == "cylinder_30" or insertable[:3] == "key":
             insertion_context["skill"]["p2"]["f_push"] = [0, 0, 15, 0, 0, 0]

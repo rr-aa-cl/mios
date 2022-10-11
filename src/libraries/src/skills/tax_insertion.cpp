@@ -242,6 +242,7 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_wiggle_mp(const Perc
 //    Eigen::Matrix<double,6,1> f_push;
 //    f_push<<0,0,skill_params->p2.f_push,0,0,0;
     mp->get_strategy<FFStrategy>("push")->set_TF_F_ff(skill_params->p2.f_push,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+    mp->get_strategy<FFStrategy>("push")->set_frame(true);
     Eigen::Matrix<double,6,1> K_x=skill_params->p2.K_x;
     K_x(2)=0;
     Eigen::Matrix<double,6,1> xi_x=m_memory->read_parameters()->control.cart_imp.xi_x;

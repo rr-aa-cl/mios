@@ -1,6 +1,7 @@
 #!/usr/bin/python3 -u
 import time
 from pymongo import MongoClient
+from mongodb_client.mongodb_client import MongoDBClient
 from utils.ws_client import *
 # from udp_client import *
 import logging
@@ -95,10 +96,12 @@ def upload_result(host: str, skill_class: str, skill_instance: str, cost_functio
 
 
 def download_knowldge_to_context(host: str, db: str, skill_class: str, tags: list, context, context_map):
-    client = MongoClient('mongodb://' + host + ':27017')
-    result_db = client[db]
-    skill_collection = result_db[skill_class]
-    results = skill_collection.find({"meta.tags": {"$all": tags}})
+    client = MongoDBClient(host)
+    # result_db = client[db]
+    # skill_collection = result_db[skill_class]
+    # results = skill_collection.find({"meta.tags": {"$all": tags}})
+    results = client.read(db,skill_class,{"meta.tags":tags})
+    print(len(results),"\n",results)
     theta = results[0]["parameters"]
     
     for p in theta.keys():
