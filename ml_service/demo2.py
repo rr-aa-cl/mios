@@ -15,11 +15,11 @@ from definitions.cost_functions import *
 from run_experiments import learn_single_task
 from utils.taxonomy_utils import download_best_result_tags, download_best_result, download_knowldge_to_context
 
-robots = {  "collective-panda-prime.local": ["key_door"],
-            "collective-panda-002.local": ["key_abus_e30"],
-            "collective-panda-003.local": ["key_padlock"],
-            "collective-panda-004.local": ["cylinder_40"],
-            "collective-panda-008.local": ["HDMI_plug"]}
+robots = {  "collective-panda-prime": ["key_door"],
+            "collective-panda-002": ["key_abus_e30"],
+            "collective-panda-003": ["key_padlock"],
+            "collective-panda-004": ["cylinder_40"],
+            "collective-panda-008": ["HDMI_plug"]}
 path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
 
 robots_list = list(robots.keys())
@@ -198,7 +198,7 @@ def demo_part_3():
     knowledge_source.type = "all"
     try:
         for robot in robots.keys():
-            if robot[:-6] == "collective-panda-prime":
+            if robot == "collective-panda-prime":
                 continue
             threads.append(Thread(target=learn_multiple_tasks, args=(robot, robots[robot], sc, knowledge_source.to_dict(), tags, 0, )))
             threads[-1].start()
@@ -249,7 +249,7 @@ def demo_part_4():
     #tags = ["demo_learning"]
     threads = []
     knowledge_source = Knowledge()
-    knowledge_source.kb_location = robots_list[0][:-6]  # "collective-dev-001"  #"collective-panda-prime" 
+    knowledge_source.kb_location = robots_list[0]  # "collective-dev-001"  #"collective-panda-prime" 
     knowledge_source.mode = "local"
     knowledge_source.scope = []
     knowledge_source.scope.extend(tags)
@@ -258,18 +258,15 @@ def demo_part_4():
                                     {"Insertable": robots[robots_list[0]][0], "Container": container,
                                     "Approach": approach}).get_problem_definition(robots[robots_list[0]][0])
 
-    if robots_list[0][-6:] == ".local":
-        learn_single_task(robots_list[0][:-6], pd, sc, tags, 0, False, knowledge_source.to_dict(), False)
-    else:
-        learn_single_task(robots_list[0], pd, sc, tags, 0, False, knowledge_source.to_dict(), False)
+    learn_single_task(robots_list[0], pd, sc, tags, 0, False, knowledge_source.to_dict(), False)
     input("Press any key to stop learning.")
     
     stop_service_collective()
 
-    while call_method(robots_list[0][:-6],12000,"is_busy")["result"]["busy"]:
+    while call_method(robots_list[0],12000,"is_busy")["result"]["busy"]:
         time.sleep(2)
 
-    result = start_task_and_wait(robots_list[0][:-6], "MoveToJointPose", {
+    result = start_task_and_wait(robots_list[0], "MoveToJointPose", {
             "parameters": {
                 "pose": "telepresence_init",
                 "speed": 1,
@@ -299,7 +296,7 @@ def demo_part_4():
                 "control_mode": 0
             }
         }
-        t = Task(robots_list[0][:-6])
+        t = Task(robots_list[0])
         t.add_skill("success", "GenericWiggleMotion", wiggle_context)
         t.start(False)
         result = t.wait()
@@ -359,10 +356,7 @@ def learn_multiple_tasks(robot: str, task_instances: list, service_config: Servi
             service_config.finish_cost = finish_threshold[insertable]
         if insertable == "HDMI_plug":  # increase the limits for HDMI_plug
             pd.domain.limits["p2_f_push_z"] = (0, 25)
-        if robot[-6:] == ".local":
-            learn_single_task(robot[:-6], pd, service_config, tags, iteration, False, knowledge_configuration, True)
-        else:
-            learn_single_task(robot, pd, service_config, tags, iteration, False, knowledge_configuration, True)
+        learn_single_task(robot, pd, service_config, tags, iteration, False, knowledge_configuration, True)
         print("finished learning ", pd.tags, "\nplacing...")
         place_insertable(robot, insertable, container, approach, container+"_above")
 
