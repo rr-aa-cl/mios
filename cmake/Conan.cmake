@@ -25,8 +25,8 @@ conan_cmake_run(
 #    CONAN_COMMAND
 #    ${CONAN_CMD}
     CMAKE_TARGETS
-#    BUILD
-#    missing
+    BUILD
+    missing
     )
 
 #include(${PROJECT_BINARY_DIR}/conanbuildinfo.cmake)
