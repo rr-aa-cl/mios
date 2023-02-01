@@ -27,7 +27,7 @@ def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion
         for id in ids:
             mongo_client.remove(db, task_class, {"_id":id})
 
-def move(robot, location, offset):
+def move(robot, location, offset, port=12000, wait = True):
     context = {
         "skill": {
             "p0":{
@@ -46,29 +46,33 @@ def move(robot, location, offset):
             "control_mode": 2
         }
     }
-    t = Task(robot)
+    t = Task(robot, port=port)
     t.add_skill("move", "TaxMove", context)
     t.start()
-    result = t.wait()
-    return result
+    if wait:
+        return t.wait()
+
     #print("Result: " + str(result))
 
-def move_joint(robot, location):
+def move_joint(robot, location,port=12000, wait=True):
     path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
-    t0 = Task(robot)
     f = open(path_to_default_context + "move_joint.json")
     move_context = json.load(f)
     move_context["skill"]["objects"]["goal_pose"] = location
     move_context["skill"]["time_max"] = 10
+    t0 = Task(robot, port=port)
     t0.add_skill("move", "MoveToPoseJoint", move_context)
     t0.start()
-    result = t0.wait()
+    if wait:
+        result = t0.wait()
 
-def check_location(robot, pose_name):
+def check_location(robot, pose_name, port=12000):
     client = MongoDBClient(robot)
     pose_object = client.read("mios","environment",{"name":pose_name})[0]
+    if not pose_object:
+        return False
     cart_coordinates_g = pose_object["O_T_OB"][12:15]
-    cart_coordinates_current = call_method(robot,12000,"get_state")["result"]["O_T_EE"][12:15]
+    cart_coordinates_current = call_method(robot,port,"get_state")["result"]["O_T_EE"][12:15]
     cart_coordinates_current = np.array(cart_coordinates_current) + np.array(pose_object["OB_T_TCP"][12:15])
     distance = np.sqrt(np.sum((cart_coordinates_current - cart_coordinates_g)**2, axis=0))
     #print(distance)
@@ -84,19 +88,19 @@ def place_current_insertable(robot):
         place_insertable(robot, current_object, current_object+"_container", current_object+"_container_approach", current_object+"_container_above")
 
 
-def place_insertable(robot, insertable="generic_insertable", container="generic_container", approach="generic_container_approach", above = None):
+def place_insertable(robot, insertable="generic_insertable", container="generic_container", approach="generic_container_approach", above = None, port=12000):
     count = 0
     while True:
-        if call_method(robot,12000,"get_state")["result"]['grasped_object'] == 'NullObject':
-            call_method(robot, 12000, "set_grasped_object", {"object": insertable})
+        if call_method(robot,port,"get_state")["result"]['grasped_object'] == 'NullObject':
+            call_method(robot, port, "set_grasped_object", {"object": insertable})
         path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
-        t0 = Task(robot)
-        t1 = Task(robot)
-        t2 = Task(robot)
+        t0 = Task(robot, port=port)
+        t1 = Task(robot, port=port)
+        t2 = Task(robot, port=port)
         if above is None:
-            move(robot, approach, [0,0,0.1])
+            move(robot, approach, [0,0,0.1],port=port)
         else:
-            move_joint(robot, above)
+            move_joint(robot, above, port=port)
         f = open(path_to_default_context + "insertion.json")
         insertion_context = json.load(f)
         insertion_context["skill"]["objects"]["Insertable"] = insertable
@@ -131,49 +135,49 @@ def place_insertable(robot, insertable="generic_insertable", container="generic_
         result = t1.wait()
 
         if result["result"]["task_result"]["success"] == True:
-            if not call_method(robot, 12000, "release_object")["result"]["result"]:
-                call_method(robot,12000,"home_gripper")
+            if not call_method(robot, port, "release_object")["result"]["result"]:
+                call_method(robot,port,"home_gripper")
                 time.sleep(10)
             if above is None:
-                move(robot, approach, [0,0,0.1])
+                move(robot, approach, [0,0,0.1], port=port)
             else:
-                move_joint(robot, above)
+                move_joint(robot, above, port=port)
             #call_method(robot, 12000, "home_gripper")
             return True
         else:
             if check_location(robot, insertable):
-                if not call_method(robot, 12000, "release_object")["result"]["result"]:
-                    call_method(robot,12000,"home_gripper")
+                if not call_method(robot, port, "release_object")["result"]["result"]:
+                    call_method(robot,port,"home_gripper")
                     time.sleep(10)
                 if above is None:
-                    move(robot, approach, [0,0,0.1])
+                    move(robot, approach, [0,0,0.1], port=port)
                 else:
-                    move_joint(robot, above)
+                    move_joint(robot, above, port=port)
                 #call_method(robot, 12000, "home_gripper")
                 return True
         if count > 10:
             break
     return False
 
-def grasp_insertable(robot:str, insertable = "generic_insertable", container = "generic_container", approach = "generic_container_approach", above = None):
+def grasp_insertable(robot:str, insertable = "generic_insertable", container = "generic_container", approach = "generic_container_approach", above = None, port=12000):
     count = 0
     while True:
         #print("current object grasped: ", call_method(robot,12000,"get_state")["result"]['grasped_object'] )
-        if call_method(robot,12000,"get_state")["result"]['grasped_object'] == 'NullObject':
-            call_method(robot, 12000, "release_object")
+        if call_method(robot,port,"get_state")["result"]['grasped_object'] == 'NullObject':
+            call_method(robot, port, "release_object")
         else:
             print("I am already grasping something")
-            call_method(robot, 12000, "release_object")
+            call_method(robot, port, "release_object")
             #return 0
         if above is None:
             move(robot, approach, [0,0,0.1])
         else:
             move_joint(robot, above)
         #call_method(robot,12000,"move_gripper",{"width":0.06,"force":100,"epsilon_outer":1,"speed":100})
-        call_method(robot,12000,"home_gripper")
+        call_method(robot,port,"home_gripper")
         path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
-        t1 = Task(robot)
-        t2 = Task(robot)
+        t1 = Task(robot, port=port)
+        t2 = Task(robot, port=port)
         f = open(path_to_default_context + "move_cart.json")
         move_fine_context = json.load(f)
         move_fine_context["skill"]["objects"]["GoalPose"] = insertable
@@ -201,11 +205,11 @@ def grasp_insertable(robot:str, insertable = "generic_insertable", container = "
                 if count > 2:
                     break
             success_moving = False
-            result = call_method(robot, 12000, "grasp_object", {"object": insertable}) # call_method(robot,12000,"grasp",{"width":0,"force":100,"epsilon_outer":1,"speed":100}) #
+            result = call_method(robot, port, "grasp_object", {"object": insertable}) # call_method(robot,12000,"grasp",{"width":0,"force":100,"epsilon_outer":1,"speed":100}) #
             #call_method(robot,12000,"set_grasped_object",{"object":insertable})
             success_grasping  = result["result"]["result"]
             if not success_grasping:
-                call_method(robot, 12000, "move_gripper",{"width":1,"speed":1,"force":50})
+                call_method(robot, port, "move_gripper",{"width":1,"speed":1,"force":50})
                 print(robot, " grasping success for ", insertable," = ", success_grasping)
             if grasp_count > 3:
                 break
@@ -217,14 +221,14 @@ def grasp_insertable(robot:str, insertable = "generic_insertable", container = "
         t2.start()
         result = t2.wait()["result"]["result"]
         if not result:
-            if check_location(robot, approach) and call_method(robot,12000,"get_state")["result"]["grasped_object"] == insertable:
+            if check_location(robot, approach, port=port) and call_method(robot,port,"get_state")["result"]["grasped_object"] == insertable:
                 return True
-            grasping_result = call_method(robot,12000,"grasp",{"width":0,"force":100,"epsilon_outer":1,"speed":100})["result"]["result"] #call_method(robot, 12000, "grasp_object", {"object": "generic_insertable"})
-            call_method(robot,12000,"set_grasped_object",{"object":insertable})
+            grasping_result = call_method(robot,port,"grasp",{"width":0,"force":100,"epsilon_outer":1,"speed":100})["result"]["result"] #call_method(robot, 12000, "grasp_object", {"object": "generic_insertable"})
+            call_method(robot,port,"set_grasped_object",{"object":insertable})
             if not grasping_result:
-                call_method(robot,12000,"home_gripper")
+                call_method(robot,port,"home_gripper")
                 move(robot, "EndEffector", [0,0,0.03])
-                call_method(robot,12000,"grasp",{"width":0,"force":100,"epsilon_outer":1,"speed":100})["result"]["result"]
+                call_method(robot,port,"grasp",{"width":0,"force":100,"epsilon_outer":1,"speed":100})["result"]["result"]
                 move(robot,"EndEffector",[0,0,-0.03])
         else:
             return True
