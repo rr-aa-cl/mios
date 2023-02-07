@@ -20,7 +20,7 @@ class Core;
 
 class Memory{
 public:
-    Memory(unsigned database_port);
+    Memory(unsigned database_port, std::string robot_arm);
     Memory(const Memory&) = delete;
     void operator=(Memory const&) = delete;
     bool is_ok() const;
@@ -63,6 +63,7 @@ public:
     bool get_task_data(const std::string uuid,TaskData& data) const;
     Object *get_object(const std::string& name);
     const Event* get_event(const std::string& name);
+    std::string m_robot_arm;
 
 private:
     LTMemory m_lt_memory;

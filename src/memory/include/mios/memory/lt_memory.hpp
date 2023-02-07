@@ -20,7 +20,7 @@ class SkillLibrary;
 
 class LTMemory{
 public:
-    LTMemory(unsigned database_port);
+    LTMemory(unsigned database_port, std::string robot_arm);
     bool is_ok() const;
     void link_to_st_memory(STMemory* st_memory);
     void link_to_skill_library(SkillLibrary* skill_library);

@@ -25,7 +25,7 @@ class Memory;
 class PandaBody{
 public:
     PandaBody(Memory* memory);
-    bool initialize();
+    bool initialize(std::string robot_arm);
     bool connect_to_robot(const std::optional<std::string> &ip);
     bool connect_to_gripper(const std::optional<std::string> &ip);
     void disconnect_from_robot();

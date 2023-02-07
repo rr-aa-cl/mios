@@ -3,10 +3,11 @@
 
 namespace mios {
 
-Memory::Memory(unsigned database_port):m_lt_memory(database_port){
+Memory::Memory(unsigned database_port, std::string robot_arm):m_lt_memory(database_port, robot_arm){
     spdlog::trace("Memory::Memory");
     m_st_memory.link_to_lt_memory(&m_lt_memory);
     m_lt_memory.link_to_st_memory(&m_st_memory);
+    m_robot_arm = robot_arm;
 }
 
 bool Memory::is_ok() const{

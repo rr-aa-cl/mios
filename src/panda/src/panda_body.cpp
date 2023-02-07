@@ -20,10 +20,12 @@ m_memory(memory){
     m_robot_state.O_T_EE={1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 }
 
-bool PandaBody::initialize(){
+bool PandaBody::initialize(std::string robot_arm){
     spdlog::trace("PandaBody::initialize()");
     m_has_arm=m_memory->read_parameters()->system.has_robot;
     m_hand=m_memory->read_parameters()->system.gripper;
+    // print(m_robot_arm);
+    std::string ip = (robot_arm == "Left")? "192.168.3.100" : "192.168.4.100";
     m_memory->get_parameters()->system.robot_ip = get_robot_ip(m_memory->read_parameters()->system.robot_ip).value_or("127.0.0.1");
 
     if(!connect_to_robot(m_memory->read_parameters()->system.robot_ip)){
