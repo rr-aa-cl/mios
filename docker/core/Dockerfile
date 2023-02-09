@@ -14,14 +14,16 @@ RUN apt-get install -y fping
 COPY mios/ /mios/
 COPY dependencies/ /dependencies/
 
-EXPOSE 12000 12001 12002 8888 8889
+EXPOSE 12000 12001 12002 8888 8889 
 
 ARG default_verbosity_value=info
 ARG default_database_port_value=27017
 ARG default_robot_config_value=3
+ARG default_robot_arm_value=left
 ENV verbosity=$default_verbosity_value
 ENV database_port=$default_database_port_value
 ENV robot_config=$default_robot_config_value
+ENV robot_arm=$default_robot_arm_value
 
 WORKDIR mios/bin
-CMD ["sh", "-c", "./mios.sh --verbosity=${verbosity} --database_port=${database_port} --robot_config=${robot_config}"]
+CMD ["sh", "-c", "./mios.sh --verbosity=${verbosity} --database_port=${database_port} --robot_config=${robot_config} --robot_arm=${robot_arm}"]
