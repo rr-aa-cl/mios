@@ -286,7 +286,7 @@ bool PandaBody::is_robot(const std::string &ip){
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object in_control = desk_client.attr("in_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd);
-        if !in_control.cast<bool>(){
+        if(!in_control.cast<bool>()){
             pybind11::object py_result = desk_client.attr("take_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd);
             bool wait = py_result.cast<bool>();
             if(wait){
