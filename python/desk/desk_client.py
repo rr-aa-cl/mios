@@ -26,10 +26,8 @@ class FrankaAPI:
         self._in_control = False
         self.db = db
         self.mongodb_client = MongoDBClient()
-        print("desk_client intit")
         self._in_control = self.mongodb_client.read(self.db, "parameters", {"name":"system"})[0].get("spoc_in_control", False)
         self._spoc_token = self.mongodb_client.read(self.db, "parameters", {"name":"system"})[0].get("spoc_token","")
-        print("finished init")
 
 
     def __enter__(self):
@@ -160,7 +158,6 @@ class FrankaAPI:
         response = self._client.getresponse()
         response_content = response.read()
         response_status = response.status
-        print("till here!!!!!!")
         if response_status == 200:
             self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_token":self._spoc_token})
             self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_in_control":True})
@@ -188,7 +185,7 @@ class FrankaAPI:
                 if self.in_control():
                     self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_token":self._spoc_token})
                     self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_in_control":True})
-                    return int(1)
+                    return True
                 else:
                     print("new spoc token doesn't work. Try to force control.")
 
@@ -218,11 +215,12 @@ class FrankaAPI:
                         self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_token":self._spoc_token})
                         self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_in_control":True})
                         print("verify your access to the robot: Press the O-Button!\n You have ",response," Seconds!")
-                        return int(response)
+                        time.sleep(response)
+                        return True
 
-            return int(-1)
+            return False
         print("Already in control! spoc token: ",self._spoc_token)
-        return int(1)
+        return True
 
     def release_control(self):
         if self._in_control:
