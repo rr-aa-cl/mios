@@ -317,7 +317,7 @@ bool PandaBody::is_robot(const std::string &ip){
         return false;
     }
     if(!activate_fci()){
-        spdlog::debug("PandaBody: Cannot activate FCI "+ip);
+        spdlog::debug("PandaBody: Cannot activate FCI "+ip+" spoc_token:"+m_memory->read_parameters()->system.spoc_token);
         return false;   
     }
 /*
