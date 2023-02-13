@@ -255,7 +255,7 @@ class FrankaAPI:
             print("spoc token: ",self._spoc_token)
             return True
         else:
-            print("bad http response! spoc token: ",self._spoc_token)
+            print("bad http response!",response_status," spoc token: ",self._spoc_token)
             return False
 
     def deactivate_fci(self):
