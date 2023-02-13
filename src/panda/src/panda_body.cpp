@@ -97,7 +97,7 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
         if(mirmi_utils::ping(last_ip.value().c_str())==false){
             spdlog::warn("IP was set to "+last_ip.value()+" but no device has been found. Searching for new connection...");
         }else{
-            if(is_robot(new_ip.value())){
+            if(is_robot(last_ip.value_or("127.0.0.1"))){
                 new_ip=last_ip;
                 return new_ip;
             }
