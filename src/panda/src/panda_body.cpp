@@ -281,7 +281,7 @@ bool PandaBody::pre_run_checks() const{
 }
 
 bool PandaBody::is_robot(const std::string &ip){
-    spdlog::trace("PandaBody::is_robot()"+ip+m_memory->get_parameters()->system.desk_user+ m_memory->get_parameters()->system.desk_pwd);
+    spdlog::trace("PandaBody::is_robot()"+ip+m_memory->get_parameters()->system.desk_user+ m_memory->get_parameters()->system.desk_pwd+m_memory->m_robot_arm);
     //int tokenForceTimeout = 0;
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
