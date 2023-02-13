@@ -101,7 +101,7 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
                 if(is_robot(last_ip.value_or("127.0.0.1"))){
                     new_ip=last_ip;
                     spdlog::debug("PandaBody: found robot at"+new_ip.value()+" unlocking...");
-                    unlock_brakes(new_ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd)
+                    unlock_brakes(new_ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd);
                     return new_ip;
                 }
             }
