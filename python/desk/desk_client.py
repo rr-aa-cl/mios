@@ -157,6 +157,7 @@ class FrankaAPI:
         response = self._client.getresponse()
         response_content = response.read()
         response_status = response.status
+        print("till here!!!!!!")
         if response_status == 200:
             self.mongodb_client.update("mios","parameters",{"name":"system"},{"spoc_token":self._spoc_token})
             self.mongodb_client.update("mios","parameters",{"name":"system"},{"spoc_in_control":True})

@@ -108,7 +108,7 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
         std::map<std::string,std::string> ifaces = mirmi_utils::get_subnets();
         std::string address;
         for(const auto& i : ifaces){
-            if(i.first=="lo" || i.first=="docker0" || i.first=="tap0" || i.first=="flannel.1" || i.first.substr(0,3)=="enx" || i.first.substr(0,3)=="wlp" || i.first.substr(0,2)=="br"){
+            if(i.first=="lo" || i.first=="docker0" || i.first=="tap0" || i.first=="flannel.1" || i.first.substr(0,3)=="enx" || i.first.substr(0,3)=="wlp" || i.first.substr(0,2)=="br" || i.first.substr(0,4)=="enp4"){
                 continue;
             }
             for(unsigned j=2;j<255;j++){
@@ -286,14 +286,16 @@ bool PandaBody::is_robot(const std::string &ip){
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");
         pybind11::object in_control = desk_client.attr("in_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd);
+        spdlog::debug("PandaBody::is_robot("+ip+")": )
         if(!in_control.cast<bool>()){
+            spdlog::debug("PandaBody::is_robot("+ip+"): not in control of DESK, aquire control...");
             pybind11::object py_result = desk_client.attr("take_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd);
             bool wait = py_result.cast<bool>();
             if(wait){
                 spdlog::warn("Please verify that you are in control of the robot: Press the Button with the cyrcle on the Pilot! \n You have " + std::to_string(30) + "Seconds.");
                 std::this_thread::sleep_for(std::chrono::seconds(30));
             }
-            if(!wait){
+            else{
                 spdlog::error("PandaBody::is_robot(): Not able to aquire control over DESK client. Bad http response");
             }
         }
