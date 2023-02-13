@@ -29,7 +29,6 @@ def populate_all():
         t.join()
 
 def command_collective(cmd: str, args: dict = {}):
-
     threads = []
     for r in hostnames:
         robot = r
