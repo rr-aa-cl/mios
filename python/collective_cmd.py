@@ -1,6 +1,7 @@
 from desk.mongodb_client import MongoDBClient
 import pymongo
-
+from threading import Thread
+from utils.ws_client import call_method
 
 hostnames = ["collective-%03d.rsi.ei.tum.de"%n for n in range(1,51)]
 
@@ -17,5 +18,18 @@ def populate_databases(db, ip, user_name="franka", user_pw="frankaRSI"):
         except:
             print(host, " not updated")
 
+
+def command_collective(cmd: str, args: dict = {}):
+
+    threads = []
+    for r in hostnames:
+        robot = r
+        threads.append(Thread(target=call_method, args=(robot, 12000, cmd, args,)))
+        threads.append(Thread(target=call_method, args=(robot, 13000, cmd, args,)))
+        threads[-2].start()
+        threads[-1].start()
+
+    for t in threads:
+        t.join()
 
 

@@ -300,7 +300,7 @@ bool PandaBody::is_robot(const std::string &ip){
             else{
                 spdlog::error("PandaBody::is_robot(): Not able to aquire control over DESK client. Bad http response");
             }
-            return is_robot(ip);
+            return false;
         }
         else{
             spdlog::debug("PandaBody: MIOS is in control of DESK-Interface of robot at "+ip);
@@ -317,6 +317,7 @@ bool PandaBody::is_robot(const std::string &ip){
         return false;
     }
     if(!activate_fci()){
+        spdlog::debug("PandaBody: Cannot activate FCI "+ip);
         return false;   
     }
 /*
