@@ -13,6 +13,7 @@ public:
 
     bool is_master;
     bool multicast;
+    std::optional<std::string> host;  //hostname or sending IP to specify the right interface 
     std::string ip_dst;
     std::vector<std::string> multicast_group;
     unsigned port_dst;

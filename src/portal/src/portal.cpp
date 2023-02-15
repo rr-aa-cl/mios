@@ -85,13 +85,18 @@ void Portal::bind_method_to_all(const char *method_name, std::function<nlohmann:
     }
 }
 
-std::shared_ptr<mirmi_utils::UDPStreamSender> Portal::open_udp_outstream(const std::string &name, const std::string &address, unsigned int port){
+std::shared_ptr<mirmi_utils::UDPStreamSender> Portal::open_udp_outstream(const std::string &name, const std::string &address, unsigned int port, const std::optional<std::string> &host){
     spdlog::trace("Portal::open_udp_outstream");
     if(m_outstreams.find(name)!=m_outstreams.end()){
         spdlog::error("A UDP channel with name " + name + " already exists.");
         return nullptr;
     }
-    m_outstreams.insert(std::make_pair(name,std::make_shared<mirmi_utils::UDPStreamSender>(name,address,port)));
+    if(!host.has_value()){
+        m_outstreams.insert(std::make_pair(name,std::make_shared<mirmi_utils::UDPStreamSender>(name,address,port)));
+    }
+    else{
+        m_outstreams.insert(std::make_pair(name,std::make_shared<mirmi_utils::UDPStreamSender>(name,address,port,host.value())));
+    }
     return m_outstreams[name];
 }
 
