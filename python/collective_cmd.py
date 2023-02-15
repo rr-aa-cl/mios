@@ -1,9 +1,82 @@
 from desk.mongodb_client import MongoDBClient
 import pymongo
+import os
 from threading import Thread
-from utils.ws_client import call_method
+from utils.ws_client import *
 
 hostnames = ["collective-%03d.rsi.ei.tum.de"%n for n in range(1,25)]
+hostnames.remove("collective-001.rsi.ei.tum.de")
+hostnames.remove("collective-002.rsi.ei.tum.de")
+hostnames.remove("collective-007.rsi.ei.tum.de")
+hostnames.remove("collective-012.rsi.ei.tum.de")
+hostnames.remove("collective-016.rsi.ei.tum.de")
+hostnames.remove("collective-017.rsi.ei.tum.de")
+hostnames.remove("collective-018.rsi.ei.tum.de")
+hostnames.remove("collective-020.rsi.ei.tum.de")
+
+hostnames.remove("collective-010.rsi.ei.tum.de")
+
+#hostnames = ["collective-006.rsi.ei.tum.de"]
+#hostnames.remove("collective-006.rsi.ei.tum.de")
+#hostnames.remove("collective-018.rsi.ei.tum.de")
+#hostnames.remove("collective-017.rsi.ei.tum.de")
+#hostnames.remove("collective-020.rsi.ei.tum.de")
+#hostnames.remove("collective-021.rsi.ei.tum.de")
+#hostnames.remove("collective-022.rsi.ei.tum.de")
+#hostnames.remove("collective-023.rsi.ei.tum.de")
+#hostnames.remove("collective-024.rsi.ei.tum.de")
+
+import time
+
+
+class Task:
+    def __init__(self, robot, port=12000):
+        self.skill_names = []
+        self.skill_types = []
+        self.skill_context = dict()
+        self.context = {
+            "parameters": {
+                "skill_names": [],
+                "skill_types": [],
+                "as_queue": False
+            },
+            "skills": self.skill_context
+        }
+
+        self.robot = robot
+        self.port = port
+        self.task_uuid = "INVALID"
+        self.t_0 = 0
+
+    def add_skill(self, name, skill_class, context):
+        self.skill_names.append(name)
+        self.skill_types.append(skill_class)
+        self.skill_context[name] = context
+
+        self.context["parameters"]["skill_names"] = self.skill_names
+        self.context["parameters"]["skill_types"] = self.skill_types
+        self.context["skills"] = self.skill_context
+
+    def start(self, queue: bool = False):
+        self.t_0 = time.time()
+        self.context["parameters"]["as_queue"] = queue
+        response = start_task(self.robot, "GenericTask", parameters=self.context, port=self.port)
+        self.task_uuid = response["result"]["task_uuid"]
+
+    def wait(self):
+        result = wait_for_task(self.robot, self.task_uuid, port=self.port)
+        #print("Task execution took " + str(time.time() - self.t_0) + " s.")
+        return result
+
+    def stop(self):
+        result = stop_task(self.robot, port=self.port)
+        #print("Task execution took " + str(time.time() - self.t_0) + " s.")
+        return result
+
+
+def get_ip(hostname: str):
+    print("hostname: ",hostname)
+    return socket.gethostbyname(hostname)
 
 def populate_database(host, db, ip, user_name="franka", user_pw="frankaRSI"):
     try:
@@ -39,5 +112,229 @@ def command_collective(cmd: str, args: dict = {}):
 
     for t in threads:
         t.join()
+
+def copy_object(source:str, destinations:list, object_name:str, robot_arm="left"):
+    def _send_object(destination, db, collection, document):
+        if "_id" in document:
+            document.pop("_id")
+        client = MongoDBClient(destination)
+        if len(client.read(db, collection, {"name": document["name"]})):
+            client.remove(db, collection, {"name":document["name"]})
+        client.write(db, collection, document)
+    if destinations == "all":
+        destinations = hostnames
+        if source in destinations:
+            destinations.remove(source)
+    client = MongoDBClient(source)
+    obj = None
+    if robot_arm == "left":
+        obj = client.read("miosL","environment",{"name":object_name})
+    else:
+        obj = client.read("miosR","environment",{"name":object_name})
+    if len(obj) != 1:
+        print("Failure: Found ", len(obj), " objects on ", source, " with name ", object_name)
+        return "error"
+    else:
+        obj = obj[0]
+    threads = []
+    for destination in destinations:
+        if robot_arm == "left":
+            threads.append(Thread(target=_send_object, args=(destination, "miosL", "environment", obj)))
+        else:
+            threads.append(Thread(target=_send_object, args=(destination, "miosR", "environment", obj)))
+        threads[-1].start()
+    for t in threads:
+        t.join()
+    print("sending completed. Restart cluster!")
+
+def move(robot, location, offset, port=12000, wait = True):
+    context = {
+        "skill": {
+            "p0":{
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "K_x": [2000, 2000, 2000, 250, 250, 250],
+                "T_T_EE_g_offset": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, offset[0], offset[1], offset[2], 1]
+
+            },
+            "time_max":10,
+            "objects": {
+                    "GoalPose": location
+                }
+        },
+        "control": {
+            "control_mode": 2
+        }
+    }
+    t = Task(robot, port=port)
+    t.add_skill("move", "TaxMove", context)
+    t.start()
+    if wait:
+        return t.wait()
+
+    #print("Result: " + str(result))
+
+def move_joint(robot, location,port=12000, wait=True):
+    path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
+    f = open(path_to_default_context + "move_joint.json")
+    move_context = json.load(f)
+    move_context["skill"]["objects"]["goal_pose"] = location
+    move_context["skill"]["time_max"] = 10
+    t0 = Task(robot, port=port)
+    t0.add_skill("move", "MoveToPoseJoint", move_context)
+    t0.start()
+    if wait:
+        return t0.wait()
+
+def move_all(pose = "default_pose"):
+    threads = []
+    for host in hostnames:
+        threads.append(Thread(target=move_joint, args=(host, pose, 12000, True)))
+        threads[-1].start()
+        #threads.append(Thread(target=move_joint, args=(host, pose, 13000, True)))
+        #threads[-1].start()
+    for t in threads:
+        t.join()
+    print("finished")
+
+def demo_part_2():
+    robots = hostnames.copy()
+    for host in robots:
+        stop_task(host)
+    master = robots.pop(4)
+    print("master is ", master)
+    master = get_ip(master)
+    result = start_task(master, "MoveToJointPose", {
+        "parameters": {
+            "pose": "default_pose",
+            "speed": 1,
+            "acc": 2
+        }
+    })
+    result = wait_for_task(master, result["result"]["task_uuid"])
+    if not result["result"]["task_result"]["success"]:
+        print("master could not move to default pose")
+
+
+    ip_slaves = []
+    threads = []
+    for i in range(0, len(robots)):
+        ip_slaves.append(get_ip(robots[i]))
+        threads.append(Thread(target=start_task_and_wait, args=(ip_slaves[-1], "MoveToJointPose",{
+        "parameters": {
+            "pose": "default_pose",
+            "speed": 1,
+            "acc": 2
+        }
+        })))
+        threads[-1].start()
+    for t in threads:
+        t.join()
+    time.sleep(2)
+
+    print(ip_slaves)
+
+    telepresence_master_context = {
+        "skill": {
+            "is_master": True,
+            "ip_dst": "0.0.0.0",
+            "port_dst": 8888,
+            "port_src": 8888,
+            "telepresence_mode": "DirectJoint",
+            "multicast": True,
+            "multicast_group": ip_slaves,
+            "host": master,
+            "direct_joint": {
+                "alpha": [15, 15, 10, 10, 8, 6, 3]#[0, 0, 0, 0, 0, 0, 0]
+            }
+        },
+        "control": {
+            "control_mode": 1
+        }
+    }
+    telepresence_slave_context = {
+        "skill": {
+            "is_master": False,
+            "ip_dst": "0.0.0.0",
+            "port_dst": 8888,
+            "port_src": 8888,
+            "telepresence_mode": "DirectJoint",
+            "multicast": True,
+            "direct_joint": {
+                "alpha": [0, 0, 0, 0, 0, 0, 0]
+            }
+        },
+        "control": {
+            "control_mode": 1,
+            "joint_imp": {
+                "K_theta": [1500,1200,800,600,300,200,50]
+            }
+        }
+    }
+    t = Task(master)
+    t.add_skill("telepresence", "Telepresence", telepresence_master_context)
+    t.start()
+    for i in range(0, len(robots)):
+        try:
+            t = Task(robots[i])
+            t.add_skill("telepresence", "Telepresence", telepresence_slave_context)
+            print(robots[i])
+            t.start()
+        except TypeError:
+            print(robots[i], " is not working.")
+            pass
+
+    input("Press key to stop.")
+    for ip in ip_slaves:
+        stop_task(ip)
+
+    stop_task(master)
+
+def direct_joint_mode(master: str, slave: str):
+    master_context = {
+        "skill": {
+            "is_master": True,
+            "ip_dst": get_ip(slave),
+            "port_dst": 8888,
+            "port_src": 8888,
+            "telepresence_mode": "DirectJoint",
+            "direct_joint": {
+                "alpha": [15, 15, 10, 10, 8, 6, 3]
+            }
+        },
+        "control": {
+            "control_mode": 1
+        }
+    }
+    slave_context = {
+        "skill": {
+            "is_master": False,
+            "ip_dst": get_ip(master),
+            "port_dst": 8888,
+            "port_src": 8888,
+            "telepresence_mode": "DirectJoint",
+            "direct_joint": {
+                "alpha": [0, 0, 0, 0, 0, 0, 0]
+            }
+        },
+        "control": {
+            "control_mode": 1,
+            "joint_imp": {
+                "K_theta": [1500,1200,800,600,300,200,50]
+            }
+        }
+    }
+    t_m = Task(master)
+    t_s = Task(slave)
+    t_m.add_skill("telepresence", "Telepresence", master_context)
+    t_s.add_skill("telepresence", "Telepresence", slave_context)
+
+    t_m.start()
+    t_s.start()
+    input("Press Enter to stop...")
+    t_m.stop()
+    t_s.stop()
+
+
 
 
