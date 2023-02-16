@@ -36,6 +36,9 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
     if(!mirmi_utils::read_json_param(parameters, "host", host)){
         host.reset();
     }
+    if(!mirmi_utils::read_json_param(parameters, "multicast_ip", host)){
+        multicast_ip = "255.0.0.1";
+    }
     if(is_master && multicast && multicast_group.size()==0){
         spdlog::error("When using multicast, at least one slave must be defined.");
         return false;
@@ -126,18 +129,21 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
         }
     }
 
-    if(multicast && is_master){
-        if(std::stoi(ip_dst.substr(0,3)) < 224 && std::stoi(ip_dst.substr(0,3)) > 239){
-            ip_dst="225.0.0.1";  //if the multicast group is not defined, set it to "225.0.0.1"
+    if(multicast){
+        if(std::stoi(multicast_ip.substr(0,3)) < 224 && std::stoi(multicast_ip.substr(0,3)) > 239){
+            spdlog::error("Multicast IP is not within the range 224.0.0.1 to 239.255.255.255");
+            return false;
         }
-        
+        if(is_master){
+            ip_dst = multicast_ip;
+        }
     }
 
     return true;
 }
 
 std::map<std::string,std::set<std::string> > SkillParametersTelepresence::get_parameter_list(){
-    return {{"is_master",{}},{"ip_dst",{}},{"port_dst",{}},{"host",{}},{"port_src",{}},{"remote_event_port",{}},{"remote_event_protocol",{}},{"terminate_when_loc",{}},{"multicast",{}},{"multicast_group",{}},{"telepresence_mode",{}},
+    return {{"is_master",{}},{"ip_dst",{}},{"port_dst",{}},{"host",{}},{"multicast_ip",{}},{"port_src",{}},{"remote_event_port",{}},{"remote_event_protocol",{}},{"terminate_when_loc",{}},{"multicast",{}},{"multicast_group",{}},{"telepresence_mode",{}},
         {"joystick",{"amp","force_thr","static_frame"}},{"direct_joint",{"alpha"}},{"direct_cart",{"alpha"}},{"direct_cart",{"plane"}}};
 }
 
@@ -223,7 +229,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                             mp->create_strategy<RemoteWrenchStrategy>("telepresence",1);
                             mp->get_strategy<RemoteWrenchStrategy>("telepresence")->set_damping(get_parameters<Params>()->direct_cart.alpha);
                             if(!mp->get_strategy<RemoteWrenchStrategy>("telepresence")->connect(m_portal,"remote_wrench_in",get_parameters<Params>()->port_src,256,0,10000,200, false, 
-                                        read_parameters<Params>()->host, read_parameters<Params>()->ip_dst)){
+                                        read_parameters<Params>()->host, read_parameters<Params>()->multicast_ip)){
                                 spdlog::error("Could not open incoming udp channel.");
                                 throw SkillException();
                             }
@@ -358,7 +364,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 std::shared_ptr<ManipulationPrimitive> mp = create_mp("telepresence",p);
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectCart){
                     mp->create_strategy<RemoteCartPoseStrategy>("telepresence",1);
-                    if(!mp->get_strategy<RemoteCartPoseStrategy>("telepresence")->connect(m_portal,"remote_cart_pose_in",get_parameters<Params>()->port_src,256,0,10000,20,read_parameters<Params>()->multicast, read_parameters<Params>()->host, read_parameters<Params>()->ip_dst)){
+                    if(!mp->get_strategy<RemoteCartPoseStrategy>("telepresence")->connect(m_portal,"remote_cart_pose_in",get_parameters<Params>()->port_src,256,0,10000,20,read_parameters<Params>()->multicast, read_parameters<Params>()->host, read_parameters<Params>()->multicast_ip)){
                         spdlog::error("Could not open incoming udp channel.");
                         throw SkillException();
                     }
@@ -379,7 +385,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmDirectJoint){
                     mp->create_strategy<RemoteJointPoseStrategy>("telepresence",1);
-                    if(!mp->get_strategy<RemoteJointPoseStrategy>("telepresence")->connect(m_portal,"remote_joint_pose_in",get_parameters<Params>()->port_src,256,0,10000,20,read_parameters<Params>()->multicast, read_parameters<Params>()->host, read_parameters<Params>()->ip_dst)){
+                    if(!mp->get_strategy<RemoteJointPoseStrategy>("telepresence")->connect(m_portal,"remote_joint_pose_in",get_parameters<Params>()->port_src,256,0,10000,20,read_parameters<Params>()->multicast, read_parameters<Params>()->host, read_parameters<Params>()->multicast_ip)){
                         spdlog::error("Could not open incoming udp channel.");
                         throw SkillException();
                     }
@@ -387,7 +393,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > Telepresence::graph_trans
                 }
                 if(read_parameters<Params>()->mode==TelepresenceMode::tmJoystick){
                     mp->create_strategy<RemoteTwistStrategy>("telepresence",1);
-                    if(!mp->get_strategy<RemoteTwistStrategy>("telepresence")->connect(m_portal,"remote_twist_in",get_parameters<Params>()->port_src,256,0,10000,200,read_parameters<Params>()->multicast, read_parameters<Params>()->host, read_parameters<Params>()->ip_dst)){
+                    if(!mp->get_strategy<RemoteTwistStrategy>("telepresence")->connect(m_portal,"remote_twist_in",get_parameters<Params>()->port_src,256,0,10000,200,read_parameters<Params>()->multicast, read_parameters<Params>()->host, read_parameters<Params>()->multicast_ip)){
                         spdlog::error("Could not open incoming udp channel.");
                         throw SkillException();
                     }
