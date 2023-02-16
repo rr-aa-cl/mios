@@ -45,10 +45,10 @@ bool RemoteTorqueStrategy::finished(){
     return !m_receiver->is_running();
 }
 
-bool RemoteTorqueStrategy::connect(Portal *portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us,unsigned max_lost_packets, bool multicast, const std::optional<std::string> &host){
+bool RemoteTorqueStrategy::connect(Portal *portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us,unsigned max_lost_packets, bool multicast, const std::optional<std::string> &host, const std::optional<std::string> &multicast_group){
     m_portal=portal;
     m_stream_name=name;
-    m_receiver = m_portal->open_udp_instream(m_stream_name,port,buffer_size,timeout_s,timeout_us,max_lost_packets,std::bind(&RemoteTorqueStrategy::read_stream,this,std::placeholders::_1),multicast, host);
+    m_receiver = m_portal->open_udp_instream(m_stream_name,port,buffer_size,timeout_s,timeout_us,max_lost_packets,std::bind(&RemoteTorqueStrategy::read_stream,this,std::placeholders::_1),multicast, host, multicast_group);
     if(m_receiver==nullptr){
         return false;
     }
