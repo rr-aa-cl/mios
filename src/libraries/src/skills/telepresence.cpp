@@ -131,7 +131,7 @@ bool SkillParametersTelepresence::from_json(const nlohmann::json &parameters){
 
     if(multicast){
         if(std::stoi(multicast_ip.substr(0,3)) < 224 && std::stoi(multicast_ip.substr(0,3)) > 239){
-            spdlog::error("Multicast IP is not within the range 224.0.0.1 to 239.255.255.255");
+            spdlog::error("Multicast IP "+multicast_ip+" is not within the range 224.0.0.1 to 239.255.255.255");
             return false;
         }
         if(is_master){

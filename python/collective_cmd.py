@@ -240,6 +240,7 @@ def demo_part_2():
             "telepresence_mode": "DirectJoint",
             "multicast": True,
             "multicast_group": ip_slaves,
+            "multicast_ip":"225.0.0.2",
             "host": master,
             "direct_joint": {
                 "alpha": [15, 15, 10, 10, 8, 6, 3]#[0, 0, 0, 0, 0, 0, 0]
@@ -257,6 +258,7 @@ def demo_part_2():
             "port_src": 8888,
             "telepresence_mode": "DirectJoint",
             "multicast": True,
+            "multicast_ip":"225.0.0.2",
             "direct_joint": {
                 "alpha": [0, 0, 0, 0, 0, 0, 0]
             }
