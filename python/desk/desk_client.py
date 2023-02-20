@@ -150,6 +150,7 @@ class FrankaAPI:
     def reboot(self):
         self._client.request('POST', '/desk/api/reboot',
                              headers={})
+        print("rebooting robot...")
         return self._client.getresponse().read()
 
     def in_control(self):
@@ -192,7 +193,7 @@ class FrankaAPI:
                     return False
             print("DESK_client: Bad https responde")
             return False
-            
+
     def force_control(self):
         if not self.in_control():
             temp_body = json.dumps({'requestedBy':self._user})  #pinakothek

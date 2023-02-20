@@ -1,8 +1,10 @@
 from desk.mongodb_client import MongoDBClient
 import pymongo
+from xmlrpc.client import ServerProxy
 import os
 from threading import Thread
 from utils.ws_client import *
+
 import time
 import copy
 
@@ -460,5 +462,7 @@ def direct_joint_mode(master: str, slave: str):
     t_s.stop()
 
 
-
+def restart_collective():
+    client =ServerProxy("http://collective-009.rsi.ei.tum.de:"+str(8008), allow_none=True)
+    client.reboot_robots()
 
