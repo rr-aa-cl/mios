@@ -21,7 +21,7 @@ class Database():
         self.results_db_name = "global_ml_results"  # raw result data
 
         self.rpc_server = None
-        self.db_client = MongoDBClient(mongo_port)
+        self.db_client = MongoDBClient(port=mongo_port)
         self.knowledge_manager = KnowledgeManager(port=mongo_port)
         self.port = port
 
