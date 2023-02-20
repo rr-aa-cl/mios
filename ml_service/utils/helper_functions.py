@@ -246,4 +246,21 @@ def grasp_insertable(robot:str, insertable = "generic_insertable", container = "
             break
     print("abort grabbing ", insertable)
     return False
+    
+def hold_pose(robot, duration, port):
+    hold_context = {
+        "skill": {
+            "t_max": duration,
+        },
+        "control": {
+            "control_mode": 0,
+            "cart_imp": {
+                "K_x": [2000, 2000, 2000, 250, 250, 250]
+            }
+        },
+        "user": {"F_ext_max": [100, 50]}
+    }
+    t = Task(robot, port)
+    t.add_skill("hold","HoldPose",hold_context)
+    t.start(queue=False)
 

@@ -551,6 +551,74 @@ def horizontal_learning_experiment():
 
 
 
+def dualarm_demo():
+    robots_dualarm = [  "001",
+                        "003",
+                        "005",
+                        "008",
+                        "012",
+                        "013",
+                        "019",
+                        #"023",
+                        "024",
+                        "025",
+                        "038.local",
+                        "039.local",
+                        "046"]
+    tags = ["dualarm_demo"]
+    sc = SVMLearner(130,10,0,True,False, 0.4,True).get_configuration()
+    for r in robots_dualarm:
+        move_joint("collective-"+r,"hold",13000,False)
+        move_joint("collective-"+r,r[:3]+"_left_container_above",12000,False)
+
+    services = []
+    for r in robots_dualarm:
+        services.append(ServerProxy("http://" + "collective-"+r + ":8000", allow_none=True))
+        while call_method("collective-"+r,13000,"get_state")["result"]["current_task"] != "IdleTask":
+            time.sleep(1)
+        hold_pose("collective-"+r,10000,13000)
+
+        knowledge_source = Knowledge()
+        knowledge_source.kb_location = "collective-004"
+        knowledge_source.mode = "global"
+        knowledge_source.scope = []
+        knowledge_source.scope.extend(tags)
+        #knowledge_source.scope.append("n"+str(n_current_iter+1))
+        knowledge_source.type = "all"
+        pd = InsertionFactory(["collective-"+r], TimeMetric("insertion", {"time": 5}),
+                                    {"Insertable": r[:3]+"_left", "Container": r[:3]+"_left_container",
+                                    "Approach": r[:3]+"_left_container_approach"}).get_problem_definition(r[:3]+"_left")
+        
+        learn_single_task("collective-"+r, pd, sc, tags, 1, False, knowledge_source.to_dict(), False,service_port=8000)
+
+        while True:
+            input("Pause?")
+            for s in services:
+                s.pause_service()
+            input("start again?")
+            for s in services:
+                s.resume_service()
+
+def stop_dualarm():
+    robots_dualarm = [  "001",
+                        "003",
+                        "005",
+                        "008",
+                        "012",
+                        "013",
+                        "019",
+                        "023",
+                        "024",
+                        "025",
+                        "038.local",
+                        "039.local",
+                        "046"]
+    for r in robots_dualarm:
+        print("http://" + "collective-"+r + ":8000")
+        s=ServerProxy("http://" + "collective-"+r + ":8000", allow_none=True)
+        s.stop_service()
+
+
 def transfer_video_grab_insertable(robot: str, insertable: str, container: str, approach: str, above: str):
     # call_method(robot, 12000, "release_object")
     path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"

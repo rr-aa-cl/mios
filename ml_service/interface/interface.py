@@ -50,6 +50,8 @@ class Interface:
         self.rpc_server.register_function(self.wait_for_service, "wait_for_service")
         self.rpc_server.register_function(self.is_ready, "is_ready")
         self.rpc_server.register_function(self.stop_service, "stop_service")
+        self.rpc_server.register_function(self.pause_service, "pause_service")
+        self.rpc_server.register_function(self.resume_service, "resume_service")
         self.rpc_server.register_function(self.status, "status")
         self.rpc_server.serve_forever()
         logger.debug("Interface::start_rpc_server.server_stopped")
