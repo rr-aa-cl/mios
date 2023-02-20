@@ -128,7 +128,7 @@ class Interface:
             self.service.pause()
     
     def resume_service(self):
-        logger.debut("Interface::resume()")
+        logger.debug("Interface::resume()")
         if self.service is not None:
             self.service.start()
 
