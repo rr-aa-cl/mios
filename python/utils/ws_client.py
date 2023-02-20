@@ -117,8 +117,8 @@ def wait_for_task(hostname: str, task_uuid: str, port = 12000):
 
 
 def start_task_and_wait(hostname, task, parameters, queue=False, port = 12000):
-    response = start_task(hostname, task, parameters, queue)
-    response = wait_for_task(hostname, response["result"]["task_uuid"])
+    response = start_task(hostname, task, parameters, queue, port=port)
+    response = wait_for_task(hostname, response["result"]["task_uuid"], port=port)
     return response
 
 

@@ -294,13 +294,22 @@ bool PandaBody::is_robot(const std::string &ip){
         if(!in_control.cast<bool>()){
             spdlog::debug("PandaBody::is_robot("+ip+"): not in control of DESK, aquire control...");
             pybind11::object py_result = desk_client.attr("take_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR");
-            bool wait = py_result.cast<bool>();
-            if(wait){
-                spdlog::warn("Please verify that you are in control of the robot: Press the Button with the cyrcle on the Pilot! \n You have " + std::to_string(30) + "Seconds.");
+            bool desk_in_control = py_result.cast<bool>();
+            if(!desk_in_control){
+                pybind11::object py_result = desk_client.attr("reboot")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR");
+                //spdlog::debug("PandaBody::is_robot(): Not able to take control over DESK. Try to force control...");
+                //pybind11::object py_result = desk_client.attr("force_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR");
+                desk_in_control = py_result.cast<bool>();
+                //spdlog::warn("Please verify that you are in control of the robot: Press the Button with the cyrcle on the Pilot! \n You have " + std::to_string(30) + "Seconds.");
                 std::this_thread::sleep_for(std::chrono::seconds(30));
+                if(!desk_in_control){
+                    spdlog::error("PandaBody::is_robot(): Cannot aquire control over DESK");
+                    return false;
+                }
+
             }
             else{
-                spdlog::error("PandaBody::is_robot(): Not able to aquire control over DESK client. Bad http response");
+                spdlog::debug("PandaBody::is_robot(): Now in control over DESK");
             }
             return false;
         }

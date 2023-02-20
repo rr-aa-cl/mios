@@ -189,36 +189,40 @@ class FrankaAPI:
                     self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_in_control":True})
                     return True
                 else:
-                    print("new spoc token doesn't work. Try to force control.")
-
-                temp_body = json.dumps({'requestedBy':self._user})  #pinakothek
-                self._client.request('POST', '/admin/api/control-token/request?force=', temp_body,
-                                 headers={'content-type': 'application/json',
-                                          'Cookie': 'authorization=%s' % self._token})
+                    return False
+            print("DESK_client: Bad https responde")
+            return False
+            
+    def force_control(self):
+        if not self.in_control():
+            temp_body = json.dumps({'requestedBy':self._user})  #pinakothek
+            self._client.request('POST', '/admin/api/control-token/request?force=', temp_body,
+                             headers={'content-type': 'application/json',
+                                      'Cookie': 'authorization=%s' % self._token})
+            response = self._client.getresponse()
+            response_content = response.read()
+            response_status = response.status
+            if response_status == 200:
+                temp = json.loads(response_content)
+                #print("2. request:",response_content)
+                self._client.request('GET', '/admin/api/safety',
+                                headers={'content-type': 'application/json',
+                                        'Cookie': 'authorization=%s' % self._token,
+                                        "X-Control-Token":self._spoc_token})
                 response = self._client.getresponse()
                 response_content = response.read()
                 response_status = response.status
+                self._spoc_token = temp["token"]  # has to be after safty request
                 if response_status == 200:
-                    temp = json.loads(response_content)
-                    #print("2. request:",response_content)
-                    self._client.request('GET', '/admin/api/safety',
-                                    headers={'content-type': 'application/json',
-                                            'Cookie': 'authorization=%s' % self._token,
-                                            "X-Control-Token":self._spoc_token})
-                    response = self._client.getresponse()
-                    response_content = response.read()
-                    response_status = response.status
-                    self._spoc_token = temp["token"]  # has to be after safty request
-                    if response_status == 200:
-                        response = json.loads(response_content)
-                        #print("3. request:",response_content)
-                        response = response["tokenForceTimeout"]
-                        self._in_control = True
-                        self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_token":self._spoc_token})
-                        self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_in_control":True})
-                        print("verify your access to the robot: Press the O-Button!\n You have ",response," Seconds!")
-                        #time.sleep(response)
-                        return True
+                    response = json.loads(response_content)
+                    #print("3. request:",response_content)
+                    response = response["tokenForceTimeout"]
+                    self._in_control = True
+                    self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_token":self._spoc_token})
+                    self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_in_control":True})
+                    print("verify your access to the robot: Press the O-Button!\n You have ",response," Seconds!")
+                    #time.sleep(response)
+                    return True
 
             return False
         print("Already in control! spoc token: ",self._spoc_token)
@@ -372,6 +376,14 @@ def take_control(ip, user, pwd, db):
     try:
         with FrankaAPI(ip, user, pwd, db) as api:
             return api.take_control()
+    except socket.error as e:
+        print(e)
+        print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
+
+def force_control(ip, user, pwd, db):
+    try:
+        with FrankaAPI(ip, user, pwd, db) as api:
+            return api.force_control()
     except socket.error as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)

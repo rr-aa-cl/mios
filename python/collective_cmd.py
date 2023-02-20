@@ -4,6 +4,7 @@ import os
 from threading import Thread
 from utils.ws_client import *
 import time
+import copy
 
 
 hostnames = ["collective-%03d.rsi.ei.tum.de"%n for n in range(1,25)]
@@ -75,7 +76,7 @@ def populate_database(host, db, ip, user_name="franka", user_pw="frankaRSI"):
         client = MongoDBClient(host)
         new_params = {"desk_name":user_name, "desk_pwd":user_pw,"robot_ip":ip, "spoc_token":"","spoc_in_control":False}
         client.update(db,"parameters",{"name":"system"}, new_params)
-        print("updated ", host)
+        print("updated ", host,": ",db)
     except:
             print(host, " not updated")
 def populate_databases(db, ip, user_name="franka", user_pw="frankaRSI"):
@@ -183,17 +184,16 @@ def move_all(pose = "default_pose"):
     for host in hostnames:
         threads.append(Thread(target=move_joint, args=(host, pose, 12000, True)))
         threads[-1].start()
-        #threads.append(Thread(target=move_joint, args=(host, pose, 13000, True)))
-        #threads[-1].start()
+        threads.append(Thread(target=move_joint, args=(host, pose, 13000, True)))
+        threads[-1].start()
     for t in threads:
         t.join()
     print("finished")
 
-def demo_part_2():
-    robots = hostnames.copy()
+def demo_part_left(master="008",wait=True):
+    robots = copy.deepcopy(hostnames)
     for host in robots:
         stop_task(host)
-    master = "008"
     for host in robots:
         if host.find(master) != -1:
             master = host
@@ -201,16 +201,17 @@ def demo_part_2():
     robots.remove(master)
     print("master is ", master)
     master = get_ip(master)
-    result = start_task(master, "MoveToJointPose", {
+    result_left = start_task(master, "MoveToJointPose", {
         "parameters": {
             "pose": "default_pose",
             "speed": 1,
             "acc": 2
         }
     })
-    result = wait_for_task(master, result["result"]["task_uuid"])
-    if not result["result"]["task_result"]["success"]:
+    result_left = wait_for_task(master, result_left["result"]["task_uuid"])
+    if not result_left["result"]["task_result"]["success"]:
         print("master could not move to default pose")
+        return "error"
 
 
     ip_slaves = []
@@ -231,7 +232,7 @@ def demo_part_2():
 
     print(ip_slaves)
 
-    telepresence_master_context = {
+    telepresence_master_context_left = {
         "skill": {
             "is_master": True,
             "ip_dst": "0.0.0.0",
@@ -240,7 +241,7 @@ def demo_part_2():
             "telepresence_mode": "DirectJoint",
             "multicast": True,
             "multicast_group": ip_slaves,
-            "multicast_ip":"225.0.0.2",
+            "multicast_ip":"225.0.0.1",
             "host": master,
             "direct_joint": {
                 "alpha": [15, 15, 10, 10, 8, 6, 3]#[0, 0, 0, 0, 0, 0, 0]
@@ -250,7 +251,7 @@ def demo_part_2():
             "control_mode": 1
         }
     }
-    telepresence_slave_context = {
+    telepresence_slave_context_left = {
         "skill": {
             "is_master": False,
             "ip_dst": "0.0.0.0",
@@ -258,7 +259,7 @@ def demo_part_2():
             "port_src": 8888,
             "telepresence_mode": "DirectJoint",
             "multicast": True,
-            "multicast_ip":"225.0.0.2",
+            "multicast_ip":"225.0.0.1",
             "direct_joint": {
                 "alpha": [0, 0, 0, 0, 0, 0, 0]
             }
@@ -270,25 +271,148 @@ def demo_part_2():
             }
         }
     }
-    t = Task(master)
-    t.add_skill("telepresence", "Telepresence", telepresence_master_context)
-    t.start()
+    print(telepresence_master_context_left)
+    t_left = Task(master)
+    t_left.add_skill("telepresence", "Telepresence", telepresence_master_context_left)
+    t_left.start()
     for i in range(0, len(robots)):
         try:
-            t = Task(robots[i])
-            telepresence_slave_context["skill"]["host"] = robots[i]
-            t.add_skill("telepresence", "Telepresence", telepresence_slave_context)
+            t_left = Task(robots[i])
+            telepresence_slave_context_left["skill"]["host"] = robots[i]
+            t_left.add_skill("telepresence", "Telepresence", telepresence_slave_context_left)
             print(robots[i])
-            t.start()
+            t_left.start()
+        except TypeError:
+            print(robots[i], " is not working.")
+            pass
+    if wait:
+        input("Press key to stop.")
+        for ip in ip_slaves:
+            stop_task(ip)
+
+        stop_task(master)
+
+def demo_part_right(master = "008", wait = True):
+    robots = copy.deepcopy(hostnames)
+    for host in robots:
+        stop_task(host,port=13000)
+    for host in robots:
+        if host.find(master) != -1:
+            master = host
+            break
+    robots.remove(master)
+    print("master is ", master)
+    master = get_ip(master)
+    result_right = start_task(master, "MoveToJointPose", {
+        "parameters": {
+            "pose": "beer",
+            "speed": 1,
+            "acc": 2
+        }
+    },port=13000)
+    result_right = wait_for_task(master, result_right["result"]["task_uuid"],port=13000)
+    if not result_right["result"]["task_result"]["success"]:
+        print(result_right)
+        print("master could not move to default pose")
+        return "error"
+
+
+    ip_slaves = []
+    threads = []
+    for i in range(0, len(robots)):
+        ip_slaves.append(get_ip(robots[i]))
+        threads.append(Thread(target=start_task_and_wait, args=(ip_slaves[-1], "MoveToJointPose",{
+        "parameters": {
+            "pose": "beer",
+            "speed": 1,
+            "acc": 2
+        }
+        }),kwargs={"port":13000}))
+        threads[-1].start()
+    for t in threads:
+        t.join()
+    time.sleep(2)
+
+    print(ip_slaves)
+
+    telepresence_master_context_right = {
+        "skill": {
+            "is_master": True,
+            "ip_dst": "0.0.0.0",
+            "port_dst": 8886,
+            "port_src": 8886,
+            "telepresence_mode": "DirectJoint",
+            "multicast": True,
+            "multicast_group": ip_slaves,
+            "multicast_ip":"225.0.0.3",
+            "remote_event_port":13000,
+            "host": master,
+            "direct_joint": {
+                "alpha": [15, 15, 10, 10, 8, 6, 3]#[0, 0, 0, 0, 0, 0, 0]
+            }
+        },
+        "control": {
+            "control_mode": 1
+        }
+    }
+    telepresence_slave_context_right = {
+        "skill": {
+            "is_master": False,
+            "ip_dst": "0.0.0.0",
+            "port_dst": 8886,
+            "port_src": 8886,
+            "telepresence_mode": "DirectJoint",
+            "multicast": True,
+            "multicast_ip":"225.0.0.3",
+            "remote_event_port":13000,
+            "direct_joint": {
+                "alpha": [0, 0, 0, 0, 0, 0, 0]
+            }
+        },
+        "control": {
+            "control_mode": 1,
+            "joint_imp": {
+                "K_theta": [1500,1200,800,600,300,200,50]
+            }
+        }
+    }
+    print(telepresence_master_context_right)
+    t_right = Task(master,13000)
+    t_right.add_skill("telepresence","Telepresence", telepresence_master_context_right)
+    t_right.start()
+    for i in range(0, len(robots)):
+        try:
+            t_right = Task(robots[i],13000)
+            telepresence_slave_context_right["skill"]["host"] = robots[i]
+            t_right.add_skill("telepresence", "Telepresence", telepresence_slave_context_right)
+            print(robots[i])
+            t_right.start()
         except TypeError:
             print(robots[i], " is not working.")
             pass
 
-    input("Press key to stop.")
-    for ip in ip_slaves:
-        stop_task(ip)
+    if wait:
+        input("Press key to stop.")
+        for ip in ip_slaves:
+            stop_task(ip,port=13000)
 
-    stop_task(master)
+        stop_task(master,port=13000)
+
+def teleop_dualarm(master = "008"):
+    demo_part_left(master,wait=False)
+    demo_part_right(master,wait=False)
+    input("Press Key to stop")
+    threads = []
+    for ip in hostnames:
+        if master in ip:
+            continue
+        threads.append(Thread(target=stop_task, args=(ip,),kwargs={"port":13000}))
+        threads[-1].start()
+        threads.append(Thread(target=stop_task, args=(ip,),kwargs={"port":12000}))
+        threads[-1].start()
+    
+    stop_task(master,port=13000)
+    stop_task(master,port=12000)
 
 def direct_joint_mode(master: str, slave: str):
     master_context = {
