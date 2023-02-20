@@ -43,7 +43,7 @@ class Interface:
         self.start_global_database()
 
     def start_rpc_server(self):
-        logger.debug("Interface::start_rpc_server() on port "+str(self.interface_port))
+        logger.debug("Interface::start_rpc_server() on port "+str(self.interface_port)+" with mios_port="+str(self.mios_port))
         self.rpc_server.register_introspection_functions()
         self.rpc_server.register_function(self.start_service_wrapper, "start_service")
         self.rpc_server.register_function(self.is_busy, "is_busy")
