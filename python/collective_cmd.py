@@ -3,6 +3,7 @@ import pymongo
 from xmlrpc.client import ServerProxy
 import os
 from threading import Thread
+import copy
 from utils.ws_client import *
 
 import time
@@ -40,6 +41,9 @@ hostnames = [
 "10.157.174.175",  #0 ms            collective-039.local    [n/a]           A8:A1:59:B8:25:70                   [n/a]                               ASRock Incorporation                      
 "10.157.174.52" ,  #0 ms            collective-046.local    [n/a]           A8:A1:59:B8:23:A5                   [n/a]                               ASRock Incorporation                      
 "10.157.175.134"]  #0 ms            collective-050.local    [n/a]           A8:A1:59:B2:0F:85                   [n/a]                               ASRock Incorporation 
+modules = ["001",\
+        "002","003","004","005","006","007","008","009","010","011","012","013","014","015","016","017",\
+        "018","019","020","021","022","023","024","025","026","027","028","029","038","039","046","050",]
 #hostnames = ["collective-%03d.rsi.ei.tum.de"%n for n in range(1,50)]
 
 #hostnames = ["collective-%03d.local"%n for n in range(1,50)]
@@ -217,12 +221,57 @@ def move_joint(robot, location,port=12000, wait=True):
     if wait:
         return t0.wait()
 
+def wink_thread(robot, port):
+    path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
+    f = open(path_to_default_context + "move_joint.json")
+    move1_context = json.load(f)
+    move1_context["skill"]["objects"]["goal_pose"] = "reset"
+    move1_context["skill"]["time_max"] = 10
+    t0 = Task(robot, port=port)
+    t0.add_skill("reset_move", "MoveToPoseJoint", move1_context)
+
+    move2_context = copy.deepcopy(move1_context)
+    move2_context["skill"]["objects"]["goal_pose"] = "wink"
+    t0.add_skill("wink_move", "MoveToPoseJoint", move2_context)
+
+    move3_context = copy.deepcopy(move1_context)
+    move3_context["skill"]["objects"]["goal_pose"] = "wink2"
+    t0.add_skill("wink2_move", "MoveToPoseJoint", move3_context)
+
+    move4_context = copy.deepcopy(move1_context)
+    move4_context["skill"]["objects"]["goal_pose"] = "wink3"
+    t0.add_skill("wink3_move", "MoveToPoseJoint", move4_context)
+
+    move5_context = copy.deepcopy(move1_context)
+    move5_context["skill"]["objects"]["goal_pose"] = "wink2"
+    t0.add_skill("wink2_move_again", "MoveToPoseJoint", move5_context)
+
+    move6_context = copy.deepcopy(move1_context)
+    move6_context["skill"]["objects"]["goal_pose"] = "reset"
+    t0.add_skill("reset_again", "MoveToPoseJoint", move6_context)
+
+    t0.start()
+    
+    result = t0.wait()
+
+
 def move_all(pose = "default_pose"):
     threads = []
     for host in hostnames:
         threads.append(Thread(target=move_joint, args=(host, pose, 12000, True)))
         threads[-1].start()
         threads.append(Thread(target=move_joint, args=(host, pose, 13000, True)))
+        threads[-1].start()
+    for t in threads:
+        t.join()
+    print("finished")
+
+def move_all_cart(pose = "default_pose"):
+    threads = []
+    for host in hostnames:
+        threads.append(Thread(target=move, args=(host, pose,[0,0,0], 12000, True)))
+        threads[-1].start()
+        threads.append(Thread(target=move, args=(host, pose,[0,0,0], 13000, True)))
         threads[-1].start()
     for t in threads:
         t.join()
@@ -241,7 +290,7 @@ def demo_part_left(master="008",wait=True):
     master = get_ip(master)
     result_left = start_task(master, "MoveToJointPose", {
         "parameters": {
-            "pose": "default_pose",
+            "pose": "reset",
             "speed": 1,
             "acc": 2
         }
@@ -258,7 +307,7 @@ def demo_part_left(master="008",wait=True):
         ip_slaves.append(get_ip(robots[i]))
         threads.append(Thread(target=start_task_and_wait, args=(ip_slaves[-1], "MoveToJointPose",{
         "parameters": {
-            "pose": "default_pose",
+            "pose": "reset",
             "speed": 1,
             "acc": 2
         }
@@ -343,7 +392,7 @@ def demo_part_right(master = "008", wait = True):
     master = get_ip(master)
     result_right = start_task(master, "MoveToJointPose", {
         "parameters": {
-            "pose": "beer",
+            "pose": "reset",
             "speed": 1,
             "acc": 2
         }
@@ -361,7 +410,7 @@ def demo_part_right(master = "008", wait = True):
         ip_slaves.append(get_ip(robots[i]))
         threads.append(Thread(target=start_task_and_wait, args=(ip_slaves[-1], "MoveToJointPose",{
         "parameters": {
-            "pose": "beer",
+            "pose": "reset",
             "speed": 1,
             "acc": 2
         }
@@ -551,6 +600,110 @@ def hold_pose(robot, duration, port):
     t.add_skill("hold","HoldPose",hold_context)
     t.start(queue=False)
 
+def gear_reset():
+    move("collective-026.local","026_left_container_approach",[0,0,0],12000,True)
+    move("collective-026.local","026_left_container_above",[0,0,0],12000,True)
+    move_joint("collective-026.local","026_left_start",12000,True)
+    move_joint("collective-026.local","026_left_pre")
 
+def gear_insertion():
+    call_method("collective-026.local",12000,"set_grasped_object",{"object":"026_left"})
+    move_joint("collective-026.local","026_left_pre")
+    move_joint("collective-026.local","026_left_start",12000,True)
+    move_joint("collective-026.local","026_left_container_above",12000,True)
+    content = {
+        "skill": {
+            "objects": {
+                "Container": "026_left_container",
+                "Approach": "026_left_container_approach",
+                "Insertable": "026_left"
+            },
+            "time_max": 17,
+            "p0": {
+                "dX_d": [0.1, 1],
+                "ddX_d": [0.5, 4],
+                "DeltaX": [0, 0, 0, 0, 0, 0],
+                "K_x": [1500, 1500, 1500, 600, 600, 600]
+            },
+            "p1": {
+                "dX_d": [0.03, 0.1],
+                "ddX_d": [0.5, 0.1],
+                "K_x": [500, 500, 500, 600, 600, 600]
+            },
+            "p2": {
+                "search_a": [5, 5, 0, 0, 0, 0],
+                "search_f": [2, 2, 0, 1.2, 1.2, 0],
+                "search_phi": [0, 3.14159265358979323846/2, 0, 3.14159265358979323846/2, 0, 0],
+                "K_x": [500, 500, 500, 800, 800, 800],
+                "f_push": [0, 0, 10, 0, 0, 0],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+            },
+            "p3": {
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "f_push": 7,
+                "K_x": [500, 500, 0, 800, 800, 800]
+            }
+        },
+        "control": {
+            "control_mode": 0
+        },
+        "user": {
+            "env_X": [0.01, 0.01, 0.002, 0.05, 0.05, 0.05],
+            "env_dX": [0.001, 0.001, 0.001, 0.005, 0.005, 0.005],
+            "F_ext_contact": [3.0, 2.0]
+        }
+    }
+    t = Task("collective-026.local")
+    t.add_skill("insertion", "TaxInsertion", content)
+    t.start()
+    result = t.wait()
+    print("Result: " + str(result))
+
+def move_left(pose):
+    threads = []
+    for r in hostnames:
+        threads.append(Thread(move_joint, args=(r, pose, 12000, True)))
+        threads[-1].start()
+
+    for t in threads:
+        t.join()
         
+def move_right(pose):
+    threads = []
+    for r in hostnames:
+        threads.append(Thread(move_joint, args=(r, pose, 13000, True)))
+        threads[-1].start()
+
+    for t in threads:
+        t.join()
+                
     
+def testrun():
+    while True:
+        move_joint("collective-019","019_left_container")
+        move_joint("collective-019","019_left_container_approach")
+        move_joint("collective-019","019_left_container_above")
+        move_joint("collective-019","019_left")
+        move_joint("collective-019","reset")
+
+def attention():
+    threads = []
+    for r in hostnames:
+        if r == "10.157.174.245":
+            continue
+        threads.append(Thread(target=wink_thread, args=(r, 12000)))
+        threads.append(Thread(target=wink_thread, args=(r, 13000)))
+        threads[-2].start()
+        threads[-1].start()
+    
+    for t in threads:
+        t.join()
+    return "finished"  
+    move_all("reset")
+    move_all("wink")
+    move_all("wink2")
+    move_all("wink3")
+    move_all("wink2")
+    move_all("reset")
