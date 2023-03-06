@@ -8,7 +8,7 @@ ROOT=$(dirname "$(realpath $0)")/..
 cd ${ROOT}
 
 # build mios
-${ROOT}/install.sh 10.157.174.54
+${ROOT}/install.sh
 
 if [ ! -d "${ROOT}/mios/lib" ]; then
 echo "Library folder does not exist."

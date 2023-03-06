@@ -14,15 +14,15 @@ set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/_deps)
 
 FetchContent_Declare(
     libfranka
-    GIT_REPOSITORY https://github.com/frankaemika/libfranka-release.git
-    GIT_TAG upstream/0.9.0)
+    GIT_REPOSITORY https://github.com/frankaemika/libfranka.git
+    GIT_TAG 0.9.2)
 set(BUILD_EXAMPLES OFF CACHE INTERNAL "No examples")
 set(BUILD_TESTS OFF CACHE INTERNAL "No examples")
 
 FetchContent_Declare(
     mirmi_cpp_utils
     GIT_REPOSITORY https://gitlab.lrz.de/mirmi-internal/mirmi_utils.git
-    GIT_TAG v1.7.0)
+    GIT_TAG v1.7.2)
 
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE INTERNAL "")
 
