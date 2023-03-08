@@ -64,7 +64,7 @@ logs/
 build*
 venv
 _deps
-
+mios
 
 # IDE files #
 ###########
