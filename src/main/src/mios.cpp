@@ -73,7 +73,7 @@ int main(int argc, char** argv){
         return -1;
     }
 
-    ros::init(argc, argv, "mios", ros::init_options::NoSigintHandler);
+    //ros::init(argc, argv, "mios", ros::init_options::NoSigintHandler);
 
     pybind11::scoped_interpreter guard{};
     mios::Core core(database_port,robot_configuration);

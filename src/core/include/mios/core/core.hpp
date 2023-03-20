@@ -6,7 +6,7 @@
 
 #include "mios/controller_pipeline/controller_pipeline.hpp"
 #include "mios/interface/interface.hpp"
-#include "mios/interface/ros_node.hpp"
+//#include "mios/interface/ros_node.hpp"
 #include "mios/learning_module/learning_module.hpp"
 #include "mios/memory/memory.hpp"
 #include "mios/panda/panda_body.hpp"
@@ -68,7 +68,7 @@ public:
     Portal* get_portal();
     TaskEngine* get_task_engine();
     CommandInterface* get_command_interface();
-    RosNode* get_ros_node();
+    //RosNode* get_ros_node();
     LearningModule* get_learning_module();
     TelemetryUDP* get_telemetry();
     const Percept *get_percept() const;
@@ -94,7 +94,7 @@ private:
     SkillLibrary m_skill_library;
     TaskEngine m_task_engine;
     CommandInterface m_command_interface;
-    RosNode m_ros_node;
+    //RosNode m_ros_node;
     LearningModule m_learning_module;
     TelemetryUDP m_telemetry;
     std::unique_ptr<ControllerPipeline> m_controller_pipeline;

@@ -12,10 +12,12 @@ mongo-cxx-driver/3.6.6
 openssl/1.1.1j
 
 [options]
-boost:shared=True
+boost*:shared=True
 
 [generators]
 cmake_find_package
+#CMakeDeps
+#CMakeToolchain
 
 [imports]
 lib, libboost_*.so* -> ./lib/boost

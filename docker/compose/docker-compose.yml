@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   mios:
-    image: "10.162.15.39/mios"
+    image: "mirmi/mios"
     restart: always
     environment:
       - verbosity=info
@@ -13,10 +13,10 @@ services:
     depends_on:
       - "ros"
       - "mongo"
-  ros:
-    image: "ros:noetic-ros-core"
-    network_mode: "host"
-    command: roscore
+  #ros:
+  #  image: "ros:noetic-ros-core"
+  #  network_mode: "host"
+  #  command: roscore
   mongo:
     image: "mongo:4.4.6"
     ports:
