@@ -2398,7 +2398,7 @@ def plot_collective_demo():
     tags = ["dualarm_demo"]
     p = DataProcessor()
     experiments = {
-                    "10.157.175.221":   "001_left", #0 ms            collective-001.local  
+                   # "10.157.175.221":   "001_left", #0 ms            collective-001.local  
                     "10.157.174.166":   "002_left",#0 ms            collective-002.local  
                     "10.157.174.167":   "003_left", #0 ms            collective-003.local   
                     "10.157.174.168":   "004_left", #0 ms            collective-004.local   

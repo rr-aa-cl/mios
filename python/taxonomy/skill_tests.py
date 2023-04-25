@@ -38,6 +38,7 @@ class InsertionTest(BaseTest):
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Insertable"]})
         context = self.default_context
         if host is not None and database is not None and task is not None:
+            print("download context: ", host, database,self.skill_class,task,cost_function)
             context = download_result2(host, database, self.skill_class, task, cost_function)
         context["skill"]["objects"] = {
             "Insertable": args["Insertable"],
@@ -365,8 +366,9 @@ class TipTest(BaseTest):
         self.initialize(default_context, reset_default_contexts, record_performance, object_modifier)
 
     def pre_run(self):
-        s = ServerProxy("http://collective-control-001:8000", allow_none=True)
-        s.subscribe_to_event("tippable_pressed", "collective-panda-007", "12000")
+        pass
+        #s = ServerProxy("http://collective-control-001:8000", allow_none=True)
+        #s.subscribe_to_event("tippable_pressed", "collective-panda-007", "12000")
 
     def run(self, args: dict, cost_function: str, host: str = None, database: str = None, task: str = None):
 
@@ -1277,6 +1279,8 @@ class CutTest(BaseTest):
         input("Press enter to teach the knife.")
         teach_object(self.robot, args["Knife"])
         call_method(self.robot, 12000, "set_grasped_object", {"object": args["Knife"]})
+        input("Press enter to teach the surface pose.")
+        teach_object(self.robot, args["Surface"])
         input("Press enter to teach the approach pose.")
         teach_object(self.robot, args["Approach"])
         input("Press enter to teach the cut start.")

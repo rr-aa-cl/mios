@@ -109,6 +109,17 @@ class Task:
         return result
 
 
+def command_collective(cmd: str, args: dict = {}):
+    threads = []
+    for r in hostnames:
+        robot = r
+        threads.append(Thread(target=call_method, args=(robot, 12000, cmd, args,)))
+        threads[-1].start()
+        threads.append(Thread(target=call_method, args=(robot, 13000, cmd, args,)))
+        threads[-1].start()
+    for t in threads:
+        t.join()
+
 def get_ip(hostname: str):
     print("hostname: ",hostname)
     return socket.gethostbyname(hostname)
