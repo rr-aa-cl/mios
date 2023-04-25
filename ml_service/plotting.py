@@ -2392,6 +2392,123 @@ def success_cost():
             print("best_cost: ",best_cost,"\nmean_cost: ",mean_cost,"\nworst_cost", worst_cost)
 
 
+def plot_collective_demo():
+    def isNaN(num):
+        return num != num
+    tags = ["dualarm_demo"]
+    p = DataProcessor()
+    experiments = {
+                   # "10.157.175.221":   "001_left", #0 ms            collective-001.local  
+                    "10.157.174.166":   "002_left",#0 ms            collective-002.local  
+                    "10.157.174.167":   "003_left", #0 ms            collective-003.local   
+                    "10.157.174.168":   "004_left", #0 ms            collective-004.local   
+                    "10.157.174.89" :   "005_left", #0 ms            collective-005.local   
+                    "10.157.174.80" :   "006_left",#0 ms            collective-006.local   
+                    "10.157.174.200":   "007_left",#0 ms            collective-007.local   
+                    "10.157.175.129":   "008_left", #0 ms            collective-008.local   
+                    "10.157.174.36" :   "009_left",#0 ms            collective-009.local 
+                    "10.157.174.59":    "010_left",                #collective-010#  
+                   # "10.157.175.87":    "011_left",#0 ms            collective-011.local
+                    "10.157.174.241":   "012_left",#0 ms            collective-012.local
+                    "10.157.174.201":   "013_left",#0 ms            collective-013.local
+                    "10.157.174.247":   "014_left",#0 ms            collective-014.local   
+                    "10.157.174.202":   "015_left",#0 ms            collective-015.local
+                    "10.157.174.203":   "016_left",#0 ms            collective-016.local    
+                    "10.157.174.46":    "017_left",#0 ms            collective-017.local    
+                    "10.157.174.103":   "018_left",#0 ms            collective-018.local    
+                    "10.157.174.206":   "019_left",#0 ms            collective-019.local   
+                    "10.157.174.204":   "020_left",#0 ms            collective-020.local    
+                    "10.157.175.173":   "021_left",#0 ms            collective-021.local    
+                    "10.157.174.244":   "022_left",#0 ms            collective-022.local   
+                    "10.157.174.205":   "023_left",#0 ms            collective-023.local    
+                    "10.157.175.156":   "024_left",#0 ms            collective-024.local    
+                    "10.157.174.186":   "025_left",#0 ms            collective-025.local    
+                    "10.157.174.245":   "026_left", #0 ms            collective-026.local    
+                    "10.157.174.249":   "027_left",#0 ms            collective-027.local   
+                    "10.157.174.255":   "028_left",#0 ms            collective-028.local    
+                    #"10.157.174.42":    "029_left",#0 ms            collective-029.local    
+                    "10.157.174.163":   "038_left",
+                    "10.157.174.175":   "039_left",
+                    "10.157.174.52" :   "046_left",
+                    "10.157.175.134":   "050_left",
+                }
+    learning_times_mean = []
+    learning_times_interval = []
+    for r in experiments.keys():
+        insertable = experiments[r]
+        results = get_multiple_experiment_data(r, "insertion", filter={"meta.tags": tags})
+        indexes2pop = []
+        average_time = 0
+        for i in range(len(results)):
+            if len(results[i].costs) < 9:
+                indexes2pop.append(i)
+                continue
+            average_time += results[i].total_time
+        if indexes2pop:
+            indexes2pop.reverse()
+        for i in indexes2pop:
+            results.pop(i)
+        indexes2pop = []
+        for i in range(len(results)):  # consider 8 succeses as learned
+            successes = results[i].get_successes_per_trial()
+            success_indexes = [index for index,success in enumerate(successes) if success is True]
+
+            if len(success_indexes)>=8:
+                results[i].trials = results[i].trials[:success_indexes[7]+1]  # cut off results at 8th success
+            else:
+                indexes2pop.append(i)
+        if indexes2pop:
+            indexes2pop.reverse()
+            for i in indexes2pop:
+                results.pop(i)
+
+        # mean learning time
+        learning_times = []
+        for result in results:
+            learning_time = 0
+            for t in result.trials:
+                if t["t_delta"] < 10:
+                    learning_time+=t["t_delta"]
+            if type(learning_time) is float:
+                learning_times.append(learning_time)
+        if len(learning_times) > 15:
+            print(learning_times[15])
+        learning_time_mean = np.mean(learning_times)
+        learning_time_interval = scipy.stats.t.interval(alpha=0.95, df=len(learning_times)-1, loc=np.mean(learning_times), scale=scipy.stats.sem(learning_times))
+        learning_times_mean.append(learning_time_mean)
+        learning_times_interval.append(learning_time_interval)
+    #sort for collective plot:
+    print(learning_times_mean)
+    indexes2pop=[]
+    for i,(mean, interval) in enumerate(zip(learning_times_mean, learning_times_interval)):
+        if isNaN(mean):
+            indexes2pop.append(i)
+    if indexes2pop:
+        indexes2pop.reverse()
+        for i in indexes2pop:
+            learning_times_mean.pop(i)
+            learning_times_interval.pop(i)
+
+    sorted_learning_data = sorted(zip(learning_times_interval, learning_times_mean), key=lambda x: x[1])
+    learning_times_mean = [x[1] for x in sorted_learning_data]
+    learning_times_interval = [x[0] for x in sorted_learning_data]
+    print(learning_times_mean)
+    #plot
+    learning_times_interval.insert(0, (0,0))
+    learning_times_mean.insert(0,0)
+    fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
+    axes1.set_xlabel("Time [s]")
+    axes1.set_ylabel("learned Skills [1]")
+    print(len(learning_times_mean))
+    axes1.plot(learning_times_mean, list(range(len(learning_times_mean))))
+    lower_interval = [x[0] for x in learning_times_interval]
+    upper_interval = [x[1] for x in learning_times_interval]
+    axes1.fill_betweenx(list(range(len(learning_times_mean))), lower_interval, upper_interval, alpha=0.2)
+    axes1.set_xlim(0,600)
+    axes1.set_ylim(0,32)
+    plt.show()
+
+
 def plot_simple_learning():
     robots = ["collective-panda-004"]
     p = DataProcessor()

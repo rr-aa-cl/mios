@@ -9,7 +9,7 @@ from mongodb_client.mongodb_client import MongoDBClient
 
 
 def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service: ServiceConfiguration, n_eval: int = 1,
-                     tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True):
+                     tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True, service_port:int = 8000):
     if tags is None:
         tags = []
 
@@ -26,7 +26,7 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
         if keep_record is True and len(client.read("ml_results", problem_def.skill_class, {"meta.tags": {"$all": problem_def.tags}})) != 0:
             print("Continue at n" + str(i+1))
             continue
-        s = ServerProxy("http://" + learner + ":8000", allow_none=True)
+        s = ServerProxy("http://" + learner + ":"+str(service_port), allow_none=True)
         # if knowledge is not None:
         #     if "scope" not in knowledge:
         #         knowledge["scope"] = []
@@ -42,7 +42,7 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
 
 
 def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, service: ServiceConfiguration, iter: int = 1,
-                     tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True):
+                     tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True, service_port:int = 8000):
     if tags is None:
         tags = []
 
@@ -59,7 +59,7 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
     if keep_record is True and len(client.read("ml_results", problem_def.skill_class, {"meta.tags": {"$all": problem_def.tags}})) != 0:
         print("Continue at n" + str(iter+1))
         return
-    s = ServerProxy("http://" + learner + ":8000", allow_none=True)
+    s = ServerProxy("http://" + learner + ":"+str(service_port), allow_none=True)
     if knowledge_tmp is not None:
         #if "scope" not in knowledge_tmp:
         #    knowledge_tmp["scope"] = []
@@ -75,9 +75,9 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
     
         # backup_result(agent, "collective-control-001.local", problem_def.skill_class, uuid)
 
-def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion", db: str ="ml_results", min_size: int =0):
+def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion", db: str ="ml_results", min_size: int =0, mongo_port=27017):
     for robot in robots:
-        mongo_client = MongoDBClient(robot)
+        mongo_client = MongoDBClient(robot,port=27017)
         documents = mongo_client.read(db, task_class, {"meta.tags":tags})
         if len(documents) == 0:
             print("Not found documents on ", robot)

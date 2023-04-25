@@ -66,8 +66,8 @@ class SVMConfiguration(ServiceConfiguration):
 
 
 class SVMService(BaseService):
-    def __init__(self):
-        super(SVMService, self).__init__()
+    def __init__(self, mios_port=12000, mongo_port=27017):
+        super(SVMService, self).__init__(mios_port, mongo_port)
 
         self.constraints_multiplier = []
         self.failure_cost = None

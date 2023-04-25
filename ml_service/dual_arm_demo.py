@@ -8,58 +8,17 @@ from services.knowledge import Knowledge
 from utils.helper_functions import *
 from run_experiments import *
 from demo2 import stop_service
+from run_experiments import *
 from threading import Thread
+from run_experiments import learn_insertion
 
-
-class TaskO:
-    def __init__(self, robot):
-        self.skill_names = []
-        self.skill_types = []
-        self.skill_context = dict()
-        self.context = {
-            "parameters": {
-                "skill_names": [],
-                "skill_types": [],
-                "as_queue": False
-            },
-            "skills": self.skill_context
-        }
-
-        self.robot = robot
-        self.task_uuid = "INVALID"
-        self.t_0 = 0
-
-    def add_skill(self, name, skill_class, context):
-        self.skill_names.append(name)
-        self.skill_types.append(skill_class)
-        self.skill_context[name] = context
-
-        self.context["parameters"]["skill_names"] = self.skill_names
-        self.context["parameters"]["skill_types"] = self.skill_types
-        self.context["skills"] = self.skill_context
-
-    def start(self, queue: bool = False):
-        self.t_0 = time.time()
-        self.context["parameters"]["as_queue"] = queue
-        response = start_task(self.robot, "GenericTask", parameters=self.context, port = 12003)
-        self.task_uuid = response["result"]["task_uuid"]
-
-    def wait(self):
-        result = wait_for_task(self.robot, self.task_uuid, )
-        #print("Task execution took " + str(time.time() - self.t_0) + " s.")
-        return result
-
-    def stop(self):
-        result = stop_task(self.robot, port = 12003)
-        #print("Task execution took " + str(time.time() - self.t_0) + " s.")
-        return result
 
 path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
-robot = "kfm01-dev.rsi.ei.tum.de"
-#port_right = 12003
-#port_left = 12000
-port_right = 12000
-port_left = 13000
+#robot = "kfm01-dev.rsi.ei.tum.de"
+#robot = "collective-008"
+
+port_right = 13000
+port_left = 12000
 
 
 def hold_pose(robot, duration, port):
@@ -81,15 +40,15 @@ def hold_pose(robot, duration, port):
     #t.wait()
 
 
-def insert_test(learning_time = 121):
+def insert_test(robot, learning_time = 121, wait=True):
     move_joint(robot,"hold_lock",port_right)
     hold_pose(robot,3600,port_right)
-    approach = "generic_insertable" + "_container_approach"
-    container = "generic_insertable" + "_container"
+    approach = "generic" + "_container_approach"
+    container = "generic" + "_container"
     
-    move_joint(robot,"generic_insertable"+"_container_above", port_left)
+    move_joint(robot,"generic"+"_container_above", port_left)
     call_method(robot,port_left,"set_grasped_object",{"object":"generic_insertable"})
-    move_joint(robot,"generic_insertable"+"_container_approach", port_left)
+    move_joint(robot,"generic"+"_container_approach", port_left)
 
     #insertion_context = download_best_result_tags("collective-panda-prime.local","ml_results","insertion",["collective_learning"])
     f = open(path_to_default_context + "insertion.json")
@@ -114,22 +73,23 @@ def insert_test(learning_time = 121):
         learn_single_task(robot, pd, sc, tags, 0, False, knowledge_source.to_dict(), False)
     else:
         knowledge_source = Knowledge()
-        knowledge_source.kb_location =  "collective-dev-001.rsi.ei.tum.de"  #"collective-panda-prime" 
-        knowledge_source.mode = "global"
+        #knowledge_source.kb_location =  "collective-dev-001.rsi.ei.tum.de"  #"collective-panda-prime" 
+        knowledge_source.mode = "local"
         knowledge_source.scope = ["demo_collective"]
         knowledge_source.scope.extend(["generic_insertable"])
         knowledge_source.type = "all"
         learn_single_task(robot, pd, sc, tags, 0, False, knowledge_source.to_dict(), False)
-    input("Press any key to stop learning.")
+    if wait:
+        input("Press any key to stop learning.")
     
-    stop_service(robot)
-
-    while call_method(robot,port_left,"is_busy")["result"]["busy"]:
         stop_service(robot)
 
-        time.sleep(2)
+        while call_method(robot,port_left,"is_busy")["result"]["busy"]:
+            stop_service(robot)
 
-    time.sleep(5)
+            time.sleep(2)
+        stop_task(robot,port=port_right)
+        time.sleep(5)
     #place_insertable("collective-panda-prime","key_door","key_door_container","key_door_container_approach","key_door_container_above")
 
 
@@ -206,3 +166,89 @@ def demo():
         thread.start()
     for thread in threads:
         thread.join()
+
+def stop_services():
+    def stop_service(service):
+        is_running = True
+        while is_running:
+            try:
+                service.stop_sercive()
+                time.sleep(3)
+                is_running = service.is_busy()
+            except:
+                is_running = False
+    hostnames = ["collective-%03d.rsi.ei.tum.de"%n for n in range(1,47)]
+    threads = []
+    learning_services = []
+    for r in hostnames:
+        threads.append(Thread(target=stop_service, args=(ServerProxy("http://" + r+ ":8000", allow_none=True))))
+        threads[-1].start()
+        threads.append(Thread(target=stop_service, args=(ServerProxy("http://" + r+ ":9000", allow_none=True))))
+        threads[-1].start()     
+    for t in threads:
+        t.join()
+
+
+def test():
+    hostnames = ["collective-%03d.rsi.ei.tum.de"%n for n in range(1,25)]
+    for robot in hostnames:
+        try:
+            insert_test(robot,50,wait=False)
+        except TypeError:
+            pass
+    input("press key to stop learning")
+    for robot in hostnames:
+        try:
+            stop_service(robot)
+            while call_method(robot,port_left,"is_busy")["result"]["busy"]:
+                stop_service(robot)
+            stop_task(robot,port=port_right)
+        except TypeError:
+            pass
+
+def dryrun():
+    hostnames = ["collective-%03d.rsi.ei.tum.de"%n for n in range(1,50)]
+    lefties = []
+    righties = []
+    dualarm = []
+    for host in hostnames:
+        stop_task(host,port=12000)
+        stop_task(host,port=13000)
+        r_left = call_method(host,12000,"get_state")
+        r_right = call_method(host,13000,"get_state")
+        if r_left is not None:
+            if r_left["result"]["state"] == "idle":
+                lefties.append(host)
+        if r_right is not None:
+            if r_right["result"]["state"] == "idle":
+                righties.append(host)
+        if host in lefties and host in righties:
+            dualarm.append(host)
+            lefties.remove(host)
+            righties.remove(host)
+    
+    print("dualarm:\n",dualarm,"\n")
+    print("lefties:\n",lefties,"\n")
+    print("righties:\n",righties,"\n")
+
+def run_collective():
+    tasks = {"collective-001":{"left":["insertable_left"], "right":["insertable_right"]}
+    #...
+    }
+    tags = ["AI.BAY","demo"]
+    threads = []
+    for host in tasks.keys():
+        knowledge_source = Knowledge()
+        knowledge_source.kb_location = "collective-dev-001"
+        knowledge_source.mode = "global"
+        knowledge_source.scope = []
+        knowledge_source.scope.extend(tags)
+        knowledge_source.scope.append("n"+str(n_current_iter+1))
+        knowledge_source.type = "all"
+        learn_insertion(host, tasks[host]["left"]+"approach", tasks[host]["left"], tasks[host]["left"]+"container",tags,None,False,1,8000)
+        learn_insertion(host, tasks[host]["right"]+"approach", tasks[host]["right"], tasks[host]["right"]+"container",tags,None,False,1,9000)
+
+
+
+
+
