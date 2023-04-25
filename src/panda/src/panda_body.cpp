@@ -25,18 +25,12 @@ bool PandaBody::initialize(std::string robot_arm){
     m_has_arm=m_memory->read_parameters()->system.has_robot;
     m_hand=m_memory->read_parameters()->system.gripper;
     
-<<<<<<< HEAD
     std::optional<std::string> ip;
     if(m_has_arm){
     //request control and activate FCI
         spdlog::debug("PandaBody::initialize()");
         ip = PandaBody::ping_robot(m_memory->get_parameters()->system.robot_ip);     
     }
-=======
-    // print(m_robot_arm);
-    // std::string ip = (robot_arm == "Left")? "192.168.3.100" : "192.168.4.100";
-    m_memory->get_parameters()->system.robot_ip = get_robot_ip(m_memory->read_parameters()->system.robot_ip).value_or("127.0.0.1");
->>>>>>> 739ad795c5c2fdb16634c5f1c92ea3b0fa867b98
 
     m_memory->get_parameters()->system.robot_ip = ip.value_or("127.0.0.1");
     if(!connect_to_robot(m_memory->read_parameters()->system.robot_ip)){
@@ -894,7 +888,6 @@ bool PandaBody::grasp(double width, double speed, double force, double epsilon_i
                 spdlog::error("Gripper cannot reach width of "+std::to_string(width)+". Must be between 0 and "+std::to_string(max_width)+".");
                 return false;
             }
-<<<<<<< HEAD
             /*
             if(width>=current_width){
                 spdlog::error("Grasping to a width larger than the current width is not possible.");
@@ -902,13 +895,6 @@ bool PandaBody::grasp(double width, double speed, double force, double epsilon_i
                 return false;
             }
             */
-=======
-            // if(width>=current_width){
-            //     spdlog::error("Grasping to a width larger than the current width is not possible.");
-            //     spdlog::debug("Current width is " + std::to_string(current_width) + ", desired width is " + std::to_string(width));
-            //     return false;
-            // }
->>>>>>> 739ad795c5c2fdb16634c5f1c92ea3b0fa867b98
 
             if(state.is_grasped){
                 spdlog::error("I am already grasping something.");

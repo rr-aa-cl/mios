@@ -5,14 +5,9 @@ services:
     restart: always
     environment:
       - verbosity=info
-<<<<<<< HEAD
-      - database_port=27017
-      - robot_config=0
-=======
       - database_port=27005
       - robot_config=1
       - robot_arm=left
->>>>>>> 739ad795c5c2fdb16634c5f1c92ea3b0fa867b98
     network_mode: "host"
     cap_add:
       - SYS_NICE
