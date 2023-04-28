@@ -7,7 +7,7 @@ def insertion_test(robot: str, insertable: str, container: str, approach: str, c
     start_experiment(t,
                      {"Insertable": insertable, "Container": container, "Approach": approach},
                      {"Extractable": insertable, "Container": container,
-                      "ExtractTo": approach, "GoalPose": approach}, 50, cf,
+                      "ExtractTo": approach, "GoalPose": approach}, 1, cf,
                      "collective-control-001", "skill_data", insertable)
 
 
@@ -17,14 +17,14 @@ def extraction_test(robot: str, extractable: str, container: str, extract_to: st
                          "ExtractTo": extract_to},
                      {"Insertable": extractable, "Container": container,
                       "Approach": extract_to,
-                      "GoalPose": extract_to}, 50, cf,
+                      "GoalPose": extract_to}, 1, cf,
                      "collective-control-001", "skill_data", extractable)
 
 
 def press_button_test(robot: str, button: str, pressed: str, approach: str, cf: str):
     t = PressButtonTest(robot)
     start_experiment(t, {"Button": button, "Approach": approach, "Pressed": pressed},
-                     {"GoalPose": approach}, 50, cf, "collective-control-001", "skill_data",
+                     {"GoalPose": approach}, 1, cf, "collective-control-001", "skill_data",
                      button)
 
 
@@ -95,7 +95,7 @@ def bend_test(robot: str, bendable: str, goal: str, start: str, cf: str):
 def turn_test(robot: str, turnable: str, goal: str, start: str, cf: str):
     t = TurnTest(robot)
     start_experiment(t, {"Turnable": turnable, "GoalOrientation": goal},
-                     {"Turnable": turnable, "GoalOrientation": start}, 50, cf,
+                     {"Turnable": turnable, "GoalOrientation": start}, 1, cf,
                      "collective-control-001", "skill_data", turnable)
 
 
