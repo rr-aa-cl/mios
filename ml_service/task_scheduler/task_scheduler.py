@@ -23,12 +23,13 @@ class Task:
 
 class TaskScheduler:
 
-    def __init__(self, notification_user_token: str = "", notification_api_token: str = ""):
+    def __init__(self, notification_user_token: str = "", notification_api_token: str = "", interface_port=8000):
         self.unassigned_tasks = Queue()
         self.assigned_tasks = set()
         self.services = set()
         self.keep_running = False
         self.kb_location = "localhost"
+        self.interface_port=interface_port
         self.done_tasks = 0
         self.n_tasks = 0
         #self.pushover_client = Client(notification_user_token, api_token=notification_api_token)
@@ -76,7 +77,7 @@ class TaskScheduler:
 
     def is_service_ready(self, service_url: str, agents: list) -> bool:
         logger.debug("TaskScheduler::is_service_ready(" + service_url + ", " + str(agents) + ")")
-        s = ServerProxy("http://" + service_url + ":8000", allow_none=True)
+        s = ServerProxy("http://" + service_url + ":"+str(self.interface_port), allow_none=True)
         try:
             ready = s.is_ready(agents)
             logger.debug("TaskScheduler::is_service_ready.after_call")
@@ -87,7 +88,7 @@ class TaskScheduler:
 
     def solve_task(self, task: Task):
         logger.debug("TaskScheduler::solve_task.starting at" +str(task.service_url)+" with task mode "+str(task.knowledge_mode))
-        s = ServerProxy("http://" + task.service_url + ":8000", allow_none=True)
+        s = ServerProxy("http://" + task.service_url + ":"+str(self.interface_port), allow_none=True)
         knowledge_info = {
             "mode": task.knowledge_mode,
             "type": task.knowledge_type,

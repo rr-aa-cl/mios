@@ -46,16 +46,18 @@ class Trial:
 
 
 class Engine:
-    def __init__(self, agents: set = None):
+    def __init__(self, agents: set = None, mios_port=12000, mongo_port=27017):
         logger.debug("Engine.__init__(" + str(agents) + ")")
         if agents is None:
             agents = set()
+        self.mios_port = mios_port
+        self.mongo_port = mongo_port
         self.agents = agents
         self.free_agents = agents
         self.queued_trials = Queue()
         self.completed_trials = dict()
 
-        self.database_client = MongoDBClient()
+        self.database_client = MongoDBClient(port=self.mongo_port)
         self.database_results_collection = None
         self.database_results_id = None
 
@@ -63,6 +65,7 @@ class Engine:
         self.meta_data = dict()
 
         self.keep_running = False
+        self.pause_execution = False
         self.max_trial_repeats = 3
 
         self.cnt_trial = 0
@@ -97,6 +100,12 @@ class Engine:
 
     def stop(self):
         self.keep_running = False
+    
+    def pause(self):
+        self.pause_execution = True
+
+    def resume(self):
+        self.pause_execution = False
 
     def push_trial(self, trial: Trial) -> str:
         logger.debug("Engine.push_trial()")
@@ -185,7 +194,7 @@ class Engine:
                         continue
 
                     # logger.debug("Engine.main_loop().is_busy(" + a + ")")
-                    response = call_method(a, 12000, "is_busy")
+                    response = call_method(a, self.mios_port, "is_busy")
                     if response is None:
                         logger.debug("is_busy on agent " + a + ": response is None")
                         # time.sleep(1)
@@ -329,7 +338,7 @@ class Engine:
                         time.sleep(1)
                         continue
                 else:
-                    response = call_method(agent, 12000, i["method"], i["parameters"])
+                    response = call_method(agent, self.mios_port, i["method"], i["parameters"])
                     if response is None:
                         logger.debug(response)
                         time.sleep(1)
@@ -342,9 +351,11 @@ class Engine:
     def _start_task(self, agent: str, task_context: dict) -> (bool, str):
         task_uuid = "INVALID"
         task_name = task_context["name"]
+        while(self.pause_execution and self.keep_running):
+            time.sleep(1)
         logger.info("Executing task " + task_name + " on agent " + agent + ".")
         # logger.debug("Task context: " + str(task_context))
-        response = start_task(agent, task_name, task_context, True)
+        response = start_task(agent, task_name, task_context, True, port=self.mios_port)
         if response is None:
             logger.warning("Agent " + agent + " is not responding.")
             time.sleep(1)
@@ -373,7 +384,7 @@ class Engine:
 
     def _wait_for_task(self, agent: str, task_uuid: str) -> (bool, TaskResult):
         task_result = TaskResult()
-        response = wait_for_task(agent, task_uuid)
+        response = wait_for_task(agent, task_uuid, port=self.mios_port)
         # logger.debug("Engine._wait_for_task.response: " + str(response))
         if response is None:
             logger.warning("Agent " + agent + " is not responding.")
@@ -421,7 +432,7 @@ class Engine:
                         time.sleep(1)
                         continue
                 else:
-                    response = call_method(agent, 12000, i["method"], i["parameters"])
+                    response = call_method(agent, self.mios_port, i["method"], i["parameters"])
                     if response is None:
                         logger.debug(response)
                         time.sleep(1)

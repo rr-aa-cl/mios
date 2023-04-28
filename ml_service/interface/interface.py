@@ -29,24 +29,29 @@ class InterfaceServer(ThreadingMixIn, SimpleXMLRPCServer):
 class Interface:
     """Class that provides basic controlling functions for ml_service"""
 
-    def __init__(self):
+    def __init__(self, interface_port=8000, mios_port=12000, mongo_port=27017):
         self.service = None
         self.learn_thread = None
         self.rpc_server = None
+        self.mios_port = mios_port
+        self.interface_port = interface_port
+        self.mongo_port = mongo_port
         self.service_lock = Lock()
-        self.global_db = Database(8001)
+        self.global_db = Database(self.interface_port+1, self.mongo_port)
         self.global_db_thread = None
-        self.rpc_server = InterfaceServer(("0.0.0.0", 8000), allow_none=True)
+        self.rpc_server = InterfaceServer(("0.0.0.0", interface_port), allow_none=True)
         self.start_global_database()
 
     def start_rpc_server(self):
-        logger.debug("Interface::start_rpc_server()")
+        logger.debug("Interface::start_rpc_server() on port "+str(self.interface_port)+" with mios_port="+str(self.mios_port))
         self.rpc_server.register_introspection_functions()
         self.rpc_server.register_function(self.start_service_wrapper, "start_service")
         self.rpc_server.register_function(self.is_busy, "is_busy")
         self.rpc_server.register_function(self.wait_for_service, "wait_for_service")
         self.rpc_server.register_function(self.is_ready, "is_ready")
         self.rpc_server.register_function(self.stop_service, "stop_service")
+        self.rpc_server.register_function(self.pause_service, "pause_service")
+        self.rpc_server.register_function(self.resume_service, "resume_service")
         self.rpc_server.register_function(self.status, "status")
         self.rpc_server.serve_forever()
         logger.debug("Interface::start_rpc_server.server_stopped")
@@ -116,6 +121,16 @@ class Interface:
         """Stop the learning process, if possible save all results and stop the robot"""
         if self.service is not None:
             self.service.stop()
+    
+    def pause_service(self):
+        logger.debug("Interface::Pause()")
+        if self.service is not None:
+            self.service.pause()
+    
+    def resume_service(self):
+        logger.debug("Interface::resume()")
+        if self.service is not None:
+            self.service.start()
 
     def is_ready(self, agents) -> bool:
         if self.service_lock.locked() is True:
@@ -124,7 +139,7 @@ class Interface:
         for a in agents:
             logger.debug("Interface::is_ready.before_call")
             print("############################################################################")
-            response = call_method(a, 12000, "is_busy")
+            response = call_method(a, self.mios_port, "is_busy")
             print("############################################################################2")
             logger.debug("Interface::is_ready.after_call")
             if response["result"]["busy"] is True:
@@ -141,7 +156,7 @@ class Interface:
         """"return status of service: [learning, thinking, ready, ]"""
         response = {}
         response["is_busy"] = self.service_lock.locked()
-        mios_state = call_method(agent, 12000, "get_state")
+        mios_state = call_method(agent, self.mios_port, "get_state")
         if mios_state is not None:
             if "current_task" in mios_state["result"]:
                 response["current_task"] = mios_state["result"]["current_task"]

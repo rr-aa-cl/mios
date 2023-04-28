@@ -40,8 +40,8 @@ class CMAESConfiguration(ServiceConfiguration):
 
 
 class CMAESService(BaseService):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, mios_port=12000, mongo_port=27017):
+        super().__init__(mios_port,mongo_port)
 
         self.success_ratio = 0
 

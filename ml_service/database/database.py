@@ -15,14 +15,14 @@ class DatabaseServer(ThreadingMixIn, SimpleXMLRPCServer):
 
 
 class Database():
-    def __init__(self, port):
+    def __init__(self, port, mongo_port = 27017):
         # Database names:
         self.task_knowledge_db_name = "global_knowledge"  # knowledge of single tasks
         self.results_db_name = "global_ml_results"  # raw result data
 
         self.rpc_server = None
-        self.db_client = MongoDBClient()
-        self.knowledge_manager = KnowledgeManager()
+        self.db_client = MongoDBClient(port=mongo_port)
+        self.knowledge_manager = KnowledgeManager(port=mongo_port)
         self.port = port
 
         self.stop = False

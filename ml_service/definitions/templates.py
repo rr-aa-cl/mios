@@ -4,11 +4,11 @@ from xmlrpc.client import ServerProxy
 
 
 class InsertionFactory(ProblemDefinitionFactory):
-    def __init__(self, robots: list, cost_function: CostFunctionFactory, objects: dict):
+    def __init__(self, robots: list, cost_function: CostFunctionFactory, objects: dict, mios_port=12000):
         super().__init__(robots, "insertion", [("TaxInsertion", "insertion", "insertion")],
                          [("MoveToPoseJoint", "move", "move_joint")],
                          [("TaxExtraction", "extraction", "extraction"),
-                          ("MoveToPoseJoint", "move", "move_joint")], [], cost_function, objects)
+                          ("MoveToPoseJoint", "move", "move_joint")], [], cost_function, objects, mios_port=mios_port)
 
     def get_limits(self):
         limits = {
@@ -129,7 +129,7 @@ class InsertionFactory(ProblemDefinitionFactory):
 
     def run_setup(self) -> bool:
         for r in self.robots:
-            result = call_method(r, 12000, "set_grasped_object", {"object": self.objects["Insertable"]})
+            result = call_method(r, self.mios_port, "set_grasped_object", {"object": self.objects["Insertable"]})
         return True
 
     def modify_contexts(self):
@@ -138,11 +138,11 @@ class InsertionFactory(ProblemDefinitionFactory):
 
 
 class ExtractionFactory(ProblemDefinitionFactory):
-    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict):
+    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict, mios_port=12000):
         super().__init__(robot, "extraction", [("TaxExtraction", "extraction", "extraction")],
                          [("MoveToPoseJoint", "move", "move_joint"), ("TaxInsertion", "insertion", "insertion")],
                          [("MoveToPoseJoint", "move", "move_joint"), ("TaxInsertion", "insertion", "insertion")],
-                         [], cost_function, objects)
+                         [], cost_function, objects, mios_port=mios_port)
 
     def get_limits(self):
         limits = {
@@ -219,7 +219,7 @@ class ExtractionFactory(ProblemDefinitionFactory):
             "ExtractTo"]
 
     def run_setup(self) -> bool:
-        result = call_method(self.robot, 12000, "set_grasped_object", {"object": self.objects["Extractable"]})
+        result = call_method(self.robot, self.mios_port, "set_grasped_object", {"object": self.objects["Extractable"]})
         return True
 
     def modify_contexts(self):
@@ -229,10 +229,10 @@ class ExtractionFactory(ProblemDefinitionFactory):
 
 
 class TipFactory(ProblemDefinitionFactory):
-    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict):
+    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict, mios_port=12000):
         super().__init__(robot, "tip", [("TaxTip", "tip", "tip")],
                          [("MoveToPoseJoint", "move", "move_joint")],
-                         [("MoveToPoseJoint", "move", "move_joint")], [], cost_function, objects)
+                         [("MoveToPoseJoint", "move", "move_joint")], [], cost_function, objects, mios_port=mios_port)
 
     def get_limits(self):
         limits = {
@@ -297,10 +297,10 @@ class TipFactory(ProblemDefinitionFactory):
 
 
 class DragFactory(ProblemDefinitionFactory):
-    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict):
+    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict, mios_port=12000):
         super().__init__(robot, "drag", [("TaxDrag", "drag", "drag")],
                          [("MoveToPoseJoint", "move", "move_joint")],
-                         [("MoveToPoseJoint", "move", "move_joint")], [], cost_function, objects)
+                         [("MoveToPoseJoint", "move", "move_joint")], [], cost_function, objects, mios_port=mios_port)
 
     def get_limits(self):
         limits = {
@@ -343,16 +343,16 @@ class DragFactory(ProblemDefinitionFactory):
             "StartPose"]
 
     def run_setup(self) -> bool:
-        result = call_method(self.robot, 12000, "set_grasped_object", {"object": self.objects["Draggable"]})
+        result = call_method(self.robot, self.mios_port, "set_grasped_object", {"object": self.objects["Draggable"]})
         return True
 
 
 class TurnLeverFactory(ProblemDefinitionFactory):
-    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict):
+    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict, mios_port=12000):
         super().__init__(robot, "turn_lever", [("TaxTurnLever", "turn_lever", "turn_lever")],
                          [("TaxTurnLever", "turn_lever", "turn_lever"),("MoveToPoseJoint", "move", "move_joint")],
                          [("TaxTurnLever", "turn_lever", "turn_lever"),("MoveToPoseJoint", "move", "move_joint")],
-                         [], cost_function, objects)
+                         [], cost_function, objects, mios_port=mios_port)
 
     def get_limits(self):
         limits = {
@@ -409,15 +409,15 @@ class TurnLeverFactory(ProblemDefinitionFactory):
             "StartPose"]
 
     def run_setup(self) -> bool:
-        result = call_method(self.robot, 12000, "set_grasped_object", {"object": self.objects["Lever"]})
+        result = call_method(self.robot, self.mios_port, "set_grasped_object", {"object": self.objects["Lever"]})
         return True
 
 
 class PressButtonFactory(ProblemDefinitionFactory):
-    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict):
+    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict, mios_port=12000):
         super().__init__(robot, "press_button", [("TaxPressButton", "press_button", "press_button")],
                          [("MoveToPoseJoint", "move", "move_joint")],
-                         [("MoveToPoseJoint", "move", "move_joint")], [], cost_function, objects)
+                         [("MoveToPoseJoint", "move", "move_joint")], [], cost_function, objects, mios_port=mios_port)
 
     def get_limits(self):
         limits = {
@@ -496,11 +496,11 @@ class PressButtonFactory(ProblemDefinitionFactory):
 
 
 class BendFactory(ProblemDefinitionFactory):
-    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict):
+    def __init__(self, robot: str, cost_function: CostFunctionFactory, objects: dict, mios_port=12000):
         super().__init__(robot, "bend", [("TaxBend", "bend", "bend")],
                          [("TaxBend", "bend", "bend"),("MoveToPoseJoint", "move", "move_joint")],
                          [("TaxBend", "bend", "bend"),("MoveToPoseJoint", "move", "move_joint")],
-                         [], cost_function, objects)
+                         [], cost_function, objects, mios_port=mios_port)
 
     def get_limits(self):
         limits = {
@@ -563,5 +563,5 @@ class BendFactory(ProblemDefinitionFactory):
         self.reset_instructions[0]["parameters"]["skills"]["bend"]["skill"]["time_max"] = 20
 
     def run_setup(self) -> bool:
-        result = call_method(self.robot, 12000, "set_grasped_object", {"object": self.objects["Bendable"]})
+        result = call_method(self.robot, self.mios_port, "set_grasped_object", {"object": self.objects["Bendable"]})
         return True
