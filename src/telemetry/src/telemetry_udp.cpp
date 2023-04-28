@@ -36,7 +36,7 @@ bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, 
     if(it == m_subscribers.end()){
         std::string name = "telemetry_" + ip + ":" + std::to_string(port);
         Subscriber sub_temp = {port, ip, addr, subs, sendWithTerminatingNullCharacter,
-                               m_portal->open_udp_outstream(name, ip, port)};
+                               m_portal->open_udp_outstream(name, ip, port,{})};
         m_subscribers.push_back(sub_temp);  // add new subscriber
         if(!sub_temp.stream->connect()){
             spdlog::error("Could not connect outgoing UDP stream to " + sub_temp.address + ":" + std::to_string(sub_temp.port));

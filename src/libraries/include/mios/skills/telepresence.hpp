@@ -13,8 +13,10 @@ public:
 
     bool is_master;
     bool multicast;
+    std::optional<std::string> host;  //hostname or sending IP to specify the right interface 
     std::string ip_dst;
     std::vector<std::string> multicast_group;
+    std::string multicast_ip; //ip for multicast group, if not set -> "225.0.0.1"
     unsigned port_dst;
     unsigned port_src;
     unsigned remote_event_port; // remote port to be used for the handshake event
