@@ -16,13 +16,15 @@ FetchContent_Declare(
     libfranka
     GIT_REPOSITORY https://github.com/frankaemika/libfranka-release.git
     GIT_TAG upstream/0.9.2)
+    #GIT_REPOSITORY https://github.com/frankaemika/libfranka.git
+    #GIT_TAG 0.10.0)
 set(BUILD_EXAMPLES OFF CACHE INTERNAL "No examples")
 set(BUILD_TESTS OFF CACHE INTERNAL "No examples")
 
 FetchContent_Declare(
     mirmi_cpp_utils
     GIT_REPOSITORY https://gitlab.lrz.de/mirmi-internal/mirmi_utils.git
-    GIT_TAG origin/dev_samu)#v1.7.1)
+    GIT_TAG v1.7.2)
 
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE INTERNAL "")
 
