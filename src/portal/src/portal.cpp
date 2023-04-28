@@ -85,23 +85,33 @@ void Portal::bind_method_to_all(const char *method_name, std::function<nlohmann:
     }
 }
 
-std::shared_ptr<mirmi_utils::UDPStreamSender> Portal::open_udp_outstream(const std::string &name, const std::string &address, unsigned int port){
+std::shared_ptr<mirmi_utils::UDPStreamSender> Portal::open_udp_outstream(const std::string &name, const std::string &address, unsigned int port, const std::optional<std::string> &host){
     spdlog::trace("Portal::open_udp_outstream");
     if(m_outstreams.find(name)!=m_outstreams.end()){
         spdlog::error("A UDP channel with name " + name + " already exists.");
         return nullptr;
     }
-    m_outstreams.insert(std::make_pair(name,std::make_shared<mirmi_utils::UDPStreamSender>(name,address,port)));
+    if(!host.has_value()){
+        m_outstreams.insert(std::make_pair(name,std::make_shared<mirmi_utils::UDPStreamSender>(name,address,port)));
+    }
+    else{
+        m_outstreams.insert(std::make_pair(name,std::make_shared<mirmi_utils::UDPStreamSender>(name,address,port,host.value())));
+    }
     return m_outstreams[name];
 }
 
-std::shared_ptr<mirmi_utils::UDPStreamReceiver> Portal::open_udp_instream(const std::string &name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us, unsigned max_lost_packet, std::function<void(std::vector<double>&)> callback, bool multicast){
+std::shared_ptr<mirmi_utils::UDPStreamReceiver> Portal::open_udp_instream(const std::string &name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us, unsigned max_lost_packet, std::function<void(std::vector<double>&)> callback, bool multicast, const std::optional<std::string> &host, const std::optional<std::string> &multicast_ip){
     spdlog::trace("Portal::open_udp_instream");
     if(m_instreams.find(name)!=m_instreams.end()){
         spdlog::error("A UDP channel with name " + name + " already exists.");
         return nullptr;
     }
-    m_instreams.insert(std::make_pair(name,std::make_shared<mirmi_utils::UDPStreamReceiver>(name,port,buffer_size,timeout_s,timeout_us,max_lost_packet,callback,multicast)));
+    if(host.has_value()){
+        m_instreams.insert(std::make_pair(name,std::make_shared<mirmi_utils::UDPStreamReceiver>(name,port,buffer_size,timeout_s,timeout_us,max_lost_packet,callback,multicast,host.value(),multicast_ip.value_or("225.0.0.1"))));
+    }
+    else{
+        m_instreams.insert(std::make_pair(name,std::make_shared<mirmi_utils::UDPStreamReceiver>(name,port,buffer_size,timeout_s,timeout_us,max_lost_packet,callback,multicast)));
+    }
     return m_instreams[name];
 }
 

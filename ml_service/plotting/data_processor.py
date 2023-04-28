@@ -75,6 +75,19 @@ class DataProcessor:
                     c.extend([c[-1]] * (n_trials - len(c)))
         return costs
 
+    def get_collection_of_times(self, results: list, agent:str=None, specification: str = "all", cost_type:str=None, equal_length:bool = True) -> list:
+        times = []
+        for r in results:
+            times.append(r.get_cost_per_timestemp(cost_type, agent))
+
+        n_trials = self.find_maximum_length(times)
+
+        if equal_length:
+            for c in times:
+                if len(c) < n_trials:
+                    c.extend([c[-1]] * (n_trials - len(c)))
+        return costs
+
     def get_collection_of_costs_over_time(self, results: list, min_length: int = False, decreasing: bool = False, agent=None) -> list:
         costs = []
         times = []
@@ -119,6 +132,15 @@ class DataProcessor:
             max_cost = 1
             arr[i, -1] = percentage * cost[-1]
         return arr
+    
+    def get_average_time(self, results: list, episode_length: int = 1, agent=None, specification:str="all", cutoff:float = False):
+        cost, times = self.get_cost_over_timestemp(results, cutoff)  # timestemp t_1  - starting_time
+        total_times = []
+        for single_run_times in times:
+            total_times.append(single_run_times[-1])
+        interval = []
+        interval = scipy.stats.t.interval(alpha=0.95, df=len(total_times)-1, loc=np.mean(total_times), scale=scipy.stats.sem(total_times))
+        return np.mean(total_times), interval
 
     def get_average_cost(self, results: list, decreasing: bool = False, episode_length: int = 1, agent=None) -> Tuple[np.ndarray, np.ndarray]:
         cost = np.asarray(self.get_collection_of_costs(results, decreasing, episode_length, agent))
@@ -161,13 +183,17 @@ class DataProcessor:
         starting_time = []
         mean_cutoff_index = []
         for r in results:
-            print("min_length: ",min_length, " actual length:",len(r.costs))
-            cost.append(self.get_monotonically_decreasing_cost(r.costs[:min_length]))
-            if len(cost[-1]) < min_length:
-                cost[-1].extend([cost[-1][-1]] * (min_length - len(cost[-1])))
-            time.append(r.times[:min_length])
-            if len(time[-1]) < min_length:
-                time[-1].extend([time[-1][-1]] * (min_length - len(time[-1])))
+            if min_length:
+                print("min_length: ",min_length, " actual length:",len(r.costs))
+                cost.append(self.get_monotonically_decreasing_cost(r.costs[:min_length]))
+                if len(cost[-1]) < min_length:
+                    cost[-1].extend([cost[-1][-1]] * (min_length - len(cost[-1])))
+                time.append(r.times[:min_length])
+                if len(time[-1]) < min_length:
+                    time[-1].extend([time[-1][-1]] * (min_length - len(time[-1])))
+            else:
+                cost.append(self.get_monotonically_decreasing_cost(r.costs))
+                time.append(r.times)
             starting_time.append(r.starting_time)
             mean_cutoff_index.append(next((x for x in range(len(cost[-1])) if cost[-1][x]<cutoff), len(cost[-1])-1))
         cost =  np.asarray(cost)
@@ -185,6 +211,20 @@ class DataProcessor:
             interval_time.append(h)
         return np.average(cost, 0), np.asarray(interval_cost), np.average(time, 0), np.asarray(interval_time), np.average(starting_time, 0), int(np.ceil(np.mean(mean_cutoff_index)))+1
     
+    def get_cost_over_timestemp(self, results:list, cutoff:float = False):
+        costs = []
+        times = []
+        for r in results:
+            costs.append(self.get_monotonically_decreasing_cost(r.costs))
+            times.append(r.times)
+            if cutoff:
+                for i in range(len(costs[-1])):
+                    if costs[-1][i] <= cutoff:
+                        costs[-1] = costs[-1][:i+1]
+                        times[-1] = times[-1][:i+1]
+                        break
+        return costs, times
+
     def get_average_cost_over_trials(self, results: list, decreasing: bool = False, episode_length: int = 1, agent=None, specification: str = "all") -> Tuple[np.ndarray, np.ndarray]:
         cost = np.asarray(self.get_collection_of_costs(results, decreasing, episode_length, agent, specification=specification))
         confidence = 0.95

@@ -21,7 +21,7 @@ class Result:
             try:
                 if data_tmp["n" + str(i+1)]["t_1"] is not None:
                     self.trials.append(data_tmp["n" + str(i+1)])
-                    self.times.append(data["n" + str(i+1)]["t_0"] - self.starting_time)
+                    self.times.append(data["n" + str(i+1)]["t_1"] - self.starting_time)
                     self.costs.append(data["n" + str(i+1)]["q_metric"]["final_cost"])
             except KeyError:
                 continue
@@ -187,6 +187,48 @@ class Result:
         except Exception as e:
             print(e)
             print("Meta data: " + str(self.meta_data))
+
+    def get_cost_per_timestemp(self, cost_type: str = None, agent: str = None) -> Tuple[list, list]:
+            #print("get cost per time")
+            cost = []
+            time = []
+            try:
+                t_0 = self.trials[0]["t_0"]
+                for t in self.trials:
+                    #print("t = !!!\n",t)
+                    if agent is not None:
+                        if agent == t["agent"]:
+                            if cost_type is None:
+                                if "q_metric" not in t:
+                                    cost.append(t["cost"])
+                                else:
+                                    cost.append(t["q_metric"]["final_cost"])
+                            else:
+                                cost.append(t["q_metric"]["cost"][cost_type])
+                            #time.append(t["t_1"] - t_0)
+                            if t["t_1"] == None:    
+                                time.append(time[-1]+5.0)
+                            else:
+                                time.append(t["t_1"])
+                        else:
+                            continue
+                    else:
+                        if cost_type is None:
+                            if "q_metric" not in t:
+                                cost.append(t["cost"])
+                            else:
+                                cost.append(t["q_metric"]["final_cost"])
+                        else:
+                            cost.append(t["q_metric"]["cost"][cost_type])
+                        if t["t_1"] == None:    
+                            time.append(time[-1]+5.0)
+                        else:
+                            time.append(t["t_1"] )
+                #print(cost, time)
+                return cost, time
+            except Exception as e:
+                print(e)
+                print("Meta data: " + str(self.meta_data))
 
     def get_theta_per_trial(self):
         theta = []

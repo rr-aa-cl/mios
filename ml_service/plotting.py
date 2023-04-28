@@ -13,7 +13,7 @@ import matplotlib.patches as mpatches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 import csv
-import scipy.stats
+import scipy.stats as st
 
 plot = Plotter()
 
@@ -1934,7 +1934,6 @@ def plot_horizontal_learning():
     plt.show()
 
 
-
 def plot_collective_experiment_time():
     import time
 
@@ -2106,13 +2105,15 @@ def plot_collective_experiment_time():
     print("trials overall = ",sum(count_trials_overall))
     plt.show()
 
-def plot_collective_experiment():
-    tags = ["collective_learning_04_alt"]
-    tags = ["collective_learning_04_ext_alt"]
-    #tags = ["collective_learning_bugfix_alt"]
-    #tags = ["collective_learning_alt"]
+#######
+
+def plot_collective_experiment(tags = "collective_learning_04_alt"):
+    #tags = ["collective_learning_04_alt"]
+    #tags = ["collective_learning_04_ext_alt"]
+    ##tags = ["collective_learning_bugfix_alt"]
+    ##tags = ["collective_learning_alt"]
     #tags = ["collective_learning_parallel"]
-    #tags = ["collective_learning"]
+    ##tags = ["collective_learning"]
 
     #default, collective_learning_04_alt
     robots = {  "collective-panda-prime.local": ["key_door"],
@@ -2165,6 +2166,10 @@ def plot_collective_experiment():
                 "key_hatch": 0.25,
                 "key_old": 0.25
                 }
+    #for key in cutoff.keys():
+    #    cutoff[key] = cutoff[key] * 1.5
+    
+
     robot_addr = list(robots.keys())
     n_tasks = sum([len(tasks) for tasks in robots.values()])
     p = DataProcessor()
@@ -2182,11 +2187,17 @@ def plot_collective_experiment():
     xticks_labels = []
     count_agents = 0
     count_bars = 0
-    count_time_overall = []
+    average_experiment_times = []
+    time_robots = []
+    agent_task_times = []
+    agent_task_times_var = []
     for r in range(len(robot_addr)):
         task_count = 0
         title=False
         last_time = False
+        robot_time = []
+        agent_task_time = []
+        agent_task_time_var = []
         for e in robots[robot_addr[r]]:
             filters = []
             filters.extend(tags)
@@ -2196,7 +2207,7 @@ def plot_collective_experiment():
             results = get_multiple_experiment_data(robot_addr[r], "insertion", filter={"meta.tags": filters})
             indexes2pop = []
             tag_set = set()
-            average_time = 0
+            average_time = 0  # for 1 experiment
             for i in range(len(results)):
                 #if i < 4:  #  just for extended experiment bcause cylinder 10 was not working for the first 4 runs
                 #    indexes2pop.append(i)
@@ -2212,9 +2223,15 @@ def plot_collective_experiment():
                 indexes2pop.reverse()
                 for i in indexes2pop:
                     results.pop(i)
+            average_time, time_var = p.get_average_time(results,cutoff=cutoff[e])
 
-            average_time = average_time / len(results)
-            count_time_overall.append(average_time)
+            robot_time.append(average_time)  # time per robot is sum of all average experiment times
+            print(e, "average_time: ",average_time, time_var)
+            agent_task_time.append(average_time)
+
+            average_experiment_times.append(average_time)
+            agent_task_time_var.append(time_var)
+
             mean_length, interval = p.get_average_n_trials(results, cutoff=cutoff[e])
             print(mean_length, interval)
             print("robot_number=",r)
@@ -2240,14 +2257,19 @@ def plot_collective_experiment():
             axes1.set_ylabel("mean cost [1]")
             count_bars += 1
         count_agents += 1
+        time_robots.append(robot_time) # time_robots collects all robot execution times
+        agent_task_times.append(agent_task_time)  # for all agents the average times for their tasks [[cylinder_1,cylinder_2,..],[key_1,key_2,...],..]
+        agent_task_times_var.append(agent_task_time_var)
     fig1.tight_layout()
     plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
     print("trials overall = ",sum(count_trials_overall))
-    print("time overall = ", int(max(count_time_overall)/60)+1, ",min")
-    plt.show()
+    print("time overall = ", max([sum(robot_time) for robot_time in time_robots])/60, "min")
+    print("average experiment time = ", (sum(average_experiment_times)/n_tasks)/60, "min")
+    plt.show(block=False)
+    return max([sum(robot_time) for robot_time in time_robots])/60, agent_task_times, agent_task_times_var
 
-def plot_single_robot_experiment():
-    tags = ["single_robot_learning_without"]
+def plot_single_robot_experiment(tags = "single_robot_learning_without"):
+    #tags = ["single_robot_learning_without"]
     #tags = ["single_robot_learning_trans"]
 
     #default, collective_learning_04_alt
@@ -2279,6 +2301,9 @@ def plot_single_robot_experiment():
                 "key_hatch": 0.25,
                 "key_old": 0.25
                 }
+    #for key in cutoff.keys():
+    #    cutoff[key] = cutoff[key] * 1.5
+
     robot_addr = list(robots.keys())
     n_tasks = sum([len(tasks) for tasks in robots.values()])
     p = DataProcessor()
@@ -2297,25 +2322,34 @@ def plot_single_robot_experiment():
     xticks_labels = []
     count_agents = 0
     count_bars = 0
-
-    outsource = {"collective-panda-005": ["cylinder_10", "cylinder_30", "cylinder_50"]}
+    average_experiment_times = []
+    experiment_time = []
+    time_robots = []
+    agent_task_times = []
+    agent_task_times_var = []
+    outsource = ("collective-panda-004",{"collective-panda-005": ["cylinder_10", "cylinder_30", "cylinder_50"]})
     for r in range(len(robot_addr)):
         task_count = 0
         title=False
         last_time = False
+        robot_time = []
+        agent_task_time = []
+        agent_task_time_var = []
         for e in robots[robot_addr[r]]:
             filters = []
             filters.extend(tags)
             filters.append(e)
             print("tags = ", filters)
-
             results = get_multiple_experiment_data(robot_addr[r], "insertion", filter={"meta.tags": filters})
-            if r in outsource.keys():
-                results.extend(get_multiple_experiment_data("collective-panda-005", "insertion", filter={"meta.tags": filters}))
-
+            if robot_addr[r] is "collective-panda-004":
+                try:
+                    outsource_data = get_multiple_experiment_data("collective-panda-005", "insertion", filter={"meta.tags": filters})
+                    results.extend(outsource_data)
+                    print("outsource data found",len(outsource_data))
+                except DataNotFoundError:
+                    pass
             indexes2pop = []
             tag_set = set()
-            average_time = 0
             for i in range(len(results)):
                 if len(results[i].costs) < 9:
                     indexes2pop.append(i)
@@ -2323,14 +2357,20 @@ def plot_single_robot_experiment():
                 if results[i] in tag_set:
                     indexes2pop.append(i)
                 tag_set.add(str(results[i].tags))
-                average_time += results[i].total_time
             if indexes2pop:
                 indexes2pop.reverse()
                 for i in indexes2pop:
                     results.pop(i)
-            average_time = average_time / len(results)
-            count_time_overall.append(average_time)
-            
+
+            average_time, time_var = p.get_average_time(results,cutoff=cutoff[e])
+
+            robot_time.append(average_time)  # time per robot is sum of all average experiment times
+            print(e, "average_time: ",average_time, time_var)
+            agent_task_time.append(average_time)
+
+            average_experiment_times.append(average_time)
+            agent_task_time_var.append(time_var)
+
             mean_length, interval = p.get_average_n_trials(results, cutoff=cutoff[e])
             print(mean_length, interval)
             print("r=",r)
@@ -2354,11 +2394,183 @@ def plot_single_robot_experiment():
             axes1.set_xlabel("Tasks by Agents")
             axes1.set_ylabel("mean cost [1]")
             count_bars += 1
+        count_agents += 1
+        time_robots.append(robot_time) # time_robots collects all robot execution times
+        agent_task_times.append(agent_task_time)  # for all agents the average times for their tasks [[cylinder_1,cylinder_2,..],[key_1,key_2,...],..]
+        agent_task_times_var.append(agent_task_time_var)
     fig1.tight_layout()
     plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
     print("trials overall = ",sum(count_trials_overall))
-    print("time overall = ", int(sum(count_time_overall)/60)+1, ",min")
-    plt.show()
+    print("time overall = ", sum([sum(robot_time) for robot_time in time_robots])/60, "min")
+    print("average experiment time = ", (sum(average_experiment_times)/n_tasks)/60, "min")
+    plt.show(block=False)
+    return sum([sum(robot_time) for robot_time in time_robots])/60, agent_task_times, agent_task_times_var
+
+def plot_collective_overview():
+    cm = 1/2.54
+    fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=2, figsize=(20*cm,20*cm))
+    axes1.set_xlabel("#agents [1]")
+    axes1.set_ylabel("time [min]")
+    single_trans,_,_ = plot_single_robot_experiment(["single_robot_learning_trans"])
+    collective_5,_,_ = plot_collective_experiment(["collective_learning_04_alt"])
+    collective_6,_,_ = plot_collective_experiment(["collective_learning_04_ext_alt"])
+    print("\n plot this: ",[1,5,6],[single_trans,collective_5,collective_6])
+    axes1.plot([1,5,6],[single_trans,collective_5,collective_6], label="14 tasks")
+    axes1.scatter([1,5,6],[single_trans,collective_5,collective_6], s=120, marker="X", color="orange")#, markersize=12)
+    single_without,_,_ = plot_single_robot_experiment(["single_robot_learning_without"])
+    parallel,_,_ = plot_collective_experiment(["collective_learning_parallel"])
+    axes1.scatter([1,5],[single_without, parallel], s=120, marker="X", label = "14 tasks", color="orange")
+    axes1.text(1.1,single_without-4,"without memory", fontsize=14) 
+    axes1.text(1.1,single_trans+4,"transfer", fontsize=14)
+    axes1.text(4.2,parallel+3,"local transfer", fontsize=14)
+    axes1.text(4.2,collective_5-2.4,"collective", fontsize=14)
+    axes1.text(5.4,collective_6+2,"collective", fontsize=14)
+    #axes1.annotate("single trans", xy=(1,single_trans), xytext=(1.2,single_trans+10),arrowprops=dict(facecolor="k", shrink=0.15, width=1,headwidth=5),) 
+    #axes1.annotate("parallel", xy=(5,parallel), xytext=(4.5,parallel+10),arrowprops=dict(facecolor="k", shrink=0.15, width=1,headwidth=5),) 
+    #axes1.annotate("collective", xy=(5,collective_5), xytext=(4.2,collective_5-5),arrowprops=dict(facecolor="k", shrink=0.15, width=0,headwidth=0),) 
+    #axes1.annotate("collective", xy=(6,collective_6), xytext=(5.5,collective_6+10),arrowprops=dict(facecolor="k", shrink=0.15, width=1,headwidth=5),) 
+
+    axes1.set_title("learning 14 task")
+    fig1.tight_layout()
+    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+    plt.show(block=False)
+
+def collective_plot():
+    def acending_sublist(list_of_lists):
+        '''add total times of tasks to get time-points:'''
+        sublists_ascending = []
+        for agent_tasks in list_of_lists:
+            agent_added = []
+            for i in range(len(agent_tasks)):
+                #add total times of tasks to get time-points:
+                agent_added.append(sum(agent_tasks[:i+1]))
+            sublists_ascending.append(agent_added)
+        return sublists_ascending
+    def ascending_list(l):
+        ascending_l = []
+        for i in range(len(l)):
+            ascending_l.append(sum(l[:i+1]))
+        return ascending_l
+    def acending_sublist_touple(list_of_lists):
+        '''add total times of tasks to get time-points:'''
+        sublists_ascending = []
+        for agent_tasks in list_of_lists:
+            agent_added = []
+            for i in range(len(agent_tasks)):
+                #add total times of tasks to get time-points:
+                if i == 0:
+                    agent_added.append(agent_tasks[i])
+                else:
+                    t = (agent_added[i-1][0]+agent_tasks[i][0],agent_added[i-1][1]+agent_tasks[i][1])
+                    agent_added.append(t)
+            sublists_ascending.append(agent_added)
+        return sublists_ascending
+    def ascending_list_touple(l):
+        ascending_l = []
+        for i in range(len(l)):
+            if i == 0:
+                ascending_l.append(l[i])
+            else:
+                t = (ascending_l[i-1][0]+l[i][0],ascending_l[i-1][1]+l[i][1])
+                ascending_l.append(t)
+        return ascending_l
+
+    _,single_trans, single_trans_var = plot_single_robot_experiment(["single_robot_learning_trans"])
+    _,single_without, single_without_var = plot_single_robot_experiment(["single_robot_learning_without"])
+    _,collective_5, collective_5_var = plot_collective_experiment(["collective_learning_04_alt"])
+    _,collective_6, collective_6_var = plot_collective_experiment(["collective_learning_04_ext_alt"])
+    _,parallel, parallel_var = plot_collective_experiment(["collective_learning_parallel"])
+    #mean
+    #flatten first -> pretend all tasks are done by one robot
+    single_trans_flatten = [average_task_time for agent in single_trans for average_task_time in agent] #flatten
+    single_without_flatten = [average_task_time for agent in single_without for average_task_time in agent] #flatten
+    single_trans_added = ascending_list(single_trans_flatten)
+    single_without_added = ascending_list(single_without_flatten)
+    collective_5_added = acending_sublist(collective_5)
+    collective_6_added = acending_sublist(collective_6)
+    parallel_added = acending_sublist(parallel)
+    collective_5_added = [average_task_time for agent in collective_5_added for average_task_time in agent] #flatten
+    collective_6_added = [average_task_time for agent in collective_6_added for average_task_time in agent] #flatten
+    parallel_added = [average_task_time for agent in parallel_added for average_task_time in agent] #flatten
+    #var
+    #flatten first -> pretend all tasks are done by one robot
+    single_trans_flatten_var = [average_task_time for agent in single_trans_var for average_task_time in agent] #flatten
+    single_without_flatten_var = [average_task_time for agent in single_without_var for average_task_time in agent] #flatten
+    single_trans_added_var = ascending_list_touple(single_trans_flatten_var)
+    single_without_added_var = ascending_list_touple(single_without_flatten_var)
+    collective_5_added_var = acending_sublist_touple(collective_5_var)
+    collective_6_added_var = acending_sublist_touple(collective_6_var)
+    parallel_added_var = acending_sublist_touple(parallel_var)
+    collective_5_added_var = [average_task_time for agent in collective_5_added_var for average_task_time in agent] #flatten
+    collective_6_added_var = [average_task_time for agent in collective_6_added_var for average_task_time in agent] #flatten
+    parallel_added_var = [average_task_time for agent in parallel_added_var for average_task_time in agent] #flatten
+
+    #sort
+    zipped_lists = zip(collective_5_added, collective_5_added_var)
+    sorted_pairs = sorted(zipped_lists, key=lambda pair: pair[0])
+    tuples = zip(*sorted_pairs)
+    collective_5_added, collective_5_added_var = [ list(tuple) for tuple in  tuples]
+
+    zipped_lists = zip(collective_6_added, collective_6_added_var)
+    sorted_pairs = sorted(zipped_lists, key=lambda pair: pair[0])
+    tuples = zip(*sorted_pairs)
+    collective_6_added, collective_6_added_var = [ list(tuple) for tuple in  tuples]
+
+    zipped_lists = zip(parallel_added, parallel_added_var)
+    sorted_pairs = sorted(zipped_lists, key=lambda pair: pair[0])
+    tuples = zip(*sorted_pairs)
+    parallel_added, parallel_added_var = [ list(tuple) for tuple in  tuples]
+
+    # add time zero to beginning:
+    collective_5_added.insert(0,0)
+    collective_5_added_var.insert(0,(0,0))
+    collective_6_added.insert(0,0)
+    collective_6_added_var.insert(0,(0,0))
+    parallel_added.insert(0,0)
+    parallel_added_var.insert(0,(0,0))
+    single_trans_added.insert(0,0)
+    single_trans_added_var.insert(0,(0,0))
+    single_without_added.insert(0,0)
+    single_without_added_var.insert(0,(0,0))
+
+
+    cm = 1/2.54
+    fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=3, figsize=(20*cm,20*cm))
+    axes1.set_xlabel("time [min]")
+    axes1.set_ylabel("#solved tasks")
+
+    coll_5_handle, = axes1.plot([x/60 for x in collective_5_added],list(range(len(collective_5_added))), label="5 agent collective", color='b')
+    #collective_5_added_interval_low = [collective_5_added_var[i][0]/60 for i in range(len(collective_5_added))]
+    #collective_5_added_interval_high = [collective_5_added_var[i][1]/60 for i in range(len(collective_5_added))]
+    #axes1.fill_betweenx(list(range(len(collective_5_added))), collective_5_added_interval_low, collective_5_added_interval_high, color='b', alpha=.1)
+
+    coll_6_handle, = axes1.plot([x/60 for x in collective_6_added],list(range(len(collective_6_added))), label="6 agent collective", color='orange')
+    #collective_6_added_interval_low = [collective_6_added_var[i][0]/60 for i in range(len(collective_6_added))]
+   # collective_6_added_interval_high = [collective_6_added_var[i][1]/60 for i in range(len(collective_6_added))]
+   # axes1.fill_betweenx(list(range(len(collective_6_added))), collective_6_added_interval_low, collective_6_added_interval_high, color='orange', alpha=.1)
+
+    parallel_handle, = axes1.plot([x/60 for x in parallel_added],list(range(len(parallel_added))), label="5 agent local transfer (parallel)", color="green")
+    #parallel_added_interval_low = [parallel_added_var[i][0]/60 for i in range(len(parallel_added))]
+    #parallel_added_interval_high = [parallel_added_var[i][1]/60 for i in range(len(parallel_added))]
+    #axes1.fill_betweenx(list(range(len(parallel_added))), parallel_added_interval_low, parallel_added_interval_high, color='green', alpha=.1)
+
+    without_handle, = axes1.plot([x/60 for x in single_without_added],list(range(len(single_without_added))), label="1 agent without memory",color = "red")
+    #single_without_interval_low = [single_without_added_var[i][0]/60 for i in range(len(single_without_added_var))]
+    #single_without_interval_high = [single_without_added_var[i][1]/60 for i in range(len(single_without_added_var))]
+    #axes1.fill_betweenx(list(range(len(single_without_added))), single_without_interval_low, single_without_interval_high, color='red', alpha=.1)
+
+    trans_handle, = axes1.plot([x/60 for x in single_trans_added],list(range(len(single_trans_added))), label="1 agent transfer",color="purple")
+    #single_trans_added_interval_low = [single_trans_added_var[i][0]/60 for i in range(len(single_trans_added))]
+    #single_trans_added_interval_high = [single_trans_added_var[i][1]/60 for i in range(len(single_trans_added))]
+    #axes1.fill_betweenx(list(range(len(single_trans_added))), single_trans_added_interval_low, single_trans_added_interval_high, color='purple', alpha=.1)
+    
+    plt.legend(handles=[coll_5_handle,coll_6_handle,parallel_handle,without_handle,trans_handle])
+
+    axes1.set_xlim((0,max(single_without_added)/60+5))
+    axes1.set_title("learning 14 task")
+    fig1.tight_layout()
+    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+    plt.show(block=False)
 
 def success_cost():
     robots = {  "collective-panda-prime": ["key_door"],

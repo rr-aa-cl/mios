@@ -77,7 +77,7 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
 
 def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion", db: str ="ml_results", min_size: int =0, mongo_port=27017):
     for robot in robots:
-        mongo_client = MongoDBClient(robot,port=27017)
+        mongo_client = MongoDBClient(robot,mongo_port)
         documents = mongo_client.read(db, task_class, {"meta.tags":tags})
         if len(documents) == 0:
             print("Not found documents on ", robot)

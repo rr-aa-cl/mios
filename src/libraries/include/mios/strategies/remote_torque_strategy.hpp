@@ -21,7 +21,7 @@ public:
     void terminate(const Percept &p) override;
     bool finished() override;
 
-    bool connect(Portal* portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us, unsigned max_lost_packets);
+    bool connect(Portal* portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us, unsigned max_lost_packets, bool multicast, const std::optional<std::string> &host, const std::optional<std::string> &multicast_group);
     void set_damping(Eigen::Matrix<double,7,1> alpha);
 
 private:

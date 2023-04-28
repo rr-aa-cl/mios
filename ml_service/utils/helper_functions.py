@@ -216,7 +216,12 @@ def grasp_insertable(robot:str, insertable = "generic_insertable", container = "
             success_moving = False
             result = call_method(robot, port, "grasp_object", {"object": insertable}) # call_method(robot,12000,"grasp",{"width":0,"force":100,"epsilon_outer":1,"speed":100}) #
             #call_method(robot,12000,"set_grasped_object",{"object":insertable})
-            success_grasping  = result["result"]["result"]
+            if result:
+                success_grasping  = result["result"]["result"]
+            else:
+                success_grasping = False  # return from mios is None --> waiting for mios-restart
+                time.sleep(32)
+                break
             if not success_grasping:
                 call_method(robot, port, "move_gripper",{"width":1,"speed":1,"force":50})
                 print(robot, " grasping success for ", insertable," = ", success_grasping)

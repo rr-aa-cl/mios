@@ -6,8 +6,8 @@ ROOT=$(dirname "$(realpath $0)")
 cd ${ROOT}
 
 ### make ros components ###
-cd ${ROOT}/src/ros_workspace
-catkin_make
+#cd ${ROOT}/src/ros_workspace
+#catkin_make
 
 ### make ###
 cd ${ROOT}
