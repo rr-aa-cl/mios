@@ -18,7 +18,7 @@ class Client:
         return json.loads(response)
 
 
-async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout=100, silent=False):
+async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout=100000, silent=False):
     uri = "ws://" + hostname + ":" + str(port) + "/" +endpoint
     try:
         async with websockets.connect(uri, close_timeout=1000) as websocket:
@@ -62,6 +62,12 @@ async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout
             print(e)
             print("Hostname: " + hostname + ", port: " + str(port) + ", endpoint: " + endpoint)
         return None
+    except asyncio.exceptions.TimeoutError as e:  # mios is taking to long for response
+        if silent is False:
+            print("asyncio.exceptions.TimeoutError: ")
+            print(e)
+            print("Hostname: " + hostname + ", port: " + str(port) + ", endpoint: " + endpoint)
+        return None
 
 
 def call_server(hostname, port, endpoint, request, timeout):
@@ -85,34 +91,34 @@ def call_method(hostname: str, port: int, method, payload=None, endpoint="mios/c
         return None
 
 
-def start_task(hostname: str, task: str, parameters={}, queue=False):
+def start_task(hostname: str, task: str, parameters={}, queue=False, port = 12000):
     payload = {
         "task": task,
         "parameters": parameters,
         "queue": queue
     }
-    return call_method(hostname, 12000, "start_task", payload)
+    return call_method(hostname, port, "start_task", payload)
 
 
-def stop_task(hostname: str, raise_exception=False, recover=False, empty_queue=False):
+def stop_task(hostname: str, raise_exception=False, recover=False, empty_queue=False, port = 12000):
     payload = {
         "raise_exception": raise_exception,
         "recover": recover,
         "empty_queue": empty_queue
     }
-    return call_method(hostname, 12000, "stop_task", payload)
+    return call_method(hostname, port, "stop_task", payload)
 
 
-def wait_for_task(hostname: str, task_uuid: str):
+def wait_for_task(hostname: str, task_uuid: str, port = 12000):
     payload = {
         "task_uuid": task_uuid
     }
-    return call_method(hostname, 12000, "wait_for_task", payload)
+    return call_method(hostname, port, "wait_for_task", payload)
 
 
-def start_task_and_wait(hostname, task, parameters, queue=False):
-    response = start_task(hostname, task, parameters, queue)
-    response = wait_for_task(hostname, response["result"]["task_uuid"])
+def start_task_and_wait(hostname, task, parameters, queue=False, port = 12000):
+    response = start_task(hostname, task, parameters, queue, port=port)
+    response = wait_for_task(hostname, response["result"]["task_uuid"], port=port)
     return response
 
 
