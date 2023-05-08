@@ -292,23 +292,26 @@ bool PandaBody::is_robot(const std::string &ip){
             pybind11::object take_control_result = desk_client.attr("take_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR");
             bool desk_in_control = take_control_result.cast<bool>();
             if(!desk_in_control){
-                spdlog::debug("PandaBody cannot take control over robot. Rebooting....");
-                pybind11::object reboot_result = desk_client.attr("reboot")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR");
-                //spdlog::debug("PandaBody::is_robot(): Not able to take control over DESK. Try to force control...");
-                //pybind11::object py_result = desk_client.attr("force_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR");
-                desk_in_control = reboot_result.cast<bool>();
-                //spdlog::warn("Please verify that you are in control of the robot: Press the Button with the cyrcle on the Pilot! \n You have " + std::to_string(30) + "Seconds.");
-                //std::this_thread::sleep_for(std::chrono::seconds(30));
+                spdlog::debug("PandaBody::is_robot(): Not able to take control over DESK. Try to force control...");
+                pybind11::object py_result = desk_client.attr("force_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR");
+                desk_in_control = py_result.cast<bool>();
                 if(!desk_in_control){
                     spdlog::error("PandaBody::is_robot(): Cannot aquire control over DESK");
                     return false;
+                }
+                else{
+                    spdlog::warn("Please verify that you are in control of the robot: Press the Button with the cyrcle on the Pilot! \n You have " + std::to_string(30) + "Seconds.");
+                    std::this_thread::sleep_for(std::chrono::seconds(30));
+                    pybind11::object in_control = desk_client.attr("in_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR");
+                    if(in_control.cast<bool>()){
+                        spdlog::debug("PandaBody::is_robot(): MIOS is now in control of DESK.");
+                    }
                 }
 
             }
             else{
                 spdlog::debug("PandaBody::is_robot(): Now in control over DESK");
             }
-            return false;
         }
         else{
             spdlog::debug("PandaBody: MIOS is in control of DESK-Interface of robot at "+ip);

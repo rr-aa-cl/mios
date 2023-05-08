@@ -17,7 +17,7 @@ from urllib.parse import urlencode, quote_plus
 
 
 class FrankaAPI:
-    def __init__(self, hostname, user, password, db="miosL"):
+    def __init__(self, hostname, user, password, db="miosL", db_port=27017):
         self._hostname = hostname
         self._user = user
         self._password = password
@@ -25,7 +25,7 @@ class FrankaAPI:
         self._token = False
         self._in_control = False
         self.db = db
-        self.mongodb_client = MongoDBClient()
+        self.mongodb_client = MongoDBClient(port=db_port)
         self._in_control = self.mongodb_client.read(self.db, "parameters", {"name":"system"})[0].get("spoc_in_control", False)
         self._spoc_token = self.mongodb_client.read(self.db, "parameters", {"name":"system"})[0].get("spoc_token","")
 
@@ -290,9 +290,9 @@ class FrankaAPI:
 
 
 
-def shutdown(ip, user, pwd, db):
+def shutdown(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             api.shutdown()
             return True
     except socket.error as e:
@@ -301,9 +301,9 @@ def shutdown(ip, user, pwd, db):
         return False
 
 
-def unlock_brakes(ip, user, pwd, db):
+def unlock_brakes(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             api.unlock_brakes()
             return True
     except (socket.error):
@@ -311,9 +311,9 @@ def unlock_brakes(ip, user, pwd, db):
         return False
 
 
-def lock_brakes(ip, user, pwd, db):
+def lock_brakes(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             api.lock_brakes()
             return True
     except socket.error as e:
@@ -322,9 +322,9 @@ def lock_brakes(ip, user, pwd, db):
         return False
 
 
-def pack_pose(ip, user, pwd, db):
+def pack_pose(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             api.pack_pose()
             return True
     except socket.error as e:
@@ -332,9 +332,9 @@ def pack_pose(ip, user, pwd, db):
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
         return False
 
-def unfold(ip, user, pwd, db):
+def unfold(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             api.unfold()
             return True
     except socket.error as e:
@@ -342,91 +342,91 @@ def unfold(ip, user, pwd, db):
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
         return False
 
-def stop_task(ip, user, pwd, db):
+def stop_task(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             return api.stop_task()
     except (socket.error):
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
 
 
-def is_busy(ip, name, pwd, db):
+def is_busy(ip, name, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, name, pwd) as api:
+        with FrankaAPI(ip, name, pwd, db, db_port) as api:
             return api.check_timeline()
     except socket.error as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip, ', name: ', name, ' and password: ', pwd)
 
 
-def start_task(ip, user, pwd, db, task):
+def start_task(ip, user, pwd, db, db_port, task):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             return api.start_task(task)
     except socket.error as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
 
 
-def check_task(ip, name, pwd, db):
+def check_task(ip, name, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, name, pwd) as api:
+        with FrankaAPI(ip, name, pwd, db, db_port) as api:
             return api.check_timeline()
     except (socket.error) as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip,', name: ', name,' and password: ', pwd)
 
-def reboot(ip, user, pwd, db):
+def reboot(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             return api.reboot()
     except socket.error as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
 
-def take_control(ip, user, pwd, db):
+def take_control(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             return api.take_control()
     except socket.error as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
 
-def force_control(ip, user, pwd, db):
+def force_control(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             return api.force_control()
     except socket.error as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
 
-def release_control(ip, user, pwd, db):
+def release_control(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             api.release_control()
     except socket.error as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
 
-def activate_fci(ip, user, pwd, db):
+def activate_fci(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             return api.activate_fci()
     except socket.error as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
 
-def deactivate_fci(ip, user, pwd, db):
+def deactivate_fci(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             return api.deactivate_fci()
     except socket.error as e:
         print(e)
         print('Socket error, possibly no host with IP: ', ip, ', user: ', user, ' and password: ', pwd)
 
-def in_control(ip, user, pwd, db):
+def in_control(ip, user, pwd, db, db_port):
     try:
-        with FrankaAPI(ip, user, pwd, db) as api:
+        with FrankaAPI(ip, user, pwd, db, db_port) as api:
             return api.in_control()
     except socket.error as e:
         print(e)
