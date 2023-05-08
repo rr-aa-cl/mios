@@ -8,8 +8,9 @@
 
 namespace mios {
 
-LTMemory::LTMemory(unsigned database_port, std::string robot_arm):m_mongodb_client((robot_arm == "left") ? "miosL" : "miosR",database_port){
+LTMemory::LTMemory(unsigned database_port, std::string robot_arm):m_mongodb_client((robot_arm == "left") ? "miosL" : "miosR", database_port){
     spdlog::trace("LTMemory::LTMemory");
+    m_database_port= database_port;
 }
 
 bool LTMemory::is_ok() const{

@@ -65,8 +65,9 @@ public:
     const Event* get_event(const std::string& name);
     std::string m_robot_arm;
 
-private:
     LTMemory m_lt_memory;
+private:
+    
     STMemory m_st_memory;
 
 };
