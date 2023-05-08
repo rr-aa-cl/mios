@@ -41,6 +41,8 @@ public:
 
     bool update_database();
 
+    unsigned m_database_port;
+
 private:
     bool make_database_consistent();
     bool make_default_skills_consistent();
