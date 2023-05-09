@@ -268,7 +268,7 @@ class FrankaAPI:
         response_status = response.status
         response_context = response.read()
         if response_status == 200:
-            print("spoc token: ",self._spoc_token)
+            print("FCI activated! spoc token: ",self._spoc_token)
             return True
         else:
             print("bad http response!",response_status," spoc token: ",self._spoc_token)
