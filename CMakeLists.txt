@@ -36,9 +36,7 @@ endif()
 
 
 include(cmake/ApplyModuleOptions.cmake)
-
 include(cmake/Conan.cmake)
-
 include(cmake/Doxygen.cmake)
 include(cmake/PreventInSourceBuilds.cmake)
 include(cmake/StaticAnalyzers.cmake)

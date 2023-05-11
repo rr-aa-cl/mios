@@ -20,7 +20,7 @@ m_memory(memory){
     m_robot_state.O_T_EE={1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 }
 
-bool PandaBody::initialize(std::string robot_arm){
+bool PandaBody::initialize(){
     spdlog::trace("PandaBody::initialize()");
     m_has_arm=m_memory->read_parameters()->system.has_robot;
     m_hand=m_memory->read_parameters()->system.gripper;

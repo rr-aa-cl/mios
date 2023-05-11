@@ -34,8 +34,6 @@ Core::Core(unsigned database_port, unsigned robot_configuration, std::string rob
     spdlog::trace("Core::Core()");
 }
 
-
-
 Core::~Core(){
     spdlog::trace("Core::~Core()");
     terminate();
@@ -49,7 +47,7 @@ bool Core::initialize(){
         return false;
     }
     spdlog::info("Initializing robot...");
-    if(!m_panda_body.initialize(this -> m_robot_arm)){
+    if(!m_panda_body.initialize()){
         spdlog::error("Could not initialize robot.");
         return false;
     }

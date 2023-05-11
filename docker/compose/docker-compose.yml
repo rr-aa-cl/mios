@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   mios:
-    image: "mirmi/mios"
+    image: "mirmi/mios:latest"
     restart: always
     environment:
       - verbosity=info
