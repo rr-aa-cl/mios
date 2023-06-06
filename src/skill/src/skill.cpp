@@ -121,7 +121,7 @@ Actuator* Skill::cycle(const Percept &p){
         spdlog::trace("Skill::cycle.init");
         m_active_mp=get_initial_mp(p);
         if(!m_active_mp->has_strategies()){
-            spdlog::error("Manipulation primitive " + next_mp.value()->get_name() + " has no strategies.");
+            spdlog::error("Manipulation primitive " + m_active_mp->get_name() + " has no strategies.");
             throw SkillException();
         }
         m_result.p_0=p;
