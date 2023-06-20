@@ -6,6 +6,8 @@
 #include "mios/strategies/ff_wrench_lissajous_strategy.hpp"
 #include "mios/strategies/twist_strategy.hpp"
 #include "mirmi_cpp_utils/math/math.hpp"
+#include "mios/strategies/null_strategy.hpp"
+
 
 namespace mios {
 
@@ -130,41 +132,41 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::get_initial_mp(const Percep
     return create_approach_mp(p_0);
 }
 
+Eigen::Matrix<double,6,1> calcBias(Eigen::Matrix<double,6,1> newData, Eigen::Matrix<double,6,1> currentBias, int dataCount) 
+{
+    return (newData - currentBias) / (dataCount + 1) + currentBias;
+}
+
 std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_transition(const Percept &p){
     if(get_active_mp()->get_name()=="approach"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
+            return create_calibration_mp(p);
+        }
+    }
+
+    if(get_active_mp()->get_name()=="calibration"){
+        Bias = calcBias(p.proprioception.K_F_ext_K, Bias, dataCount);
+        dataCount++;
+        if (dataCount > 1999){
+            std::ostringstream oss;
+            oss << Bias;
+            spdlog::warn("Bias of K_F_ext_K: [{}]", oss.str());
             return create_contact_mp(p);
         }
     }
+
+
     if(get_active_mp()->get_name()=="contact"){
-        if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
+        if(p.proprioception.TF_F_ext_K(2) - Bias(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
             return create_wiggle_mp(p);
         }
     }
-//    if(get_active_mp()->get_name()=="insert"){
-//        if(is_stuck(p)){
-//            return create_wiggle_mp(p);
-//        }
-//    }
+
     if(get_active_mp()->get_name()=="wiggle"){
 //        if(!is_stuck(p)){
 //            return create_insert_mp(p);
 //        }
     }
-//    if(get_active_mp()->get_name()=="insert"){
-//        if(!is_stuck(p)){
-//            return {};
-//        }else{
-//            return create_wiggle_mp(p);
-//        }
-//    }
-//    if(get_active_mp()->get_name()=="wiggle"){
-//        if(!is_stuck(p)){
-//            return create_insert_mp(p);
-//        }else{
-//            return {};
-//        }
-//    }
     return {};
 }
 
@@ -184,6 +186,16 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_approach_mp(const Pe
     mp->get_strategy<CartComplianceStrategy>("compliance")->set_complicance(skill_params->p0.K_x,m_memory->read_parameters()->control.cart_imp.xi_x);
     return mp;
 }
+
+std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_calibration_mp(const Percept &p){
+    spdlog::trace("TaxInsertion::create_calibration_mp()");
+    Bias.setZero();
+    dataCount = 0;
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("calibration",p);
+    mp->create_strategy<NullStrategy>("hold",1);
+    return mp;
+}
+
 
 std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_contact_mp(const Percept &p){
     spdlog::trace("TaxInsertion::create_contact_mp()");
@@ -274,6 +286,13 @@ bool TaxInsertion::check_local_suc_conditions(const Percept &p){
 }
 
 bool TaxInsertion::check_local_err_conditions(const Percept &p){
+    if(get_active_mp()->get_name()=="wiggle"){
+        bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
+        if(lateral){
+            spdlog::error("searching out of ROI range");
+        }
+        return lateral;
+    }
     return false;
 }
 

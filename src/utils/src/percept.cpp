@@ -5,6 +5,8 @@ namespace mios {
 
 Percept::Percept(){
     internal_model.hand_activity_state=HandActivityState::hsIdle;
+    proprioception.K_F_ext_K.setZero(); 
+
 }
 
 void Percept::update(std::unique_ptr<franka::Model> const& model, const franka::RobotState &robot_state, const franka::GripperState &gripper_state,std::optional<Eigen::Matrix<double,3,3> > O_R_T){
@@ -33,7 +35,10 @@ void Percept::update(std::unique_ptr<franka::Model> const& model, const franka::
     proprioception.O_T_EE=Eigen::Matrix<double,4,4>(robot_state.O_T_EE.data());
 
     proprioception.O_F_ext_K=Eigen::Matrix<double,6,1>(robot_state.O_F_ext_hat_K.data());
-    proprioception.K_F_ext_K=Eigen::Matrix<double,6,1>(robot_state.K_F_ext_hat_K.data());
+    // proprioception.K_F_ext_K=Eigen::Matrix<double,6,1>(robot_state.K_F_ext_hat_K.data());
+    for (unsigned int i = 0; i < 6; i++) {
+        proprioception.K_F_ext_K[i] = franka::lowpassFilter(1e-3, proprioception.K_F_ext_K[i], robot_state.K_F_ext_hat_K[i], 100);
+    }
 
     Eigen::Matrix<double,3,3> O_R_T_id = Eigen::Matrix<double,3,3>::Identity();
     proprioception.T_T_EE=mirmi_utils::rotate_matrix(proprioception.O_T_EE,O_R_T.value_or(O_R_T_id).transpose());

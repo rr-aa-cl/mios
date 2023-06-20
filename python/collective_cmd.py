@@ -161,10 +161,35 @@ def command_collective(cmd: str, args: dict = {}):
         threads.append(Thread(target=call_method, args=(robot, 12000, cmd, args,)))
         threads.append(Thread(target=call_method, args=(robot, 13000, cmd, args,)))
         threads[-2].start()
-        threads[-1].start()
+       
 
     for t in threads:
         t.join()
+        
+############################################################## 
+#  lock dual arm robots 
+def lock_dualarm(r):
+    try:
+        call_method(r, 12000, "lock_brakes")
+    except:
+        print("The left arm of " + r + " loss connection")
+        
+    try:
+        call_method(r, 13000, "lock_brakes")
+    except:
+        print("The right arm of " + r + " loss connection")        
+
+def try_lock():
+    threads = []
+    for r in hostnames:
+        threads.append(Thread(target=lock_dualarm, args=(r)))
+        threads[-1].start()
+    
+    for t in threads:
+        t.join()
+
+##############################################################
+
 
 def copy_object(source:str, destinations:list, object_name:str, robot_arm="left"):
     def _send_object(destination, db, collection, document):
