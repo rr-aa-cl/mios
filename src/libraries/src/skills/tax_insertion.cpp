@@ -286,10 +286,18 @@ bool TaxInsertion::check_local_suc_conditions(const Percept &p){
 }
 
 bool TaxInsertion::check_local_err_conditions(const Percept &p){
+
+    if(get_active_mp()->get_name()=="contact"){
+        bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
+        if(lateral){
+            spdlog::error("searching out of ROI range in mp contact");
+        }
+        return lateral;
+    }
     if(get_active_mp()->get_name()=="wiggle"){
         bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
         if(lateral){
-            spdlog::error("searching out of ROI range");
+            spdlog::error("searching out of ROI range in mp wiggle");
         }
         return lateral;
     }
