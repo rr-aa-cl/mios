@@ -140,6 +140,7 @@ Eigen::Matrix<double,6,1> calcBias(Eigen::Matrix<double,6,1> newData, Eigen::Mat
 std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_transition(const Percept &p){
     if(get_active_mp()->get_name()=="approach"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
+            spdlog::warn("------------------------------- start calibration ------------------------------------");
             return create_calibration_mp(p);
         }
     }
@@ -151,6 +152,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_trans
             std::ostringstream oss;
             oss << Bias;
             spdlog::warn("Bias of K_F_ext_K: [{}]", oss.str());
+            spdlog::warn("------------------------------- start contact ------------------------------------");
             return create_contact_mp(p);
         }
     }
@@ -158,6 +160,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_trans
 
     if(get_active_mp()->get_name()=="contact"){
         if(p.proprioception.TF_F_ext_K(2) - Bias(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
+            spdlog::warn("------------------------------- start wiggle ------------------------------------");
             return create_wiggle_mp(p);
         }
     }
@@ -286,10 +289,26 @@ bool TaxInsertion::check_local_suc_conditions(const Percept &p){
 }
 
 bool TaxInsertion::check_local_err_conditions(const Percept &p){
+
+    if(get_active_mp()->get_name()=="approach"){
+        bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
+        if(lateral){
+            spdlog::error("searching out of ROI range in mp approach");
+        }
+        return lateral;
+    }    
+
+    if(get_active_mp()->get_name()=="contact"){
+        bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
+        if(lateral){
+            spdlog::error("searching out of ROI range in mp contact");
+        }
+        return lateral;
+    }
     if(get_active_mp()->get_name()=="wiggle"){
         bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
         if(lateral){
-            spdlog::error("searching out of ROI range");
+            spdlog::error("searching out of ROI range in mp wiggle");
         }
         return lateral;
     }
