@@ -22,7 +22,7 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
         if "n" + str(i) in problem_def.tags:
             problem_def.tags.remove("n" + str(i))
         problem_def.tags.append("n" + str(i+1))
-        print("starting with ", problem_def.tags)
+        #print("starting with ", problem_def.tags)
         if keep_record is True and len(client.read("ml_results", problem_def.skill_class, {"meta.tags": {"$all": problem_def.tags}})) != 0:
             print("Continue at n" + str(i+1))
             continue
@@ -60,14 +60,14 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
         print("Continue at n" + str(iter+1))
         return
     s = ServerProxy("http://" + learner + ":"+str(service_port), allow_none=True)
-    if knowledge_tmp is not None:
+    #if knowledge_tmp is not None:
         #if "scope" not in knowledge_tmp:
         #    knowledge_tmp["scope"] = []
         #if "n" + str(iter) in knowledge_tmp["scope"]:
         #    knowledge_tmp["scope"].remove("n" + str(iter))
         #knowledge_tmp["scope"].append("n" + str(iter+1))
-        print(knowledge_tmp)
-    print("start task on ", agents, " with knowledge scope = ",knowledge_tmp["meta"]["scope"])
+        #print(knowledge_tmp)
+    #print("start task on ", agents, " with knowledge scope = ",knowledge_tmp["meta"]["scope"])
     uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge_tmp)
     if wait:
         while s.is_busy():

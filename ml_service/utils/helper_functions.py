@@ -66,7 +66,7 @@ def move_joint(robot, location,port=12000, wait=True):
     t0.add_skill("move", "MoveToPoseJoint", move_context)
     t0.start()
     if wait:
-        result = t0.wait()
+        return t0.wait()
 
 def check_location(robot, pose_name, port=12000):
     client = MongoDBClient(robot)

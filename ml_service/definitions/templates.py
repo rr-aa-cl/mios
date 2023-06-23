@@ -112,7 +112,7 @@ class InsertionFactory(ProblemDefinitionFactory):
         return x_0
 
     def ground_skills(self):
-        print(self.setup_instructions)
+        #print(self.setup_instructions)
         self.learn_context["skills"]["insertion"]["skill"]["objects"]["Approach"] = self.objects["Approach"]
         self.learn_context["skills"]["insertion"]["skill"]["objects"]["Container"] = self.objects["Container"]
         self.learn_context["skills"]["insertion"]["skill"]["objects"]["Insertable"] = self.objects["Insertable"]

@@ -609,6 +609,121 @@ def stop_services(robots:list =[ "collective-panda-prime","collective-panda-002"
             print(e)
 
 
+def dualarm_demo_thread(robot, obj, tags, sc, knowledge:dict):
+    results = []
+    try:
+        call_method(robot,12000,"stop_task")
+        c = 0
+        while call_method(robot,13000,"get_state")["result"]["current_task"] != "IdleTask":
+                if c>3:
+                    return -1
+                if call_method(robot,13000,"get_state")["result"]["status"] == "UserStopped":
+                    break
+                print("sleep")
+                c+=1
+                time.sleep(1)
+        while call_method(robot,12000,"get_state")["result"]["current_task"] != "IdleTask":
+                if c>3:
+                    return -1
+                if call_method(robot,12000,"get_state")["result"]["status"] == "UserStopped":
+                    print(obj, "(",robot,") is in userstop")
+                    return -1
+                print("sleep")
+                c+=1
+                time.sleep(1)
+        
+
+        if obj[:3] != "010":
+            call_method(robot,13000,"stop_task")
+            result_right = move_joint(robot,"hold",13000,True)
+        result_left = move_joint(robot,obj+"_container_above",12000,True)
+        if not result_left["result"]["task_result"] or not result_right["result"]["task_result"]:
+            print("cannot move arm at ", robot," ", obj)
+            return 1
+        call_method(robot,12000,"set_grasped_objext",{"object":obj})
+        if obj[:3] != "010":
+            current_task = call_method(robot,13000,"get_state")["result"]["current_task"]
+            if current_task != "IdleTask":
+                return robot+" is not in IdleTask, but" + current_task
+
+            hold_pose(robot,10000,13000)
+            pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
+                                        {"Insertable": obj, "Container": obj+"_container",
+                                        "Approach": obj+"_container_approach"}).get_problem_definition(obj)
+            print("starting ", obj, " on ", robot)
+            learn_single_task(robot, pd, sc, tags, 100, False, knowledge, False,service_port=8000)
+    except ConnectionRefusedError:
+        print("ConnectionRefusedError for ", obj, " on ", robot)
+    except TypeError:
+        print("TypeError for ",obj," on ",robot)
+
+def dualarm_demo2():
+    robots_dualarm = [
+    "10.157.175.221",  #0 ms            collective-001.local    [n/a]           A8:A1:59:B8:22:8B                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.166",  #0 ms            collective-002.local    [n/a]           A8:A1:59:B8:25:9A                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.167",  #0 ms            collective-003.local    [n/a]           A8:A1:59:B8:24:E8                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.168",  #0 ms            collective-004.local    [n/a]           A8:A1:59:B8:25:EC                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.89" ,  #0 ms            collective-005.local    [n/a]           A8:A1:59:B8:23:72                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.80" ,  #0 ms            collective-006.local    [n/a]           A8:A1:59:B8:23:74                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.200",  #0 ms            collective-007.local    [n/a]           A8:A1:59:B2:B1:6E                   [n/a]                               ASRock Incorporation                      
+    "10.157.175.129",  #0 ms            collective-008.local    [n/a]           A8:A1:59:B8:22:F4                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.36" ,  #0 ms            collective-009.local    [n/a]           A8:A1:59:B8:25:BD                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.59",  #collective-010.local
+    "10.157.175.87",  #0 ms            collective-011.local    [n/a]           A8:A1:59:B8:23:62                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.241",  #0 ms            collective-012.local    [n/a]           A8:A1:59:B8:25:DF                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.201",  #0 ms            collective-013.local    [n/a]           A8:A1:59:B2:BF:1F                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.247",  #0 ms            collective-014.local    [n/a]           A8:A1:59:B2:1C:28                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.202",  #0 ms            collective-015.local    [n/a]           A8:A1:59:B8:23:38                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.203",  #0 ms            collective-016.local    [n/a]           A8:A1:59:B2:B2:E4                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.46",  #0 ms            collective-017.local    [n/a]           A8:A1:59:B8:24:CF                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.103",  #0 ms            collective-018.local    [n/a]           A8:A1:59:B8:23:1E                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.206",  #0 ms            collective-019.local    [n/a]           A8:A1:59:B8:22:E2                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.204",  #0 ms            collective-020.local    [n/a]           A8:A1:59:B8:22:AE                   [n/a]                               ASRock Incorporation                      
+    "10.157.175.173",  #0 ms            collective-021.local    [n/a]           A8:A1:59:B8:24:C9                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.244",  #0 ms            collective-022.local    [n/a]           A8:A1:59:B8:24:E6                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.205",  #0 ms            collective-023.local    [n/a]           A8:A1:59:B8:26:4D                   [n/a]                               ASRock Incorporation                      
+    "10.157.175.156",  #0 ms            collective-024.local    [n/a]           A8:A1:59:B8:23:5A                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.186",  #0 ms            collective-025.local    [n/a]           A8:A1:59:B8:25:D5                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.245",  #0 ms            collective-026.local    [n/a]           A8:A1:59:B2:1C:7A                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.249",  #0 ms            collective-027.local    [n/a]           A8:A1:59:B8:23:B9                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.255",  #0 ms            collective-028.local    [n/a]           A8:A1:59:B2:AE:FF                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.42" ,  #0 ms            collective-029.local    [n/a]           A8:A1:59:B2:AD:9A                   [n/a]                               ASRock Incorporation                      
+    #"10.157.175.236",#collective-030 # with hand
+    "10.157.174.148",#collective-032
+    #"10.157.174.160",#collective-034
+    #"10.157.174.163",  #0 ms            collective-038.local    [n/a]           A8:A1:59:B8:23:9F                   [n/a]                               ASRock Incorporation                      
+    #"10.157.174.175",  #0 ms            collective-039.local    [n/a]           A8:A1:59:B8:25:70                   [n/a]                               ASRock Incorporation                      
+    #"10.157.174.52" ,  #0 ms            collective-046.local    [n/a]           A8:A1:59:B8:23:A5                   [n/a]                               ASRock Incorporation                      
+    "10.157.175.134"]  #0 ms            collective-050.local    [n/a]           A8:A1:59:B2:0F:85                   [n/a]                               ASRock Incorporation 
+    modules = ["001",\
+            "002","003","004","005","006","007","008","009","010","011","012","013","014","015","016",
+            "017",\
+            "018","019","020",
+            "021","022",
+            "023","024","025","026","027","028","029",#"030",
+            "032",#"034",#"038","039","046",
+            "050",]
+    threads = []
+    sc = SVMLearner(2000,10,0,True,False, 0.4,True).get_configuration()
+    tags = ["demo_learning_2"]
+    knowledge_source = Knowledge()
+    knowledge_source.kb_location = robots_dualarm[0]
+    knowledge_source.mode = "global"
+    knowledge_source.scope = []
+    knowledge_source.scope.extend(tags)
+    #knowledge_source.scope.append("n"+str(n_current_iter+1))
+    knowledge_source.type = "all"
+    for i in range(len(robots_dualarm)):
+        obj = modules[i]+"_left"
+        threads.append(Thread(target=dualarm_demo_thread, args=(robots_dualarm[i], obj, tags, sc, knowledge_source.to_dict())))
+    for t in threads:
+        t.start()
+
+    for t in threads:
+        t.join()
+
+
+
 
 def dualarm_demo():
     robots_dualarm = [
@@ -641,7 +756,7 @@ def dualarm_demo():
     "10.157.174.249",  #0 ms            collective-027.local    [n/a]           A8:A1:59:B8:23:B9                   [n/a]                               ASRock Incorporation                      
     "10.157.174.255",  #0 ms            collective-028.local    [n/a]           A8:A1:59:B2:AE:FF                   [n/a]                               ASRock Incorporation                      
     "10.157.174.42" ,  #0 ms            collective-029.local    [n/a]           A8:A1:59:B2:AD:9A                   [n/a]                               ASRock Incorporation                      
-    #"10.157.175.236",#collective-030
+    #"10.157.175.236",#collective-030 # with hand
     "10.157.174.148",#collective-032
     #"10.157.174.160",#collective-034
     #"10.157.174.163",  #0 ms            collective-038.local    [n/a]           A8:A1:59:B8:23:9F                   [n/a]                               ASRock Incorporation                      
@@ -650,14 +765,14 @@ def dualarm_demo():
     "10.157.175.134"]  #0 ms            collective-050.local    [n/a]           A8:A1:59:B2:0F:85                   [n/a]                               ASRock Incorporation 
     modules = ["001",\
             "002","003","004","005","006","007","008","009","010","011","012","013","014","015","016","017",\
-            "018",#"019",#"020",
+            "018",#"019","020",
             "021","022","023","024","025","026","027","028","029",#"030",
             "032",#"034",#"038","039","046",
             "050",]
 
 
     print(len(modules),len(robots_dualarm))
-    tags = ["dualarm_demo_2"]
+    tags = ["dualarm_demo_2", "Frankies_tag"]
     sc = SVMLearner(2000,10,0,True,False, 0.4,True).get_configuration()
     for r,m in zip(robots_dualarm,modules):
         print(r,":  ",m)
@@ -727,7 +842,7 @@ def stop_dualarm():
     "10.157.174.46",  #0 ms            collective-017.local    [n/a]           A8:A1:59:B8:24:CF                   [n/a]                               ASRock Incorporation                      
     "10.157.174.103",  #0 ms            collective-018.local    [n/a]           A8:A1:59:B8:23:1E                   [n/a]                               ASRock Incorporation                      
     # "10.157.174.206",  #0 ms            collective-019.local    [n/a]           A8:A1:59:B8:22:E2                   [n/a]                               ASRock Incorporation                      
-    #"10.157.174.204",  #0 ms            collective-020.local    [n/a]           A8:A1:59:B8:22:AE                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.204",  #0 ms            collective-020.local    [n/a]           A8:A1:59:B8:22:AE                   [n/a]                               ASRock Incorporation                      
     "10.157.175.173",  #0 ms            collective-021.local    [n/a]           A8:A1:59:B8:24:C9                   [n/a]                               ASRock Incorporation                      
     "10.157.174.244",  #0 ms            collective-022.local    [n/a]           A8:A1:59:B8:24:E6                   [n/a]                               ASRock Incorporation                      
     "10.157.174.205",  #0 ms            collective-023.local    [n/a]           A8:A1:59:B8:26:4D                   [n/a]                               ASRock Incorporation                      
@@ -745,9 +860,12 @@ def stop_dualarm():
     #"10.157.174.52" ,  #0 ms            collective-046.local    [n/a]           A8:A1:59:B8:23:A5                   [n/a]                               ASRock Incorporation                      
     "10.157.175.134"]  #0 ms            collective-050.local    [n/a]           A8:A1:59:B2:0F:85                   [n/a]                               ASRock Incorporation 
     modules = ["001",\
-            "002","003","004","005","006","007","008","009","010","011","012","013","014","015","016","017",\
-            "018","019",#"020",
-            "021","022","023","024","025","026","027","028","029",#"030",
+            "002","003","004","005","006","007","008","009","010","011","012","013","014","015","016",
+            "017",\
+            "018",#"019",
+            "020",
+            "021",
+            "022","023","024","025","026","027","028","029",#"030",
             "032",#"034",#"038","039","046",
             "050",]    
     for r,m in zip(robots_dualarm,modules):
