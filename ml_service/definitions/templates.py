@@ -135,7 +135,7 @@ class InsertionFactory(ProblemDefinitionFactory):
     def modify_contexts(self):
         self.learn_context["skills"]["insertion"]["user"]["env_X"] = [0.003, 0.003, 0.002, 0.1, 0.1, 0.1]
         self.learn_context["skills"]["insertion"]["skill"]["ROI_x"] = [-0.03, 0.03, -0.03, 0.03, -1, 1]
-        self.learn_context["skills"]["insertion"["user"]]["F_ext_contact"] = [12, 5]
+        self.learn_context["skills"]["insertion"]["user"]["F_ext_contact"] = [12, 5]
 
 
 class ExtractionFactory(ProblemDefinitionFactory):

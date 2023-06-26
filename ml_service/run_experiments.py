@@ -10,6 +10,21 @@ from services.knowledge import Knowledge
 from utils.helper_functions import *
 import os
 from threading import Thread
+import json
+
+
+###################################################################################
+list_block_1 = ["001", "002", "003", "004", "005", "006", "007", "008", "010", "011"]
+list_U = ["023", "024", "025", "026", "027", "028", "029"]
+
+def load_config(module_list):
+    with open("../python/ip.json", "r") as jsonfile:
+        data = json.load(jsonfile)        
+        ips = [data[i] for i in module_list]
+        print(ips)
+    
+    return ips
+###################################################################################
 
 ###################################################################################
 list_block_1 = ["001", "002", "003", "004", "005", "006", "007", "008", "010", "011"]
@@ -1060,3 +1075,58 @@ def teach_insertable(robot:str, insertable:str, mios_port=12000):
     input("Teach container [with object]")
     call_method(robot, mios_port, "teach_object", {"object": insertable+"_container"})        
 
+#############################################################################
+# list_block_1
+# list_U
+# automatica 
+def demo_automatica(modules):
+    robots_dualarm = load_config(modules)    
+    print(len(modules),len(robots_dualarm))
+    tags = ["dualarm_demo_2", "Frankies_tag"]
+    sc = SVMLearner(2000,10,0,True,False, 0.4,True).get_configuration()
+    for r,m in zip(robots_dualarm,modules):
+        print(r,":  ",m)
+        call_method(r,12000,"stop_task")
+        if m != "010":
+            call_method(r,13000,"stop_task")
+            move_joint(r,"hold",13000,False)
+        move_joint(r,m+"_left_container_above",12000,False)
+        call_method(r,12000,"set_grasped_object",{"object":m+"_left"})
+
+    services = []
+    #for r,m in zip(robots_dualarm, modules):
+    for i in range(len(modules)):
+        r = robots_dualarm[i]
+        m = modules[i]
+        print(r,":  ",m)
+        services.append(ServerProxy("http://" + r + ":8000", allow_none=True))
+        if m != "010":
+            while call_method(r,13000,"get_state")["result"]["current_task"] != "IdleTask":
+                if call_method(r,13000,"get_state")["result"]["status"] == "UserStopped":
+                    break
+                print("sleep")
+                time.sleep(1)
+            if call_method(r,13000,"get_state")["result"]["status"] == "UserStopped":
+                    continue
+            hold_pose(r,10000,13000)
+        print(r,":  ",m)
+        knowledge_source = Knowledge()
+        knowledge_source.kb_location = robots_dualarm[0]
+        knowledge_source.mode = "global"
+        knowledge_source.scope = []
+        knowledge_source.scope.extend(tags)
+        #knowledge_source.scope.append("n"+str(n_current_iter+1))
+        knowledge_source.type = "all"
+        pd = InsertionFactory([r], TimeMetric("insertion", {"time": 5}),
+                                    {"Insertable": m+"_left", "Container": m+"_left_container",
+                                    "Approach": m+"_left_container_approach"}).get_problem_definition(m+"_left")
+        print(pd.skill_instance)
+        learn_single_task(r, pd, sc, tags, 100, False, knowledge_source.to_dict(), False,service_port=8000)
+        print(m," started.")
+    while True:
+        input("Pause?")
+        for s in services:
+            s.pause_service()
+        input("start again?")
+        for s in services:
+            s.resume_service()
