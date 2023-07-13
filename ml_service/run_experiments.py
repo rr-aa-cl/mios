@@ -14,21 +14,8 @@ import json
 
 
 ###################################################################################
-list_block_1 = ["001", "002", "003", "004", "005", "006", "007", "008", "010", "011"]
-list_U = ["023", "024", "025", "026", "027", "028", "029"]
-
-def load_config(module_list):
-    with open("../python/ip.json", "r") as jsonfile:
-        data = json.load(jsonfile)        
-        ips = [data[i] for i in module_list]
-        print(ips)
-    
-    return ips
-###################################################################################
-
-###################################################################################
-list_block_1 = ["001", "002", "003", "004", "005", "006", "007", "008", "010", "011"]
-list_U = ["023", "024", "025", "026", "027", "028", "029"]
+list_block_1 = ["001", "002", "003", "004", "005", "006", "007", "008", "010", "011", "012"]
+list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
 list_external = ["050"]
 
 def load_config(module_list):
@@ -39,6 +26,7 @@ def load_config(module_list):
     
     return ips
 ###################################################################################
+
 
 def learn_task(robot:str, problem_definition: ProblemDefinition, service_config: ServiceConfiguration, tags: list,
                n_iterations: int = 10, keep_record: bool = False, knowledge = None, wait: bool = False, service_port:int = 8000):
@@ -661,31 +649,29 @@ def dualarm_demo_thread(robot, obj, tags, sc, knowledge:dict):
                 time.sleep(1)
         
 
-        if obj[:3] != "010":
-            call_method(robot,13000,"stop_task")
-            result_right = move_joint(robot,"hold",13000,True)
+        call_method(robot,13000,"stop_task")
+        result_right = move_joint(robot,"hold",13000,True)
         result_left = move_joint(robot,obj+"_container_above",12000,True)
         if not result_left["result"]["task_result"] or not result_right["result"]["task_result"]:
             print("cannot move arm at ", robot," ", obj)
             return 1
         call_method(robot,12000,"set_grasped_objext",{"object":obj})
-        if obj[:3] != "010":
-            current_task = call_method(robot,13000,"get_state")["result"]["current_task"]
-            if current_task != "IdleTask":
-                return robot+" is not in IdleTask, but" + current_task
+        current_task = call_method(robot,13000,"get_state")["result"]["current_task"]
+        if current_task != "IdleTask":
+            return robot+" is not in IdleTask, but" + current_task
 
-            hold_pose(robot,10000,13000)
-            pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
-                                        {"Insertable": obj, "Container": obj+"_container",
-                                        "Approach": obj+"_container_approach"}).get_problem_definition(obj)
-            print("starting ", obj, " on ", robot)
-            learn_single_task(robot, pd, sc, tags, 100, False, knowledge, False,service_port=8000)
+        hold_pose(robot,1000000,13000)
+        pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
+                                    {"Insertable": obj, "Container": obj+"_container",
+                                    "Approach": obj+"_container_approach"}).get_problem_definition(obj)
+        print("starting ", obj, " on ", robot)
+        learn_single_task(robot, pd, sc, tags, 100, False, knowledge, False,service_port=8000)
     except ConnectionRefusedError:
         print("ConnectionRefusedError for ", obj, " on ", robot)
     except TypeError:
         print("TypeError for ",obj," on ",robot)
 
-def dualarm_demo2():
+def dualarm_demo2(dualarm_modules):   # dualarm_modules = list_block_1, list_U, list_external
     robots_dualarm = [
     "10.157.175.221",  #0 ms            collective-001.local    [n/a]           A8:A1:59:B8:22:8B                   [n/a]                               ASRock Incorporation                      
     "10.157.174.166",  #0 ms            collective-002.local    [n/a]           A8:A1:59:B8:25:9A                   [n/a]                               ASRock Incorporation                      
@@ -732,13 +718,15 @@ def dualarm_demo2():
             "032",#"034",#"038","039","046",
             "050",]
     robots_dualarm = []
-    robots_dualarm.extend(load_config(list_block_1))
-    robots_dualarm.extend(load_config(list_U))
-    robots_dualarm.extend(load_config(list_external))
+    #robots_dualarm.extend(load_config(list_block_1))
+    #robots_dualarm.extend(load_config(list_U))
+    #robots_dualarm.extend(load_config(list_external))
+    robots_dualarm.extend(load_config(dualarm_modules))
     modules = []
-    modules.extend(list_block_1)
-    modules.extend(list_U)
-    modules.extend(list_external)
+    modules.extend(dualarm_modules)
+    #modules.extend(list_block_1)
+    #modules.extend(list_U)
+    #modules.extend(list_external)
 
     threads = []
     sc = SVMLearner(2000,10,0,True,False, 0.4,True).get_configuration()

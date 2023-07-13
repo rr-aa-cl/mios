@@ -87,7 +87,8 @@ modules = ["001",\
 #hostnames.remove("collective-010.rsi.ei.tum.de")
 second_ushape = [   "collective-016.rsi.ei.tum.de","collective-021.rsi.ei.tum.de","collective-022.rsi.ei.tum.de",
                     "collective-018.rsi.ei.tum.de","collective-017.rsi.ei.tum.de","collective-015.rsi.ei.tum.de",
-                    "collective-014.rsi.ei.tum.de","collective-013.rsi.ei.tum.de","collective-009.rsi.ei.tum.de",]
+                    "collective-014.rsi.ei.tum.de","collective-013.rsi.ei.tum.de","collective-009.rsi.ei.tum.de",
+                    "collective-020.rsi.ei.tum.de"]
 print(hostnames)
 
 
@@ -158,8 +159,12 @@ def command_some(robots:list, cmd: str, args: dict = {}):
     for t in threads:
         t.join()
 
-def automatica_wave_small(robot, port=12000):
-    move_joint(robot, "wave_high",port=port)
+def automatica_wave_small(robot, port=12000, min_time = 10):
+    result = False
+    speed = [1.5,5]
+    while not result:
+        result = move_joint(robot, "wave_high", port=port, speed=speed)["result"]["task_result"]["success"]
+        speed = [s*0.8 for s in speed]
     pi = 3.14159265359
     wiggle_context1 = {
         "skill": {
@@ -169,27 +174,32 @@ def automatica_wave_small(robot, port=12000):
             "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
             "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
             "use_EE": True,
-            "time_max": 10
+            "time_max": min_time
         },
         "control": {
             "control_mode": 0
         }
     }
     t1 = time.time()
-    t = Task(robot,port)
-    t.add_skill("wiggle", "GenericWiggleMotion", wiggle_context1)
-    t.start(False)
+
     c = 0
-    while time.time() - t1 < 10:
+    while time.time() - t1 < min_time:
         c+=1
+        move_joint(robot, "wave_high",port=port, speed=[1.5,5])
+        t = Task(robot,port)
         t.add_skill("wiggle"+str(c), "GenericWiggleMotion", wiggle_context1)
         t.start(False)
         t.wait()
 
-def automatica_wave_big(robot, port=12000):
-    move_joint(robot, "wave_high", port=port)
+def automatica_wave_big(robot, port=12000, min_time = 10):
+    result = False
+    speed = [1.5,5]
+    while not result:
+        result = move_joint(robot, "wave_high", port=port, speed=speed)["result"]["task_result"]["success"]
+        speed = [s*0.8 for s in speed]
+
     pi = 3.14159265359
-    speed = 0.4
+    speed = 0.36
     wiggle_context = {
         "skill": {
             "dX_fourier_a_a": [0.05,        0.1,    0.,      0.1,       0.1,        0.5],
@@ -198,53 +208,69 @@ def automatica_wave_big(robot, port=12000):
             "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
             "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
             "use_EE": True,
-            "time_max": 10
+            "time_max": min_time
         },
         "control": {
             "control_mode": 0
         }
     }
     t1 = time.time()
-    t = Task(robot,port)
-    t.add_skill("wiggle", "GenericWiggleMotion", wiggle_context)
-    t.start(False)
-    t.wait()
     c = 0
-    while time.time() - t1 < 10:
+    while time.time() - t1 < min_time:
         c+=1
+        move_joint(robot, "wave_high", port=port, speed=[1.5,5])
+        t = Task(robot,port)
         t.add_skill("wiggle"+str(c), "GenericWiggleMotion", wiggle_context)
         t.start(False)
         t.wait()
 
-def automatica_waving():
-    big_flags = [("collective-016.rsi.ei.tum.de", 13000),("collective-021.rsi.ei.tum.de", 12000),("collective-021.rsi.ei.tum.de", 13000),
+def automatica_waving(banner=False):
+    waving_time = 25
+    if banner:
+        big_flags = [("collective-016.rsi.ei.tum.de", 13000),("collective-021.rsi.ei.tum.de", 12000),("collective-021.rsi.ei.tum.de", 13000),
                  ("collective-022.rsi.ei.tum.de", 12000),("collective-022.rsi.ei.tum.de", 13000),("collective-017.rsi.ei.tum.de", 12000),
                  ("collective-014.rsi.ei.tum.de", 13000),("collective-020.rsi.ei.tum.de", 13000),("collective-015.rsi.ei.tum.de", 12000),
-                 ("collective-015.rsi.ei.tum.de", 13000)]
-    small_flags = [("collective-018.rsi.ei.tum.de", 12000),("collective-018.rsi.ei.tum.de", 13000),
+                 ("collective-015.rsi.ei.tum.de", 13000)]  # with banner
+        small_flags = [("collective-018.rsi.ei.tum.de", 12000),("collective-018.rsi.ei.tum.de", 13000),
                 ("collective-014.rsi.ei.tum.de", 12000),("collective-009.rsi.ei.tum.de", 12000),("collective-009.rsi.ei.tum.de", 13000),
-                ("collective-013.rsi.ei.tum.de", 13000),("collective-016.rsi.ei.tum.de", 12000)]
+                ("collective-013.rsi.ei.tum.de", 13000),("collective-016.rsi.ei.tum.de", 12000)]  # with banner
+    else:
+        big_flags = [("collective-016.rsi.ei.tum.de", 13000),("collective-021.rsi.ei.tum.de", 12000),("collective-021.rsi.ei.tum.de", 13000),
+                 ("collective-022.rsi.ei.tum.de", 12000),("collective-022.rsi.ei.tum.de", 13000),("collective-017.rsi.ei.tum.de", 12000),
+                 ("collective-014.rsi.ei.tum.de", 13000),("collective-020.rsi.ei.tum.de", 13000),("collective-015.rsi.ei.tum.de", 12000),
+                 ("collective-015.rsi.ei.tum.de", 13000),("collective-020.rsi.ei.tum.de", 12000)] # without banner
+        small_flags = [("collective-018.rsi.ei.tum.de", 12000),("collective-018.rsi.ei.tum.de", 13000),
+                ("collective-014.rsi.ei.tum.de", 12000),("collective-009.rsi.ei.tum.de", 12000),("collective-009.rsi.ei.tum.de", 13000),
+                ("collective-013.rsi.ei.tum.de", 13000),("collective-016.rsi.ei.tum.de", 12000),("collective-013.rsi.ei.tum.de", 12000)]   # without banner
+  
     threads = []
-    print("big_flags")
     for robot, port in small_flags:
-        print(robot,port)
-        threads.append(Thread(target=automatica_wave_small, args=(robot,port)))
-    print("small_flags")
+        threads.append(Thread(target=automatica_wave_small, args=(robot,port,waving_time)))
     for robot, port in big_flags:
         print(robot,port)
-        threads.append(Thread(target=automatica_wave_big, args=(robot,port)))
+        threads.append(Thread(target=automatica_wave_big, args=(robot,port,waving_time)))
     for t in threads:
         t.start()
-    raise_banner()
-    for t in threads:
+    time_1 = time.time()
+    if banner:
+        raise_banner()
+    while time.time() - time_1 < waving_time+2:
+        time.sleep
+
+    big_flags.extend(small_flags)
+
+    for i,t in enumerate(threads):
+        print("waiting for ", big_flags[i])
+        command_some(second_ushape, "stop_task")
         t.join()
+
 
     
 
 def raise_banner():
     threads = []
     for r in ["collective-013.rsi.ei.tum.de","collective-020.rsi.ei.tum.de"]:
-        threads.append(Thread(target=move_joint, args=(r, "wave_high", 12000, True)))
+        threads.append(Thread(target=move_joint, args=(r, "banner_high", 12000, True)))
         threads[-1].start()
     for t in threads:
         t.join()
@@ -345,12 +371,15 @@ def move(robot, location, offset, port=12000, wait = True):
 
     #print("Result: " + str(result))
 
-def move_joint(robot, location,port=12000, wait=True):
+def move_joint(robot, location,port=12000, wait=True, speed = []):
     path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
     f = open(path_to_default_context + "move_joint.json")
     move_context = json.load(f)
     move_context["skill"]["objects"]["goal_pose"] = location
     move_context["skill"]["time_max"] = 10
+    if speed:
+        move_context["skill"]["speed"] = speed[0]
+        move_context["skill"]["acc"] = speed[1]
     t0 = Task(robot, port=port)
     t0.add_skill("move", "MoveToPoseJoint", move_context)
     t0.start()
@@ -748,8 +777,24 @@ def hold_pose(robot, duration, port):
     t.add_skill("hold","HoldPose",hold_context)
     t.start(queue=False)
 
+def extract(robot, extractable, extractTo, container, port):
+    path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
+    f = open(path_to_default_context + "extraction.json")
+    move_context = json.load(f)
+    move_context["skill"]["objects"]["Container"] = container
+    move_context["skill"]["objects"]["ExtractTo"] = extractTo
+    move_context["skill"]["objects"]["Extractable"] = extractable
+    move_context["skill"]["time_max"] = 10
+    #move_context["user"]["env_X"] = [0, 0, 1, 1, 1, 1]
+    t = Task(robot, port)
+    t.add_skill("extraction","TaxExtraction",move_context)
+    t.start(queue=False)
+    t.wait()
+
 def gear_reset():
-    move("10.157.174.245","026_left_container_approach",[0,0,0],12000,True)
+    #call_method("10.157.174.245",12000,"move_gripper",{"force":100,"speed":0.08,"width":0.0,"espilon_inner":1,"epsilon_outer":1})
+    extract("10.157.174.245","026_left","026_left_container_approach","026_left_container",12000)
+    #move("10.157.174.245","026_left_container_approach",[0,0,0],12000,True)
     move("10.157.174.245","026_left_container_above",[0,0,0],12000,True)
     move_joint("10.157.174.245","026_left_start",12000,True)
     move_joint("10.157.174.245","026_left_pre")
@@ -761,6 +806,8 @@ def gear_insertion():
     move_joint("10.157.174.245","hold",13000,True)
     move_joint("10.157.174.245","026_left_start",12000,True)
     move_joint("10.157.174.245","026_left_container_above",12000,True)
+    move("10.157.174.245","026_left_container_approach",[0,0,0],12000,True)
+
     content = {
         "skill": {
             "objects": {
@@ -871,4 +918,23 @@ def move_to_approach_poses():
 
     for t in threads:
         t.join()
-                       
+
+def grasp(module, side=None):
+    ip = load_config([module])[0]
+    if module == "026":
+        call_method(ip, 12000, "move_gripper",{"width":0.01,"speed":1,"force":1})
+    if side == "left":
+        call_method(ip, 12000, "release_object")
+        call_method(ip, 12000, "grasp", {"force":100, "speed":0.5, "width":0, "epsilon_inner":1, "epsilon_outer":1})
+        call_method(ip, 12000, "set_grasped_object", {"object":module+"_left"})
+    elif side == "right":
+        call_method(ip, 13000, "release_object")
+        call_method(ip, 13000, "grasp", {"force":100, "speed":0.5, "width":0, "epsilon_inner":1, "epsilon_outer":1})
+    else:
+        call_method(ip, 12000, "release_object")
+        call_method(ip, 13000, "release_object")
+        call_method(ip, 12000, "grasp", {"force":100, "speed":0.5, "width":0, "epsilon_inner":1, "epsilon_outer":1})
+        call_method(ip, 12000, "set_grasped_object", {"object":module+"_left"})
+        call_method(ip, 13000, "grasp", {"force":100, "speed":0.5, "width":0, "epsilon_inner":1, "epsilon_outer":1})
+    move_joint(ip, module+"_left_container_approach", 12000)
+    move_joint(ip, "hold", 13000)
