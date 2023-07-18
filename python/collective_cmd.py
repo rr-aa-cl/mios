@@ -254,7 +254,7 @@ def automatica_waving(banner=False):
     time_1 = time.time()
     if banner:
         raise_banner()
-    while time.time() - time_1 < waving_time+2:
+    while time.time() - time_1 < waving_time+10:
         time.sleep
 
     big_flags.extend(small_flags)
