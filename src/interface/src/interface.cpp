@@ -387,6 +387,7 @@ nlohmann::json CommandInterface::get_state([[maybe_unused]] const nlohmann::json
         result=false;
     }
     const Percept* p = m_core->get_percept();
+    mirmi_utils::write_json_array<double,7,1>(response["gravity"],p->internal_model.G);
     mirmi_utils::write_json_array<double,7,1>(response["q"],p->proprioception.q);
     mirmi_utils::write_json_array<double,4,4>(response["O_T_EE"],p->proprioception.O_T_EE);
     response["grasped_object"]=m_memory->get_live_context()->grasped_object->name;

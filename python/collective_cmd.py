@@ -371,12 +371,13 @@ def move(robot, location, offset, port=12000, wait = True):
 
     #print("Result: " + str(result))
 
-def move_joint(robot, location,port=12000, wait=True, speed = []):
+def move_joint(robot, location, port=12000, offset=[0,0,0,0,0,0,0], wait=True, speed = []):
     path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
     f = open(path_to_default_context + "move_joint.json")
     move_context = json.load(f)
     move_context["skill"]["objects"]["goal_pose"] = location
     move_context["skill"]["time_max"] = 10
+    move_context["skill"]["q_g_offset"] = offset
     if speed:
         move_context["skill"]["speed"] = speed[0]
         move_context["skill"]["acc"] = speed[1]
