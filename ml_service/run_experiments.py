@@ -151,17 +151,17 @@ def check_poses(robot_dict):
     return error            
 
 def transfer_learning():
-    robots = {"collective-017": "cylinder_30",
-              "collective-005": "usb_a",
-              "collective-010": "schuko",
-              "collective-029": "IEC60320_C13",
-              "collective-027": "abus_e30"}
-    tasks = ["cylinder_30", "usb_a", "schuko", "IEC60320_C13", "abus_e30"]
+    robots = {"collective-016.rsi.ei.tum.de": "cylinder_50",
+              "collective-005.rsi.ei.tum.de": "usb-a",
+              "collective-010.rsi.ei.tum.de": "schuko",
+              "collective-029.rsi.ei.tum.de": "IEC60320_C13",
+              "collective-017.rsi.ei.tum.de": "abus_e30"}
+    tasks = ["cylinder_50", "usb-a", "schuko", "IEC60320_C13", "abus_e30"]
     
     #sc = SVMLearner(130,10,0,True,False, 0.4,True).get_configuration()
     sc = CMAESLearner(10,13,True).get_configuration()
     # learning for base knowledge
-    tags = ["transfer_learning","evaluation"]
+    tags = ["test","evaluation"]  # transfer_learning
     for n_current_iter in range(0,10):
         threads = []
         print("Number of iteration: ", n_current_iter+1,"/10")
@@ -190,7 +190,7 @@ def transfer_learning():
         # check for completness:
         client = MongoDBClient(knowledge_source.kb_location)
         for robot in robots.keys():
-            for task in robots[robot]:
+                task = robots[robot]
                 knowledge_tags = tags.copy()
                 knowledge_tags.extend(["n"+str(n_current_iter+1), task])
                 print("checking ", knowledge_tags," for consistency.")
@@ -204,10 +204,11 @@ def transfer_learning():
         knowledge_source.scope = []
         knowledge_source.tags = []
         del knowledge_source
-
+    stop_services(list(robots.keys()))
+    return True
     #transfer to here: 
     for task in tasks:
-        tags = ["transfer_learning","evaluation"]
+        tags = ["test","evaluation"]
         for n_current_iter in range(0,10):
             threads = []
             print("Number of iteration: ", n_current_iter+1,"/10")
