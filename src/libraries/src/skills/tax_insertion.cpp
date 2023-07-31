@@ -201,7 +201,7 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_calibration_mp(const
 
 
 std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_contact_mp(const Percept &p){
-    spdlog::trace("TaxInsertion::create_contact_mp()");
+    spdlog::debug("TaxInsertion::create_contact_mp()");
     std::shared_ptr<SkillParametersTaxInsertion> skill_params = get_parameters<SkillParametersTaxInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("contact",p);
     mp->create_strategy<TwistStrategy>("move",1);
@@ -300,17 +300,27 @@ bool TaxInsertion::check_local_err_conditions(const Percept &p){
 
     if(get_active_mp()->get_name()=="contact"){
         bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
+        bool depth = p.proprioception.T_T_EE(2,3) > get_object_pose_T("Container")(2,3) + 0.015;
+
         if(lateral){
             spdlog::error("searching out of ROI range in mp contact");
         }
-        return lateral;
+        if(depth){
+            spdlog::error("Too deep");
+        }
+        return lateral && depth;
     }
     if(get_active_mp()->get_name()=="wiggle"){
         bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
+        bool depth = p.proprioception.T_T_EE(2,3) > get_object_pose_T("Container")(2,3) + 0.015;
+
         if(lateral){
-            spdlog::error("searching out of ROI range in mp wiggle");
+            spdlog::error("searching out of ROI range in wiggle contact");
         }
-        return lateral;
+        if(depth){
+            spdlog::error("Too deep in wiggle mp");
+        }
+        return lateral && depth;
     }
     return false;
 }

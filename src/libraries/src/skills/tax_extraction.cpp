@@ -102,10 +102,13 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_move_mp(const Perce
     T_g.block<3,1>(0,3)=p.proprioception.T_T_EE.block<3,1>(0,3);
     orientation->set_goal(T_g,skill_params->p1.dX_d,skill_params->p1.ddX_d);
 
-    mp->create_strategy<TwistStrategy>("pull",1);
-    Eigen::Matrix<double,6,1> dX_d;
-    dX_d<<0,0,-skill_params->p0.dX_d(0),0,0,0;
-    mp->get_strategy<TwistStrategy>("pull")->set_TF_dX_d(dX_d,skill_params->p0.ddX_d);
+    // mp->create_strategy<TwistStrategy>("pull",1);
+    // Eigen::Matrix<double,6,1> dX_d;
+    // dX_d<<0,0,-skill_params->p0.dX_d(0),0,0,0;
+    // mp->get_strategy<TwistStrategy>("pull")->set_TF_dX_d(dX_d,skill_params->p0.ddX_d);
+
+
+
 //    mp->create_strategy<FFStrategy>("pull",1);
 //    Eigen::Matrix<double,6,1> f_pull;
 //    f_pull<<0,0,-skill_params->p1.f_pull,0,0,0;
@@ -130,13 +133,25 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_wiggle_mp(const Per
                                                                    Eigen::Matrix<double,6,1>::Zero(),skill_params->p0.search_f,
                                                                    Eigen::Matrix<double,6,1>::Zero(),Eigen::Matrix<double,6,1>::Zero());
 
-    mp->create_strategy<TwistStrategy>("pull",1);
-    Eigen::Matrix<double,6,1> dX_d;
-    Eigen::Matrix<double,3,1> dir=get_object_pose_T("ExtractTo").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);
-    dir/=dir.norm();
-    dX_d<<dir*skill_params->p0.dX_d(0),0,0,0;
-//    dX_d<<0,0,-skill_params->p0.dX_d(0),0,0,0;
-    mp->get_strategy<TwistStrategy>("pull")->set_TF_dX_d(dX_d,skill_params->p0.ddX_d);
+    // ((((((((((((((((((((((((((((()))))))))))))))))))))))))))))
+    mp->create_strategy<MoveToPoseStrategy>("move",1);
+    std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
+    Eigen::Matrix<double,4,4> offset = Eigen::MatrixXd::Identity(4,4);
+    offset(2,3) = -0.08;
+    Eigen::Matrix<double,4,4> goal = offset * get_object_pose_T("Container");
+    Eigen::Matrix<double,2,1> dx, ddx;
+    dx << 0.1, 0.1;
+    ddx << 0.5, 0.5;
+    move->set_goal(goal, dx, ddx);
+// ((((((((((((((((((((((((((((()))))))))))))))))))))))))))))
+
+//     mp->create_strategy<TwistStrategy>("pull",1);
+//     Eigen::Matrix<double,6,1> dX_d;
+//     Eigen::Matrix<double,3,1> dir=get_object_pose_T("ExtractTo").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);
+//     dir/=dir.norm();
+//     dX_d<<dir*skill_params->p0.dX_d(0),0,0,0;
+// //    dX_d<<0,0,-skill_params->p0.dX_d(0),0,0,0;
+//     mp->get_strategy<TwistStrategy>("pull")->set_TF_dX_d(dX_d,skill_params->p0.ddX_d);
 
 //    mp->create_strategy<FFStrategy>("pull",1);
 //    Eigen::Matrix<double,6,1> f_pull;

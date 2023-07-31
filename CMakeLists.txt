@@ -58,7 +58,7 @@ option(FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)
 option(DEBUG_LOGGING "Enabling debug logging" OFF)
 option(ENABLE_IPO "Enable Interprocedural Optimization, aka Link Time Optimization (LTO)" OFF)
 option(ENABLE_PCH "Enable Precompiled Headers" ON)
-option(ENABLE_UNITY_BUILD "Enable unity build" ON)
+option(ENABLE_UNITY_BUILD "Enable unity build" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/src/plugins)
