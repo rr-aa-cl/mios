@@ -451,8 +451,12 @@ class KnowledgeManager:
         for nr in range(len(d)):
             key = "n" + str(nr)
             if d.get(key, False):  # if trial number available
-                if (d[key]["q_metric"]["success"] == True):  # if trial was successfull
-                    successful_trials.append(d[key])
+                if "q_metric" in d[key]:
+                    if (d[key]["q_metric"]["success"] == True):  # if trial was successfull
+                        successful_trials.append(d[key])
+                else:
+                    if (d[key]["success"] == True):  # if trial was successfull
+                        successful_trials.append(d[key])
         return successful_trials
 
     def dict_to_list(self, d):

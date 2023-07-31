@@ -1,14 +1,14 @@
 [requires]
-boost/1.78.0
+boost/1.82.0
 eigen/3.4.0
 nlohmann_json/3.10.5
 simple-websocket-server/2.0.2
 cpp-httplib/0.10.1
 catch2/2.13.8
 spdlog/1.9.2
-pybind11/2.9.1
+pybind11/2.10.4
 cxxopts/3.0.0
-mongo-cxx-driver/3.6.6
+mongo-cxx-driver/3.7.2
 openssl/1.1.1j
 
 [options]

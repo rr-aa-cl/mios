@@ -33,17 +33,20 @@ class Result:
             self.total_trials = 0
             self.total_time = 0
 
-
+        self.knowledge = None
         if "init_knowledge" in data_tmp["meta"]:
-            self.knowledge = data_tmp["meta"]["init_knowledge"]["parameters"]
-        else:
-            self.knowledge = None
+            if "parameters" in data_tmp["meta"]["init_knowledge"]:
+                self.knowledge = data_tmp["meta"]["init_knowledge"]["parameters"]
+            
 
 
     def get_successes_per_trial(self):
         success = []
         for t in self.trials:
-            success.append(t["q_metric"]["success"])
+            if "q_metric" in t:
+                success.append(t["q_metric"]["success"])
+            else:
+                success.append(t["success"])
         return success
 
     def get_successes_per_time(self):
@@ -86,9 +89,15 @@ class Result:
                 else:
                     episode_size_counter += 1
                     if cost_type is None:
-                        cost_raw.append(t["q_metric"]["final_cost"])
+                        if "q_metric" in t:
+                            cost_raw.append(t["q_metric"]["final_cost"])
+                        else:
+                            cost_raw.append(t["cost"])
                     else:
-                        cost_raw.append(t["q_metric"]["cost"][cost_type])
+                        if q_metric in t:
+                            cost_raw.append(t["q_metric"]["cost"][cost_type])
+                        else:
+                            cost_raw.append(t["cost"][cost_type])
             elif specification == "local" and not t["external"]:
                 if agent is not None:
                     if agent == t["agent"]:
@@ -96,13 +105,19 @@ class Result:
                         if cost_type is None:
                             cost_raw.append(t["q_metric"]["final_cost"])
                         else:
-                            cost_raw.append(t["q_metric"]["cost"][cost_type])
+                            if q_metric in t:
+                                cost_raw.append(t["q_metric"]["cost"][cost_type])
+                            else:
+                                cost_raw.append(t["cost"][cost_type])
                     else:
                         continue
                 else:
                     episode_size_counter += 1
                     if cost_type is None:
-                        cost_raw.append(t["q_metric"]["final_cost"])
+                        if "q_metric" in t:
+                            cost_raw.append(t["q_metric"]["final_cost"])
+                        else:
+                            cost_raw.append(t["cost"])
                     else:
                         cost_raw.append(t["q_metric"]["cost"][cost_type])
             elif specification == "external" and t["external"]:
@@ -110,7 +125,10 @@ class Result:
                     if agent == t["agent"]:
                         episode_size_counter += 1
                         if cost_type is None:
-                            cost_raw.append(t["q_metric"]["final_cost"])
+                            if "q_metric" in t:
+                                cost_raw.append(t["q_metric"]["final_cost"])
+                            else:
+                                cost_raw.append(t["cost"])
                         else:
                             cost_raw.append(t["q_metric"]["cost"][cost_type])
                     else:
@@ -118,7 +136,10 @@ class Result:
                 else:
                     episode_size_counter += 1
                     if cost_type is None:
-                        cost_raw.append(t["q_metric"]["final_cost"])
+                        if "q_metric" in t:
+                            cost_raw.append(t["q_metric"]["final_cost"])
+                        else:
+                            cost_raw.append(t["cost"])
                     else:
                         cost_raw.append(t["q_metric"]["cost"][cost_type])
 
@@ -175,7 +196,10 @@ class Result:
                         if "q_metric" not in t:
                             cost.append(t["cost"])
                         else:
-                            cost.append(t["q_metric"]["final_cost"])
+                            if "q_metric" not in t:
+                                cost.append(t["final_cost"])
+                            else:
+                                cost.append(t["q_metric"]["final_cost"])
                     else:
                         cost.append(t["q_metric"]["cost"][cost_type])
                     if t["t_1"] == None:    

@@ -170,7 +170,7 @@ def plot_collective_learning(tags, data_src):
 
 
 def plot_transfer_learning(db: str):
-    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_abus_e30",
+    tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", #"key_abus_e30",
              "key_pad", "key_old", "key_hatch"]
 
     p = DataProcessor()
@@ -185,20 +185,20 @@ def plot_transfer_learning(db: str):
                 if i == j:
                     print("Processing plot " + str(i * 10 + j + 1), end="\r")
                     tags = ["transfer_learning", tasks[i]]
-                    results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+                    results = get_multiple_experiment_data("localhost", "insert_object",  # collective-control-001.local
                                                            results_db="results_tl_base",
                                                            filter={"meta.tags": {"$all": tags}})
                     cost = p.get_average_cost(results, True)
                     axes[i, j].plot(cost)
                 else:
                     tags = ["transfer_learning", tasks[j], "from_" + tasks[i]]
-                    results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+                    results = get_multiple_experiment_data("localhost", "insert_object",  # collective-control-001.local
                                                            results_db=db,
                                                            filter={"meta.tags": {"$all": tags}})
                     cost = p.get_average_cost(results, True)
                     axes[i, j].plot(cost)
             except (DataNotFoundError, DataError):
-                print("No data found for experiment (" + str(i) + "," + str(j) + ")")
+                print("No data found for experiment (" + str(i) + "," + str(j) + "): ",tasks[j],", from_",tasks[i])
             if i == 0:
                 axes[i, j].annotate("t" + str(j), xy=(0.5, 1), xytext=(0, 5),
                                     xycoords='axes fraction', textcoords='offset points',
@@ -225,17 +225,17 @@ def plot_transfer_learning_2(task: str):
     p = DataProcessor()
     plot = Plotter()
     tags = ["transfer_learning", task]
-    results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+    results = get_multiple_experiment_data("localhost", "insert_object",  # collective-control-001.local
                                            results_db="transfer_base_v2",
                                            filter={"meta.tags": {"$all": tags}})
     cost = p.get_average_cost(results, True, 13)
     cost = np.insert(cost, 0, 1)
-    plot.plot_cost_over_trials(cost)
+   # plot.plot_cost_over_trials(cost)
     legend = [task]
     for i in range(len(tasks)):
         try:
             tags = ["transfer_learning", task, "from_" + tasks[i]]
-            results = get_multiple_experiment_data("collective-control-001.local", "insert_object",
+            results = get_multiple_experiment_data("localhost", "insert_object",  # collective-control-001.local
                                                    results_db="transfer_all_v2",
                                                    filter={"meta.tags": {"$all": tags}})
             cost = p.get_average_cost(results, True, 13)
@@ -476,7 +476,7 @@ color_level_2 = "#54b4d3"
 def plot_transfer_learning_4():
     plt.rcParams.update({
         "text.usetex": True,
-        'text.latex.preamble': [r'\usepackage{amssymb}',r'\usepackage{amsmath}',r'\usepackage{mathbbol}'],
+        'text.latex.preamble': r'\usepackage{amssymb}\usepackage{amsmath}\usepackage{mathbbol}',  # [r'\usepackage{amssymb}',r'\usepackage{amsmath}',r'\usepackage{mathbbol}']
         "font.family": 'serif',
         "font.size": 16
     })

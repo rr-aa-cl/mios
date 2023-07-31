@@ -115,10 +115,10 @@ class CMAESService(BaseService):
 
         costs = []
         self.success_ratio = 0
-        if self.knowledge_source is None:
+        if self.knowledge.kb_location is None:
             kb = None
         else:
-            kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
+            kb = ServerProxy("http://" + self.knowledge.kb_location + ":8001")
         for uuid in trial_uuids.keys():
             result = self.wait_for_result(uuid)
             if result.q_metric.final_cost is None:
@@ -146,10 +146,10 @@ class CMAESService(BaseService):
         logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
         self.population = None
 
-        if self.knowledge_source is None:
+        if self.knowledge.kb_location is None:
             kb = None
         else:
-            kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
+            kb = ServerProxy("http://" + self.knowledge.kb_location + ":8001")
 
         for gen in range(ngen):
             # Generate a new population
