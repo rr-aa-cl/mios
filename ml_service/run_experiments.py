@@ -13,6 +13,7 @@ import json
 
 ###################################################################################
 list_block_1 = ["001", "002", "003", "004", "005", "006", "007", "008", "010", "011", "012"]
+list_block_2 = ["009","013","014","015","016","017","018","020","021","022"]
 list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
 list_external = ["050"]
 
@@ -162,50 +163,53 @@ def transfer_learning():
     sc = CMAESLearner(10,13,True).get_configuration()
     # learning for base knowledge
     tags = ["test","evaluation"]  # transfer_learning
+
     for n_current_iter in range(0,10):
         threads = []
         print("Number of iteration: ", n_current_iter+1,"/10")
+        try:
+            for robot in robots.keys():
+                insertable = robots[robot]
 
-        for robot in robots.keys():
-            insertable = robots[robot]
+                knowledge_source = Knowledge()
+                knowledge_source.kb_location = "collective-020.rsi.ei.tum.de"
+                knowledge_source.mode = "global" 
+                knowledge_source.kb_db = "global_knowledge"
+                knowledge_source.kb_task_type = "insertion"
+                knowledge_source.scope = []
+                knowledge_source.scope.extend(tags)
+                knowledge_source.scope.extend(insertable)
+                knowledge_source.scope.append("n"+str(n_current_iter+1))
+                knowledge_source.type = "all"
 
-            knowledge_source = Knowledge()
-            knowledge_source.kb_location = "collective-020.rsi.ei.tum.de"
-            knowledge_source.mode = "global" 
-            knowledge_source.kb_db = "global_knowledge"
-            knowledge_source.kb_task_type = "insertion"
+                pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
+                                        {"Insertable": insertable, "Container": insertable+"_container",
+                                        "Approach": insertable+"_container_approach"}).get_problem_definition(insertable)
+                threads.append(Thread(target=learn_single_task, args=(robot, pd, sc, tags, n_current_iter, False, knowledge_source.to_dict(), True)))
+                threads[-1].start()
+            for t in threads:
+                t.join()
+            # check for completness:
+            client = MongoDBClient(knowledge_source.kb_location)
+            for robot in robots.keys():
+                    task = robots[robot]
+                    knowledge_tags = tags.copy()
+                    knowledge_tags.extend(["n"+str(n_current_iter+1), task])
+                    print("checking ", knowledge_tags," for consistency.")
+                    if not client.read("global_knowledge", "insertion",{"meta.tags":knowledge_tags}):
+                        robot_db = MongoDBClient(robot)
+                        if len(robot_db.read("ml_results","insertion",{"meta.tags":knowledge_tags})) < 133:
+                            print("task ",task, " wasn finished properly")
+                            return task
+            kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
+            kb.clear_memory()
             knowledge_source.scope = []
-            knowledge_source.scope.extend(tags)
-            knowledge_source.scope.extend(insertable)
-            knowledge_source.scope.append("n"+str(n_current_iter+1))
-            knowledge_source.type = "all"
-
-            pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
-                                    {"Insertable": insertable, "Container": insertable+"_container",
-                                    "Approach": insertable+"container_approach"}).get_problem_definition(insertable)
-            threads.append(Thread(target=learn_single_task, args=(robot, pd, sc, tags, n_current_iter, False, knowledge_source.to_dict(), True)))
-            threads[-1].start()
-        for t in threads:
-            t.join()
-        # check for completness:
-        client = MongoDBClient(knowledge_source.kb_location)
-        for robot in robots.keys():
-                task = robots[robot]
-                knowledge_tags = tags.copy()
-                knowledge_tags.extend(["n"+str(n_current_iter+1), task])
-                print("checking ", knowledge_tags," for consistency.")
-                if not client.read("global_knowledge", "insertion",{"meta.tags":knowledge_tags}):
-                    robot_db = MongoDBClient(robot)
-                    if len(robot_db.read("ml_results","insertion",{"meta.tags":knowledge_tags})) < 133:
-                        print("task ",task, " wasn finished properly")
-                        return task
-        kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
-        kb.clear_memory()
-        knowledge_source.scope = []
-        knowledge_source.tags = []
-        del knowledge_source
-    stop_services(list(robots.keys()))
-    return True
+            knowledge_source.tags = []
+            del knowledge_source
+        except KeyboardInterrupt:
+            stop_services(list(robots.keys()))
+            return True
+        return True
     #transfer to here: 
     for task in tasks:
         tags = ["test","evaluation"]
@@ -796,25 +800,27 @@ def dualarm_demo2(dualarm_modules):   # dualarm_modules = list_block_1, list_U, 
     "10.157.174.205",  #0 ms            collective-023.local    [n/a]           A8:A1:59:B8:26:4D                   [n/a]                               ASRock Incorporation                      
     "10.157.175.156",  #0 ms            collective-024.local    [n/a]           A8:A1:59:B8:23:5A                   [n/a]                               ASRock Incorporation                      
     "10.157.174.186",  #0 ms            collective-025.local    [n/a]           A8:A1:59:B8:25:D5                   [n/a]                               ASRock Incorporation                      
-    "10.157.174.245",  #0 ms            collective-026.local    [n/a]           A8:A1:59:B2:1C:7A                   [n/a]                               ASRock Incorporation                      
+    #"10.157.174.245",  #0 ms            collective-026.local    [n/a]           A8:A1:59:B2:1C:7A                   [n/a]                               ASRock Incorporation                      
     "10.157.174.249",  #0 ms            collective-027.local    [n/a]           A8:A1:59:B8:23:B9                   [n/a]                               ASRock Incorporation                      
     "10.157.174.255",  #0 ms            collective-028.local    [n/a]           A8:A1:59:B2:AE:FF                   [n/a]                               ASRock Incorporation                      
     "10.157.174.42" ,  #0 ms            collective-029.local    [n/a]           A8:A1:59:B2:AD:9A                   [n/a]                               ASRock Incorporation                      
     #"10.157.175.236",#collective-030 # with hand
-    "10.157.174.148",#collective-032
+    #"10.157.174.148",#collective-032
     #"10.157.174.160",#collective-034
     #"10.157.174.163",  #0 ms            collective-038.local    [n/a]           A8:A1:59:B8:23:9F                   [n/a]                               ASRock Incorporation                      
     #"10.157.174.175",  #0 ms            collective-039.local    [n/a]           A8:A1:59:B8:25:70                   [n/a]                               ASRock Incorporation                      
     #"10.157.174.52" ,  #0 ms            collective-046.local    [n/a]           A8:A1:59:B8:23:A5                   [n/a]                               ASRock Incorporation                      
-    "172.24.192.25"]  #0 ms            collective-050.local    [n/a]           A8:A1:59:B2:0F:85                   [n/a]                               ASRock Incorporation 
+    #"172.24.192.25"]  #0 ms            collective-050.local    [n/a]           A8:A1:59:B2:0F:85                   [n/a]                               ASRock Incorporation 
+    ]
     modules = ["001",\
             "002","003","004","005","006","007","008","009","010","011","012","013","014","015","016",
             "017",\
             "018","019","020",
             "021","022",
             "023","024","025","026","027","028","029",#"030",
-            "032",#"034",#"038","039","046",
-            "050",]
+            #"032",#"034",#"038","039","046",
+            #"050",
+    ]
     robots_dualarm = []
     #robots_dualarm.extend(load_config(list_block_1))
     #robots_dualarm.extend(load_config(list_U))
@@ -828,7 +834,7 @@ def dualarm_demo2(dualarm_modules):   # dualarm_modules = list_block_1, list_U, 
 
     threads = []
     sc = SVMLearner(2000,10,0,True,False, 0.4,True).get_configuration()
-    tags = ["demo_learning_2"]
+    tags = ["demo_learning_3"]
     knowledge_source = Knowledge()
     knowledge_source.kb_location = robots_dualarm[0]
     knowledge_source.mode = "global"

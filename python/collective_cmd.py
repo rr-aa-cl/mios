@@ -348,7 +348,7 @@ def move(robot, location, offset, port=12000, wait = True):
     context = {
         "skill": {
             "p0":{
-                "dX_d": [0.1, 0.5],
+                "dX_d": [0.3, 0.8],
                 "ddX_d": [0.5, 1],
                 "K_x": [2000, 2000, 2000, 250, 250, 250],
                 "T_T_EE_g_offset": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, offset[0], offset[1], offset[2], 1]
@@ -792,8 +792,40 @@ def extract(robot, extractable, extractTo, container, port):
     t.start(queue=False)
     t.wait()
 
-def gear_reset():
+def gear_full():
+    gear_grasp()
+    gear_insertion()
+    gear_reset(True)
+
+def gear_place_ring():
+    gear_unmount_ring()
+    move_joint("10.157.174.245","026_left_pre")
+    move("10.157.174.245","ring",[0,0,0])
+    call_method("10.157.174.245",12000,"move_gripper",{"speed":1,"force":1,"width":0})
+    move("10.157.174.245","026_left_pre",[0,0,0])
+    #gear_insertion()
+
+def gear_unmount_ring():
+    move_joint("10.157.174.245","026_left_start")
+    move_joint("10.157.174.245","026_left_container_above")
+    call_method("10.157.174.245",12000,"move_gripper",{"speed":1,"force":1,"width":0})
+    move("10.157.174.245","026_left_container_approach",[0,0,0])
+    move("10.157.174.245","026_left_container",[0,0,0])
+    call_method("10.157.174.245",12000,"grasp",{"speed":0.1,"width":0.04,"force":0.2,"epsilon_inner":1,"epsilon_outer":1})
+    gear_reset(False)
+    
+
+def gear_grasp():
+    move_joint("10.157.174.245","026_left_pre")
+    call_method("10.157.174.245",12000,"move_gripper",{"speed":1,"force":1,"width":0})
+    move("10.157.174.245","ring",[0,0,0])
+    call_method("10.157.174.245",12000,"grasp",{"speed":0.1,"width":0.04,"force":0.2,"epsilon_inner":1,"epsilon_outer":1})
+    move("10.157.174.245","026_left_pre",[0,0,0])
+
+def gear_reset(ring_inside = False):
     #call_method("10.157.174.245",12000,"move_gripper",{"force":100,"speed":0.08,"width":0.0,"espilon_inner":1,"epsilon_outer":1})
+    if ring_inside:
+        call_method("10.157.174.245",12000,"move_gripper",{"speed":1,"force":1,"width":0})
     extract("10.157.174.245","026_left","026_left_container_approach","026_left_container",12000)
     #move("10.157.174.245","026_left_container_approach",[0,0,0],12000,True)
     move("10.157.174.245","026_left_container_above",[0,0,0],12000,True)
@@ -829,8 +861,8 @@ def gear_insertion():
                 "K_x": [500, 500, 500, 600, 600, 600]
             },
             "p2": {
-                "search_a": [5, 5, 0, 0, 0, 0],
-                "search_f": [2, 2, 0, 1.2, 1.2, 0],
+                "search_a": [1, 1, 0, 0, 0, 0],
+                "search_f": [1, 1, 0, 1.2, 1.2, 0],
                 "search_phi": [0, 3.14159265358979323846/2, 0, 3.14159265358979323846/2, 0, 0],
                 "K_x": [500, 500, 500, 800, 800, 800],
                 "f_push": [0, 0, 10, 0, 0, 0],
