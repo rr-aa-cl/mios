@@ -167,7 +167,7 @@ def transfer_learning():
     sc = SVMLearner(130,10,0,True,False, 0.4,True).get_configuration()
     #sc = CMAESLearner(10,13,True).get_configuration()
     # learning for base knowledge
-    tags = ["test","evaluation"]  # transfer_learning
+    tags = ["test2","evaluation"]  # transfer_learning
 
     for n_current_iter in range(0,10):
         threads = []
