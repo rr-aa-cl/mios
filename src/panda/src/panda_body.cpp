@@ -841,9 +841,9 @@ bool PandaBody::reboot_robot(const std::optional<std::string> &ip, const std::st
     spdlog::trace("PandaBody::reboot_robot");
     bool reconnect_arm = m_has_arm;
     bool reconnect_hand = m_arm_connected;
-    disconnect_from_gripper();
-    disconnect_from_robot();
-    deactivate_fci();
+    //disconnect_from_gripper();
+    //disconnect_from_robot();
+    //deactivate_fci();
     bool result;
     try{
         pybind11::module desk_client = pybind11::module::import("desk_client");

@@ -156,9 +156,8 @@ class FrankaAPI:
                              headers={'content-type': 'application/json',
                                       'Cookie': 'authorization=%s' % self._token,
                                       "X-Control-Token":self._spoc_token})
-        print("rebooting robot...")
-        response = self._client.getresponse()
-        content = response.read()
+        #response = self._client.getresponse()
+        #content = response.read()
         return True
 
     def in_control(self):
