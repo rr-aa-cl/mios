@@ -541,7 +541,7 @@ nlohmann::json CommandInterface::shutdown([[maybe_unused]] const nlohmann::json 
 }
 
 nlohmann::json CommandInterface::reboot([[maybe_unused]] const nlohmann::json &request){
-    spdlog::trace("CommandInterface:shutdown()");
+    spdlog::info("CommandInterface:reboot()");
     nlohmann::json response;
     bool result=m_core->reboot_body();
     response["result"]=result;
