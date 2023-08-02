@@ -178,6 +178,9 @@ def transfer_learning():
         try:
             for robot in robots.keys():
                 insertable = robots[robot]
+                if call_method(robot,12000,"get_state")["result"]["greasped_object"] == "NullObject":
+                    grasp_insertable(robot,insertable,insertable+"_container",insertable+"_container_approach",insertable+"_container_above",port=12000)
+                
                 knowledge_source = Knowledge()
                 knowledge_source.kb_location = "collective-020.rsi.ei.tum.de"
                 knowledge_source.mode = "global" 
