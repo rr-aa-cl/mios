@@ -839,6 +839,8 @@ bool PandaBody::shutdown_robot(const std::optional<std::string> &ip, const std::
 
 bool PandaBody::reboot_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password){
     spdlog::trace("PandaBody::reboot_robot");
+    bool reconnect_arm = m_has_arm;
+    bool reconnect_hand = m_arm_connected;
     disconnect_from_gripper();
     disconnect_from_robot();
     deactivate_fci();
@@ -852,14 +854,14 @@ bool PandaBody::reboot_robot(const std::optional<std::string> &ip, const std::st
         spdlog::warn("Cannot reboot, error when calling the python desk client.");
         result=false;
     }
-    if(result){
+    /*if(result){
         spdlog::info("Rebooting Robot... Wait until re-initialising.");
         std::this_thread::sleep_for(std::chrono::seconds(120));
         result=false;
         if(this->initialize()){
             result = true;
         }
-    }
+    }*/
     return result;
 }
 

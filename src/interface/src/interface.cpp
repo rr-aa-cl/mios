@@ -544,6 +544,10 @@ nlohmann::json CommandInterface::reboot([[maybe_unused]] const nlohmann::json &r
     spdlog::info("CommandInterface:reboot()");
     nlohmann::json response;
     bool result=m_core->reboot_body();
+    if(result){
+        spdlog::info("Rebooting robot arm... Shutdown MIOS. You can restart MIOS as soon as the robot is booted.");
+        result = this->terminate(request);
+    }
     response["result"]=result;
     return response;
 }
