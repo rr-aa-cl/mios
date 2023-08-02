@@ -174,7 +174,7 @@ def transfer_learning():
     slowest_iteration = 0
     while slowest_iteration < 1:
         threads = []
-        print("Number of iteration: ", n_current_iter+1,"/10")
+        print("Number of iteration: ", slowest_iteration+1,"/10")
         try:
             for robot in robots.keys():
                 insertable = robots[robot]
@@ -209,7 +209,7 @@ def transfer_learning():
                     knowledge_tags.extend(["n"+str(n_current_iter[task]+1), task])
                     print("checking ", knowledge_tags," for consistency.")
 
-                    
+
                     n_current_iter[task] += 1
 
 
@@ -228,7 +228,8 @@ def transfer_learning():
         except KeyboardInterrupt:
             stop_services(list(robots.keys()))
             return True
-        return True
+        
+        slowest_iteration = min(n_current_iter.values())
     
     for robot in robots.keys():
         insertable = robots[robot]
