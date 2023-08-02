@@ -123,7 +123,7 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
         print("Continue at n" + str(iter+1))
         return
     if dualarm_cmd is not None:
-        move_joint(dualarm_cmd["agent"],dualarm_cmd["port"],dualarm_cmd["pose"],wait=True)
+        move_joint(dualarm_cmd["agent"],dualarm_cmd["pose"],port=dualarm_cmd["port"],wait=True)
         c = DualarmCMD(dualarm_cmd)
         c.start()
 
@@ -141,7 +141,7 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
         while s.is_busy():
             time.sleep(15)
     c.stop()
-    move_joint(dualarm_cmd["agent"],dualarm_cmd["port"],dualarm_cmd["pose"],wait=True)
+    move_joint(dualarm_cmd["agent"],dualarm_cmd["pose"],port=dualarm_cmd["port"],wait=True)
         # backup_result(agent, "collective-control-001.local", problem_def.skill_class, uuid)
 
 def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion", db: str ="ml_results", min_size: int =0, mongo_port=27017):

@@ -231,10 +231,12 @@ def transfer_learning():
         
         slowest_iteration = min(n_current_iter.values())
     
+    #restart every robot 
     for robot in robots.keys():
         insertable = robots[robot]
         move_joint(robot,insertable+"_hold",wait=True,port=13000)
         if place_insertable(robot, insertable, insertable+"_container",insertable+"_container_approach",insertable+"container_above",port=12000):
+            move(robot,insertable+"_container_above",[0,0,0],wait=True)
             call_method(robot, 12000, "reboot")
             call_method(robot, 13000, "reboot")
     time.sleep(600)
