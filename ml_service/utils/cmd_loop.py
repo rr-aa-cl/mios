@@ -1,5 +1,5 @@
-from helper_functions import Task
-from ws_client import *
+from utils.helper_functions import Task
+from utils.ws_client import *
 from threading import Thread
 import time
 
