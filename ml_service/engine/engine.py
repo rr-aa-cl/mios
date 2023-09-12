@@ -169,7 +169,7 @@ class Engine:
 
         while self.keep_running is True:
             try:
-                logger.debug("Engine::main_loop.get_trial")
+                #logger.debug("Engine::main_loop.get_trial")
                 trial = self.queued_trials.get(False)
                 # logger.debug("Engine::main_loop.new_trial: " + trial.trial_uuid)
             except Empty:

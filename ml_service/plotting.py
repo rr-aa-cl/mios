@@ -187,14 +187,14 @@ def plot_transfer_learning(db: str):
                     print("Processing plot " + str(i * 10 + j + 1), end="\r")
                     tags = ["transfer_learning", tasks[i]]
                     results = get_multiple_experiment_data("collective-020", "insertion",  # collective-control-001.local , insert_object
-                                                           results_db="global_results",
+                                                           results_db="global_ml_results",
                                                            filter={"meta.tags": {"$all": tags+["base"]}})
                     cost = p.get_average_cost(results, True)
                     axes[i, j].plot(cost)
                 else:
                     tags = ["transfer_learning", tasks[j], "from_" + tasks[i]]
                     results = get_multiple_experiment_data("collective-020", "insertion",  # collective-control-001.local, insert_object
-                                                           results_db="global_results",
+                                                           results_db="global_ml_results",
                                                            filter={"meta.tags": {"$all": tags}})
                     cost = p.get_average_cost(results, True)
                     axes[i, j].plot(cost)
@@ -223,11 +223,12 @@ def plot_transfer_learning(db: str):
 def plot_transfer_learning_2(task: str):
     tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60", "key_pad",
              "key_hatch", "key_old"]
+    tasks = ["cylinder_50", "usb-a", "schuko", "IEC60320_C13", "abus_e30"]
     p = DataProcessor()
     plot = Plotter()
     tags = ["transfer_learning", task]
     results = get_multiple_experiment_data("collective-020", "insertion",  # collective-control-001.local
-                                           results_db="transfer_base_v2",
+                                           results_db="global_ml_results",  #"transfer_base_v2",
                                            filter={"meta.tags": {"$all": tags+["base"]}})
     cost = p.get_average_cost(results, True, 13)
     cost = np.insert(cost, 0, 1)
@@ -237,7 +238,7 @@ def plot_transfer_learning_2(task: str):
         try:
             tags = ["transfer_learning", task, "from_" + tasks[i]]
             results = get_multiple_experiment_data("collective-020", "insertion",  # collective-control-001.local
-                                                   results_db="transfer_all_v2",
+                                                   results_db="global_ml_results", #  "transfer_all_v2",
                                                    filter={"meta.tags": {"$all": tags}})
             cost = p.get_average_cost(results, True, 13)
             cost = np.insert(cost, 0, 1)
@@ -259,9 +260,10 @@ def plot_transfer_learning_2(task: str):
 def plot_transfer_learning_3():
     tasks = ["cylinder_10", "cylinder_20", "cylinder_30", "cylinder_40", "cylinder_50", "cylinder_60",
              "key_pad", "key_old", "key_hatch"]
+    tasks = ["cylinder_50", "usb-a", "schuko", "IEC60320_C13", "abus_e30"]
     task_colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]
 
-    n_cols = 3
+    n_cols = 2
     n_rows = 3
 
     episode_wise = False
@@ -282,6 +284,8 @@ def plot_transfer_learning_3():
     fig.set_size_inches(16, 9)
     for i in range(n_rows):
         for j in range(n_cols):
+            if i * n_cols + j > 4:
+                continue
             if trial_wise is True:
                 if episode_wise is True:
                     axes[i, j].set_xlim(0, 10)
@@ -293,12 +297,12 @@ def plot_transfer_learning_3():
             axes_casr[i, j].set_ylim(0, 1500)
             axes[i, j].grid()
             axes[i, j].tick_params(axis="both", which="both", length=0)
-            axes[i, j].set_title(tasks[i * n_rows + j], y=1.0, pad=-14)
+            axes[i, j].set_title(tasks[i * n_cols + j], y=1.0, pad=-14)
             legend = []
             try:
-                tags = ["transfer_learning", tasks[i * n_rows + j]]
+                tags = ["transfer_learning", tasks[i * n_cols + j]]
                 results = get_multiple_experiment_data("collective-020","insertion",  #"localhost", "insert_object",
-                                                       results_db="global_results" #"transfer_base_v2",
+                                                       results_db="global_ml_results", #"transfer_base_v2",
                                                        filter={"meta.tags": {"$all": tags+["base"]}})
                 if trial_wise is True:
                     base_cost, _ = p.get_average_cost(results, True, episode_size)
@@ -322,17 +326,17 @@ def plot_transfer_learning_3():
                 axes[i, j].plot(base_cost_log, linestyle="dashed", zorder=2, linewidth=4)
                 axes_casr[i, j].plot([0, len(base_casr)], [0, len(base_casr)], color="black", linestyle="dashed")
                 axes_casr[i, j].plot(base_casr, linestyle="dashed", zorder=2, linewidth=4)
-                legend = [tasks[i * n_rows + j]]
-                legend_casr = ["Optimal CASR", tasks[i * n_rows + j]]
+                legend = [tasks[i * n_cols + j]]
+                legend_casr = ["Optimal CASR", tasks[i * n_cols + j]]
             except (DataNotFoundError, DataError):
                 print("Base cost for task " + tasks[i] + " not found.")
                 continue
             for t in range(len(tasks)):
                 try:
-                    tags = ["transfer_learning", tasks[i * n_rows + j], "from_" + tasks[t]]
+                    tags = ["transfer_learning", tasks[i * n_cols + j], "from_" + tasks[t]]
                     results = get_multiple_experiment_data("collective-020","insertion",  #"localhost", "insert_object",
-                                                       results_db="global_results" #"transfer_all_v2",
-                                                       filter={"meta.tags": {"$all": tags+["base"]}})
+                                                       results_db="global_ml_results", #"transfer_all_v2",
+                                                       filter={"meta.tags": {"$all": tags}})
                     if trial_wise is True:
                         cost, _ = p.get_average_cost(results, True, episode_size)
                         casr, _ = p.get_average_success(results)
@@ -363,11 +367,11 @@ def plot_transfer_learning_3():
 
                     le_base = np.sum(base_cost) - baseline
                     le_transfer = np.sum(cost) - baseline
-                    le_ratio_matrix[i * n_rows + j][t] = le_transfer / le_base
-                    kl_matrix[i * n_rows + j][t] = calculate_kl_divence(base_cost, cost)
-                    casr_matrix[i * n_rows + j][t] = np.sum(casr) / np.sum(base_casr)
+                    le_ratio_matrix[i * n_cols + j][t] = le_transfer / le_base
+                    kl_matrix[i * n_cols + j][t] = calculate_kl_divence(base_cost, cost)
+                    casr_matrix[i * n_cols + j][t] = np.sum(casr) / np.sum(base_casr)
 
-                    speedup_matrix[i * n_rows + j][t] = calculate_speedup(base_cost, cost)
+                    speedup_matrix[i * n_cols + j][t] = calculate_speedup(base_cost, cost)
                     axes[i, j].plot(cost_log, zorder=1, color=task_colors[t])
                     axes_casr[i, j].plot(casr, zorder=1, color=task_colors[t])
 
@@ -384,8 +388,8 @@ def plot_transfer_learning_3():
             #                         xycoords='axes fraction', textcoords='offset points',
             #                         size='large', ha='center', va='baseline')
             if j == 0:
-                axes[i, j].set_yticks([2, 4, 6, 8, 10])
-                axes[i, j].set_yticklabels(["2", "4", "6", "8", "10"])
+                axes[i, j].set_yticks([2, 4, ])#6, 8, 10])
+                axes[i, j].set_yticklabels(["2", "4",])# "6", "8", "10"])
             #     pass
             #     axes[i, j].annotate("t" + str(i), xy=(0, 0.5), xytext=(-axes[i, j].yaxis.labelpad - 5, 0),
             #                         xycoords=axes[i, j].yaxis.label, textcoords='offset points',
@@ -415,11 +419,11 @@ def plot_transfer_learning_3():
     ax_casr.tick_params(labelcolor="none", bottom=False, left=False)
     if trial_wise is True:
         if episode_wise is True:
-            ax.xlabel("Episode [1]")
-            ax_casr.xlabel("Episode [1]")
+            ax.set_xlabel("Episode [1]")
+            ax_casr.set_xlabel("Episode [1]")
         else:
-            ax.xlabel("Trial [1]")
-            ax_casr.xlabel("Episode [1]")
+            ax.set_xlabel("Trial [1]")
+            ax_casr.set_xlabel("Episode [1]")
     else:
         ax.set_xlabel("Time [s]", fontsize=12)
         ax_casr.set_xlabel("Time [s]")
@@ -428,7 +432,7 @@ def plot_transfer_learning_3():
 
     fig.set_size_inches(16, 9)
     fig_casr.set_size_inches(16, 9)
-    fig.savefig("results_cost.png", bbox_inches='tight', dpi=300)
+    #fig.savefig("results_cost.png", bbox_inches='tight', dpi=300)
     fig_casr.savefig("results_casr.png", bbox_inches='tight', dpi=300)
 
     es_matrix = np.zeros(le_ratio_matrix.shape)
@@ -444,6 +448,7 @@ def plot_transfer_learning_3():
     print(casr_matrix)
 
     header = np.array(["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"])
+    header = np.array(tasks)
 
     es_matrix = es_matrix.astype('|S4')
     speedup_matrix = speedup_matrix.astype('|S4')
@@ -510,12 +515,18 @@ def plot_transfer_learning_4():
         "key_old": r"$\mathbb{t}_8$",
         "key_hatch": r"$\mathbb{t}_9$",
     }
+    task_title = {"cylinder_50":r"$\mathbb{t}_{cylinder_{50}}$",
+                   "usb-a":r"$\mathbb{t}_{USB Tpye-A}$",
+                "schuko":r"$\mathbb{t}_{schuko}$", 
+                "IEC60320_C13":r"$\mathbb{t}_{IEC60320-C13}$", 
+                "abus_e30":r"$\mathbb{t}_{abus-e30}$"}
 
-    n_cols = 3
-    n_rows = 3
+    n_cols = 2
+    n_rows = 3  # 3
 
+    general_objects = True
     episode_wise = False
-    trial_wise = False
+    trial_wise = False  # False
     if episode_wise is True:
         episode_size = 13
     else:
@@ -532,6 +543,8 @@ def plot_transfer_learning_4():
 
     for i in range(n_rows):
         for j in range(n_cols):
+            if i*n_cols+j>4:  # just for the evaluation plot
+                continue
             if trial_wise is True:
                 if episode_wise is True:
                     axes[i, j].set_xlim(0, 10)
@@ -544,12 +557,12 @@ def plot_transfer_learning_4():
             axes_casr[i, j].set_ylim(0, 1)
             axes[i, j].grid()
             axes[i, j].tick_params(axis="both", which="both", length=0)
-            axes[i, j].set_title("Task: " + task_title[tasks[i * n_rows + j]], x=0.1, y=0.13, pad=-14, fontsize=16)
-            axes_casr[i, j].set_title("Task: " + task_title[tasks[i * n_rows + j]], y=1.0, pad=-14, fontsize=16)
+            axes[i, j].set_title("Task: " + task_title[tasks[i * n_cols + j]], x=0.1, y=0.13, pad=-14, fontsize=16)
+            axes_casr[i, j].set_title("Task: " + task_title[tasks[i * n_cols + j]], y=1.0, pad=-14, fontsize=16)
             try:
-                tags = ["transfer_learning", tasks[i * n_rows + j]]
+                tags = ["transfer_learning", tasks[i * n_cols + j]]
                 results = get_multiple_experiment_data("collective-020", "insertion",
-                                                       results_db="global_results",  #"transfer_base_v2",
+                                                       results_db="global_ml_results",  #"transfer_base_v2",
                                                        filter={"meta.tags": {"$all": tags+["base"]}})
                 if trial_wise is True:
                     base_cost, _ = p.get_average_cost(results, True, episode_size)
@@ -566,6 +579,7 @@ def plot_transfer_learning_4():
                 dcasr_set[i * n_rows + j].append(base_dcasr)
                 base_cost_log = np.log10(base_cost + 1)
                 time_log = []
+                print(base_cost)
                 for k in range(len(base_cost_log)):
                     time_log.append(np.log10(k))
                 if len(base_casr) < 1500:
@@ -582,18 +596,20 @@ def plot_transfer_learning_4():
                 #legend = ["None-Transfer"]
                 #legend_casr = ["Optimal CALSC", "Raw Learning"]
             except (DataNotFoundError, DataError):
-                print("Base cost for task " + tasks[i] + " not found.")
+                print("Base cost for task " + tasks[i] + " not found.", i,j)
                 continue
 
             cost_cylinders = []
             casr_cylinders = []
             cost_keys = []
             casr_keys = []
+            cost_general_object = []
+            casr_general_object = []
             for t in range(len(tasks)):
                 try:
-                    tags = ["transfer_learning", tasks[i * n_rows + j], "from_" + tasks[t]]
-                    results = get_multiple_experiment_data("collective-020","insertion"  #"localhost", "insert_object",
-                                                           results_db="global_results"  # "transfer_all_v2",
+                    tags = ["transfer_learning", tasks[i * n_cols + j], "from_" + tasks[t]]
+                    results = get_multiple_experiment_data("collective-020","insertion",  #"localhost", "insert_object",
+                                                           results_db="global_ml_results",  # "transfer_all_v2",
                                                            filter={"meta.tags": {"$all": tags}})
                     if trial_wise is True:
                         cost, _ = p.get_average_cost(results, True, episode_size)
@@ -618,71 +634,102 @@ def plot_transfer_learning_4():
                     for k in range(1, len(casr)):
                         casr[k] += casr[k - 1]
 
-                    if tasks[t] == tasks[i * n_rows + j]:
+                    if tasks[t] == tasks[i * n_cols + j]:
                         axes[i, j].plot(time_log, cost_log, zorder=1, color=color_level_0, linestyle="dashed", label="Level-0-Transfer", linewidth=2)
                         asr_mean, asr_std = get_mean_over_window(np.diff(casr))
                         axes_casr[i, j].stairs(asr_mean, zorder=1, color=color_level_0, linestyle="dashed", label="Level-0-Transfer", linewidth=2)
                         #legend.append("Level-0-Transfer")#: " + tasks[t])
-                        dcasr_set[i * n_rows + j].append(np.diff(casr))
+                        dcasr_set[i * n_cols + j].append(np.diff(casr))
                     else:
-                        if tasks[t].split("_")[0] == "cylinder":
-                            cost_cylinders.append(cost_log)
-                            casr_cylinders.append(casr)
-                        if tasks[t].split("_")[0] == "key":
-                            cost_keys.append(cost_log)
-                            casr_keys.append(casr)
+                        if general_objects:
+                            cost_general_object.append(cost_log)
+                            casr_general_object.append(casr)
+                        else:
+                            if tasks[t].split("_")[0] == "cylinder":
+                                cost_cylinders.append(cost_log)
+                                casr_cylinders.append(casr)
+                            if tasks[t].split("_")[0] == "key":
+                                cost_keys.append(cost_log)
+                                casr_keys.append(casr)
 
                 except (DataNotFoundError, DataError):
+                    print("Cant find ",tags,"  i,j:",i,j)
                     pass
-
+            print("cost cylinders: ",cost_cylinders,"  i,j:",i,j)
             mean_cost_cylinders = [0] * 1500
             mean_casr_cylinders = [0] * 1500
             mean_cost_keys = [0] * 1500
             mean_casr_keys = [0] * 1500
+            mean_cost_general_object = [0] * 1500
+            mean_casr_general_object = [0] * 1500
             std_cost_cylinders = [0] * 1500
             std_casr_cylinders = [0] * 1500
             std_cost_keys = [0] * 1500
             std_casr_keys = [0] * 1500
-            for k in range(1500):
-                mean_cost = 0
-                mean_casr = 0
-                std_cost = 0
-                std_casr = 0
-                for m in range(len(cost_cylinders)):
-                    mean_cost += cost_cylinders[m][k]
-                    mean_casr += casr_cylinders[m][k]
-                mean_cost_cylinders[k] = mean_cost / len(cost_cylinders)
-                mean_casr_cylinders[k] = mean_casr / len(cost_cylinders)
-                mean_dcasr_cylinders = np.diff(mean_casr_cylinders)
-                for m in range(len(cost_keys)):
-                    std_cost += np.power(cost_keys[m][k] - mean_cost, 2)
-                    std_casr += np.power(casr_keys[m][k] - mean_casr, 2)
+            std_cost_general_object = [0] * 1500
+            std_casr_general_object = [0] * 1500
 
-                std_cost_cylinders[k] = np.sqrt(std_cost / len(cost_keys))
-                std_casr_cylinders = np.sqrt(std_casr / len(casr_keys))
+            if general_objects:
+                for k in range(1500):
+                    mean_cost = 0
+                    mean_casr = 0
+                    std_cost = 0
+                    std_casr = 0
+                    for m in range(len(cost_general_object)):
+                        mean_cost += cost_general_object[m][k]
+                        mean_casr += casr_general_object[m][k]
+                    mean_cost_general_object[k] = mean_cost / len(cost_general_object)
+                    mean_casr_general_object[k] = mean_casr / len(cost_general_object)
+                    mean_dcasr_general_object = np.diff(mean_casr_general_object)
+                    for m in range(len(cost_general_object)):
+                        std_cost += np.power(cost_general_object[m][k] - mean_cost, 2)
+                        std_casr += np.power(casr_general_object[m][k] - mean_casr, 2)
 
-            for k in range(1500):
-                mean_cost = 0
-                mean_casr = 0
-                std_cost = 0
-                std_casr = 0
-                for m in range(len(cost_keys)):
-                    mean_cost += cost_keys[m][k]
-                    mean_casr += casr_keys[m][k]
-                mean_cost_keys[k] = mean_cost / len(cost_keys)
-                mean_casr_keys[k] = mean_casr / len(cost_keys)
-                mean_dcasr_keys = np.diff(mean_casr_cylinders)
-                for m in range(len(cost_keys)):
-                    std_cost += np.power(cost_keys[m][k] - mean_cost, 2)
-                    std_casr += np.power(casr_keys[m][k] - mean_casr, 2)
+                    std_cost_general_object[k] = np.sqrt(std_cost / len(cost_general_object))
+                    std_casr_general_object[k] = np.sqrt(std_casr / len(casr_general_object))
+            else:
+                for k in range(1500):
+                    mean_cost = 0
+                    mean_casr = 0
+                    std_cost = 0
+                    std_casr = 0
+                    for m in range(len(cost_cylinders)):
+                        mean_cost += cost_cylinders[m][k]
+                        mean_casr += casr_cylinders[m][k]
+                    mean_cost_cylinders[k] = mean_cost / len(cost_cylinders)
+                    mean_casr_cylinders[k] = mean_casr / len(cost_cylinders)
+                    mean_dcasr_cylinders = np.diff(mean_casr_cylinders)
+                    for m in range(len(cost_keys)):
+                        std_cost += np.power(cost_keys[m][k] - mean_cost, 2)
+                        std_casr += np.power(casr_keys[m][k] - mean_casr, 2)
 
-                std_cost_keys[k] = np.sqrt(std_cost / len(cost_keys))
-                std_casr_keys[k] = np.sqrt(std_casr / len(casr_keys))
+                    std_cost_cylinders[k] = np.sqrt(std_cost / len(cost_keys))  # should be len(cost_cylinders)
+                    std_casr_cylinders = np.sqrt(std_casr / len(casr_keys))  # should be len(casr_cylinders)
+
+                for k in range(1500):
+                    mean_cost = 0
+                    mean_casr = 0
+                    std_cost = 0
+                    std_casr = 0
+                    for m in range(len(cost_keys)):
+                        mean_cost += cost_keys[m][k]
+                        mean_casr += casr_keys[m][k]
+                    mean_cost_keys[k] = mean_cost / len(cost_keys)
+                    mean_casr_keys[k] = mean_casr / len(cost_keys)
+                    mean_dcasr_keys = np.diff(mean_casr_cylinders)
+                    for m in range(len(cost_keys)):
+                        std_cost += np.power(cost_keys[m][k] - mean_cost, 2)
+                        std_casr += np.power(casr_keys[m][k] - mean_casr, 2)
+
+                    std_cost_keys[k] = np.sqrt(std_cost / len(cost_keys))
+                    std_casr_keys[k] = np.sqrt(std_casr / len(casr_keys))
 
             std_cost_cylinders = np.asarray(std_cost_cylinders)
             std_casr_cylinders = np.asarray(std_casr_cylinders)
             std_cost_keys = np.asarray(std_cost_keys)
             std_casr_keys = np.asarray(std_casr_keys)
+            std_cost_general_object = np.asarray(std_cost_general_object)
+            std_casr_general_object = np.asarray(std_casr_general_object)
 
             time_log = []
             for k in range(1500):
@@ -690,27 +737,39 @@ def plot_transfer_learning_4():
 
             cylinder_asr_mean, cylinder_asr_std = get_mean_over_window(np.diff(mean_casr_cylinders))
             keys_asr_mean, keys_asr_std = get_mean_over_window(np.diff(mean_casr_keys))
-            if tasks[i * n_rows + j].split("_")[0] == "cylinder":
-                dcasr_set[i * n_rows + j].append(mean_dcasr_cylinders)
-                dcasr_set[i * n_rows + j].append(mean_dcasr_keys)
-                axes[i, j].plot(time_log, mean_cost_cylinders, zorder=1, color=color_level_1, linestyle="dotted", label="Level-1-Transfer", linewidth=2)
-                axes[i, j].plot(time_log, mean_cost_keys, zorder=1, color=color_level_2, linestyle="dashdot",  label="Level-2-Transfer", linewidth=2)
-                axes_casr[i, j].stairs(cylinder_asr_mean, linestyle="dotted", zorder=1, color=color_level_1, label="Level-1-Transfer", linewidth=2)
-                axes_casr[i, j].stairs(keys_asr_std, linestyle="dashdot", zorder=1, color=color_level_2, label="Level-2-Transfer", linewidth=2)
+            general_object_asr_mean, general_object_asr_std = get_mean_over_window(np.diff(mean_casr_general_object))
+
+            if general_objects:
+                dcasr_set[i * n_cols + j].append(mean_dcasr_general_object)
+                dcasr_set[i * n_cols + j].append(mean_dcasr_general_object)
+                #axes[i, j].plot(time_log, mean_cost_general_object, zorder=1, color=color_level_1, linestyle="dotted", label="Level-1-Transfer", linewidth=2)
+                axes[i, j].plot(time_log, mean_cost_general_object, zorder=1, color=color_level_2, linestyle="dashdot", label="Level-2-Transfer", linewidth=2)
+                #axes_casr[i, j].stairs(general_object_asr_mean, linestyle="dotted", zorder=1, color=color_level_1, label="Level-1-Transfer", linewidth=2)
+                axes_casr[i, j].stairs(general_object_asr_mean, linestyle="dashdot", zorder=1, color=color_level_2, label="Level-2-Transfer", linewidth=2)
             else:
-                dcasr_set[i * n_rows + j].append(mean_dcasr_keys)
-                dcasr_set[i * n_rows + j].append(mean_dcasr_cylinders)
-                axes[i, j].plot(time_log, mean_cost_cylinders, zorder=1, color=color_level_2, linestyle="dotted",
-                                label="Level-2-Transfer")
-                axes[i, j].plot(time_log, mean_cost_keys, zorder=1, color=color_level_1, linestyle="dashdot",
-                                label="Level-1-Transfer")
-                axes_casr[i, j].stairs(keys_asr_mean, linestyle="dashdot", zorder=1, color=color_level_1, label="Level-1-Transfer", linewidth=2)
-                axes_casr[i, j].stairs(cylinder_asr_mean, linestyle="dotted", zorder=1, color=color_level_2, label="Level-2-Transfer", linewidth=2)
+                if tasks[i * n_cols + j].split("_")[0] == "cylinder":
+                    dcasr_set[i * n_cols + j].append(mean_dcasr_cylinders)
+                    dcasr_set[i * n_cols + j].append(mean_dcasr_keys)
+                    axes[i, j].plot(time_log, mean_cost_cylinders, zorder=1, color=color_level_1, linestyle="dotted", label="Level-1-Transfer", linewidth=2)
+                    axes[i, j].plot(time_log, mean_cost_keys, zorder=1, color=color_level_2, linestyle="dashdot",  label="Level-2-Transfer", linewidth=2)
+                    axes_casr[i, j].stairs(cylinder_asr_mean, linestyle="dotted", zorder=1, color=color_level_1, label="Level-1-Transfer", linewidth=2)
+                    axes_casr[i, j].stairs(keys_asr_std, linestyle="dashdot", zorder=1, color=color_level_2, label="Level-2-Transfer", linewidth=2)
+                else:
+                    dcasr_set[i * n_cols + j].append(mean_dcasr_keys)
+                    dcasr_set[i * n_cols + j].append(mean_dcasr_cylinders)
+                    axes[i, j].plot(time_log, mean_cost_cylinders, zorder=1, color=color_level_2, linestyle="dotted",
+                                    label="Level-2-Transfer")
+                    axes[i, j].plot(time_log, mean_cost_keys, zorder=1, color=color_level_1, linestyle="dashdot",
+                                    label="Level-1-Transfer")
+                    axes_casr[i, j].stairs(keys_asr_mean, linestyle="dashdot", zorder=1, color=color_level_1, label="Level-1-Transfer", linewidth=2)
+                    axes_casr[i, j].stairs(cylinder_asr_mean, linestyle="dotted", zorder=1, color=color_level_2, label="Level-2-Transfer", linewidth=2)
 
             if i == 0 and j == 0:
                 current_handles, current_labels = axes[i, j].get_legend_handles_labels()
-                new_lables = [current_labels[1], current_labels[2], current_labels[3], current_labels[0]]
-                new_handles = [current_handles[1], current_handles[2], current_handles[3], current_handles[0]]
+                new_lables = [label for label in current_labels]
+                #new_lables = [current_labels[1], current_labels[2], current_labels[3], current_labels[0]]
+                new_handles = [handle for handle in current_handles]
+                #new_handles = [current_handles[1], current_handles[2], current_handles[3], current_handles[0]]
                 axes[i, j].legend(new_handles, new_lables, fontsize=16, loc="center left", bbox_to_anchor=(0, 1.15), ncol=4)
                 axes_casr[i, j].legend(new_handles, new_lables, fontsize=16, loc='center left', bbox_to_anchor=(0, 1.15), ncol=4)
 
@@ -771,8 +830,8 @@ def plot_transfer_learning_4():
             ax.xlabel("Episode [1]")
             ax_casr.xlabel("Episode [1]")
         else:
-            ax.xlabel("Trial [1]")
-            ax_casr.xlabel("Trial [1]")
+            ax.set_xlabel("Trial [1]")
+            ax_casr.set_xlabel("Trial [1]")
     else:
         ax.set_xlabel(r"Learning Time [$\text{log}_{10}$(s)]", fontsize=16)
         ax_casr.set_xlabel(r"Learning Time [s]", fontsize=16)
@@ -782,8 +841,8 @@ def plot_transfer_learning_4():
 
     fig.set_size_inches(16, 9)
     fig_casr.set_size_inches(16, 9)
-    fig.savefig("results_cost.png", bbox_inches='tight', dpi=300)
-    fig_casr.savefig("results_calsc.png", bbox_inches='tight', dpi=300)
+    fig.savefig("results_cost_new.png", bbox_inches='tight', dpi=300)
+    fig_casr.savefig("results_calsc_new.png", bbox_inches='tight', dpi=300)
 
     plt.show()
 

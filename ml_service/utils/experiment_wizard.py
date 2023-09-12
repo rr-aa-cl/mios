@@ -26,42 +26,25 @@ class DualarmCMD():
             self.port = cmd["port"]
         else:
             self.port = 13000
-        
-
-        self.hold_context = {
-                    "skill": {
-                        "t_max": self.sleep,},
-                    "control": {
-                        "control_mode": 0,
-                        "cart_imp": {
-                            "K_x": [2000, 2000, 2000, 250, 250, 250]}},
-                        #"joint_imp":{
-                        #    "K_theta":[10000,10000,10000,10000,10000,10000,10000]}},
-                    "user": {"F_ext_max": [100, 50]}}
-        self.move_context = {
-                    "skill": {
-                        "speed": 0.5,
-                        "acc": 1,
-                        "q_g": [0, 0, 0, 0, 0, 0, 0],
-                        "objects": {
-                            "goal_pose": self.cmd["pose"]}},
-                    "control": {
-                        "control_mode": 3},
-                    "user": {
-                        "env_X": [0.001, 0.001, 0.001, 0.001, 0.001, 0.001]}}
+        self.skills = cmd["skills"]
 
     def _execute_loop(self):
+        t = Task(self.agent, self.port)
+        for i in range(0,100):
+            for skill in self.skills:
+                t.add_skill(skill[0]+"-"+str(i),skill[1],skill[2])
+        #t.add_skill("hold","HoldPose",self.hold_context)
         while(self.keep_running):
-            t = Task(self.agent, self.port)
-            t.add_skill("move", "MoveToPoseJoint", self.move_context)
-            t.add_skill("hold","HoldPose",self.hold_context)
             t.start(queue=False)
-            t.wait()
+            t.wait(timeout=1000)
+        return True
+            
 
     def stop(self):
         self.keep_running = False
         call_method(self.agent,self.port,"stop_task")
         self.thread.join()
+
     def start(self):
         self.keep_running = True
         self.thread = Thread(target=self._execute_loop)
@@ -120,7 +103,7 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
         print("Continue at n" + str(iter+1))
         return
     if dualarm_cmd is not None:
-        move_joint(dualarm_cmd["agent"],dualarm_cmd["pose"],port=dualarm_cmd["port"],wait=True)
+        #move_joint(dualarm_cmd["agent"],dualarm_cmd["pose"],port=dualarm_cmd["port"],wait=True)
         c = DualarmCMD(dualarm_cmd)
         c.start()
 
@@ -137,10 +120,12 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
     if wait:
         while s.is_busy():
             time.sleep(15)
-    if dualarm_cmd is not None:
+    if dualarm_cmd is not None and wait is True:
         c.stop()
         move_joint(dualarm_cmd["agent"],dualarm_cmd["pose"],port=dualarm_cmd["port"],wait=True)
         # backup_result(agent, "collective-control-001.local", problem_def.skill_class, uuid)
+    else:
+        return c
 
 def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion", db: str ="ml_results", min_size: int =0, mongo_port=27017):
     for robot in robots:

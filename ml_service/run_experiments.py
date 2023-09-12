@@ -12,17 +12,17 @@ import json
 
 
 ###################################################################################
-list_block_1 = ["001", "002", "003", "004", #"005", 
-                "006", "007", "008", #"010", 
+list_block_1 = ["001", "002", "003", "004", "005", 
+                "006", "007", "008", "010", 
                 "011", "012"]
-list_block_2 = ["009","013","014","015",#"016","017",
+list_block_2 = ["009","013","014","015","016","017",
                 "018",#"020",
                 "021","022"]
-list_U = ["023", "024", "025", "027", "028", #"029"
+list_U = ["023", "024", "025", "027", "028", "029"
           ] #, "026"
 list_external = ["050"]
 
-def load_config(module_list):
+def get_ips(module_list):
     with open("../python/ip.json", "r") as jsonfile:
         data = json.load(jsonfile)        
         ips = [data[i] for i in module_list]
@@ -38,7 +38,7 @@ def learn_task(robot:str, problem_definition: ProblemDefinition, service_config:
                      keep_record=keep_record, wait=wait,service_port=service_port)
 def learn_single_task(robot:str, problem_definition: ProblemDefinition, service_config: ServiceConfiguration, tags: list,
                current_number_iterations: int=0, keep_record: bool = False, knowledge = None, wait: bool = False, service_port:int=8000, dualarm_cmd: dict=None):
-    start_single_experiment(robot, [robot], problem_definition, service_config, current_number_iterations, tags, knowledge, keep_record, wait, service_port=service_port, dualarm_cmd = dualarm_cmd)
+    return start_single_experiment(robot, [robot], problem_definition, service_config, current_number_iterations, tags, knowledge, keep_record, wait, service_port=service_port, dualarm_cmd = dualarm_cmd)
 
 def test_learning():
     pd = InsertionFactory("collective-panda-001", ContactForcesMetric("insertion", {"contact_forces": 175}),
@@ -121,7 +121,7 @@ def learn_multiple_tasks(robot: str, task_instances: list, service_config: Servi
             service_config.finish_cost = finish_threshold[insertable]
         if insertable == "HDMI_plug":  # increase the limits for HDMI_plug
             pd.domain.limits["p2_f_push_z"] = (0, 25)
-        learn_single_task(robot, pd, service_config, tags, iteration, False, knowledge_configuration, True,service_port=service_port)
+        learn_single_task(robot, pd, service_config, tags, iteration, False, knowledge_configuration, True)
         print("finished learning ", pd.tags, "\nplacing...")
         place_insertable(robot, insertable, container, approach, container+"_above")
 
@@ -154,7 +154,81 @@ def check_poses(robot_dict):
     for robot in robot_dict.keys():
         for pose in robot_dict[robot]:
             error.append(check_pose(robot,pose))
-    return error            
+    return error
+
+def learn_from_source(robot, insertable):
+    stop_services([robot])
+    wait_for_services([robot], [["localhost"]])
+    print("start with default knowledge")
+    path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
+    f = open(path_to_default_context + "insertion.json")
+    insertion = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
+                                        {"Insertable": insertable, "Container": insertable+"_container",
+                                        "Approach": insertable+"_container_approach"})
+    pd = insertion.get_problem_definition(insertable)
+    skill_context = json.load(f)
+    skill_context["skill"]["p2"]["f_push"][2] = 30
+    if insertable == "024_left" or insertable == "027_left":
+        pd.domain.limits["p2_f_push_z"] = (0,35)
+        skill_context["skill"]["p2"]["f_push"][2] = 30
+    if insertable == "023_left":
+        pd.domain.limits["p2_f_push_z"] = (0,35)
+        skill_context["skill"]["p2"]["f_push"][2] = 25
+    if insertable == "029_left":
+        skill_context["skill"]["p2"]["f_push"][2] = 15
+
+    sc = SVMLearner(130,10,0,True,False, -1,True).get_configuration()
+
+    skill_context = {"skills": {"insertion": skill_context}}
+    skill_mapping = insertion.get_mapping()
+    theta = dict()
+    for key in skill_mapping.keys():
+        for m in skill_mapping[key]:
+            value = get_nested_parameter(skill_context, m)
+            if value is not None:
+                theta[key] = value
+            else:
+                print("The skill context provided has no key ",m)
+
+    print(theta)
+    knowledge = Knowledge(None, "similar", ["default_context"], None, None, "insertion", theta, 0.04, None, False, None, [1], "insertion", insertable, "default_context", None, time.ctime(),["default_context"])
+    
+    dualarm_skills = []
+    if insertable != "016_left":
+        move_context = {
+                    "skill": {
+                        "speed": 0.5,
+                        "acc": 1,
+                        "q_g": [0, 0, 0, 0, 0, 0, 0],
+                        "objects": {
+                            "goal_pose": "hold"}},
+                    "control": {
+                        "control_mode": 3},
+                    "user": {
+                        "env_X": [0.001, 0.001, 0.001, 0.001, 0.001, 0.001],
+                        "F_ext_max": [100, 50]}}
+        dualarm_skills.append(("move", "MoveToPoseJoint", move_context))
+    else:
+        call_method(robot,13000,"set_grasped_object",{"object":"016_right"})
+        f = open(path_to_default_context + "insertion.json")
+        insert_context = json.load(f)
+        insert_context["skill"]["objects"]["Container"] = "016_right_container"
+        insert_context["skill"]["objects"]["Insertable"] = "016_right"
+        insert_context["skill"]["objects"]["Approach"] = "016_right_container_approach"
+        dualarm_skills.append(("insert", "TaxInsertion", insert_context))
+        f = open(path_to_default_context + "extraction.json")
+        extract_context = json.load(f)
+        extract_context["skill"]["objects"]["Container"] = "016_right_container"
+        extract_context["skill"]["objects"]["Extractable"] = "016_right"
+        extract_context["skill"]["objects"]["ExtractTo"] = "016_right_container_approach"
+        dualarm_skills.append(("extract", "TaxExtraction", extract_context))
+        #dualarm_cmd = {"agent":robot,"port":13000,"skills":[("insert", "TaxInsertion", insert_context),("extract", "TaxExtraction", extract_context)],"sleep":1,"pose":"hold"}
+    dualarm_cmd = {"agent":robot,"port":13000,"skills":dualarm_skills,"sleep":1}
+    dualarm_cmd_thread = learn_single_task(robot, pd, sc, ["default_context"], 0, False, knowledge, False, 8000, dualarm_cmd)
+    input("press enter to stop robot")
+    stop_services([robot])
+    dualarm_cmd_thread.stop()
+
 
 def transfer_learning():
     robots = {"collective-016.rsi.ei.tum.de": "cylinder_50",
@@ -766,6 +840,16 @@ def stop_services(robots:list =[ "collective-panda-prime","collective-panda-002"
             print("Error with robot ",r)
             print(e)
 
+def wait_for_services(robots:list , agents):
+    for r,a in zip(robots, agents):
+        s = ServerProxy("http://" + r + ":8000", allow_none=True)
+        try:
+            while not s.is_ready(a):
+                time.sleep(0.5)
+        except Exception as e:
+            print("Error with robot ",r)
+            print(e)
+
 
 def dualarm_demo_thread(robot, obj, tags, sc, knowledge:dict):
     results = []
@@ -807,7 +891,39 @@ def dualarm_demo_thread(robot, obj, tags, sc, knowledge:dict):
                                     {"Insertable": obj, "Container": obj+"_container",
                                     "Approach": obj+"_container_approach"}).get_problem_definition(obj)
         print("starting ", obj, " on ", robot)
-        learn_single_task(robot, pd, sc, tags, 100, False, knowledge, False,service_port=8000)
+        dualarm_skills = []
+        path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
+        move_context = {
+                    "skill": {
+                        "speed": 0.5,
+                        "acc": 1,
+                        "q_g": [0, 0, 0, 0, 0, 0, 0],
+                        "objects": {
+                            "goal_pose": "hold"}},
+                    "control": {
+                        "control_mode": 3},
+                    "user": {
+                        "env_X": [0.001, 0.001, 0.001, 0.001, 0.001, 0.001],
+                        "F_ext_max": [100, 50]}}
+        dualarm_skills.append(("move", "MoveToPoseJoint", move_context))
+        if obj == "016_left":
+            dualarm_cmd = []
+            call_method(robot,13000,"set_grasped_object",{"object":"016_right"})
+            f = open(path_to_default_context + "insertion.json")
+            insert_context = json.load(f)
+            insert_context["skill"]["objects"]["Container"] = "016_right_container"
+            insert_context["skill"]["objects"]["Insertable"] = "016_right"
+            insert_context["skill"]["objects"]["Approach"] = "016_right_container_approach"
+            dualarm_skills.append(("insert", "TaxInsertion", insert_context))
+            f = open(path_to_default_context + "extraction.json")
+            extract_context = json.load(f)
+            extract_context["skill"]["objects"]["Container"] = "016_right_container"
+            extract_context["skill"]["objects"]["Extractable"] = "016_right"
+            extract_context["skill"]["objects"]["ExtractTo"] = "016_right_container_approach"
+            dualarm_skills.append(("extract", "TaxExtraction", extract_context))
+        #dualarm_cmd = {"agent":robot,"port":13000,"skills":[("insert", "TaxInsertion", insert_context),("extract", "TaxExtraction", extract_context)],"sleep":1,"pose":"hold"}
+        dualarm_cmd = {"agent":robot,"port":13000,"skills":dualarm_skills,"sleep":1}
+        learn_single_task(robot, pd, sc, tags, 100, False, knowledge, False,service_port=8000, dualarm_cmd=dualarm_cmd)
     except ConnectionRefusedError:
         print("ConnectionRefusedError for ", obj, " on ", robot)
     except TypeError:
@@ -862,10 +978,10 @@ def dualarm_demo2(dualarm_modules):   # dualarm_modules = list_block_1, list_U, 
             #"050",
     ]
     robots_dualarm = []
-    #robots_dualarm.extend(load_config(list_block_1))
-    #robots_dualarm.extend(load_config(list_U))
-    #robots_dualarm.extend(load_config(list_external))
-    robots_dualarm.extend(load_config(dualarm_modules))
+    #robots_dualarm.extend(get_ips(list_block_1))
+    #robots_dualarm.extend(get_ips(list_U))
+    #robots_dualarm.extend(get_ips(list_external))
+    robots_dualarm.extend(get_ips(dualarm_modules))
     modules = []
     modules.extend(dualarm_modules)
     #modules.extend(list_block_1)
@@ -1020,14 +1136,14 @@ def stop_dualarm():
     "10.157.174.245",  #0 ms            collective-026.local    [n/a]           A8:A1:59:B2:1C:7A                   [n/a]                               ASRock Incorporation                      
     "10.157.174.249",  #0 ms            collective-027.local    [n/a]           A8:A1:59:B8:23:B9                   [n/a]                               ASRock Incorporation                      
     "10.157.174.255",  #0 ms            collective-028.local    [n/a]           A8:A1:59:B2:AE:FF                   [n/a]                               ASRock Incorporation                      
-    "10.157.174.42" ,  #0 ms            collective-029.local    [n/a]           A8:A1:59:B2:AD:9A                   [n/a]                               ASRock Incorporation                      
+    "10.157.174.42"]   #0 ms            collective-029.local    [n/a]           A8:A1:59:B2:AD:9A                   [n/a]                               ASRock Incorporation                      
     #"10.157.175.236",#collective-030
-    "10.157.174.148",#collective-032
+    #"10.157.174.148",#collective-032
     #"10.157.174.160",#collective-034
     #"10.157.174.163",  #0 ms            collective-038.local    [n/a]           A8:A1:59:B8:23:9F                   [n/a]                               ASRock Incorporation                      
     #"10.157.174.175",  #0 ms            collective-039.local    [n/a]           A8:A1:59:B8:25:70                   [n/a]                               ASRock Incorporation                      
     #"10.157.174.52" ,  #0 ms            collective-046.local    [n/a]           A8:A1:59:B8:23:A5                   [n/a]                               ASRock Incorporation                      
-    "172.24.192.25"]  #0 ms            collective-050.local    [n/a]           A8:A1:59:B2:0F:85                   [n/a]                               ASRock Incorporation 
+    #"172.24.192.25"]  #0 ms            collective-050.local    [n/a]           A8:A1:59:B2:0F:85                   [n/a]                               ASRock Incorporation 
     modules = ["001",\
             "002","003","004","005","006","007","008","009","010","011","012","013","014","015","016",
             "017",\
@@ -1035,13 +1151,19 @@ def stop_dualarm():
             "020",
             "021",
             "022","023","024","025","026","027","028","029",#"030",
-            "032",#"034",#"038","039","046",
-            "050",]    
+            #"032",#"034",#"038","039","046",
+            #"050",
+            ]    
     for r,m in zip(robots_dualarm,modules):
-        call_method(r,13000,"stop_task")
-        print("stopping ",m,"  (",r,")")
-        s=ServerProxy("http://" + r + ":8000", allow_none=True)
-        s.stop_service()
+        try:
+            call_method(r,13000,"stop_task")
+            print("stopping ",m,"  (",r,")")
+            s=ServerProxy("http://" + r + ":8000", allow_none=True)
+            s.stop_service()
+        except OSError:
+            pass
+        except ConnectionRefusedError:
+            pass
 
 
 def transfer_video_grab_insertable(robot: str, insertable: str, container: str, approach: str, above: str):
@@ -1212,7 +1334,7 @@ def teach_insertable(robot:str, insertable:str, mios_port=12000):
 # list_U
 # automatica 
 def demo_automatica(modules):
-    robots_dualarm = load_config(modules)    
+    robots_dualarm = get_ips(modules)    
     print(len(modules),len(robots_dualarm))
     tags = ["dualarm_demo_2", "Frankies_tag"]
     sc = SVMLearner(2000,10,0,True,False, 0.4,True).get_configuration()
