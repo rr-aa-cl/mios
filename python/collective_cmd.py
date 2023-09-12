@@ -12,7 +12,8 @@ import copy
 
 
 ###################################################################################
-list_block_1 = ["001", "002", "003", "004", "005", 
+list_block_1 = ["001", #"002", 
+                "003", "004", "005", 
                 "006", "007", "008", "010", 
                 "011", "012"]
 list_block_2 = ["009","013","014","015","016","017",
@@ -1017,12 +1018,15 @@ def attention(modules):
 def move_to_approach_poses():
     threads = []
     c = 0
-    for r,n in zip(hostnames,modules):
+    all_modules = list_U+list_block_2+list_block_1
+    print(all_modules)
+    ips = get_ips(all_modules)
+    for ip,m in zip(ips,all_modules):
         c += 1
-        print(c, ": move collective-",n, " (",r,")")
-        threads.append(Thread(target=move_joint, args=(r,"hold",13000,)))
+        print(c, ": move collective-",m, " (",ip,")")
+        threads.append(Thread(target=move_joint, args=(ip,"hold",13000,)))
         threads[-1].start()
-        threads.append(Thread(target=move_joint, args=(r,n+"_left_container_approach",12000,)))
+        threads.append(Thread(target=move_joint, args=(ip,m+"_left_container_approach",12000,)))
         threads[-1].start()
 
     for t in threads:
