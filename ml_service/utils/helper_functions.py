@@ -29,6 +29,44 @@ def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion
         for id in ids:
             mongo_client.remove(db, task_class, {"_id":id})
 
+def nested_get(input_dict, nested_key):
+    internal_dict_value = input_dict
+    for k in nested_key:
+        internal_dict_value = internal_dict_value.get(k, None)
+        if internal_dict_value is None:
+            return None
+    return internal_dict_value
+
+def get_nested_parameter(dic, keys):
+    key_list = keys.split(".")
+    parameter = key_list.pop(-1)
+    parameter = parameter.split("-")
+    key_list.append(parameter[0])
+    if len(parameter) == 1:
+        return nested_get(dic, key_list)
+    if len(parameter) == 2:
+        if nested_get(dic, key_list) is not None: 
+            return nested_get(dic, key_list)[int(parameter[1])-1]
+        else:
+            return None
+
+
+def set_nested_parameter(dic, keys, value):
+    # logger.debug("BaseService.set_nested_parameter(dic: " + str(dic) + ", " + "keys: " + str(keys) + ")")
+    for key in keys[:-1]:
+        dic = dic.setdefault(key, {})
+    tmp = keys[-1].split("-")
+    if len(tmp) == 1:
+        dic[keys[-1]] = value
+    elif len(tmp) == 2:
+        p_name = tmp[0]
+        p_dim = int(tmp[1])
+        if p_name not in dic:
+            dic[p_name] = []
+        if len(dic[p_name]) < p_dim:
+            dic[p_name].extend([0] * (p_dim - len(dic[p_name])))
+        dic[p_name][p_dim - 1] = value
+
 def move(robot, location, offset, port=12000, wait = True):
     context = {
         "skill": {

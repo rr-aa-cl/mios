@@ -1,12 +1,13 @@
 from xmlrpc.client import ServerProxy
 import copy
 import time
-
 from utils.database import backup_result
 from problem_definition.problem_definition import ProblemDefinition
 from services.base_service import ServiceConfiguration
 from mongodb_client.mongodb_client import MongoDBClient
-
+from utils.ws_client import *
+from utils.taxonomy_utils import Task
+from utils.helper_functions import *
 
 def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service: ServiceConfiguration, n_eval: int = 1,
                      tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True, service_port:int = 8000):
@@ -42,7 +43,7 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
 
 
 def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, service: ServiceConfiguration, iter: int = 1,
-                     tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True, service_port:int = 8000):
+                     tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True, service_port:int = 8000, dualarm_cmd:dict=None):
     if tags is None:
         tags = []
 
@@ -59,6 +60,7 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
     if keep_record is True and len(client.read("ml_results", problem_def.skill_class, {"meta.tags": {"$all": problem_def.tags}})) != 0:
         print("Continue at n" + str(iter+1))
         return
+
     s = ServerProxy("http://" + learner + ":"+str(service_port), allow_none=True)
     #if knowledge_tmp is not None:
         #if "scope" not in knowledge_tmp:
@@ -68,12 +70,13 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
         #knowledge_tmp["scope"].append("n" + str(iter+1))
         #print(knowledge_tmp)
     #print("start task on ", agents, " with knowledge scope = ",knowledge_tmp["meta"]["scope"])
+    if dualarm_cmd:
+        s.start_cmd_loop(dualarm_cmd)
     uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge_tmp)
+
     if wait:
         while s.is_busy():
             time.sleep(15)
-    
-        # backup_result(agent, "collective-control-001.local", problem_def.skill_class, uuid)
 
 def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion", db: str ="ml_results", min_size: int =0, mongo_port=27017):
     for robot in robots:
@@ -81,6 +84,8 @@ def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion
         documents = mongo_client.read(db, task_class, {"meta.tags":tags})
         if len(documents) == 0:
             print("Not found documents on ", robot)
+        else:
+            print("found ",len(documents)," documents that will now be deleted.")
         ids = []
         for d in documents:
             if len(d) > min_size:

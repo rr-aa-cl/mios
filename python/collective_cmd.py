@@ -12,11 +12,17 @@ import copy
 
 
 ###################################################################################
-tmp_list = ["001", "002", "003", "004", "006", "007", "008", "011", "012", "009","013","014","015","018","021","022", "023", "025", "027", "028"]
-list_block_1 = ["001", "002", "003", "004", "005", "006", "007", "008", "010", "011"]
-list_U = ["023", "024", "025", "026", "027", "028", "029"]
-
-def load_config(module_list):
+list_block_1 = ["001", #"002", 
+                "003", "004", "005", 
+                "006", "007", "008", "010", 
+                "011", "012"]
+list_block_2 = ["009","013","014","015","016","017",
+                "018",#"020",
+                "021","022"]
+list_U = ["023", "024", "025", "027", "028", "029"
+          ] #, "026"
+list_external = ["050"]
+def get_ips(module_list):
     with open("ip.json", "r") as jsonfile:
         data = json.load(jsonfile)        
         ips = [data[i] for i in module_list]
@@ -379,6 +385,8 @@ def move_joint(robot, location, port=12000, offset=[0,0,0,0,0,0,0], wait=True, s
     move_context["skill"]["objects"]["goal_pose"] = location
     move_context["skill"]["time_max"] = 10
     move_context["skill"]["q_g_offset"] = offset
+    move_context["user"]["env_X"] = [0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
+    move_context["user"]["F_ext_max"] = [12,6]
     if speed:
         move_context["skill"]["speed"] = speed[0]
         move_context["skill"]["acc"] = speed[1]
@@ -388,38 +396,49 @@ def move_joint(robot, location, port=12000, offset=[0,0,0,0,0,0,0], wait=True, s
     if wait:
         return t0.wait()
 
-def wink_thread(robot, port):
+def wink_thread(robot, port, duration=False):
+    stop_services([robot])
+    call_method(robot,port, "stop_task")
+    #while call_method(robot,port,"get_state")["result"]["current_task"] != "IdleTask":
+    #    call_method(robot,port, "stop_task")
+    #    print("is not IdleTask")
+    #    time.sleep(1)
+#
     path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
     f = open(path_to_default_context + "move_joint.json")
+    
     move1_context = json.load(f)
-    move1_context["skill"]["objects"]["goal_pose"] = "reset"
-    move1_context["skill"]["time_max"] = 10
+    move1_context["skill"]["speed"] = 1
+    move1_context["skill"]["acc"] = 2
+    
     t0 = Task(robot, port=port)
-    t0.add_skill("reset_move", "MoveToPoseJoint", move1_context)
+    #move1_context["skill"]["objects"]["goal_pose"] = "reset"
+    #move1_context["skill"]["time_max"] = 10
+    #t0.add_skill("reset_move", "MoveToPoseJoint", move1_context)
+    for i in range(100):
+        move2_context = copy.deepcopy(move1_context)
+        move2_context["skill"]["objects"]["goal_pose"] = "wink"
+        t0.add_skill("wink_move", "MoveToPoseJoint", move2_context)
 
-    move2_context = copy.deepcopy(move1_context)
-    move2_context["skill"]["objects"]["goal_pose"] = "wink"
-    t0.add_skill("wink_move", "MoveToPoseJoint", move2_context)
+        move3_context = copy.deepcopy(move1_context)
+        move3_context["skill"]["objects"]["goal_pose"] = "wink2"
+        t0.add_skill("wink2_move", "MoveToPoseJoint", move3_context)
 
-    move3_context = copy.deepcopy(move1_context)
-    move3_context["skill"]["objects"]["goal_pose"] = "wink2"
-    t0.add_skill("wink2_move", "MoveToPoseJoint", move3_context)
+        move4_context = copy.deepcopy(move1_context)
+        move4_context["skill"]["objects"]["goal_pose"] = "wink3"
+        t0.add_skill("wink3_move", "MoveToPoseJoint", move4_context)
 
-    move4_context = copy.deepcopy(move1_context)
-    move4_context["skill"]["objects"]["goal_pose"] = "wink3"
-    t0.add_skill("wink3_move", "MoveToPoseJoint", move4_context)
+        move5_context = copy.deepcopy(move1_context)
+        move5_context["skill"]["objects"]["goal_pose"] = "wink2"
+        t0.add_skill("wink2_move_again", "MoveToPoseJoint", move5_context)
 
-    move5_context = copy.deepcopy(move1_context)
-    move5_context["skill"]["objects"]["goal_pose"] = "wink2"
-    t0.add_skill("wink2_move_again", "MoveToPoseJoint", move5_context)
-
-    move6_context = copy.deepcopy(move1_context)
-    move6_context["skill"]["objects"]["goal_pose"] = "reset"
-    t0.add_skill("reset_again", "MoveToPoseJoint", move6_context)
+    #move6_context = copy.deepcopy(move1_context)
+    #move6_context["skill"]["objects"]["goal_pose"] = "reset"
+    #t0.add_skill("reset_again", "MoveToPoseJoint", move6_context)
 
     t0.start()
-    
     result = t0.wait()
+    
 
 
 def move_all(pose = "default_pose"):
@@ -442,7 +461,7 @@ def move_some(robots:list, pose):
         threads[-1].start()
     for t in threads:
         t.join()
-    print("finished")
+    print("finished moving to ",pose)
 
 def move_all_cart(pose = "default_pose"):
     threads = []
@@ -762,24 +781,32 @@ def get_status():
             print(host, " -right- Not reachable!")
 
 
-def hold_pose(robot, duration, port):
+def hold_pose(robot, duration, port, control="joint"):
     hold_context = {
         "skill": {
             "t_max": duration,
         },
         "control": {
-            "control_mode": 0,
-            "cart_imp": {
-                "K_x": [2000, 2000, 2000, 250, 250, 250]
+            "control_mode": 1,
+            "joint_imp":{
+                "K_theta":[10000,10000,10000,10000,10000,10000,10000]
             }
+            
         },
         "user": {"F_ext_max": [100, 50]}
     }
+    if control == "cart":
+        hold_context["control"] = { "control_mode": 0,
+                                    "cart_imp": {
+                                        "K_x": [3000, 3000, 3000, 200, 200, 200]
+                                        }
+                                    }
     t = Task(robot, port)
     t.add_skill("hold","HoldPose",hold_context)
     t.start(queue=False)
 
-def extract(robot, extractable, extractTo, container, port):
+
+def extract(robot, extractable, extractTo, container, port=12000):
     path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
     f = open(path_to_default_context + "extraction.json")
     move_context = json.load(f)
@@ -791,7 +818,22 @@ def extract(robot, extractable, extractTo, container, port):
     t = Task(robot, port)
     t.add_skill("extraction","TaxExtraction",move_context)
     t.start(queue=False)
-    t.wait()
+    return t.wait()
+
+def insert(robot, insertable, approach, container, port=12000):
+    path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
+    f = open(path_to_default_context + "insertion.json")
+    move_context = json.load(f)
+    move_context["skill"]["objects"]["Container"] = container
+    move_context["skill"]["objects"]["Approach"] = approach
+    move_context["skill"]["objects"]["Insertable"] = insertable
+    move_context["skill"]["time_max"] = 7
+    move_context["skill"]["p2"]["f_push"][2] = 25
+    #move_context["user"]["env_X"] = [0, 0, 1, 1, 1, 1]
+    t = Task(robot, port)
+    t.add_skill("insertion","TaxInsertion",move_context)
+    t.start(queue=False)
+    return t.wait()
 
 def gear_full():
     gear_grasp()
@@ -799,7 +841,9 @@ def gear_full():
     gear_reset(True)
 
 def gear_place_ring():
-    gear_unmount_ring()
+    result = gear_unmount_ring()
+    if not result["result"]["success"]:
+        return False
     move_joint("10.157.174.245","026_left_pre")
     move("10.157.174.245","ring",[0,0,0])
     call_method("10.157.174.245",12000,"move_gripper",{"speed":1,"force":1,"width":0})
@@ -813,7 +857,7 @@ def gear_unmount_ring():
     move("10.157.174.245","026_left_container_approach",[0,0,0])
     move("10.157.174.245","026_left_container",[0,0,0])
     call_method("10.157.174.245",12000,"grasp",{"speed":0.1,"width":0.04,"force":0.2,"epsilon_inner":1,"epsilon_outer":1})
-    gear_reset(False)
+    return gear_reset(False)
     
 
 def gear_grasp():
@@ -827,11 +871,14 @@ def gear_reset(ring_inside = False):
     #call_method("10.157.174.245",12000,"move_gripper",{"force":100,"speed":0.08,"width":0.0,"espilon_inner":1,"epsilon_outer":1})
     if ring_inside:
         call_method("10.157.174.245",12000,"move_gripper",{"speed":1,"force":1,"width":0})
-    extract("10.157.174.245","026_left","026_left_container_approach","026_left_container",12000)
+    result = extract("10.157.174.245","026_left","026_left_container_approach","026_left_container",12000)
     #move("10.157.174.245","026_left_container_approach",[0,0,0],12000,True)
+    if not result["result"]["success"]:
+        return False
     move("10.157.174.245","026_left_container_above",[0,0,0],12000,True)
     move_joint("10.157.174.245","026_left_start",12000,True)
     move_joint("10.157.174.245","026_left_pre")
+    return True
 
 def gear_insertion():
     call_method("10.157.174.245",12000,"set_grasped_object",{"object":"026_left"})
@@ -919,18 +966,47 @@ def testrun():
         move_joint("collective-019","019_left")
         move_joint("collective-019","reset")
 
-def attention():
+def stop_services(robots:list):
+    for r in robots:
+        s = ServerProxy("http://" + r + ":8000", allow_none=True)
+        try:
+            s.stop_service()
+        except Exception as e:
+            print("Error with robot ",r)
+            print(e)
+
+def attention(modules):
+    ips = get_ips(modules)
+    move_some(ips, "reset")
     threads = []
-    for r in hostnames:
+    keep_running = True
+    def wink(robot):
+        while keep_running:
+            left_arm = Thread(target=wink_thread,args=(robot, 12000))
+            right_arm = Thread(target=wink_thread,args=(robot, 13000))
+            left_arm.start()
+            right_arm.start()
+            left_arm.join()
+            right_arm.join()
+    print("press Crtl + c to stop waving")
+    for r in ips:
+        call_method(r, 12000, "stop_task")
+        call_method(r, 13000, "stop_task")
         if r == "10.157.174.245":
             continue
-        threads.append(Thread(target=wink_thread, args=(r, 12000)))
-        threads.append(Thread(target=wink_thread, args=(r, 13000)))
-        threads[-2].start()
+        #threads.append(Thread(target=wink_thread, args=(r, 12000)))
+        #threads.append(Thread(target=wink_thread, args=(r, 13000)))
+        threads.append(Thread(target=wink, args=(r,)))
+        #threads[-2].start()
         threads[-1].start()
-    
-    for t in threads:
-        t.join()
+    try:
+        for t in threads:
+            t.join()
+    except KeyboardInterrupt:
+        keep_running = False
+        command_some(ips,"stop_task")
+        time.sleep(1)
+    move_some(ips,"reset")
     return "finished"  
     move_all("reset")
     move_all("wink")
@@ -942,19 +1018,28 @@ def attention():
 def move_to_approach_poses():
     threads = []
     c = 0
-    for r,n in zip(hostnames,modules):
+    all_modules = list_U+list_block_2+list_block_1
+    print(all_modules)
+    ips = get_ips(all_modules)
+    for ip,m in zip(ips,all_modules):
         c += 1
-        print(c, ": move collective-",n, " (",r,")")
-        threads.append(Thread(target=move_joint, args=(r,"hold",13000,)))
+        print(c, ": move collective-",m, " (",ip,")")
+        threads.append(Thread(target=move_joint, args=(ip,"hold",13000,)))
         threads[-1].start()
-        threads.append(Thread(target=move_joint, args=(r,n+"_left_container_approach",12000,)))
+        threads.append(Thread(target=move_joint, args=(ip,m+"_left_container_approach",12000,)))
         threads[-1].start()
 
     for t in threads:
         t.join()
 
+def home_grippers(modules:list):
+    ips = get_ips(modules)
+    for robot in ips:
+        call_method(robot,12000,"home_gripper",silent=True)
+        call_method(robot,13000,"home_gripper", silent=True)
+
 def grasp(module, side=None):
-    ip = load_config([module])[0]
+    ip = get_ips([module])[0]
     if module == "026":
         call_method(ip, 12000, "move_gripper",{"width":0.01,"speed":1,"force":1})
     if side == "left":

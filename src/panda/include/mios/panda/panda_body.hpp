@@ -38,6 +38,7 @@ public:
     bool stop_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string &password);
     void wait_for_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string& password);
     bool shutdown_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password);
+    bool reboot_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password);
     bool move_to_pack_pose(const std::optional<std::string> &ip, const std::string user, const std::string& password);
     bool unlock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password);
     bool lock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password);

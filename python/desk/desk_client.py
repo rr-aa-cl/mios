@@ -152,17 +152,13 @@ class FrankaAPI:
         #                     headers={'content-type': 'application/x-www-form-urlencoded',
         #                              'Cookie': 'authorization=%s' % self._token, 'X-Control-Token': self._spoc_token})
         temp_body = json.dumps({'token':'%s' % self._spoc_token})
-        self._client.request('POST', '/desk/api/reboot', #temp_body,
+        self._client.request('POST', '/admin/api/reboot', #temp_body,
                              headers={'content-type': 'application/json',
                                       'Cookie': 'authorization=%s' % self._token,
                                       "X-Control-Token":self._spoc_token})
-        print("rebooting robot...")
-        response = self._client.getresponse()
-        content = response.read()
-        if response.status == 200:
-            return True
-        else:
-            return False
+        #response = self._client.getresponse()
+        #content = response.read()
+        return True
 
     def in_control(self):
         temp = "mode=%22one%22".encode("utf-8")  # 'mode':'\"one\"'

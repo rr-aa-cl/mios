@@ -109,11 +109,11 @@ def stop_task(hostname: str, raise_exception=False, recover=False, empty_queue=F
     return call_method(hostname, port, "stop_task", payload)
 
 
-def wait_for_task(hostname: str, task_uuid: str, port = 12000):
+def wait_for_task(hostname: str, task_uuid: str, port = 12000, timeout = 100):
     payload = {
         "task_uuid": task_uuid
     }
-    return call_method(hostname, port, "wait_for_task", payload)
+    return call_method(hostname, port, "wait_for_task", payload, timeout=timeout)
 
 
 def start_task_and_wait(hostname, task, parameters, queue=False):

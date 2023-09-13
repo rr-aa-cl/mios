@@ -14,6 +14,7 @@ from services.base_service import ServiceConfiguration
 from problem_definition.problem_definition import ProblemDefinition
 from utils.ws_client import call_method
 from database.database import Database
+from utils.cmd_loop import CMDLoop
 
 from xmlrpc.server import SimpleXMLRPCServer
 from socketserver import ThreadingMixIn
@@ -33,6 +34,7 @@ class Interface:
         self.service = None
         self.learn_thread = None
         self.rpc_server = None
+        self.cmd_loop = None
         self.mios_port = mios_port
         self.interface_port = interface_port
         self.mongo_port = mongo_port
@@ -53,6 +55,8 @@ class Interface:
         self.rpc_server.register_function(self.pause_service, "pause_service")
         self.rpc_server.register_function(self.resume_service, "resume_service")
         self.rpc_server.register_function(self.status, "status")
+        self.rpc_server.register_function(self.start_cmd_loop, "start_cmd_loop")
+        self.rpc_server.register_function(self.stop_cmd_loop, "stop_cmd_loop")
         self.rpc_server.serve_forever()
         logger.debug("Interface::start_rpc_server.server_stopped")
 
@@ -111,10 +115,12 @@ class Interface:
             logger.debug("Service initialized ")
             result = self.service.learn_task()
             logger.debug("learning success " + str(result))
+            self.stop_cmd_loop()
             return result
         finally:
             logger.debug("Interface::learn_task.finally: Releasing service lock")
             self.service_lock.release()
+            self.stop_cmd_loop()
 
     def stop_service(self):
         logger.debug("Interface::stop_service")
@@ -190,6 +196,19 @@ class Interface:
         logger.debug("interface.stop_global_database: global Database hase been stoped, " + str(
             not self.global_db_thread.is_alive()))
         return not self.global_db_thread.is_alive()
+
+    def start_cmd_loop(self, cmd):
+        logger.debug("interface::start_cmd_loop() with cmd:\n"+str(cmd))
+        if not self.cmd_loop:
+            self.cmd_loop = CMDLoop(cmd)
+            self.cmd_loop.start()
+    
+    def stop_cmd_loop(self):
+        logger.debug("interface::stop_cmd_loop()")
+        if self.cmd_loop:
+            self.cmd_loop.stop()
+        self.cmd_loop = None
+        logger.debug("interface::stop_cmd_loop: stopped successfully")
 
     def get_status(self) -> str:
         """returns a detailed status for debugging purposes"""

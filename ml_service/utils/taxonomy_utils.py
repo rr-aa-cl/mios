@@ -52,8 +52,8 @@ class Task:
         response = start_task(self.robot, "GenericTask", parameters=self.context, port=self.port)
         self.task_uuid = response["result"]["task_uuid"]
 
-    def wait(self):
-        result = wait_for_task(self.robot, self.task_uuid, port=self.port)
+    def wait(self, timeout = 100):
+        result = wait_for_task(self.robot, self.task_uuid, port=self.port, timeout=timeout)
         #print("Task execution took " + str(time.time() - self.t_0) + " s.")
         return result
 

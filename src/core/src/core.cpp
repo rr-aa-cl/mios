@@ -543,6 +543,11 @@ bool Core::shutdown_body(){
     return m_panda_body.shutdown_robot(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
 }
 
+bool Core::reboot_body(){
+    spdlog::trace("Core::reboot_body()");
+    return m_panda_body.reboot_robot(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
+}
+
 bool Core::pack_body(){
     spdlog::trace("Core::pack_body()");
     return m_panda_body.move_to_pack_pose(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);

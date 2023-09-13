@@ -54,6 +54,7 @@ void CommandInterface::bind_methods(){
     m_portal->bind_method_to_all("unlock_brakes",std::bind(&CommandInterface::unlock_brakes,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("lock_brakes",std::bind(&CommandInterface::lock_brakes,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("shutdown",std::bind(&CommandInterface::shutdown,this,std::placeholders::_1),{});
+    m_portal->bind_method_to_all("reboot",std::bind(&CommandInterface::reboot,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("pack_pose",std::bind(&CommandInterface::pack_pose,this,std::placeholders::_1),{});
     m_portal->bind_method_to_all("start_desk_task",std::bind(&CommandInterface::start_desk_task,this,std::placeholders::_1),{ArgPair("task",{})});
     m_portal->bind_method_to_all("stop_desk_task",std::bind(&CommandInterface::stop_desk_task,this,std::placeholders::_1),{});
@@ -535,6 +536,18 @@ nlohmann::json CommandInterface::shutdown([[maybe_unused]] const nlohmann::json 
     spdlog::trace("CommandInterface:shutdown()");
     nlohmann::json response;
     bool result=m_core->shutdown_body();
+    response["result"]=result;
+    return response;
+}
+
+nlohmann::json CommandInterface::reboot([[maybe_unused]] const nlohmann::json &request){
+    spdlog::info("CommandInterface:reboot()");
+    nlohmann::json response;
+    bool result=m_core->reboot_body();
+    if(result){
+        spdlog::info("Rebooting robot arm... Shutdown MIOS. You can restart MIOS as soon as the robot is booted.");
+        result = this->terminate(request);
+    }
     response["result"]=result;
     return response;
 }
