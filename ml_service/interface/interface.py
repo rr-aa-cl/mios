@@ -198,13 +198,17 @@ class Interface:
         return not self.global_db_thread.is_alive()
 
     def start_cmd_loop(self, cmd):
+        logger.debug("interface::start_cmd_loop() with cmd:\n"+str(cmd))
         if not self.cmd_loop:
             self.cmd_loop = CMDLoop(cmd)
             self.cmd_loop.start()
     
     def stop_cmd_loop(self):
+        logger.debug("interface::stop_cmd_loop()")
         if self.cmd_loop:
             self.cmd_loop.stop()
+        self.cmd_loop = None
+        logger.debug("interface::stop_cmd_loop: stopped successfully")
 
     def get_status(self) -> str:
         """returns a detailed status for debugging purposes"""
