@@ -39,6 +39,8 @@ class Trial:
         self.external = external
 
     def to_dict(self):
+        for key in self.theta.keys():
+            self.theta[key] = float(self.theta[key])
         trial_dict = {
             "task_context": self.task_context,
             "reset_instructions": self.reset_instructions,
