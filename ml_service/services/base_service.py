@@ -293,7 +293,7 @@ class BaseService(metaclass=ABCMeta):
         result = self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations)
         #self.test_debug += 1
         #result = self.test_debug
-        self.data_buffer_visualization.add_data(result.to_dict())
+        self.data_buffer_visualization.add_data(self.make_float_again(result.to_dict()))
         #s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         #if result.q_metric.final_cost is None:
         #    s.sendto(str(0).encode(), ("localhost", 8003))
@@ -356,3 +356,14 @@ class BaseService(metaclass=ABCMeta):
             if internal_dict_value is None:
                 return None
         return internal_dict_value
+    
+    def make_float_again(self, x):
+        if isinstance(x, np.float64):
+            return float(x)
+        elif isinstance(x, dict):
+            for key in x.keys():
+                x[key] = self.make_float_again(x)
+        elif isinstance(x, list):
+            for i in range(len(x)):
+                x[i] = self.make_float_again(x[i])
+        return x
