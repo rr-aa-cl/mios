@@ -41,6 +41,8 @@ class TensorboardClient:
             flag = 0
         except:
             print("failed to send the message",  (self.hostname, n, self.count))
+            return False
+        return True
 
 def get_ip() -> str:
     # Get a list of all network interfaces, add return the one begin with "10."

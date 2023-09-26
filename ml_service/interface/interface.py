@@ -242,9 +242,10 @@ class Interface:
 
     def _send_telemetry(self):
         while self.keep_running_telemetry:
-            #buffered_trial = self.telemetry_buffer.get_data()
-            self.telemetry_sender.send(self.telemetry_buffer.get_data())
-            logger.debug("_send_telemetry to " + str(self.telemetry_sender.ip))  #,+": ",str(buffered_trial)
+            buffered_trial = self.telemetry_buffer.get_data()
+            logger.debug("_send_telemetry to " + str(self.telemetry_sender.ip)) 
+            if not self.telemetry_sender.send(buffered_trial):
+                self.telemetry_buffer.add_data(buffered_trial)
 
     def get_status(self) -> str:
         """returns a detailed status for debugging purposes"""
