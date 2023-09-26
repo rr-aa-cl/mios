@@ -54,6 +54,7 @@ class Trial:
             "log": self.log,
             "external": self.external
         }
+        return trial_dict
 
     def is_valid(self):
         if "name" not in self.task_context:

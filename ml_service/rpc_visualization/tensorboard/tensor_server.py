@@ -21,9 +21,11 @@ class Server():
         # self.server.register_multicall_functions() 
         self.server.register_function(self.plot, 'plot') 
         self.server.register_function(self.echo, 'echo') 
+        self.server.register_function(self.plot_old, 'plot_old') 
+        
     
-    def plot(self, data):
-        print(data)
+    def plot(self, hostname, data, count):
+        print(hostname,"\n",data, "\n", count)
 
 
     def plot_old(self, plot_name:str, data:float, n):
@@ -56,8 +58,9 @@ if __name__ == '__main__':
         # ------------------- start rpc_vis server -----------------------
         server_addr = ("10.0.2.32", 8004) 
         server = Server(server_addr) 
-        t = threading.Thread(target=server.start)
-        t.start()  
+        server.start()
+        #t = threading.Thread(target=server.start)
+        #t.start()  
         # ------------------- start rpc_vis server -----------------------
         
         # robot_list = ["10.157.174.205"]
@@ -95,7 +98,8 @@ if __name__ == '__main__':
         # proxy.start_visualization("10.157.175.142", 8002)
         # print("xxxxxxxxxxxxxxxxxxxxxx")
         # ------------------- start rpc_vis server -----------------------
-        t.join()
+
+        #t.join()
         
     except KeyboardInterrupt:
         server.stop_server()
