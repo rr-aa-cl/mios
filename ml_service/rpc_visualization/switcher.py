@@ -34,15 +34,15 @@ class TensorboardClient:
         
     def send(self, n):
         # for the collective learning the        
-        try:    
+        #try:    
             self.proxy.plot(self.hostname, n, self.count)
             print("vis send:", (n, self.count))
             self.count += 1
             flag = 0
-        except:
-            print("failed to send the message",  (self.hostname, n, self.count))
-            return False
-        return True
+        #except:
+          #  print("failed to send the message",  (self.hostname, n, self.count))
+         #   return False
+        #return True
 
 def get_ip() -> str:
     # Get a list of all network interfaces, add return the one begin with "10."

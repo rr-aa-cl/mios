@@ -244,7 +244,7 @@ class Interface:
         while self.keep_running_telemetry:
             buffered_trial = self.telemetry_buffer.get_data()
             logger.debug("_send_telemetry to " + str(self.telemetry_sender.ip)) 
-            if not self.telemetry_sender.send({"test":123}):
+            if not self.telemetry_sender.send(buffered_trial):
                 self.telemetry_buffer.add_data(buffered_trial)
 
     def get_status(self) -> str:
