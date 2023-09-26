@@ -226,7 +226,7 @@ class Interface:
         self.telemetry_sender = TensorboardClient(ip, port)
         if self.telemetry_buffer is None:
             return False
-        self.telemetry_thread = Thread(target=self._send_telemetry, args=(ip, port))
+        self.telemetry_thread = Thread(target=self._send_telemetry)
         self.telemetry_thread.start()
         return True
 
