@@ -38,6 +38,23 @@ class Trial:
 
         self.external = external
 
+    def to_dict(self):
+        trial_dict = {
+            "task_context": self.task_context,
+            "reset_instructions": self.reset_instructions,
+            "theta": self.theta,
+            "task_result": self.task_result.to_dict(),
+            "t_0": self.t_0,
+            "t_1": self.t_1,
+            "t_delta": self.t_delta,
+            "task_uuid": self.task_uuid,
+            "trial_uuid": self.trial_uuid,
+            "agent": self.agent,
+            "trial_number": self.trial_number,
+            "log": self.log,
+            "external": self.external
+        }
+
     def is_valid(self):
         if "name" not in self.task_context:
             logger.error("Task context has no name.")

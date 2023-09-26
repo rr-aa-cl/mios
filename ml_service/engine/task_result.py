@@ -34,6 +34,14 @@ class TaskResult:
         self.errors = []
         self.q_metric = QMetric()
         self.n_variations = 1
+    
+    def to_dict(self):
+        task_result_dict = {
+            "q_metric":self.q_metric.to_dict(),
+            "n_varialtions": self.n_variations,
+            "errors": self.errors
+        }
+        return task_result_dict
 
     def add_variation(self, q_metric: QMetric):
         self.n_variations += 1

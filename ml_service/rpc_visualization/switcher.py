@@ -1,5 +1,5 @@
-import xmlrpc
 from xmlrpc.server import SimpleXMLRPCServer
+from xmlrpc.client import ServerProxy
 import socket
 from rpc_visualization.data_buffer import DataBuffer
 import sys
@@ -22,7 +22,8 @@ class TensorboardClient:
         """
         self.ip = host
         self.port = port
-        self.proxy = xmlrpc.client.ServerProxy("http://%s:%s/" %(host, str(port))) 
+        #self.proxy = ServerProxy("http://%s:%s" %(host, str(port))) 
+        self.proxy = ServerProxy("http://"+self.ip+":"+str(self.port), allow_none=True)
         self.count = 0
         self.hostname = socket.gethostname()
         print("server info: ", (host, str(port)))

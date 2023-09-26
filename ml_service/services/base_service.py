@@ -290,10 +290,10 @@ class BaseService(metaclass=ABCMeta):
                   self.get_theta(x_real), external=external))
 
     def wait_for_result(self, uuid: str) -> TaskResult:
-        result = self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations).task_result
+        result = self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations)
         #self.test_debug += 1
         #result = self.test_debug
-        self.data_buffer_visualization.add_data(result)
+        self.data_buffer_visualization.add_data(result.to_dict())
         #s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         #if result.q_metric.final_cost is None:
         #    s.sendto(str(0).encode(), ("localhost", 8003))
@@ -301,10 +301,10 @@ class BaseService(metaclass=ABCMeta):
         #    s.sendto(str(result.q_metric.final_cost).encode(), ("localhost", 8003))
         #    print("send_final_cost: ", result.q_metric.final_cost)
         #    # why inf? if result.q_metric.final_cost == float('inf'):
-        return result   
+        return result.task_result
 
     def get_theta(self, x) -> dict:
-        logger.debug("BaseService.get_theta(" + str(x) + ")")
+        #logger.debug("BaseService.get_theta(" + str(x) + ")")
         theta = dict()
         for i in range(len(self.problem_definition.domain.vector_mapping)):
             theta[self.problem_definition.domain.vector_mapping[i]] = x[i]
