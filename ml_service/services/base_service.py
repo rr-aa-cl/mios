@@ -18,6 +18,7 @@ from knowledge_processor.knowledge_manager import KnowledgeManager
 from mongodb_client.mongodb_client import MongoDBClient
 from utils.exception import *
 from services.knowledge import Knowledge
+from rpc_visualization.DataBuffer import DataBuffer
 
 logger = logging.getLogger("ml_service")
 
@@ -74,7 +75,8 @@ class BaseService(metaclass=ABCMeta):
         self.similarity_estimate = {}  # this maps a similarity to all collective agents 
         self.external_success = {}     # will be filled for each external Task with 1 for success or 0 if not
         self.internal_success = []     # counts just the internal trials: 1 for success 0 for failure
-
+        self.data_buffer_visualization = DataBuffer()
+        self.test_debug = 0
         # 10s timeout for xmlrpc clinet:
         socket.setdefaulttimeout(10)
 
@@ -288,15 +290,17 @@ class BaseService(metaclass=ABCMeta):
                   self.get_theta(x_real), external=external))
 
     def wait_for_result(self, uuid: str) -> TaskResult:
-    
         result = self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations).task_result
-        s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-        if result.q_metric.final_cost is None:
-            s.sendto(str(0).encode(), ("localhost", 8003))
-        else:
-            s.sendto(str(result.q_metric.final_cost).encode(), ("localhost", 8003))
-            print("send_final_cost: ", result.q_metric.final_cost)
-            # why inf? if result.q_metric.final_cost == float('inf'):
+        #self.test_debug += 1
+        #result = self.test_debug
+        self.data_buffer_visualization.add_data(result)
+        #s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        #if result.q_metric.final_cost is None:
+        #    s.sendto(str(0).encode(), ("localhost", 8003))
+        #else:
+        #    s.sendto(str(result.q_metric.final_cost).encode(), ("localhost", 8003))
+        #    print("send_final_cost: ", result.q_metric.final_cost)
+        #    # why inf? if result.q_metric.final_cost == float('inf'):
         return result   
 
     def get_theta(self, x) -> dict:

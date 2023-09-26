@@ -15,10 +15,12 @@ from problem_definition.problem_definition import ProblemDefinition
 from utils.ws_client import call_method
 from database.database import Database
 from utils.cmd_loop import CMDLoop
+from rpc_visualization.switcher import tensorboard_client
 
 from xmlrpc.server import SimpleXMLRPCServer
 from socketserver import ThreadingMixIn
 from xmlrpc.client import ServerProxy
+from rpc_visualization.switcher import tensorboard_client
 
 logger = logging.getLogger("ml_service")
 
@@ -42,6 +44,10 @@ class Interface:
         self.global_db = Database(self.interface_port+1, self.mongo_port)
         self.global_db_thread = None
         self.rpc_server = InterfaceServer(("0.0.0.0", interface_port), allow_none=True)
+
+        self.telemetry_buffer = None
+        self.keep_running_telemetry
+        self.telemetry_sender = 
         self.start_global_database()
 
     def start_rpc_server(self):
@@ -57,6 +63,8 @@ class Interface:
         self.rpc_server.register_function(self.status, "status")
         self.rpc_server.register_function(self.start_cmd_loop, "start_cmd_loop")
         self.rpc_server.register_function(self.stop_cmd_loop, "stop_cmd_loop")
+        self.rpc_server.register_function(self.start_telemetry, "start_telemetry")
+        self.rpc_server.register_function(self.stop_telemetry, "stop_telemetry")
         self.rpc_server.serve_forever()
         logger.debug("Interface::start_rpc_server.server_stopped")
 
@@ -113,9 +121,11 @@ class Interface:
             if self.service.initialize(problem_definition, configuration, agents, knowledge) is False:
                 return False
             logger.debug("Service initialized ")
+            self.telemetry_buffer = self.service.data_buffer_visualization
             result = self.service.learn_task()
             logger.debug("learning success " + str(result))
             self.stop_cmd_loop()
+            self.stop_telemetry()
             return result
         finally:
             logger.debug("Interface::learn_task.finally: Releasing service lock")
@@ -125,6 +135,8 @@ class Interface:
     def stop_service(self):
         logger.debug("Interface::stop_service")
         """Stop the learning process, if possible save all results and stop the robot"""
+        self.stop_cmd_loop()
+        self.stop_telemetry()
         if self.service is not None:
             self.service.stop()
     
@@ -209,6 +221,24 @@ class Interface:
             self.cmd_loop.stop()
         self.cmd_loop = None
         logger.debug("interface::stop_cmd_loop: stopped successfully")
+
+    def start_telemetry(self, ip, port):
+        self.keep_running_telemetry = True
+        self.telemetry_sender = tensorboard_client(ip, port)
+        if self.telemetry_buffer is None:
+            return False
+        self.telemetry_thread = Thread(target=self._send_telemetry, args=(ip, port))
+        self.telemetry_thread.start()
+        return True
+
+    def stop_telemetry(self):
+        self.keep_running_telemetry = False
+        self.telemetry_thread.join()
+
+    def _send_telemetry(self):
+        while self.keep_running_telemetry:
+            self.telemetry_sender.send(self.telemetry_buffer.get_data())
+            time.sleep(2)
 
     def get_status(self) -> str:
         """returns a detailed status for debugging purposes"""
