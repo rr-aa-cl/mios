@@ -101,6 +101,7 @@ class BaseService(metaclass=ABCMeta):
         self.problem_definition = problem_definition
         self.configuration = configuration
         #self.knowledge_source = knowledge_source
+        self.data_buffer_visualization = DataBuffer()
         if knowledge_source is not None:
             self.knowledge.from_dict(knowledge_source)
         # Skill identity used for searching similar tasks:
