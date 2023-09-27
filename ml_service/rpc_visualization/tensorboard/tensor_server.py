@@ -7,6 +7,7 @@ import datetime
 import sys
 import xmlrpc
 from xmlrpc.server import SimpleXMLRPCServer
+import argparse
 
 
 
@@ -59,7 +60,11 @@ class Server():
 if __name__ == '__main__': 
     try:
         # ------------------- start rpc_vis server -----------------------
-        server_addr = ("10.0.2.32", 8004) 
+        parser = argparse.ArgumentParser(description="Opens an RPC Server to receive Visualization Data from the ml_service")
+        parser.add_argument("ip", help="changes to receiving IP for the RPC-Visualization-Server", type=str, default="0.0.0.0")
+        #parser.add_argument("-p","--port", help="changes the port for the RPC-Visualization-Server (default:8004)", type=int, default=8004)
+        args = parser.parse_args()
+        server_addr = (args.ip, 8004) 
         server = Server(server_addr) 
         server.start()
         #t = threading.Thread(target=server.start)
