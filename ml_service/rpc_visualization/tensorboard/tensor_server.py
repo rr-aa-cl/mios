@@ -16,7 +16,7 @@ class Server():
     def __init__(self, server_addr): 
         print(server_addr)
         print(type(server_addr))
-        self.writer = SummaryWriter(log_dir= "x00x/collective_" + datetime.datetime.now().strftime("%d%b-%H:%M") , flush_secs=1) 
+        self.writer = SummaryWriter(log_dir= "/home/collective-dev/vis_CL/collective_" + datetime.datetime.now().strftime("%d%b-%H:%M") , flush_secs=1) 
         self.server = SimpleXMLRPCServer((server_addr), allow_none=True) 
         # self.server.register_multicall_functions() 
         self.server.register_function(self.plot, 'plot') 
@@ -30,6 +30,8 @@ class Server():
         cost = data["task_result"]["q_metric"]["final_cost"]  #float
         trial_number = data["trial_number"]  #int 
         self.writer.add_scalar('Collective Learning/'+hostname, cost, trial_number)
+        print(hostname + "<=====" + external)
+        print(type(external))
 
     def plot_old(self, plot_name:str, data:float, n):
         print((plot_name, data, n))
@@ -59,7 +61,7 @@ class Server():
 if __name__ == '__main__': 
     try:
         # ------------------- start rpc_vis server -----------------------
-        server_addr = ("10.0.2.32", 8004) 
+        server_addr = ("10.157.175.246", 8004) 
         server = Server(server_addr) 
         server.start()
         #t = threading.Thread(target=server.start)
