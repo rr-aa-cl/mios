@@ -8,6 +8,7 @@ import sys
 import xmlrpc
 from xmlrpc.server import SimpleXMLRPCServer
 import json
+from threading import Thread
 
 list_block_1 = ["001", #"002", 
                 "003", "004", "005", 
@@ -47,13 +48,21 @@ def send_start():
             print("communication error with", r)
 
 def send_stop():
-    for r in robot_list:
+    def stop(r):
         try:
             server = xmlrpc.client.ServerProxy("http://%s:%s/" %(r, "8000"))
             server.stop_telemetry()
-            print(r)
+            print("stop ",r)
         except:
-            print("error")
+            print("error for ",r)
+    threads = []
+    for r in robot_list:
+        threads.append(Thread(target=stop, args=(r,)))
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+        
  
 
 def empty_buffer():

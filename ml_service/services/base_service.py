@@ -292,7 +292,10 @@ class BaseService(metaclass=ABCMeta):
 
     def wait_for_result(self, uuid: str) -> TaskResult:
         result = self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations)
-        self.data_buffer_visualization.add_data(self.make_float_again(result.to_dict()))
+        result_dict = result.to_dict()
+        if result_dict["external"]:  # if external is not False
+            result_dict["external"] = eval(result_dict["external"])  # make it a dict again
+        self.data_buffer_visualization.add_data(self.make_float_again(result_dict))
         return result.task_result
 
     def get_theta(self, x) -> dict:

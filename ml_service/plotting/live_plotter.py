@@ -12,6 +12,83 @@ from xmlrpc.client import ServerProxy
 from xmlrpc.client import Fault
 import socket
 
+
+
+class LivePlotter():
+    def __init__(self, server_addr):
+        self.data = {}
+        self.heatmap = np.zeros((5,5))
+        self.fig, self.ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 10))  # gridspec_kw={'width_ratios': [3, 1]}
+        self.drawables = []
+        self.FRAMES_START = 0
+        self.FRAMES_STOP = 300
+        self.WRITE = 0
+        self.FPS = 40
+
+        self.Writer = animation.writers['ffmpeg']
+        self.writer = self.Writer(fps=self.FPS, bitrate=3600)
+
+        #lock for data
+        self.lock = threading.Lock()
+        self.condition = threading.Condition(self.lock)
+
+        self.server = Server(server_addr, self.add_data)
+        self.server_thread = None
+
+    def start_server(self):
+        self.server_thread = Thread(target=self.server.start)
+
+    def stop_server(self):
+        self.server.stop_server()
+        self.server_thread.join()
+
+    def add_data(self, name, value):
+        if name not in self.data.keys():
+            accumulated_value = 0
+        min_value = self.data[name]["min_value"]
+        if value < self.data[name]["min_value"]:
+            min_value = value
+        
+        accumulated_value = self.data[name]["accumulated_value"] + value
+
+        with self.lock:
+            self.data[name] = {"new_value":value,
+                               "min_value": min_value,
+                               "accumulated_value": accumulated_value}
+        print(str(value), " added for ", name)
+
+    def _animate(self, i):
+        self.drawables[-1].remove()  # Without this, the object doesnt get properly removed
+        self.drawables.pop()
+        with self.lock:
+            for iter, name in enumerate(self.data.keys()):
+                col = iter%5
+                row = int(iter/5)
+                self.heatmap[row][col] = self.data[name]["accumulated_value"]
+        print("animation cycle")
+        self.drawables.append(self.ax.imshow(self.heatmap, extent=[0, 200, 0, 100],
+                                alpha=0.99, cmap=plt.cm.YlOrRd, zorder=1))
+        return self.drawables
+
+    def _init_animation(self):
+        self.drawables.append(self.ax.imshow(self.heatmap, extent=[0, 200, 0, 100],
+                                alpha=0.99, cmap=plt.cm.YlOrRd, zorder=1))
+        return self.drawables
+
+    def start_animation(self):
+        print("start animation")
+        ani = animation.FuncAnimation(self.fig, self._animate, frames=range(self.FRAMES_START, self.FRAMES_STOP),
+                              blit=True, interval=1, init_func=self._init_animation,
+                              repeat=False)
+
+        if self.WRITE == 0:
+            plt.show()
+        else:
+            ani.save('./vids/vid_' + str(self.WRITE) + '.mp4', writer=self.writer)
+
+
+
+
 def live_plot(robots, tags):
     matplotlib.rcParams.update({'font.size': 22})
 
