@@ -25,8 +25,11 @@ class Server():
         
     
     def plot(self, hostname, data, count):
-        print(hostname,"\n",data, "\n", count)
-
+        #print(hostname,"\n",data, "\n", count)
+        external = data["external"]  # False or str
+        cost = data["task_result"]["q_metric"]["final_cost"]  #float
+        trial_number = data["trial_number"]  #int 
+        self.writer.add_scalar('Collective Learning/'+hostname, cost, trial_number)
 
     def plot_old(self, plot_name:str, data:float, n):
         print((plot_name, data, n))

@@ -246,6 +246,9 @@ class Interface:
             logger.debug("_send_telemetry to " + str(self.telemetry_sender.ip)) 
             if not self.telemetry_sender.send(buffered_trial):
                 self.telemetry_buffer.add_data(buffered_trial)
+                logger.error("cannot send trial to "+ str(self.telemetry_sender.ip)+":"+str(self.telemetry_sender.port))
+                time.sleep(2)
+                
 
     def get_status(self) -> str:
         """returns a detailed status for debugging purposes"""

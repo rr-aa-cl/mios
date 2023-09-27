@@ -291,16 +291,7 @@ class BaseService(metaclass=ABCMeta):
 
     def wait_for_result(self, uuid: str) -> TaskResult:
         result = self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations)
-        #self.test_debug += 1
-        #result = self.test_debug
         self.data_buffer_visualization.add_data(self.make_float_again(result.to_dict()))
-        #s = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-        #if result.q_metric.final_cost is None:
-        #    s.sendto(str(0).encode(), ("localhost", 8003))
-        #else:
-        #    s.sendto(str(result.q_metric.final_cost).encode(), ("localhost", 8003))
-        #    print("send_final_cost: ", result.q_metric.final_cost)
-        #    # why inf? if result.q_metric.final_cost == float('inf'):
         return result.task_result
 
     def get_theta(self, x) -> dict:

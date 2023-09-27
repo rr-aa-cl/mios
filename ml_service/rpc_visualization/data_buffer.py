@@ -28,6 +28,9 @@ class DataBuffer:
     def empty_buffer(self):
         with self.lock:
             self.buffer = [] 
+            
+    def get_size(self):
+        return len(self.buffer)
                 
     
      
