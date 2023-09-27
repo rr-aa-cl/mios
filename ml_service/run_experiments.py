@@ -1109,10 +1109,10 @@ def dualarm_demo():
 def stop_dualarm():
     def stop(r,m):
         try:
-            call_method(r,13000,"stop_task")
             print("stopping ",m,"  (",r,")")
             s=ServerProxy("http://" + r + ":8000", allow_none=True)
             s.stop_service()
+            call_method(r,13000,"stop_task")
         except OSError:
             pass
         except ConnectionRefusedError:
@@ -1123,7 +1123,6 @@ def stop_dualarm():
         threads.append(Thread(target=stop, args=(r,m)))
     for t in threads:
         t.start()
-
     for t in threads:
         t.join()
 
