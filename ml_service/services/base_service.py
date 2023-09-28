@@ -119,6 +119,8 @@ class BaseService(metaclass=ABCMeta):
                 self.knowledge.confidence = 0.04
         elif self.knowledge.mode == None:
             self.centroid = None
+            self.configuration.request_probability = 0
+            self.knowledge.kb_location = None
         elif self.knowledge.mode == "specific":
             logger.debug("BaseService::initialize: Use specific knowledge: "+str(self.knowledge))
             client = MongoDBClient(self.knowledge.kb_location)

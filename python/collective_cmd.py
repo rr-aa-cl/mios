@@ -1057,3 +1057,29 @@ def grasp(module, side=None):
         call_method(ip, 13000, "grasp", {"force":100, "speed":0.5, "width":0, "epsilon_inner":1, "epsilon_outer":1})
     move_joint(ip, module+"_left_container_approach", 12000)
     move_joint(ip, "hold", 13000)
+
+def teach_dualarm(module:str):
+    insertable = module+"_left"
+    robot = get_ips([module])[0]
+    
+    
+    print("\nteaching ",insertable, "for ", robot,"\n")
+    input("teach hold position of right arm")
+    call_method(robot, 13000, "teach_object",{"object":"hold"})
+    input("Press key to start teaching. [Pose above container, without object]")
+    call_method(robot,12000,"release_object")
+    call_method(robot, 12000, "teach_object", {"object": insertable+"_container_above"})
+    input("Teach where to grab object")
+    call_method(robot, 12000, "grasp", {"width":0,"speed":1,"force":100})
+    call_method(robot, 12000, "teach_object", {"object": insertable, "teach_width":True})
+    current_finger_width = call_method(robot,12000,"get_state")["result"]["gripper_width"]
+    call_method(robot,12000,"move_gripper",{"speed":1,"force":100,"width":current_finger_width+0.005})
+    #call_method(robot, mios_port, "grasp", {"width":0,"speed":1,"force":100,"epsilon_outer":1})
+    #call_method(robot, mios_port, "set_grasped_object", {"object": insertable})
+    time.sleep(1)
+    print("closing gripper")
+    print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
+    input("Teach approach [with object]")
+    call_method(robot, 12000, "teach_object", {"object": insertable+"_container_approach"})
+    input("Teach container [with object]")
+    call_method(robot, 12000, "teach_object", {"object": insertable+"_container"})        
