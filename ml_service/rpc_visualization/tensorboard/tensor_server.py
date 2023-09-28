@@ -24,8 +24,7 @@ list_block_1 = ["001", #"002",
 list_block_2 = ["009","013","014","015","016","017",
                 "018",#"020",
                 "021","022"]
-list_U = ["023", "024", "025", "027", "028", "029"
-          ] #, "026"
+list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
 modules = list_block_1+list_block_2+list_U
 print(modules)
 
@@ -76,7 +75,13 @@ class Server():
                     self.current_transfer_data[hostname][external] += 1
                 else:
                     self.current_transfer_data[hostname][external] -= 1
-                #print(self.current_transfer_data[hostname], " success:",success, hostname)
+            else:
+                if hostname[-3:] not in self.current_transfer_data[hostname].keys():
+                    self.current_transfer_data[hostname][hostname[-3:]] = 0
+                if success:
+                    self.current_transfer_data[hostname][hostname[-3:]] += 1
+                else:
+                    self.current_transfer_data[hostname][hostname[-3:]] += 1
         #self.plotter.add_data(hostname, cost)
 
     def save_frames(self, period):
@@ -90,9 +95,9 @@ class Server():
                         col = index%5
                         row = int(index/5)
                         current_heatmap[row][col] = self.current_data[name]
-                        for knowledge_source in self.current_transfer_data[name].keys():
+                        for knowledge_source in self.current_transfer_data[name].keys():  # knowledge_source like "003"
                             current_transfermap[modules.index(knowledge_source)][modules.index(name[-3:])] = self.current_transfer_data[name][knowledge_source]
-            print(current_heatmap)
+
             self.storage.append(deepcopy(current_heatmap))
             self.transfermap_storage.append(deepcopy(current_transfermap))
             np.save("heatmap.npy", self.storage)
