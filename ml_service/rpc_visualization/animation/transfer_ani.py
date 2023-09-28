@@ -39,7 +39,7 @@ def sns_heatmap(i , m):
 
     plt.clf()
     # c = sns.color_palette("light:#006600", as_cmap=True)
-    ax = sns.heatmap(m[i], linewidth=0.5, cmap=cmap, norm=norm, annot=True, fmt=".1f") #fmt="g"
+    ax = sns.heatmap(m[i], linewidth=0.5, cmap=cmap, norm=norm, annot=True, fmt=".2f") #fmt="g"
 
     ax.set_xticklabels(labels, rotation=90)    
     ax.set_yticklabels(labels, rotation=0)  
@@ -56,7 +56,7 @@ def sns_heatmap(i , m):
 fig, ax = plt.subplots(figsize=(16, 12))
 # data = np.load("transfer_array.npy")
 name = "transfermap"
-data = np.load(name+".npy").astype(int)
+data = np.load(name+".npy")
 print(data[0])
 
 num_frames =  np.size(data, axis = 0)  # Number of frames in the video
