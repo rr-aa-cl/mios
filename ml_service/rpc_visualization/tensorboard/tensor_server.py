@@ -33,7 +33,7 @@ class Server():
     def __init__(self, server_addr): 
         print(server_addr)
         print(type(server_addr))
-        self.writer = SummaryWriter(log_dir= "x00x/collective_" + datetime.datetime.now().strftime("%d%b-%H:%M") , flush_secs=1) 
+        self.writer = SummaryWriter(log_dir= "/home/collective-dev/vis_CL/collective_" + datetime.datetime.now().strftime("%d%b-%H:%M") , flush_secs=1) 
         self.server = SimpleXMLRPCServer((server_addr), allow_none=True) 
         self.save_frame_thread = Thread(target=self.save_frames, args=(100,))
         self.current_data = {}
@@ -134,11 +134,7 @@ class Server():
 if __name__ == '__main__': 
     try:
         # ------------------- start rpc_vis server -----------------------
-        parser = argparse.ArgumentParser(description="Opens an RPC Server to receive Visualization Data from the ml_service")
-        parser.add_argument("ip", help="changes to receiving IP for the RPC-Visualization-Server", type=str, default="0.0.0.0")
-        #parser.add_argument("-p","--port", help="changes the port for the RPC-Visualization-Server (default:8004)", type=int, default=8004)
-        args = parser.parse_args()
-        server_addr = (args.ip, 8004) 
+        server_addr = ("10.0.2.32", 8004) 
         server = Server(server_addr) 
         server.start()
         #t = threading.Thread(target=server.start)
