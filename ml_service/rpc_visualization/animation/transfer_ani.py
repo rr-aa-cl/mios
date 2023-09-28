@@ -10,7 +10,8 @@ import seaborn as sns
 def sns_heatmap(i , m):
     color_list = ["#F08080","#E7F1E7","#D4E6D4","#BDD7BD","#A7CBA7","#8DBB8D","#78AE78","#5E9E5E","#479147","#308030","#197519","#016701"]
     cmap = colors.ListedColormap(color_list)
-    labels = ["task"+str(i) for i in range(1,26)]
+    # labels = ["task"+str(i) for i in range(1,26)]
+    labels = ["IEC(C7)", "Triangle-1", "Hexagon-1", "USB-1", "Triangle-2", "Cylinder-1", "Key-1", "Plug(type F)-1", "Audio Jack(3.5mm)", "IEC(C13)", "Cylinder-2", "Hexagon-2", "HDMI-1", "Key-2", "Cylinder-3", "Square-1", "Hexagon-3", "Square-2", "Audio jack(6.35mm)", "USB-2", "Plug(type C)", "Key-3", "Plug(type F)-2", "HDMI-2", "Key-4"]
     # bounds = [1, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5]
     bounds = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     norm = colors.BoundaryNorm(bounds, cmap.N)
