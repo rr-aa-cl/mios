@@ -32,7 +32,7 @@ def get_ips(module_list):
 robot_list = get_ips(list_block_1+list_block_2+list_U)
 
 
-receiving_ip = "10.0.2.32"
+receiving_ip = "10.157.175.246" # "10.0.2.32"
 receiving_port = 8004
 
 def send_start():

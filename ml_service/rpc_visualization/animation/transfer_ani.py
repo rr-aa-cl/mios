@@ -39,7 +39,7 @@ def sns_heatmap(i , m):
 
     plt.clf()
     # c = sns.color_palette("light:#006600", as_cmap=True)
-    ax = sns.heatmap(m[i], linewidth=0.5, cmap=cmap, norm=norm, annot=True, fmt=".2f") #fmt="g"
+    ax = sns.heatmap(m[-i], linewidth=0.5, cmap=cmap, norm=norm, annot=True, fmt=".2f") #fmt="g"
 
     ax.set_xticklabels(labels, rotation=90)    
     ax.set_yticklabels(labels, rotation=0)  
@@ -60,7 +60,7 @@ data = np.load(name+".npy")
 print(data[0])
 
 num_frames =  np.size(data, axis = 0)  # Number of frames in the video
-ani = FuncAnimation(fig, sns_heatmap, frames=num_frames, fargs=(data,), repeat=False, interval=100)
+ani = FuncAnimation(fig, sns_heatmap, frames=3, fargs=(data,), repeat=False, interval=100)
 
 # Save the animation as a video (replace 'animation.mp4' with your desired filename)
 Writer = animation.writers['ffmpeg']
