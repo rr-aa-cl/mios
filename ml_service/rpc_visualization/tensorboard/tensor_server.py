@@ -74,12 +74,12 @@ class Server():
                     self.current_transfer_data[hostname][external] = 3  #float("inf")
                 if success:
                     #self.current_transfer_data[hostname][external] += 1
-                    if cost < self.current_transfer_data[hostname][hostname[-3:]]:
-                        self.current_transfer_data[hostname][hostname[-3:]] = cost
+                    if cost < self.current_transfer_data[hostname][external]:
+                        self.current_transfer_data[hostname][external] = cost
                 else:
                     #self.current_transfer_data[hostname][external] -= 1
-                    if cost < self.current_transfer_data[hostname][hostname[-3:]]:
-                        self.current_transfer_data[hostname][hostname[-3:]] = cost
+                    if cost < self.current_transfer_data[hostname][external]:
+                        self.current_transfer_data[hostname][external] = cost
             else:
                 if hostname[-3:] not in self.current_transfer_data[hostname].keys():
                     #self.current_transfer_data[hostname][hostname[-3:]] = 0
