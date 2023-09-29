@@ -134,7 +134,7 @@ class Server():
 if __name__ == '__main__': 
     try:
         # ------------------- start rpc_vis server -----------------------
-        server_addr = ("10.0.2.32", 8004) 
+        server_addr = ("10.157.175.246", 8004) 
         server = Server(server_addr) 
         server.start()
         #t = threading.Thread(target=server.start)

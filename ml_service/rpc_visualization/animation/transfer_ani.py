@@ -68,4 +68,4 @@ writer = Writer(fps=10, bitrate=1800)
 ani.save(name+'.mp4', writer=writer)
 
 # Show the animation (optional)
-plt.show()
+# plt.show()
