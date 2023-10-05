@@ -464,7 +464,7 @@ def five_agent_collective():
 
     sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
     tags = ["5agents_25tasks", "collective"]
-    for n_current_iter in range(1):
+    for n_current_iter in range(10):
         threads = []
         print("Number of iteration: ", n_current_iter+1)
         knowledge_source = Knowledge()
