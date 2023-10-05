@@ -18,7 +18,9 @@ def generate_heatmap(frame_number):
 def sns_heatmap(i , m):
     color_list = ["#E7F1E7","#D4E6D4","#BDD7BD","#A7CBA7","#8DBB8D","#78AE78","#5E9E5E","#479147","#308030","#197519","#016701"]
     cmap = colors.ListedColormap(color_list)
-    bounds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100]
+    # bounds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100]
+    bounds = [0, 2, 4, 6, 8, 10, 30, 50, 75, 100, 200, 300]
+
     # bounds = list(range(11))
     norm = colors.BoundaryNorm(bounds, cmap.N)
     plt.clf()
@@ -33,7 +35,7 @@ def sns_heatmap(i , m):
     ax.set_xticks([])  # Remove x labels
     ax.set_yticks([])  # Remove y labels
     cbar = ax.collections[0].colorbar
-    cbar.set_ticks([0,1, 2, 3, 4, 5, 6, 7, 8,9,10, 100])
+    cbar.set_ticks(bounds)
     # plt.title("Collective Learning Process")
 
     ax.set_title(f'Collective Learning Process')
