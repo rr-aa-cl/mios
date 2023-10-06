@@ -236,6 +236,7 @@ class Interface:
     def stop_telemetry(self):
         self.keep_running_telemetry = False
         logger.debug("interface::stop_telemetry"+str(self.keep_running_telemetry))
+        self.service.data_buffer_visualization.add_data("STOP")
         if self.telemetry_thread is not None:
             self.telemetry_thread.join()
             self.telemetry_thread = None
@@ -244,8 +245,9 @@ class Interface:
         while self.keep_running_telemetry:
             buffered_trial = self.telemetry_buffer.get_data(timeout=1)
             if buffered_trial is None:
-                logger.debug("BUFFER IS NONE")
                 continue
+            if buffered_trial == "STOP":
+                break
             logger.debug("_send_telemetry to " + str(self.telemetry_sender.ip)) 
             if not self.telemetry_sender.send(buffered_trial):
                 self.telemetry_buffer.add_data(buffered_trial)
