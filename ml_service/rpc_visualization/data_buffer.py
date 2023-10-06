@@ -17,13 +17,18 @@ class DataBuffer:
             self.condition.notify_all()
             logger.debug("DataBuffer::add_data, current size: "+str(len(self.buffer)))
 
-    def get_data(self):
+    def get_data(self, timeout=None):
         with self.lock:
             # wait until there is data in the buffer
             while len(self.buffer) == 0:
-                self.condition.wait()
+                self.condition.wait(timeout=timeout)
             # get the data from the buffer
-            return self.buffer.pop(0)
+            result = None
+            try:
+                result = self.buffer.pop(0)
+            except IndexError:
+                pass
+            return result
         
     def empty_buffer(self):
         with self.lock:
