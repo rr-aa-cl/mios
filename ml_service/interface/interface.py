@@ -44,6 +44,7 @@ class Interface:
         self.global_db_thread = None
         self.rpc_server = InterfaceServer(("0.0.0.0", interface_port), allow_none=True)
 
+        # rpc_visulation related 
         self.telemetry_buffer = None
         self.keep_running_telemetry = False
         self.telemetry_sender = None
