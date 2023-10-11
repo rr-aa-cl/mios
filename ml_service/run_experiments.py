@@ -461,7 +461,7 @@ def five_agent_collective():
                 '029_left': 0.68088}
 
     sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
-    tags = ["5agents_25tasks", "collective"]
+    tags = ["5agents_25tasks_11Oct", "collective"]
     for n_current_iter in range(10):
         tasks = {}
         for xxx in modules: 
