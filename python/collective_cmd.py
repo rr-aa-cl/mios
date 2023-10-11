@@ -385,7 +385,7 @@ def move_joint(robot, location, port=12000, offset=[0,0,0,0,0,0,0], wait=True, s
     move_context["skill"]["time_max"] = 10
     move_context["skill"]["q_g_offset"] = offset
     move_context["user"]["env_X"] = [0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
-    move_context["user"]["F_ext_max"] = [12,6]
+    move_context["user"]["F_ext_max"] = [12,12]
     if speed:
         move_context["skill"]["speed"] = speed[0]
         move_context["skill"]["acc"] = speed[1]

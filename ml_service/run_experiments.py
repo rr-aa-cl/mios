@@ -462,7 +462,7 @@ def five_agent_collective():
 
     sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
     tags = ["5agents_25tasks_11Oct", "collective"]
-    for n_current_iter in range(10):
+    for n_current_iter in range(13,23):
         tasks = {}
         for xxx in modules: 
             tasks["collective-"+str(xxx)+".rsi.ei.tum.de"] = [str(xxx)+"_left"]
@@ -510,7 +510,7 @@ def five_agent_collective():
             dualarm_cmd = {"agent":robot,"port":13000,"skills":dualarm_skills,"sleep":1}
             threads.append(Thread(target=learn_single_task, args=(robot, pd, sc, tags, n_current_iter, False, knowledge_source.to_dict(), True, 8000, dualarm_cmd)))
             threads[-1].start()
-            time.sleep(0.2)
+            time.sleep(0.5)
             server = ServerProxy("http://%s:%s/" %(robot, "8000"))
             if server.start_telemetry("10.157.175.246", 8004):
                 print("start sending telemetry")
@@ -522,7 +522,8 @@ def five_agent_collective():
 
         kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
         kb.clear_memory()
-        return "finished :)"
+        print("run ", n_current_iter, " finished :)")
+    return "finished :)"
 
 
 def collective_experiment():

@@ -127,12 +127,11 @@ class Interface:
             self.telemetry_buffer = self.service.data_buffer_visualization
             result = self.service.learn_task()
             logger.debug("learning success " + str(result))
-            self.stop_cmd_loop()
-            self.stop_telemetry()
         finally:
             logger.debug("Interface::learn_task.finally: Releasing service lock")
-            self.service_lock.release()
             self.stop_cmd_loop()
+            self.stop_telemetry()
+            self.service_lock.release()
         return result
     
     def stop_service(self):
@@ -236,15 +235,20 @@ class Interface:
         return True
 
     def stop_telemetry(self):
-        logger.debug("interface::stop_telemetry")
         self.keep_running_telemetry = False
+        logger.debug("interface::stop_telemetry"+str(self.keep_running_telemetry))
+        self.service.data_buffer_visualization.add_data("STOP")
         if self.telemetry_thread is not None:
             self.telemetry_thread.join()
             self.telemetry_thread = None
 
     def _send_telemetry(self):
         while self.keep_running_telemetry:
-            buffered_trial = self.telemetry_buffer.get_data()
+            buffered_trial = self.telemetry_buffer.get_data(timeout=1)
+            if buffered_trial is None:
+                continue
+            if buffered_trial == "STOP":
+                break
             logger.debug("_send_telemetry to " + str(self.telemetry_sender.ip)) 
             if not self.telemetry_sender.send(buffered_trial):
                 self.telemetry_buffer.add_data(buffered_trial)
