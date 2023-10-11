@@ -117,7 +117,8 @@ class Interface:
     def learn_task(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
                    agents: set, knowledge: dict) -> bool:
         logger.debug("Interface::learn_task")
-        """strt to learn a task according to instructions"""
+        """start to learn a task according to instructions"""
+        result = False
         try:
             logger.debug("interface.learn_task: start learning task")
             if self.service.initialize(problem_definition, configuration, agents, knowledge) is False:
@@ -128,12 +129,12 @@ class Interface:
             logger.debug("learning success " + str(result))
             self.stop_cmd_loop()
             self.stop_telemetry()
-            return result
         finally:
             logger.debug("Interface::learn_task.finally: Releasing service lock")
             self.service_lock.release()
             self.stop_cmd_loop()
-
+        return result
+    
     def stop_service(self):
         logger.debug("Interface::stop_service")
         """Stop the learning process, if possible save all results and stop the robot"""
@@ -249,6 +250,8 @@ class Interface:
                 self.telemetry_buffer.add_data(buffered_trial)
                 logger.error("cannot send trial to "+ str(self.telemetry_sender.ip)+":"+str(self.telemetry_sender.port))
                 time.sleep(2)
+        logger.debug("interface:: telemetry sending thread stopped.")
+        return True
                 
 
     def get_status(self) -> str:

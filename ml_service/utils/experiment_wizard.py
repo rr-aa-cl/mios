@@ -76,7 +76,8 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
 
     if wait:
         while s.is_busy():
-            time.sleep(15)
+            time.sleep(5)
+    return True
 
 def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion", db: str ="ml_results", min_size: int =0, mongo_port=27017):
     for robot in robots:
