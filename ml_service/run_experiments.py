@@ -475,9 +475,8 @@ def five_agent_collective():
                 '027_left': 0.68448,
                 '028_left': 0.61824,
                 '029_left': 0.68088}
-    modules = modules[:10]
-    sc = SVMLearner(10,10,0,True,False, 0.4,True).get_configuration()
-    tags = ["testrun"]# ["5agents_25tasks", "collective"]
+    sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
+    tags = ["5agents_25tasks", "collective"]
     for n_current_iter in range(15,25):
         tasks = {}
         for xxx in modules: 
