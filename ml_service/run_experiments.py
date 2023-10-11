@@ -475,9 +475,9 @@ def five_agent_collective():
                 '027_left': 0.68448,
                 '028_left': 0.61824,
                 '029_left': 0.68088}
-
-    sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
-    tags = ["5agents_25tasks", "collective"]
+    modules = modules[:10]
+    sc = SVMLearner(10,10,0,True,False, 0.4,True).get_configuration()
+    tags = ["testrun"]# ["5agents_25tasks", "collective"]
     for n_current_iter in range(15,25):
         tasks = {}
         for xxx in modules: 
@@ -537,7 +537,8 @@ def five_agent_collective():
 
         for t in threads:
             t.join()
-
+        tensor_server = ServerProxy("http://10.157.175.246:8004")
+        tensor_server.stop()
         kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
         kb.clear_memory()
         print("run ", n_current_iter, " finished :)")

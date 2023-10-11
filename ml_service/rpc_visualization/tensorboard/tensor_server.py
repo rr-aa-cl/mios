@@ -42,6 +42,7 @@ class Server():
         self.server.register_function(self.plot, 'plot') 
         self.server.register_function(self.echo, 'echo') 
         self.server.register_function(self.plot_old, 'plot_old') 
+        self.server.register_function(self.stop, "stop")
         self.storage = []
         self.transfermap_storage = []
         self.current_transfer_data = {}
@@ -51,6 +52,11 @@ class Server():
         self.condition = threading.Condition(self.lock)
         self.save_frame_thread.start()
     
+    def stop(self):
+        self.keep_running = False
+        self.save_frame_thread.join()
+        
+
     def plot(self, hostname, data, count):
         #print(hostname,"\n",data, "\n", count)
         external = data["external"]  # False or str
