@@ -395,6 +395,22 @@ def get_cutoff():
         cutoff[str(xxx)+"_left"] = cost
     return cutoff
 
+def get_states(modules):
+    ips = get_ips(modules)
+    states = []
+    for ip in ips:
+        response = call_method(ip, 12000, "get_state")
+        s = ServerProxy("http://"+ip+":8000", allow_none=True)
+        busy = s.is_busy()
+        if type(response) is dict:
+            status = response["result"]["status"]
+            if status == "Idle" and not busy:
+                states.append(True)
+            else:
+                states.append(False)
+                print("\n",ip, "robot is not ready:\n ml_service is busy", busy, "\n mios-left state:",status)
+    return states
+
 def test_cutoff(cutoff ={ '001_left': 0.7080000000000001,   # best solution found
                 '003_left': 0.68016,
                 '004_left': 0.74976,
@@ -501,7 +517,9 @@ def five_agent_collective():
             pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
                                     {"Insertable": insertable, "Container": container,
                                     "Approach": approach}).get_problem_definition(insertable)
-
+            if not get_states([insertable[:3]])[0]:
+                print(robot, "is not ready! Skipping task ",insertable)
+                continue
             if insertable in cutoff:
                 sc.finish_cost = cutoff[insertable]
             if insertable == "010_left" or insertable == "023_left" or insertable == "027_left":
@@ -510,7 +528,7 @@ def five_agent_collective():
             dualarm_cmd = {"agent":robot,"port":13000,"skills":dualarm_skills,"sleep":1}
             threads.append(Thread(target=learn_single_task, args=(robot, pd, sc, tags, n_current_iter, False, knowledge_source.to_dict(), True, 8000, dualarm_cmd)))
             threads[-1].start()
-            time.sleep(0.5)
+            time.sleep(1)
             server = ServerProxy("http://%s:%s/" %(robot, "8000"))
             if server.start_telemetry("10.157.175.246", 8004):
                 print("start sending telemetry")
