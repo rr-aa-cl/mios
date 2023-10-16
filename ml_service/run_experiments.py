@@ -476,16 +476,16 @@ def five_agent_collective():
                 '028_left': 0.61824,
                 '029_left': 0.68088}
     sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
-    tags = ["5agents_25tasks", "collective"]
-    for n_current_iter in range(15,25):
+    tags = ["5agents_25tasks_local", "isolated_local_noFastPipeline"]
+    for n_current_iter in [2]: #range(15,25):
         tasks = {}
         for xxx in modules: 
             tasks["collective-"+str(xxx)+".rsi.ei.tum.de"] = [str(xxx)+"_left"]
         threads = []
         print("Number of iteration: ", n_current_iter+1)
         knowledge_source = Knowledge()
-        knowledge_source.kb_location = "collective-001.rsi.ei.tum.de"
-        knowledge_source.mode = "global"
+        knowledge_source.kb_location = None # "collective-001.rsi.ei.tum.de"
+        knowledge_source.mode = "local" # global
         knowledge_source.scope = []
         knowledge_source.scope.extend(tags)
         knowledge_source.scope.append("n"+str(n_current_iter+1))
@@ -536,10 +536,10 @@ def five_agent_collective():
 
         for t in threads:
             t.join()
-        tensor_server = ServerProxy("http://10.157.175.246:8004")
-        tensor_server.stop()
-        kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
-        kb.clear_memory()
+        # tensor_server = ServerProxy("http://10.157.175.246:8004")
+        # tensor_server.stop()
+        # kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
+        # kb.clear_memory()
         print("run ", n_current_iter, " finished :)")
     return "finished :)"
 
@@ -730,7 +730,7 @@ def collective_experiment_parallel():
         print("Number of iteration: ", n_current_iter+1,"/25")
         knowledge_source = Knowledge()
         #knowledge_source.kb_location = "collective-dev-001"
-        knowledge_source.mode = "local"
+        # knowledge_source.mode = "local"
         knowledge_source.scope = []
         knowledge_source.scope.extend(tags)
         knowledge_source.scope.append("n"+str(n_current_iter+1))
