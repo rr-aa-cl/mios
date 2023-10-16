@@ -479,7 +479,7 @@ def five_agent_collective():
     sc = SVMLearner(450,10,0,True,False, 0,True).get_configuration()
 
     tags = ["5agents_25tasks_local", "isolated_local_noFastPipeline"]
-    for n_current_iter in [3]: #range(15,25):
+    for n_current_iter in range(4,20): #range(15,25):
         tasks = {}
         for xxx in modules: 
             tasks["collective-"+str(xxx)+".rsi.ei.tum.de"] = [str(xxx)+"_left"]
