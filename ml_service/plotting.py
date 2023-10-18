@@ -17,6 +17,15 @@ import scipy.stats as st
 
 plot = Plotter()
 
+list_block_1 = ["001", #"002", 
+                "003", "004", "005", 
+                "006", "007", "008", "010", 
+                "011", "012"]
+list_block_2 = ["009","013","014","015","016","017",
+                "018",#"020",
+                "021","022"]
+list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
+list_external = ["050"]
 
 def plot_single_experiment(host: str, task_type: str, database: str, tags: list = None, uuid: str = None):
     p = DataProcessor()
@@ -1995,6 +2004,124 @@ def plot_horizontal_learning():
     fig1.tight_layout()
     plt.show()
 
+def get_iteration(tags:list):
+    '''returns the tag containing the iteration number, like "n123" '''
+    for tag in tags:
+        if tag[0] == "n":
+            try:
+                iteration_n = int(tag[1:])
+            except ValueError:
+                continue
+            return tag
+def get_confidence(listoflists, confidence=0.95):
+    '''calculates the everage and confidence-interval of listoflists'''
+    longest_data = 0
+    for data in listoflists:  # find longest data
+        if len(data)>longest_data:
+            longest_data = len(data)
+    mean = []
+    interval = []
+    for i in range(longest_data):
+        points = [x[i] for x in listoflists if i<len(x)]  # use just points for calculation that are available
+        mean.append(np.mean(points))
+        interval.append(st.t.interval(confidence=confidence, df=len(points)-1, loc=mean[-1], scale=st.sem(points)))
+    return mean, interval
+
+def plot_big_collective(tags:list = ["5agents_25tasks", "collective"]):
+    
+    p = DataProcessor()
+    cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
+                '003_left': 0.68016,
+                '004_left': 0.74976,
+                '005_left': 0.65, #
+                '006_left': 0.6127199999999999,
+                '007_left': 0.62616,
+                '008_left': 0.6371999999999999,
+                '010_left': 0.6888000000000001,
+                '011_left': 0.63816,
+                '012_left': 0.75528,
+                '009_left': 0.6943199999999999,
+                '013_left': 0.6348,
+                '014_left': 0.6,
+                '015_left': 0.68184,
+                '016_left': 0.9,   #
+                '017_left': 0.63864,
+                '018_left': 0.63144,
+                '021_left': 0.63528,
+                '022_left': 0.6828000000000001,
+                '023_left': 0.6648000000000001,
+                '024_left': 0.9187199999999999,
+                '025_left': 0.64752,
+                '027_left': 0.68448,
+                '028_left': 0.61824,
+                '029_left': 0.68088}
+    modules = list_block_1+list_block_2+list_U
+    colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
+    legend_handles1 = []
+    legend_handles2 = []
+
+    fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
+
+    #getting data
+    results_dict = {}
+    max_instances = 0
+    task_finished_times = []
+    for xxx in modules:
+        results = get_multiple_experiment_data("collective-"+xxx+".rsi.ei.tum.de", "insertion", "ml_results", {"meta.tags": tags})
+        for result in results:
+            if len(result.costs)<10:
+                continue
+            iteration = get_iteration(result.tags)
+            if not result.get_time_until_threshold(cutoff[xxx+"_left"]):
+                continue
+            if iteration not in results_dict.keys():
+                results_dict[iteration] = { "earliest_starting_time":float('inf'), 
+                                            "times_of_taskFinish":[], 
+                                            "accumulated_costs_times":[], 
+                                            "starting_times":[],
+                                            "instances":[]}
+            if results_dict[iteration]["earliest_starting_time"] > result.starting_time:  # save lowest starting time
+                results_dict[iteration]["earliest_starting_time"] = result.starting_time
+            monotonically_decreading_costs = p.get_monotonically_decreasing_cost(result.costs)
+            times_costs = [(c,t) for c,t in zip(result.times, monotonically_decreading_costs)]  # list of tupels [(cost,time),(cost,time),...]
+            results_dict[iteration]["accumulated_costs_times"].append(times_costs)
+            results_dict[iteration]["starting_times"].append(result.starting_time)
+            results_dict[iteration]["times_of_taskFinish"].append(result.get_time_until_threshold(cutoff[xxx+"_left"]))
+            results_dict[iteration]["instances"].append(result.instance)
+            sorted(results_dict[iteration]["accumulated_costs_times"])
+    max_instances = 0
+    print(results_dict.keys())
+    for results in results_dict.values():
+        if len(results["instances"]) > max_instances:
+            max_instances = len(results["instances"])        
+    print("max instanses",max_instances)
+
+    #rearranging data for plotting and adding time offeset relative to experiment beginning
+    for iteration in list(results_dict.keys()):
+        results = results_dict[iteration]
+        if len(results["instances"]) < max_instances:
+            print("pop iteration ",iteration)
+            del results_dict[iteration]
+            #results_dict.pop(iteration)
+            continue
+        accumulated_costs_times = []
+        for i in range(len(results["starting_times"])):
+            time_offset = results["starting_times"][i] - results["earliest_starting_time"]
+            times_costs_relative = [(cost, time+time_offset) for cost,time in results["accumulated_costs_times"][i]]  
+            accumulated_costs_times.extend(times_costs_relative)
+            results["times_of_taskFinish"][i] = results["times_of_taskFinish"][i] + time_offset
+        results["accumulated_costs_times"] = sorted(accumulated_costs_times)
+        results["times_of_taskFinish"] = sorted(results["times_of_taskFinish"])
+    
+    times_of_finished_tasks = [results_dict[iteration]["times_of_taskFinish"] for iteration in results_dict]
+    times_of_finished_tasks_mean, times_of_finished_tasks_confidence = get_confidence(times_of_finished_tasks)
+    print("full set of experiments: ", len(times_of_finished_tasks))
+    axes1.plot(times_of_finished_tasks_mean, range(len(times_of_finished_tasks_mean)))
+    plt.show()
+
+
+#[x for sublist in listoflists for x in sublist]
+#[x for sublist in listoflistsoflists for subsublist in sublist for x in subsublist]
 
 def plot_collective_experiment_time():
     import time

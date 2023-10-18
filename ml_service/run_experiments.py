@@ -434,7 +434,7 @@ def five_agent_collective():
     modules = list_block_1 + list_block_2 + list_U
     
 
-    cutoff = {  '001_left': 0.7080000000000001,   # best solution found
+    cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
                 '003_left': 0.68016,
                 '004_left': 0.74976,
                 '005_left': 0.65, #

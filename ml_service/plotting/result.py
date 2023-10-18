@@ -9,7 +9,8 @@ class Result:
         self.id = copy.deepcopy(data_tmp["_id"])
         self.uuid = data_tmp["meta"]["uuid"]
         self.tags = data_tmp["meta"]["tags"]
-        print(self.tags)
+        self.instance = data_tmp["meta"]["skill_instance"]  # insertable
+        #print(self.tags)
         del data_tmp["_id"]
         n_trials = len(data_tmp) - 2
 
@@ -316,6 +317,12 @@ class Result:
             max_param = self.meta_data["domain"]["limits"][param][1]
             data_dict[param] = normalize(data_dict[param], min_param, max_param)
         return data_dict
+
+    def get_time_until_threshold(self, cost_threshold):
+        for c,t in zip(self.costs, self.times):
+            if c < cost_threshold:
+                return t
+        return False
 
 
 class KnowledgePoint:   # changed from name "Knowledge" to "KnowledgePoint"
