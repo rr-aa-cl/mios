@@ -476,9 +476,9 @@ def five_agent_collective():
                 '028_left': 0.61824,
                 '029_left': 0.68088}
     # sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
-    sc = SVMLearner(450,10,0,True,False, 0,True).get_configuration()
+    sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
 
-    tags = ["5agents_25tasks_local", "isolated_local_noFastPipeline"]
+    tags = ["5agents_25tasks", "collective"]
     for n_current_iter in range(4,20): #range(15,25):
         tasks = {}
         for xxx in modules: 
@@ -486,8 +486,8 @@ def five_agent_collective():
         threads = []
         print("Number of iteration: ", n_current_iter+1)
         knowledge_source = Knowledge()
-        # knowledge_source.kb_location = None # "collective-001.rsi.ei.tum.de"
-        knowledge_source.mode = "local" # global
+        knowledge_source.kb_location = "collective-001.rsi.ei.tum.de"
+        knowledge_source.mode = "global" 
         knowledge_source.scope = []
         knowledge_source.scope.extend(tags)
         knowledge_source.scope.append("n"+str(n_current_iter+1))
