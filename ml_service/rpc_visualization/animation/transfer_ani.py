@@ -39,7 +39,7 @@ def sns_heatmap(i , m):
 
     plt.clf()
     # c = sns.color_palette("light:#006600", as_cmap=True)
-    ax = sns.heatmap(m[i], linewidth=0.5, cmap=cmap, norm=norm, annot=True, fmt=".2f") #fmt="g"
+    ax = sns.heatmap(m[i-1], linewidth=0.5, cmap=cmap, norm=norm, annot=True, fmt=".2f") #fmt="g"
 
     ax.set_xticklabels(labels, rotation=90)    
     ax.set_yticklabels(labels, rotation=0)  
@@ -55,9 +55,9 @@ def sns_heatmap(i , m):
 # Create a figure and axis
 fig, ax = plt.subplots(figsize=(16, 12))
 # data = np.load("transfer_array.npy")
-name = "transfermap"
+name = "iso_131023/transfermap"
 data = np.load(name+".npy")
-print(data[0])
+print(data[-1], "length: ", len(data))
 
 num_frames =  np.size(data, axis = 0)  # Number of frames in the video
 ani = FuncAnimation(fig, sns_heatmap, frames=num_frames, fargs=(data,), repeat=False, interval=100)
@@ -65,7 +65,7 @@ ani = FuncAnimation(fig, sns_heatmap, frames=num_frames, fargs=(data,), repeat=F
 # Save the animation as a video (replace 'animation.mp4' with your desired filename)
 Writer = animation.writers['ffmpeg']
 writer = Writer(fps=10, bitrate=1800)
-ani.save(name+'.mp4', writer=writer)
+ani.save(name+'.mp4', writer=writer,  progress_callback = lambda i, n: print(f'Progress {i/n}'))
 
 # Show the animation (optional)
 # plt.show()

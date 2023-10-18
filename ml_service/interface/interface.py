@@ -44,6 +44,7 @@ class Interface:
         self.global_db_thread = None
         self.rpc_server = InterfaceServer(("0.0.0.0", interface_port), allow_none=True)
 
+        # rpc_visulation related 
         self.telemetry_buffer = None
         self.keep_running_telemetry = False
         self.telemetry_sender = None
@@ -236,7 +237,8 @@ class Interface:
     def stop_telemetry(self):
         self.keep_running_telemetry = False
         logger.debug("interface::stop_telemetry"+str(self.keep_running_telemetry))
-        self.service.data_buffer_visualization.add_data("STOP")
+        if self.service is not None:
+            self.service.data_buffer_visualization.add_data("STOP")
         if self.telemetry_thread is not None:
             self.telemetry_thread.join()
             self.telemetry_thread = None
