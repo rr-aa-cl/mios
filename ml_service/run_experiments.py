@@ -398,20 +398,22 @@ def get_cutoff():
 def get_states(modules):
     ips = get_ips(modules)
     states = []
-    for ip in ips:
+    for ip,xxx in zip(ips,modules):
+        print("get state of ",xxx)
         response = call_method(ip, 12000, "get_state")
         s = ServerProxy("http://"+ip+":8000", allow_none=True)
         busy = s.is_busy()
         if type(response) is dict:
             try:
-                status = response["result"]["status"]
+                status = response["result"]["current_task"]
+                if status == "IdleTask" and not busy:
+                    states.append(True)
+                else:
+                    states.append(False)
+                    print("\n",ip, "robot is not ready:\n ml_service is busy", busy, "\n mios-left state:",status)
             except KeyError:
                 states.append(False)
-            if status == "Idle" and not busy:
-                states.append(True)
-            else:
-                states.append(False)
-                print("\n",ip, "robot is not ready:\n ml_service is busy", busy, "\n mios-left state:",status)
+
     return states
 
 def test_cutoff(cutoff ={ '001_left': 0.7080000000000001,   # best solution found
@@ -480,8 +482,9 @@ def five_agent_collective():
     sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
 
     tags = ["5agents_25tasks_rearanged", "collective"]
-    for n_current_iter in range(1,20): #range(15,25):
-        tasks = {"collective-014.rsi.ei.tum.de":["014_left"]}  #  do this task at first
+    for n_current_iter in range(30,31): #range(15,25):
+        tasks = {}
+        #tasks = {"collective-014.rsi.ei.tum.de":["014_left"]}  #  do this task at first
         for xxx in modules: 
             tasks["collective-"+str(xxx)+".rsi.ei.tum.de"] = [str(xxx)+"_left"]
         threads = []
@@ -532,8 +535,8 @@ def five_agent_collective():
             threads[-1].start()
             time.sleep(1)
             server = ServerProxy("http://%s:%s/" %(robot, "8000"))
-            #if server.start_telemetry("10.157.175.246", 8004):
-            #    print("start sending telemetry")
+            if server.start_telemetry("10.157.175.246", 8004):
+                print("start sending telemetry")
             while sum([t.is_alive() for t in threads]) >= 5:  # 5agents are running in parallel
                 time.sleep(1)
 

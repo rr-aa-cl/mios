@@ -10,6 +10,8 @@ from plotting.data_processor import DataError
 from plotting.plotter import Plotter
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from matplotlib.animation import FuncAnimation
+import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 import csv
@@ -2065,9 +2067,11 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
         results = get_multiple_experiment_data("collective-"+xxx+".rsi.ei.tum.de", "insertion", "ml_results", {"meta.tags": tags})
         #print(len(results), "results found for ",xxx)
         for result in results:
+            iteration = get_iteration(result.tags)
+            #if xxx == "001":
+            #    print(xxx,"_left iterations",iteration, "best cost: ",min(result.costs))
             if len(result.costs)<10:
                 continue
-            iteration = get_iteration(result.tags)
             learning_time = result.get_time_until_threshold(cutoff[xxx+"_left"])
             if not learning_time:
                 #print(xxx," iteration",iteration, "didnt fully learn the task")
@@ -2122,7 +2126,7 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
         results["accumulated_costs_times"] = sorted(accumulated_costs_times)
         results["instances"] = [x[1] for x in sorted(zip(results["times_of_taskFinish"], results["instances"]))]  #same order as times_of_taskFinish (next line)
         results["times_of_taskFinish"] = sorted(results["times_of_taskFinish"])
-        print("instances ordered: \n","\n".join(results["instances"]))
+        #print("instances ordered: \n","\n".join(results["instances"]))
     
     # create data for plotting
     times_of_finished_tasks = [results_dict[iteration]["times_of_taskFinish"] for iteration in results_dict]
@@ -2132,7 +2136,7 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
     # inserting 0 at the beginning for better plotting
     times_of_finished_tasks_mean.insert(0,0)
     times_of_finished_tasks_confidence.insert(0,(0,0))
-    return times_of_finished_tasks_mean,times_of_finished_tasks_confidence
+    return times_of_finished_tasks_mean, times_of_finished_tasks_confidence
 
 def plot_big_collective():
     colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
@@ -2164,16 +2168,68 @@ def plot_big_collective():
     mean_collective_re = [x/60 for x in mean_collective_re]
     lower_bound_confindece_collective_re = [x[0]/60 for x in confidence_collective_re]
     upper_bound_confindece_collective_re = [x[1]/60 for x in confidence_collective_re]
-    legend_collective_re = axes1.plot(mean_collective_re, range(len(mean_collective_re)), label="collective knowledge sharing (rearanged sequence)")
+    legend_collective_re = axes1.plot(mean_collective_re, range(len(mean_collective_re)), label="collective knowledge sharing (optimised sequence)")
     axes1.fill_betweenx(range(len(mean_collective_re)), lower_bound_confindece_collective_re, upper_bound_confindece_collective_re, alpha=0.2)
     
     axes1.set_xlabel("time [min]")
     axes1.set_ylabel("learned tasks [1]")
     axes1.set_title("5 agents | 25 tasks")
-    axes1.set_xlim((0,180))
+    axes1.set_xlim((0,700))
+    #axes1.set_xlim((0,180))
     axes1.grid()
     axes1.legend(loc="lower right")
     plt.show()
+
+
+def video_plot_big_collective():
+    def plot_frame(i, collective, isolated_single):
+        if (i-1) <= isolated_single[-1]*60:
+            data = [x for x in isolated_single if x*60<=i*100]
+            #legend_collective = axes1.plot(data, range(len(data)), label="isolated single", color="green")
+            graph_isolated.set_data(data, range(len(data)))
+        else:
+            i=int((i-isolated_single[-1]*60))
+            #legend_collective = axes1.plot(isolated_single, range(len(isolated_single)), label="isolated single")
+            data = [x for x in collective if x*60<i]
+            #legend_collective = axes1.plot(data, range(len(data)), label="collective knowledge sharing", color="blue")
+            graph_collective.set_data(data, range(len(data)))
+        axes1.legend(loc="lower right")
+        pass
+
+    # Create a figure and axis
+    colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
+    fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1,figsize=(16, 12))
+    axes1.set_xlabel("time [min]")
+    axes1.set_ylabel("learned tasks [1]")
+    axes1.set_title("5 agents collective | 1 agent isolated")
+    axes1.set_xlim((0,575))
+    axes1.set_ylim((0,25))
+    axes1.grid()
+    graph_isolated, = plt.plot([], [], color="green",label="isolated single")
+    graph_collective, = plt.plot([], [], color="blue",label="collective knowledge sharing")
+    axes1.legend(loc="lower right")
+
+    print("\ngetting collective data")
+    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective"])
+    mean_collective = [x/60 for x in mean_collective]
+
+    print("\ngetting single isolated data")
+    mean_isolated_single, confidence_isolated_single = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"], single_agent=True)
+    mean_isolated_single = [x/60 for x in mean_isolated_single]
+
+    total_time = mean_collective[-1] + mean_isolated_single[-1]  #in minutes
+    num_frames =  int(total_time*60)+1  # Number of frames with framerate 0.2
+    num_frames += 10  #add 10 sec to the end 
+    print("total frames: ", num_frames)
+    print("collective: ",mean_collective, len(mean_collective))
+    print("isolated: ",mean_isolated_single)
+    ani = FuncAnimation(fig1, plot_frame, frames=num_frames, fargs=(mean_collective, mean_isolated_single), repeat=False, interval=100)
+
+    # Save the animation as a video (replace 'animation.mp4' with your desired filename)
+    Writer = animation.writers['ffmpeg']
+    writer = Writer(fps=1, bitrate=1800)
+    ani.save("collective_isolated"+'.mp4', writer=writer,  progress_callback = lambda i, n: print(f'Progress {i/n}'))
+
 
 #[x for sublist in listoflists for x in sublist]
 #[x for sublist in listoflistsoflists for subsublist in sublist for x in subsublist]
