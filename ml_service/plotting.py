@@ -2027,7 +2027,7 @@ def get_confidence(listoflists, confidence=0.95):
         interval.append(st.t.interval(confidence=confidence, df=len(points)-1, loc=mean[-1], scale=st.sem(points)))
     return mean, interval
 
-def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"]):
+def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], single_agent=False):
     
     p = DataProcessor()
     cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
@@ -2085,7 +2085,7 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"]):
             if results_dict[iteration]["earliest_starting_time"] > result.starting_time:  # save lowest starting time
                 results_dict[iteration]["earliest_starting_time"] = result.starting_time
             monotonically_decreading_costs = p.get_monotonically_decreasing_cost(result.costs)
-            times_costs = [(c,t) for c,t in zip(result.times, monotonically_decreading_costs)]  # list of tupels [(cost,time),(cost,time),...]
+            times_costs = [(t,c) for t,c in zip(result.times, monotonically_decreading_costs)]  # list of tupels [(cost,time),(cost,time),...]
             results_dict[iteration]["accumulated_costs_times"].append(times_costs)
             results_dict[iteration]["starting_times"].append(result.starting_time)
             results_dict[iteration]["times_of_taskFinish"].append(learning_time)
@@ -2098,7 +2098,6 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"]):
         if len(r["instances"]) > max_instances:
             max_instances = len(r["instances"])
             all_instaces = r["instances"]
-    #print("max instanses",max_instances)
 
     #rearranging data for plotting and adding time offeset relative to experiment beginning
     for iteration in list(results_dict.keys()):
@@ -2107,45 +2106,71 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"]):
             missing = [x for x in all_instaces if x not in results["instances"]]
             print("pop iteration ",iteration, "\n" ,"missing instances: ",missing)
             del results_dict[iteration]
-            #results_dict.pop(iteration)
             continue
-        accumulated_costs_times = []
+        accumulated_costs_times = []  # currently unused (was ment to plot the decreasing accumulated cost over time)
         for i in range(len(results["starting_times"])):
-            time_offset = results["starting_times"][i] - results["earliest_starting_time"]
-            times_costs_relative = [(cost, time+time_offset) for cost,time in results["accumulated_costs_times"][i]]  
+            if single_agent:  # only single agent at a time
+                if i == 0:
+                    time_offset = 0 
+                else:
+                    time_offset = results["times_of_taskFinish"][i-1] + 10  # time offset is finsihing time of last agents trial +10sec 
+            else:  # normal time offset (no single isolated learning)
+                time_offset = results["starting_times"][i] - results["earliest_starting_time"]
+            times_costs_relative = [(cost, time+time_offset) for time, cost in results["accumulated_costs_times"][i]]  
             accumulated_costs_times.extend(times_costs_relative)
             results["times_of_taskFinish"][i] = results["times_of_taskFinish"][i] + time_offset
         results["accumulated_costs_times"] = sorted(accumulated_costs_times)
+        results["instances"] = [x[1] for x in sorted(zip(results["times_of_taskFinish"], results["instances"]))]  #same order as times_of_taskFinish (next line)
         results["times_of_taskFinish"] = sorted(results["times_of_taskFinish"])
+        print("instances ordered: \n","\n".join(results["instances"]))
     
+    # create data for plotting
     times_of_finished_tasks = [results_dict[iteration]["times_of_taskFinish"] for iteration in results_dict]
     times_of_finished_tasks_mean, times_of_finished_tasks_confidence = get_confidence(times_of_finished_tasks)
     print("full set of experiments: ", len(times_of_finished_tasks))
+    
     # inserting 0 at the beginning for better plotting
     times_of_finished_tasks_mean.insert(0,0)
     times_of_finished_tasks_confidence.insert(0,(0,0))
     return times_of_finished_tasks_mean,times_of_finished_tasks_confidence
 
-def plot_big_collective(tags_collective = ["5agents_25tasks","collective"], tags_isolated = ["5agents_25tasks_local","isolated_local_noFastPipeline"]):
+def plot_big_collective():
     colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
     fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
     
-    mean_collective, confidence_collective = get_big_collective_data(tags_collective)
+    print("\ngetting collective data")
+    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective"])
     mean_collective = [x/60 for x in mean_collective]
     lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
     upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
     legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing")
     axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2)
-
-    mean_isolated, confidence_isolated = get_big_collective_data(tags_isolated)
+    print("\ngetting parallel isolated data")
+    mean_isolated, confidence_isolated = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"])
     mean_isolated = [x/60 for x in mean_isolated]
     lower_bound_confindece_isolated = [x[0]/60 for x in confidence_isolated]
     upper_bound_confindece_isolated = [x[1]/60 for x in confidence_isolated]
-    legend_isolated = axes1.plot(mean_isolated, range(len(mean_isolated)), label="isolated learning")
+    legend_isolated = axes1.plot(mean_isolated, range(len(mean_isolated)), label="isolated parallel learning")
     axes1.fill_betweenx(range(len(mean_isolated)), lower_bound_confindece_isolated, upper_bound_confindece_isolated, alpha=0.2)
+    print("\ngetting single isolated data")
+    mean_isolated_single, confidence_isolated_single = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"], single_agent=True)
+    mean_isolated_single = [x/60 for x in mean_isolated_single]
+    lower_bound_confindece_isolated_single = [x[0]/60 for x in confidence_isolated_single]
+    upper_bound_confindece_isolated_single = [x[1]/60 for x in confidence_isolated_single]
+    legend_isolated_single = axes1.plot(mean_isolated_single, range(len(mean_isolated_single)), label="isolated single learning")
+    axes1.fill_betweenx(range(len(mean_isolated_single)), lower_bound_confindece_isolated_single, upper_bound_confindece_isolated_single, alpha=0.2)
+    print(["\n5agents_25tasks_rearanged", "collective"])
+    mean_collective_re, confidence_collective_re = get_big_collective_data(["5agents_25tasks_rearanged", "collective"])
+    mean_collective_re = [x/60 for x in mean_collective_re]
+    lower_bound_confindece_collective_re = [x[0]/60 for x in confidence_collective_re]
+    upper_bound_confindece_collective_re = [x[1]/60 for x in confidence_collective_re]
+    legend_collective_re = axes1.plot(mean_collective_re, range(len(mean_collective_re)), label="collective knowledge sharing (rearanged sequence)")
+    axes1.fill_betweenx(range(len(mean_collective_re)), lower_bound_confindece_collective_re, upper_bound_confindece_collective_re, alpha=0.2)
+    
     axes1.set_xlabel("time [min]")
     axes1.set_ylabel("learned tasks [1]")
     axes1.set_title("5 agents | 25 tasks")
+    axes1.set_xlim((0,180))
     axes1.grid()
     axes1.legend(loc="lower right")
     plt.show()
