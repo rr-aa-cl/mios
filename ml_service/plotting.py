@@ -2183,14 +2183,14 @@ def plot_big_collective():
 
 def video_plot_big_collective():
     def plot_frame(i, collective, isolated_single):
-        if (i-1)*100 <= isolated_single[-1]*60:
+        if (i-1) <= isolated_single[-1]*60:
             data = [x for x in isolated_single if x*60<=i*100]
             #legend_collective = axes1.plot(data, range(len(data)), label="isolated single", color="green")
             graph_isolated.set_data(data, range(len(data)))
         else:
-            i=int((i*100-isolated_single[-1]*60)/100)
+            i=int((i-isolated_single[-1]*60))
             #legend_collective = axes1.plot(isolated_single, range(len(isolated_single)), label="isolated single")
-            data = [x for x in collective if x*60<i*100]
+            data = [x for x in collective if x*60<i]
             #legend_collective = axes1.plot(data, range(len(data)), label="collective knowledge sharing", color="blue")
             graph_collective.set_data(data, range(len(data)))
         axes1.legend(loc="lower right")
@@ -2219,7 +2219,7 @@ def video_plot_big_collective():
 
     total_time = mean_collective[-1] + mean_isolated_single[-1]  #in minutes
     num_frames =  int(total_time*60)+1  # Number of frames with framerate 0.2
-    num_frames = int(num_frames/100)
+    num_frames += 10  #add 10 sec to the end 
     print("total frames: ", num_frames)
     print("collective: ",mean_collective, len(mean_collective))
     print("isolated: ",mean_isolated_single)
