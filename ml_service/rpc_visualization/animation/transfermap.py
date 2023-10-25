@@ -32,10 +32,10 @@ def sns_heatmap(i , m):
     # sss = np.array(sss)
     # sss = sss.reshape(25,25)
     # print(sss.shape)
-    tmp = np.array([["{:.2f}".format(value) if value!=3 else " " for value in row] for row in m[i]])
+    tmp = np.array([["{:.2f}".format(value) if value!=3 else " " for value in row] for row in m[-i-1]])
 
     
-    ax = sns.heatmap(m[i-1], linewidth=0.5, cmap=cmap, norm=norm, annot=tmp.astype(str), fmt="") #fmt="g"
+    ax = sns.heatmap(-m[-i-1], linewidth=0.5, cmap=cmap, norm=norm, annot=tmp.astype(str), fmt="") #fmt="g"
 
     ax.set_xticklabels(labels, rotation=90)    
     ax.set_yticklabels(labels, rotation=0)  
