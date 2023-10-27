@@ -2195,8 +2195,6 @@ def video_plot_big_collective():
             #i=int((i*reduce_factor - ((isolated_single[-1] - collective[-1])*60) / reduce_factor))
             data = [x for x in collective if (x +(isolated_single[-1] - collective[-1]))*60<i*reduce_factor]
             graph_collective.set_data(data, range(len(data)))
-        axes1.legend(loc="lower right")
-        pass
 
     # Create a figure and axis
     colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
@@ -2220,13 +2218,15 @@ def video_plot_big_collective():
     mean_isolated_single = [x/60 for x in mean_isolated_single]
 
     total_time = mean_isolated_single[-1]  #in minutes
-    num_frames =  int(total_time*60)+1  # Number of frames with framerate 0.2
+    print("total_time ",total_time)
+    num_frames =  int(total_time*60)+1  # Number of frames with framerate 1
     num_frames += 10  #add 10 sec to the end 
     #num_frames  = int(num_frames/100)
-    print("total frames: ", num_frames)
+    print("total frames: ", num_frames, "  in min: ",num_frames/60)
     print("collective: ",mean_collective, len(mean_collective))
     print("isolated: ",mean_isolated_single)
-    ani = FuncAnimation(fig1, plot_frame, frames=num_frames, fargs=(mean_collective, mean_isolated_single), repeat=False, interval=100)
+    input("continue?")
+    ani = FuncAnimation(fig1, plot_frame, frames=num_frames, fargs=(mean_collective, mean_isolated_single), repeat=False, interval=0.1)
 
     # Save the animation as a video (replace 'animation.mp4' with your desired filename)
     Writer = animation.writers['ffmpeg']

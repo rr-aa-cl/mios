@@ -153,6 +153,26 @@ def delete_some_results(modules: list, tags:list):
         print("\nDelete results on ",module)
         delete_results(ip, tags)
 
+def delete_double_results(modules: list, tags:list, keep_newest = True):
+    ips = get_ips(modules)
+    threads = []
+    for ip,module in zip(ips, modules):
+        client = MongoDBClient(ip)
+        results = client.read("ml_results", "insertion", {"meta.tags":tags})
+        if len(results) > 1:
+            times = [r["meta"]["t_0"] for r in results]
+            if keep_newest:
+                keep_this = max(times)
+                delete_this = [r["_id"] for r in results if r["meta"]["t_0"] < keep_this]
+            else:
+                keep_this = min(times)
+                delete_this = [r["_id"] for r in results if r["meta"]["t_0"] > keep_this]
+            print("\nFound multiple results on ",module)
+            for id in delete_this:
+                client.remove("ml_results", "insertion", {"_id": id})
+        else:
+            print("found ", len(results), " results. Nothing to delete.")
+
 
 def check_pose(robot,pose):
     error = []
@@ -495,7 +515,7 @@ def five_agent_collective():
     # sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
     sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
 
-    tags = ["5agents_25tasks_local","isolated_local_noFastPipeline"]
+    tags = ["5agents_25tasks","collective"]
     for n_current_iter in range(29,30): #range(15,25):
         tasks = {}
         #tasks = {"collective-014.rsi.ei.tum.de":["014_left"]}  #  do this task at first
