@@ -31,7 +31,7 @@ def sns_heatmap(i , m):
                        ["Square-1", "Hexagon-3", "Square-2", "Audio jack\n(6.35mm)", "USB-2"],
                        ["Plug\n(type C)", "Key-3", "Plug\n(type F)-2", "HDMI-2", "Key-4"]])
     
-    ax = sns.heatmap(m[i-1], linewidth=0.5, cmap=cmap, norm=norm, annot=labels, fmt="", annot_kws={"fontsize":8})
+    ax = sns.heatmap(m[i], linewidth=0.5, cmap=cmap, norm=norm, annot=labels, fmt="", annot_kws={"fontsize":8})
     ax.set_xticks([])  # Remove x labels
     ax.set_yticks([])  # Remove y labels
     cbar = ax.collections[0].colorbar
@@ -45,7 +45,7 @@ def sns_heatmap(i , m):
 
 # Create a figure and axis
 fig, ax = plt.subplots(figsize=(8, 6))
-name = "iso_251023/heatmap_nonParallel"
+name = "collective_251023/heatmap_collective"
 data = np.load(name+".npy").astype(int)
 data = data[::50]
 print(data[-1],"\n Size: ",len(data))
