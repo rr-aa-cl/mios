@@ -27,7 +27,7 @@ list_block_1 = ["001", #"002",
                 "006", "007", "008", "010", 
                 "011", "012"]
 list_block_2 = ["009","013","014","015","016","017",
-                "018",#"020",
+                # "018",#"020",
                 "021","022"]
 list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
 list_external = ["050"]
@@ -485,7 +485,7 @@ def test_cutoff(cutoff ={ '001_left': 0.7080000000000001,   # best solution foun
     return lowest_index
 
 
-def five_agent_collective():
+def five_agent_collective(if_reverse = False):
     modules = list_block_1 + list_block_2 + list_U
     cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
                 '003_left': 0.68016,
@@ -515,8 +515,16 @@ def five_agent_collective():
     # sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
     sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
 
-    tags = ["5agents_25tasks","collective"]
-    for n_current_iter in range(29,30): #range(15,25):
+    # tags = ["5agents_25tasks","collective"]
+    
+    if (if_reverse):
+        tags = ["5agents_25tasks","collective_reverse"]
+        modules.reverse()
+    else:
+        tags = ["5agents_25tasks","collective"]
+        
+    # for n_current_iter in range(29,30): #range(15,25):   (not reserve)
+    for n_current_iter in [0]: # reverse one
         tasks = {}
         #tasks = {"collective-014.rsi.ei.tum.de":["014_left"]}  #  do this task at first
         for xxx in modules: 
@@ -1150,17 +1158,19 @@ def dualarm_demo_thread(robot, obj, tags, sc, knowledge:dict):
     except TypeError:
         print("TypeError for ",obj," on ",robot)
 
-def dualarm_demo2(dualarm_modules):   # dualarm_modules = list_block_1, list_U, list_external
+def dualarm_demo2():   # dualarm_modules = list_block_1, list_U, list_external
     robots_dualarm = []
-    #robots_dualarm.extend(get_ips(list_block_1))
-    #robots_dualarm.extend(get_ips(list_U))
+    robots_dualarm.extend(get_ips(list_block_1))
+    robots_dualarm.extend(get_ips(list_block_2))
+    robots_dualarm.extend(get_ips(list_U))
     #robots_dualarm.extend(get_ips(list_external))
-    robots_dualarm.extend(get_ips(dualarm_modules))
+    # robots_dualarm.extend(get_ips(dualarm_modules))
     modules = []
-    modules.extend(dualarm_modules)
-    #modules.extend(list_block_1)
-    #modules.extend(list_U)
-    #modules.extend(list_external)
+    # modules.extend(dualarm_modules)
+    modules.extend(list_block_1)
+    modules.extend(list_block_2)
+    modules.extend(list_U)
+    # modules.extend(list_external)
 
     threads = []
     sc = SVMLearner(2000,10,0,True,False, 0.4,True).get_configuration()
