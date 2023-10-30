@@ -27,7 +27,7 @@ list_block_1 = ["001", #"002",
                 "006", "007", "008", "010", 
                 "011", "012"]
 list_block_2 = ["009","013","014","015","016","017",
-                "018",#"020",
+                # "018",#"020",
                 "021","022"]
 list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
 list_external = ["050"]
@@ -138,7 +138,41 @@ def learn_multiple_tasks(robot: str, task_instances: list, service_config: Servi
 
 def delete_results(robot:str, tags:list):
     client = MongoDBClient(robot)
-    client.remove("ml_results", "insertion", {"meta.tags":tags})
+    if not client.remove("ml_results", "insertion", {"meta.tags":tags}):
+        print("Cannot find ", tags, "at ml_results")
+    if not client.remove("local_knowledge", "insertion", {"meta.tags": tags}):
+        print("Cannot find ", tags, "at local_knowledge")
+    if not client.remove("global_knowledge", "insertion", {"meta.tags": tags}):
+        print("Cannot find ", tags, "at global_knowledge")
+    
+
+def delete_some_results(modules: list, tags:list):
+    ips = get_ips(modules)
+    threads = []
+    for ip,module in zip(ips, modules):
+        print("\nDelete results on ",module)
+        delete_results(ip, tags)
+
+def delete_double_results(modules: list, tags:list, keep_newest = True):
+    ips = get_ips(modules)
+    threads = []
+    for ip,module in zip(ips, modules):
+        client = MongoDBClient(ip)
+        results = client.read("ml_results", "insertion", {"meta.tags":tags})
+        if len(results) > 1:
+            times = [r["meta"]["t_0"] for r in results]
+            if keep_newest:
+                keep_this = max(times)
+                delete_this = [r["_id"] for r in results if r["meta"]["t_0"] < keep_this]
+            else:
+                keep_this = min(times)
+                delete_this = [r["_id"] for r in results if r["meta"]["t_0"] > keep_this]
+            print("\nFound multiple results on ",module)
+            for id in delete_this:
+                client.remove("ml_results", "insertion", {"_id": id})
+        else:
+            print("found ", len(results), " results. Nothing to delete.")
+
 
 def check_pose(robot,pose):
     error = []
@@ -410,7 +444,7 @@ def get_states(modules):
                     states.append(True)
                 else:
                     states.append(False)
-                    print("\n",ip, "robot is not ready:\n ml_service is busy", busy, "\n mios-left state:",status)
+                    print("  ",ip, "robot is not ready:\n ml_service is busy", busy, "\n mios-left state:",status)
             except KeyError:
                 states.append(False)
 
@@ -451,7 +485,7 @@ def test_cutoff(cutoff ={ '001_left': 0.7080000000000001,   # best solution foun
     return lowest_index
 
 
-def five_agent_collective():
+def five_agent_collective(if_reverse = False):
     modules = list_block_1 + list_block_2 + list_U
     cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
                 '003_left': 0.68016,
@@ -481,8 +515,16 @@ def five_agent_collective():
     # sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
     sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
 
-    tags = ["5agents_25tasks_rearanged", "collective"]
-    for n_current_iter in range(30,31): #range(15,25):
+    # tags = ["5agents_25tasks","collective"]
+    
+    if (if_reverse):
+        tags = ["5agents_25tasks","collective_reverse"]
+        modules.reverse()
+    else:
+        tags = ["5agents_25tasks","collective"]
+        
+    # for n_current_iter in range(29,30): #range(15,25):   (not reserve)
+    for n_current_iter in [0]: # reverse one
         tasks = {}
         #tasks = {"collective-014.rsi.ei.tum.de":["014_left"]}  #  do this task at first
         for xxx in modules: 
@@ -490,8 +532,8 @@ def five_agent_collective():
         threads = []
         print("Number of iteration: ", n_current_iter+1)
         knowledge_source = Knowledge()
-        knowledge_source.kb_location = "collective-001.rsi.ei.tum.de"
-        knowledge_source.mode = "global" 
+        knowledge_source.kb_location = "collective-001.rsi.ei.tum.de" # None #  
+        knowledge_source.mode = "global"  # None  # 
         knowledge_source.scope = []
         knowledge_source.scope.extend(tags)
         knowledge_source.scope.append("n"+str(n_current_iter+1))
@@ -512,6 +554,8 @@ def five_agent_collective():
                         "F_ext_max": [100, 50]}}
         dualarm_skills.append(("move", "MoveToPoseJoint", move_context))
         
+        kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
+        kb.clear_memory()
 
         threads = []
         while len(tasks) > 0:
@@ -542,10 +586,10 @@ def five_agent_collective():
 
         for t in threads:
             t.join()
-        # tensor_server = ServerProxy("http://10.157.175.246:8004")
-        # tensor_server.stop()
-        # kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
-        # kb.clear_memory()
+        tensor_server = ServerProxy("http://10.157.175.246:8004")
+        tensor_server.stop()
+        kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
+        kb.clear_memory()
         print("run ", n_current_iter, " finished :)")
     return "finished :)"
 
@@ -1114,17 +1158,19 @@ def dualarm_demo_thread(robot, obj, tags, sc, knowledge:dict):
     except TypeError:
         print("TypeError for ",obj," on ",robot)
 
-def dualarm_demo2(dualarm_modules):   # dualarm_modules = list_block_1, list_U, list_external
+def dualarm_demo2():   # dualarm_modules = list_block_1, list_U, list_external
     robots_dualarm = []
-    #robots_dualarm.extend(get_ips(list_block_1))
-    #robots_dualarm.extend(get_ips(list_U))
+    robots_dualarm.extend(get_ips(list_block_1))
+    robots_dualarm.extend(get_ips(list_block_2))
+    robots_dualarm.extend(get_ips(list_U))
     #robots_dualarm.extend(get_ips(list_external))
-    robots_dualarm.extend(get_ips(dualarm_modules))
+    # robots_dualarm.extend(get_ips(dualarm_modules))
     modules = []
-    modules.extend(dualarm_modules)
-    #modules.extend(list_block_1)
-    #modules.extend(list_U)
-    #modules.extend(list_external)
+    # modules.extend(dualarm_modules)
+    modules.extend(list_block_1)
+    modules.extend(list_block_2)
+    modules.extend(list_U)
+    # modules.extend(list_external)
 
     threads = []
     sc = SVMLearner(2000,10,0,True,False, 0.4,True).get_configuration()

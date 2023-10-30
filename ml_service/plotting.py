@@ -2094,7 +2094,7 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
             results_dict[iteration]["starting_times"].append(result.starting_time)
             results_dict[iteration]["times_of_taskFinish"].append(learning_time)
             results_dict[iteration]["instances"].append(result.instance)
-            sorted(results_dict[iteration]["accumulated_costs_times"])
+      #      sorted(results_dict[iteration]["accumulated_costs_times"])
     max_instances = 0
     all_instaces = []
     #print(results_dict.keys())
@@ -2123,9 +2123,11 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
             times_costs_relative = [(cost, time+time_offset) for time, cost in results["accumulated_costs_times"][i]]  
             accumulated_costs_times.extend(times_costs_relative)
             results["times_of_taskFinish"][i] = results["times_of_taskFinish"][i] + time_offset
-        results["accumulated_costs_times"] = sorted(accumulated_costs_times)
-        results["instances"] = [x[1] for x in sorted(zip(results["times_of_taskFinish"], results["instances"]))]  #same order as times_of_taskFinish (next line)
-        results["times_of_taskFinish"] = sorted(results["times_of_taskFinish"])
+        
+        if not single_agent:
+            results["accumulated_costs_times"] = sorted(accumulated_costs_times)
+            results["instances"] = [x[1] for x in sorted(zip(results["times_of_taskFinish"], results["instances"]))]  #same order as times_of_taskFinish (next line)
+            results["times_of_taskFinish"] = sorted(results["times_of_taskFinish"])
         #print("instances ordered: \n","\n".join(results["instances"]))
     
     # create data for plotting
@@ -2171,59 +2173,60 @@ def plot_big_collective():
     legend_collective_re = axes1.plot(mean_collective_re, range(len(mean_collective_re)), label="collective knowledge sharing (optimised sequence)")
     axes1.fill_betweenx(range(len(mean_collective_re)), lower_bound_confindece_collective_re, upper_bound_confindece_collective_re, alpha=0.2)
     
-    axes1.set_xlabel("time [min]")
-    axes1.set_ylabel("learned tasks [1]")
-    axes1.set_title("5 agents | 25 tasks")
+    axes1.set_xlabel("time [min]", fontsize=14)
+    axes1.set_ylabel("learned skills [1]", fontsize=14)
+    axes1.set_title("learn 25 skills | 5 agent collective VS single isolated", fontsize=14)
     axes1.set_xlim((0,700))
     #axes1.set_xlim((0,180))
     axes1.grid()
-    axes1.legend(loc="lower right")
+    axes1.legend(loc="lower right", fontsize=14)
     plt.show()
 
 
 def video_plot_big_collective():
     def plot_frame(i, collective, isolated_single):
-        if (i-1) <= isolated_single[-1]*60:
-            data = [x for x in isolated_single if x*60<=i*100]
-            #legend_collective = axes1.plot(data, range(len(data)), label="isolated single", color="green")
+        reduce_factor = 1#00
+        if (i-1)*reduce_factor <= (isolated_single[-1] - collective[-1])*60:
+            data = [x for x in isolated_single if x*60<=i*reduce_factor]
             graph_isolated.set_data(data, range(len(data)))
         else:
-            i=int((i-isolated_single[-1]*60))
-            #legend_collective = axes1.plot(isolated_single, range(len(isolated_single)), label="isolated single")
-            data = [x for x in collective if x*60<i]
-            #legend_collective = axes1.plot(data, range(len(data)), label="collective knowledge sharing", color="blue")
+            data = [x for x in isolated_single if x*60<=i*reduce_factor]
+            graph_isolated.set_data(data, range(len(data)))
+            #i=int((i*reduce_factor - ((isolated_single[-1] - collective[-1])*60) / reduce_factor))
+            data = [x for x in collective if (x +(isolated_single[-1] - collective[-1]))*60<i*reduce_factor]
             graph_collective.set_data(data, range(len(data)))
-        axes1.legend(loc="lower right")
-        pass
 
     # Create a figure and axis
     colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
     fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1,figsize=(16, 12))
-    axes1.set_xlabel("time [min]")
-    axes1.set_ylabel("learned tasks [1]")
-    axes1.set_title("5 agents collective | 1 agent isolated")
+    axes1.set_xlabel("time [min]", fontsize=14)
+    axes1.set_ylabel("learned skills [1]", fontsize=14)
+    axes1.set_title("5 agents collective | 1 agent isolated", fontsize=14)
     axes1.set_xlim((0,575))
     axes1.set_ylim((0,25))
     axes1.grid()
     graph_isolated, = plt.plot([], [], color="green",label="isolated single")
     graph_collective, = plt.plot([], [], color="blue",label="collective knowledge sharing")
-    axes1.legend(loc="lower right")
+    axes1.legend(loc="lower right", fontsize=14)
 
     print("\ngetting collective data")
-    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective"])
+    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective", "n30"])
     mean_collective = [x/60 for x in mean_collective]
 
     print("\ngetting single isolated data")
-    mean_isolated_single, confidence_isolated_single = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"], single_agent=True)
+    mean_isolated_single, confidence_isolated_single = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline", "n30"], single_agent=True)
     mean_isolated_single = [x/60 for x in mean_isolated_single]
 
-    total_time = mean_collective[-1] + mean_isolated_single[-1]  #in minutes
-    num_frames =  int(total_time*60)+1  # Number of frames with framerate 0.2
+    total_time = mean_isolated_single[-1]  #in minutes
+    print("total_time ",total_time)
+    num_frames =  int(total_time*60)+1  # Number of frames with framerate 1
     num_frames += 10  #add 10 sec to the end 
-    print("total frames: ", num_frames)
+    #num_frames  = int(num_frames/100)
+    print("total frames: ", num_frames, "  in min: ",num_frames/60)
     print("collective: ",mean_collective, len(mean_collective))
     print("isolated: ",mean_isolated_single)
-    ani = FuncAnimation(fig1, plot_frame, frames=num_frames, fargs=(mean_collective, mean_isolated_single), repeat=False, interval=100)
+    input("continue?")
+    ani = FuncAnimation(fig1, plot_frame, frames=num_frames, fargs=(mean_collective, mean_isolated_single), repeat=False, interval=0.1)
 
     # Save the animation as a video (replace 'animation.mp4' with your desired filename)
     Writer = animation.writers['ffmpeg']

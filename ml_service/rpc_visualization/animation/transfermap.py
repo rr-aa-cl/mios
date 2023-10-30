@@ -32,10 +32,10 @@ def sns_heatmap(i , m):
     # sss = np.array(sss)
     # sss = sss.reshape(25,25)
     # print(sss.shape)
-    tmp = np.array([["{:.2f}".format(value) if value!=3 else " " for value in row] for row in m[-i-1]])
+    tmp = np.array([["{:.2f}".format(value) if value!=3 else " " for value in row] for row in m[i]])
 
     
-    ax = sns.heatmap(-m[i-1], linewidth=0.5, cmap=cmap, norm=norm, annot=tmp.astype(str), fmt="") #fmt="g"
+    ax = sns.heatmap(-m[i], linewidth=0.5, cmap=cmap, norm=norm, annot=tmp.astype(str), fmt="") #fmt="g"
 
     ax.set_xticklabels(labels, rotation=90)    
     ax.set_yticklabels(labels, rotation=0)  
@@ -52,18 +52,17 @@ def sns_heatmap(i , m):
 
 fig, ax = plt.subplots(figsize=(16, 12))
 # data = np.load("transfer_array.npy")
-name = "iso_transfermap"
+name = "collective_131023/transfermap"
 data = np.load(name+".npy")
-data = data[:29130]
-down_data = data[::5]
 print(data[-1], "length: ", len(data))
 
 # data = data[-5:]
 
-num_frames =  np.size(down_data, axis = 0)  # Number of frames in the video
-ani = FuncAnimation(fig, sns_heatmap, frames=num_frames, fargs=(data,), repeat=False, interval=1)
+num_frames =  np.size(data, axis = 0)  # Number of frames in the video
+ani = FuncAnimation(fig, sns_heatmap, frames=num_frames, fargs=(data,), repeat=False, interval=100)
 
 # Save the animation as a video (replace 'animation.mp4' with your desired filename)
 Writer = animation.writers['ffmpeg']
-writer = Writer(fps=2, bitrate=1800)
+writer = Writer(fps=10, bitrate=1800)
 ani.save(name+'.mp4', writer=writer,  progress_callback = lambda i, n: print(f'Progress {i/n}'))
+print("Video save at ",name)
