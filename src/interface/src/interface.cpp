@@ -535,6 +535,7 @@ nlohmann::json CommandInterface::lock_brakes([[maybe_unused]] const nlohmann::js
 nlohmann::json CommandInterface::shutdown([[maybe_unused]] const nlohmann::json &request){
     spdlog::trace("CommandInterface:shutdown()");
     nlohmann::json response;
+    m_core->terminate();
     bool result=m_core->shutdown_body();
     response["result"]=result;
     return response;

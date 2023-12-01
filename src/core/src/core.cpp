@@ -81,6 +81,7 @@ void Core::start(){
 
 void Core::terminate(){
     spdlog::trace("Core::terminate()");
+    m_task_engine.stop();
     m_panda_body.disconnect_from_robot();
     m_panda_body.disconnect_from_gripper();
 }
