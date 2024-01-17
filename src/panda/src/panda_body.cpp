@@ -821,8 +821,6 @@ void PandaBody::wait_for_desk_task(const std::optional<std::string> &ip, const s
 
 bool PandaBody::shutdown_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password){
     spdlog::trace("PandaBody::shutdown_robot");
-    disconnect_from_gripper();
-    disconnect_from_robot();
     deactivate_fci();
     bool result;
     try{

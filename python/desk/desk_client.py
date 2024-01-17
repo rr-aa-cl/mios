@@ -122,7 +122,8 @@ class FrankaAPI:
 
     def shutdown(self):
         self._client.request('POST', '/admin/api/shutdown',
-                             headers={'content-type': 'application/json'})
+                             headers={'content-type': 'application/json',
+                             'Cookie': 'authorization=%s' % self._token})
 
     def pack_pose(self):
         self._client.request('POST', '/desk/api/robot/fold',
