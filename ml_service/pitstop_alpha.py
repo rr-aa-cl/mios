@@ -39,7 +39,8 @@ def ten_agent_collective():
     # sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
     sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()    
    
-    tags = ["10agents_25tasks","collective","ps_alpha_5"]
+    tags = ["10agents_25tasks","collective","ps_alpha_5_reverse"]
+    modules.reverse()
     # tags = ["test run"]
         
         
