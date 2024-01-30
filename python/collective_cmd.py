@@ -30,71 +30,15 @@ def get_ips(module_list):
     return ips
 ###################################################################################
 
+modules = list_block_1+list_block_2+list_U  # +list_external
 
-hostnames = [
-"10.157.175.221",  #0 ms            collective-001.local    [n/a]           A8:A1:59:B8:22:8B                   [n/a]                               ASRock Incorporation                      
-"10.157.174.166",  #0 ms            collective-002.local    [n/a]           A8:A1:59:B8:25:9A                   [n/a]                               ASRock Incorporation                      
-"10.157.174.167",  #0 ms            collective-003.local    [n/a]           A8:A1:59:B8:24:E8                   [n/a]                               ASRock Incorporation                      
-"10.157.174.168",  #0 ms            collective-004.local    [n/a]           A8:A1:59:B8:25:EC                   [n/a]                               ASRock Incorporation                      
-"10.157.174.89" ,  #0 ms            collective-005.local    [n/a]           A8:A1:59:B8:23:72                   [n/a]                               ASRock Incorporation                      
-"10.157.174.80" ,  #0 ms            collective-006.local    [n/a]           A8:A1:59:B8:23:74                   [n/a]                               ASRock Incorporation                      
-"10.157.174.200",  #0 ms            collective-007.local    [n/a]           A8:A1:59:B2:B1:6E                   [n/a]                               ASRock Incorporation                      
-"10.157.175.129",  #0 ms            collective-008.local    [n/a]           A8:A1:59:B8:22:F4                   [n/a]                               ASRock Incorporation                      
-"10.157.174.36" ,  #0 ms            collective-009.local    [n/a]           A8:A1:59:B8:25:BD                   [n/a]                               ASRock Incorporation                      
-"10.157.174.59",  #collective-010.local
-"10.157.175.87",  #0 ms            collective-011.local    [n/a]           A8:A1:59:B8:23:62                   [n/a]                               ASRock Incorporation                      
-"10.157.174.241",  #0 ms            collective-012.local    [n/a]           A8:A1:59:B8:25:DF                   [n/a]                               ASRock Incorporation                      
-"10.157.174.201",  #0 ms            collective-013.local    [n/a]           A8:A1:59:B2:BF:1F                   [n/a]                               ASRock Incorporation                      
-"10.157.174.247",  #0 ms            collective-014.local    [n/a]           A8:A1:59:B2:1C:28                   [n/a]                               ASRock Incorporation                      
-"10.157.174.202",  #0 ms            collective-015.local    [n/a]           A8:A1:59:B8:23:38                   [n/a]                               ASRock Incorporation                      
-"10.157.174.203",  #0 ms            collective-016.local    [n/a]           A8:A1:59:B2:B2:E4                   [n/a]                               ASRock Incorporation                      
-"10.157.174.46",  #0 ms            collective-017.local    [n/a]           A8:A1:59:B8:24:CF                   [n/a]                               ASRock Incorporation                      
-"10.157.174.103",  #0 ms            collective-018.local    [n/a]           A8:A1:59:B8:23:1E                   [n/a]                               ASRock Incorporation                      
-#"10.157.174.206",  #0 ms            collective-019.local    [n/a]           A8:A1:59:B8:22:E2                   [n/a]                               ASRock Incorporation                      
-"10.157.174.204",  #0 ms            collective-020.local    [n/a]           A8:A1:59:B8:22:AE                   [n/a]                               ASRock Incorporation                      
-"10.157.175.173",  #0 ms            collective-021.local    [n/a]           A8:A1:59:B8:24:C9                   [n/a]                               ASRock Incorporation                      
-"10.157.174.244",  #0 ms            collective-022.local    [n/a]           A8:A1:59:B8:24:E6                   [n/a]                               ASRock Incorporation                      
-"10.157.174.205",  #0 ms            collective-023.local    [n/a]           A8:A1:59:B8:26:4D                   [n/a]                               ASRock Incorporation                      
-"10.157.175.156",  #0 ms            collective-024.local    [n/a]           A8:A1:59:B8:23:5A                   [n/a]                               ASRock Incorporation                      
-"10.157.174.186",  #0 ms            collective-025.local    [n/a]           A8:A1:59:B8:25:D5                   [n/a]                               ASRock Incorporation                      
-"10.157.175.135",  #0 ms            collective-026.local    [n/a]           A8:A1:59:B2:1C:7A                   [n/a]                               ASRock Incorporation                      
-"10.157.174.249",  #0 ms            collective-027.local    [n/a]           A8:A1:59:B8:23:B9                   [n/a]                               ASRock Incorporation                      
-"10.157.174.255",  #0 ms            collective-028.local    [n/a]           A8:A1:59:B2:AE:FF                   [n/a]                               ASRock Incorporation                      
-"10.157.174.42" ,  #0 ms            collective-029.local    [n/a]           A8:A1:59:B2:AD:9A                   [n/a]                               ASRock Incorporation                      
-#"10.157.175.236",#collective-030
-"10.157.174.148",#collective-032
-#"10.157.174.160",#collective-034
-#"10.157.174.163",  #0 ms            collective-038.local    [n/a]           A8:A1:59:B8:23:9F                   [n/a]                               ASRock Incorporation                      
-#"10.157.174.175",  #0 ms            collective-039.local    [n/a]           A8:A1:59:B8:25:70                   [n/a]                               ASRock Incorporation                      
-#"10.157.174.52" ,  #0 ms            collective-046.local    [n/a]           A8:A1:59:B8:23:A5                   [n/a]                               ASRock Incorporation                      
-"10.157.175.134"]  #0 ms            collective-050.local    [n/a]           A8:A1:59:B2:0F:85                   [n/a]                               ASRock Incorporation 
-modules = ["001",\
-        "002","003","004","005","006","007","008","009","010","011","012","013","014","015","016","017",\
-        #"018",#"019",
-        "020",
-        "021","022","023","024","025","026","027","028","029",#"030",
-        "032",#"034",#"038","039","046",
-        "050",]
-#hostnames = ["collective-%03d.rsi.ei.tum.de"%n for n in range(1,50)]
-
-#hostnames = ["collective-%03d.local"%n for n in range(1,50)]
-#hostnames.remove("collective-001.rsi.ei.tum.de")
-#hostnames.remove("collective-002.rsi.ei.tum.de")
-#hostnames.remove("collective-007.rsi.ei.tum.de")
-#hostnames.remove("collective-012.rsi.ei.tum.de")
-#hostnames.remove("collective-016.rsi.ei.tum.de")
-#hostnames.remove("collective-017.rsi.ei.tum.de")
-#hostnames.remove("collective-018.rsi.ei.tum.de")
-#hostnames.remove("collective-020.rsi.ei.tum.de")
-
-#for host in hostnames:
-#    if host.find("010") != -1:
-#        hostnames.remove(host)
-#hostnames.remove("collective-010.rsi.ei.tum.de")
 second_ushape = [   "collective-016.rsi.ei.tum.de","collective-021.rsi.ei.tum.de","collective-022.rsi.ei.tum.de",
                     "collective-018.rsi.ei.tum.de","collective-017.rsi.ei.tum.de","collective-015.rsi.ei.tum.de",
                     "collective-014.rsi.ei.tum.de","collective-013.rsi.ei.tum.de","collective-009.rsi.ei.tum.de",
                     "collective-020.rsi.ei.tum.de"]
+hostnames = []
+for m in modules:
+    hostnames.append("collective-"+m+".rsi.ei.tum.de")
 print(hostnames)
 
 
@@ -145,7 +89,7 @@ class Task:
 
 def command_collective(cmd: str, args: dict = {}):
     threads = []
-    for r in hostnames:
+    for r in get_ips(modules):
         print(r)
         threads.append(Thread(target=call_method, args=(r, 12000, cmd, args,)))
         threads[-1].start()
@@ -301,12 +245,12 @@ def populate_database(host, db, ip, user_name="franka", user_pw="frankaRSI"):
     except:
             print(host, " not updated")
 def populate_databases(db, ip, user_name="franka", user_pw="frankaRSI"):
-    for host in hostnames:
+    for host in get_ips(modules):
         populate_database(host,db,ip,user_name,user_pw)
 
 def populate_all():
     threads = []
-    for host in hostnames:
+    for host in get_ips(modules):
         threads.append(Thread(target=populate_database, args=(host,"miosL","192.168.3.100","franka","frankaRSI",)))
         threads[-1].start()
         threads.append(Thread(target=populate_database, args=(host,"miosR","192.168.4.100","franka","frankaRSI",)))
@@ -325,7 +269,7 @@ def copy_object(source:str, destinations:list, object_name:str, robot_arm="left"
             client.remove(db, collection, {"name":document["name"]})
         client.write(db, collection, document)
     if destinations == "all":
-        destinations = hostnames
+        destinations = get_ips(modules)
         if source in destinations:
             destinations.remove(source)
     client = MongoDBClient(source)
@@ -441,7 +385,7 @@ def wink_thread(robot, port, duration=False):
 
 def move_all(pose = "default_pose"):
     threads = []
-    for host in hostnames:
+    for host in get_ips(modules):
         threads.append(Thread(target=move_joint, args=(host, pose, 12000, True)))
         threads[-1].start()
         threads.append(Thread(target=move_joint, args=(host, pose, 13000, True)))
@@ -463,7 +407,7 @@ def move_some(robots:list, pose):
 
 def move_all_cart(pose = "default_pose"):
     threads = []
-    for host in hostnames:
+    for host in get_ips(modules):
         threads.append(Thread(target=move, args=(host, pose,[0,0,0], 12000, True)))
         threads[-1].start()
         threads.append(Thread(target=move, args=(host, pose,[0,0,0], 13000, True)))
@@ -473,7 +417,7 @@ def move_all_cart(pose = "default_pose"):
     print("finished")
 
 def demo_part_left(master="008",wait=True):
-    robots = copy.deepcopy(hostnames)
+    robots = copy.deepcopy(get_ips(modules))
     for host in robots:
         stop_task(host)
     for host in robots:
@@ -575,7 +519,7 @@ def demo_part_left(master="008",wait=True):
         stop_task(master)
 
 def demo_part_right(master = "008", wait = True):
-    robots = copy.deepcopy(hostnames)
+    robots = copy.deepcopy(get_ips(modules))
     for host in robots:
         stop_task(host,port=13000)
     for host in robots:
@@ -685,7 +629,7 @@ def teleop_dualarm(master = "008"):
     demo_part_right(master,wait=False)
     input("Press Key to stop")
     threads = []
-    for ip in hostnames:
+    for ip in get_ips(modules):
         if master in ip:
             continue
         threads.append(Thread(target=stop_task, args=(ip,),kwargs={"port":13000}))
@@ -747,7 +691,7 @@ def restart_collective():
     client.reboot_robots()
 
 def get_status():
-    for number,host in zip(modules,hostnames):
+    for number,host in zip(modules,get_ips(modules)):
         #print("\ncollective-%03d"%(number+1))
         print("collective-",number)
         result = call_method(host,12000,"get_state")
@@ -939,7 +883,7 @@ def gear_insertion():
 
 def move_left(pose):
     threads = []
-    for r in hostnames:
+    for r in get_ips(modules):
         threads.append(Thread(target=move_joint, args=(r, pose, 12000, True)))
         threads[-1].start()
 
@@ -948,7 +892,7 @@ def move_left(pose):
         
 def move_right(pose):
     threads = []
-    for r in hostnames:
+    for r in get_ips(modules):
         threads.append(Thread(target=move_joint, args=(r, pose, 13000, True)))
         threads[-1].start()
 
@@ -1041,6 +985,14 @@ def home_grippers(modules:list):
     for robot in ips:
         call_method(robot,12000,"home_gripper",silent=True)
         call_method(robot,13000,"home_gripper", silent=True)
+
+def grasp_all():
+    threads = []
+    for m in modules:
+        threads.append(Thread(target=grasp, args=(m,None)))
+        threads[-1].start()
+    for t in threads:
+        t.join()
 
 def grasp(module, side=None):
     ip = get_ips([module])[0]
