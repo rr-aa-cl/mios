@@ -1,5 +1,4 @@
 from run_experiments import *
-import deepcopy
 
 # ---------------------------- exp robots ------------------------------------
 list_robots = list_block_1 + list_block_2 + list_U
@@ -118,7 +117,7 @@ def ten_agent_collective():
 
 
 def var_agent_collective(n_agents: int, n_current_iter:int, tags:list, reverse=False):
-    modules = deepcopy.deepcopy(list_robots)
+    modules = copy.deepcopy(list_robots)
     # sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
     sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()    
    
