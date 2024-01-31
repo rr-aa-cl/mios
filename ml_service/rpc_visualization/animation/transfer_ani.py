@@ -55,7 +55,7 @@ def sns_heatmap(i , m):
 # Create a figure and axis
 fig, ax = plt.subplots(figsize=(16, 12))
 # data = np.load("transfer_array.npy")
-name = "iso_131023/transfermap"
+name = "../tensorboard/transfermap_alpha_5"
 data = np.load(name+".npy")
 print(data[-1], "length: ", len(data))
 

@@ -118,8 +118,8 @@ class Server():
             print("number of sumbmitted agents: ", len(self.current_data.keys()))
             self.storage.append(deepcopy(current_heatmap))
             self.transfermap_storage.append(deepcopy(current_transfermap))
-            np.save("heatmap_alpha_4.npy", self.storage)
-            np.save("transfermap_alpha_4.npy",self.transfermap_storage)
+            np.save("heatmap_alpha_5_reverse.npy", self.storage)
+            np.save("transfermap_alpha_5_reverse.npy",self.transfermap_storage)
             time.sleep(period/1000)
         print("storing data done")
 
