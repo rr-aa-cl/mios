@@ -2330,9 +2330,22 @@ def plot_pitstop_alpha():
     print("total learning time comparison")
     fig2, axes2 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=2)
     y = []
-    for time in [mean_collective_5,mean_collective_6,mean_collective_7,mean_collective_8,mean_collective_9,mean_collective_10]:
+    var = []
+    for time,confidence in zip([mean_collective_5,mean_collective_6,mean_collective_7,mean_collective_8,mean_collective_9,mean_collective_10], [
+        (lower_bound_confindece_collective_5[-1], upper_bound_confindece_collective_5[-1]),
+        (lower_bound_confindece_collective_6[-1], upper_bound_confindece_collective_6[-1]),
+        (lower_bound_confindece_collective_7[-1], upper_bound_confindece_collective_7[-1]),
+        (lower_bound_confindece_collective_8[-1], upper_bound_confindece_collective_8[-1]),
+        (lower_bound_confindece_collective_9[-1], upper_bound_confindece_collective_9[-1]),
+        (lower_bound_confindece_collective_10[-1], upper_bound_confindece_collective_10[-1]),
+        
+    ]):
         y.append(time[-1])
+        var.append(confidence)
+    print(var)
     axes2.plot(range(5,11),y,label="agent dependent total learning time (25 tasks)")
+    axes2.fill_between(range(5,11), [v[0] for v in var], [v[1] for v in var], alpha=0.2)
+    axes2.set_ylim(0,200)
     axes2.set_ylabel("learning time [min]")
     axes2.set_xlabel("number of agents")
     axes2.set_title("collective with 25 tasks")
