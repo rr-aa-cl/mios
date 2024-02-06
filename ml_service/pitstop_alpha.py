@@ -202,3 +202,7 @@ def alpha_experiment():
         for n in range(6,10):
             var_agent_collective(n,i, [str(n)+"agents_25tasks","collective","ps_alpha_var"])
 
+def alpha_experiment_second():
+    for i in range(10):  # iteration
+        for n in range(1,5):
+            var_agent_collective(n,i, [str(n)+"agents_25tasks","collective","ps_alpha_var"])
