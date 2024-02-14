@@ -19,12 +19,14 @@ from copy import deepcopy
 # writer = SummaryWriter(log_dir= "x11x/collective_" + datetime.datetime.now().strftime("%d%b-%H:%M") , flush_secs=1) 
 list_block_1 = ["001", #"002", 
                 "003", "004", "005", 
-                "006", "007", "008", "010", 
+                "006", "007", " ", "010", 
                 "011", "012"]
 list_block_2 = ["009","013","014","015","016","017",
-                "018",#"020",
+                # "018",#"020",
+                "041",
                 "021","022"]
 list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
+list_external = ["050"]
 modules = list_block_1+list_block_2+list_U
 print(modules)
 
@@ -116,8 +118,8 @@ class Server():
             print("number of sumbmitted agents: ", len(self.current_data.keys()))
             self.storage.append(deepcopy(current_heatmap))
             self.transfermap_storage.append(deepcopy(current_transfermap))
-            np.save("heatmap.npy", self.storage)
-            np.save("transfermap.npy",self.transfermap_storage)
+            np.save("heatmap_alpha_4.npy", self.storage)
+            np.save("transfermap_alpha_4.npy",self.transfermap_storage)
             time.sleep(period/1000)
         print("storing data done")
 

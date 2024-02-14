@@ -9,7 +9,7 @@ class Knowledge():
                 prediction=False, prediction_error=None, identity=[1], skill_class=None, skill_instance=None, source=[], expected_cost=None, time=time.ctime(),
                 tags=[], equal_start=False, equal_tags=[], cost_function=[],identification_name=""):
         self.mode = mode  # either None, "specific", "local", "global"     (if "None", but parameters is not empty, the parameters will be used as centroid)
-        self.type = type  # also possible: "predicted" (use prediction), "all" (gives list of knowledges),
+        self.type = type  # also possible: "predicted" (use prediction), "all" (gives list of knowledges, no predicted ones),
         self.scope = scope  # scope (tags of results to make this knowledge)
         self.kb_location = kb_location  # location of the knowledge base
         self.kb_db = kb_db  # needed if type is specific

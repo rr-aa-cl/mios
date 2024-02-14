@@ -45,9 +45,9 @@ def sns_heatmap(i , m):
 
 # Create a figure and axis
 fig, ax = plt.subplots(figsize=(8, 6))
-name = "collective_251023/heatmap_collective"
+name = "../tensorboard/heatmap_alpha_5"
 data = np.load(name+".npy").astype(int)
-data = data[::50]
+# data = data[::50]
 print(data[-1],"\n Size: ",len(data))
 # num_frames =  np.size(data[:80000], axis = 0)  # Number of frames in the video
 num_frames =  np.size(data, axis = 0)  # Number of frames in the video

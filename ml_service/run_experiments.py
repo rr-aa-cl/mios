@@ -28,9 +28,14 @@ list_block_1 = ["001", #"002",
                 "011", "012"]
 list_block_2 = ["009","013","014","015","016","017",
                 # "018",#"020",
+                "041",
                 "021","022"]
 list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
 list_external = ["050"]
+
+# list_all = list_block_1 + list_block_2 + list_U
+# for i in zip(list(range(1,26)), list_all):
+#     print(i)
 
 def get_ips(module_list):
     with open("../python/ip.json", "r") as jsonfile:
@@ -523,6 +528,7 @@ def five_agent_collective(if_reverse = False):
     else:
         tags = ["5agents_25tasks","collective"]
         
+        
     # for n_current_iter in range(29,30): #range(15,25):   (not reserve)
     for n_current_iter in [0]: # reverse one
         tasks = {}
@@ -533,11 +539,11 @@ def five_agent_collective(if_reverse = False):
         print("Number of iteration: ", n_current_iter+1)
         knowledge_source = Knowledge()
         knowledge_source.kb_location = "collective-001.rsi.ei.tum.de" # None #  
-        knowledge_source.mode = "global"  # None  # 
+        knowledge_source.mode = "global"  # None:isolated parallel (no knowledge from theirself)  # "local": has transfer inside agent
         knowledge_source.scope = []
         knowledge_source.scope.extend(tags)
-        knowledge_source.scope.append("n"+str(n_current_iter+1))
-        knowledge_source.type = "all"
+        knowledge_source.scope.append("n"+str(n_current_iter+1)) # searching for knowledge on the database (only works for the slow pipeline);  e.g. [] search all, 
+        knowledge_source.type = "all"  # all: 
             
         dualarm_skills = []
         move_context = {
@@ -1158,18 +1164,18 @@ def dualarm_demo_thread(robot, obj, tags, sc, knowledge:dict):
     except TypeError:
         print("TypeError for ",obj," on ",robot)
 
-def dualarm_demo2():   # dualarm_modules = list_block_1, list_U, list_external
+def dualarm_demo2(dualarm_modules = list_block_1+list_block_2+ list_U):   # 
     robots_dualarm = []
-    robots_dualarm.extend(get_ips(list_block_1))
-    robots_dualarm.extend(get_ips(list_block_2))
-    robots_dualarm.extend(get_ips(list_U))
+    #robots_dualarm.extend(get_ips(list_block_1))
+    #robots_dualarm.extend(get_ips(list_block_2))
+    #robots_dualarm.extend(get_ips(list_U))
     #robots_dualarm.extend(get_ips(list_external))
-    # robots_dualarm.extend(get_ips(dualarm_modules))
+    robots_dualarm.extend(get_ips(dualarm_modules))
     modules = []
-    # modules.extend(dualarm_modules)
-    modules.extend(list_block_1)
-    modules.extend(list_block_2)
-    modules.extend(list_U)
+    modules.extend(dualarm_modules)
+    #modules.extend(list_block_1)
+    #modules.extend(list_block_2)
+    #modules.extend(list_U)
     # modules.extend(list_external)
 
     threads = []
