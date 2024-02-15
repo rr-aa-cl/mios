@@ -1219,6 +1219,28 @@ def stop_dualarm():
     for t in threads:
         t.join()
 
+
+def stop_list(names):
+    def stop(r,m):
+        try:
+            print("stopping ",m,"  (",r,")")
+            s=ServerProxy("http://" + r + ":8000", allow_none=True)
+            s.stop_service()
+            call_method(r,13000,"stop_task")
+        except OSError:
+            pass
+        except ConnectionRefusedError:
+            pass
+    threads = []
+    ips = get_ips(names)
+    for r,m in zip(ips,names):
+        threads.append(Thread(target=stop, args=(r,m)))
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+
 def transfer_video_grab_insertable(robot: str, insertable: str, container: str, approach: str, above: str):
     # call_method(robot, 12000, "release_object")
     path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
