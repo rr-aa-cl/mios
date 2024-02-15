@@ -52,21 +52,17 @@ def sns_heatmap(i , m):
 
 fig, ax = plt.subplots(figsize=(16, 12))
 # data = np.load("transfer_array.npy")
-# name = "collective_251023/transfermap"
-name = "../tensorboard/transfermap_alpha_5"
+name = "collective_131023/transfermap"
 data = np.load(name+".npy")
-# down_data = data[::50]
-down_data = data
 print(data[-1], "length: ", len(data))
 
 # data = data[-5:]
 
-num_frames =  np.size(down_data, axis = 0)  # Number of frames in the video
-# num_frames = 100
-ani = FuncAnimation(fig, sns_heatmap, frames=num_frames, fargs=(down_data,), repeat=False, interval=1)
+num_frames =  np.size(data, axis = 0)  # Number of frames in the video
+ani = FuncAnimation(fig, sns_heatmap, frames=num_frames, fargs=(data,), repeat=False, interval=100)
 
 # Save the animation as a video (replace 'animation.mp4' with your desired filename)
 Writer = animation.writers['ffmpeg']
-writer = Writer(fps=0.2, bitrate=1800)
+writer = Writer(fps=10, bitrate=1800)
 ani.save(name+'.mp4', writer=writer,  progress_callback = lambda i, n: print(f'Progress {i/n}'))
 print("Video save at ",name)
