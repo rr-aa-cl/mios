@@ -4,7 +4,7 @@ import time
 
 def var_sr_collective(sr:float, n_agents: int, n_current_iter:int, tags:list, reverse=False):
     """
-    sr: sample rate [0, 0.2, 0.4, 0.6, 0.8, 1]; 0.4 is already finished in pitstop-[alpha]
+    sr: request rate [0, 0.2, 0.4, 0.6, 0.8, 1]; 0.4 is already finished in pitstop-[alpha]
     """
     modules = copy.deepcopy(list_robots)
     # sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
@@ -92,7 +92,7 @@ def bravo_experiment():
         for sr in [0, 0.2, 0.6, 0.8, 1]:
             print('bravo round'+ str(i) + " sr="+ str(sr))
             get_states(list_block_1+list_block_2+list_U)
-            var_sr_collective( sr,num, i , ["sr"+str(num),"collective","ps_bravo_1"])
+            var_sr_collective( sr,num, i , [str(num)+"_agents","collective","ps_bravo_2","ReqR"+str(sr)])
             time.sleep(10)
     # old issue tag: ps_alpha_beta; ps_alpha_beta_1
     
