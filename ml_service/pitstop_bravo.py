@@ -1,43 +1,10 @@
 from run_experiments import *
-
-# ---------------------------- exp robots ------------------------------------
-list_robots = list_block_1 + list_block_2 + list_U
-print(len(list_robots))
-
-# ---------------------------- cutoff cost ------------------------------------
-cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
-            '003_left': 0.68016,
-            '004_left': 0.74976,
-            '005_left': 0.65, #
-            '006_left': 0.6127199999999999,
-            '007_left': 0.62616,
-            '008_left': 0.6371999999999999,
-            '010_left': 0.6888000000000001,
-            '011_left': 0.63816,
-            '012_left': 0.75528,
-            '009_left': 0.6943199999999999,
-            '013_left': 0.6348,
-            '014_left': 0.6,
-            '015_left': 0.68184,
-            '016_left': 0.9,   #
-            '017_left': 0.63864,
-            '041_left': 0.63144,
-            '021_left': 0.63528,
-            '022_left': 0.6828000000000001,
-            '023_left': 0.6648000000000001,
-            '024_left': 0.9187199999999999,
-            '025_left': 0.64752,
-            '027_left': 0.68448,
-            '028_left': 0.61824,
-            '029_left': 0.68088}
-# -----------------------------------------------------------------------------
-
-
+import time
 
 
 def var_sr_collective(sr:float, n_agents: int, n_current_iter:int, tags:list, reverse=False):
     """
-    sr: sample rate [0, 0.2, 0.4, 0.6, 0.8, 1]; 0.4 is already finished in pitstop-alpha
+    sr: sample rate [0, 0.2, 0.4, 0.6, 0.8, 1]; 0.4 is already finished in pitstop-[alpha]
     """
     modules = copy.deepcopy(list_robots)
     # sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
@@ -46,7 +13,6 @@ def var_sr_collective(sr:float, n_agents: int, n_current_iter:int, tags:list, re
     if reverse:
         modules.reverse()
     # tags = ["test run"]
-        
         
 # for n_current_iter in range(29,30): #range(15,25):   (not reserve)
     tasks = {}
@@ -116,10 +82,51 @@ def var_sr_collective(sr:float, n_agents: int, n_current_iter:int, tags:list, re
     kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
     kb.clear_memory()
     print("run ", n_current_iter, " finished :)")
+    print("with request rate" + str(sr))
+
     return "finished :)"
 
 def bravo_experiment():
     num = 5 # this number is the optimal number from 
     for i in range(10):  # iteration
         for sr in [0, 0.2, 0.6, 0.8, 1]:
-            var_sr_collective( sr,num,i, ["sr"+str(num),"collective","ps_alpha_beta"])
+            print('bravo round'+ str(i) + " sr="+ str(sr))
+            get_states(list_block_1+list_block_2+list_U)
+            var_sr_collective( sr,num, i , ["sr"+str(num),"collective","ps_bravo_1"])
+            time.sleep(10)
+    # old issue tag: ps_alpha_beta; ps_alpha_beta_1
+    
+
+if __name__ == '__main__':
+    # ---------------------------- exp robots ------------------------------------
+    list_robots = list_block_1 + list_block_2 + list_U
+    print(len(list_robots))
+
+    # ---------------------------- cutoff cost ------------------------------------
+    cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
+                '003_left': 0.68016,
+                '004_left': 0.74976,
+                '005_left': 0.65, #
+                '006_left': 0.6127199999999999,
+                '007_left': 0.62616,
+                '008_left': 0.6371999999999999,
+                '010_left': 0.6888000000000001,
+                '011_left': 0.63816,
+                '012_left': 0.75528,
+                '009_left': 0.6943199999999999,
+                '013_left': 0.6348,
+                '014_left': 0.6,
+                '015_left': 0.68184,
+                '016_left': 0.9,   #
+                '017_left': 0.63864,
+                '041_left': 0.63144,
+                '021_left': 0.63528,
+                '022_left': 0.6828000000000001,
+                '023_left': 0.6648000000000001,
+                '024_left': 0.9187199999999999,
+                '025_left': 0.64752,
+                '027_left': 0.68448,
+                '028_left': 0.61824,
+                '029_left': 0.68088}
+    # -----------------------------------------------------------------------------
+    bravo_experiment()
