@@ -30,6 +30,41 @@ list_block_2 = ["009","013","014","015","016","017",
                 "021","022"]
 list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
 list_external = ["050"]
+cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
+            '003_left': 0.68016,
+            '004_left': 0.74976,
+            '005_left': 0.65, #
+            '006_left': 0.6127199999999999,
+            '007_left': 0.62616,
+            '008_left': 0.6371999999999999,
+            '010_left': 0.6888000000000001,
+            '011_left': 0.63816,
+            '012_left': 0.75528,
+            '009_left': 0.6943199999999999,
+            '013_left': 0.6348,
+            '014_left': 0.6,
+            '015_left': 0.68184,
+            '016_left': 0.9,   #
+            '017_left': 0.63864,
+            '041_left': 0.63144,  # '018_left': 0.63144,
+            '021_left': 0.63528,
+            '022_left': 0.6828000000000001,
+            '023_left': 0.6648000000000001,
+            '024_left': 0.9187199999999999,
+            '025_left': 0.64752,
+            '027_left': 0.68448,
+            '028_left': 0.61824,
+            '029_left': 0.68088}
+
+def check_cutoff():
+    tags = ["test", "CMAEStest"]
+    for m in list_block_1+list_block_2+list_U:
+        results = get_multiple_experiment_data("collective-"+m+".rsi.ei.tum.de", "insertion", "ml_results", filter={"meta.tags": {"$all": tags}})
+        for r in results:
+            print(r.tags)
+            undercuts = sum([1 for i in r.costs if i < cutoff[m+"_left"]])
+            print(m, "performed better than", cutoff[m+"_left"], " for ", undercuts, "times")
+
 
 def plot_single_experiment(host: str, task_type: str, database: str, tags: list = None, uuid: str = None):
     p = DataProcessor()

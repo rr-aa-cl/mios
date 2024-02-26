@@ -167,7 +167,7 @@ class Engine:
         if self.exploration_mode is True:
             return False
         else:
-            return self.cnt_optimal > self.problem_definition.cost_function.finish_thr
+            return self.cnt_optimal > self.problem_definition.cost_function.finish_thr  # finsih threshold states how often a optimal_thr was undercut to finish
 
     def main_loop(self):
         logger.debug("Engine.main_loop()")
