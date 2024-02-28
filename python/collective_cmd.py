@@ -994,7 +994,13 @@ def grasp_all():
     for t in threads:
         t.join()
 
-def grasp(module, side=None):
+def grasp(module, wait=False, side=None):
+    t = Thread(target=grasp_thread, args=(module, side))
+    t.start()
+    if wait:
+        t.join()
+
+def grasp_thread(module, side=None):
     ip = get_ips([module])[0]
     if module == "026":
         call_method(ip, 12000, "move_gripper",{"width":0.01,"speed":1,"force":1})

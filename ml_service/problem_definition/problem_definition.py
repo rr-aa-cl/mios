@@ -18,7 +18,7 @@ class CostFunction:
         self.max_cost = dict.fromkeys(cost_types, 1)
         self.heuristic_skills = []
         self.heuristic_expressions = "var"
-        self.finish_thr = 0
+        self.finish_thr = 0  # finsih threshold states how often optimal_thr needs to be undercut to finish
         self.normal_cost = 1
 
     def to_dict(self):
@@ -50,7 +50,7 @@ class ProblemDefinition:
     def __init__(self, skill_class: str, skill_instance: str, domain: Domain, default_context: dict,
                  setup_instructions: list, termination_instruction: list, reset_instruction: list,
                  cost_function: CostFunction, identity: list, identity_weights: list = None, tags=None,
-                 object_modifier: dict = {}, n_variations = 1):
+                 object_modifier: dict = {}, n_variations = 1, optimum_threshold:float = 0):
         if tags is None:
             tags = []
         self.domain = domain
@@ -64,7 +64,7 @@ class ProblemDefinition:
         self.skill_instance = skill_instance
         self.cost_function = cost_function
         self.tags = tags
-        self.optimum_thr = 0
+        self.optimum_thr = optimum_threshold
         self.n_variations = n_variations
         if identity is None:
             self.identity = [0]
@@ -108,7 +108,8 @@ class ProblemDefinition:
             "identity": self.identity,
             "identity_weights": self.identity_weights,
             "object_modifier": self.object_modifier,
-            "n_variations": self.n_variations
+            "n_variations": self.n_variations,
+            "optimum_threshold": self.optimum_thr
         }
         return problem_definition
 
@@ -119,7 +120,7 @@ class ProblemDefinition:
                                pd_dict["termination_instructions"], pd_dict["reset_instructions"],
                                CostFunction.from_dict(pd_dict["cost_function"]), pd_dict["identity"],
                                pd_dict["identity_weights"], pd_dict["tags"], object_modifier=pd_dict["object_modifier"],
-                               n_variations=pd_dict["n_variations"])
+                               n_variations=pd_dict["n_variations"],optimum_threshold=pd_dict["optimum_threshold"])
         pd.domain = Domain.from_dict(pd_dict["domain"])
         pd.cost_function = CostFunction.from_dict(pd_dict["cost_function"])
         return pd
