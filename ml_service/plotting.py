@@ -2139,6 +2139,8 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
             results_dict[iteration]["times_of_taskFinish"].append(learning_time)
             results_dict[iteration]["instances"].append(result.instance)
       #      sorted(results_dict[iteration]["accumulated_costs_times"])
+        if xxx == "007":
+            print(results_dict["n1"])
     max_instances = 0
     all_instaces = []
     #print(results_dict.keys())
@@ -3672,3 +3674,97 @@ def plot_simple_learning():
                 axes2[r].legend(legend_handles2, experiments, loc='upper right')#, experiments)
 
     plt.show()
+
+
+def plot_pitstop_bravo():
+    new_cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
+                    '003_left': 0.68016,
+                    '004_left': 0.74976,
+                    '005_left': 0.65, #
+                    '006_left': 0.6127199999999999,
+                    '007_left': 0.62616,
+                    '008_left': 0.6371999999999999,
+                    '010_left': 0.6888000000000001,
+                    '011_left': 0.63816,
+                    '012_left': 0.75528,
+                    '009_left': 0.6943199999999999,
+                    '013_left': 0.6348,
+                    '014_left': 0.6,
+                    '015_left': 0.68184,
+                    '016_left': 0.9,   #
+                    '017_left': 0.63864,
+                    '041_left': 0.63144,  # '018_left': 0.63144,
+                    '021_left': 0.63528,
+                    '022_left': 0.6828000000000001,
+                    '023_left': 0.6648000000000001,
+                    '024_left': 0.9187199999999999,
+                    '025_left': 0.64752,
+                    '027_left': 0.68448,
+                    '028_left': 0.61824,
+                    '029_left': 0.68088}
+    colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
+    # fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
+    
+    print("\ngetting data - collective with 5 agents")
+    mean = []
+    upper_boundary = []
+    lower_boundary = []
+    tags = [["ps_bravo_5","ReqR"+str(sr)] for sr in [0, 0.2, 0.6, 0.8, 1]]
+    print("-------------------------------------------------")
+    tags.insert(2, ["5agents_25tasks","collective"])
+    print(tags)
+    print("-------------------------------------------------")
+    
+    for tag in tags:
+        try:
+            if tag == ["5agents_25tasks","collective"]:
+                temp_a, temp_b = get_big_collective_data(tag)
+            else:
+                temp_a, temp_b = get_big_collective_data(tag ,cutoff=new_cutoff)
+                               
+            mean.append(temp_a[-1]/60)
+            lower_boundary.append(temp_b[-1][0]/60)
+            upper_boundary.append(temp_b[-1][1]/60)
+        except:
+            print("888888888888888888")
+            print(tag)
+    
+    range = [0, 0.2, 0.4, 0.6, 0.8, 1]
+    plt.plot(range, mean)
+    plt.fill_between(range, lower_boundary, upper_boundary, alpha=0.2)
+    plt.xlabel("request rate")
+    plt.ylabel("learning time [min]")
+    plt.title("5 agents 25 tasks with distinct request rate")
+    plt.grid(True)
+    plt.savefig("Pitstop Bravo.png")
+    
+    # save to csv
+    
+
+   
+
+    # print("total learning time comparison")
+    # fig2, axes2 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=2)
+    # y = []
+    # var = []
+    # for time,confidence in zip([mean_collective_5,mean_collective_6,mean_collective_7,mean_collective_8,mean_collective_9,mean_collective_10], [
+    #     (lower_bound_confindece_collective_5[-1], upper_bound_confindece_collective_5[-1]),
+    #     (lower_bound_confindece_collective_6[-1], upper_bound_confindece_collective_6[-1]),
+    #     (lower_bound_confindece_collective_7[-1], upper_bound_confindece_collective_7[-1]),
+    #     (lower_bound_confindece_collective_8[-1], upper_bound_confindece_collective_8[-1]),
+    #     (lower_bound_confindece_collective_9[-1], upper_bound_confindece_collective_9[-1]),
+    #     (lower_bound_confindece_collective_10[-1], upper_bound_confindece_collective_10[-1]),
+        
+    # ]):
+    #     y.append(time[-1])
+    #     var.append(confidence)
+    # print(var)
+    # axes2.plot(range(5,11),y,label="agent dependent total learning time (25 tasks)")
+    # axes2.fill_between(range(5,11), [v[0] for v in var], [v[1] for v in var], alpha=0.2)
+    # axes2.set_ylim(0,200)
+    # axes2.set_ylabel("learning time [min]")
+    # axes2.set_xlabel("number of agents")
+    # axes2.set_title("collective with 25 tasks")
+    # axes2.grid()
+    # axes2.legend(loc="upper right", fontsize=14)
+    # plt.show(block=False)

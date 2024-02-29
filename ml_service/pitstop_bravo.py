@@ -88,11 +88,18 @@ def var_sr_collective(sr:float, n_agents: int, n_current_iter:int, tags:list, re
 
 def bravo_experiment():
     num = 5 # this number is the optimal number from 
-    for i in range(10):  # iteration
+    
+    j = 0
+    srj = 1
+    print('bravo round'+ str(j) + " sr="+ str(srj))
+    get_states(list_block_1+list_block_2+list_U)
+    var_sr_collective( srj,num, j , [str(num)+"_agents","collective","ps_bravo_5","ReqR"+str(srj)])
+    
+    for i in [1,2,3,4]:  # iteration
         for sr in [0, 0.2, 0.6, 0.8, 1]:
             print('bravo round'+ str(i) + " sr="+ str(sr))
             get_states(list_block_1+list_block_2+list_U)
-            var_sr_collective( sr,num, i , [str(num)+"_agents","collective","ps_bravo_2","ReqR"+str(sr)])
+            var_sr_collective( sr,num, i , [str(num)+"_agents","collective","ps_bravo_5","ReqR"+str(sr)])
             time.sleep(10)
     # old issue tag: ps_alpha_beta; ps_alpha_beta_1
     
