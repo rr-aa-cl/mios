@@ -1485,7 +1485,7 @@ def cmaes_run(if_reverse = False):
 
 
 def psp_run(if_reverse = False):
-    modules = list_block_1 #+ list_block_2 + list_U
+    modules =  list_block_2 + list_U #list_block_1 +
     cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
                 '003_left': 0.68016,
                 '004_left': 0.74976,
