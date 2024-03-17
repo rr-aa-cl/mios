@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib
 import os
 import pickle
 import numpy as np
@@ -30,13 +31,13 @@ def psp():
     mean_list = []
     std_list = []
     for xx in robots:
-        if os.path.isfile("new_data/psp_data/" + xx + ".pickle"):
-            with open("new_data/psp_data/" + xx + ".pickle", "rb") as file:
+        if os.path.isfile("data17/psp_data/" + xx + ".pickle"):
+            with open("data17/psp_data/" + xx + ".pickle", "rb") as file:
                 data = pickle.load(file)
                 mean_list.append(data[0])
                 std_list.append(data[1])            
         else:
-            print("File missing: new_data/psp_data/" + xx + ".pickle")
+            print("File missing: data17/psp_data/" + xx + ".pickle")
             mean_list.append(np.array([1]*50))
             std_list.append(np.array([0]*50))
     
@@ -48,9 +49,12 @@ def cmaes():
     mean_list = []
     std_list = []
     
+    labels = ["IEC (C7)", "Triangle (S)", "Hexagon (S)", "USB (loose)", "Triangle (M)", "Cylinder (S)", "Key (type 1)", "Plug (type F & loose)", "Audio Jack (3.5mm)", "IEC (C13)", "Cylinder (M)", "Hexagon (M)", "HDMI (tight)", "Key (type 2)", "Cylinder (L)", "Square (S)", "Hexagon (L)", "Square (M)", "Audio jack (6.35mm)", "USB (tight)", "Plug (type C)", "Key (type 3)", "Plug(type F & tight)", "HDMI (tight)", "Key (type 4)"]
+
+    
     for xx in robots:
-        if os.path.isfile("new_data/cmaes_data/" + xx + ".pickle"):
-            with open("new_data/cmaes_data/" + xx + ".pickle", "rb") as file:
+        if os.path.isfile("data17/cmaes_data/" + xx + ".pickle"):
+            with open("data17/cmaes_data/" + xx + ".pickle", "rb") as file:
                 data = pickle.load(file)
                 mean_list.append(data[0])
                 std_list.append(data[1])
@@ -58,10 +62,11 @@ def cmaes():
             # file
             
         else:
-            print("File missing: new_data/cmaes_data/" + xx + ".pickle")
+            print("File missing: data17/cmaes_data/" + xx + ".pickle")
             mean_list.append(np.array([1]*50))
             std_list.append(np.array([0]*50))
-
+            
+    matplotlib.rc('font', family='DejaVu Serif')
     fig, axs = plt.subplots(5, 5, figsize=(15, 7), constrained_layout=True)
 
     # Loop through all subfigures to add content
@@ -90,6 +95,7 @@ def cmaes():
                 axs[i, j].set_yticklabels([])
                 # axs[i, j].set_yticks([])
             axs[i, j].grid()
+            axs[i, j].set_title(labels[id],fontsize=9)
                 
                 
     # plt.subplots_adjust(left=0.2, right=0.9, top=1, bottom=0.1)

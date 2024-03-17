@@ -18,6 +18,7 @@ import csv
 import scipy.stats as st
 from matplotlib import colors
 import seaborn as sns
+import pickle
 
 plot = Plotter()
 
@@ -3560,3 +3561,133 @@ def plot_pitstop_bravo():
     # axes2.grid()
     # axes2.legend(loc="upper right", fontsize=14)
     # plt.show(block=False)
+
+
+def cost_process(c:list):
+    s = 100
+    r = []
+    for i in c:
+        s = min(i, s)
+        r.append(s)
+    
+    return r
+
+def cost_list2curve(cost_list):
+    length = max([len(l) for l in cost_list])
+    # print(length)
+    r = []
+    for l in cost_list:
+        r.append(l + (length - len(l)) * [l[-1]])
+        # print(len(l))
+    
+    m = np.array(r)
+    mean = np.mean(m,0)
+    std = np.std(m,0)
+    
+    
+    # plt.plot(list(range(1, length+1)), mean)
+    # plt.plot(list(range(1, length+1)), mean-std)
+    # plt.plot(list(range(1, length+1)), mean+std)
+    # plt.savefig("xxx.png")
+    return [mean, std]
+        
+cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
+            '003_left': 0.68016,
+            '004_left': 0.74976,
+            '005_left': 0.65, #
+            '006_left': 0.6127199999999999,
+            '007_left': 0.62616,
+            '008_left': 0.6371999999999999,
+            '010_left': 0.6888000000000001,
+            '011_left': 0.63816,
+            '012_left': 0.75528,
+            '009_left': 0.6943199999999999,
+            '013_left': 0.6348,
+            '014_left': 0.6,
+            '015_left': 0.68184,
+            '016_left': 0.9,   #
+            '017_left': 0.63864,
+            '041_left': 0.63144,  # '018_left': 0.63144,
+            '021_left': 0.63528,
+            '022_left': 0.6828000000000001,
+            '023_left': 0.6648000000000001,
+            '024_left': 0.9187199999999999,
+            '025_left': 0.64752,
+            '027_left': 0.68448,
+            '028_left': 0.61824,
+            '029_left': 0.68088}
+
+new_cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
+                    '003_left': 0.68016,
+                    '004_left': 0.74976,
+                    '005_left': 0.65, #
+                    '006_left': 0.6127199999999999,
+                    '007_left': 0.62616,
+                    '008_left': 0.6371999999999999,
+                    '010_left': 0.6888000000000001,
+                    '011_left': 0.63816,
+                    '012_left': 0.75528,
+                    '009_left': 0.6943199999999999,
+                    '013_left': 0.6348,
+                    '014_left': 0.6,
+                    '015_left': 0.68184,
+                    '016_left': 0.9,   #
+                    '017_left': 0.63864,
+                    '041_left': 0.63144,  # '018_left': 0.63144,
+                    '021_left': 0.63528,
+                    '022_left': 0.6828000000000001,
+                    '023_left': 0.6648000000000001,
+                    '024_left': 0.9187199999999999,
+                    '025_left': 0.64752,
+                    '027_left': 0.68448,
+                    '028_left': 0.61824,
+                    '029_left': 0.68088}
+  
+    
+def fetch_data(cutoff= new_cutoff, mode = 0):
+    # 1: for psp, with 
+    robots = list_block_1 + list_block_2 + list_U
+    print(robots)
+    # tags = ["5agents_25tasks_local","isolated_local_noFastPipeline"]
+    tags = "CMAES"
+    dir = "data17/cmaes_data/"
+    if mode == 1:
+        tags = ["5agents_25tasks_local","isolated_local_noFastPipeline"]
+        dir = "data17/psp_data/"
+    ret = []
+    
+    
+    # for xxx in robots:
+    for xxx in robots:
+        # if xxx == "041" and mode == 1:
+        #     continue
+        
+        
+        results = get_multiple_experiment_data("collective-"+xxx+".rsi.ei.tum.de", "insertion", "ml_results", {"meta.tags": tags})
+        cost_list = []
+        for result in results:
+            # print("length", len(result.costs))                
+            if len(result.costs) < 10:
+                continue
+        
+            if min(result.costs) <= cutoff[xxx+"_left"]:
+                cost_list.append(cost_process(result.costs))
+        
+        
+        if len(cost_list)>0:
+            ret.append( cost_list2curve(cost_list) ) 
+            # print("-------------", xxx)
+
+            with open(dir + xxx + '.pickle', 'wb') as file:
+                pickle.dump(cost_list2curve(cost_list), file) 
+        
+        else:
+            print(xxx + "cutoff issue")
+            try:
+                print("min_cost", min([ min(i.costs) for i in results]))
+            except:
+                print("costs missing in results")
+                
+            print("cut_off", cutoff[xxx+"_left"])
+
+    return ret
