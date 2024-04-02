@@ -20,7 +20,7 @@ class Knowledge():
         self.prediction = prediction  # bool, wether this knowledge was predicted or not
         self.prediction_error = prediction_error
         self.identity = identity  # task identity
-        self.skill_class = skill_class
+        self.skill_class = skill_class  # eg. "insertion"
         self.skill_instance = skill_instance  #  skill_instance from problem_definition
         self.source = source  # uuid(s) of the source ml_results
         self.expected_cost = expected_cost

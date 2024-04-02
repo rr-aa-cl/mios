@@ -1,6 +1,7 @@
 from definitions.templates import *
 from definitions.cost_functions import *
 from definitions.service_configs import *
+from ml_service import mongodb_client
 from utils.database import delete_global_knowledge
 from utils.experiment_wizard import *
 from utils.taxonomy_utils import *
@@ -277,7 +278,57 @@ def learn_from_source(robot, insertable):
     input("press enter to stop robot")
     stop_services([robot])
 
+def learn_from_trial(source_ip, source_uuid, source_trial_n: list, target_ip, target_instance):
+    mongodb_client = MongoDBClient(source_ip)
+    source_results = mongodb_client.read("ml_results","insertion",{"meta.uuid":source_uuid})[0]
+    for trial_n in source_trial_n:
+        theta = source_results["n"+str(trial_n)]["theta"]
+        source_tags = source_results["meta"]["tags"]
+        source_tags.append("trial_n"+str(trial_n))
+        knowledge = Knowledge(None, "similar", ["default_context"], None, None, "insertion", theta, 0.04, None, False, None, [1], "insertion", source_results["meta"]["skill_instance"], source_uuid, None, time.ctime(),source_tags)
+        sc = SVMLearner(1,1,0,True,False, -1,True).get_configuration()
+        insertable = target_instance
+        container = insertable + "_container"
+        approach = container + "approach"
+        pd = InsertionFactory([target_ip], TimeMetric("insertion", {"time": 5}),
+                                    {"Insertable": insertable, "Container": container,
+                                    "Approach": approach}).get_problem_definition(insertable)
+        pd.cost_function.finish_thr = 2  # undercut cutoff threshold 3 time to stop learning
 
+        if not get_states([insertable[:3]])[0]:
+            print(target_ip, " is not ready!")
+            break
+            
+        if insertable == "010_left" or insertable == "023_left" or insertable == "027_left" or insertable == "024_left":
+            print("increase limits for ",insertable)
+            pd.domain.limits["p2_f_push_z"] = (0,60)
+        dualarm_skills = []
+        move_context = {
+                    "skill": {
+                        "speed": 0.5,
+                        "acc": 1,
+                        "q_g": [0, 0, 0, 0, 0, 0, 0],
+                        "objects": {
+                            "goal_pose": "hold"}},
+                    "control": {
+                        "control_mode": 3},
+                    "user": {
+                        "env_X": [0.001, 0.001, 0.001, 0.001, 0.001, 0.001],
+                        "F_ext_max": [100, 50]}}
+        dualarm_skills.append(("move", "MoveToPoseJoint", move_context))
+        dualarm_cmd = {"agent":target_ip,"port":13000,"skills":dualarm_skills,"sleep":1}
+        target_tags = ["transfermapping", "from_"+str()]
+        learn_single_task(target_ip, pd, sc, target_tags, 1, False, knowledge.to_dict(), True, 8000, dualarm_cmd)
+
+def transfer_to_all_from_trial(source_ip:str, source_uuid, source_trial_n: list):
+    all_modules = list_block_1+list_block_2+list_U
+    target_ips = get_ips(all_modules)
+    target_instances = [m+"_left" for m in all_modules]
+    threads = []
+    for target_ip,target_instance in zip(target_ips,target_instances):
+        Thread(target=learn_from_trial, args=(source_ip, source_uuid, source_trial_n, target_ip, target_instance))
+    for t in threads:
+        t.join()
 
 def transfer_learning():
     robots = {"collective-016.rsi.ei.tum.de": "cylinder_50",
