@@ -47,6 +47,7 @@
 #include "mios/skills/tax_screw.hpp"
 #include "mios/skills/tax_wrench.hpp"
 #include "mios/skills/tax_screw_out.hpp"
+#include "mios/skills/ll_interface.hpp"
 
 namespace mios {
 
@@ -284,6 +285,9 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case mirmi_utils::str_to_int("TaxScrewOut"):
         execute_skill<TaxScrewOut,SkillParametersTaxScrewOut>(name);
+        break;
+    case mirmi_utils::str_to_int("LLInterface"):
+        execute_skill<LLInterface,SkillParametersLLInterface>(name);
         break;
     default:
         spdlog::error("Skill with type " + type + " not known to GenericTask");
