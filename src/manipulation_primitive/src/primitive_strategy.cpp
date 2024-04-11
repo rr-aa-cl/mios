@@ -12,3 +12,11 @@ std::set<CommandPattern> PrimitiveStrategy::get_command_pattern() const{
 }
 
 }
+
+void DynamicSystemInterpolation(double& y, double& dy, double goal){
+    double a = 0.9;
+    double b = 0.3;
+    double ddy = a*(b*(goal-y)-dy);
+    dy = dy + ddy;
+    y = y + dy;
+}

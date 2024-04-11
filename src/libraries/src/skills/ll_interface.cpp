@@ -181,6 +181,9 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > LLInterface::graph_transi
             }
             if(read_parameters<Params>()->mode==LLInterfaceMode::llTorque){
                 mp->create_strategy<RemoteTorqueStrategy>("LLInterface",1);
+                if (0){
+                    mp->get_strategy<RemoteTorqueStrategy>("LLInterface")->StartDSInterpolation();
+                }
                 if(!mp->get_strategy<RemoteTorqueStrategy>("LLInterface")->connect(m_portal,"remote_torque_in",get_parameters<Params>()->port_src,256,3,10000,200,read_parameters<Params>()->multicast, read_parameters<Params>()->host, read_parameters<Params>()->multicast_ip)){
                     spdlog::error("Could not open incoming udp channel.");
                     throw SkillException();

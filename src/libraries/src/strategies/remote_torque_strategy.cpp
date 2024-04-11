@@ -3,14 +3,23 @@
 #include "mirmi_cpp_utils/math/math.hpp"
 #include <functional>
 #include <math.h>
+#include "spdlog/spdlog.h"
+
 
 namespace mios {
 
 RemoteTorqueStrategy::RemoteTorqueStrategy():PrimitiveStrategy({CommandPatternJointFFTorque}),m_receiver(nullptr),m_portal(nullptr){
     m_tau_in[0]={0,0,0,0,0,0,0};
+    tau_dy.fill(0);
+    tau_y.fill(0);
 }
 
 void RemoteTorqueStrategy::initialize([[maybe_unused]] const Percept &p_0){
+}
+
+void RemoteTorqueStrategy::StartDSInterpolation(){
+    ds_inter = true;
+    spdlog::info("Dynamic system interpolation starts");
 }
 
 void RemoteTorqueStrategy::get_next_command(Actuator &cmd, const Percept &p){
@@ -18,8 +27,17 @@ void RemoteTorqueStrategy::get_next_command(Actuator &cmd, const Percept &p){
     double power_scale;
     double p_thr=1;
     for(unsigned i=0;i<7;i++){
-        cmd.tau_ff(i)=-m_tau_in[0][i];
-        power_in=p.proprioception.dq(i)*m_tau_in[0][i];
+        // interpolation with DS - start
+        if (ds_inter){
+            DynamicSystemInterpolation(tau_y[i], tau_dy[i], m_tau_in[0][i]);
+            cmd.tau_ff(i)=-tau_y[i];
+            power_in=p.proprioception.dq(i)*tau_y[i];
+        }
+        else{
+            cmd.tau_ff(i)=-m_tau_in[0][i];
+            power_in=p.proprioception.dq(i)*m_tau_in[0][i];
+        }
+        // interpolation with DS - end
 //        power_scale=1-0.5*(1-cos(M_PI*(1-power_in/p_thr)));
         if(power_scale>p_thr)power_scale=0;
         if(power_scale<=0)power_scale=1;

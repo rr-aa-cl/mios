@@ -23,6 +23,7 @@ public:
 
     bool connect(Portal* portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us, unsigned max_lost_packets, bool multicast, const std::optional<std::string> &host, const std::optional<std::string> &multicast_group);
     void set_damping(Eigen::Matrix<double,7,1> alpha);
+    void StartDSInterpolation();
 
 private:
     void read_stream(std::vector<double> &data);
@@ -32,6 +33,9 @@ private:
     Portal* m_portal;
     std::string m_stream_name;
     Eigen::Matrix<double,7,1> m_alpha;
+
+    std::array<double,7> tau_y, tau_dy;
+    bool ds_inter = false;
 };
 
 }
