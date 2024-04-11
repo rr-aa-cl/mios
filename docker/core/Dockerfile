@@ -1,7 +1,7 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update && \
-    apt-get install -y python3.8 libpython3.8
+    apt-get install -y python3.10 libpython3.10
 RUN apt-get install -y --no-install-recommends python3-pip
 RUN pip3 install -U setuptools
 RUN pip3 install -U numpy
