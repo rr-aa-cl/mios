@@ -3,6 +3,8 @@
 #include "mirmi_cpp_utils/math/math.hpp"
 #include <functional>
 #include <math.h>
+#include "spdlog/spdlog.h"
+
 
 namespace mios {
 
@@ -13,6 +15,11 @@ RemoteTorqueStrategy::RemoteTorqueStrategy():PrimitiveStrategy({CommandPatternJo
 }
 
 void RemoteTorqueStrategy::initialize([[maybe_unused]] const Percept &p_0){
+}
+
+void RemoteTorqueStrategy::StartDSInterpolation(){
+    ds_inter = true;
+    spdlog::info("Dynamic system interpolation starts");
 }
 
 void RemoteTorqueStrategy::get_next_command(Actuator &cmd, const Percept &p){
