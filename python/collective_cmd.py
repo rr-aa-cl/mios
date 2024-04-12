@@ -449,38 +449,54 @@ def lltest(module = "013"):
         current_q[-1] += 0.1
     else:
         current_q[-1] -= 0.1
-    call_method(robot_ip,12000,"post_event",{"name":"handshake","q_init":current_q})
-    
-    time.sleep(1.5)
-    call_method(robot_ip,12000, "stop_task")
-    return 0 
+    call_method(robot_ip,12000,"post_event",{"name":"handshake","content":{"q_init":current_q}})
+    result, addr = udp_receive_message("10.0.2.35", 8888)
+    print("handshake: ", result)
+    udp_send_message(addr[0], addr[1], {"result":True})
+   # time.sleep(1.5)
+   # call_method(robot_ip,12000, "stop_task")
+   # return 0 
     increase_angle = True
     try:
         while True:
             if increase_angle:
-                current_q[-1] += 0.01
+                current_q[-1] += 0.005
             else:
-                current_q[-1] -= 0.01
+                current_q[-1] -= 0.005
             if current_q[-1] > 1 and increase_angle:
                 increase_angle = False
             if current_q[-1] < -1 and not increase_angle:
                 increase_angle = True
-            udp_sender(robot_ip, 8888, current_q)
+            udp_send_message(robot_ip, 8888, current_q)
             print(current_q)
             time.sleep(0.01)
     except KeyboardInterrupt:
         print("stop sending...")
+        call_method(robot_ip,12000,"stop_task")
     t.wait()
-
-def udp_sender(ip, port, message):
-    sock = socket.socket(socket.AF_INET, # Internet
-                        socket.SOCK_DGRAM) # UDP
-    sock.sendto(json.dumps(message).encode(), (ip, port))
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 def subscrib_telemetry(robot_ip, receiving_ip, receiving_port, data:list):
     call_method(robot_ip,12000, "subscribe_telemetry",{"subscribe":["q_d","q"],"ip":receiving_ip,"port":receiving_port})
-    udp_receiver(receiving_ip,receiving_port)
+    if udp_receiver(receiving_ip,receiving_port):
+        print("unsubscribe...")
+        call_method(robot_ip,12000, "unsubscribe_telemetry",{"subscribe":["q_d","q"],"ip":receiving_ip,"port":receiving_port})
+
+def udp_send_message(ip, port, message):
+    sock = socket.socket(socket.AF_INET, # Internet
+                        socket.SOCK_DGRAM) # UDP
+    sock.sendto(json.dumps(message).encode(), (ip, port))
+    sock.close()
+
+def udp_receive_message(ip, port):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  
+    s.bind((ip, port)) 
+    try: 
+        data, adrr = s.recvfrom(8192)
+        s.close()
+    except KeyboardInterrupt:
+        s.close()
+        return False, (False, False)
+    return json.loads(data.decode("utf-8")), adrr
 
 def udp_receiver(ip, port):
     #receiver
@@ -497,8 +513,8 @@ def udp_receiver(ip, port):
                 print("q:   ",json.loads(data.decode("utf-8"))["q"])
                 
         except KeyboardInterrupt:
-            pass
-        return 0
+            s.close()
+        return True
     return write_incomming_udp(ip,port)
 
 
