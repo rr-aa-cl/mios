@@ -6,6 +6,7 @@ import copy
 from utils.ws_client import *
 import json
 import socket
+import struct
 
 import time
 import copy
@@ -417,22 +418,78 @@ def move_all_cart(pose = "default_pose"):
         t.join()
     print("finished")
 
-def lltest(module = "013"):
+def telepresence_udp_test(module = "013"):
     robot_ip = copy.deepcopy(get_ips([module]))[0]
-    own_ip = "10.0.2.35"
-    move_joint(robot_ip, "test")
     current_state = call_method(robot_ip,12000,"get_state")
     if current_state is None:
         return "cannot call robot at "+str(robot_ip)
     current_q = current_state["result"]["q"]
-    # subscrib_telemetry("collective-013.rsi.ei.tum.de","10.0.2.35",12345,["q","q_d"])
+    telepresence_slave_context_left = {
+        "skill": {
+            "is_master": False,
+            "remote_event_protocol":"udp",
+            "ip_dst": "10.0.2.35",
+            "remote_event_port":8888,
+            "port_dst": 8888,
+            "port_src": 8888,
+            "telepresence_mode": "DirectJoint",
+            "multicast": False,
+            "direct_joint": {
+                "alpha": [0, 0, 0, 0, 0, 0, 0]
+            }
+        },
+        "control": {
+            "control_mode": 1,
+            "joint_imp": {
+                "K_theta": [1500,1200,800,600,300,200,50]
+            }
+        }
+    }
+    t_left = Task(robot_ip)
+    t_left.add_skill("telepresence", "Telepresence", telepresence_slave_context_left)
+    t_left.start()
+    current_q[-3] = current_q[-3] - 0.1
+    print(current_q)
+    call_method(robot_ip,12000,"post_event",{"name":"handshake","content":{"q_master":current_q}})
+    result, addr = udp_receive_message("10.0.2.35", 8888)
+    print("handshake: ", result)
+    udp_send_message(addr[0], addr[1], {"result":True})
+    increase_angle = True
+    counter = 0
+    try:
+        while True:
+            if increase_angle:
+                current_q[-1] += 0.0005
+            else:
+                current_q[-1] -= 0.0005
+            if current_q[-1] > 1 and increase_angle:
+                increase_angle = False
+            if current_q[-1] < -1 and not increase_angle:
+                increase_angle = True
+            udp_send_message_teleformat(robot_ip, 8888, current_q, counter=counter)
+            time.sleep(0.001)
+            #counter += 1
+            #if counter > 255:
+            #    counter = 0
+            #print(current_q)
+    except KeyboardInterrupt:
+        print("stop sending...")
+        call_method(robot_ip,12000,"stop_task")
+    t_left.wait()
+
+
+def lltest(module = "013"):
+    robot_ip = copy.deepcopy(get_ips([module]))[0]
+    own_ip = "10.0.2.35"
+    move_joint(robot_ip, "test")
+    current_state = get_current_percept(robot_ip, "10.0.2.35", 12345,["TF_dX_d"])["TF_dX_d"]
     llInterface_context = {
         "skill": {
             "ip_dst": own_ip,  # IP to send answers to
             "port_dst": 8888,  # port to send answers to
             "port_src": 8888,  # receiving port
-            "LLInterface_mode": "JointPose",
-            # "twist": {"static_frame": True}
+            "LLInterface_mode": "Twist",
+            "twist": {"static_frame": True}
         },
         "control": {
             "control_mode": 1,
@@ -444,34 +501,31 @@ def lltest(module = "013"):
     t = Task(robot_ip)
     t.add_skill("test_llInterface", "LLInterface", llInterface_context)
     t.start()
-
-    if current_q[-1] < 0:
-        current_q[-1] += 0.1
-    else:
-        current_q[-1] -= 0.1
+    current_q = get_current_percept(robot_ip, "10.0.2.35", 12345,["q"])["q"]
     call_method(robot_ip,12000,"post_event",{"name":"handshake","content":{"q_init":current_q}})
     result, addr = udp_receive_message("10.0.2.35", 8888)
     print("handshake: ", result)
     udp_send_message(addr[0], addr[1], {"result":True})
-   # time.sleep(1.5)
-   # call_method(robot_ip,12000, "stop_task")
-   # return 0 
     increase_angle = True
+    counter = 0
     try:
         while True:
             if increase_angle:
-                current_q[-1] += 0.005
+                current_state[-1] += 0.005
             else:
-                current_q[-1] -= 0.005
-            if current_q[-1] > 1 and increase_angle:
+                current_state[-1] -= 0.005
+            if current_state[-1] > 1 and increase_angle:
                 increase_angle = False
-            if current_q[-1] < -1 and not increase_angle:
+            if current_state[-1] < -1 and not increase_angle:
                 increase_angle = True
-            udp_send_message(robot_ip, 8888, current_q)
-            print(current_q)
+            current_state[0] = 0.05
+            udp_send_message_teleformat(robot_ip, 8888, current_state, counter=counter)
+            print(current_state)
             time.sleep(0.01)
     except KeyboardInterrupt:
         print("stop sending...")
+        call_method(robot_ip,12000,"stop_task")
+    except:
         call_method(robot_ip,12000,"stop_task")
     t.wait()
 
@@ -481,11 +535,23 @@ def subscrib_telemetry(robot_ip, receiving_ip, receiving_port, data:list):
         print("unsubscribe...")
         call_method(robot_ip,12000, "unsubscribe_telemetry",{"subscribe":["q_d","q"],"ip":receiving_ip,"port":receiving_port})
 
+def get_current_percept(robot_ip,receiving_ip,receiving_port, percepts:list):
+    call_method(robot_ip,12000, "subscribe_telemetry",{"subscribe":percepts,"ip":receiving_ip,"port":receiving_port})
+    result, _ = udp_receive_message(receiving_ip,receiving_port)
+    call_method(robot_ip,12000, "unsubscribe_telemetry",{"subscribe":percepts,"ip":receiving_ip,"port":receiving_port})
+    return result
+
+def udp_send_message_teleformat(ip,port,payload:list,counter=0):
+    sock = socket.socket(socket.AF_INET, # Internet
+                        socket.SOCK_DGRAM) # UDP
+    format = "<6b"+str(len(payload))+"f4b"  # 127,127,127,127,package counter, payload size, payload (4 bytes/value), 126,126,126,126
+    message = struct.pack(format, 127,127,127,127, counter, len(payload)*4,*payload, 126,126,126,126)
+    sock.sendto(message, (ip, port))
+
 def udp_send_message(ip, port, message):
     sock = socket.socket(socket.AF_INET, # Internet
                         socket.SOCK_DGRAM) # UDP
     sock.sendto(json.dumps(message).encode(), (ip, port))
-    sock.close()
 
 def udp_receive_message(ip, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  
@@ -509,8 +575,9 @@ def udp_receiver(ip, port):
             print("   --- Interrupt writing ctrl+c ---")
             while True: 
                 data, adrr = s.recvfrom(8192) 
-                print("q_d: ", json.loads(data.decode("utf-8"))["q_d"])
-                print("q:   ",json.loads(data.decode("utf-8"))["q"])
+                print(json.loads(data.decode("utf-8")))
+                #print("q_d: ", json.loads(data.decode("utf-8"))["q_d"])
+                #print("q:   ",json.loads(data.decode("utf-8"))["q"])
                 
         except KeyboardInterrupt:
             s.close()

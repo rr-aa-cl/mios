@@ -127,12 +127,8 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > LLInterface::graph_transi
             spdlog::debug("LLInterface: Received handshake (slave)");
             std::shared_ptr<ManipulationPrimitive> mp = create_mp("receive",p);
             mirmi_utils::read_json_param<double,7,1>(m_memory->get_event("handshake")->get_content(),"q_init",m_q_init);
-            mp->create_strategy<MoveToJointPoseStrategy>("move",1);
-            mp->get_strategy<MoveToJointPoseStrategy>("move")->set_goal(m_q_init,0.5,2);
-
-            if(read_parameters<Params>()->mode==LLInterfaceMode::llTwist){
-                mp->create_strategy<IdleStrategy>("move",1);
-            }
+            mp->create_strategy<MoveToJointPoseStrategy>("initial_move",1);
+            mp->get_strategy<MoveToJointPoseStrategy>("initial_move")->set_goal(m_q_init,0.5,2);
             m_memory->remove_event("handshake");
             return mp;
         }
@@ -141,7 +137,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > LLInterface::graph_transi
         }
     }
     if(get_active_mp()->get_name()=="receive"){
-        if(get_active_mp()->get_strategy_interface("move")->finished()){
+        if(get_active_mp()->get_strategy_interface("initial_move")->finished()){
             spdlog::debug("LL_interface::graph_transition()  initial move succeded.");
             if(read_parameters<Params>()->mode==LLInterfaceMode::llJointPose && (m_q_init-p.proprioception.q).norm()>0.1){
                 spdlog::error("The init pose not reached after handshake.");
