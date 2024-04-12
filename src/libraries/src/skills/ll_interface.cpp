@@ -156,7 +156,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > LLInterface::graph_transi
             std::shared_ptr<ManipulationPrimitive> mp = create_mp("LLInterface",p);
             if(read_parameters<Params>()->mode==LLInterfaceMode::llCartPose){
                 mp->create_strategy<RemoteCartPoseStrategy>("LLInterface",1);
-                if(!mp->get_strategy<RemoteCartPoseStrategy>("LLInterface")->connect(m_portal,"remote_cart_pose_in",get_parameters<Params>()->port_src,256,0,10000,20,read_parameters<Params>()->multicast, read_parameters<Params>()->host, read_parameters<Params>()->multicast_ip)){
+                if(!mp->get_strategy<RemoteCartPoseStrategy>("LLInterface")->connect(m_portal,"remote_cart_pose_in",get_parameters<Params>()->port_src,256,3,10000,20,read_parameters<Params>()->multicast, read_parameters<Params>()->host, read_parameters<Params>()->multicast_ip)){
                     spdlog::error("Could not open incoming udp channel.");
                     throw SkillException();
                 }
