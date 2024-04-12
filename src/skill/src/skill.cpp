@@ -144,6 +144,7 @@ Actuator* Skill::cycle(const Percept &p){
         return cmd;
     }
     if(m_life_cycle==SkillLifeCycle::slSettle){
+        spdlog::trace("Skill::cycle.settle");
         if(m_active_mp->is_settled(m_memory->read_parameters()->skill->ignore_settling) && is_settled(p,m_memory->read_parameters()->skill->ignore_settling)){
             m_life_cycle=SkillLifeCycle::slTerminate;
         }
@@ -213,6 +214,7 @@ Actuator* Skill::cycle(const Percept &p){
     }
 
     if(m_life_cycle==SkillLifeCycle::slExecution){
+        // spdlog::trace("Skill::cycle.execution");
         auxiliaries(p);
         update_internal_models(p);
         update_policies(p);

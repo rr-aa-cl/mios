@@ -141,6 +141,7 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > LLInterface::graph_transi
         }
     }
     if(get_active_mp()->get_name()=="receive"){
+        spdlog::debug("LL_interface::graph_transition() doing initial move.");
         if(get_active_mp()->get_strategy_interface("move")->finished()){
             spdlog::debug("LL_interface::graph_transition()  initial move succeded.");
             if(read_parameters<Params>()->mode==LLInterfaceMode::llJointPose && (m_q_init-p.proprioception.q).norm()>0.1){
