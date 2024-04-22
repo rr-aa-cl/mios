@@ -2,6 +2,7 @@ import struct
 import socket
 import time
 from utils.ws_client import *
+import os
 
 PI = 3.141592653
 INIT_q = [0, -3.141592653/4, 0, -3 * PI/4, 0, PI/2, PI/4]
@@ -144,8 +145,6 @@ class Task:
 
 
 
-
-
 #  usefull functions:
 def subscrib_telemetry(robot_ip, receiving_ip, receiving_port, data:list):
     '''
@@ -244,3 +243,75 @@ def udp_receiver(ip, port):
             s.close()
         return True
     return write_incomming_udp(ip,port)
+
+
+################# recovery related
+def move_joint(robot, location,port=12000, wait=True):
+   
+    move_context = {
+        "skill": {
+            "speed": 0.5,
+            "acc": 1,
+            "q_g": [0, 0, 0, 0, 0, 0, 0],
+            "objects": {
+                "goal_pose": "GoalPose"
+            }
+        },
+        "control": {
+            "control_mode": 3
+        },
+        "user": {
+            "env_X": [0.005, 0.005, 0.005, 0.0175, 0.0175, 0.0175]
+        }
+    }
+    move_context["skill"]["objects"]["goal_pose"] = location
+    move_context["skill"]["time_max"] = 10
+    t0 = Task(robot, port=port)
+    t0.add_skill("move", "MoveToPoseJoint", move_context)
+    t0.start()
+    if wait:
+        return t0.wait()
+def extract(obj_nr):
+    extraction_context = {
+        "skill": {
+            "objects": {
+                "Container": "hold",
+                "ExtractTo": obj_nr + "_left_container_approach",
+                "Extractable": obj_nr + "_left"
+            },
+            "time_max": 15,
+            "p0": {
+                "search_a": [0, 0, 0, 0, 0, 0],
+                "search_f": [0, 0, 0, 0, 0, 0],
+                "K_x": [1500, 1500, 1500, 150, 150, 150],
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1]
+            },
+            "p1": {
+                "dX_d": [0.05, 0.25],
+                "ddX_d": [0.5, 1],
+                "K_x": [1000, 1000, 1500, 100, 100, 100]
+            }
+        },
+        "control": {
+            "control_mode": 0  # 0" non-feedback;  1" feedback-xy; 2" ...
+        },
+        "user": {
+            "env_X": [0.005, 0.01, 0.01, 0.05, 0.05, 0.05],
+            "env_dX": [0.001, 0.001, 0.001, 0.005, 0.005, 0.005]
+        }
+    }
+    
+    t = Task("localhost")
+    t.add_skill("extraction", "TaxExtraction", extraction_context)
+    t.start()
+    time.sleep(0.1)
+    result = t.wait()
+
+
+def extract_and_reset(ip, obj_nr):
+    extract(obj_nr)
+    # move arms to pre-start pose
+    move_joint(ip, obj_nr + "_left_container_approach", 12000)
+    move_joint(ip, "hold", 13000)
+    
