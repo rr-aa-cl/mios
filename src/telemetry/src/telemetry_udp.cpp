@@ -9,7 +9,7 @@
 
 namespace mios {
 
-TelemetryUDP::TelemetryUDP(Core *core, Portal* portal):m_core(core),m_portal(portal),m_keep_running(false),m_thread_running(false),m_frequency(200){
+TelemetryUDP::TelemetryUDP(Core *core, Portal* portal):m_core(core),m_portal(portal),m_keep_running(false),m_thread_running(false),m_frequency(10){
     start_sending();
 }
 
