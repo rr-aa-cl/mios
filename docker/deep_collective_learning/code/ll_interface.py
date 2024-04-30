@@ -45,7 +45,6 @@ class LLSender:
     
     def _udp_send_message_teleformat(self, ip, port, payload:list, counter=0):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print(type(payload))
         format = "<6b"+str(len(payload))+"f4b"  # 127,127,127,127,package counter, payload size, payload (4 bytes/value), 126,126,126,126
         message = struct.pack(format, 127,127,127,127, counter, len(payload)*4,*payload, 126,126,126,126)
         sock.sendto(message, (ip, port))
@@ -75,21 +74,22 @@ class LLSender:
             "control": {
                 "control_mode": controller,
                 "joint_imp": {
-                   "K_theta": [2500,2200,2800,2600,2300,2200,250]
+                   "K_theta": [50,50,50,50,50,50,10]
                 },
                 "cart_imp": {
                    "K_x": [10, 10, 10, 2.5, 2.5, 2.5]
                 }
             }
         }    
+
         t = Task(self.robot_ip)
         t.add_skill("remote_"+self.mode, "LLInterface", llInterface_context)
         t.start()
+
         if not self.init_q:
-            self.init_q = INIT_q  # for quick testing
+            self.init_q = INIT_q
         call_method(self.robot_ip,12000,"post_event",{"name":"handshake","content":{"q_init":self.init_q}})
-        print(self.own_ip)
-        result, addr = self._udp_receive_message(self.own_ip, 8888)
+        result, addr = self._udp_receive_message(self.own_ip, self.own_port)
         self._udp_send_message(addr[0], addr[1], {"result":True}) 
         print(result)
     
@@ -291,7 +291,7 @@ def extract(ip, obj_nr):
     extraction_context = {
         "skill": {
             "objects": {
-                "Container": "hold",
+                "Container": obj_nr + "_left_container",
                 "ExtractTo": obj_nr + "_left_container_approach",
                 "Extractable": obj_nr + "_left"
             },
