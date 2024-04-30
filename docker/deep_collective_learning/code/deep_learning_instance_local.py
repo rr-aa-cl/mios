@@ -166,14 +166,21 @@ class DeepReinforcementLearner():
             self.robot_ip=IP
             self.own_ip=IP
 
+            print(self.robotID)
+            print(self.robot_hostname)
+            print("get poses")
             self.approachPoses,self.goalPoses=get_poses(self.robotID)
+            print(self.approachPoses)
+            print(self.goalPoses)
             self.goalPose=self.getEulerFromPose(self.goalPoses["EE"])
             
-            self.q_init=self.approachPoses["q"]
 
+
+            self.q_init=self.approachPoses["q"]
+            print("holding")
             holding_arm_skills.append(("move","MoveToPoseJoint",move_context))
             self.looped_skill={"agent":self.robot_ip,"port":13000,"skills":holding_arm_skills,"sleep":1}
-
+            print("sender")
             self.other_task=Task(self.robot_ip,13000)
             self.sender=LLSender(self.robot_ip,self.robot_ip,self.interface,self.q_init)
             print("Done")
