@@ -4,7 +4,7 @@ from deep_learning.agents.sac import SAC
 from deep_learning.agents.ddpg import DDPG
 from deep_learning.utils.utils import Dict
 from configparser import ConfigParser
-from ml_service import mongodb_client
+from desk.mongodb_client import MongoDBClient
 from torch.utils.tensorboard import SummaryWriter
 import requests
 from datetime import datetime
