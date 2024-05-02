@@ -160,7 +160,7 @@ class DeepReinforcementLearner():
         d_old=np.sqrt(d_old)
         d_new=np.sqrt(d_new)
 
-        reward=100*(d_old-d_new)
+        reward=10*(d_old-d_new)
         
         return reward
 
@@ -389,8 +389,6 @@ class DeepReinforcementLearner():
         self.timestep=0
         robot_state,self.initialPose=self.getState()
         self.actualPose=copy.deepcopy(self.initialPose)
-           
-        self.actionSamplingVariance=modelKnowledge['sigmaScaling']
         
         logger.debug("starting")
 
@@ -408,7 +406,7 @@ class DeepReinforcementLearner():
                 action=self.processAction(action)
                 log_prob = dist.log_prob(action).sum(-1,keepdim = True)
 
-                print("Sent action: "+str(action.tolist()))
+                #print("Sent action: "+str(action.tolist()))
                 self.sender.send(action.tolist())
                 for skill in self.looped_skill["skills"]:
                     self.other_task.add_skill(skill[0]+"-"+str(0),skill[1],skill[2])
@@ -421,7 +419,9 @@ class DeepReinforcementLearner():
                     done=True
 
                 self.lastPose=copy.deepcopy(self.actualPose)
+                #startTime=time.time()
                 next_robot_state_,self.actualPose=self.getState()
+                #print(time.time()-startTime)
                 reward=self.getReward(self.actualPose,self.lastPose)
 
                 if(self.check_status()):
@@ -462,7 +462,6 @@ class DeepReinforcementLearner():
                 action = action.cpu().detach().numpy()
                 action=action[0]
                 action=self.processAction(action)
-                print("Sent action: "+str(action.tolist()))
                 self.sender.send(action.tolist())
                 for skill in self.looped_skill["skills"]:
                     self.other_task.add_skill(skill[0]+"-"+str(0),skill[1],skill[2])
@@ -475,7 +474,9 @@ class DeepReinforcementLearner():
                     done=True
 
                 self.lastPose=copy.deepcopy(self.actualPose)
+                #startTime=time.time()
                 next_robot_state,self.actualPose=self.getState()
+                #print(time.time()-startTime)
                 reward=self.getReward(self.actualPose,self.lastPose)
                 if(self.check_status()):
                     done=True

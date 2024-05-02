@@ -56,10 +56,10 @@ learningParams= {'architecture':'sac',
                 'logging':True,
                 'maxTime':5,
                 'load':'no'}
-tags = []
-for key in learningParams.keys():
-    tags.append(key+"="+learningParams[key])
-#tags=learningParams['architecture']
+# tags = []
+# for key in learningParams.keys():
+#     tags.append(key+"="+learningParams[key])
+tags=[learningParams['architecture']]
 #tags = ["sac"]
 
 
@@ -79,6 +79,7 @@ class CollectiveDeepReinforcementLearner():
         self.loadExistingNetwork=learning_params['load']
         self.saveInterval=learning_params['saveInterval']
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        print("Device: ",self.device)
         self.tags = tags
 
         if self.model_knowledge['mode']==0:
@@ -96,7 +97,7 @@ class CollectiveDeepReinforcementLearner():
 
 
     def initializeLocalLearners(self):
-        dual_arm_system_IDs=[format(i, '03d') for i in range(30)]
+        dual_arm_system_IDs=[format(i, '03d') for i in range(25,26)]
         def ping_hosts(hosts):
             reachable_hosts = []
             unreachable_hosts = []
@@ -304,7 +305,7 @@ class CollectiveDeepReinforcementLearner():
         self.saveExperimentData("experimentData")
 
 for i in range(5):
-    Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge0)
+    Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge1)
     Learner.initializeLocalLearners()
     Learner.learning()
    
