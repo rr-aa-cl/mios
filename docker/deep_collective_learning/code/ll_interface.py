@@ -233,8 +233,8 @@ def udp_receiver(ip, port):
         data, adrr = s.recvfrom(8192) 
         data_dict = json.loads(data.decode("utf-8"))
         s.close()
-    except KeyboardInterrupt:
-        pass
+    except:
+        return False
 
     return data_dict
 

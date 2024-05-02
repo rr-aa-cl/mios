@@ -17,11 +17,11 @@ list_block_1 = ["001", #"002",
                 "003", "004", "005", 
                 "006", "007", "008", "010", 
                 "011", "012"]
-list_block_2 = ["009","013","014","015","016","017","041",
+list_block_2 = ["009","013","014","015","016","017",
                 # "018",#"020",
                 "041",
                 "021","022"]
-list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
+list_U = ["023", "024", "025", "027", "040", "029"] #, "026", "028",
 list_external = ["050"]
 def get_ips(module_list):
     with open("ip.json", "r") as jsonfile:
@@ -482,13 +482,13 @@ def lltest(module = "013"):
     robot_ip = copy.deepcopy(get_ips([module]))[0]
     own_ip = "10.0.2.35"
     move_joint(robot_ip, "test")
-    current_state = get_current_percept(robot_ip, "10.0.2.35", 12345,["TF_T_EE_d"])["TF_T_EE_d"]
+    current_state = get_current_percept(robot_ip, "10.0.2.35", 12345,["tau"])["tau"]
     llInterface_context = {
         "skill": {
             "ip_dst": own_ip,  # IP to send answers to
             "port_dst": 8888,  # port to send answers to
             "port_src": 8888,  # receiving port
-            "LLInterface_mode": "CartPose",
+            "LLInterface_mode": "Torque", #CartPose  Torque  JointPose
             "twist": {"static_frame": True}
         },
         "control": {
@@ -499,8 +499,11 @@ def lltest(module = "013"):
             #"cart_imp": {
             #    "K_x": [2000, 2000, 2000, 250, 250, 250]
             #}
+        },
+        "user":{
+            "F_ext_max": [30, 15]
         }
-    }    
+    }   
     t = Task(robot_ip)
     t.add_skill("test_llInterface", "LLInterface", llInterface_context)
     t.start()
@@ -514,12 +517,12 @@ def lltest(module = "013"):
     try:
         while True:
             if increase_angle:
-                current_state[-2] += 0.005
+                current_state[-2] += 0.5
             else:
-                current_state[-2] -= 0.005
-            if current_state[-2] > 1 and increase_angle:
+                current_state[-2] -= 0.5
+            if current_state[-2] > 10 and increase_angle:
                 increase_angle = False
-            if current_state[-2] < -1 and not increase_angle:
+            if current_state[-2] < -10 and not increase_angle:
                 increase_angle = True
             #current_state[0] = 0.05
             udp_send_message_teleformat(robot_ip, 8888, current_state, counter=counter)

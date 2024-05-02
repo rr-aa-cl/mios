@@ -266,7 +266,9 @@ class DeepReinforcementLearner():
         return True
 
     def getState(self):
-        robotState=udp_receiver(self.own_ip,8887)
+        robotState = False
+        while not robotState:
+            robotState=udp_receiver(self.own_ip,8887)
 
 
         eulerPose=self.getEulerFromPose(robotState["T_T_EE"])
