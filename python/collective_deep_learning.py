@@ -93,8 +93,10 @@ class CollectiveDeepReinforcementLearner():
         parser.read('deep_learning/config.ini')
         self.agent_args = Dict(parser,self.architecture)
         self.mongo_client = MongoDBClient()
-        self.tags.append("iteration_"+str(len(self.mongo_client.read("deep_ml_results", "insertion", {"meta.tags": self.tags})) +1))  #append iteration number to tags
-
+        iteration = 1
+        while len(self.mongo_client.read("deep_ml_results", "insertion", {"meta.tags": self.tags+["iteration_"+str(iteration)]})) >= 1:
+            iteration += 1
+        self.tags.append("iteration_"+str(iteration))
 
     def initializeLocalLearners(self):
         dual_arm_system_IDs=[format(i, '03d') for i in range(25,26)]
