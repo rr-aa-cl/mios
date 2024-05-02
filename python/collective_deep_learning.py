@@ -6,11 +6,15 @@ from deep_learning.utils.utils import Dict
 from configparser import ConfigParser
 from torch.utils.tensorboard import SummaryWriter
 import requests
+from datetime import datetime
 import xmlrpc.client
 import pickle
 import socket
 import numpy as np
 import torch
+import copy
+import time
+import os
 
 import asyncio
 
@@ -25,6 +29,7 @@ learningParams= {'architecture':'sac',
                 'train':True,
                 'experiment_ID': 0,
                 'number_of_experiments': 5,
+                'saveInterval':100,
                 'frequency': 20,
                 'taskID':0,
                 'logging':True,
@@ -46,6 +51,7 @@ class CollectiveDeepReinforcementLearner():
         self.architecture=learning_params['architecture']
         self.logging=learning_params['logging']
         self.loadExistingNetwork=learning_params['load']
+        self.saveInterval=learning_params['saveInterval']
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         if modelKnowledge['mode']==0:
@@ -60,8 +66,9 @@ class CollectiveDeepReinforcementLearner():
         self.agent_args = Dict(parser,self.architecture)
 
     def initializeLocalLearners(self):
-        dual_arm_system_IDs=[format(i, '03d') for i in range(1, 30)]
         dual_arm_system_IDs=[format(i, '03d') for i in range(24, 26)]
+        #dual_arm_system_IDs=[format(i, '03d') for i in range(15, 30)]
+        #dual_arm_system_IDs=[format(i, '03d') for i in [29]]
         def ping_hosts(hosts):
             reachable_hosts = []
             unreachable_hosts = []
@@ -84,23 +91,25 @@ class CollectiveDeepReinforcementLearner():
 
         self.robotLearningInstances=[]
         for host in working_Hosts:
+            try:
+                RPC_SERVER_URL = "http://"+host+":9000"
 
-            RPC_SERVER_URL = "http://"+host+":9000"
+                response = requests.get(RPC_SERVER_URL)
+                response_time = response.elapsed.total_seconds()
+                print("Response time:", response_time, "seconds")
 
-            response = requests.get(RPC_SERVER_URL)
-            response_time = response.elapsed.total_seconds()
-            print("Response time:", response_time, "seconds")
-
-            learnerProxy = xmlrpc.client.ServerProxy("http://"+host+":9000")
-            print(learnerProxy)
-            if(learnerProxy.running()==True):
-                IP=get_ip_address(host)
-                if(learnerProxy.setModelKnowledge(self.model_knowledge)==True and
-                learnerProxy.setLearningParams(self.learning_params)==True and
-                learnerProxy.setID(host,IP)==True):
-                    self.robotLearningInstances.append([host,IP])
-                else:
-                    print("Initialization of "+host+" failed!")
+                learnerProxy = xmlrpc.client.ServerProxy("http://"+host+":9000")
+                print(learnerProxy)
+                if(learnerProxy.running()==True):
+                    IP=get_ip_address(host)
+                    if(learnerProxy.setModelKnowledge(self.model_knowledge)==True and
+                    learnerProxy.setLearningParams(self.learning_params)==True and
+                    learnerProxy.setID(host,IP)==True):
+                        self.robotLearningInstances.append([host,IP])
+                    else:
+                        print("Initialization of "+host+" failed!")
+            except:
+                print("Initialization of "+host+" failed!")
 
     async def rpc_call_to_learner(self,learnerProxy,index):
         await self.loop.run_in_executor(None, getattr(learnerProxy, "learning"))
@@ -133,6 +142,8 @@ class CollectiveDeepReinforcementLearner():
         learnerProxy=xmlrpc.client.ServerProxy("http://"+IP+":9000")
         #1. get new trial data
         new_transitions=learnerProxy.getNewExperimentData()
+        trialResult=learnerProxy.getTrialResult()
+        self.learningLog[learner_index].append(trialResult)
         #2. append data to agent
         for transition in new_transitions:
             self.agents[learner_index].put_data(transition) 
@@ -141,22 +152,55 @@ class CollectiveDeepReinforcementLearner():
         #print(self.agents[learner_index].data.data_idx)
         if self.agents[learner_index].data.data_idx > self.agent_args.learn_start_size: 
             print("TRAINING")
+            startTime=time.time()
             for i in range(int(self.learning_params['maxTime']*self.learning_params['frequency'])):
                 self.agents[learner_index].train_net(self.agent_args.batch_size, self.epochs[learner_index])
+            print("Training time: ",time.time()-startTime)
         #4. update weights
         model_bytes = pickle.dumps(self.agents[learner_index].state_dict())
         if learnerProxy.setModelWeights(xmlrpc.client.Binary(model_bytes))==True:
             pass
         else:
-            print("Transfer of weights to "+host+" failed!")        
-        #5. increment respective  epoch
+            print("Transfer of weights to "+host+" failed!")   
+
+        #5. Store weights if needed
+        if self.epochs[learner_index]%self.saveInterval==0:
+            self.storedNetworkWeights[learner_index].append(copy.deepcopy(self.agents[learner_index].state_dict()))     
+        #6. increment respective  epoch
         self.epochs[learner_index]+=1
-        #6. start new learning epoch again
+        #7. start new learning epoch again
         if self.epochs[learner_index]<self.learning_params['epochs']:
             return False
         else:
             return True
 
+    def saveExperimentData(self,path):
+        #create folder
+        i=1
+        folder_name = datetime.now().strftime("%Y-%m-%d")
+        if not os.path.exists(path+"/"+folder_name):
+            os.makedirs(path+"/"+folder_name)
+
+        while os.path.exists(path+"/"+folder_name+"/"+str(i)):
+            i+=1
+
+        os.makedirs(path+"/"+folder_name+"/"+str(i))
+        #save experiment results
+        with open(path+"/"+folder_name+"/"+str(i)+'/experiment_result.pkl', 'wb') as f:
+            pickle.dump(self.learningLog, f)
+
+        #save network weights
+        os.makedirs(path+"/"+folder_name+"/"+str(i)+"/network_weights")
+        for i in range(len(self.robotLearningInstances)):
+            host,IP=self.robotLearningInstances[i]
+            os.makedirs(path+"/"+folder_name+"/"+str(i)+"/network_weights/"+host)   
+            for j in range(len(self.storedNetworkWeights[i])):         
+                torch.save(self.agents[i].state_dict(),path+"/"+folder_name+"/"+str(i)+"/network_weights/"+host+"/"+str((j+1)*self.saveInterval))
+
+        #save experiment parameters                
+        experiments_params = {'learning_params': self.learning_params, 'model_knowledge': self.model_knowledge}
+        with open(path+"/"+folder_name+"/"+str(i)+'/experiments_params.pkl', 'wb') as f:
+            pickle.dump(experiments_params, f)
 
     def learning(self):
         #initialize state size
@@ -169,7 +213,9 @@ class CollectiveDeepReinforcementLearner():
         #initialize data logging and networks
         self.summaryWriters=[]
         self.agents=[]
+        self.storedNetworkWeights=[]
         self.epochs=[]
+        self.learningLog=[]
         for host,IP in self.robotLearningInstances:
             if self.logging==True:
                 writer = SummaryWriter()
@@ -191,6 +237,8 @@ class CollectiveDeepReinforcementLearner():
 
             self.agents.append(agent)
             self.epochs.append(0)
+            self.storedNetworkWeights.append([])
+            self.learningLog.append([])
             #initialize and transfer weights
             learnerProxy=xmlrpc.client.ServerProxy("http://"+IP+":9000")
             if learnerProxy.initializeAgent()==False:
@@ -208,11 +256,11 @@ class CollectiveDeepReinforcementLearner():
         self.loop = asyncio.get_event_loop()
         self.loop.run_until_complete(self.learning_loop(self.robotLearningInstances, self.learning_callback))
 
+        #saving experiment results
+        self.saveExperimentData("experimentData")
 
 
 Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge)
 Learner.initializeLocalLearners()
 Learner.learning()
-
-
-    
+   

@@ -26,6 +26,14 @@ import time
 from xmlrpc.server import SimpleXMLRPCServer
 from socketserver import ThreadingMixIn
 
+import logging
+
+logger = logging.getLogger("deep_interface")
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+
 class InterfaceServer(ThreadingMixIn, SimpleXMLRPCServer):
     pass
 
@@ -109,7 +117,7 @@ class DeepReinforcementLearner():
             self.end2end=False
             
         self.penaltyMultiplier=0.0001
-        self.deltaTaskLimits=[0.05,0.05,0.05,1,1,1]
+        self.deltaTaskLimits=[0.1,0.1,0.1,0.5,0.5,0.5]
 
         parser = ConfigParser()
         parser.read('deep_learning/config.ini')
@@ -118,32 +126,33 @@ class DeepReinforcementLearner():
         self.robot_ip="localhost"
         self.own_ip="localhost"
 
-        print("initialized")
+        logger.debug("initialized")
 
 
     def start_rpc_server(self):
-        print("DeepLearningInstance: Starting RPC server on port 9000")
+        logger.debug("DeepLearningInstance: Starting RPC server on port 9000")
         self.rpc_server.register_introspection_functions()
         self.rpc_server.register_function(self.running, "running")
         self.rpc_server.register_function(self.setID, "setID")
         self.rpc_server.register_function(self.learning, "learning")
+        self.rpc_server.register_function(self.sendTrialResult, "getTrialResult")        
         self.rpc_server.register_function(self.setModelWeights, "setModelWeights")
         self.rpc_server.register_function(self.setModelKnowledge, "setModelKnowledge")
         self.rpc_server.register_function(self.setLearningParams, "setLearningParams")
         self.rpc_server.register_function(self.initializeAgent, "initializeAgent")
         self.rpc_server.register_function(self.sendNewExperimentDataToCollective, "getNewExperimentData")
-        print("RPC server is serving..")
+        logger.debug("RPC server is serving..")
         self.rpc_server.serve_forever()
 
     def stop_rpc_server(self):
-        print("stop_rpc_server()")
+        logger.debug("stop_rpc_server()")
         self.rpc_server.shutdown()
-        print("Interface::stop_rpc_server.end")
+        logger.debug("Interface::stop_rpc_server.end")
 
 
     def getReward(self,new_pose,old_pose):
-        d_new=0
         d_old=0
+        d_new=0        
         for i in range (3):
             d_old+=abs(self.goalPose[i]-old_pose[i])*abs(self.goalPose[i]-old_pose[i])
             d_new+=abs(self.goalPose[i]-new_pose[i])*abs(self.goalPose[i]-new_pose[i])
@@ -151,7 +160,7 @@ class DeepReinforcementLearner():
         d_old=np.sqrt(d_old)
         d_new=np.sqrt(d_new)
 
-        reward=d_old-d_new
+        reward=100*(d_old-d_new)
         
         return reward
 
@@ -160,61 +169,24 @@ class DeepReinforcementLearner():
     
     def setID(self,host,IP):
         try:
-            print("Setting host and ip...")
+            logger.debug("Setting host and ip...")
             self.robotID=host[-3:]
             self.robot_hostname=host
             self.robot_ip=IP
             self.own_ip=IP
 
-            print(self.robotID)
-            print(self.robot_hostname)
-            print("get poses")
             self.approachPoses,self.goalPoses=get_poses(self.robotID)
-            print(self.approachPoses)
-            print(self.goalPoses)
-            self.goalPose=self.getEulerFromPose(self.goalPoses["EE"])
-            
-
-
+            self.goalPose=self.getEulerFromPose(self.goalPoses["EE"])          
             self.q_init=self.approachPoses["q"]
-            print("holding")
             holding_arm_skills.append(("move","MoveToPoseJoint",move_context))
             self.looped_skill={"agent":self.robot_ip,"port":13000,"skills":holding_arm_skills,"sleep":1}
-            print("sender")
             self.other_task=Task(self.robot_ip,13000)
             self.sender=LLSender(self.robot_ip,self.robot_ip,self.interface,self.q_init)
-            print("Done")
+            logger.debug("Done")
             return True
         except:
-            print("Failed")
+            logger.debug("Failed")
             return False
-
-    def getOverallReward(self,):
-        dx=-abs(self.actualPose[0]-self.goalPose[0])
-        dy=-abs(self.actualPose[1]-self.goalPose[1])
-        dz=-(self.actualPose[2]-self.goalPose[2])
-        #todo parameters
-        reward=100*(dz+dx+dy)
-
-        # if self.end2end==False:
-        #     penalty=(robot_state["TF_F_ext_K"][0]*robot_state["TF_F_ext_K"][0]+
-        #     robot_state["TF_F_ext_K"][1]*robot_state["TF_F_ext_K"][1]+
-        #     robot_state["TF_F_ext_K"][3]*robot_state["TF_F_ext_K"][3]+
-        #     robot_state["TF_F_ext_K"][4]*robot_state["TF_F_ext_K"][4]+
-        #     robot_state["TF_F_ext_K"][5]*robot_state["TF_F_ext_K"][5])
-        # else:
-        #     penalty=(robot_state["tau_ext"] [0]*robot_state["tau_ext"] [0]+
-        #     robot_state["tau_ext"] [1]*robot_state["tau_ext"] [1]+
-        #     robot_state["tau_ext"] [2]*robot_state["tau_ext"] [2]+
-        #     robot_state["tau_ext"] [3]*robot_state["tau_ext"] [3]+
-        #     robot_state["tau_ext"] [4]*robot_state["tau_ext"] [4]+
-        #     robot_state["tau_ext"] [5]*robot_state["tau_ext"] [5]+
-        #     robot_state["tau_ext"] [6]*robot_state["tau_ext"] [6])
-        # penalty=self.penaltyMultiplier*penalty
-        # #todo thinking
-        # #reward=reward-penalty
-
-        return reward
 
     def getEulerFromPose(self, pose):
         eulerPose=[pose[12],pose[13],pose[14],0,0,0]
@@ -237,23 +209,28 @@ class DeepReinforcementLearner():
         f.close()
 
     def sendNewExperimentDataToCollective(self):
-        print("Sending trial data")
+        logger.debug("Sending trial data")
         return self.DataList
+    
+    def sendTrialResult(self):
+        logger.debug("sending trial result")
+        trialResult=[self.isSuccessful,self.timestep]
+        return trialResult
 
     def setModelWeights(self,state_dict_bytes): 
         try:
-            print("updating model weights...")
+            logger.debug("updating model weights...")
             state_dict = pickle.loads(state_dict_bytes.data)
             self.agent.load_state_dict(state_dict)
-            print("Done")
+            logger.debug("Done")
         except:
-            print("Failed")
+            logger.debug("Failed")
             return False
         return True
 
     def setModelKnowledge(self,modelKnowledge):
         try:
-            print("Setting model knowledge...")
+            logger.debug("Setting model knowledge...")
             if modelKnowledge['mode']==0:
                 self.interface='Torque'
                 self.end2end=True
@@ -264,16 +241,16 @@ class DeepReinforcementLearner():
                 self.actionSamplingVariance=modelKnowledge['sigmaScaling']
                 self.graspOrientation=np.reshape(modelKnowledge['graspOrientation'], (3, 3), order='F')
                 self.end2end=False
-            print("Done")
+            logger.debug("Done")
         except:
-            print("Failed")
+            logger.debug("Failed")
             return False
         
         return True
 
     def setLearningParams(self,learning_params):
         try:
-            print("Setting learning parameters...")
+            logger.debug("Setting learning parameters...")
             self.experiment_ID=learning_params['experiment_ID']
             self.numberOfExperiments=learning_params['number_of_experiments']
             self.logging=learning_params['logging']
@@ -282,9 +259,9 @@ class DeepReinforcementLearner():
             self.loadExistingNetwork=learning_params['load']
             self.maxTime=learning_params['maxTime']
             self.deltaTime=1/learning_params['frequency']
-            print("Done")
+            logger.debug("Done")
         except:
-            print("Failed")
+            logger.debug("Failed")
             return False
         return True
 
@@ -313,7 +290,8 @@ class DeepReinforcementLearner():
             robotState["tau_ext"][6]]
         return state,eulerPose
 
-    def  check_state(self):
+    def  check_status(self):
+        #check if trial has violated limits
         for i in range(len(self.goalPose)):
             if(abs(self.actualPose[i]-self.goalPose[i])>self.deltaTaskLimits[i] and 
                abs(self.actualPose[i]-self.initialPose[i])>self.deltaTaskLimits[i]):
@@ -330,12 +308,13 @@ class DeepReinforcementLearner():
            abs(self.actualPose[1]-self.goalPose[1])<0.003 and
            abs(self.actualPose[2]-self.goalPose[2])<0.002):
             success=True
+            self.isSuccessful=True
 
         return success
 
     def initializeAgent(self):
         try:
-            print("Initializing Agent...")
+            logger.debug("Initializing Agent...")
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
             writer = None
             #Actions/States
@@ -357,9 +336,9 @@ class DeepReinforcementLearner():
                 noise = OUNoise(action_dim,0)
                 self.agent = DDPG(writer, self.device, state_dim, action_dim, self.agent_args, noise)
 
-            print("Done")
+            logger.debug("Done")
         except:
-            print("Failed")
+            logger.debug("Failed")
             return False
         return True
 
@@ -392,10 +371,11 @@ class DeepReinforcementLearner():
         call_method(self.robot_ip,12000, "subscribe_telemetry",{"subscribe":desired_states,"ip":self.own_ip,"port":8887})
 
         self.DataList=[]
-        self.state_lst = []
+        self.state_lst=[]
 
-        score = 0.0
-        costScore=0.0   
+        self.isSuccessful=False
+        self.score=[]
+
         for skill in self.looped_skill["skills"]:
             self.other_task.add_skill(skill[0]+"-"+str(0),skill[1],skill[2])
 
@@ -412,13 +392,15 @@ class DeepReinforcementLearner():
            
         self.actionSamplingVariance=modelKnowledge['sigmaScaling']
         
-        print("starting")
+        logger.debug("starting")
+
+
 
         if self.agent_args.on_policy == True:
-            score = 0.0
             robot_state_=copy.deepcopy(robot_state)
             robot_state = np.clip((robot_state_ - self.state_rms.mean) / (self.state_rms.var ** 0.5 + 1e-8), -5, 5)
             while not done:
+
                 self.state_lst.append(robot_state)
                 mu,sigma = self.agent.get_action(torch.from_numpy(robot_state).float().to(self.device))
                 dist = torch.distributions.Normal(mu,sigma[0])
@@ -426,31 +408,28 @@ class DeepReinforcementLearner():
                 action=self.processAction(action)
                 log_prob = dist.log_prob(action).sum(-1,keepdim = True)
 
-                #todo
+                print("Sent action: "+str(action.tolist()))
                 self.sender.send(action.tolist())
                 for skill in self.looped_skill["skills"]:
                     self.other_task.add_skill(skill[0]+"-"+str(0),skill[1],skill[2])
                 self.other_task.start(queue=False)   
                 time.sleep(self.deltaTime-0.0105)
-                if call_method(self.robot_ip,12000, "get_state")["result"]["current_task"]=="IdleTask":
+                try:
+                    if call_method(self.robot_ip,12000, "get_state")["result"]["current_task"]=="IdleTask":
+                        done=True
+                except:
                     done=True
 
                 self.lastPose=copy.deepcopy(self.actualPose)
                 next_robot_state_,self.actualPose=self.getState()
                 reward=self.getReward(self.actualPose,self.lastPose)
 
-                if(self.check_state()):
+                if(self.check_status()):
                     done=True
 
                 if(self.check_success()):
                     done=True
                 
-                score += reward
-
-                if done==True:
-                    reward=self.getOverallReward()*1000/self.timestep
-                    #    reward=reward+10
-                    score = reward
 
                 next_robot_state = np.clip((next_robot_state_ - self.state_rms.mean) / (self.state_rms.var ** 0.5 + 1e-8), -5, 5)
                 #todo
@@ -464,22 +443,18 @@ class DeepReinforcementLearner():
 
                 self.DataList.append(self.convert_np_float64(transition))
 
-                score += reward
-                if done:
+                if done==True:
                     self.sender.stop()
                     self.state_rms.update(np.vstack(self.state_lst))
                     break
                 else:
                     robot_state = next_robot_state
                     robot_state_ = next_robot_state_
-
             
 
         else :   
             while not done:
-                overall_start_time = time.time()
                 self.timestep=self.timestep+1
-                #get action
                 if (self.learning_params["train"]==True):
                     action, _ = self.agent.get_action(torch.from_numpy(np.asarray(robot_state)).float().to(self.device))
                 else:
@@ -487,47 +462,39 @@ class DeepReinforcementLearner():
                 action = action.cpu().detach().numpy()
                 action=action[0]
                 action=self.processAction(action)
-
+                print("Sent action: "+str(action.tolist()))
                 self.sender.send(action.tolist())
                 for skill in self.looped_skill["skills"]:
                     self.other_task.add_skill(skill[0]+"-"+str(0),skill[1],skill[2])
                 self.other_task.start(queue=False)   
                 time.sleep(self.deltaTime-0.0105)
-                if call_method(self.robot_ip,12000, "get_state")["result"]["current_task"]=="IdleTask":
+                try:
+                    if call_method(self.robot_ip,12000, "get_state")["result"]["current_task"]=="IdleTask":
+                        done=True
+                except:
                     done=True
 
                 self.lastPose=copy.deepcopy(self.actualPose)
                 next_robot_state,self.actualPose=self.getState()
                 reward=self.getReward(self.actualPose,self.lastPose)
-
-                if(self.check_state()):
+                if(self.check_status()):
                     done=True
-
                 if(self.check_success()):
                     done=True
-                
-                score += reward
-
-                if done==True:
-                    reward=self.getOverallReward()*1000/self.timestep
-                    #    reward=reward+10
-                    score = reward
-                
+                                
                 transition = make_transition(robot_state,\
                                             action.tolist(),\
                                             reward,\
                                             next_robot_state,\
                                             done\
-                                            )              
+                                            )           
 
                 self.DataList.append(self.convert_np_float64(transition))
-                #self.agent.put_data(transition) 
                 robot_state = next_robot_state
-
                 if done==True:
                     self.sender.stop()
                     break
-            print("finished")
+            logger.debug("finished")
 
         call_method(self.robot_ip,12000, "unsubscribe_telemetry",{"subscribe":desired_states,"ip":self.own_ip,"port":8887})    
 
@@ -537,11 +504,12 @@ class DeepReinforcementLearner():
 
 
 if __name__ == "__main__":
+        logger.debug("Version: 1.0")
         server = DeepReinforcementLearner(learningParams,modelKnowledge)
         server.start_rpc_server()
         
         def signal_handler(sig, frame):
-            print("Shutting down the server.")
+            logger.debug("Shutting down the server.")
             server.rpc_server.stop()
             sys.exit(0)
 
