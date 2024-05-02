@@ -214,7 +214,7 @@ class DeepReinforcementLearner():
     
     def sendTrialResult(self):
         logger.debug("sending trial result")
-        trialResult=[self.isSuccessful,self.timestep]
+        trialResult=[self.isSuccessful,self.timestep*self.deltaTime]
         return trialResult
 
     def setModelWeights(self,state_dict_bytes): 
