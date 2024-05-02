@@ -184,7 +184,7 @@ class CollectiveDeepReinforcementLearner():
         mongo_data = self.mongo_client.read("deep_ml_results","insertion",{"meta.tags":self.tags+[host]})
         if mongo_data:
             mongo_data = mongo_data[0]
-            mongo_data["n"+str(len(self.learningLog[learner_index]+1))] = {"success":trialResult[0], "time":trialResult[1]}
+            mongo_data["n"+str(len(self.learningLog[learner_index])+1)] = {"success":trialResult[0], "time":trialResult[1]}
             self.mongo_client.update("deep_ml_results","insertion",{"meta.tags":self.tags+[host]},mongo_data)
         #2. append data to agent
         for transition in new_transitions:
