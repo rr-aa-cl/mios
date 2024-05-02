@@ -56,8 +56,10 @@ learningParams= {'architecture':'sac',
                 'logging':True,
                 'maxTime':5,
                 'load':'no'}
-
-tags=learningParams['architecture']
+tags = []
+for key in learningParams.keys():
+    tags.append(key+"="+learningParams[key])
+#tags=learningParams['architecture']
 #tags = ["sac"]
 
 
