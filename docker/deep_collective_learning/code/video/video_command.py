@@ -2,6 +2,7 @@ import subprocess
 from datetime import datetime
 import socket
 import time
+import os
 
 # current_time = datetime.now()
 # time_string = current_time.strftime("%Y%m%d_%H%M%S")
@@ -26,7 +27,10 @@ import time
 
 
 class VideoRecorder:
-    def __init__(self, device='/dev/video4', output_dir='./'):
+    def __init__(self, tag="", device='/dev/video4', output_dir='./'):
+        os.system("pwd")
+        os.system("touch aaa.txt")
+        self.tag = tag
         self.device = device
         self.output_dir = output_dir
 
@@ -34,7 +38,7 @@ class VideoRecorder:
         current_time = datetime.now()
         time_string = current_time.strftime("%Y%m%d_%H%M%S")
         hostname = socket.gethostname()
-        self.name = f"{hostname}HH{time_string}.mp4"
+        self.name = f"{self.tag}HH{hostname}HH{time_string}.mp4"
         
         ffmpeg_command = [
             'ffmpeg',
@@ -44,8 +48,12 @@ class VideoRecorder:
             '-i', self.device,
             self.name
         ]
-
+        
+        # ffmpeg_command = ['pwd']
         self.ffmpeg_process = subprocess.Popen(ffmpeg_command)
+        os.system("ls")
+
+        
     
     def __del__(self):
         print("terminate")
@@ -56,8 +64,8 @@ class VideoRecorder:
             self.ffmpeg_process.wait()
         
 
-recorder = VideoRecorder()
-recorder.start_recording()
+# r = VideoRecorder("xx")
 
-time.sleep(10)  
-recorder.stop_recording()
+# r.start_recording()
+# time.sleep(5)
+# r.stop_recording()

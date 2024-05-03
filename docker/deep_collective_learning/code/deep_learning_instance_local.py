@@ -371,7 +371,7 @@ class DeepReinforcementLearner():
             
         return processedAction
 
-    def learning(self):
+    def learning(self, tag=" ", trial=0):
         desired_states=["q","dq","tau_ext","T_T_EE","TF_dX_EE","TF_F_ext_K"]
 
         #subscribe to state
@@ -390,7 +390,10 @@ class DeepReinforcementLearner():
         call_method(self.robot_ip,12000,"stop_task")
         call_method(self.robot_ip,13000,"stop_task")
         self.other_task.start(queue=False)    
-        extract_and_reset(self.robot_ip, self.robotID)     
+        extract_and_reset(self.robot_ip, self.robotID)   
+        
+        # record 
+        # self.start_recording(tag+"_n"+str(trial))  
         self.sender.start()
         done = False
         self.timestep=0
@@ -505,16 +508,17 @@ class DeepReinforcementLearner():
             logger.debug("finished")
 
         call_method(self.robot_ip,12000, "unsubscribe_telemetry",{"subscribe":desired_states,"ip":self.own_ip,"port":8887})    
-
+        self.end_recording()
+        
         return "finished"
 
-    def start_recording(self):
+    def start_recording(self, tag = "xx"):
         
         if self.video_flag:
             logger.debug("warning: recording already started")
         else:            
             try:
-                self.recorder = VideoRecorder()
+                self.recorder = VideoRecorder(tag)
                 self.recorder.start_recording()
                 logger.debug("recording starts")
                 self.video_flag = True
