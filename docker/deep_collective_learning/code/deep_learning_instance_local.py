@@ -219,7 +219,9 @@ class DeepReinforcementLearner():
     
     def sendTrialResult(self):
         logger.debug("sending trial result")
-        trialResult=[self.isSuccessful,self.timestep*self.deltaTime]
+        distance=abs(self.actualPose[0]-self.goalPose[0])**2+abs(self.actualPose[1]-self.goalPose[1])**2+abs(self.actualPose[2]-self.goalPose[2])**2
+
+        trialResult=[self.isSuccessful,self.timestep*self.deltaTime,distance]
         return trialResult
 
     def setModelWeights(self,state_dict_bytes): 
@@ -399,11 +401,8 @@ class DeepReinforcementLearner():
         self.timestep=0
         robot_state,self.initialPose=self.getState()
         self.actualPose=copy.deepcopy(self.initialPose)
-        
+        logger.debug("PreparationTime: "+str(time.time()-startingTime))
         logger.debug("starting")
-
-
-
         if self.agent_args.on_policy == True:
             robot_state_=copy.deepcopy(robot_state)
             robot_state = np.clip((robot_state_ - self.state_rms.mean) / (self.state_rms.var ** 0.5 + 1e-8), -5, 5)
@@ -463,7 +462,9 @@ class DeepReinforcementLearner():
             
 
         else :   
+            startingTime=time.time()
             while not done:
+                
                 self.timestep=self.timestep+1
                 if (self.learning_params["train"]==True):
                     action, _ = self.agent.get_action(torch.from_numpy(np.asarray(robot_state)).float().to(self.device))
@@ -502,9 +503,11 @@ class DeepReinforcementLearner():
 
                 self.DataList.append(self.convert_np_float64(transition))
                 robot_state = next_robot_state
+
                 if done==True:
                     self.sender.stop()
                     break
+            logger.debug("TrialTime:"+str(startingTime-time.time()))
             logger.debug("finished")
 
         call_method(self.robot_ip,12000, "unsubscribe_telemetry",{"subscribe":desired_states,"ip":self.own_ip,"port":8887})    

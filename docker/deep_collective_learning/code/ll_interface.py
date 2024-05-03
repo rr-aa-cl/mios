@@ -237,6 +237,7 @@ def udp_receiver(ip, port):
         data_dict = json.loads(data.decode("utf-8"))
         s.close()
     except:
+        s.close()
         return False
 
     return data_dict
@@ -279,7 +280,8 @@ def move_joint(robot, location,port=12000, wait=True):
             "control_mode": 3
         },
         "user": {
-            "env_X": [0.005, 0.005, 0.005, 0.0175, 0.0175, 0.0175]
+            "env_X": [0.005, 0.005, 0.005, 0.0175, 0.0175, 0.0175],
+            "F_ext":[100,50]
         }
     }
     move_context["skill"]["objects"]["goal_pose"] = location
@@ -326,11 +328,26 @@ def extract(ip, obj_nr):
     t.add_skill("extraction", "TaxExtraction", extraction_context)
     t.start()
     time.sleep(0.1)
-    result = t.wait()
+    return t.wait()
+
 
 
 def extract_and_reset(ip, obj_nr):
-    extract(ip, obj_nr)
+    successful=False
+    while successful==False:
+        result=extract(ip, obj_nr)
+        if result:
+            successful=result["result"]["task_result"]['success']
+        time.sleep(0.5)
+
     # move arms to pre-start pose
+    successful=False
+    while successful==False:
+        result = move_joint(ip,obj_nr+"_left_container_above",12000)
+        if result:
+            successful=result["result"]["task_result"]['success']
+        time.sleep(0.5)
+
+    
     move_joint(ip, obj_nr + "_left_container_approach", 12000)
     move_joint(ip, "hold", 13000)
