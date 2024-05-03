@@ -100,6 +100,11 @@ def command_collective(cmd: str, args: dict = {}):
     for t in threads:
         t.join()
 
+def set_grasped_objects():
+    ips = get_ips(modules)
+    for ip,m in zip(ips,modules):
+        call_method(ip,12000,"set_grasped_object",{"object":m+"_left"})
+
 def command_some(robots:list, cmd: str, args: dict = {}):
     threads = []
     for r in robots:
