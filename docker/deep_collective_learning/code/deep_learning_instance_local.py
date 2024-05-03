@@ -27,6 +27,7 @@ from xmlrpc.server import SimpleXMLRPCServer
 from socketserver import ThreadingMixIn
 
 import logging
+from video.video_command import VideoRecorder
 
 logger = logging.getLogger("deep_interface")
 logger.setLevel(logging.DEBUG)
@@ -125,6 +126,8 @@ class DeepReinforcementLearner():
         self.agent_args = Dict(parser,self.architecture)
         self.robot_ip="localhost"
         self.own_ip="localhost"
+        
+        self.video_flag = False
 
         logger.debug("initialized")
 
@@ -141,6 +144,8 @@ class DeepReinforcementLearner():
         self.rpc_server.register_function(self.setLearningParams, "setLearningParams")
         self.rpc_server.register_function(self.initializeAgent, "initializeAgent")
         self.rpc_server.register_function(self.sendNewExperimentDataToCollective, "getNewExperimentData")
+        self.rpc_server.register_function(self.start_recording, "start_recording")
+        self.rpc_server.register_function(self.end_recording, "end_recording")
         logger.debug("RPC server is serving..")
         self.rpc_server.serve_forever()
 
@@ -503,8 +508,28 @@ class DeepReinforcementLearner():
 
         return "finished"
 
+    def start_recording(self):
+        
+        if self.video_flag:
+            logger.debug("warning: recording already started")
+        else:            
+            try:
+                self.recorder = VideoRecorder()
+                self.recorder.start_recording()
+                logger.debug("recording starts")
+                self.video_flag = True
+            except:
+                logger.debug("pls check the camera device")
 
-
+        
+    def end_recording(self):
+        if self.video_flag:
+            self.recorder.stop_recording()
+            logger.debug("recording ends")
+            logger.debug(self.recorder.name)
+            del self.recorder
+        else:
+            logger.debug("pls check if the recording is start")
 
 if __name__ == "__main__":
         logger.debug("Version: 1.0")
