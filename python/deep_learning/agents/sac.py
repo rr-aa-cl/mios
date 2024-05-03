@@ -13,13 +13,13 @@ class SAC(nn.Module):
         super(SAC,self).__init__()
         self.args = args
         self.actor = Actor(self.args.layer_num, state_dim, action_dim, self.args.hidden_dim, \
-                           self.args.activation_function, self.args.last_activation, self.args.trainable_std)
+                           self.args.activation_function, self.args.last_activation, self.args.trainable_std).to(device)
 
-        self.q_1 = Critic(self.args.layer_num, state_dim+action_dim, 1, self.args.hidden_dim, self.args.activation_function,self.args.last_activation)
-        self.q_2 = Critic(self.args.layer_num, state_dim+action_dim, 1, self.args.hidden_dim, self.args.activation_function,self.args.last_activation)
+        self.q_1 = Critic(self.args.layer_num, state_dim+action_dim, 1, self.args.hidden_dim, self.args.activation_function,self.args.last_activation).to(device)
+        self.q_2 = Critic(self.args.layer_num, state_dim+action_dim, 1, self.args.hidden_dim, self.args.activation_function,self.args.last_activation).to(device)
         
-        self.target_q_1 = Critic(self.args.layer_num, state_dim+action_dim, 1, self.args.hidden_dim, self.args.activation_function, self.args.last_activation)
-        self.target_q_2 = Critic(self.args.layer_num, state_dim+action_dim, 1, self.args.hidden_dim, self.args.activation_function, self.args.last_activation)
+        self.target_q_1 = Critic(self.args.layer_num, state_dim+action_dim, 1, self.args.hidden_dim, self.args.activation_function, self.args.last_activation).to(device)
+        self.target_q_2 = Critic(self.args.layer_num, state_dim+action_dim, 1, self.args.hidden_dim, self.args.activation_function, self.args.last_activation).to(device)
         
         self.soft_update(self.q_1, self.target_q_1, 1.)
         self.soft_update(self.q_2, self.target_q_2, 1.)

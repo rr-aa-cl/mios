@@ -14,18 +14,19 @@ import socket
 import numpy as np
 import torch
 import copy
+import math
 import time
 import os
 
 import asyncio
-
 from desk.mongodb_client import MongoDBClient
 
 modelKnowledge0={'mode':0,
-                'scaling':[1,1,1,1,1,1],
-                'actionLimits':[[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1]],
+                'scaling':[1,1,1,1,1,1,1],
+                'actionLimits':[[-2,2],[-2,2],[-2,2],[-2,2],[-2,2],[-2,2],[-2,2]],
                 'sigmaScaling':0.1,
                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
+
 
 modelKnowledge1={'mode':1,
                 'scaling':[1,1,1,1,1,1],
@@ -46,7 +47,7 @@ modelKnowledge3={'mode':1,
                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 
 learningParams= {'architecture':'sac',
-                'epochs':400,
+                'epochs':300,
                 'train':True,
                 'experiment_ID': 0,
                 'number_of_experiments': 5,
@@ -78,6 +79,8 @@ class CollectiveDeepReinforcementLearner():
         self.logging=learning_params['logging']
         self.loadExistingNetwork=learning_params['load']
         self.saveInterval=learning_params['saveInterval']
+        self.batchSizeScale=8
+        self.timeoutTime=120
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print("Device: ",self.device)
         self.tags = tags
@@ -99,7 +102,8 @@ class CollectiveDeepReinforcementLearner():
         self.tags.append("iteration_"+str(iteration))
 
     def initializeLocalLearners(self):
-        dual_arm_system_IDs=[format(i, '03d') for i in range(25,26)]
+        dual_arm_system_IDs=[format(i, '03d') for i in range(0,30)]
+        dual_arm_system_IDs=[format(i, '03d') for i in range(24,25)]
         def ping_hosts(hosts):
             reachable_hosts = []
             unreachable_hosts = []
@@ -143,7 +147,8 @@ class CollectiveDeepReinforcementLearner():
                 print("Initialization of "+host+" failed!")
 
     async def rpc_call_to_learner(self,learnerProxy,index):
-        await self.loop.run_in_executor(None, getattr(learnerProxy, "learning"))
+        task=self.loop.run_in_executor(None, getattr(learnerProxy, "learning"))
+        await asyncio.wait_for(task,self.timeoutTime)
         return index
 
     async def learning_loop(self,learningInstances,callback):
@@ -170,11 +175,18 @@ class CollectiveDeepReinforcementLearner():
             for task in done:
                 index=task.result()
                 isFinished=callback(index)
+                host,IP=self.robotLearningInstances[index]
                 if isFinished==False:
-                    host,IP=self.robotLearningInstances[index]
                     learnerProxy=xmlrpc.client.ServerProxy("http://"+IP+":9000")
                     call_task = asyncio.create_task(self.rpc_call_to_learner(learnerProxy,index))
                     self.learningTasks.add(call_task)
+                else:
+                    mongo_data = self.mongo_client.read("deep_ml_results","insertion",{"meta.tags":self.tags+[host]})
+                    if mongo_data:
+                        mongo_data = mongo_data[0]
+                        mongo_data["meta"]["ending_time"] = time.time()
+                        self.mongo_client.update("deep_ml_results","insertion",{"meta.tags":self.tags+[host]},mongo_data)
+                    
             self.learningTasks-=done
     
     def learning_callback(self,learner_index):
@@ -195,14 +207,15 @@ class CollectiveDeepReinforcementLearner():
         #3. train model -> improve!
         #Do i need to change the format?
         #print(self.agents[learner_index].data.data_idx)
-        if self.agents[learner_index].data.data_idx > self.agent_args.learn_start_size: 
+        if self.agents[learner_index].data.data_idx > 512: #self.agent_args.learn_start_size: 
             print("TRAINING")
             startTime=time.time()
-            for i in range(int(self.learning_params['maxTime']*self.learning_params['frequency'])):
-                self.agents[learner_index].train_net(self.agent_args.batch_size, self.epochs[learner_index])
+            for i in range(math.ceil(self.learning_params['maxTime']*self.learning_params['frequency']/self.batchSizeScale)):
+                self.agents[learner_index].train_net(self.agent_args.batch_size*self.batchSizeScale, self.epochs[learner_index])
             print("Training time: ",time.time()-startTime)
         #4. update weights
-        model_bytes = pickle.dumps(self.agents[learner_index].state_dict())
+        state_dict_cpu = {k: v.cpu() for k, v in self.agents[learner_index].state_dict().items()}
+        model_bytes = pickle.dumps(state_dict_cpu)
         if learnerProxy.setModelWeights(xmlrpc.client.Binary(model_bytes))==True:
             pass
         else:
@@ -220,6 +233,7 @@ class CollectiveDeepReinforcementLearner():
             return True
 
     def saveExperimentData(self,path):
+
         #create folder
         i=1
         folder_name = datetime.now().strftime("%Y-%m-%d")
@@ -237,7 +251,6 @@ class CollectiveDeepReinforcementLearner():
         #save network weights
         os.makedirs(path+"/"+folder_name+"/"+str(i)+"/network_weights")
         for i in range(len(self.robotLearningInstances)):
-            mongo_data = self.mongo_client.read("deep_ml_results","insertion",{"meta.tags":self.tags+[host]})
             host,IP=self.robotLearningInstances[i]
             os.makedirs(path+"/"+folder_name+"/"+str(i)+"/network_weights/"+host)   
             for j in range(len(self.storedNetworkWeights[i])):         
@@ -292,7 +305,8 @@ class CollectiveDeepReinforcementLearner():
                 print("Agent initialization of "+host+" failed!")
 
             else:
-                model_bytes = pickle.dumps(agent.state_dict())
+                state_dict_cpu = {k: v.cpu() for k, v in agent.state_dict().items()}
+                model_bytes = pickle.dumps(state_dict_cpu)
 
                 if learnerProxy.setModelWeights(xmlrpc.client.Binary(model_bytes))==True:
                     pass
@@ -306,7 +320,7 @@ class CollectiveDeepReinforcementLearner():
         #saving experiment results^
         self.saveExperimentData("experimentData")
 
-for i in range(5):
+for i in range(learningParams['number_of_experiments']):
     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge1)
     Learner.initializeLocalLearners()
     Learner.learning()
