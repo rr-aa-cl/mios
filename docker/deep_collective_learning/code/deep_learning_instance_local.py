@@ -534,6 +534,7 @@ class DeepReinforcementLearner():
             self.recorder.stop_recording()
             logger.debug("recording ends")
             logger.debug(self.recorder.name)
+            self.video_flag = False
             del self.recorder
         else:
             logger.debug("pls check if the recording is start")
