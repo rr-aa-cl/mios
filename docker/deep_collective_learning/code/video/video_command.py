@@ -27,7 +27,7 @@ import os
 
 
 class VideoRecorder:
-    def __init__(self, tag="", device='/dev/video7', output_dir='./v/'):
+    def __init__(self, tag="", device='/dev/video4', output_dir='./v/'):
         self.tag = tag
         self.device = device
         self.output_dir = output_dir
