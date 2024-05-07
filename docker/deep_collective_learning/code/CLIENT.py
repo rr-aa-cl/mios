@@ -1,9 +1,43 @@
 import xmlrpc.client
 import time
+import os
+import json
 
+list_block_1 = ["001", #"002", 
+                "003", "004", "005", 
+                "006", "007", "008", "010", 
+                "011", "012"]
+list_block_2 = ["009","013","014","015","016","017",
+                # "018",#"020",
+                "041",
+                "021","022"]
+list_U = ["023", "024", "025", "027", "029"] #, "026"
+list_external = ["050"]
 
-with xmlrpc.client.ServerProxy("http://0.0.0.0:9000") as s:
-    s.start_recording()
-    time.sleep(5)
-    s.end_recording()
+def get_ips(module_list):
+    with open("../../../python/ip.json", "r") as jsonfile:
+        data = json.load(jsonfile)        
+        ips = [data[i] for i in module_list]
+        print(ips)
     
+    return ips
+modules = list_block_1+ list_block_2 + list_U
+# modules = ["024"]
+ips = get_ips(modules)
+
+for ip in ips:
+    try:
+        with xmlrpc.client.ServerProxy("http://" + ip + ":9000") as s:
+            s.start_recording("testing")
+            time.sleep(5)
+            s.end_recording()
+            print("done:  " + ip)
+    except:
+        print("error: oooooooooooooooooo " + ip)
+
+# sudo v4l2-ctl --list-devices 
+
+# adm?-Dualarm
+# sudo apt install v4l-utils -y/dev
+
+
