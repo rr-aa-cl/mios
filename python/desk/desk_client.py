@@ -230,7 +230,7 @@ class FrankaAPI:
                     self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_token":self._spoc_token})
                     self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_in_control":True})
                     print("verify your access to the robot: Press the O-Button!\n You have ",response," Seconds!")
-                    #time.sleep(response)
+                    time.sleep(response)
                     return True
 
             return False
