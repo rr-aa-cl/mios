@@ -22,15 +22,15 @@ def get_ips(module_list):
     
     return ips
 modules = list_block_1+ list_block_2 + list_U
-# modules = ["024"]
+modules = ["026"]
 ips = get_ips(modules)
 
 for ip in ips:
     try:
         with xmlrpc.client.ServerProxy("http://" + ip + ":9000") as s:
-            s.start_recording("testing")
+            s.start_recording("a/c/testing")
             time.sleep(5)
-            s.end_recording()
+            s.stop_recording()
             print("done:  " + ip)
     except:
         print("error: oooooooooooooooooo " + ip)
