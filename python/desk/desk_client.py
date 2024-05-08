@@ -1,4 +1,5 @@
 #!/usr/bin/python3 -u
+from tkinter.tix import Tree
 import requests
 from http.client import HTTPSConnection
 import base64
@@ -46,10 +47,12 @@ class FrankaAPI:
             self._spoc_token = self.mongodb_client.read(self.db, "parameters", {"name":"system"})[0]["spoc_token"]
             if self.in_control():
                 print("desk_client: In control. spoc token: ",self._spoc_token)
+                self._in_control = True
             else:
                 print("desk_clinet: Not in control yet. Updating mongodb accordingly.")
                 self.mongodb_client.update(self.db, "parameters", {"name":"system"}, {"spoc_in_control":False})
                 self.mongodb_client.update(self.db, "parameters", {"name":"system"}, {"spoc_token":""})
+                self._in_control = False
         return self
 
     def __exit__(self, type, value, traceback):
@@ -172,9 +175,11 @@ class FrankaAPI:
         if response_status == 200:
             self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_token":self._spoc_token})
             self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_in_control":True})
+            self._in_control = True
             return True
         else:
             self.mongodb_client.update(self.db,"parameters",{"name":"system"},{"spoc_in_control":False})
+            self._in_control = False
             return False
 
     def take_control(self):

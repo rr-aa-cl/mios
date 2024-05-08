@@ -8,6 +8,7 @@ from queue import Empty
 from copy import deepcopy
 import uuid
 import numpy as np
+from xmlrpc.client import ServerProxy
 from mongodb_client.mongodb_client import MongoDBClient
 from problem_definition.problem_definition import ProblemDefinition
 from engine.task_result import TaskResult
@@ -157,7 +158,9 @@ class Engine:
         self.problem_definition = problem_definition
         self.meta_data = problem_definition.to_dict()
         self.meta_data["t_0"] = time.time()
-        self.meta_data["date"] = str(datetime.datetime.now())
+        now = datetime.datetime.now()
+        now.strftime("%Y-%m-%d_%H:%M:%S")
+        self.meta_data["date"] = now.strftime("%Y-%m-%d_%H:%M:%S")
         self.database_results_collection = self.database_client.client.ml_results[problem_definition.skill_class]
         self.database_results_id = self.database_results_collection.insert_one(
             {"meta": self.meta_data}).inserted_id
@@ -245,19 +248,37 @@ class Engine:
         self._run_trial(agent, trial)
         self.free_agents.add(agent)
         logger.debug("Free agent " + agent)
+        try:  # just to be sure
+            with ServerProxy("http://" + agent + ":9000") as s:
+                logger.debug("stop_recoring video")
+                s.stop_recording()
+        except:
+            pass
 
     def _run_trial(self, agent: str, trial: Trial):
         if trial.is_valid() is False:
             raise ProblemDefinitionError
-
         trial.trial_number = self.cnt_trial
         self.cnt_trial += 1
         trial.t_0 = time.time()
+        # start video recording
+        try:
+            with ServerProxy("http://" + agent + ":9000") as s:
+                folder = ""
+                for tag in self.problem_definition.tags:
+                    folder = folder + tag
+                folder = folder +"/" + self.meta_data["date"] + "/"
+                trial_name = "n"+str(trial.trial_number)+"_"+str(trial.t_0)
+                logger.debug("start recording at "+folder+trial_name+".mp4")
+                s.start_recording(folder+trial_name)
+                time.sleep(2)
+        except:
+            pass
+
         for i in range(self.problem_definition.n_variations):
             #print("Running variation " + str(i))
             self.problem_definition.apply_object_modifiers(trial.task_context)
             result, variation_result = self._execute_task(agent, trial)
-
             if self.keep_running is True:
                 if result is False:
                     logger.warning("Could not execute task for agent " + agent + ". Trial will be re-inserted into queue.")
@@ -279,7 +300,6 @@ class Engine:
 
             trial.t_1 = time.time()
             trial.t_delta = trial.t_1 - trial.t_0
-            #print("#######################")
             print(trial.trial_number)
 
             self.lock_data.acquire()
@@ -288,7 +308,12 @@ class Engine:
                 self.y = np.append(self.y, trial.task_result.q_metric.final_cost)
             self.lock_data.release()
             self._reset_task(agent, trial)
-
+        try:
+            with ServerProxy("http://" + agent + ":9000") as s:
+                logger.debug("stop_recoring video")
+                s.stop_recording()
+        except:
+            pass
         logger.debug("Cost: " + str(trial.task_result.q_metric.final_cost))
         logger.debug("FINISHED trial " + str(self.cnt_trial) + " with uuid " + trial.trial_uuid)
         if trial.task_result.q_metric.optimal is True:

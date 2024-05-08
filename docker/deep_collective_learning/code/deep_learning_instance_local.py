@@ -145,7 +145,7 @@ class DeepReinforcementLearner():
         self.rpc_server.register_function(self.initializeAgent, "initializeAgent")
         self.rpc_server.register_function(self.sendNewExperimentDataToCollective, "getNewExperimentData")
         self.rpc_server.register_function(self.start_recording, "start_recording")
-        self.rpc_server.register_function(self.end_recording, "end_recording")
+        self.rpc_server.register_function(self.stop_recording, "stop_recording")
         logger.debug("RPC server is serving..")
         self.rpc_server.serve_forever()
 
@@ -511,7 +511,7 @@ class DeepReinforcementLearner():
             logger.debug("finished")
 
         call_method(self.robot_ip,12000, "unsubscribe_telemetry",{"subscribe":desired_states,"ip":self.own_ip,"port":8887})    
-        self.end_recording()
+        self.stop_recording()
         
         return "finished"
 
@@ -529,7 +529,7 @@ class DeepReinforcementLearner():
                 logger.debug("pls check the camera device")
 
         
-    def end_recording(self):
+    def stop_recording(self):
         if self.video_flag:
             self.recorder.stop_recording()
             logger.debug("recording ends")
