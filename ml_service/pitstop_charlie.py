@@ -5,7 +5,8 @@ from pathspec import iter_tree
 from run_experiments import *
 
 # ---------------------------- exp robots ------------------------------------
-list_robots = list_block_1 + list_block_2 + list_U
+# list_robots = list_block_1 + list_block_2 + list_U
+list_robots = list_block_2
 print(len(list_robots))
 
 # ---------------------------- cutoff cost ------------------------------------
@@ -194,7 +195,7 @@ def check_object(host, obj):
         if result["grasped_object"] == obj:
             return True
         else:
-            move_joint(Learner, "raise_hand")
+            move_joint(host, "raise_hand")
             print("wainting for ",host, " to grasp ", obj)
             return False
 
