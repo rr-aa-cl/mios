@@ -1,3 +1,4 @@
+from numpy import insert
 from definitions.templates import *
 from definitions.cost_functions import *
 from definitions.service_configs import *
@@ -1780,38 +1781,52 @@ def collective25():
 
         threads = []
         while len(tasks) > 0:
-            robot = list(tasks.keys())[0]
-            insertable = tasks.pop(robot)[0]  #first index because every robot has just one object
-            #TODO: change names
-            container = insertable+"_container" 
-            approach = container+"_approach"
-            pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
-                                    {"Insertable": insertable, "Container": container,
-                                    "Approach": approach}).get_problem_definition(insertable)
-            if not get_states([insertable[:3]])[0]:
-                print(robot, "is not ready! Skipping task ",insertable)
-                continue
-            if insertable in cutoff:
-                sc.finish_cost = cutoff[insertable]
-            if insertable == "010_left" or insertable == "023_left" or insertable == "027_left":
-                print("increase limits for ",insertable)
-                pd.domain.limits["p2_f_push_z"] = (0,60)
-            dualarm_cmd = {"agent":robot,"port":13000,"skills":dualarm_skills,"sleep":1}
-            threads.append(Thread(target=learn_single_task, args=(robot, pd, sc, tags, n_current_iter, False, knowledge_source.to_dict(), True, 8000, dualarm_cmd)))
-            threads[-1].start()
-            time.sleep(1)
-            server = ServerProxy("http://%s:%s/" %(robot, "8000"))
-            if server.start_telemetry("10.157.175.246", 8004):
-                print("start sending telemetry")
-            while sum([t.is_alive() for t in threads]) >= 5:  # TODO: decide new number, maybe 5 or 25
+            for robot in tasks:
+                server = ServerProxy("http://%s:%s/" %(robot, "8000"))
+                if len(tasks[robot]) == 0:
+                    tasks.pop(robot)
+                    continue
+                if server.is_busy():
+                    continue
+                insertable = tasks[robot][0]
+                if not check_object(robot, insertable):
+                    continue
+                if sum([t.is_alive() for t in threads]) >= 10:
+                    time.sleep(1)
+                    continue
+                #TODO: change names
+                container = insertable+"_container" 
+                approach = container+"_approach"
+                pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
+                                        {"Insertable": insertable, "Container": container,
+                                        "Approach": approach}).get_problem_definition(insertable)
+                if not get_states([insertable[:3]])[0]:
+                    print(robot, "is not ready! Skipping task ",insertable)
+                    continue
+                if insertable in cutoff:
+                    sc.finish_cost = cutoff[insertable]
+                if insertable == "010_left" or insertable == "023_left" or insertable == "027_left":
+                    print("increase limits for ",insertable)
+                    pd.domain.limits["p2_f_push_z"] = (0,60)
+                dualarm_cmd = {"agent":robot,"port":13000,"skills":dualarm_skills,"sleep":1}
+                threads.append(Thread(target=learn_single_task, args=(robot, pd, sc, tags, n_current_iter, False, knowledge_source.to_dict(), True, 8000, dualarm_cmd)))
+                threads[-1].start()
                 time.sleep(1)
 
         for t in threads:
             t.join()
-        tensor_server = ServerProxy("http://10.157.175.246:8004")
-        tensor_server.stop()
         kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
         kb.clear_memory()
         print("run ", n_current_iter, " finished :)")
         # TODO: add video recording by call FLO's rpc
     return "finished :)"
+
+def check_object(host, obj):
+    result = call_method(host, 12000, "get_state")
+    if type(result) == dict:
+        if result["grasped_object"] == obj:
+            return True
+        else:
+            move_joint(Learner, "raise_hand")
+            print("wainting for ",host, " to grasp ", obj)
+            return False
