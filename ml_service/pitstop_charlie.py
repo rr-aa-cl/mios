@@ -92,10 +92,10 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
     tasks = {   "collective-001.rsi.ei.tum.de":["task1",""],
                 "collective-003.rsi.ei.tum.de":["D_012","D_005","D_018"],
                 "collective-004.rsi.ei.tum.de":[],
-                "collective-005.rsi.ei.tum.de":[],
-                "collective-006.rsi.ei.tum.de":[],
+                "collective-005.rsi.ei.tum.de":["D_006", "D_024", "D_027"],
+                "collective-006.rsi.ei.tum.de":["D_002", "D_001", "D_021"],
                 "collective-007.rsi.ei.tum.de":[],
-                "collective-008.rsi.ei.tum.de":[],
+                "collective-008.rsi.ei.tum.de":["D_008", "D_004", "D_013"],
                 "collective-010.rsi.ei.tum.de":[],
                 "collective-011.rsi.ei.tum.de":[],
                 "collective-012.rsi.ei.tum.de":[],
@@ -113,7 +113,7 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
                 "collective-025.rsi.ei.tum.de":["A_023_stairs"],
                 "collective-026.rsi.ei.tum.de":["A_022_diamond"],
                 "collective-027.rsi.ei.tum.de":["C_key_23"],
-                "collective-040.rsi.ei.tum.de":[],
+                # "collective-040.rsi.ei.tum.de":[],
                 "collective-029.rsi.ei.tum.de":["A_018_cross-2", "A_016_cross-1"]
             }
 
