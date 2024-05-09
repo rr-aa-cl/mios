@@ -5,10 +5,13 @@ from pathspec import iter_tree
 from run_experiments import *
 
 # ---------------------------- exp robots ------------------------------------
-# list_robots = list_block_1 + list_block_2 + list_U
-list_robots = list_block_2
-print(len(list_robots))
+list_robots = list_block_1 + list_block_2 + list_U
+# list_robots = list_block_2
 
+# list_robots = ["001", "003", "004"]
+
+print(len(list_robots))
+print(list_robots)
 # ---------------------------- cutoff cost ------------------------------------
 cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
             '003_left': 0.68016,
@@ -53,14 +56,15 @@ def prefill_fast_pipe(iteration_n:int, kb_location:str, tags: list = ["10agents_
                 break
 
             
-def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_charlie_1"], n_agents:int = 5): #10
+def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_charlie_1"], n_agents:int = 25): #10
     '''
     n_current_iter: number of current iteration
 
     '''
     # tags = ["ps_alpha_5","10agents_25tasks"]
-    tags = ["testing"]
+    tags = ["100_testing"]
     # modules = list_block_1 + list_block_2 + list_U
+    
     modules = list_block_1 
     cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
                 '003_left': 0.68016,
@@ -93,16 +97,16 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
     # for n_current_iter in range(29,30): #range(15,25):   (not reserve)
 
     tasks = {   
-            #  "collective-001.rsi.ei.tum.de":["task1",""],
-            #     "collective-003.rsi.ei.tum.de":[],
-            #     "collective-004.rsi.ei.tum.de":[],
-            #     "collective-005.rsi.ei.tum.de":[],
-            #     "collective-006.rsi.ei.tum.de":[],
-            #     "collective-007.rsi.ei.tum.de":[],
-            #     "collective-008.rsi.ei.tum.de":[],
-            #     "collective-010.rsi.ei.tum.de":[],
-            #     "collective-011.rsi.ei.tum.de":[],
-            #     "collective-012.rsi.ei.tum.de":[],
+                "collective-001.rsi.ei.tum.de":["D_007","D_016","D_017"],
+                "collective-003.rsi.ei.tum.de":["D_012","D_005","D_018"],
+                "collective-004.rsi.ei.tum.de":["D_003","D_019","D_020"],
+                "collective-005.rsi.ei.tum.de":["D_006", "D_024", "D_027"],
+                "collective-006.rsi.ei.tum.de":["D_002", "D_001", "D_021"],
+                "collective-007.rsi.ei.tum.de":["D_022","D_024","D_025"],
+                "collective-008.rsi.ei.tum.de":["D_008", "D_004", "D_013"],
+                "collective-010.rsi.ei.tum.de":["D_009"],
+                "collective-011.rsi.ei.tum.de":["D_010"],
+                "collective-012.rsi.ei.tum.de":["C_key_05"],
                 "collective-009.rsi.ei.tum.de":["B_017_IT2DE"],
                 "collective-013.rsi.ei.tum.de":["A_012_ellipsoid-2"],
                 "collective-014.rsi.ei.tum.de":["A_024_moon"],
@@ -112,13 +116,15 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
                 "collective-041.rsi.ei.tum.de":["A_key_24"],
                 "collective-021.rsi.ei.tum.de":["A_020_pentagram"],
                 "collective-022.rsi.ei.tum.de":["C_key_10"],
-                # "collective-023.rsi.ei.tum.de":[],
-                # "collective-024.rsi.ei.tum.de":[],
-                # "collective-025.rsi.ei.tum.de":[],
-                # "collective-027.rsi.ei.tum.de":[],
+                "collective-023.rsi.ei.tum.de":["C_key_08"],
+                "collective-024.rsi.ei.tum.de":["C_key_24"],
+                "collective-025.rsi.ei.tum.de":["A_023_stairs"],
+                "collective-026.rsi.ei.tum.de":["A_022_diamond"],
+                "collective-027.rsi.ei.tum.de":["C_key_23"],
                 # "collective-040.rsi.ei.tum.de":[],
-                # "collective-029.rsi.ei.tum.de":["A_018_cross-2", "A_016_cross-1"]
+                "collective-029.rsi.ei.tum.de":["A_018_cross-2", "A_016_cross-1"]
             }
+
 
     threads = []
     print("Number of iteration: ", n_current_iter+1)
@@ -130,28 +136,32 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
     knowledge_source.scope.append("n"+str(n_current_iter+1)) # searching for knowledge on the database (only works for the slow pipeline);  e.g. [] search all, 
     knowledge_source.type = "all"  # all: 
         
-    dualarm_skills = []
-    move_context = {
-                "skill": {
-                    "speed": 0.5,
-                    "acc": 1,
-                    "q_g": [0, 0, 0, 0, 0, 0, 0],
-                    "objects": {
-                        "goal_pose": "hold"}},
-                "control": {
-                    "control_mode": 3},
-                "user": {
-                    "env_X": [0.001, 0.001, 0.001, 0.001, 0.001, 0.001],
-                    "F_ext_max": [100, 50]}}
-    dualarm_skills.append(("move", "MoveToPoseJoint", move_context))
     
-    kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
-    kb.clear_memory()
 
     threads = []
     tags.extend(tags_addon)
     while len(tasks) > 0:
         for robot in tasks:
+            
+            
+            dualarm_skills = []
+            move_context = {
+                        "skill": {
+                            "speed": 0.5,
+                            "acc": 1,
+                            "q_g": [0, 0, 0, 0, 0, 0, 0],
+                            "objects": {
+                                "goal_pose": "hold_" + tasks[robot][0]}},
+                        "control": {
+                            "control_mode": 3},
+                        "user": {
+                            "env_X": [0.001, 0.001, 0.001, 0.001, 0.001, 0.001],
+                            "F_ext_max": [100, 50]}}
+            dualarm_skills.append(("move", "MoveToPoseJoint", move_context))
+            
+            kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
+            kb.clear_memory()
+            
             server = ServerProxy("http://%s:%s/" %(robot, "8000"))
             if len(tasks[robot]) == 0:
                 tasks.pop(robot)
@@ -170,7 +180,7 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
             pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
                                     {"Insertable": insertable, "Container": container,
                                     "Approach": approach}).get_problem_definition(insertable)
-            if not get_states([insertable[:3]])[0]:
+            if not get_states([robot.split(".")[0][-3:]])[0]:
                 print(robot, "is not ready! Skipping task ",insertable)
                 continue
             if insertable in cutoff:
@@ -195,10 +205,13 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
 def check_object(host, obj):
     result = call_method(host, 12000, "get_state")
     if type(result) == dict:
-        if result["grasped_object"] == obj:
+        if result["result"]["grasped_object"] == obj:
             return True
         else:
-            move_joint(host, "raise_hand")
+            if host == "collective-041.rsi.ei.tum.de" or host == get_ips["041"][0]:
+                move_joint(host, "raise_hand_041")
+            else:                
+                move_joint(host, "raise_hand")
             print("wainting for ",host, " to grasp ", obj)
             return False
 

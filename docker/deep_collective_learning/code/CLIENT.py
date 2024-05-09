@@ -11,7 +11,7 @@ list_block_2 = ["009","013","014","015","016","017",
                 # "018",#"020",
                 "041",
                 "021","022"]
-list_U = ["023", "024", "025", "027", "029"] #, "026"
+list_U = ["023", "024", "025", "026", "027", "029"] 
 list_external = ["050"]
 
 def get_ips(module_list):
@@ -22,13 +22,13 @@ def get_ips(module_list):
     
     return ips
 modules = list_block_1+ list_block_2 + list_U
-modules = ["026"]
+# modules = ["026"]
 ips = get_ips(modules)
 
 for ip in ips:
     try:
         with xmlrpc.client.ServerProxy("http://" + ip + ":9000") as s:
-            s.start_recording("a/c/testing")
+            s.start_recording("HelloWorld")
             time.sleep(5)
             s.stop_recording()
             print("done:  " + ip)

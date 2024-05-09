@@ -21,7 +21,7 @@ list_block_2 = ["009","013","014","015","016","017",
                 # "018",#"020",
                 "041",
                 "021","022"]
-list_U = ["023", "024", "025", "027", "040", "029"] #, "026", "028",
+list_U = ["023", "024", "025","026", "027", "029"] #, "026", "028",
 list_external = ["050"]
 def get_ips(module_list):
     with open("ip.json", "r") as jsonfile:
@@ -873,6 +873,7 @@ def restart_collective():
     client.reboot_robots()
 
 def get_status():
+    print(len(modules))
     for number,host in zip(modules,get_ips(modules)):
         #print("\ncollective-%03d"%(number+1))
         print("collective-",number)
@@ -1223,6 +1224,34 @@ def teach_dualarm(module:str, object_name:str):
     time.sleep(1)
     print("closing gripper")
     print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
+    input("Teach approach [with object]")
+    call_method(robot, 12000, "teach_object", {"object": insertable+"_container_approach"})
+    input("Teach container [with object]")
+    call_method(robot, 12000, "teach_object", {"object": insertable+"_container"})
+    # print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
+    
+    print(call_method(robot, 12000, "set_grasped_object",{"object":insertable}))      
+
+
+def teach_dualarm_without_homing(module:str, object_name:str):
+    insertable = object_name
+    robot = get_ips([module])[0]
+    print("\nteaching ",insertable, "for ", robot,"\n")
+    input("teach hold position of right arm")
+    call_method(robot, 13000, "teach_object",{"object":"hold_"+insertable})
+    input("Press key to start teaching. [Pose above container, without object]")
+    call_method(robot,12000,"release_object")
+    call_method(robot, 12000, "teach_object", {"object": insertable+"_container_above"})
+    #input("Teach where to grab object")
+    #call_method(robot, 12000, "grasp", {"width":0,"speed":1,"force":100})
+    call_method(robot, 12000, "teach_object", {"object": insertable, "teach_width":True})
+    current_finger_width = call_method(robot,12000,"get_state")["result"]["gripper_width"]
+    #call_method(robot,12000,"move_gripper",{"speed":1,"force":100,"width":current_finger_width+0.005})
+    #call_method(robot, mios_port, "grasp", {"width":0,"speed":1,"force":100,"epsilon_outer":1})
+    #call_method(robot, mios_port, "set_grasped_object", {"object": insertable})
+    time.sleep(1)
+    #print("closing gripper")
+    #print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
     input("Teach approach [with object]")
     call_method(robot, 12000, "teach_object", {"object": insertable+"_container_approach"})
     input("Teach container [with object]")
