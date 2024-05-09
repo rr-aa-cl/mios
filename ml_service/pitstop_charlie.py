@@ -90,7 +90,7 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
     # for n_current_iter in range(29,30): #range(15,25):   (not reserve)
 
     tasks = {   "collective-001.rsi.ei.tum.de":["task1",""],
-                "collective-003.rsi.ei.tum.de":[],
+                "collective-003.rsi.ei.tum.de":["D_012","D_005","D_018"],
                 "collective-004.rsi.ei.tum.de":[],
                 "collective-005.rsi.ei.tum.de":[],
                 "collective-006.rsi.ei.tum.de":[],
