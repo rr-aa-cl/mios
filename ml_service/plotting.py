@@ -2,6 +2,8 @@ from ast import Num
 from asyncio import FastChildWatcher
 from cProfile import label
 from math import isclose
+from os import error
+from unittest import result
 import numpy as np
 import copy
 from plotting.data_acquisition import *
@@ -15,6 +17,7 @@ import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 import csv
+from pymongo.errors import ServerSelectionTimeoutError
 import scipy.stats as st
 from matplotlib import colors
 import seaborn as sns
@@ -29,7 +32,7 @@ list_block_1 = ["001", #"002",
 list_block_2 = ["009","013","014","015","016","017",
                 "041",#"020",
                 "021","022"]
-list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
+list_U = ["023", "024", "025", "026","027", "040", "029"] #, , "028"
 list_external = ["050"]
 cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
             '003_left': 0.68016,
@@ -2068,7 +2071,6 @@ def get_confidence(listoflists, confidence=0.95):
     return mean, interval
 
 def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], single_agent=False, cutoff=None, skip_module=set()):
-    
     p = DataProcessor()
     if cutoff is None:  #plot old comparison
         cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
@@ -2087,14 +2089,15 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
                     '015_left': 0.68184,
                     '016_left': 0.9,   #
                     '017_left': 0.63864,
-                    '018_left': 0.63144,  # '018_left': 0.63144,
+                    #'018_left': 0.63144,  # '018_left': 0.63144,
+                    '041_left': 0.63144,
                     '021_left': 0.63528,
                     '022_left': 0.6828000000000001,
                     '023_left': 0.6648000000000001,
                     '024_left': 0.9187199999999999,
                     '025_left': 0.64752,
                     '027_left': 0.68448,
-                    '028_left': 0.61824,
+                    '040_left':  0.61824,#'028_left': 0.61824,
                     '029_left': 0.68088}
         modules = list_block_1 + list_block_2 + list_U
         modules.pop(modules.index("041"))
@@ -2109,7 +2112,13 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
     for xxx in modules:
         if xxx in skip_module:
             continue
-        results = get_multiple_experiment_data("collective-"+xxx+".rsi.ei.tum.de", "insertion", "ml_results", {"meta.tags": tags})
+        try:
+            results = get_multiple_experiment_data("collective-"+xxx+".rsi.ei.tum.de", "insertion", "ml_results", {"meta.tags": tags})
+        except DataNotFoundError:
+            print("data not found on ",xxx)
+            continue
+        except ServerSelectionTimeoutError:
+            continue
         #print(len(results), "results found for ",xxx)
         for result in results:
             iteration = get_iteration(result.tags)
@@ -2140,8 +2149,8 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
             results_dict[iteration]["times_of_taskFinish"].append(learning_time)
             results_dict[iteration]["instances"].append(result.instance)
       #      sorted(results_dict[iteration]["accumulated_costs_times"])
-        if xxx == "007":
-            print(results_dict["n1"])
+      #  if xxx == "007":
+      #      print(results_dict["n1"])
     max_instances = 0
     all_instaces = []
     #print(results_dict.keys())
@@ -2187,6 +2196,344 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
     times_of_finished_tasks_confidence.insert(0,(0,0))
     return times_of_finished_tasks_mean, times_of_finished_tasks_confidence
 
+
+def get_global_collective_data(tags_list:list = [["10agents_25tasks", "collective", "n2",'ps_alpha_5'],["100collective"]], single_agent=False, cutoff=None, skip_module=set()):
+    p = DataProcessor()
+    tasks = {   
+        "001":["001_left","D_007","D_016","D_017"],
+        "003":["003_left","D_012","D_005","D_018","D_028"],
+        "004":["004_left","D_019","D_020"],
+        "005":["005_left","D_006", "D_026", "D_027"],
+        "006":["006_left","D_002", "D_001", "D_021"],
+        "007":["007_left","D_022","D_011"],
+        "008":["008_left","D_008", "D_004","D_013"],
+        "010":["010_left","D_009","D_014","D_024","D_025"],
+        "011":["011_left","D_010", "D_015","D_023"],
+        "012":["012_left","C_007","C_key_05","C_006"],
+        "009":["009_left","A_015_trapezoid","B_017_IT2DE","B_013"],
+        "013":["013_left","A_030_shamrock","A_012_ellipsoid-2", "C_011"],
+        "014":["014_left","A_024_moon","C_020","B_016"],
+        "015":["015_left","B_012_DE2DE","A_011","C_025"],
+        "016":["016_left","A_026_cylinder_10","A_026_cylinder_20","A_026_cylinder_50","A_026_cylinder_30"],  #,,,],"A_026_cylinder_60"
+        "017":["017_left","B_015","C_key_12","A_013_hexagram"],
+        "041":["020_left","A_021_arrow","A_key_24","C_022"],
+        "021":["021_left","C_018","A_020_pentagram","C_019"],
+        "022":["022_left","C_010","C_013","C_009"],
+        "023":["023_left","A_019_oneline","C_key_08","C_014"],
+        "024":["024_left","C_017","C_015","C_key_24"],
+        "025":["025_left","A_014_doji-1","A_023_stairs","A_025_heart"],
+        "026":["B-014","A_022_diamond","B-018"],
+        "027":["027_left","C_016","C_key_23","A_031_audi"],
+        "040":["028_left"],
+        "029":["029_left","A_016_sector","A_018_cross-2", "A_016_cross-1"]
+        }
+    if cutoff is None:  #plot old comparison
+        cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
+                    '003_left': 0.68016,
+                    '004_left': 0.74976,
+                    '005_left': 0.65, #
+                    '006_left': 0.6127199999999999,
+                    '007_left': 0.62616,
+                    '008_left': 0.6371999999999999,
+                    '010_left': 0.6888000000000001,
+                    '011_left': 0.63816,
+                    '012_left': 0.75528,
+                    '009_left': 0.6943199999999999,
+                    '013_left': 0.6348,
+                    '014_left': 0.6,
+                    '015_left': 0.68184,
+                    '016_left': 0.9,   #
+                    '017_left': 0.63864,
+                    '041_left': 0.63144,  # '018_left': 0.63144,
+                    '021_left': 0.63528,
+                    '022_left': 0.6828000000000001,
+                    '023_left': 0.6648000000000001,
+                    '024_left': 0.9187199999999999,
+                    '025_left': 0.64752,
+                    '027_left': 0.68448,
+                    '028_left': 0.61824,
+                    '029_left': 0.68088,
+                    
+                    }
+        modules = list_block_1 + list_block_2 + list_U
+        modules.pop(modules.index("041"))
+        modules.append("018")
+
+    else:
+        modules = list_block_1+list_block_2+list_U
+
+    #getting data
+    results_dict = {}
+    max_instances = 0
+    task_finished_times = []
+    for xxx in modules:
+        if xxx in skip_module:
+            continue
+        results = []
+        for tags in tags_list:
+            try:
+                results.extend(get_multiple_experiment_data("collective-"+xxx+".rsi.ei.tum.de", "insertion", "ml_results", {"meta.tags": tags}))
+            except DataNotFoundError:
+                print("data not found on ",xxx)
+                continue
+            except ServerSelectionTimeoutError:
+                print("cannot connect to ",xxx)
+        for r in results:
+            print("found", r.tags, " on ",xxx)
+        #print(len(results), "results found for ",xxx)
+        for result in results:
+            iteration = get_iteration(result.tags)
+            #if xxx == "001":
+            #    print(xxx,"_left iterations",iteration, "best cost: ",min(result.costs))
+            if len(result.costs)<10:
+                continue
+            if xxx+"_left" in cutoff:
+                learning_time = result.get_time_until_threshold(cutoff[xxx+"_left"])
+            else:
+                learning_time = result.get_time_until_threshold(0.8)
+            if not learning_time:
+                if len(result.times) > 300:
+                    learning_time = result.times[299]
+                    result.times = result.times[:300]
+                else:
+                    learning_time = result.times[-1]
+            if iteration not in results_dict.keys():
+                results_dict[iteration] = {}
+            if xxx not in results_dict[iteration]:
+                results_dict[iteration][xxx] = { "earliest_starting_time":float('inf'), 
+                                            "times_of_taskFinish":[], 
+                                            "accumulated_costs_times":[], 
+                                            "starting_times":[],
+                                            "instances":[],
+                                            "first_success":[]}
+            if not xxx in results_dict[iteration]:
+                results_dict[iteration][xxx] = {}
+            
+            monotonically_decreading_costs = p.get_monotonically_decreasing_cost(result.costs)
+            times_costs = [(t,c) for t,c in zip(result.times, monotonically_decreading_costs)]
+            results_dict[iteration][xxx]["starting_times"].append(result.starting_time)
+            results_dict[iteration][xxx]["times_of_taskFinish"].append(learning_time)
+            results_dict[iteration][xxx]["instances"].append(result.instance)
+            s_list,t_list =  result.get_successes_per_time()
+            try:
+                first_success = [t for s,t in zip(s_list,t_list) if s==True][0]
+            except IndexError:
+                first_success = result.times[-1]
+            print("first_success: ", first_success)
+            results_dict[iteration][xxx]["first_success"].append( first_success)
+
+            
+    for xxx in modules:
+        if xxx not in results_dict:
+            continue
+        sort_this = zip(results_dict[iteration][xxx]["times_of_taskFinish"],results_dict[iteration][xxx]["instances"],results_dict[iteration][xxx]["starting_times"],results_dict[iteration][xxx]["fist_success"])
+        this_is_sorted = sorted(sort_this, key=lambda x: tasks[xxx].index(x[1]))
+        results_dict[iteration][xxx]["times_of_taskFinish"] = [x[0] for x in this_is_sorted]
+        results_dict[iteration][xxx]["instances"] = [x[1] for x in this_is_sorted]
+        results_dict[iteration][xxx]["starting_times"] = [x[2] for x in this_is_sorted]
+        results_dict[iteration][xxx]["first_success"] = [x[3] for x in this_is_sorted]
+      #      sorted(results_dict[iteration]["accumulated_costs_times"])
+        #if xxx == "007":
+        #    print(results_dict["n1"])
+    max_instances = 0
+    all_instaces = []
+    #print(results_dict.keys())
+    #for r in results_dict.values():
+    #    if len(r["instances"]) > max_instances:
+   #         max_instances = len(r["instances"])
+   #         all_instaces = r["instances"]
+    
+    s = 0
+    for instances in results_dict.keys():
+        for key in results_dict[instances].keys():
+            print(key, " instances: ", len(results_dict[instances][key]["instances"]))
+            s += len(results_dict[instances][key]["instances"])
+    print("total=",s)
+    #rearranging data for plotting and adding time offeset relative to experiment beginning
+    results_dict2 = copy.deepcopy(results_dict)
+    for iteration in list(results_dict.keys()):  # only one iteration assumed check if it works for more...
+        currently_running = {}
+        for m in results_dict2[iteration].keys():
+            currently_running[m] = {"finishes_at":0,
+                                    "tasks_count":0,
+                                    "active":False}
+        parallel_agents = 10
+        agent_list = [(0,"host")]*parallel_agents
+
+        task_finished_times = []
+        first_successes = []
+        stop_while = False
+        time_from = False
+        start_next = False
+        lowest_time = 0
+        available_modules =[]
+        while len(results_dict2[iteration]) > 0:
+            aktive_agents = 0
+            # try:
+            #     lowest_time = min([currently_running[x]["finishes_at"] for x in currently_running if currently_running[x]["finishes_at"] > 0])
+                
+            # except ValueError:
+            #     print("cant all finsished_at are 0", currently_running)
+            #     lowest_time = 0
+            for xxx in results_dict[iteration]:
+                if len(results_dict2[iteration]) == 0:
+                    stop_while = True
+                    break
+                if xxx in results_dict2[iteration]:
+                    if len(results_dict2[iteration][xxx]["times_of_taskFinish"]) == 0:
+                        try:
+                            results_dict2[iteration].pop(xxx)
+                            currently_running[xxx]["finishes_at"] = float("inf")
+                            # lowest_time = min([currently_running[x]["finishes_at"] for x in currently_running])
+                            # print("reevaluate lowest time ", lowest_time,currently_running)
+                        except KeyError:  #already poped
+                            print("already poped", xxx)
+                            pass
+                        continue
+                else:
+                    continue
+                active_agents = sum([currently_running[x]["active"] for x in currently_running])
+                if active_agents < parallel_agents:
+                    finished_time = results_dict2[iteration][xxx]["times_of_taskFinish"].pop(0)
+                    first_success = results_dict2[iteration][xxx]["first_success"].pop(0)
+                    if len(results_dict2[iteration][xxx]["times_of_taskFinish"]) == 0:
+                        results_dict2[iteration].pop(xxx)
+                    currently_running[xxx]["finishes_at"] = finished_time
+                    currently_running[xxx]["active"] = True
+                    task_finished_times.append(finished_time)
+                    first_successes.append(first_success)
+                    agent_list.pop(0)
+                    agent_list.append((finished_time,xxx))
+                    agent_list.sort(key=lambda x: x[0])
+
+                    available_modules = []
+                    for x in currently_running:
+                        available_modules.append((currently_running[x]["finishes_at"], x))
+                else:
+                    pass
+            #print("\n")
+            #print(agent_list)
+            lowest_time, agent = agent_list.pop(0)
+            #print(agent, " finished at ", lowest_time)
+
+            starting_time = copy.deepcopy(lowest_time)
+            keys = list(results_dict2[iteration].keys())
+            if len(keys) <= 0:
+                break
+            keys.reverse()
+            start_next = False
+            for x in keys:
+                if currently_running[x]["finishes_at"] <= lowest_time:
+                    lowest_time = currently_running[x]["finishes_at"]
+                    start_next = (starting_time, x)
+            if not start_next:
+                lowest_time = float('inf')
+                for x in results_dict2[iteration]:
+                    if currently_running[x]["finishes_at"] < lowest_time:
+                        lowest_time = currently_running[x]["finishes_at"]
+                        start_next = (lowest_time, x)
+            finished_time = results_dict2[iteration][start_next[1]]["times_of_taskFinish"].pop(0) + start_next[0] + 30
+            first_success = results_dict2[iteration][start_next[1]]["first_success"].pop(0) + start_next[0] + 30
+            
+            if len(results_dict2[iteration][start_next[1]]["times_of_taskFinish"]) == 0:
+                results_dict2[iteration].pop(start_next[1])
+
+            task_finished_times.append(finished_time)
+            first_successes.append(first_success)
+            #print("starting on ",start_next[1], "unitl ",finished_time)
+            agent_list.append((finished_time, start_next[1]))
+            agent_list.sort(key=lambda x: x[0])
+            currently_running[start_next[1]]["finishes_at"] = finished_time
+
+                    
+                        
+
+                #     if not start_next:
+                #         lowest_time, start_next = agent_list.pop(0)
+                #         keys = list(results_dict2[iteration].keys())
+                #         keys.reverse()
+                #         start_other = False
+                #         for x in keys:
+                #             if currently_running[x]["finishes_at"] <= lowest_time:
+                #                 start_other = x
+                #         if start_other:
+                #             currently_running[start_other]["finishes_at"] = lowest_time
+                #             start_next = x
+                #         print("next task: ",start_next, lowest_time)
+                #     if xxx == start_next:
+                #         finished_time = results_dict2[iteration][xxx]["times_of_taskFinish"].pop(0) + lowest_time + 60
+                #         task_finished_times.append(finished_time)
+                #         currently_running[xxx]["finishes_at"] = finished_time
+                #         if len(results_dict2[iteration][xxx]) != 0:
+                #             agent_list.append((finished_time, xxx))
+                #             agent_list.sort(key=lambda x: x[0])
+                #         start_next = False
+                #         print("start task on ",xxx, agent_list," at ", lowest_time)
+                #         break
+                    
+                # if len(agent_list)==0:
+                #     stop_while = True
+                #     break
+            
+            # for x in currently_running:
+            #     agent_list.append((currently_running[x]["finishes_at"] , x))
+            # agent_list.sort(key=lambda x: x[0])
+            # agent_list = agent_list[:10]
+
+                    # lowest_time = float('inf')
+                    # keys = list(results_dict2[iteration].keys())
+                    # #keys.reverse()
+                    # for x in keys:
+                    #     if currently_running[x]["finishes_at"] < lowest_time:
+                    #         lowest_time = currently_running[x]["finishes_at"]
+                    #         if lowest_time == 0:
+                    #             lowest_time = min([currently_running[x]["finishes_at"] for x in currently_running if currently_running[x]["finishes_at"] > 0])
+                    #         if lowest_time == float('inf'):
+                    #             stop_while = True
+                    #             print("stop_while")
+                    #             break
+                    #         start_next = x
+                    # if lowest_time == float('inf'):
+                    #     stop_while = True
+                    #     print("stop_while")
+                    #     break
+                    # print("lowest time on ",xxx,": ",lowest_time, "start_next", start_next, start_next in results_dict2[iteration], [currently_running[x]["finishes_at"] for x in currently_running])
+                    # if xxx == start_next:
+                    #     finished_time = results_dict2[iteration][xxx]["times_of_taskFinish"].pop(0) + lowest_time # add time offset
+                    #     currently_running[xxx]["finishes_at"] = finished_time + 60  # add one minute to change object
+                    #     currently_running[xxx]["active"] = True
+                    #     task_finished_times.append(finished_time)
+                    #     print("start task on ",xxx, results_dict2[iteration][xxx]["instances"].pop(0))
+                    #     for x in currently_running:
+                    #         if currently_running[x]["finishes_at"] == lowest_time:
+                    #             currently_running[x]["active"] = False  # set the one we took the time to false
+                        
+                    #    break
+                    #else:
+                    #    return start_next, currently_running, results_dict2[iteration].keys()
+            if stop_while:
+                break
+        
+        
+        task_finished_times = sorted(task_finished_times)
+        first_successes = sorted(first_successes)
+        #if not single_agent:
+        #    results["instances"] = [x[1] for x in sorted(zip(results["times_of_taskFinish"], results["instances"]))]  #same order as times_of_taskFinish (next line)
+        #    results["times_of_taskFinish"] = sorted(results["times_of_taskFinish"])
+
+    
+    # create data for plotting
+   # times_of_finished_tasks = [results_dict[iteration]["times_of_taskFinish"] for iteration in results_dict]
+   # times_of_finished_tasks_mean, times_of_finished_tasks_confidence = get_confidence(times_of_finished_tasks)
+    print("full set of experiments: ", len(task_finished_times))
+    print()
+    
+    # inserting 0 at the beginning for better plotting
+    task_finished_times.insert(0,0)
+    first_successes.insert(0,0)
+    #times_of_finished_tasks_confidence.insert(0,(0,0))
+    return task_finished_times, first_successes, s
+
 def plot_big_collective():
     new_cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
                     '003_left': 0.68016,
@@ -2214,29 +2561,126 @@ def plot_big_collective():
                     '028_left': 0.61824,
                     '029_left': 0.68088}
     colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
+    plt.style.use('dark_background')
     fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
     
     print("\ngetting collective data")
-    mean_collective, confidence_collective = get_big_collective_data(["10agents_25tasks","collective","ps_alpha_5"],cutoff=new_cutoff)  # history: ["5agents_25tasks","collective"]
+    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective"],cutoff=new_cutoff,skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks","collective"]
     mean_collective = [x/60 for x in mean_collective]
     lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
     upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing (10 agents)")
+    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing")
     axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2)
+
     print("\ngetting collective data")
-    mean_collective, confidence_collective = get_big_collective_data(["10agents_25tasks","collective","ps_alpha_5_reverse"],cutoff=new_cutoff)  # history: ["5agents_25tasks","collective"]
+    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective","ps_alpha_5_reverse"],cutoff=new_cutoff,skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks","collective"]
     mean_collective = [x/60 for x in mean_collective]
     lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
     upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing (10 agents) reverse sheduled")
-    axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2)
+    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing\n(10 aoptimised sequence)",color="tab:pink")
+    axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2,color="tab:pink")
     print("\ngetting collective data")
-    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective"])  # history: ["5agents_25tasks","collective"]
+    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective"],skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks","collective"]
     mean_collective = [x/60 for x in mean_collective]
     lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
     upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
     legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing (5 agents)")
     axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2)
+    print("\ngetting parallel isolated data")
+    mean_isolated, confidence_isolated = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"],skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks_local","isolated_local_noFastPipeline"]
+    mean_isolated = [x/60 for x in mean_isolated]
+    lower_bound_confindece_isolated = [x[0]/60 for x in confidence_isolated]
+    upper_bound_confindece_isolated = [x[1]/60 for x in confidence_isolated]
+    legend_isolated = axes1.plot(mean_isolated, range(len(mean_isolated)), label="isolated parallel learning")
+    axes1.fill_betweenx(range(len(mean_isolated)), lower_bound_confindece_isolated, upper_bound_confindece_isolated, alpha=0.2)
+    print("\ngetting single isolated data")
+    mean_isolated_single, confidence_isolated_single = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"], single_agent=True,skip_module=set(["018","010","020"]))  #history: ["5agents_25tasks_local","isolated_local_noFastPipeline"]
+    mean_isolated_single = [x/60 for x in mean_isolated_single]
+    lower_bound_confindece_isolated_single = [x[0]/60 for x in confidence_isolated_single]
+    upper_bound_confindece_isolated_single = [x[1]/60 for x in confidence_isolated_single]
+    legend_isolated_single = axes1.plot(mean_isolated_single, range(len(mean_isolated_single)), label="isolated single learning",color = "tab:green")
+    axes1.fill_betweenx(range(len(mean_isolated_single)), lower_bound_confindece_isolated_single, upper_bound_confindece_isolated_single, alpha=0.2,color = "tab:green")
+    print(["\n5agents_25tasks_rearanged", "collective"])
+    mean_collective_re, confidence_collective_re = get_big_collective_data(["5agents_25tasks_rearanged", "collective"],skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks_rearanged", "collective"]
+    mean_collective_re = [x/60 for x in mean_collective_re]
+    lower_bound_confindece_collective_re = [x[0]/60 for x in confidence_collective_re]
+    upper_bound_confindece_collective_re = [x[1]/60 for x in confidence_collective_re]
+    legend_collective_re = axes1.plot(mean_collective_re, range(len(mean_collective_re)), label="collective knowledge sharing\n(5 agents, optimised sequence)",color="tab:red")
+    axes1.fill_betweenx(range(len(mean_collective_re)), lower_bound_confindece_collective_re, upper_bound_confindece_collective_re, alpha=0.2,color="tab:red")
+        
+    
+
+   
+    axes1.set_xlabel("time [min]", fontsize=14)
+    axes1.set_ylabel("learned skills [1]", fontsize=14)
+    axes1.set_title("learn 25 skills", fontsize=14)
+    axes1.set_xlim((0,700))
+    #axes1.set_xlim((0,220))
+    axes1.grid()
+    axes1.legend(loc="center right", fontsize=14)  #lower right
+    plt.show(block=False)
+
+def plot_100_collective():
+    new_cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
+                    '003_left': 0.68016,
+                    '004_left': 0.74976,
+                    '005_left': 0.65, #
+                    '006_left': 0.6127199999999999,
+                    '007_left': 0.62616,
+                    '008_left': 0.6371999999999999,
+                    '010_left': 0.6888000000000001,
+                    '011_left': 0.63816,
+                    '012_left': 0.75528,
+                    '009_left': 0.6943199999999999,
+                    '013_left': 0.6348,
+                    '014_left': 0.6,
+                    '015_left': 0.68184,
+                    '016_left': 0.9,   #
+                    '017_left': 0.63864,
+                    '041_left': 0.63144,  # '018_left': 0.63144,
+                    '021_left': 0.63528,
+                    '022_left': 0.6828000000000001,
+                    '023_left': 0.6648000000000001,
+                    '024_left': 0.9187199999999999,
+                    '025_left': 0.64752,
+                    '027_left': 0.68448,
+                    '028_left': 0.61824,
+                    '029_left': 0.68088}
+    colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
+    plt.style.use('dark_background')
+    fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
+    
+    # print("\ngetting collective data")
+    # mean_collective, confidence_collective = get_big_collective_data(["10agents_25tasks","collective","ps_alpha_5"],cutoff=new_cutoff)  # history: ["5agents_25tasks","collective"]
+    # mean_collective = [x/60 for x in mean_collective]
+    # lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
+    # upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
+    # legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing (10 agents)")
+    # axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2)
+
+
+    print("\ngetting 100 collective data")
+    mean_collective, first_successes, n_tasks = get_global_collective_data(cutoff=new_cutoff,skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks","collective"]
+    mean_collective = [x/60 for x in mean_collective]
+    first_successes = [x/60 for x in first_successes]
+    print(len(first_successes)," vs ", len(mean_collective))
+    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing\n(10 agents, %i objects)"%n_tasks, color="tab:blue",linewidth=2)
+    #legend_collective = axes1.plot(first_successes, range(len(first_successes)), label="first successes(10 agents, %i objects)"%n_tasks, color="tab:olive",linewidth=2)
+
+    print("\ngetting collective data")
+    mean_collective, confidence_collective = get_big_collective_data(["10agents_25tasks","collective","ps_alpha_5_reverse"],cutoff=new_cutoff,skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks","collective"]
+    mean_collective = [x/60 for x in mean_collective]
+    lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
+    upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
+    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing\n(10 agents, optimised sequence)",color="tab:pink",linewidth=2)
+    axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2,color="tab:pink")
+    # print("\ngetting collective data")
+    # mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective"],skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks","collective"]
+    # mean_collective = [x/60 for x in mean_collective]
+    # lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
+    # upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
+    # legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing (5 agents)")
+    # axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2)
     #print("\ngetting parallel isolated data")
     #mean_isolated, confidence_isolated = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"])  # history: ["5agents_25tasks_local","isolated_local_noFastPipeline"]
     #mean_isolated = [x/60 for x in mean_isolated]
@@ -2245,27 +2689,44 @@ def plot_big_collective():
     #legend_isolated = axes1.plot(mean_isolated, range(len(mean_isolated)), label="isolated parallel learning")
     #axes1.fill_betweenx(range(len(mean_isolated)), lower_bound_confindece_isolated, upper_bound_confindece_isolated, alpha=0.2)
     print("\ngetting single isolated data")
-    mean_isolated_single, confidence_isolated_single = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"], single_agent=True)  #history: ["5agents_25tasks_local","isolated_local_noFastPipeline"]
+    mean_isolated_single, confidence_isolated_single = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"], single_agent=True,skip_module=set(["018","010","020"]))  #history: ["5agents_25tasks_local","isolated_local_noFastPipeline"]
     mean_isolated_single = [x/60 for x in mean_isolated_single]
     lower_bound_confindece_isolated_single = [x[0]/60 for x in confidence_isolated_single]
     upper_bound_confindece_isolated_single = [x[1]/60 for x in confidence_isolated_single]
-    legend_isolated_single = axes1.plot(mean_isolated_single, range(len(mean_isolated_single)), label="isolated single learning")
-    axes1.fill_betweenx(range(len(mean_isolated_single)), lower_bound_confindece_isolated_single, upper_bound_confindece_isolated_single, alpha=0.2)
+    legend_isolated_single = axes1.plot(mean_isolated_single, range(len(mean_isolated_single)), label="isolated single learning",color = "tab:green",linewidth=2)
+    axes1.fill_betweenx(range(len(mean_isolated_single)), lower_bound_confindece_isolated_single, upper_bound_confindece_isolated_single, alpha=0.2,color = "tab:green")
     print(["\n5agents_25tasks_rearanged", "collective"])
-    mean_collective_re, confidence_collective_re = get_big_collective_data(["5agents_25tasks_rearanged", "collective"])  # history: ["5agents_25tasks_rearanged", "collective"]
+    mean_collective_re, confidence_collective_re = get_big_collective_data(["5agents_25tasks_rearanged", "collective"],skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks_rearanged", "collective"]
     mean_collective_re = [x/60 for x in mean_collective_re]
     lower_bound_confindece_collective_re = [x[0]/60 for x in confidence_collective_re]
     upper_bound_confindece_collective_re = [x[1]/60 for x in confidence_collective_re]
-    legend_collective_re = axes1.plot(mean_collective_re, range(len(mean_collective_re)), label="collective knowledge sharing (5 agents, optimised sequence)")
-    axes1.fill_betweenx(range(len(mean_collective_re)), lower_bound_confindece_collective_re, upper_bound_confindece_collective_re, alpha=0.2)
-    
+    legend_collective_re = axes1.plot(mean_collective_re, range(len(mean_collective_re)), label="collective knowledge sharing\n(5 agents, optimised sequence)",color="tab:red",linewidth=2)
+    axes1.fill_betweenx(range(len(mean_collective_re)), lower_bound_confindece_collective_re, upper_bound_confindece_collective_re, alpha=0.2,color="tab:red")
+        
+        
     axes1.set_xlabel("time [min]", fontsize=14)
     axes1.set_ylabel("learned skills [1]", fontsize=14)
-    axes1.set_title("learn 25 skills | 5 agent collective VS 10 agent collective", fontsize=14)
+    axes1.set_title("learn %i skills"%n_tasks, fontsize=14)
     axes1.set_xlim((0,700))
-    axes1.set_xlim((0,180))
+    axes1.set_xlim((0,220))
+    axes1.set_ylim((0,100))
     axes1.grid()
-    axes1.legend(loc="lower right", fontsize=14)
+    axes1.legend(loc="center right", fontsize=14)  #lower right
+    plt.show(block=False)
+
+    fig2, axes2 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=2)
+    print(first_successes)
+    legend_collective = axes2.plot(first_successes, range(len(first_successes)), label="first successes(10 agents, %i objects)"%n_tasks,linewidth=2)
+    axes2.set_title("first successes (100 skills)")
+    axes2.set_xlabel("time [min]", fontsize=14)
+    axes2.set_ylabel("first successful trial [1]", fontsize=14)
+    axes2.set_title("learn %i skills"%n_tasks, fontsize=14)
+    axes2.set_xlim((0,700))
+    axes2.set_xlim((0,220))
+    axes2.set_ylim((0,100))
+    axes2.legend(loc="lower right", fontsize=14) 
+    axes2.grid()
+
     plt.show()
 
 
