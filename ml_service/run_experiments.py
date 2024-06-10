@@ -3,6 +3,7 @@ from definitions.templates import *
 from definitions.cost_functions import *
 from definitions.service_configs import *
 from utils.database import delete_global_knowledge
+from utils.database import delete_global_results
 from utils.experiment_wizard import *
 from utils.taxonomy_utils import *
 from services.knowledge import Knowledge
@@ -26,8 +27,8 @@ class RobotCollective:
 list_block_1 = ["001", #"002", 
                 "003", "004", "005", 
                 "006", "007", "008", "010", 
-                "011", "012"]
-list_block_2 = ["009","013","014","015","016","017",
+                "011"]
+list_block_2 = ["012","009","013","014","015","016","017",
                 # "018",#"020",
                 "041",
                 "021","022"]
@@ -42,8 +43,6 @@ def get_ips(module_list):
     with open("../python/ip.json", "r") as jsonfile:
         data = json.load(jsonfile)        
         ips = [data[i] for i in module_list]
-        print(ips)
-    
     return ips
 ###################################################################################
 
@@ -1239,8 +1238,20 @@ def dualarm_demo2(dualarm_modules = list_block_1+list_block_2+ list_U):   #
     knowledge_source.scope.extend(tags)
     #knowledge_source.scope.append("n"+str(n_current_iter+1))
     knowledge_source.type = "all"
+    tasks = [
+                "D_007",
+                "D_012",
+                "D_003",
+                "D_006",
+                "D_002",
+                "D_022",
+                "D_008",
+                "D_009",
+                "D_010", 
+            ]
     for i in range(len(robots_dualarm)):
         obj = modules[i]+"_left"
+        obj = tasks[i]
         threads.append(Thread(target=dualarm_demo_thread, args=(robots_dualarm[i], obj, tags, sc, knowledge_source.to_dict())))
     for t in threads:
         t.start()

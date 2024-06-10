@@ -69,14 +69,20 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
         #    knowledge_tmp["scope"].remove("n" + str(iter))
         #knowledge_tmp["scope"].append("n" + str(iter+1))
         #print(knowledge_tmp)
-    print("start task on ", agents, " with knowledge mode = ",str(knowledge_tmp["meta"]["mode"]))
+    print("start task ", pd.skill_instance," on ", agents, " with knowledge mode = ",str(knowledge_tmp["meta"]["mode"]), ": ",tags)
     if dualarm_cmd:
         s.start_cmd_loop(dualarm_cmd)
     uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge_tmp)
 
     if wait:
-        while s.is_busy():
-            time.sleep(5)
+        while True:
+            try:
+                if s.is_busy():
+                    time.sleep(5)
+                else:
+                    break
+            except TimeoutError:
+                time.sleep(1)
     return True
 
 def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion", db: str ="ml_results", min_size: int =0, mongo_port=27017):

@@ -1,3 +1,4 @@
+from ast import mod
 from desk.mongodb_client import MongoDBClient
 from xmlrpc.client import ServerProxy
 import os
@@ -1177,33 +1178,83 @@ def grasp_all():
     for t in threads:
         t.join()
 
-def grasp(module, wait=False, side=None):
-    t = Thread(target=grasp_thread, args=(module, side))
+def grasp(module, object=None, wait=False, side=None):
+    t = Thread(target=grasp_thread, args=(module, object, side))
     t.start()
     if wait:
         t.join()
 
-def grasp_thread(module, side=None):
+def grasp_thread(module, object=None, side=None):
     ip = get_ips([module])[0]
+    
+    insertable = object
+    if not insertable:
+        insertable = module+"_left"
     if module == "026":
         call_method(ip, 12000, "move_gripper",{"width":0.01,"speed":1,"force":1})
     if side == "left":
+        call_method(ip,12000,"home_gripper")
         call_method(ip, 12000, "release_object")
         call_method(ip, 12000, "grasp", {"force":100, "speed":0.5, "width":0, "epsilon_inner":1, "epsilon_outer":1})
-        call_method(ip, 12000, "set_grasped_object", {"object":module+"_left"})
+        call_method(ip, 12000, "set_grasped_object", {"object":insertable})
     elif side == "right":
+        call_method(ip,13000,"home_gripper")
         call_method(ip, 13000, "release_object")
         call_method(ip, 13000, "grasp", {"force":100, "speed":0.5, "width":0, "epsilon_inner":1, "epsilon_outer":1})
     else:
-        call_method(ip, 12000, "release_object")
-        call_method(ip, 13000, "release_object")
-        call_method(ip, 12000, "grasp", {"force":100, "speed":0.5, "width":0, "epsilon_inner":1, "epsilon_outer":1})
-        call_method(ip, 12000, "set_grasped_object", {"object":module+"_left"})
-        call_method(ip, 13000, "grasp", {"force":100, "speed":0.5, "width":0, "epsilon_inner":1, "epsilon_outer":1})
-    move_joint(ip, module+"_left_container_approach", 12000)
-    move_joint(ip, "hold", 13000)
+        try:
+            call_method(ip, 12000, "release_object",timeout=2)
+        except TimeoutError:
+            pass
+        try:
+            call_method(ip, 13000, "release_object",timeout=2)
+        except TimeoutError:
+            pass
+        try:
+            call_method(ip, 12000, "grasp", {"force":100, "speed":0.5, "width":0, "epsilon_inner":1, "epsilon_outer":1},timeout=4)
+        except TimeoutError:
+            pass
+        try:
+            call_method(ip, 13000, "grasp", {"force":100, "speed":0.5, "width":0, "epsilon_inner":1, "epsilon_outer":1})
+        except TimeoutError:
+            pass
+        call_method(ip, 13000, "set_grasped_object", {"object":insertable})
+        call_method(ip, 12000, "set_grasped_object", {"object":insertable})
+    move_joint(ip, insertable+"_container_approach", 12000)
+    if insertable[-4:] == "left":
+        move_joint(ip, "hold",13000)
+    else:
+        move_joint(ip, "hold_"+insertable, 13000)
+
+def release_objects(module):
+    robot = get_ips([module])[0]
+    call_method(robot,13000,"release_object")
+    threads = []
+    port = 12000
+    for i in range(0,2):
+        port += i*1000
+        threads.append(Thread(target=call_method, args=(robot, port, "release_object",{},"mios/core",2)))
+        threads[-1].start()
+    for t in threads:
+        t.join()
 
 
+def get_objects(module,side = "left"):
+    robot = get_ips([module])[0]
+    client = MongoDBClient(robot)
+    if side == "left":
+        data = client.read("miosL","environment",{})
+    else:
+        data = client.read("miosR","environment",{})
+    for d in data:
+        print(d["name"])
+    print("currently grasped: ", call_method(robot,12000, "get_state")["result"]["grasped_object"])
+
+def approach_pose(module, object):
+    robot = get_ips([module])[0]
+    result1 = move_joint(robot, object+"_container_approach", port=12000)
+    result2 = move_joint(robot, "hold_"+object,port=13000)
+    return result1["result"]["task_result"]["success"] and result2["result"]["task_result"]["success"]
 
 def teach_dualarm(module:str, object_name:str):
     insertable = object_name
@@ -1237,25 +1288,24 @@ def teach_dualarm_without_homing(module:str, object_name:str):
     insertable = object_name
     robot = get_ips([module])[0]
     print("\nteaching ",insertable, "for ", robot,"\n")
+
+    input("insert objects")
+    call_method(robot, 13000, "teach_object",{"object":insertable})
+    call_method(robot, 13000, "grasp", {"width":0,"speed":1,"force":100,"epsilon_outer":1})
+    call_method(robot, 13000, "set_grasped_object",{"object":insertable})
+    call_method(robot, 12000, "teach_object",{"object":insertable})
+    call_method(robot, 12000, "grasp", {"width":0,"speed":1,"force":100,"epsilon_outer":1})
+    call_method(robot, 12000, "set_grasped_object",{"object":insertable})
+
     input("teach hold position of right arm")
     call_method(robot, 13000, "teach_object",{"object":"hold_"+insertable})
+
     input("Press key to start teaching. [Pose above container, without object]")
-    call_method(robot,12000,"release_object")
     call_method(robot, 12000, "teach_object", {"object": insertable+"_container_above"})
-    #input("Teach where to grab object")
-    #call_method(robot, 12000, "grasp", {"width":0,"speed":1,"force":100})
-    call_method(robot, 12000, "teach_object", {"object": insertable, "teach_width":True})
-    current_finger_width = call_method(robot,12000,"get_state")["result"]["gripper_width"]
-    #call_method(robot,12000,"move_gripper",{"speed":1,"force":100,"width":current_finger_width+0.005})
-    #call_method(robot, mios_port, "grasp", {"width":0,"speed":1,"force":100,"epsilon_outer":1})
-    #call_method(robot, mios_port, "set_grasped_object", {"object": insertable})
-    time.sleep(1)
-    #print("closing gripper")
-    #print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
+
     input("Teach approach [with object]")
     call_method(robot, 12000, "teach_object", {"object": insertable+"_container_approach"})
+
     input("Teach container [with object]")
     call_method(robot, 12000, "teach_object", {"object": insertable+"_container"})
-    # print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
-    
-    print(call_method(robot, 12000, "set_grasped_object",{"object":insertable}))      
+   
