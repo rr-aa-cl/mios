@@ -38,6 +38,4 @@
 }
 
 
-db.getCollection("insertion").find({"meta.tags":{"$all":["100collective","ps_charlie_1"]}})
-adm?-Dualarm
 
