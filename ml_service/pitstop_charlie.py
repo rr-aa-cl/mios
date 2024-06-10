@@ -61,7 +61,7 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
     n_current_iter: number of current iteration
 
     '''
-    tags = ["ps_alpha_5","10agents_25tasks", "round1"]
+    tags = ["ps_alpha_5","10agents_25tasks", "round4"]
     # tags = ["100_testing"]
     # modules = list_block_1 + list_block_2 + list_U
     
@@ -208,7 +208,7 @@ def check_object(host, obj):
         if result["result"]["grasped_object"] == obj:
             return True
         else:
-            if host == "collective-041.rsi.ei.tum.de" or host == get_ips["041"][0]:
+            if host == "collective-041.rsi.ei.tum.de":
                 move_joint(host, "raise_hand_041")
             else:                
                 move_joint(host, "raise_hand")
@@ -224,3 +224,37 @@ def alpha_experiment_second():
     for i in range(10):  # iteration
         for n in range(1,5):
             var_agent_collective(n,i, [str(n)+"agents_25tasks","collective","ps_alpha_var"])
+
+
+def set_grasped_objects(n = 0):
+    tasks = {   
+                "collective-001.rsi.ei.tum.de":["D_007","D_016","D_017"],
+                "collective-003.rsi.ei.tum.de":["D_012","D_005","D_018"],
+                "collective-004.rsi.ei.tum.de":["D_003","D_019","D_020"],
+                "collective-005.rsi.ei.tum.de":["D_006", "D_024", "D_027"],
+                "collective-006.rsi.ei.tum.de":["D_002", "D_001", "D_021"],
+                "collective-007.rsi.ei.tum.de":["D_022","D_024","D_025"],
+                "collective-008.rsi.ei.tum.de":["D_008", "D_004", "D_013"],
+                "collective-010.rsi.ei.tum.de":["D_009"],
+                "collective-011.rsi.ei.tum.de":["D_010"],
+                "collective-012.rsi.ei.tum.de":["C_key_05"],
+                "collective-009.rsi.ei.tum.de":["B_017_IT2DE"],
+                "collective-013.rsi.ei.tum.de":["A_012_ellipsoid-2"],
+                "collective-014.rsi.ei.tum.de":["A_024_moon"],
+                "collective-015.rsi.ei.tum.de":["B_012_DE2DE"],
+                "collective-016.rsi.ei.tum.de":["A_026_cylinder_s6"],
+                "collective-017.rsi.ei.tum.de":["C_key_12"],
+                "collective-041.rsi.ei.tum.de":["A_key_24"],
+                "collective-021.rsi.ei.tum.de":["A_020_pentagram"],
+                "collective-022.rsi.ei.tum.de":["C_key_10"],
+                "collective-023.rsi.ei.tum.de":["C_key_08"],
+                "collective-024.rsi.ei.tum.de":["C_key_24"],
+                "collective-025.rsi.ei.tum.de":["A_023_stairs"],
+                "collective-026.rsi.ei.tum.de":["A_022_diamond"],
+                "collective-027.rsi.ei.tum.de":["C_key_23"],
+                # "collective-040.rsi.ei.tum.de":[],
+                "collective-029.rsi.ei.tum.de":["A_018_cross-2", "A_016_cross-1"]
+            }
+
+    for robot in tasks:
+        call_method(robot, 12000, "set_grasped_object",{"object": tasks[robot][n]})

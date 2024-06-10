@@ -36,3 +36,8 @@
     "050": "172.24.192.25",
     "046": "10.157.174.52"
 }
+
+
+db.getCollection("insertion").find({"meta.tags":{"$all":["100collective","ps_charlie_1"]}})
+adm?-Dualarm
+
