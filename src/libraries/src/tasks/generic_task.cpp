@@ -15,6 +15,7 @@
 #include "mios/skills/file.hpp"
 #include "mios/skills/extraction.hpp"
 #include "mios/skills/insertion.hpp"
+#include "mios/skills/insertion2.hpp"
 #include "mios/skills/turn.hpp"
 #include "mios/skills/move_trajectory.hpp"
 #include "mios/skills/wipe.hpp"
@@ -85,6 +86,8 @@ void GenericTask::add_any_skill(unsigned int index){
     case mirmi_utils::str_to_int("HoldPose"):
         add_skill<HoldPose,SkillParametersHoldPose>(name);
         break;
+    case mirmi_utils::str_to_int("Insertion2"):
+        execute_skill<Insertion2,SkillParametersInsertion2>(name);
     case mirmi_utils::str_to_int("GenericWiggleMotion"):
         add_skill<GenericWiggleMotion,SkillParametersGenericWiggleMotion>(name);
     case mirmi_utils::str_to_int("TaxMove"):
@@ -192,6 +195,9 @@ void GenericTask::execute_any_skill(unsigned index){
         break;
     case mirmi_utils::str_to_int("Insertion"):
         execute_skill<Insertion,SkillParametersInsertion>(name);
+        break;
+    case mirmi_utils::str_to_int("Insertion2"):
+        execute_skill<Insertion2,SkillParametersInsertion2>(name);
         break;
     case mirmi_utils::str_to_int("Wipe"):
         execute_skill<Wipe,SkillParametersWipe>(name);
