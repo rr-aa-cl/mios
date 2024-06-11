@@ -1,12 +1,9 @@
 #!/usr/bin/python3 -u
-from tkinter.tix import Tree
-import requests
 from http.client import HTTPSConnection
 import base64
 import hashlib
 import json
 import ssl
-import sys
 import socket
 import time
 
