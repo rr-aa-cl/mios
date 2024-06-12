@@ -80,6 +80,7 @@ SkillLibrary::SkillLibrary(){
     m_skill_parameters.insert(std::make_pair("File",std::make_shared<SkillParametersFile>()));
     m_skill_parameters.insert(std::make_pair("Extraction",std::make_shared<SkillParametersExtraction>()));
     m_skill_parameters.insert(std::make_pair("Insertion",std::make_shared<SkillParametersInsertion>()));
+    m_skill_parameters.insert(std::make_pair("Insertion2",std::make_shared<SkillParametersInsertion2>()));
     m_skill_parameters.insert(std::make_pair("Wipe",std::make_shared<SkillParametersWipe>()));
     m_skill_parameters.insert(std::make_pair("Turn",std::make_shared<SkillParametersTurn>()));
     m_skill_parameters.insert(std::make_pair("MoveTrajectory",std::make_shared<SkillParametersMoveTrajectory>()));
