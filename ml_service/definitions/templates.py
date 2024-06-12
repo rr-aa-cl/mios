@@ -635,6 +635,7 @@ class InsertionFactory2(ProblemDefinitionFactory):
             "p2_K_phi": (0, 200),
             "p2_K_chi": (0, 200),
             "p2_K_psi": (0, 200),
+            "p2_t_d": (0, 5)
         }
         return limits
 
@@ -717,6 +718,7 @@ class InsertionFactory2(ProblemDefinitionFactory):
         x_0["p0_offset_chi"] = 0.5
         x_0["p2_wiggle_c_x"] = 0.5
         x_0["p2_wiggle_c_y"] = 0.5
+        x_0["p2_t_d"] = 4.5
         return x_0
 
     def ground_skills(self):
