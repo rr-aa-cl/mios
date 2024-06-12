@@ -587,10 +587,6 @@ class InsertionFactory2(ProblemDefinitionFactory):
             "p1_ddphi_d": (0, 1),
             "p1_K_x": (0, 2000),
             "p1_K_phi": (0, 2000),
-            "p2_dx_d": (0, 0.1),
-            "p2_dphi_d": (0, 0.5),
-            "p2_ddx_d": (0, 0.5),
-            "p2_ddphi_d": (0, 1),
             "p2_wiggle_c_x": (0, 30),
             "p2_wiggle_c_y": (0, 30),
             "p2_wiggle_c_z": (0, 30),
@@ -639,9 +635,6 @@ class InsertionFactory2(ProblemDefinitionFactory):
             "p2_K_phi": (0, 200),
             "p2_K_chi": (0, 200),
             "p2_K_psi": (0, 200),
-            "p2_f_push_x": (-10, 10),
-            "p2_f_push_y": (-10, 10),
-            "p2_f_push_z": (0, 16)
         }
         return limits
 

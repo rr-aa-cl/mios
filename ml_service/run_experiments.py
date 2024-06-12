@@ -347,6 +347,7 @@ def learn_comparison(modules = list_block_1+list_block_2+list_U):
     insertables = [m+"_left" for m in modules]
     threads = []
     for i in range(0,len(ips)):
+        print("start thread for task ",insertables[i], " on ", ips[i])
         threads.append(Thread(target=learn_isolated_nonSharing, args=(ips[i], insertables[i], 1)))
         threads[-1].start()
     print("threads started")
