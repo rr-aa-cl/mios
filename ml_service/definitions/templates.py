@@ -570,7 +570,7 @@ class BendFactory(ProblemDefinitionFactory):
 
 class InsertionFactory2(ProblemDefinitionFactory):
     def __init__(self, robots: list, cost_function: CostFunctionFactory, objects: dict, mios_port=12000):
-        super().__init__(robots, "insertion", [("TaxInsertion", "insertion", "insertion")],
+        super().__init__(robots, "insertion", [("Insertion2", "insertion2", "insertion2")],
                          [("MoveToPoseJoint", "move", "move_joint")],
                          [("TaxExtraction", "extraction", "extraction"),
                           ("MoveToPoseJoint", "move", "move_joint")], [], cost_function, objects, mios_port=mios_port)
@@ -723,9 +723,9 @@ class InsertionFactory2(ProblemDefinitionFactory):
 
     def ground_skills(self):
         #print(self.setup_instructions)
-        self.learn_context["skills"]["insertion"]["skill"]["objects"]["Approach"] = self.objects["Approach"]
-        self.learn_context["skills"]["insertion"]["skill"]["objects"]["Container"] = self.objects["Container"]
-        self.learn_context["skills"]["insertion"]["skill"]["objects"]["Insertable"] = self.objects["Insertable"]
+        self.learn_context["skills"]["insertion2"]["skill"]["objects"]["Approach"] = self.objects["Approach"]
+        self.learn_context["skills"]["insertion2"]["skill"]["objects"]["Container"] = self.objects["Container"]
+        self.learn_context["skills"]["insertion2"]["skill"]["objects"]["Insertable"] = self.objects["Insertable"]
         self.setup_instructions[0]["parameters"]["skills"]["move"]["skill"]["objects"]["goal_pose"] = self.objects[
             "Approach"]
         self.reset_instructions[0]["parameters"]["skills"]["extraction"]["skill"]["objects"]["ExtractTo"] = \
@@ -743,6 +743,6 @@ class InsertionFactory2(ProblemDefinitionFactory):
         return True
 
     def modify_contexts(self):
-        self.learn_context["skills"]["insertion"]["user"]["env_X"] = [0.003, 0.003, 0.002, 0.1, 0.1, 0.1]
-        self.learn_context["skills"]["insertion"]["skill"]["ROI_x"] = [-0.03, 0.03, -0.03, 0.03, -1, 1]
-        self.learn_context["skills"]["insertion"]["user"]["F_ext_contact"] = [12, 5]
+        self.learn_context["skills"]["insertion2"]["user"]["env_X"] = [0.003, 0.003, 0.002, 0.1, 0.1, 0.1]
+        self.learn_context["skills"]["insertion2"]["skill"]["ROI_x"] = [-0.03, 0.03, -0.03, 0.03, -1, 1]
+        self.learn_context["skills"]["insertion2"]["user"]["F_ext_contact"] = [12, 5]
