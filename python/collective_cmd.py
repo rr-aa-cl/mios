@@ -995,9 +995,15 @@ def insert2(robot, insertable, approach, container, deltaX =[0,0,0,0,0,0], port=
     move_context["skill"]["objects"]["Container"] = container
     move_context["skill"]["objects"]["Approach"] = approach
     move_context["skill"]["objects"]["Insertable"] = insertable
-    move_context["skill"]["time_max"] = 7
-    move_context["skill"]["p2"]["search_c"] = [10,0,25,0,0,0]
-    move_context["skill"]["p2"]["t_d"] = 7
+    move_context["skill"]["time_max"] = 6.5
+    move_context["skill"]["p2"]["search_c"] = [0,0,20,0,0,0]
+    move_context["skill"]["p2"]["search_a"] = [5,5,0,0,0,0]
+    move_context["skill"]["p2"]["search_f"] = [0.75,1,0,0,0,0]
+    move_context["skill"]["p2"]["delta_a"] = [.0,.0,0,0,0,0.1]
+    move_context["skill"]["p2"]["delta_f"] = [0.75,0,0,0,0,0.5]
+    move_context["skill"]["p2"]["t_d"] = 4
+    move_context["skill"]["p2"]["K_X"] = [2000, 2000, 1000, 200, 200, 200],
+    
     
     # move_context["skill"]["p2"]["search_a"] = [0,0,0,0,0,0]
     # move_context["skill"]["p2"]["search_f"] = [0,0,0,0,0,0]
