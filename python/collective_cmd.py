@@ -990,23 +990,25 @@ def insert(robot, insertable, approach, container, deltaX =[0,0,0,0,0,0], port=1
 
 def insert2(robot, insertable, approach, container, deltaX =[0,0,0,0,0,0], port=12000):
     path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
-    f = open(path_to_default_context + "insertion.json")
+    f = open(path_to_default_context + "insertion2.json")
     move_context = json.load(f)
     move_context["skill"]["objects"]["Container"] = container
     move_context["skill"]["objects"]["Approach"] = approach
     move_context["skill"]["objects"]["Insertable"] = insertable
     move_context["skill"]["time_max"] = 7
-    move_context["skill"]["p2"]["search_c"] = [0,0,25,0,0,0]
-    move_context["skill"]["p2"]["search_a"] = [0,0,0,0,0,0]
-    move_context["skill"]["p2"]["search_f"] = [0,0,0,0,0,0]
-    move_context["skill"]["p2"]["search_phi"] = [0,0,0,0,0,0]
-    move_context["skill"]["p2"]["delta_a"] = [0,0,0,0,0,0]
-    move_context["skill"]["p2"]["delta_f"] = [0,0,0,0,0,0]
-    move_context["skill"]["p2"]["delta_phi"] = [0,0,0,0,0,0]
+    move_context["skill"]["p2"]["search_c"] = [10,0,25,0,0,0]
+    move_context["skill"]["p2"]["t_d"] = 7
+    
+    # move_context["skill"]["p2"]["search_a"] = [0,0,0,0,0,0]
+    # move_context["skill"]["p2"]["search_f"] = [0,0,0,0,0,0]
+    # move_context["skill"]["p2"]["search_phi"] = [0,0,0,0,0,0]
+    # move_context["skill"]["p2"]["delta_a"] = [0,0,0,0,0,0]
+    # move_context["skill"]["p2"]["delta_f"] = [0,0,0,0,0,0]
+    # move_context["skill"]["p2"]["delta_phi"] = [0,0,0,0,0,0]
     move_context["skill"]["p0"]["DeltaX"] = deltaX
     #move_context["user"]["env_X"] = [0, 0, 1, 1, 1, 1]
     t = Task(robot, port)
-    t.add_skill("insertion","TaxInsertion",move_context)
+    t.add_skill("insertion","Insertion2",move_context)
     t.start(queue=False)
     return t.wait()
 

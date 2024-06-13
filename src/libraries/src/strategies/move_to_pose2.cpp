@@ -14,13 +14,14 @@ void MoveToPoseStrategy2::initialize(const Percept &p_0){
     m_q_0 = m_T_EE_0.block<3,3>(0,0);
     m_q_d = m_T_EE_d.block<3,3>(0,0);
     m_wiggle = false;
+    m_t = 0;
 
     
 }
 
 void MoveToPoseStrategy2::get_next_command(Actuator &cmd, [[maybe_unused]] const Percept &p){
     m_t++;
-    m_s = m_a*pow(m_t/1000*m_t_d,3)+m_b*pow(m_t/1000*m_t_d,2); 
+    m_s = m_a*pow(m_t/(1000*m_t_d),3)+m_b*pow(m_t/(1000*m_t_d),2); 
     if(m_s<0){
         m_s=0;
     }
