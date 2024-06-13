@@ -1,4 +1,5 @@
 from copy import deepcopy
+import time
 
 from problem_definition.domain import Domain
 from run_experiments import *
@@ -45,6 +46,34 @@ total = 0
 for k in tasks:
     total += len(tasks[k])
 print("total tasks: ",total)
+
+class have_a_rest:
+    def __init__(self, robots:list):
+        self.robots = robots
+        self.delay_time = {}
+        self.delay_start_time = {}
+        
+        for i in self.robots:
+            self.delay_time[i] = 0
+            self.delay_start_time[i] = 0
+                
+    def stop_others(self, one):
+        self.delay_start_time[one] = time.time()
+        for i in self.robots:
+            if i != one:
+                # TODO: pause_service
+                self.delay_start_time[i] = time.time()
+    
+    def resume_others(self, one):
+        self.delay_time[one] += time.time() - self.delay_start_time[one]
+        for i in self.robots:
+            if i != one:
+                # TODO: resume_service
+                self.delay_time[i] += time.time() - self.delay_start_time[i]
+
+    
+    def update_robots(self, left_robots):
+        self.robots = left_robots
 
 cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
             '003_left': 0.68016,
@@ -101,12 +130,8 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
     n_current_iter: number of current iteration
 
     '''
-<<<<<<< HEAD
-    tags = ["ps_alpha_5","10agents_25tasks", "round4"]
-=======
     prefill_fast_pipe(n_current_iter, "collective-001.rsi.ei.tum.de")
     tags = ["ps_alpha_5","10agents_25tasks"]
->>>>>>> ec3436021760c0473a4f34a2510517d5c1e5b9ed
     # tags = ["100_testing"]
     # modules = list_block_1 + list_block_2 + list_U
     
@@ -165,6 +190,12 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
                 continue
             if not check_object(robot, tasks[robot][0]):
                 continue
+            # TODO: add wait function
+            # it takes the robot and finished robot, tasks as input
+            # it needs to intial the state as false for all the robot list
+            # intial the waiting time for every robot as zero
+            
+            
             if sum([t.is_alive() for t in threads]) >= n_agents:
                 continue
             if not get_states([robot.split(".")[0][-3:]])[0]:
@@ -221,17 +252,10 @@ def check_object(host, obj):
                 waiting_robots.pop(waiting_robots.index(host))
             return True
         else:
-<<<<<<< HEAD
-            if host == "collective-041.rsi.ei.tum.de":
-                move_joint(host, "raise_hand_041")
-            else:                
-                move_joint(host, "raise_hand")
-=======
             if host in waiting_robots:
                 return False
             waiting_robots.append(host)
             move_joint(host, "raise_hand")
->>>>>>> ec3436021760c0473a4f34a2510517d5c1e5b9ed
             print("wainting for ",host, " to grasp ", obj)
             return False
         
@@ -331,44 +355,3 @@ def move_to_first_approach():
     
 
 
-<<<<<<< HEAD
-def alpha_experiment_second():
-    for i in range(10):  # iteration
-        for n in range(1,5):
-            var_agent_collective(n,i, [str(n)+"agents_25tasks","collective","ps_alpha_var"])
-
-
-def set_grasped_objects(n = 0):
-    tasks = {   
-                "collective-001.rsi.ei.tum.de":["D_007","D_016","D_017"],
-                "collective-003.rsi.ei.tum.de":["D_012","D_005","D_018"],
-                "collective-004.rsi.ei.tum.de":["D_003","D_019","D_020"],
-                "collective-005.rsi.ei.tum.de":["D_006", "D_024", "D_027"],
-                "collective-006.rsi.ei.tum.de":["D_002", "D_001", "D_021"],
-                "collective-007.rsi.ei.tum.de":["D_022","D_024","D_025"],
-                "collective-008.rsi.ei.tum.de":["D_008", "D_004", "D_013"],
-                "collective-010.rsi.ei.tum.de":["D_009"],
-                "collective-011.rsi.ei.tum.de":["D_010"],
-                "collective-012.rsi.ei.tum.de":["C_key_05"],
-                "collective-009.rsi.ei.tum.de":["B_017_IT2DE"],
-                "collective-013.rsi.ei.tum.de":["A_012_ellipsoid-2"],
-                "collective-014.rsi.ei.tum.de":["A_024_moon"],
-                "collective-015.rsi.ei.tum.de":["B_012_DE2DE"],
-                "collective-016.rsi.ei.tum.de":["A_026_cylinder_s6"],
-                "collective-017.rsi.ei.tum.de":["C_key_12"],
-                "collective-041.rsi.ei.tum.de":["A_key_24"],
-                "collective-021.rsi.ei.tum.de":["A_020_pentagram"],
-                "collective-022.rsi.ei.tum.de":["C_key_10"],
-                "collective-023.rsi.ei.tum.de":["C_key_08"],
-                "collective-024.rsi.ei.tum.de":["C_key_24"],
-                "collective-025.rsi.ei.tum.de":["A_023_stairs"],
-                "collective-026.rsi.ei.tum.de":["A_022_diamond"],
-                "collective-027.rsi.ei.tum.de":["C_key_23"],
-                # "collective-040.rsi.ei.tum.de":[],
-                "collective-029.rsi.ei.tum.de":["A_018_cross-2", "A_016_cross-1"]
-            }
-
-    for robot in tasks:
-        call_method(robot, 12000, "set_grasped_object",{"object": tasks[robot][n]})
-=======
->>>>>>> ec3436021760c0473a4f34a2510517d5c1e5b9ed
