@@ -12,6 +12,7 @@ MoveToPoseStrategy2::MoveToPoseStrategy2():PrimitiveStrategy({CommandPatternCart
 
 void MoveToPoseStrategy2::initialize(const Percept &p_0){
     m_T_EE_0=p_0.controller.TF_T_EE_d;
+    std::cout << "m_t_EE_0: " << m_T_EE_0 << std::endl;
     m_q_0 = m_T_EE_0.block<3,3>(0,0);
     m_q_d = m_T_EE_d.block<3,3>(0,0);
     m_wiggle = false;
@@ -76,6 +77,7 @@ bool MoveToPoseStrategy2::finished(){
 void MoveToPoseStrategy2::set_goal(const Eigen::Matrix<double, 4, 4> &T_EE_d, double T_d){
     m_T_EE_d=T_EE_d;
     m_t_d = T_d;
+    std::cout << "m_t_d: " << m_t_d << "\n m_T_EE_d  " << m_T_EE_d << std::endl;
 }
 
 void MoveToPoseStrategy2::set_scale(double t_scale){

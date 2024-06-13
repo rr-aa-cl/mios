@@ -166,7 +166,6 @@ std::shared_ptr<ManipulationPrimitive> Insertion2::create_wiggle_mp(const Percep
     Eigen::Matrix<double,4,4> T_g=get_object_pose_T("Container");
 //    T_g.block<3,1>(0,3)=p.proprioception.T_T_EE.block<3,1>(0,3);
     deltaMove->set_goal(T_g, skill_params->p2.t_d);
-    std::cout << T_g << "\n" << *skill_params << std::endl;
     deltaMove->set_wiggle_coefficients(skill_params->p2.delta_a,skill_params->p2.delta_f,skill_params->p2.delta_phi);
     
     mp->create_strategy<FFWrenchLissajousStrategy>("wiggle_x",1);
