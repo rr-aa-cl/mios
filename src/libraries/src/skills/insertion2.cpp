@@ -62,6 +62,10 @@ bool SkillParametersInsertion2::from_json(const nlohmann::json &parameters){
             spdlog::error("Missing parameter: p2.K_x");
             return false;
         }
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"search_c",p2.search_c)){
+            spdlog::error("Missing parameter: p2.search_c (constant force)");
+            return false;
+        }
         if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"search_a",p2.search_a)){
             spdlog::error("Missing parameter: p2.search_a");
             return false;
@@ -72,6 +76,18 @@ bool SkillParametersInsertion2::from_json(const nlohmann::json &parameters){
         }
         if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"search_phi",p2.search_phi)){
             spdlog::error("Missing parameter: p2.search_phi");
+            return false;
+        }
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"delta_a",p2.delta_a)){
+            spdlog::error("Missing parameter: p2.delta_a");
+            return false;
+        }
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"delta_f",p2.delta_f)){
+            spdlog::error("Missing parameter: p2.delta_f");
+            return false;
+        }
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"delta_phi",p2.delta_phi)){
+            spdlog::error("Missing parameter: p2.delta_phi");
             return false;
         }
         
@@ -165,6 +181,7 @@ std::shared_ptr<ManipulationPrimitive> Insertion2::create_wiggle_mp(const Percep
     std::shared_ptr<MoveToPoseStrategy2> deltaMove = mp->get_strategy<MoveToPoseStrategy2>("deltaMove");
     Eigen::Matrix<double,4,4> T_g=get_object_pose_T("Container");
 //    T_g.block<3,1>(0,3)=p.proprioception.T_T_EE.block<3,1>(0,3);
+
     deltaMove->set_goal(T_g, skill_params->p2.t_d);
     deltaMove->set_wiggle_coefficients(skill_params->p2.delta_a,skill_params->p2.delta_f,skill_params->p2.delta_phi);
     

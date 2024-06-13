@@ -30,16 +30,19 @@ private:
     
     
     double m_t_d; //desired total duration
-    double m_t = 0;  // duration progress
-    double m_a = 2;  //  term for shaping function  
+    int m_t = 0;  // duration progress in ms
+    double m_a = -2;  //  term for shaping function  
     double m_b = 3; // termn for shaping function
     double m_s;
-    bool m_wiggle;
+    bool m_wiggle = false;
     //wigle parameters:
     Eigen::Matrix<double,6,1> m_deltaPose_a;
     Eigen::Matrix<double,6,1> m_deltaPose_f;
     Eigen::Matrix<double,6,1> m_deltaPose_phi;
-    Eigen::Matrix<double,6,1> m_deltaPose;
+    Eigen::Matrix<double,6,1> m_deltaPose = {0,0,0,0,0,0};
+    
+    
+    std::chrono::high_resolution_clock::time_point t_start;
     
 };
 
