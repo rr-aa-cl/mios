@@ -2,6 +2,7 @@
 #include "mirmi_cpp_utils/math/math.hpp"
 #include <iostream>
 #include <cmath>
+#include "spdlog/spdlog.h"
 
 namespace mios{
 
@@ -58,8 +59,8 @@ void MoveToPoseStrategy2::get_next_command(Actuator &cmd, [[maybe_unused]] const
     for(unsigned i=0;i<3;i++){
         cmd.TF_T_EE_d.block<1,1>(i,3) = m_T_EE_0.block<1,1>(i,3)*(1-m_s) + m_T_EE_d.block<1,1>(i,3)*m_s;
     }
-    std::cout << cmd.TF_T_EE_d << std::endl;
-
+    //std::cout << cmd.TF_T_EE_d << std::endl;
+    std::cout << std::to_string(m_s) << std::endl;
 
 
 }
