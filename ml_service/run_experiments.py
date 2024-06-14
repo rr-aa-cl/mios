@@ -338,9 +338,9 @@ def learn_isolated_nonSharing(robot, insertable, iterations = 1):
 
     dualarm_cmd = {"agent":robot,"port":13000,"skills":dualarm_skills,"sleep":1}
     if iterations > 1:
-        learn_task(robot, pd, sc, ["noKnowledge", "noSharing", "isolated","PSP","insertion2","run_2"], iterations, True, knowledge.to_dict(),True,8000, dualarm_cmd)
+        learn_task(robot, pd, sc, ["noKnowledge", "noSharing", "isolated","PSP","insertion2","run_3"], iterations, True, knowledge.to_dict(),True,8000, dualarm_cmd)
     else:
-        learn_single_task(robot, pd, sc, ["noKnowledge", "noSharing", "isolated","PSP","insertion2","run_2"], 0, False, knowledge.to_dict(), False, 8000, dualarm_cmd)
+        learn_single_task(robot, pd, sc, ["noKnowledge", "noSharing", "isolated","PSP","insertion2","run_3"], 0, False, knowledge.to_dict(), False, 8000, dualarm_cmd)
 
 def learn_comparison(modules = list_block_1+list_block_2+list_U):
     ips = get_ips(modules)
