@@ -1,4 +1,5 @@
 from ast import mod
+from concurrent.futures import thread
 from desk.mongodb_client import MongoDBClient
 from xmlrpc.client import ServerProxy
 import os
@@ -117,18 +118,34 @@ def command_some(robots:list, cmd: str, args: dict = {}):
     for t in threads:
         t.join()
 
-def automatica_wave_small(robot, port=12000, min_time = 10):
+def automatica_wave_small(robot, port=12000, min_time = 10, reverse=False):
     result = False
     speed = [1.5,5]
     while not result:
         result = move_joint(robot, "wave_high", port=port, speed=speed)["result"]["task_result"]["success"]
         speed = [s*0.8 for s in speed]
     pi = 3.14159265359
-    wiggle_context1 = {
+    if not reverse:
+        wiggle_context1 = {
+            "skill": {
+                "dX_fourier_a_a": [0.2, 0.2, 0., 0, 0, 0.25],
+                "dX_fourier_a_phi": [0, pi/2, 0, pi/2, 0, pi/2],
+                "dX_fourier_a_f": [0.08, 0.08, 0, 0.6125, 0, 1.25],
+                "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
+                "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
+                "use_EE": True,
+                "time_max": min_time
+            },
+            "control": {
+                "control_mode": 0
+            }
+        }
+    else:
+        wiggle_context1 = {
         "skill": {
-            "dX_fourier_a_a": [0.0, 0.02, 0., 0, 0, 0.25],
+            "dX_fourier_a_a": [0.2, 0.2, 0., 0, 0, 0.25],
             "dX_fourier_a_phi": [0, pi/2, 0, pi/2, 0, pi/2],
-            "dX_fourier_a_f": [0, 1.25, 0, 0.6125, 0, 1.25],
+            "dX_fourier_a_f": [-0.08, -0.08, 0, 0.6125, 0, 1.25],
             "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
             "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
             "use_EE": True,
@@ -149,7 +166,7 @@ def automatica_wave_small(robot, port=12000, min_time = 10):
         t.start(False)
         t.wait()
 
-def automatica_wave_big(robot, port=12000, min_time = 10):
+def automatica_wave_big(robot, port=12000, min_time = 10, reverse = False):
     result = False
     speed = [1.5,5]
     while not result:
@@ -158,20 +175,36 @@ def automatica_wave_big(robot, port=12000, min_time = 10):
 
     pi = 3.14159265359
     speed = 0.36
-    wiggle_context = {
-        "skill": {
-            "dX_fourier_a_a": [0.05,        0.1,    0.,      0.1,       0.1,        0.5],
-            "dX_fourier_a_phi": [0,         pi/2,   0,       3*pi/2,         pi/2,       pi/2],
-            "dX_fourier_a_f": [2*speed,     speed,  2*speed, speed,   2*speed,    speed],
-            "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
-            "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
-            "use_EE": True,
-            "time_max": min_time
-        },
-        "control": {
-            "control_mode": 0
+    if reverse:
+        wiggle_context = {
+            "skill": {
+                "dX_fourier_a_a": [0.05,        0.1,    0.,      0.1,       0.1,        0.5],
+                "dX_fourier_a_phi": [0,         pi/2,   0,       3*pi/2,         pi/2,       pi/2],
+                "dX_fourier_a_f": [2*speed,     speed,  2*speed, speed,   2*speed,    speed],
+                "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
+                "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
+                "use_EE": True,
+                "time_max": min_time
+            },
+            "control": {
+                "control_mode": 0
+            }
         }
-    }
+    else:
+        wiggle_context = {
+            "skill": {
+                "dX_fourier_a_a": [0.05,        0.1,    0.,      0.1,       0.1,        0.5],
+                "dX_fourier_a_phi": [0,         pi/2,   0,       3*pi/2,         pi/2,       pi/2],
+                "dX_fourier_a_f": [2*speed,     speed,  2*speed, speed,   2*speed,    speed],
+                "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
+                "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
+                "use_EE": True,
+                "time_max": min_time
+            },
+            "control": {
+                "control_mode": 0
+            }
+        }
     t1 = time.time()
     c = 0
     while time.time() - t1 < min_time:
@@ -181,6 +214,15 @@ def automatica_wave_big(robot, port=12000, min_time = 10):
         t.add_skill("wiggle"+str(c), "GenericWiggleMotion", wiggle_context)
         t.start(False)
         t.wait()
+
+def em_waving(robot="collective-026.rsi.ei.tum.de", duration=15):
+    threads = []
+    threads.append(Thread(target=automatica_wave_small, args=(robot, 12000, duration, False)))
+    threads.append(Thread(target=automatica_wave_small, args=(robot, 13000, duration, True)))
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
 
 def automatica_waving(banner=False):
     waving_time = 25
@@ -995,9 +1037,15 @@ def insert2(robot, insertable, approach, container, deltaX =[0,0,0,0,0,0], port=
     move_context["skill"]["objects"]["Container"] = container
     move_context["skill"]["objects"]["Approach"] = approach
     move_context["skill"]["objects"]["Insertable"] = insertable
-    move_context["skill"]["time_max"] = 7
-    move_context["skill"]["p2"]["search_c"] = [10,0,25,0,0,0]
-    move_context["skill"]["p2"]["t_d"] = 7
+    move_context["skill"]["time_max"] = 6.5
+    move_context["skill"]["p2"]["search_c"] = [0,0,20,0,0,0]
+    move_context["skill"]["p2"]["search_a"] = [5,5,0,0,0,0]
+    move_context["skill"]["p2"]["search_f"] = [0.75,1,0,0,0,0]
+    move_context["skill"]["p2"]["delta_a"] = [.0,.0,0,0,0,0.1]
+    move_context["skill"]["p2"]["delta_f"] = [0.75,0,0,0,0,0.5]
+    move_context["skill"]["p2"]["t_d"] = 4
+    move_context["skill"]["p2"]["K_X"] = [2000, 2000, 1000, 200, 200, 200],
+    
     
     # move_context["skill"]["p2"]["search_a"] = [0,0,0,0,0,0]
     # move_context["skill"]["p2"]["search_f"] = [0,0,0,0,0,0]

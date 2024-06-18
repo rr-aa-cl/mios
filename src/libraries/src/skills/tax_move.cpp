@@ -67,7 +67,7 @@ std::shared_ptr<ManipulationPrimitive> TaxMove::create_move_mp(const Percept &p)
     spdlog::trace("TaxMove::create_move_mp");
     std::shared_ptr<SkillParametersTaxMove> skill_params = get_parameters<SkillParametersTaxMove>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
-    mp->create_strategy<MoveToPoseStrategy>("move",1);
+    mp->create_strategy<MoveToPoseStrategy>("move",1);  
     if(this->get_object("GoalPose")->name=="NullObject"){
         m_T_T_EE_g=skill_params->p0.T_T_EE_g;
     }else{
@@ -76,10 +76,11 @@ std::shared_ptr<ManipulationPrimitive> TaxMove::create_move_mp(const Percept &p)
     m_T_T_EE_g.block<3,1>(0,3)+=skill_params->p0.T_T_EE_g_offset.block<3,1>(0,3);
     m_T_T_EE_g.block<3,3>(0,0)=skill_params->p0.T_T_EE_g_offset.block<3,3>(0,0)*m_T_T_EE_g.block<3,3>(0,0);
     mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(m_T_T_EE_g,skill_params->p0.dX_d,skill_params->p0.ddX_d);
+  
     Eigen::Matrix<double,2,1> scale;
     scale<<1,1;
     mp->get_strategy<MoveToPoseStrategy>("move")->set_scale(scale);
-
+    
     if(skill_params->p0.finger_width!=-1 || skill_params->p0.finger_speed!=0){
         mp->create_strategy<GripperStrategy>("gripper",1);
         mp->get_strategy<GripperStrategy>("gripper")->move(skill_params->p0.finger_width,skill_params->p0.finger_speed);
@@ -90,7 +91,7 @@ std::shared_ptr<ManipulationPrimitive> TaxMove::create_move_mp(const Percept &p)
 }
 
 bool TaxMove::check_local_suc_conditions(const Percept &p){
-    if(get_active_mp()->get_strategy<MoveToPoseStrategy>("move")->finished()){
+    if(get_active_mp()->get_strategy<MoveToPoseStrategy>("move")->finished()){  
         if(!m_finished){
             m_finished=true;
             m_t_finished=std::chrono::high_resolution_clock::now();
