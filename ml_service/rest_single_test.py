@@ -12,8 +12,8 @@ print(list_robots)
 # ---------------------------- tasks ------------------------------------
 tasks = {   
             "collective-007.rsi.ei.tum.de":["D_022","D_011"],
-            "collective-008.rsi.ei.tum.de":["D_008", "D_004","D_013"],
-            "collective-010.rsi.ei.tum.de":["D_009","D_014","D_024","D_025"],
+            # "collective-008.rsi.ei.tum.de":["D_008", "D_004","D_013"],
+            # "collective-010.rsi.ei.tum.de":["D_009","D_014","D_024","D_025"],
         }   
 
 print(tasks)
@@ -26,8 +26,8 @@ print("total tasks: ",total)
 
 cutoff = {  
             '007_left': 0.62616,
-            '008_left': 0.6371999999999999,
-            '010_left': 0.6888000000000001,
+            # '008_left': 0.6371999999999999,
+            # '010_left': 0.6888000000000001,
         }
 # ---------------------------- rest ------------------------------------
 class have_a_rest:
@@ -61,9 +61,7 @@ class have_a_rest:
         self.robots.remove(finished_one)
         
     def pause(self, one):
-        s = ServerProxy("http://collective-" + one + ".rsi.ei.tum.de:8000", allow_none=True)
-        s.pause_service()
-        print("pause: " + one)
+        
         
     def resume(self, one):
         s = ServerProxy("http://collective-" + one + ".rsi.ei.tum.de:8000", allow_none=True)
@@ -73,30 +71,8 @@ class have_a_rest:
 
 waiting_robots = []
 # -----------------------------------------------------------------------------
-def prefill_fast_pipe(iteration_n:int, kb_location:str, tags: list = ["10agents_25tasks","ps_alpha_5"]):
-    client = MongoDBClient("collective-001.rsi.ei.tum.de")
-    kb = ServerProxy("http://" + kb_location+ ":8001", allow_none=True)
-    kb.clear_memory()
-    tags.append("n"+str(iteration_n))
-    data = client.read("global_ml_results","insertion", {"meta.tags":tags})
-    print(len(data), " results round.")
-    cnt = 0
-    for results in data: 
-        task_ident = str(results["meta"]["tags"])
-        domain = Domain.from_dict(results["meta"]["domain"])
-        for i in range(1,len(results)-3+1):
-            if results["n"+str(i)]["q_metric"]["success"]:
-                theta = []
-                for key in results["n"+str(i)]["theta"].keys():
-                    theta.append(results["n"+str(i)]["theta"][key])
-                theta_normalised = domain.normalize(theta).tolist()
-                kb.push_trial(task_ident, list(theta_normalised), results["n"+str(i)]["q_metric"]["final_cost"], 1000)
-                cnt += 1
-            else:
-                continue
-    print(cnt, "successfull trials pushed.")
             
-def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_charlie_1"], n_agents:int = 25): #10
+def test(n_current_iter:int, tags_addon:list = ["100collective","ps_charlie_1"], n_agents:int = 1): #10
     '''
     n_current_iter: number of current iteration
 
@@ -131,78 +107,55 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
     threads = []
     tags.extend(tags_addon)
     
-    Rest = have_a_rest(list_robots) # init with the robots
-    while len(tasks) > 0:
-        finished_robot = []
-        for robot in tasks:
-            server = ServerProxy("http://%s:%s/" %(robot, "8000"))
-            if len(tasks[robot]) == 0:
-                finished_robot.append(robot)
-                Rest.rm_robots(robot)
-                continue
-            if server.is_busy():
-                continue
-            if not check_object(robot, tasks[robot][0]):
-                Rest.stop_others(robot)
-                while not check_object(robot, tasks[robot][0]):
-                    time.sleep(1)
-                Rest.resume_others(robot)
-                
-                continue
-            # TODO: add wait function
-            # it takes the robot and finished robot, tasks as input
-            # it needs to intial the state as false for all the robot list
-            # intial the waiting time for every robot as zero
-            
-            
-            if sum([t.is_alive() for t in threads]) >= n_agents:
-                continue
-            if not get_states([robot.split(".")[0][-3:]])[0]:
-                print(robot, "is not ready! Skipping task ",insertable)
-                continue
+    robot = "007_left"
+    
+    insertable = tasks[robot].pop(0)
+    container = insertable+"_container" 
+    approach = container+"_approach"
+    pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
+                            {"Insertable": insertable, "Container": container,
+                            "Approach": approach}).get_problem_definition(insertable)
+    if insertable in cutoff:
+        sc.finish_cost = cutoff[insertable]
+    else:
+        sc.finish_cost = 0.8  ###########################'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    if insertable == "010_left" or insertable == "023_left" or insertable == "027_left":
+        print("increase limits for ",insertable)
+        pd.domain.limits["p2_f_push_z"] = (0,60)
+    dualarm_skills = []
+    move_context = {
+                "skill": {
+                    "speed": 0.5,
+                    "acc": 1,
+                    "q_g": [0, 0, 0, 0, 0, 0, 0],
+                    "objects": {
+                        "goal_pose": "hold_" + insertable}},
+                "control": {
+                    "control_mode": 3},
+                "user": {
+                    "env_X": [0.001, 0.001, 0.001, 0.001, 0.001, 0.001],
+                    "F_ext_max": [100, 50]}}
+    dualarm_skills.append(("move", "MoveToPoseJoint", move_context))
+    
+    dualarm_cmd = {"agent":robot,"port":13000,"skills":dualarm_skills,"sleep":1}
+    threads.append(Thread(target=learn_single_task, args=(robot, pd, sc, tags, n_current_iter, False, knowledge_source.to_dict(), True, 8000, dualarm_cmd)))
+    threads[-1].start()
+    time.sleep(120)
+    
+    s = ServerProxy("http://collective-" + robot + ".rsi.ei.tum.de:8000", allow_none=True)
+    s.pause_service()
+    print("pause: " + robot)
+    
+    time.sleep(60)
+    s.resume_service()
+    print("resume: " + robot)
+    
+    threads[-1].join()
+    print("finished :)") 
+    return 1
 
-            insertable = tasks[robot].pop(0)
-            container = insertable+"_container" 
-            approach = container+"_approach"
-            pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
-                                    {"Insertable": insertable, "Container": container,
-                                    "Approach": approach}).get_problem_definition(insertable)
-            if insertable in cutoff:
-                sc.finish_cost = cutoff[insertable]
-            else:
-                sc.finish_cost = 0.8  ###########################'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            if insertable == "010_left" or insertable == "023_left" or insertable == "027_left":
-                print("increase limits for ",insertable)
-                pd.domain.limits["p2_f_push_z"] = (0,60)
-            dualarm_skills = []
-            move_context = {
-                        "skill": {
-                            "speed": 0.5,
-                            "acc": 1,
-                            "q_g": [0, 0, 0, 0, 0, 0, 0],
-                            "objects": {
-                                "goal_pose": "hold_" + insertable}},
-                        "control": {
-                            "control_mode": 3},
-                        "user": {
-                            "env_X": [0.001, 0.001, 0.001, 0.001, 0.001, 0.001],
-                            "F_ext_max": [100, 50]}}
-            dualarm_skills.append(("move", "MoveToPoseJoint", move_context))
             
-            dualarm_cmd = {"agent":robot,"port":13000,"skills":dualarm_skills,"sleep":1}
-            threads.append(Thread(target=learn_single_task, args=(robot, pd, sc, tags, n_current_iter, False, knowledge_source.to_dict(), True, 8000, dualarm_cmd)))
-            threads[-1].start()
-            time.sleep(1)
-        for robot in finished_robot:
-            tasks.pop(robot)
 
-    for t in threads:
-        t.join()
-    kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
-    kb.clear_memory()
-    print("run ", n_current_iter, " finished :)")
-    print("total pause time: ", Rest.delay_time)
-    return "finished :)"
 
 
 def check_object(host, obj):
