@@ -103,13 +103,13 @@ def test(n_current_iter =1 , tags_addon:list = ["100collective","ps_charlie_1"],
     dualarm_cmd = {"agent":robot,"port":13000,"skills":dualarm_skills,"sleep":1}
     threads.append(Thread(target=learn_single_task, args=(robot, pd, sc, tags, n_current_iter, False, knowledge_source.to_dict(), True, 8000, dualarm_cmd)))
     threads[-1].start()
-    time.sleep(120)
+    time.sleep(10)
     
-    s = ServerProxy("http://collective-" + robot + ".rsi.ei.tum.de:8000", allow_none=True)
+    s = ServerProxy("http://" + robot + ":8000", allow_none=True)
     s.pause_service()
     print("pause: " + robot)
     
-    time.sleep(60)
+    time.sleep(10)
     s.resume_service()
     print("resume: " + robot)
     
