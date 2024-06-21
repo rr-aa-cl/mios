@@ -13,9 +13,9 @@ tasks = {
             "collective-011.rsi.ei.tum.de":["D_010", "D_015","D_023"],
         }   
 
-todos = deepcopy(tasks)
-dos = []
-threads = []
+todos = deepcopy(tasks) # unfinihsed tasks
+dos = []    # tasks in execution
+threads = [] 
 
 def check_object(host, obj):
     result = call_method(host, 12000, "get_state")
@@ -26,6 +26,7 @@ def check_object(host, obj):
         return False
 
 def update_todos(x):
+    "rm one task of x in todos, if x is empty than rm it from todos"
     todos[x].pop(0)
     if len(todos[x]) == 0:
         del todos[x]
@@ -109,7 +110,12 @@ def start_single(x, n_current_iter=1, tags_addon:list = ["new_charlie_test"]): #
 
     
 def doing(x):
-
+    # 1. add x into dos
+    # 2. rm x from todos
+    # 3. start learing next task in the todos of x
+    # 4. learning done ^ rm x form dos ^ raise hand
+    # 5. if there is still objs for x; block it and stop other dos
+    
     dos.append(x)
     print("start ", todos[x][0])
     update_todos(x)
@@ -141,21 +147,25 @@ def doing(x):
             s.resume()
             print("pause: " + one)
     
-
+# nr of the robot limitation to use 
 n_agent = 2
 
 
 while True:
-    time.sleep(1)
+    # if no robot is leaning ^ no task in todo; then stop
     if len(todos) == 0:
         if sum([t.is_alive() for t in threads]) == 0:
-            break
+            if len(dos) == 0:
+                break
     
     time.sleep(1)
     i = 0
      
     while len(dos) < n_agent and len(todos) > 0:
+        # it will prefer to assign the task to the robots in the front of the todos
+        # if it is busy then try to assign the task to the next one
         if i+1 > len(todos):
+            # jump out of current iteration;in other words, do not assign tasks to any robot when no robot is available
             break
         
         x = list(todos.keys())[i]
