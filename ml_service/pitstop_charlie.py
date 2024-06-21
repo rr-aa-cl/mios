@@ -241,13 +241,16 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
                 print("increase limits for ",insertable)
                 pd.domain.limits["p2_f_push_z"] = (0,60)
             dualarm_skills = []
+            holdPose = "hold_"+insertable
+            if insertable[-4:] == "left":
+                holdPose = "hold"
             move_context = {
                         "skill": {
                             "speed": 0.5,
                             "acc": 1,
                             "q_g": [0, 0, 0, 0, 0, 0, 0],
                             "objects": {
-                                "goal_pose": "hold_" + insertable}},
+                                "goal_pose": holdPose}},
                         "control": {
                             "control_mode": 3},
                         "user": {
