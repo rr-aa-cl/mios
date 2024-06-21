@@ -1339,7 +1339,7 @@ def dualarm_demo2(dualarm_modules = list_block_1+list_block_2+ list_U):   #
 
 
 
-def stop_dualarm():
+def stop_dualarm(modules = list_block_1+list_block_2+list_U):
     def stop(r,m):
         try:
             print("stopping ",m,"  (",r,")")
@@ -1351,8 +1351,8 @@ def stop_dualarm():
         except ConnectionRefusedError:
             pass
     threads = []
-    ips = get_ips(list_block_1+list_block_2+list_U)
-    for r,m in zip(ips,list_block_1+list_block_2+list_U):
+    ips = get_ips(modules)
+    for r,m in zip(ips,modules):
         threads.append(Thread(target=stop, args=(r,m)))
     for t in threads:
         t.start()

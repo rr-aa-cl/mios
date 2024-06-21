@@ -1,6 +1,13 @@
+from concurrent.futures import thread
 from copy import deepcopy
 import time
-
+import sys
+import logging
+logger = logging.getLogger("ml_service")
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+logger.addHandler(handler)
 from problem_definition.domain import Domain
 from run_experiments import *
 
@@ -15,32 +22,35 @@ print(list_robots)
 # ---------------------------- cutoff cost ------------------------------------
 
 tasks = {   
-        "collective-001.rsi.ei.tum.de":["D_007","D_016","D_017"],
-        "collective-003.rsi.ei.tum.de":["D_012","D_005","D_018","D_028"],
-        "collective-004.rsi.ei.tum.de":["D_019","D_020"],
-        "collective-005.rsi.ei.tum.de":["D_006", "D_026", "D_027"],
-        "collective-006.rsi.ei.tum.de":["D_002", "D_001", "D_021"],
-        "collective-007.rsi.ei.tum.de":["D_022","D_011"],
-        "collective-008.rsi.ei.tum.de":["D_008", "D_004","D_013"],
-        "collective-010.rsi.ei.tum.de":["D_009","D_014","D_024","D_025"],
-        "collective-011.rsi.ei.tum.de":["D_010", "D_015","D_023"],
-        "collective-012.rsi.ei.tum.de":["C_007","C_key_05","C_006"],
-        "collective-009.rsi.ei.tum.de":["A_015_trapezoid","B_017_IT2DE","B_013"],
-        "collective-013.rsi.ei.tum.de":["A_030_shamrock","A_012_ellipsoid-2", "C_011"],
-        "collective-014.rsi.ei.tum.de":["A_024_moon","C_020","B_016"],
-        "collective-015.rsi.ei.tum.de":["B_012_DE2DE","A_011","C_025"],
-        "collective-016.rsi.ei.tum.de":["A_026_cylinder_10","A_026_cylinder_20","A_026_cylinder_50","A_026_cylinder_30"],  #,,,],"A_026_cylinder_60"
-        "collective-017.rsi.ei.tum.de":["B_015","C_key_12","A_013_hexagram"],
-        "collective-041.rsi.ei.tum.de":["A_021_arrow","A_key_24","C_022"],
-        "collective-021.rsi.ei.tum.de":["C_018","A_020_pentagram","C_019"],
-        "collective-022.rsi.ei.tum.de":["C_010","C_013","C_009"],
-        "collective-023.rsi.ei.tum.de":["A_019_oneline","C_key_08","C_014"],
-        "collective-024.rsi.ei.tum.de":["C_017","C_015","C_key_24"],
-        "collective-025.rsi.ei.tum.de":["A_014_doji-1","A_023_stairs","A_025_heart"],
-        "collective-026.rsi.ei.tum.de":["B-014","A_022_diamond","B-018"],
-        "collective-027.rsi.ei.tum.de":["C_016","C_key_23","A_031_audi"],
+        "collective-001.rsi.ei.tum.de":["001_left","D_007","D_016","D_017"],
+        "collective-003.rsi.ei.tum.de":["003_left","D_012","D_005","D_018","D_028"],
+        "collective-004.rsi.ei.tum.de":["004_left","D_019","D_020"],
+        "collective-005.rsi.ei.tum.de":["005_left","D_006", "D_026", "D_027"],
+        "collective-006.rsi.ei.tum.de":["006_left","D_002", "D_001", "D_021"],
+        #"collective-007.rsi.ei.tum.de":["007_left","D_022","D_011"],
+        "collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
+        #"collective-010.rsi.ei.tum.de":["010_left","D_009","D_014","D_024","D_025"],
+        "collective-011.rsi.ei.tum.de":["011_left","D_010", "D_015","D_023"],
+        "collective-012.rsi.ei.tum.de":["012_left","C_007","C_key_05","C_006"],
+        #"collective-009.rsi.ei.tum.de":["009_left","A_015_trapezoid","B_017_IT2DE","B_013"],
+        #"collective-013.rsi.ei.tum.de":["013_left","A_030_shamrock","A_012_ellipsoid-2", "C_011"],
+        #"collective-014.rsi.ei.tum.de":["014_left","A_024_moon","C_020","B_016"],
+        #"collective-015.rsi.ei.tum.de":["015_left","B_012_DE2DE","A_011","C_025"],
+        #"collective-016.rsi.ei.tum.de":["016_left","A_026_cylinder_10","A_026_cylinder_20","A_026_cylinder_50","A_026_cylinder_30"],  #,,,],"A_026_cylinder_60"
+        #"collective-017.rsi.ei.tum.de":["017_left","B_015","C_key_12","A_013_hexagram"],
+
+# Checkt 041 for correct teaching:
+        #"collective-041.rsi.ei.tum.de":["041_left","A_021_arrow","A_key_24","C_022"],  
+
+        #"collective-021.rsi.ei.tum.de":["021_left","C_018","A_020_pentagram","C_019"],
+        #"collective-022.rsi.ei.tum.de":["022_left","C_010","C_013","C_009"],
+        #"collective-023.rsi.ei.tum.de":["023_left","A_019_oneline","C_key_08","C_014"],
+        #"collective-024.rsi.ei.tum.de":["024_left","C_017","C_015","C_key_24"],
+        #"collective-025.rsi.ei.tum.de":["025_left","A_014_doji-1","A_023_stairs","A_025_heart"],
+        #"collective-026.rsi.ei.tum.de":["026_left","B-014","A_022_diamond","B-018"],
+        #"collective-027.rsi.ei.tum.de":["027_left","C_016","C_key_23","A_031_audi"],
         # # "collective-040.rsi.ei.tum.de":[],
-        "collective-029.rsi.ei.tum.de":["A_016_sector","A_018_cross-2", "A_016_cross-1"]
+        #"collective-029.rsi.ei.tum.de":["029_left","A_016_sector","A_018_cross-2", "A_016_cross-1"]
         }
 total = 0
 for k in tasks:
@@ -48,44 +58,42 @@ for k in tasks:
 print("total tasks: ",total)
 
 class have_a_rest:
-    def __init__(self, robots:list):
-        self.robots = robots
-        self.delay_time = {}
-        self.delay_start_time = {}
-        
-        for i in self.robots:
-            self.delay_time[i] = 0
-            self.delay_start_time[i] = 0
-                
-    def stop_others(self, one):
-        self.delay_start_time[one] = time.time()
-        for i in self.robots:
-            if i != one:
-                # pause_service
-                self.pause(i)                
-                self.delay_start_time[i] = time.time()
-    
-    def resume_others(self, one):
-        self.delay_time[one] += time.time() - self.delay_start_time[one]
-        for i in self.robots:
-            if i != one:
-                # resume_service
-                self.resume()
-                self.delay_time[i] += time.time() - self.delay_start_time[i]
+    def __init__(self):
+        self.robots = list(tasks.keys())
 
-    
-    def rm_robots(self, finished_one):
-        self.robots.remove(finished_one)
-        
+    def pause_all(self):
+        threads = []
+        for robot in self.robots:
+            threads.append(Thread(target=self.pause, args=(robot,)))
+            threads[-1].start()
+        for t in threads:
+            t.join()
+
+    def resume_all(self):
+        threads = []
+        for robot in self.robots:
+            threads.append(Thread(target=self.resume, args=(robot,)))
+            threads[-1].start()
+        for t in threads:
+            t.join()
+
     def pause(self, one):
+        #logger.debug("pause "+one)
         s = ServerProxy("http://" + one + ":8000", allow_none=True)
-        s.pause_service()
-        print("pause: " + one)
+        try:
+            s.pause_service()
+        except socket.gaierror:
+            #logger.debug("pause: "+ one +" socket.gaierror")
+            pass
         
     def resume(self, one):
+        #logger.debug("resume "+one)
         s = ServerProxy("http://" + one + ":8000", allow_none=True)
-        s.resume_service()
-        print("resume: " + one)
+        try:
+            s.resume_service()
+        except socket.gaierror:
+            #logger.debug("resume: "+ one +" socket.gaierror")
+            pass
 
 cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
             '003_left': 0.68016,
@@ -137,13 +145,19 @@ def prefill_fast_pipe(iteration_n:int, kb_location:str, tags: list = ["10agents_
                 continue
     print(cnt, "successfull trials pushed.")
             
-def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_charlie_1"], n_agents:int = 25): #10
+def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_charlie_1"], n_agents:int = 25, prefill=False): #10
     '''
     n_current_iter: number of current iteration
 
     '''
-    prefill_fast_pipe(n_current_iter, "collective-001.rsi.ei.tum.de")
-    tags = ["ps_alpha_5","10agents_25tasks"]
+    logger.debug("start")
+    if prefill:
+        prefill_fast_pipe(n_current_iter, "collective-001.rsi.ei.tum.de")
+        tags = ["ps_alpha_5","10agents_25tasks"]
+    else:
+        s = ServerProxy("http://collective-001.rsi.ei.tum.de:8001")
+        s.clear_memory()
+        tags = deepcopy(tags_addon)
     # tags = ["100_testing"]
     # modules = list_block_1 + list_block_2 + list_U
     
@@ -179,7 +193,6 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
         
     # for n_current_iter in range(29,30): #range(15,25):   (not reserve)
 
-    threads = []
     print("Number of iteration: ", n_current_iter+1)
     knowledge_source = Knowledge()
     knowledge_source.kb_location = "collective-001.rsi.ei.tum.de" # None #  
@@ -190,38 +203,30 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
     knowledge_source.type = "all"  # all: 
         
     threads = []
-    tags.extend(tags_addon)
+    if prefill:
+        tags.extend(tags_addon)
     
-    Rest = have_a_rest(list_robots) # init with the robots
     while len(tasks) > 0:
         finished_robot = []
+        Rest = have_a_rest() # init with the robots
         for robot in tasks:
             server = ServerProxy("http://%s:%s/" %(robot, "8000"))
             if len(tasks[robot]) == 0:
                 finished_robot.append(robot)
-                Rest.rm_robots(robot)
                 continue
-            if server.is_busy():
+            try:
+                if server.is_busy():
+                    continue
+            except socket.gaierror:
                 continue
             if not check_object(robot, tasks[robot][0]):
-                Rest.stop_others(robot)
-                while not check_object(robot, tasks[robot][0]):
-                    time.sleep(1)
-                Rest.resume_others(robot)
-                
+                Rest.pause_all()
                 continue
-            # TODO: add wait function
-            # it takes the robot and finished robot, tasks as input
-            # it needs to intial the state as false for all the robot list
-            # intial the waiting time for every robot as zero
-            
-            
             if sum([t.is_alive() for t in threads]) >= n_agents:
                 continue
             if not get_states([robot.split(".")[0][-3:]])[0]:
-                print(robot, "is not ready! Skipping task ",insertable)
                 continue
-
+            Rest.resume_all()
             insertable = tasks[robot].pop(0)
             container = insertable+"_container" 
             approach = container+"_approach"
@@ -262,7 +267,6 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
     kb = ServerProxy("http://" + knowledge_source.kb_location+ ":8001", allow_none=True)
     kb.clear_memory()
     print("run ", n_current_iter, " finished :)")
-    print("total pause time: ", Rest.delay_time)
     return "finished :)"
 
 
