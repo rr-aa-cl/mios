@@ -70,7 +70,7 @@ def check_cutoff():
             print(m, "performed better than", cutoff[m+"_left"], " for ", undercuts, "times")
 
 
-def plot_single_experiment(host: str, task_type: str, database: str, tags: list = None, uuid: str = None):
+def plot_single_experiment(host: str, task_type:str = "insertion", database:str = "ml_results", tags: list = None, uuid: str = None):
     p = DataProcessor()
 
     if tags is not None:
@@ -81,7 +81,8 @@ def plot_single_experiment(host: str, task_type: str, database: str, tags: list 
         return
     cost, confidence = result.get_cost_per_time()
     cost_mono = p.get_monotonically_decreasing_cost(cost)
-    plt.plot(cost_mono)
+
+    plt.plot(cost)
     plt.ylim((0, 10))
     plt.show()
     # plot.plot_cost_over_trials())
