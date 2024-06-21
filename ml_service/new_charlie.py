@@ -113,8 +113,8 @@ def doing(x):
     # 1. add x into dos
     # 2. rm x from todos
     # 3. start learing next task in the todos of x
-    # 4. learning done ^ raise hand
-    # 5. if there is still objs for x; block it and stop others
+    # 4. learning done ^ rm x form dos ^ raise hand
+    # 5. if there is still objs for x; block it and stop other dos
     
     dos.append(x)
     print("start ", todos[x][0])
@@ -147,7 +147,7 @@ def doing(x):
             s.resume()
             print("pause: " + one)
     
-
+# nr of the robot limitation to use 
 n_agent = 2
 
 
@@ -156,7 +156,8 @@ while True:
     time.sleep(1)
     if len(todos) == 0:
         if sum([t.is_alive() for t in threads]) == 0:
-            break
+            if len(dos) == 0:
+                break
     
     time.sleep(1)
     i = 0
@@ -165,6 +166,7 @@ while True:
         # it will prefer to assign the task to the robots in the front of the todos
         # if it is busy then try to assign the task to the next one
         if i+1 > len(todos):
+            # jump out of current iteration; do not assign tasks to any robot when no robot is available
             break
         
         x = list(todos.keys())[i]
