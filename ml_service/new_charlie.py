@@ -114,6 +114,7 @@ def doing(x):
     print("start ", todos[x][0])
     update_todos(x)
     # time.sleep(random.randint(1, 20))
+    start_single(x)
     
     print("stop ", x)
     dos.remove(x)
