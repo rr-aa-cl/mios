@@ -59,8 +59,19 @@ def set_all_object():
     for robot in tasks:
         ip = get_ips([robot.split(".")[0][-3:]])[0]
         next_obj = tasks[robot][0]
-        call_method(ip,12000,"set_grasped_object",{"object":next_obj})
+        print("set ", next_obj, " for ", robot)
+        set_result = call_method(ip,12000,"set_grasped_object",{"object":next_obj})
+        # print(set_)
         call_method(ip,13000,"set_grasped_object",{"object":next_obj})
+    
+    # print all current object for double-check
+    for robot in tasks:
+        ip = get_ips([robot.split(".")[0][-3:]])[0]
+        result = call_method(ip, 12000, "get_state")
+        if type(result) == dict:
+            print(robot, " is grasping ", result["result"]["grasped_object"])
+        else:
+            print("cannot reach ", robot)
 class have_a_rest:
     def __init__(self):
         self.robots = list(tasks.keys())
