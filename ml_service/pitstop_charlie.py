@@ -22,34 +22,31 @@ print(list_robots)
 # ---------------------------- cutoff cost ------------------------------------
 
 tasks = {   
-        "collective-001.rsi.ei.tum.de":["001_left","D_007","D_016","D_017"],
+        "collective-001.rsi.ei.tum.de":["B_002_IEC-C7","D_007_extHexScrewdriver-10","D_016_extHexScrewdriver-30","D_017_extDodScrewdriver-30"],
         "collective-003.rsi.ei.tum.de":["003_left","D_012","D_005","D_018","D_028"],
         "collective-004.rsi.ei.tum.de":["004_left","D_019","D_020"],
         "collective-005.rsi.ei.tum.de":["005_left","D_006", "D_026", "D_027"],
         "collective-006.rsi.ei.tum.de":["006_left","D_002", "D_001", "D_021"],
         "collective-007.rsi.ei.tum.de":["007_left","D_022","D_011"],
         # "collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
-        "collective-036.rsi.ei.tum.de":["010_left","D_009","D_014","D_024","D_025"],#10 is 36 now
+        "collective-036.rsi.ei.tum.de":["010_left","D_009","D_014","D_024","D_025"],#PC 10 is broken and changed to 36 now
         "collective-011.rsi.ei.tum.de":["011_left","D_010", "D_015","D_023"],
         "collective-012.rsi.ei.tum.de":["012_left","C_007","C_key_05","C_006"],
         "collective-009.rsi.ei.tum.de":["009_left","A_015_trapezoid","B_017_IT2DE","B_013"],
         "collective-013.rsi.ei.tum.de":["A_030_shamrock","A_012_ellipsoid-2", "C_011"],
-        "collective-014.rsi.ei.tum.de":["014_left","A_024_moon","C_020","B_016"],
+        "collective-014.rsi.ei.tum.de":["B_006_HDMI-1","A_024_moon","C_020","B_016"],
         "collective-015.rsi.ei.tum.de":["B_012_DE2DE","A_011","C_025"],
         "collective-016.rsi.ei.tum.de":["A_026_cylinder_10","A_026_cylinder_20","A_026_cylinder_60","A_026_cylinder_30"],  #,,,],"A_026_cylinder_60"
-        "collective-017.rsi.ei.tum.de":["017_left","B_015","C_key_12","A_013_hexagram"],
-
-
-# Checkt 041 for correct teaching:
-        "collective-041.rsi.ei.tum.de":["041_left","A_021_arrow","A_key_24","C_022"],  # check 41_left
-
-        "collective-021.rsi.ei.tum.de":["021_left","C_018","A_020_pentagram","C_019"],
-        "collective-022.rsi.ei.tum.de":["022_left","C_010","C_013","C_009"],
-        "collective-023.rsi.ei.tum.de":["023_left","A_019_oneline","C_key_08","C_014"],
+        "collective-017.rsi.ei.tum.de":["A_008_square-1","B_015","C_key_12","A_013_hexagram"],
+        # Checkt 041 for correct teaching:
+        "collective-041.rsi.ei.tum.de":["A_009_hexagon-3","A_021_arrow","A_key_24","C_022"],  # check 41_left
+        "collective-021.rsi.ei.tum.de":["A_010_square-2","C_018","A_020_pentagram","C_019"],
+        "collective-022.rsi.ei.tum.de":["B_007_audioJack","C_010","C_013","C_009"],
+        "collective-023.rsi.ei.tum.de":["B_008_USB-2","A_019_oneline","C_key_08","C_014"],
         "collective-024.rsi.ei.tum.de":["B_014_CN","C_017","C_015"],
         "collective-025.rsi.ei.tum.de":["A_014_doji-1","A_023_stairs","A_025_heart"],
         # "collective-026.rsi.ei.tum.de":["026_left","B-014","A_022_diamond","B-018"],
-        "collective-027.rsi.ei.tum.de":["027_left","C_016","C_key_23","A_031_audi"],
+        "collective-027.rsi.ei.tum.de":["B_010_plugF-2","C_016","C_key_23","A_031_audi"],
         # "collective-040.rsi.ei.tum.de":[], # teach 40
         # "collective-029.rsi.ei.tum.de":["029_left","A_016_sector","A_018_cross-2", "A_016_cross-1"]
         }
