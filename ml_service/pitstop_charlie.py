@@ -22,9 +22,9 @@ print(list_robots)
 # ---------------------------- cutoff cost ------------------------------------
 
 tasks = {   
-        "collective-001.rsi.ei.tum.de":["001_left","D_007","D_016","D_017"],
+        "collective-001.rsi.ei.tum.de":["001_left","D_007","D_016","D_017"], #done
         "collective-003.rsi.ei.tum.de":["003_left","D_012","D_005","D_018","D_028"],
-        "collective-004.rsi.ei.tum.de":["004_left","D_019","D_020"],
+        "collective-004.rsi.ei.tum.de":["004_left"],  #"collective-004.rsi.ei.tum.de":["004_left","D_019","D_020"],
         "collective-005.rsi.ei.tum.de":["005_left","D_006", "D_026", "D_027"],
         "collective-006.rsi.ei.tum.de":["006_left","D_002", "D_001", "D_021"],
         "collective-007.rsi.ei.tum.de":["007_left","D_022","D_011"],
@@ -45,7 +45,7 @@ tasks = {
 
         "collective-021.rsi.ei.tum.de":["021_left","C_018","A_020_pentagram","C_019"],
         "collective-022.rsi.ei.tum.de":["022_left","C_010","C_013","C_009"],
-        "collective-023.rsi.ei.tum.de":["023_left","A_019_oneline","C_key_08","C_014"],
+        "collective-023.rsi.ei.tum.de":["023_left","  ","C_key_08","C_014"],
         "collective-024.rsi.ei.tum.de":["024_left","C_017","C_015","C_key_24"],
         "collective-025.rsi.ei.tum.de":["025_left","A_014_doji-1","A_023_stairs","A_025_heart"],
         # "collective-026.rsi.ei.tum.de":["026_left","B-014","A_022_diamond","B-018"],
