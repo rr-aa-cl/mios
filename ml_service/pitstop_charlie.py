@@ -22,12 +22,12 @@ print(list_robots)
 # ---------------------------- cutoff cost ------------------------------------
 
 tasks = {   
-        "collective-001.rsi.ei.tum.de":["B_002_IEC-C7","D_007_extHexScrewdriver-10","D_016_extHexScrewdriver-30","D_017_extDodScrewdriver-30"],
-        "collective-003.rsi.ei.tum.de":["003_left","D_012","D_005","D_018","D_028"],
-        "collective-004.rsi.ei.tum.de":["004_left","D_019","D_020"],
-        "collective-005.rsi.ei.tum.de":["005_left","D_006", "D_026", "D_027"],
+        "collective-001.rsi.ei.tum.de":["A_018","D_007_extHexScrewdriver-10","D_016_extHexScrewdriver-30","D_017_extDodScrewdriver-30","B_002_IEC-C7"],
+        "collective-003.rsi.ei.tum.de":["A_001_triangle-1","D_012","D_005","D_018","D_028"],
+        "collective-004.rsi.ei.tum.de":["A_002_hexagon-1","D_019","D_020"],
+        "collective-005.rsi.ei.tum.de":["B_001_USB-C_1","D_006", "D_026", "D_027"],
         "collective-006.rsi.ei.tum.de":["006_left","D_002", "D_001", "D_021"],
-        "collective-007.rsi.ei.tum.de":["007_left","D_022","D_011"],
+        "collective-007.rsi.ei.tum.de":["A_004_cylinder-1","D_022","D_011"],
         # "collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
         "collective-036.rsi.ei.tum.de":["010_left","D_009","D_014","D_024","D_025"],#PC 10 is broken and changed to 36 now
         "collective-011.rsi.ei.tum.de":["011_left","D_010", "D_015","D_023"],
