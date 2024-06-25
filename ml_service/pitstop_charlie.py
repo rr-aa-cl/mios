@@ -33,10 +33,10 @@ tasks = {
         "collective-011.rsi.ei.tum.de":["011_left","D_010", "D_015","D_023"],
         "collective-012.rsi.ei.tum.de":["012_left","C_007","C_key_05","C_006"],
         "collective-009.rsi.ei.tum.de":["009_left","A_015_trapezoid","B_017_IT2DE","B_013"],
-        "collective-013.rsi.ei.tum.de":["013_left","A_030_shamrock","A_012_ellipsoid-2", "C_011"],
+        "collective-013.rsi.ei.tum.de":["A_030_shamrock","A_012_ellipsoid-2", "C_011"],
         "collective-014.rsi.ei.tum.de":["014_left","A_024_moon","C_020","B_016"],
-        "collective-015.rsi.ei.tum.de":["015_left","B_012_DE2DE","A_011","C_025"],
-        "collective-016.rsi.ei.tum.de":["016_left","A_026_cylinder_10","A_026_cylinder_20","A_026_cylinder_50","A_026_cylinder_30"],  #,,,],"A_026_cylinder_60"
+        "collective-015.rsi.ei.tum.de":["B_012_DE2DE","A_011","C_025"],
+        "collective-016.rsi.ei.tum.de":["A_026_cylinder_10","A_026_cylinder_20","A_026_cylinder_60","A_026_cylinder_30"],  #,,,],"A_026_cylinder_60"
         "collective-017.rsi.ei.tum.de":["017_left","B_015","C_key_12","A_013_hexagram"],
 
 
@@ -46,8 +46,8 @@ tasks = {
         "collective-021.rsi.ei.tum.de":["021_left","C_018","A_020_pentagram","C_019"],
         "collective-022.rsi.ei.tum.de":["022_left","C_010","C_013","C_009"],
         "collective-023.rsi.ei.tum.de":["023_left","A_019_oneline","C_key_08","C_014"],
-        "collective-024.rsi.ei.tum.de":["024_left","C_017","C_015","C_key_24"],
-        "collective-025.rsi.ei.tum.de":["025_left","A_014_doji-1","A_023_stairs","A_025_heart"],
+        "collective-024.rsi.ei.tum.de":["B_014_CN","C_017","C_015"],
+        "collective-025.rsi.ei.tum.de":["A_014_doji-1","A_023_stairs","A_025_heart"],
         # "collective-026.rsi.ei.tum.de":["026_left","B-014","A_022_diamond","B-018"],
         "collective-027.rsi.ei.tum.de":["027_left","C_016","C_key_23","A_031_audi"],
         # "collective-040.rsi.ei.tum.de":[], # teach 40
