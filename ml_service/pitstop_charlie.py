@@ -25,7 +25,7 @@ tasks = {
         "collective-001.rsi.ei.tum.de":["A_018","D_007_extHexScrewdriver-10","D_016_extHexScrewdriver-30","D_017_extDodScrewdriver-30","B_002_IEC-C7"],
         "collective-003.rsi.ei.tum.de":["A_001_triangle-1","D_012","D_005","D_018","D_028"],
         "collective-004.rsi.ei.tum.de":["A_002_hexagon-1","D_019","D_020"],
-        "collective-005.rsi.ei.tum.de":["B_001_USB-C_1","D_006", "D_026", "D_027"],
+        "collective-005.rsi.ei.tum.de":["B_001_USB-1","D_006", "D_026", "D_027"],
         "collective-006.rsi.ei.tum.de":["006_left","D_002", "D_001", "D_021"],
         "collective-007.rsi.ei.tum.de":["A_004_cylinder-1","D_022","D_011"],
         # "collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
