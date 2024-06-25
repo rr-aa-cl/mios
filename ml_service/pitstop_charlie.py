@@ -30,7 +30,7 @@ tasks = {
         "collective-007.rsi.ei.tum.de":["A_004_cylinder-1","D_022","D_011"],
         # "collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
         "collective-036.rsi.ei.tum.de":["010_left","D_009","D_014","D_024","D_025"],#PC 10 is broken and changed to 36 now
-        "collective-011.rsi.ei.tum.de":["011_left","D_010", "D_015","D_023"],
+        "collective-011.rsi.ei.tum.de":["B_004_audioJack-35","D_010", "D_015","D_023"],
         "collective-012.rsi.ei.tum.de":["012_left","C_007","C_key_05","C_006"],
         "collective-009.rsi.ei.tum.de":["009_left","A_015_trapezoid","B_017_IT2DE","B_013"],
         "collective-013.rsi.ei.tum.de":["A_030_shamrock","A_012_ellipsoid-2", "C_011"],
