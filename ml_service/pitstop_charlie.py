@@ -83,7 +83,7 @@ class have_a_rest:
             threads[-1].start()
         for t in threads:
             t.join()
-        print("All robots are paused.") 
+        #print("All robots are paused.") 
 
     def resume_all(self):
         threads = []
@@ -92,7 +92,7 @@ class have_a_rest:
             threads[-1].start()
         for t in threads:
             t.join()
-        print("All robots are resumed.") 
+        #print("All robots are resumed.") 
 
     def pause(self, one):
         #logger.debug("pause "+one)
@@ -397,7 +397,14 @@ def move_to_first_approach():
         call_method(t, 12000, "teach_object",{"object":ins+"_container_above"})
 
         
-    
-    
-
-
+def release_object(module, hand="left"):
+    ip = get_ips([module])[0]
+    if hand == "left": 
+        call_method(ip, 12000, "release_object", timeout=2)
+    elif hand == "right":
+        call_method(ip, 13000, "release_object", timeout=2)
+    elif hand == "both":
+        call_method(ip, 12000, "release_object", timeout=2)
+        call_method(ip, 13000, "release_object", timeout=2)
+    else:
+        print("Hand is not properly specified.")
