@@ -22,11 +22,11 @@ print(list_robots)
 # ---------------------------- cutoff cost ------------------------------------
 
 tasks = {   
-        "collective-001.rsi.ei.tum.de":["A_018","D_007_extHexScrewdriver-10","D_016_extHexScrewdriver-30","D_017_extDodScrewdriver-30","B_002_IEC-C7"],
-        "collective-003.rsi.ei.tum.de":["A_001_triangle-1","D_012","D_005","D_018","D_028"],
-        "collective-004.rsi.ei.tum.de":["A_002_hexagon-1","D_019","D_020"],
-        "collective-005.rsi.ei.tum.de":["B_001_USB-1","D_006", "D_026", "D_027"],
-        "collective-006.rsi.ei.tum.de":["A_32_pentagon-1","D_002", "D_001", "D_021"],
+        "collective-001.rsi.ei.tum.de":["D_016_extHexScrewdriver-30","A_018","D_007_extHexScrewdriver-10","D_017_extDodScrewdriver-30","B_002_IEC-C7"],
+        "collective-003.rsi.ei.tum.de":["D_028", "D_012", "D_005", "D_018", "A_001_triangle-1"],
+        "collective-004.rsi.ei.tum.de":["D_020", "D_019", "A_002_hexagon-1"],
+        "collective-005.rsi.ei.tum.de":["D_027", "D_026", "B_001_USB-1", "D_006"],
+        "collective-006.rsi.ei.tum.de":["D_021", "A_32_pentagon-1","D_002", "D_001" ],
         "collective-007.rsi.ei.tum.de":["A_004_cylinder-1","D_022","D_011"],
         # "collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
         "collective-036.rsi.ei.tum.de":["B_003_plugF-1","D_009","D_014","D_024","D_025"],#PC 10 is broken and changed to 36 now
@@ -83,7 +83,7 @@ class have_a_rest:
             threads[-1].start()
         for t in threads:
             t.join()
-        #print("All robots are paused.") 
+        #logger.debug("All robots are paused.") 
 
     def resume_all(self):
         threads = []
@@ -92,7 +92,7 @@ class have_a_rest:
             threads[-1].start()
         for t in threads:
             t.join()
-        #print("All robots are resumed.") 
+        #logger.debug("All robots are resumed.") 
 
     def pause(self, one):
         #logger.debug("pause "+one)
@@ -408,3 +408,13 @@ def release_object(module, hand="left"):
         call_method(ip, 13000, "release_object", timeout=2)
     else:
         print("Hand is not properly specified.")
+
+
+def get_state(module):
+    ip = get_ips([module])[0]
+    current_task_left = call_method(ip, 12000, "get_state")["result"]["current_task"]
+    current_task_right = call_method(ip, 13000, "get_state")["result"]["current_task"]
+    print("Left arm tasks is:", current_task_left, "Right arm task is:", current_task_right)
+    grasped_object = call_method(ip, 12000, "get_state")["result"]["grasped_object"]
+    print("Grasped object is:", grasped_object)
+    
