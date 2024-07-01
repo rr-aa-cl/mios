@@ -1919,6 +1919,6 @@ def check_object(host, obj):
         if result["grasped_object"] == obj:
             return True
         else:
-            move_joint(Learner, "raise_hand")
+            move_joint(host, "raise_hand")
             print("wainting for ",host, " to grasp ", obj)
             return False
