@@ -235,13 +235,18 @@ def automatica_waving(banner=False):
                 ("collective-014.rsi.ei.tum.de", 12000),("collective-009.rsi.ei.tum.de", 12000),("collective-009.rsi.ei.tum.de", 13000),
                 ("collective-013.rsi.ei.tum.de", 13000),("collective-016.rsi.ei.tum.de", 12000)]  # with banner
     else:
-        big_flags = [("collective-016.rsi.ei.tum.de", 13000),("collective-021.rsi.ei.tum.de", 12000),("collective-021.rsi.ei.tum.de", 13000),
-                 ("collective-022.rsi.ei.tum.de", 12000),("collective-022.rsi.ei.tum.de", 13000),("collective-017.rsi.ei.tum.de", 12000),
-                 ("collective-014.rsi.ei.tum.de", 13000),("collective-020.rsi.ei.tum.de", 13000),("collective-015.rsi.ei.tum.de", 12000),
-                 ("collective-015.rsi.ei.tum.de", 13000),("collective-020.rsi.ei.tum.de", 12000)] # without banner
-        small_flags = [("collective-018.rsi.ei.tum.de", 12000),("collective-018.rsi.ei.tum.de", 13000),
-                ("collective-014.rsi.ei.tum.de", 12000),("collective-009.rsi.ei.tum.de", 12000),("collective-009.rsi.ei.tum.de", 13000),
-                ("collective-013.rsi.ei.tum.de", 13000),("collective-016.rsi.ei.tum.de", 12000),("collective-013.rsi.ei.tum.de", 12000)]   # without banner
+        #big_flags = [("collective-016.rsi.ei.tum.de", 13000),("collective-021.rsi.ei.tum.de", 12000),("collective-021.rsi.ei.tum.de", 13000),
+        #         ("collective-022.rsi.ei.tum.de", 12000),("collective-022.rsi.ei.tum.de", 13000),("collective-017.rsi.ei.tum.de", 12000),
+        #         ("collective-014.rsi.ei.tum.de", 13000),("collective-020.rsi.ei.tum.de", 13000),("collective-015.rsi.ei.tum.de", 12000),
+        #         ("collective-015.rsi.ei.tum.de", 13000),("collective-020.rsi.ei.tum.de", 12000)] # without banner
+        big_flags = [("collective-023.rsi.ei.tum.de", 13000),("collective-023.rsi.ei.tum.de", 12000),("collective-024.rsi.ei.tum.de", 13000),
+                 ("collective-024.rsi.ei.tum.de", 12000),("collective-025.rsi.ei.tum.de", 13000),("collective-025.rsi.ei.tum.de", 12000),
+                 ("collective-026.rsi.ei.tum.de", 13000),("collective-026.rsi.ei.tum.de", 12000),("collective-027.rsi.ei.tum.de", 12000),
+                 ("collective-027.rsi.ei.tum.de", 13000),("collective-029.rsi.ei.tum.de", 12000),("collective-029.rsi.ei.tum.de", 13000)]
+        small_flags = []
+        #small_flags = [("collective-018.rsi.ei.tum.de", 12000),("collective-018.rsi.ei.tum.de", 13000),
+        #        ("collective-014.rsi.ei.tum.de", 12000),("collective-009.rsi.ei.tum.de", 12000),("collective-009.rsi.ei.tum.de", 13000),
+        #        ("collective-013.rsi.ei.tum.de", 13000),("collective-016.rsi.ei.tum.de", 12000),("collective-013.rsi.ei.tum.de", 12000)]   # without banner
   
     threads = []
     for robot, port in small_flags:
@@ -264,8 +269,84 @@ def automatica_waving(banner=False):
         command_some(second_ushape, "stop_task")
         t.join()
 
+def grasp_lid():
+    robot = "collective-036.rsi.ei.tum.de"
+    move_joint(robot,"kitchen_top",port=13000)
+    move(robot,"kitchen_pan",port=13000,f_ext=[15,10])
+    call_method(robot,13000,"grasp",{"force":100,"width":0,"speed":1,"epsilon_inner":1,"epsilon_outer":1})
+    move(robot,"EndEffector",offset=[0,0.05,-0.01],port=13000,f_ext=[100,50])
+    move(robot,"kitchen_top",f_ext=[100,50],port=13000)
+    move_joint(robot,"kitchen_top",port=13000)
+    move_joint(robot,"kitchen_away",port=13000)
 
+def grasp_whip():
+    robot = "collective-036.rsi.ei.tum.de"
+    move_joint(robot, "kitchen_top")
+    move_joint(robot,"kitchen_whip")
+    call_method(robot,12000,"grasp",{"force":100,"width":0,"speed":1,"epsilon_inner":1,"epsilon_outer":1})
+    move_joint(robot, "kitchen_whip_up1")
+    move_joint(robot, "kitchen_whip_up2")
+    move_joint(robot, "kitchen_whip_up3")
+    move_joint(robot, "kitchen_whip_over_pan")
+
+def stir():
+    robot = "collective-036.rsi.ei.tum.de"
+    move_joint(robot, "kitchen_whip_pan")
+    pi = 3.14159265359
+    speed = 0.36
+    wiggle_context1 = {
+            "skill": {
+                "dX_fourier_a_a": [0.01, 0, 0.01, 0, 0, 0],
+                "dX_fourier_a_phi": [0, pi/2, 0, pi/2, 0, pi/2],
+                "dX_fourier_a_f": [0.75, 0.08, 1, 0.6125, 0, 1.25],
+                "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
+                "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
+                "use_EE": False,
+                "time_max": 10
+            },
+            "control": {
+                "control_mode": 0
+            }
+        }
+    t = Task(robot,port=12000)
+    t.add_skill("wiggle", "GenericWiggleMotion", wiggle_context1)
+    t.start()
+    t.wait()
+
+def place_whip():
+    robot = "collective-036.rsi.ei.tum.de"
+    move(robot, "kitchen_whip_over_pan",f_ext=[15,10])
+    move(robot, "kitchen_whip_wash",f_ext=[50,25])
+    call_method(robot,12000,"release_object")
+    move_joint(robot, "kitchen_top")
+
+def place_lid():
+    robot = "collective-036.rsi.ei.tum.de"  
+    move(robot,"kitchen_pan",port=13000,f_ext=[15,10],offset=[0,0.05,-0.01])
+    move(robot,"kitchen_pan",port=13000,f_ext=[15,10])
+    call_method(robot,13000,"release_object")
+    move(robot,"kitchen_pan",port=13000,f_ext=[15,10],offset=[0,0.05,-0.01])
+    move(robot,"kitchen_top",f_ext=[100,50],port=13000)
     
+
+def kitchen_aid():
+    robot = "collective-036.rsi.ei.tum.de"
+    #call_method(robot,12000,"home_gripper",{})
+    #call_method(robot,13000,"home_gripper",{})
+    #call_method(robot,12000,"move_gripper",{"force":100,"width":1,"speed":1,"epsilon_inner":1,"epsilon_outer":1})
+    #call_method(robot,13000,"release_object",{"force":100,"width":0,"speed":1,"epsilon_inner":1,"epsilon_outer":1})
+    move_joint(robot,"kitchen_default",port=13000)
+    move_joint(robot,"kitchen_default",port=12000)
+    grasp_lid()
+    grasp_whip()
+    stir()
+    place_whip()
+    move_joint(robot, "kitchen_default")
+    place_lid()
+    move_joint(robot,"kitchen_top",port=13000)
+    move_joint(robot,"kitchen_default",port=13000)
+    
+
 
 def raise_banner():
     threads = []
