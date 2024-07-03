@@ -382,7 +382,7 @@ def get_objects(module):
 
 def move_to_first_approach():
     for t in tasks:
-        ins = tasks[t][1]
+        ins = tasks[t][0]
         print(t, ": ", ins)
         while True:
             r1 = move_joint(t, ins+"_container_approach", wait=True)
