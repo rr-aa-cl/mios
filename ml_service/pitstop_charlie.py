@@ -1,4 +1,4 @@
-from concurrent.futures import thread
+from typing import Union
 from copy import deepcopy
 import time
 import sys
@@ -10,7 +10,7 @@ handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 from problem_definition.domain import Domain
 from run_experiments import *
-
+socket.setdefaulttimeout(3)
 # ---------------------------- exp robots ------------------------------------
 list_robots = list_block_1 + list_block_2 + list_U
 # list_robots = list_block_2
@@ -245,7 +245,7 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
             try:
                 if server.is_busy():
                     continue
-            except socket.gaierror:
+            except (socket.gaierror, TimeoutError):
                 continue
             if not check_object(robot, tasks[robot][0]):
                 #Rest.pause_all()
@@ -307,7 +307,6 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
     print("run ", n_current_iter, " finished :)")
     return "finished :)"
 
-
 def check_object(host, obj):
     result = call_method(host, 12000, "get_state")
     if type(result) == dict:
@@ -323,7 +322,7 @@ def check_object(host, obj):
             print("wainting for ",host, " to grasp ", obj)
             return False
         
-def set_next_object(module, obj=None):
+def set_next_object(module, obj:int|str = None):
     addr = "collective-"+module+".rsi.ei.tum.de"
     ip = get_ips([module])[0]
     result = call_method(ip, 12000, "get_state")
@@ -355,9 +354,15 @@ def set_next_object(module, obj=None):
         except IndexError:
             next_obj = tasks[addr][0]
             print("new start with ",next_obj)
-    else:
+    elif type(obj) is str:
         print("set next object to ", obj)
         next_obj = obj
+    elif type(obj) is int:
+        next_obj = tasks[addr][obj]
+        print("set next object to ", obj)
+    else:
+        print("Faulty input! obj should be str or int, but, ",obj,", is ", type(obj))
+        return False
     input("open")
     call_method(ip, 13000,"release_object",timeout=2)
     call_method(ip, 12000, "release_object",timeout=2)
