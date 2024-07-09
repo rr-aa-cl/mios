@@ -45,10 +45,10 @@ tasks = {
         "collective-023.rsi.ei.tum.de":["C_014", "B_008_USB-2","A_019_oneline","C_key_08"],
         "collective-024.rsi.ei.tum.de":["B_014_CN", "C_015", "C_017"],
         "collective-025.rsi.ei.tum.de":["A_025_heart", "A_014_doji-1","A_023_stairs"],
-        "collective-026.rsi.ei.tum.de":["026_left","B-014","A_022_diamond","B-018"],
-        "collective-027.rsi.ei.tum.de":["B_010_plugF-2","C_016","C_key_23","A_031_audi"],
+        "collective-026.rsi.ei.tum.de":["B_018","A_016_cross-1","A_022_diamond"],    #["026_left","B-014","A_022_diamond","B-018"],
+        "collective-027.rsi.ei.tum.de":["B_010_plugF-2","C_016","C_key_23","A_031_audi"]
         # "collective-040.rsi.ei.tum.de":[], # teach 40
-        "collective-029.rsi.ei.tum.de":["029_left","A_016_sector","A_018_cross-2", "A_016_cross-1"]
+        #"collective-029.rsi.ei.tum.de":["029_left","A_016_sector","A_018_cross-2", "A_016_cross-1"]
         }
 task_sequence = []
 count = 0

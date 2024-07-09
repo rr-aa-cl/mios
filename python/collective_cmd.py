@@ -1282,7 +1282,7 @@ def stop_services(robots:list):
             print(e)
 
 def attention(modules):
-    for m in ["006","020","017"]:  #skip some modules
+    for m in []:  #skip some modules
         try:
             index = modules.index(m)
             modules.pop(index)
