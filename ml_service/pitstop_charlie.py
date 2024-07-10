@@ -247,19 +247,15 @@ def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_char
             except (socket.gaierror, TimeoutError):
                 continue
             if not check_object(robot, tasks[robot][0]):
-                #Rest.pause_all()
+                if len(task_sequence) > 0:
+                    if task_sequence[0] == tasks[robot][0]:
+                        Rest.pause_all()
                 continue
             if sum([t.is_alive() for t in threads]) >= n_agents:
                 continue
             if not get_states([robot.split(".")[0][-3:]])[0]: # get_states() returns True if IdleTask and not Busy
                 continue
-            if len(task_sequence) > 0:
-                if task_sequence[0] == tasks[robot][0]:
-                    task_sequence.pop(0)
-                else:
-                    Rest.pause_all()
-            else:
-                continue
+
             Rest.resume_all()
             insertable = tasks[robot].pop(0)
             container = insertable+"_container" 
@@ -445,6 +441,10 @@ def count_experiments():
     alle_ps_1 = []
     alle_ps_2 = []
     alle_ps_test = []
+    alle_ps_test2 = []
+    alle_ps_test3 = []
+    alle_ps_test4 = []
+    alle_ps_test6 = []
     for r in tasks.keys():
         client = MongoDBClient(r)
         print("\n",r)
@@ -462,33 +462,42 @@ def count_experiments():
 
 
         ps_charlie_2 = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_2", "n5"]})
-        print("ps_charlie_2 n5: ",len(ps_charlie_2))
+        print("ps_charlie_2 n5: ",len(ps_charlie_2), "should be ",len(tasks[r]))
         alle.append(len(ps_charlie_2))
         alle_ps_2.append(len(ps_charlie_2))
         ps_charlie_2 = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_2", "n6"]})
-        print("ps_charlie_2 n6: ",len(ps_charlie_2))
+        print("ps_charlie_2 n6: ",len(ps_charlie_2), "should be ",len(tasks[r]))
         alle.append(len(ps_charlie_2))
         alle_ps_2.append(len(ps_charlie_2))
 
         ps_charlie_test = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_test","n2"]})
-        print("ps_charlie_2 n2: ",len(ps_charlie_test))
+        print("ps_charlie_2 n2: ",len(ps_charlie_test), "should be ",len(tasks[r]))
         alle.append(len(ps_charlie_test))
         alle_ps_test.append(len(ps_charlie_test))
+        alle_ps_test2.append(len(ps_charlie_test))
         ps_charlie_test = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_test","n3"]})
-        print("ps_charlie_2 n3: ",len(ps_charlie_test))
+        print("ps_charlie_2 n3: ",len(ps_charlie_test), "should be ",len(tasks[r]))
         alle.append(len(ps_charlie_test))
         alle_ps_test.append(len(ps_charlie_test))
+        alle_ps_test3.append(len(ps_charlie_test))
         ps_charlie_test = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_test","n4"]})
-        print("ps_charlie_2 n4: ",len(ps_charlie_test))
+        print("ps_charlie_2 n4: ",len(ps_charlie_test), "should be ",len(tasks[r]))
         alle.append(len(ps_charlie_test))
         alle_ps_test.append(len(ps_charlie_test))
+        alle_ps_test4.append(len(ps_charlie_test))
         ps_charlie_test = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_test","n6"]})
-        print("ps_charlie_2 n6: ",len(ps_charlie_test))
+        print("ps_charlie_2 n6: ",len(ps_charlie_test), "should be ",len(tasks[r]))
         alle.append(len(ps_charlie_test))
         alle_ps_test.append(len(ps_charlie_test))
+        alle_ps_test6.append(len(ps_charlie_test))
 
     print("\n\nps_charlie_1", sum(alle_ps_1))
     print("ps_charlie_2", sum(alle_ps_2))
     print("ps_charlie_test", sum(alle_ps_test))
+    print("ps_charlie_test n2", sum(alle_ps_test2))
+    print("ps_charlie_test n3", sum(alle_ps_test3))
+    print("ps_charlie_test n4", sum(alle_ps_test4))
+    print("ps_charlie_test n6", sum(alle_ps_test6))
+    
     print("\n\ntotal: ",sum(alle))
         
