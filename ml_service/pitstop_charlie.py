@@ -439,4 +439,56 @@ def get_state(module):
     print("Left arm tasks is:", current_task_left, "Right arm task is:", current_task_right)
     grasped_object = call_method(ip, 12000, "get_state")["result"]["grasped_object"]
     print("Grasped object is:", grasped_object)
-    
+
+def count_experiments():
+    alle = []
+    alle_ps_1 = []
+    alle_ps_2 = []
+    alle_ps_test = []
+    for r in tasks.keys():
+        client = MongoDBClient(r)
+        print("\n",r)
+        ps_charlie_1 = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_1"]})
+        not_this = []
+        for d in range(len(ps_charlie_1)):
+            if "rest_test" in ps_charlie_1[d]["meta"]["tags"]:
+                not_this.append(d)
+        not_this.reverse()
+        for i in not_this:
+            _ = ps_charlie_1.pop(i)
+        print("ps_charlie_1: ",len(ps_charlie_1))
+        alle.append(len(ps_charlie_1))
+        alle_ps_1.append(len(ps_charlie_1))
+
+
+        ps_charlie_2 = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_2", "n5"]})
+        print("ps_charlie_2 n5: ",len(ps_charlie_2))
+        alle.append(len(ps_charlie_2))
+        alle_ps_2.append(len(ps_charlie_2))
+        ps_charlie_2 = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_2", "n6"]})
+        print("ps_charlie_2 n6: ",len(ps_charlie_2))
+        alle.append(len(ps_charlie_2))
+        alle_ps_2.append(len(ps_charlie_2))
+
+        ps_charlie_test = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_test","n2"]})
+        print("ps_charlie_2 n2: ",len(ps_charlie_test))
+        alle.append(len(ps_charlie_test))
+        alle_ps_test.append(len(ps_charlie_test))
+        ps_charlie_test = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_test","n3"]})
+        print("ps_charlie_2 n3: ",len(ps_charlie_test))
+        alle.append(len(ps_charlie_test))
+        alle_ps_test.append(len(ps_charlie_test))
+        ps_charlie_test = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_test","n4"]})
+        print("ps_charlie_2 n4: ",len(ps_charlie_test))
+        alle.append(len(ps_charlie_test))
+        alle_ps_test.append(len(ps_charlie_test))
+        ps_charlie_test = client.read("ml_results","insertion",{"meta.tags":["ps_charlie_test","n6"]})
+        print("ps_charlie_2 n6: ",len(ps_charlie_test))
+        alle.append(len(ps_charlie_test))
+        alle_ps_test.append(len(ps_charlie_test))
+
+    print("\n\nps_charlie_1", sum(alle_ps_1))
+    print("ps_charlie_2", sum(alle_ps_2))
+    print("ps_charlie_test", sum(alle_ps_test))
+    print("\n\ntotal: ",sum(alle))
+        
