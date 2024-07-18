@@ -37,7 +37,7 @@ class Knowledge():
     def get_identification_name(self):
         return str({"skill_class": self.skill_class, "tags": self.tags, "identity": self.identity,"skill_instance":self.skill_instance})   # exactly the same as for problem_definition
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         meta_information = {
             "mode": self.mode,
             "type": self.type,

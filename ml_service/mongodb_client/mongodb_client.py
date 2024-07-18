@@ -100,7 +100,7 @@ class MongoDBClient():
                 if new_param.get("_id", False):
                     new_param.pop("_id")
                 new_param_set = {"$set": new_param}
-                col.update_one(search_param, new_param_set)
+                col.update_one(search_param, new_param_set, upsert=False)
             else:
                 logger.error("new parameter for update are not dict, but " + str(type(new_param)))
                 return False
