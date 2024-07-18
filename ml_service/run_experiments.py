@@ -1789,7 +1789,6 @@ def demo_automatica(modules):
             
             
 def collective25():
-    
     modules = list_block_1 + list_block_2 + list_U
     cutoff = {  '001_left': 0.6,   # best solution found *1.2
                 '003_left': 0.6,
@@ -1816,15 +1815,8 @@ def collective25():
                 '027_left': 0.6,
                 '028_left': 0.6, # TODO: replace
                 '029_left': 0.6}
-    # sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
     sc = SVMLearner(450,10,0,True,False, 0.4,True).get_configuration()
-
-    # tags = ["5agents_25tasks","collective"]
-    
-
     tags = ["group1","100tasks"]
-        
-        
     # for n_current_iter in range(29,30): #range(15,25):   (not reserve)
     for n_current_iter in [0]: # reverse one
         tasks = {}
@@ -1901,10 +1893,106 @@ def collective25():
         # TODO: add video recording by call FLO's rpc
     return "finished :)"
 
+def robustnes_test():
+    tasks = {   
+        "collective-001.rsi.ei.tum.de":"B_002_IEC-C7",
+        "collective-003.rsi.ei.tum.de":"A_001_triangle-1",
+        "collective-004.rsi.ei.tum.de":"A_002_hexagon-1",
+        "collective-005.rsi.ei.tum.de":"D_006",
+        "collective-006.rsi.ei.tum.de": "D_001",
+        "collective-007.rsi.ei.tum.de":"D_011",
+        "collective-008.rsi.ei.tum.de":"D_013",
+        "collective-036.rsi.ei.tum.de":"D_025",#PC 10 is broken and changed to 36 now
+        "collective-011.rsi.ei.tum.de":"D_023",
+        "collective-012.rsi.ei.tum.de":"C_006",
+        "collective-009.rsi.ei.tum.de":"B_017_IT2DE",
+        "collective-013.rsi.ei.tum.de":"A_012_ellipsoid-2",
+        "collective-014.rsi.ei.tum.de":"C_020",
+        "collective-015.rsi.ei.tum.de":"A_011",
+        #"collective-016.rsi.ei.tum.de":["A_026_cylinder_60", "A_026_cylinder_10","A_026_cylinder_20","A_026_cylinder_30"],  #,,,],"A_026_cylinder_60"
+        "collective-017.rsi.ei.tum.de":"C_key_12",
+        # Checkt 041 for correct teaching:
+        "collective-041.rsi.ei.tum.de":"C_022",  # check 41_left
+        "collective-021.rsi.ei.tum.de":"C_019",
+        "collective-022.rsi.ei.tum.de":"C_013",
+        "collective-023.rsi.ei.tum.de":"C_key_08",
+        "collective-024.rsi.ei.tum.de": "C_017",
+        "collective-025.rsi.ei.tum.de":"A_023_stairs",
+        "collective-026.rsi.ei.tum.de":"A_022_diamond",    #["026_left","B-014","A_022_diamond","B-018"],
+        "collective-027.rsi.ei.tum.de":"A_031_audi"
+        # "collective-040.rsi.ei.tum.de":[], # teach 40
+        #"collective-029.rsi.ei.tum.de":["029_left","A_016_sector","A_018_cross-2", "A_016_cross-1"]
+        }
+    robot_count = 0
+    threads = []
+    dualarm_skills = []
+    sc = SVMLearner(100,100,0,True,False, 0,True).get_configuration()
+    tags = ["robustness_test"]
+    for host,insertable in tasks.items():
+        try:
+            call_method(host,12000,"set_grasped_object",{"object":insertable},timeout=5)
+            call_method(host,13000,"set_grasped_object",{"object":"hold_"+insertable},timeout=5)
+        except socket.gaierror:
+            continue
+        if not check_object(host,insertable):
+            continue
+        client = MongoDBClient(host)
+        robot_count += 1
+        for result in client.read("ml_results","insertion",{"meta.tags":[insertable]}):
+            successful_trials = []
+            for trial_n, trial in result.items():
+                if trial_n == "meta":
+                    continue
+                if trial_n == "final_results":
+                    continue
+                if trial_n == "_id":
+                    continue
+                if not trial["q_metric"]["success"]:
+                    continue
+
+                successful_trials.append(trial)
+        if len(successful_trials)<1:
+            continue
+        best_trial = max(successful_trials, key=lambda d: d["q_metric"]["final_cost"])
+        knowledge = Knowledge()
+        knowledge.parameters = []
+        for i in range(100): 
+            knowledge.parameters.append(best_trial["theta"])
+        
+        container = insertable+"_container" 
+        approach = container+"_approach"
+        pd = InsertionFactory([host], TimeMetric("insertion", {"time": 5}),
+                                {"Insertable": insertable, "Container": container,
+                                "Approach": approach}).get_problem_definition(insertable)
+        move_context = {
+            "skill": {
+                "speed": 0.5,
+                "acc": 1,
+                "q_g": [0, 0, 0, 0, 0, 0, 0],
+                "objects": {
+                    "goal_pose": "hold_"+insertable}},
+            "control": {
+                "control_mode": 3},
+            "user": {
+                "env_X": [0.001, 0.001, 0.001, 0.001, 0.001, 0.001],
+                "F_ext_max": [100, 50]}}
+        dualarm_skills.append(("move", "MoveToPoseJoint", move_context))
+        dualarm_cmd = {"agent":host,"port":13000,"skills":dualarm_skills,"sleep":1}
+        threads.append(Thread(target=learn_single_task, args=(host, pd, sc, tags, 1, False, knowledge.to_dict(), True, 8000, dualarm_cmd)))
+        threads[-1].start()
+        time.sleep(1)
+            
+            
+        
+
+
+
 def check_object(host, obj):
-    result = call_method(host, 12000, "get_state")
+    result = call_method(host, 12000, "get_state", timeout=5)
+    if result is None:
+        return False
     if type(result) == dict:
-        if result["grasped_object"] == obj:
+        if result["result"]["grasped_object"] == obj:
             return True
         else:
             move_joint(host, "raise_hand")
