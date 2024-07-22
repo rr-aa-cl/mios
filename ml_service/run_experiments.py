@@ -1927,7 +1927,7 @@ def robustnes_test():
     threads = []
     dualarm_skills = []
     sc = SVMLearner(100,100,0,True,False, 0,True).get_configuration()
-    tags = ["robustness_test"]
+    tags = ["robustness_test","n2"]
     for host,insertable in tasks.items():
         try:
             call_method(host,12000,"set_grasped_object",{"object":insertable},timeout=5)
