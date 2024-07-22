@@ -1894,35 +1894,40 @@ def collective25():
     return "finished :)"
 
 def robustnes_test():
-    tasks = {   
-        "collective-001.rsi.ei.tum.de":"B_002_IEC-C7",
-        "collective-003.rsi.ei.tum.de":"A_001_triangle-1",
-        "collective-004.rsi.ei.tum.de":"A_002_hexagon-1",
-        "collective-005.rsi.ei.tum.de":"D_006",
-        "collective-006.rsi.ei.tum.de": "D_001",
-        "collective-007.rsi.ei.tum.de":"D_011",
-        "collective-008.rsi.ei.tum.de":"D_013",
-        "collective-036.rsi.ei.tum.de":"D_025",#PC 10 is broken and changed to 36 now
-        "collective-011.rsi.ei.tum.de":"D_023",
-        "collective-012.rsi.ei.tum.de":"C_006",
-        "collective-009.rsi.ei.tum.de":"B_017_IT2DE",
-        "collective-013.rsi.ei.tum.de":"A_012_ellipsoid-2",
-        "collective-014.rsi.ei.tum.de":"C_020",
-        "collective-015.rsi.ei.tum.de":"A_011",
+    tasks_orig = {   
+        "collective-001.rsi.ei.tum.de":["D_016_extHexScrewdriver-30","A_018","D_007_extHexScrewdriver-10","D_017_extDodScrewdriver-30","B_002_IEC-C7"],
+        "collective-003.rsi.ei.tum.de":["D_028", "D_012", "D_005", "D_018", "A_001_triangle-1"],
+        "collective-004.rsi.ei.tum.de":["D_020", "D_019", "A_002_hexagon-1"],
+        "collective-005.rsi.ei.tum.de":["D_027", "D_026", "B_001_USB-1", "D_006"],
+        "collective-006.rsi.ei.tum.de":["D_021", "A_32_pentagon-1","D_002", "D_001" ],
+        "collective-007.rsi.ei.tum.de":["D_022", "A_004_cylinder-1","D_011"],
+        "collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
+        "collective-036.rsi.ei.tum.de":["D_024", "B_003_plugF-1","D_009","D_014","D_025"],#PC 10 is broken and changed to 36 now
+        "collective-011.rsi.ei.tum.de":["B_004_audioJack-35", "D_010", "D_015","D_023"],
+        "collective-012.rsi.ei.tum.de":["C_007", "B_005_IEC-C13", "C_006"], #"C_key_05" is lost
+        "collective-009.rsi.ei.tum.de":["B_013", "A_005_cylinder-2","A_015_trapezoid","B_017_IT2DE"],
+        "collective-013.rsi.ei.tum.de":["C_011", "A_030_shamrock","A_012_ellipsoid-2"],
+        "collective-014.rsi.ei.tum.de":["B_016", "B_006_HDMI-1","A_024_moon","C_020"],
+        "collective-015.rsi.ei.tum.de":["C_025", "B_012_DE2DE","A_011"],
         #"collective-016.rsi.ei.tum.de":["A_026_cylinder_60", "A_026_cylinder_10","A_026_cylinder_20","A_026_cylinder_30"],  #,,,],"A_026_cylinder_60"
-        "collective-017.rsi.ei.tum.de":"C_key_12",
+        #"collective-017.rsi.ei.tum.de":["A_013_hexagram", "A_008_square-1","B_015","C_key_12"],
         # Checkt 041 for correct teaching:
-        "collective-041.rsi.ei.tum.de":"C_022",  # check 41_left
-        "collective-021.rsi.ei.tum.de":"C_019",
-        "collective-022.rsi.ei.tum.de":"C_013",
-        "collective-023.rsi.ei.tum.de":"C_key_08",
-        "collective-024.rsi.ei.tum.de": "C_017",
-        "collective-025.rsi.ei.tum.de":"A_023_stairs",
-        "collective-026.rsi.ei.tum.de":"A_022_diamond",    #["026_left","B-014","A_022_diamond","B-018"],
-        "collective-027.rsi.ei.tum.de":"A_031_audi"
+        "collective-041.rsi.ei.tum.de":["A_009_hexagon-3","A_021_arrow","A_key_24","C_022"],  # check 41_left
+        "collective-021.rsi.ei.tum.de":["A_020_pentagram", "A_010_square-2","C_018","C_019"],
+        "collective-022.rsi.ei.tum.de":["C_009", "B_007_audioJack","C_010","C_013"],
+        "collective-023.rsi.ei.tum.de":["C_014", "B_008_USB-2","A_019_oneline","C_key_08"],
+        "collective-024.rsi.ei.tum.de":["B_014_CN", "C_015", "C_017"],
+        "collective-025.rsi.ei.tum.de":["A_025_heart", "A_014_doji-1","A_023_stairs"],
+        "collective-026.rsi.ei.tum.de":["B_018","A_016_cross-1","A_022_diamond"],    #["026_left","B-014","A_022_diamond","B-018"],
+        "collective-027.rsi.ei.tum.de":["B_010_plugF-2","C_016","C_key_23","A_031_audi"]
         # "collective-040.rsi.ei.tum.de":[], # teach 40
         #"collective-029.rsi.ei.tum.de":["029_left","A_016_sector","A_018_cross-2", "A_016_cross-1"]
         }
+    tasks = {}
+    for host, insertables in tasks_orig.items():
+        tasks[host] = insertables[0]
+
+        
     robot_count = 0
     threads = []
     dualarm_skills = []
