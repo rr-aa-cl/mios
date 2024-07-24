@@ -14,7 +14,7 @@ import json
 ###################################################################################
 list_block_1 = ["001", #"002", 
                 "003", "004", "005", 
-                "006", "007", "008", "010", 
+                "006", "007", "008", "036",#"010", 
                 "011"]
 list_block_2 = ["012","009","013","014","015","016","017",
                 # "018",#"020",
@@ -1925,22 +1925,24 @@ def robustnes_test():
         }
     tasks = {}
     for host, insertables in tasks_orig.items():
-        tasks[host] = insertables[0]
+        tasks[host] = insertables[-1]
 
-        
+
     robot_count = 0
     threads = []
     dualarm_skills = []
     sc = SVMLearner(100,100,0,True,False, 0,True).get_configuration()
-    tags = ["robustness_test","n2"]
+    tags = ["robustness_test","n3","directly_after_learning"]
     for host,insertable in tasks.items():
-        try:
-            call_method(host,12000,"set_grasped_object",{"object":insertable},timeout=5)
-            call_method(host,13000,"set_grasped_object",{"object":"hold_"+insertable},timeout=5)
-        except socket.gaierror:
-            continue
+       # try:
+       #     call_method(host,12000,"set_grasped_object",{"object":insertable},timeout=5)
+       #     call_method(host,13000,"set_grasped_object",{"object":"hold_"+insertable},timeout=5)
+       # except socket.gaierror:
+       #     continue
         if not check_object(host,insertable):
+            print("check ", host, insertable)
             continue
+        
         client = MongoDBClient(host)
         robot_count += 1
         for result in client.read("ml_results","insertion",{"meta.tags":[insertable]}):
@@ -1959,7 +1961,8 @@ def robustnes_test():
         if len(successful_trials)<1:
             continue
         best_trial = max(successful_trials, key=lambda d: d["q_metric"]["final_cost"])
-
+        print(host, insertable, best_trial)
+        continue
         knowledge = Knowledge()
         knowledge.parameters = []
         for i in range(100): 
