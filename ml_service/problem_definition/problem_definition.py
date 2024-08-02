@@ -1,3 +1,4 @@
+from typing import Optional
 from problem_definition.domain import Domain
 from engine.task_result import TaskResult
 from engine.task_result import QMetric
@@ -50,9 +51,10 @@ class ProblemDefinition:
     def __init__(self, skill_class: str, skill_instance: str, domain: Domain, default_context: dict,
                  setup_instructions: list, termination_instruction: list, reset_instruction: list,
                  cost_function: CostFunction, identity: list, identity_weights: list = None, tags=None,
-                 object_modifier: dict = {}, n_variations = 1, optimum_threshold:float = 0):
+                 object_modifier: dict = {}, n_variations = 1, optimum_threshold:float = 0, host:str=None):
         if tags is None:
             tags = []
+        self.host = host
         self.domain = domain
         self.object_modifier = object_modifier
         self.default_context = default_context

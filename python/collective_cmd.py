@@ -423,7 +423,11 @@ def copy_object(source:str, destinations:list, object_name:str, robot_arm="left"
         threads[-1].start()
     for t in threads:
         t.join()
-    print("sending completed. Restart cluster!")
+    for m in destinations:
+        if robot_arm == "left":
+            call_method(m,12000,"reload_database")
+        else:
+            call_method(m,13000,"reload_database")
 
 def move_to_contact(robot, location, port = 12000, wait=True):
     context = {
@@ -486,7 +490,7 @@ def move_joint(robot, location, port=12000, offset=[0,0,0,0,0,0,0], wait=True, s
     move_context["skill"]["time_max"] = 10
     move_context["skill"]["q_g_offset"] = offset
     move_context["user"]["env_X"] = [0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001]
-    move_context["user"]["F_ext_max"] = [12,12]
+    move_context["user"]["F_ext_max"] = [15,15]
     if speed:
         move_context["skill"]["speed"] = speed[0]
         move_context["skill"]["acc"] = speed[1]

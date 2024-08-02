@@ -172,7 +172,7 @@ def prefill_fast_pipe(iteration_n:int, kb_location:str, tags: list = ["10agents_
                 continue
     print(cnt, "successfull trials pushed.")
             
-def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_charlie_1"], n_agents:int = 25, prefill=False): #10
+def collective25(n_current_iter:int, tags_addon:list = ["100collective","ps_charlie", "20agents"], n_agents:int = 25, prefill=False): #10
     '''
     n_current_iter: number of current iteration
 
