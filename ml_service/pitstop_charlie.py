@@ -36,7 +36,7 @@ tasks = {
         "collective-014.rsi.ei.tum.de":["B_016", "B_006_HDMI-1","A_024_moon","C_020"],
         "collective-015.rsi.ei.tum.de":["C_025", "B_012_DE2DE","A_011"],
         #"collective-016.rsi.ei.tum.de":["A_026_cylinder_60", "A_026_cylinder_10","A_026_cylinder_20","A_026_cylinder_30"],  #,,,],"A_026_cylinder_60"
-        #"collective-017.rsi.ei.tum.de":["A_013_hexagram", "A_008_square-1","B_015","C_key_12"],
+        "collective-017.rsi.ei.tum.de":["A_013_hexagram", "A_008_square-1","B_015","C_key_12"],  # included for convergence test
         # Checkt 041 for correct teaching:
         "collective-041.rsi.ei.tum.de":["A_009_hexagon-3","A_021_arrow","A_key_24","C_022"],  # check 41_left
         "collective-021.rsi.ei.tum.de":["A_020_pentagram", "A_010_square-2","C_018","C_019"],
@@ -320,7 +320,7 @@ def check_object(host, obj):
 def set_next_object(module, obj:int|str = None):
     addr = "collective-"+module+".rsi.ei.tum.de"
     ip = get_ips([module])[0]
-    result = call_method(ip, 12000, "get_state")
+    result = call_method(ip, 12000, "get_state",timeout=5)
     if type(result) is dict:
         current_obj = result["result"]["grasped_object"]
     else:

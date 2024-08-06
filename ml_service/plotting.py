@@ -2172,7 +2172,8 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
                                             "accumulated_costs_times":[], 
                                             "starting_times":[],
                                             "instances":[],
-                                            "costs_times":[]}
+                                            "costs_times":[],
+                                            "successes_times":[]}
             if result.instance in results_dict[iteration]["instances"]:  # ignore the whole iteration if is was done twice 
                 double_iteration_index = results_dict[iteration]["instances"].index(result.instance)
                 results_dict.pop(iteration)
@@ -2189,6 +2190,8 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
             results_dict[iteration]["starting_times"].append(result.starting_time)
             results_dict[iteration]["times_of_taskFinish"].append(learning_time)
             results_dict[iteration]["instances"].append(result.instance)
+            results_dict[iteration]["successes_times"].append(result.get_successes_per_time())
+            
       #      sorted(results_dict[iteration]["accumulated_costs_times"])
       #  if xxx == "007":
       #      print(results_dict["n1"])
@@ -2911,22 +2914,13 @@ def plot_robustness_test():
     print("\ngetting alpha transfer  data CMAES")
     # ["robustness_test","n2"]
     mean_reboot, confidence_reboot, reboot = get_big_collective_data(["robustness_test","n2"], single_agent=True, skip_module=set(["028", "018","010","029","017","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90) 
-    mean_reboot = [x/60 for x in mean_reboot]
-    lower_bound_confindece_reboot = [x[0]/60 for x in confidence_reboot]
-    upper_bound_confindece_reboot = [x[1]/60 for x in confidence_reboot]
-    legend_reboot = axes1.plot(mean_reboot, range(len(mean_reboot)), label="alpha task transfer, isolated (CMA-ES)")
-    axes1.fill_betweenx(range(len(mean_reboot)), lower_bound_confindece_reboot, upper_bound_confindece_reboot, alpha=0.2)
     print("\ngetting alpha transfer  data CMAES")
     # ["robustness_test","n2"]
-    mean_isolated_alpha, confidence_isolated_alpha, directly = get_big_collective_data(["robustness_test","directly_after_learning"], single_agent=True, skip_module=set(["028", "018","010","029","017","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90) 
-    mean_isolated_alpha = [x/60 for x in mean_isolated_alpha]
-    lower_bound_confindece_isolated_alpha = [x[0]/60 for x in confidence_isolated_alpha]
-    upper_bound_confindece_isolated_alpha = [x[1]/60 for x in confidence_isolated_alpha]
-    legend_isolated_alpha = axes1.plot(mean_isolated_alpha, range(len(mean_isolated_alpha)), label="alpha task transfer, isolated (CMA-ES)")
-    axes1.fill_betweenx(range(len(mean_isolated_alpha)), lower_bound_confindece_isolated_alpha, upper_bound_confindece_isolated_alpha, alpha=0.2)
-    
+    mean_isolated_alpha, confidence_isolated_alpha, directly = get_big_collective_data(["robustness_test","directly_after_learning"], single_agent=True, skip_module=set(["028", "018","010","029","017","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
     fig2, axes2 = plt.subplots(6, 5, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=2)
     results = {}
+    successrate_reboot = {}
+    successrate_directly = {}
     print(reboot.keys())
     print(directly.keys())
     for iter in reboot.keys():
@@ -2936,6 +2930,7 @@ def plot_robustness_test():
             if instance not in results:
                 results[instance] = {"alpha":[]}
             results[instance]["alpha"].append(reboot[iter]["costs_times"][i])
+            successrate_reboot[instance] = reboot[iter]["successes_times"][i]
     for iter in directly.keys():
         for i in range(len(directly[iter]["instances"])):
             instance = directly[iter]["instances"][i]
@@ -2945,8 +2940,13 @@ def plot_robustness_test():
             if "beta" not in results[instance]:
                 results[instance]["beta"] = []
             results[instance]["beta"].append(directly[iter]["costs_times"][i])
-    print(results)
+            successrate_directly[instance] = directly[iter]["successes_times"][i]
+
+    x = np.arange(len(results)) / 100  # the label locations
+    width = 0.005  # the width of the bars
+    multiplier = 0
     for i, instance in enumerate(results.keys()):
+        offset = width*multiplier
         #mean, interval, time_points = get_confidence_time(results[instance]["alpha"], n_points=1000)
         #time_points = [s/60 for s in time_points]
         label = instance
@@ -2955,6 +2955,11 @@ def plot_robustness_test():
             times = [time/60 for time,cost in results[instance]["alpha"][0]]
             costs = [cost for time,cost in results[instance]["alpha"][0]]
             line_psp_r = axes2[i%6,int(i/6)].plot(times,costs, label = "after some days")
+            
+            successrate = sum(successrate_reboot[instance][0])/len(successrate_reboot[instance][0]) *100
+            print(instance, "number of sets (rebooted): ",len(results[instance]["alpha"]), " successrate=",successrate)
+            rects = axes1.bar(x + offset, successrate, width, label="after some days")
+            axes1.bar_label(rects, padding=3)
         except KeyError:
             print("no reboot data for ",instance)
             pass  
@@ -2962,9 +2967,16 @@ def plot_robustness_test():
             times = [time/60 for time,cost in results[instance]["beta"][0]]
             costs = [cost for time,cost in results[instance]["beta"][0]]
             line_psp_d = axes2[i%6,int(i/6)].plot(times,costs, label = "directly after learning")
+            successrate = sum(successrate_directly[instance][0])/len(successrate_directly[instance][0]) *100
+            #print(successrate_directly[instance])
+            print(instance, "number of sets (directly): ",len(results[instance]["alpha"]), " successrate=",successrate)
+            rects = axes1.bar(x + offset, successrate, width, label="directly after learning")
+            axes1.bar_label(rects, padding=3)
         except KeyError:
             print("no directly after learning data for ",instance)
             pass
+        multiplier+=1
+
         #lower_confidence = [x[0] for x in interval]
         #upper_confidence = [x[1] for x in interval]
         #axes2[i%6,int(i/6)].fill_between(time_points, lower_confidence, upper_confidence, alpha=0.2)
@@ -2978,10 +2990,10 @@ def plot_robustness_test():
     fig2.suptitle("Robustness Test - Repeat best trial 100 times")
     print("130 trials for each run (alpha and noKnowledge)")
 
-    axes1.set_xlabel("time [min]", fontsize=14)
-    axes1.set_ylabel("learned skills [1]", fontsize=14)
+    axes1.set_xlabel("skill solution", fontsize=14)
+    axes1.set_ylabel("success rate [%]", fontsize=14)
     axes1.set_title("alpha task transfer VS no knowledge", fontsize=14)
-    axes1.set_xlim((0,55))
+    axes1.set_xticks(x + width, list(results.keys()))
     axes1.grid()
     axes1.legend(loc="lower right", fontsize=14)
     plt.show()
