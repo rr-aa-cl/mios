@@ -2030,7 +2030,7 @@ def convergence_test():
         }
     tasks = {}
     for host, insertables in tasks_orig.items():
-        tasks[host] = insertables[-1]
+        tasks[host] = insertables[0]
 
     robot_count = 0
     threads = []
