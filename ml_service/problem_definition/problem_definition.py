@@ -51,7 +51,7 @@ class ProblemDefinition:
     def __init__(self, skill_class: str, skill_instance: str, domain: Domain, default_context: dict,
                  setup_instructions: list, termination_instruction: list, reset_instruction: list,
                  cost_function: CostFunction, identity: list, identity_weights: list = None, tags=None,
-                 object_modifier: dict = {}, n_variations = 1, optimum_threshold:float = 0, host:str=None):
+                 object_modifier: dict = {}, n_variations = 1, optimum_threshold:float = 0, host:str=None, variate_only_success:bool=False):
         if tags is None:
             tags = []
         self.host = host
@@ -68,6 +68,7 @@ class ProblemDefinition:
         self.tags = tags
         self.optimum_thr = optimum_threshold
         self.n_variations = n_variations
+        self.variate_only_success = variate_only_success  # with an empty object_modifier this can be used to repeat successfull trials for n_variations
         if identity is None:
             self.identity = [0]
         else:
