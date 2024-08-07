@@ -2037,9 +2037,9 @@ def convergence_test():
     dualarm_skills = []
     sc = SVMLearner(5000,10,0,True,False, 0,False).get_configuration()
 
-    # tags = ["convergence_test_2","5000", "success_check"]  # later do with success check -> repeat successful trial 5 times
+    tags = ["convergence_test_2","5000", "success_check"]  # later do with success check -> repeat successful trial 5 times
     
-    tags = ["convergence_test_1","5000"]
+    # tags = ["convergence_test_1","5000"]
     for host,insertable in tasks.items():
         if not check_object(host,insertable):
             print("check ", host, insertable)
@@ -2051,8 +2051,8 @@ def convergence_test():
         pd = InsertionFactory([host], TimeMetric("insertion", {"time": 5}),
                                 {"Insertable": insertable, "Container": container,
                                 "Approach": approach}).get_problem_definition(insertable)
-        # pd.n_variations = 5
-        # pd.variate_only_success = True
+        pd.n_variations = 5
+        pd.variate_only_success = True
         if insertable == "B_010_plugF-2":
                     print("increase limits for ",insertable)
                     pd.domain.limits["p2_f_push_z"] = (0,60)
