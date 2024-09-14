@@ -19,7 +19,7 @@ class CostFunction:
         self.max_cost = dict.fromkeys(cost_types, 1)
         self.heuristic_skills = []
         self.heuristic_expressions = "var"
-        self.finish_thr = 0  # finsih threshold states how often optimal_thr needs to be undercut to finish
+        self.finish_thr = 1  # finsih threshold states how often optimal_thr needs to be undercut to finish
         self.normal_cost = 1
 
     def to_dict(self):

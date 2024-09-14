@@ -60,7 +60,7 @@ def var_sr_collective(sr:float, n_agents: int, n_current_iter:int, tags:list, re
             print(robot, "is not ready! Skipping task ",insertable)
             continue
         if insertable in cutoff:
-            sc.finish_cost = cutoff[insertable]
+            pd.optimum_thr = cutoff[insertable]
         if insertable == "010_left" or insertable == "023_left" or insertable == "027_left":
             print("increase limits for ",insertable)
             pd.domain.limits["p2_f_push_z"] = (0,60)

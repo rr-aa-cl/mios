@@ -121,7 +121,7 @@ def learn_multiple_tasks(robot: str, task_instances: list, service_config: Servi
                                     {"Insertable": insertable, "Container": container,
                                     "Approach": approach}).get_problem_definition(insertable)
         if insertable in finish_threshold:
-            service_config.finish_cost = finish_threshold[insertable]
+            pd.optimum_thr = finish_threshold[insertable]
         if insertable == "HDMI_plug":  # increase the limits for HDMI_plug
             pd.domain.limits["p2_f_push_z"] = (0, 25)
         learn_single_task(robot, pd, service_config, tags, iteration, False, knowledge_configuration, True)
@@ -696,7 +696,7 @@ def five_agent_collective(if_reverse = False):
                 print(robot, "is not ready! Skipping task ",insertable)
                 continue
             if insertable in cutoff:
-                sc.finish_cost = cutoff[insertable]
+                pd.optimum_thr = cutoff[insertable]
             if insertable == "010_left" or insertable == "023_left" or insertable == "027_left":
                 print("increase limits for ",insertable)
                 pd.domain.limits["p2_f_push_z"] = (0,60)
@@ -1877,7 +1877,7 @@ def collective25():
                     print(robot, "is not ready! Skipping task ",insertable)
                     continue
                 if insertable in cutoff:
-                    sc.finish_cost = cutoff[insertable]
+                    pd.optimum_thr = cutoff[insertable]
                 if insertable == "010_left" or insertable == "023_left" or insertable == "027_left":
                     print("increase limits for ",insertable)
                     pd.domain.limits["p2_f_push_z"] = (0,60)

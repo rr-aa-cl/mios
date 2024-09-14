@@ -144,7 +144,7 @@ class SVMService(BaseService):
         for i in range(0, int(self.configuration.n_trials / self.configuration.batch_width)):
             if self.keep_running is False:
                 break
-            if self.minCost < self.configuration.finish_cost:
+            if self.minCost < self.problem_definition.optimum_thr:
                 break
             self._setSamples(self.cnt_batch)#done
             self._run_trial_par(self.action_list_norm)#td

@@ -212,8 +212,8 @@ class Engine:
                         # time.sleep(1)
                         continue
                     if worker_threads[a] is not None and worker_threads[a].is_alive() is True:
-                        logger.debug("Thread of agent " + a + " is alive")
-                        # time.sleep(1)
+                        # logger.debug("Thread of agent " + a + " is alive")
+                        time.sleep(0.1)
                         continue
 
                     # logger.debug("Engine.main_loop().is_busy(" + a + ")")
@@ -308,8 +308,11 @@ class Engine:
                 self.y = np.append(self.y, trial.task_result.q_metric.final_cost)
             self.lock_data.release()
             self._reset_task(agent, trial)
+            logger.debug("ENGINE: success "+str(trial.task_result.q_metric.success)+ ", do vaiation only on success? "+str(self.problem_definition.variate_only_success) )
             if self.problem_definition.variate_only_success is True and trial.task_result.q_metric.success is False:
+                logger.debug("ENGINE: do not variate")
                 break
+            logger.debug("ENGINE:"+ str(i+1)+ ". variation done. Do "+str(self.problem_definition.n_variations)+" in total. ")
         try:
             with ServerProxy("http://" + agent + ":9000") as s:
                 logger.debug("stop_recoring video")
