@@ -391,7 +391,7 @@ class OrigPSPService(BaseService):
                 maxcomponents=8
                 if maxcomponents>len(self.gmm_samples):
                     maxcomponents=len(self.gmm_samples)  
-                maxcomponents=1
+                #maxcomponents=1
                 for i in range(0,maxcomponents):
                     gmm=mixture.GaussianMixture(n_components=i+1,covariance_type='diag')
                     #raw_input(self.gmm_samples)

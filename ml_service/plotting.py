@@ -3001,7 +3001,7 @@ def plot_robustness_test():
     axes1.legend(loc="lower right", fontsize=14)
     plt.show()
 
-    
+
 
 def plot_convergence_test():
     plot_single_figures = False
@@ -3023,23 +3023,26 @@ def plot_convergence_test():
     # except:
     #     pass
     if results is None:
-        print("\ngetting default PSP data")
-        # ["robustness_test","n2"]
-        mean_reboot, confidence_reboot, reboot = get_big_collective_data(["convergence_test_1","5000"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90) 
-        print("\ngetting success check data (retry 5x) with PSP")
-        # ["robustness_test","n2"]
-        mean_isolated_alpha, confidence_isolated_alpha, directly = get_big_collective_data(["convergence_test_2","success_check"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
+        # print("\ngetting default PSP data")
+        # # ["robustness_test","n2"]
+        # mean_reboot, confidence_reboot, reboot = get_big_collective_data(["convergence_test_1","5000"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90) 
+        # print("\ngetting success check data (retry 5x) with PSP")
+        # # ["robustness_test","n2"]
+        # mean_isolated_alpha, confidence_isolated_alpha, directly = get_big_collective_data(["convergence_test_2","success_check"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
         
-        print("\ngetting success check data (retry 5x) with CMA-ES")
-        # ["robustness_test","n2"]
+        # print("\ngetting success check data (retry 5x) with CMA-ES")
+        # # ["robustness_test","n2"]
         mean_isolated_alpha, confidence_isolated_alpha, cmaes = get_big_collective_data(["convergence_test_3","success_check"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        print("\ngetting success check data (retry 5x) with original PSP")
-        # ["robustness_test","n2"]
-        mean_isolated_alpha, confidence_isolated_alpha, origPSP = get_big_collective_data(["convergence_test_5","success_check"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        mean_isolated_alpha, confidence_isolated_alpha, cartHold = get_big_collective_data(["convergence_test_6","success_check","holdpose"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        mean_isolated_alpha, confidence_isolated_alpha, jointHold = get_big_collective_data(["convergence_test_6","success_check","jointpose"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
+        # print("\ngetting success check data (retry 5x) with original PSP")
+        # # ["robustness_test","n2"]
+        # mean_isolated_alpha, confidence_isolated_alpha, origPSP = get_big_collective_data(["convergence_test_5","success_check"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
+        # mean_isolated_alpha, confidence_isolated_alpha, cartHold = get_big_collective_data(["convergence_test_6","success_check","holdpose"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
+        # mean_isolated_alpha, confidence_isolated_alpha, jointHold = get_big_collective_data(["convergence_test_6","success_check","jointpose"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
         mean_isolated_alpha, confidence_isolated_alpha, lifted_jointHold = get_big_collective_data(["convergence_test_7","success_check","lifted_jointpose"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
         mean_isolated_alpha, confidence_isolated_alpha, table_insertion = get_big_collective_data(["convergence_test_9","success_check","table_insertion"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
+        # #mean_isolated_alpha, confidence_isolated_alpha, mod_length_insertion = get_big_collective_data(["convergence_test_10","table_insertion"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
+        mean_isolated_alpha, confidence_isolated_alpha, new_mount_table = get_big_collective_data(["convergence_test_10.2","modify_length"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
+        mean_isolated_alpha, confidence_isolated_alpha, new_mount_table_decreasing = get_big_collective_data(["convergence_test_10.2","modify_length"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=True, only_full_sets=False,min_length=90)  
         
         results = {}
         successrate_reboot = {}
@@ -3048,22 +3051,22 @@ def plot_convergence_test():
         successrate_origPSP = {}
         #print(reboot.keys())
         #print(directly.keys())
-        for iter in reboot.keys():
-            for i in range(len(reboot[iter]["instances"])):
-                instance = reboot[iter]["instances"][i]
-                print("instance: ", i, instance, iter)
-                if instance not in results:
-                    results[instance] = {"defaultPSP":[]}
-                results[instance]["defaultPSP"].append(reboot[iter]["costs_times"][i])
-        for iter in directly.keys():
-            for i in range(len(directly[iter]["instances"])):
-                instance = directly[iter]["instances"][i]
-                print("instance: ", i, instance, iter)
-                if instance not in results:
-                    results[instance] = {"defaultPSPsc":[]}
-                if "beta" not in results[instance]:
-                    results[instance]["defaultPSPsc"] = []
-                results[instance]["defaultPSPsc"].append(directly[iter]["costs_times"][i])
+        # for iter in reboot.keys():
+        #     for i in range(len(reboot[iter]["instances"])):
+        #         instance = reboot[iter]["instances"][i]
+        #         print("instance: ", i, instance, iter)
+        #         if instance not in results:
+        #             results[instance] = {"defaultPSP":[]}
+        #         results[instance]["defaultPSP"].append(reboot[iter]["costs_times"][i])
+        # for iter in directly.keys():
+        #     for i in range(len(directly[iter]["instances"])):
+        #         instance = directly[iter]["instances"][i]
+        #         print("instance: ", i, instance, iter)
+        #         if instance not in results:
+        #             results[instance] = {"defaultPSPsc":[]}
+        #         if "beta" not in results[instance]:
+        #             results[instance]["defaultPSPsc"] = []
+        #         results[instance]["defaultPSPsc"].append(directly[iter]["costs_times"][i])
         for iter in cmaes.keys():
             for i in range(len(cmaes[iter]["instances"])):
                 instance = cmaes[iter]["instances"][i]
@@ -3073,33 +3076,33 @@ def plot_convergence_test():
                 if "cmaes" not in results[instance]:
                     results[instance]["cmaes"] = []
                 results[instance]["cmaes"].append(cmaes[iter]["costs_times"][i])
-        for iter in origPSP.keys():
-            for i in range(len(origPSP[iter]["instances"])):
-                instance = origPSP[iter]["instances"][i]
-                print("instance: ", i, instance, iter)
-                if instance not in results:
-                    results[instance] = {"origPSP":[]}
-                if "origPSP" not in results[instance]:
-                    results[instance]["origPSP"] = []
-                results[instance]["origPSP"].append(origPSP[iter]["costs_times"][i])
-        for iter in cartHold.keys():
-            for i in range(len(cartHold[iter]["instances"])):
-                instance = cartHold[iter]["instances"][i]
-                print("instance: ", i, instance, iter)
-                if instance not in results:
-                    results[instance] = {"cartHold":[]}
-                if "cartHold" not in results[instance]:
-                    results[instance]["cartHold"] = []
-                results[instance]["cartHold"].append(cartHold[iter]["costs_times"][i])
-        for iter in jointHold.keys():
-            for i in range(len(jointHold[iter]["instances"])):
-                instance = jointHold[iter]["instances"][i]
-                print("instance: ", i, instance, iter)
-                if instance not in results:
-                    results[instance] = {"jointHold":[]}
-                if "jointHold" not in results[instance]:
-                    results[instance]["jointHold"] = []
-                results[instance]["jointHold"].append(jointHold[iter]["costs_times"][i])
+        # for iter in origPSP.keys():
+        #     for i in range(len(origPSP[iter]["instances"])):
+        #         instance = origPSP[iter]["instances"][i]
+        #         print("instance: ", i, instance, iter)
+        #         if instance not in results:
+        #             results[instance] = {"origPSP":[]}
+        #         if "origPSP" not in results[instance]:
+        #             results[instance]["origPSP"] = []
+        #         results[instance]["origPSP"].append(origPSP[iter]["costs_times"][i])
+        # for iter in cartHold.keys():
+        #     for i in range(len(cartHold[iter]["instances"])):
+        #         instance = cartHold[iter]["instances"][i]
+        #         print("instance: ", i, instance, iter)
+        #         if instance not in results:
+        #             results[instance] = {"cartHold":[]}
+        #         if "cartHold" not in results[instance]:
+        #             results[instance]["cartHold"] = []
+        #         results[instance]["cartHold"].append(cartHold[iter]["costs_times"][i])
+        # for iter in jointHold.keys():
+        #     for i in range(len(jointHold[iter]["instances"])):
+        #         instance = jointHold[iter]["instances"][i]
+        #         print("instance: ", i, instance, iter)
+        #         if instance not in results:
+        #             results[instance] = {"jointHold":[]}
+        #         if "jointHold" not in results[instance]:
+        #             results[instance]["jointHold"] = []
+        #         results[instance]["jointHold"].append(jointHold[iter]["costs_times"][i])
         for iter in lifted_jointHold.keys():
             for i in range(len(lifted_jointHold[iter]["instances"])):
                 instance = lifted_jointHold[iter]["instances"][i]
@@ -3118,6 +3121,24 @@ def plot_convergence_test():
                 if "table_insertion" not in results[instance]:
                     results[instance]["table_insertion"] = []
                 results[instance]["table_insertion"].append(table_insertion[iter]["costs_times"][i])
+        for iter in new_mount_table.keys():
+            for i in range(len(new_mount_table[iter]["instances"])):
+                instance = new_mount_table[iter]["instances"][i]
+                print("instance: ", i, instance, iter)
+                if instance not in results:
+                    results[instance] = {"new_mount_table":[]}
+                if "new_mount_table" not in results[instance]:
+                    results[instance]["new_mount_table"] = []
+                results[instance]["new_mount_table"].append(new_mount_table[iter]["costs_times"][i])
+        for iter in new_mount_table_decreasing.keys():
+            for i in range(len(new_mount_table_decreasing[iter]["instances"])):
+                instance = new_mount_table_decreasing[iter]["instances"][i]
+                print("instance: ", i, instance, iter)
+                if instance not in results:
+                    results[instance] = {"new_mount_table_decreasing":[]}
+                if "new_mount_table_decreasing" not in results[instance]:
+                    results[instance]["new_mount_table_decreasing"] = []
+                results[instance]["new_mount_table_decreasing"].append(new_mount_table_decreasing[iter]["costs_times"][i])
 
     figures = [None for x in range(len(results))]
     axes = [None for x in range(len(results))]
@@ -3167,7 +3188,7 @@ def plot_convergence_test():
             for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
                 batch_mean.append(np.mean(costs[index:index+10]))
                 batch_std.append(np.std(costs[index:index+10]))
-            #line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[2], label = "CMAES") # with success-check
+            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[2], label = "CMAES dualarm") # with success-check
             if plot_single_figures:
                 if figures[i] is None:
                     figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
@@ -3252,11 +3273,45 @@ def plot_convergence_test():
             for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
                 batch_mean.append(np.mean(costs[index:index+10]))
                 batch_std.append(np.std(costs[index:index+10]))
-            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[9], label = "original PSP with table mount")
+            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[8], label = "original PSP with table mount")
             if plot_single_figures:
                 if figures[i] is None:
                     figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
                 axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[8], label = "original PSP with table mount")
+                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[3], alpha=0.2)
+        except KeyError:
+            print("no directly after learning data for ",instance)
+            pass
+        try:          
+            times = [time/60 for time,cost in results[instance]["new_mount_table"][0]]
+            costs = [cost for time,cost in results[instance]["new_mount_table"][0]]
+            batch_mean = []
+            batch_std = []
+            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
+                batch_mean.append(np.mean(costs[index:index+10]))
+                batch_std.append(np.std(costs[index:index+10]))
+            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[9], label = "table, new mount, freshly teached")
+            if plot_single_figures:
+                if figures[i] is None:
+                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
+                axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[9], label = "table, new mount, freshly teached")
+                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[3], alpha=0.2)
+        except KeyError:
+            print("no directly after learning data for ",instance)
+            pass
+        try:          
+            times = [time/60 for time,cost in results[instance]["new_mount_table_decreasing"][0]]
+            costs = [cost for time,cost in results[instance]["new_mount_table_decreasing"][0]]
+            batch_mean = []
+            batch_std = []
+            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
+                batch_mean.append(np.mean(costs[index:index+10]))
+                batch_std.append(np.std(costs[index:index+10]))
+            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[0], label = "table, new mount, freshly teached\n(monocally decreasing)")
+            if plot_single_figures:
+                if figures[i] is None:
+                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
+                axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[9], label = "table, new mount, freshly teached")
                 #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[3], alpha=0.2)
         except KeyError:
             print("no directly after learning data for ",instance)

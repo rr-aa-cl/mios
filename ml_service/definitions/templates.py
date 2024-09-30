@@ -49,7 +49,7 @@ class InsertionFactory(ProblemDefinitionFactory):
             "p2_K_psi": (0, 200),
             "p2_f_push_x": (-10, 10),
             "p2_f_push_y": (-10, 10),
-            "p2_f_push_z": (0, 16)
+            "p2_f_push_z": (0, 20)
         }
         return limits
 

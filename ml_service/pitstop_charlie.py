@@ -2,6 +2,8 @@ from copy import deepcopy
 import time
 import sys
 import logging
+
+from matplotlib import table
 logger = logging.getLogger("ml_service")
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
@@ -435,11 +437,13 @@ def get_objects(module):
         names.append(d["name"])
     return names
 
-def move_to_first_approach():
+def move_to_first_approach(tabletop=False):
     for i,t in enumerate(tasks):
-        if i<10:
-            continue
+        #if i<10:
+        #    continue
         ins = tasks[t][0]
+        if tabletop:
+            ins = ins+"_table"
         print(t, ": ", ins)
         while True:
             r1 = move_joint(t, ins+"_container_approach", wait=True)
@@ -453,7 +457,14 @@ def move_to_first_approach():
         input("move to above")
         call_method(t, 12000, "teach_object",{"object":ins+"_container_above"})
 
-        
+def modify_object_length(module, object, length_mm):
+    ip = get_ips([module])[0]
+    client = MongoDBClient(ip)
+    o = client.read("miosL", "environment", {"name":object})[0]
+    o["OB_T_TCP"][14] = length_mm/1000
+    o["object"] = o["name"]
+    call_method(ip,12000, "set_object", o)
+
 def release_object(module, hand="left"):
     ip = get_ips([module])[0]
     if hand == "left": 
