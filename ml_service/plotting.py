@@ -3011,17 +3011,19 @@ def plot_convergence_test():
     modules = list_block_1 + list_block_2 + list_U
     fig2, axes2 = plt.subplots(6, 4, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=100)
     results = None
-    # try:
-    #     print("searching on collective NAS")
-    #     client = MongoDBClient("10.157.175.119")
-    #     results = client.read("plotting","convergence_test",{})
-    #     if len(results) > 0:
-    #         results = results[-1]
-    #         results.pop("_id")
-    #         print("found results on collective NAS")
+    try:
+        print("searching on collective NAS")
+        client = MongoDBClient("10.157.175.119")
+        results = client.read("plotting","convergence_test",{})
+        if len(results) > 0:
+            results = results[-1]
+            results.pop("_id")
+            print("found results on collective NAS")
+        else:
+            results = None
             
-    # except:
-    #     pass
+    except:
+        pass
     if results is None:
         # print("\ngetting default PSP data")
         # # ["robustness_test","n2"]
@@ -3042,7 +3044,8 @@ def plot_convergence_test():
         mean_isolated_alpha, confidence_isolated_alpha, table_insertion = get_big_collective_data(["convergence_test_9","success_check","table_insertion"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
         # #mean_isolated_alpha, confidence_isolated_alpha, mod_length_insertion = get_big_collective_data(["convergence_test_10","table_insertion"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
         mean_isolated_alpha, confidence_isolated_alpha, new_mount_table = get_big_collective_data(["convergence_test_10.2","modify_length"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        mean_isolated_alpha, confidence_isolated_alpha, new_mount_table_decreasing = get_big_collective_data(["convergence_test_10.2","modify_length"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=True, only_full_sets=False,min_length=90)  
+        #mean_isolated_alpha, confidence_isolated_alpha, new_mount_table_decreasing = get_big_collective_data(["convergence_test_10.2","modify_length"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=True, only_full_sets=False,min_length=90)  
+        mean_isolated_alpha, confidence_isolated_alpha, new_mount_table_gmm8 = get_big_collective_data(["convergence_test_10.3","modify_length"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
         
         results = {}
         successrate_reboot = {}
@@ -3130,15 +3133,15 @@ def plot_convergence_test():
                 if "new_mount_table" not in results[instance]:
                     results[instance]["new_mount_table"] = []
                 results[instance]["new_mount_table"].append(new_mount_table[iter]["costs_times"][i])
-        for iter in new_mount_table_decreasing.keys():
-            for i in range(len(new_mount_table_decreasing[iter]["instances"])):
-                instance = new_mount_table_decreasing[iter]["instances"][i]
+        for iter in new_mount_table_gmm8.keys():
+            for i in range(len(new_mount_table_gmm8[iter]["instances"])):
+                instance = new_mount_table_gmm8[iter]["instances"][i]
                 print("instance: ", i, instance, iter)
                 if instance not in results:
-                    results[instance] = {"new_mount_table_decreasing":[]}
-                if "new_mount_table_decreasing" not in results[instance]:
-                    results[instance]["new_mount_table_decreasing"] = []
-                results[instance]["new_mount_table_decreasing"].append(new_mount_table_decreasing[iter]["costs_times"][i])
+                    results[instance] = {"new_mount_table_gmm8":[]}
+                if "new_mount_table_gmm8" not in results[instance]:
+                    results[instance]["new_mount_table_gmm8"] = []
+                results[instance]["new_mount_table_gmm8"].append(new_mount_table_gmm8[iter]["costs_times"][i])
 
     figures = [None for x in range(len(results))]
     axes = [None for x in range(len(results))]
@@ -3188,7 +3191,7 @@ def plot_convergence_test():
             for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
                 batch_mean.append(np.mean(costs[index:index+10]))
                 batch_std.append(np.std(costs[index:index+10]))
-            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[2], label = "CMAES dualarm") # with success-check
+            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color='white', label = "CMAES dualarm") # with success-check
             if plot_single_figures:
                 if figures[i] is None:
                     figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
@@ -3290,7 +3293,7 @@ def plot_convergence_test():
             for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
                 batch_mean.append(np.mean(costs[index:index+10]))
                 batch_std.append(np.std(costs[index:index+10]))
-            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[9], label = "table, new mount, freshly teached")
+            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color='g', label = "table, new mount, freshly teached")
             if plot_single_figures:
                 if figures[i] is None:
                     figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
@@ -3300,14 +3303,14 @@ def plot_convergence_test():
             print("no directly after learning data for ",instance)
             pass
         try:          
-            times = [time/60 for time,cost in results[instance]["new_mount_table_decreasing"][0]]
-            costs = [cost for time,cost in results[instance]["new_mount_table_decreasing"][0]]
+            times = [time/60 for time,cost in results[instance]["new_mount_table_gmm8"][0]]
+            costs = [cost for time,cost in results[instance]["new_mount_table_gmm8"][0]]
             batch_mean = []
             batch_std = []
             for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
                 batch_mean.append(np.mean(costs[index:index+10]))
                 batch_std.append(np.std(costs[index:index+10]))
-            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[0], label = "table, new mount, freshly teached\n(monocally decreasing)")
+            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color='r', label = "origPSP with 8 GMM components")
             if plot_single_figures:
                 if figures[i] is None:
                     figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
