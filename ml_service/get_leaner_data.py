@@ -37,7 +37,7 @@ host = "collective-001.rsi.ei.tum.de"
 
 def request_data(host, tags):
     client = MongoDBClient(host)
-    data = client.read("ml_resutls","inertion",{"meta.tags":tags})
+    data = client.read("ml_results","inertion",{"meta.tags":tags})
     if len(data) == 0:
         print("no data found on ", host)
         return False
@@ -54,7 +54,7 @@ for key in data.keys():
     if key[0] != "n":
         continue
     thetas.append(data[key]["theta"])
-    thetas.append(data[key]["q_metic"]["final_cost"])
+    thetas.append(data[key]["q_metric"]["final_cost"])
 
 print(costs)
 
