@@ -89,6 +89,7 @@ class OrigPSPService(BaseService):
         self.classifierActive=False
         self.gmm_active=False
         self.mean=0
+        self.classifier=SVC(C=100000)
            
         self.episodes=int(self.configuration.n_trials/self.configuration.batch_width)
         
