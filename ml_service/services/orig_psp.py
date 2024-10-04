@@ -338,13 +338,7 @@ class OrigPSPService(BaseService):
                 
 
     def getGmmSample(self):
-        lm=len(self.sampling_gmm.means_)
-        if self.sampleCounter>=lm:
-            self.sampleCounter=lm-1
-
-        x=np.random.multivariate_normal(self.sampling_gmm.means_[self.sampleCounter],np.diag(self.sampling_gmm.covariances_[self.sampleCounter]))
-        self.sampleCounter+=1
-        
+        x=self.sampling_gmm.sample(1)[0][0]
         return x
 
     def _trainSVM(self):
@@ -353,45 +347,15 @@ class OrigPSPService(BaseService):
             self._preprocessSamples()
             self.mean=self._calculateMeanReward()
             self._redefineSamples()
-            #raw_input (self.mean)
-            
-            #self.classifier.fit(self.svm_samples,self.success)
-
-            tt=0
-            self.td=0
-
-            gammas=[1000]
-
-            for i in gammas:
-                    d=i
-                    
-                    clf = SVC(C=100000)
-                    clf.fit(self.svm_samples,self.success) 
-                    temp=np.abs(clf.decision_function(self.svm_samples))
-                    #print(clf.decision_function(self.svm_samples))
-                    
-                    if tt<temp.min():
-                        self.td=d
-                        tt=temp.min()
-                        self.classifier=clf
-                        
-                        
-            #self._plotData()
-
+            self.classifier.fit(self.svm_samples,self.success)
             self.classifierActive=True
 
-            if self.svmCounter >= 15 and len(self.gmm_samples) > 2:
-
-                for x in self.classifier.support_vectors_:
-                    pass
-                    #self.gmm_samples.append(x)
-
+            if self.svmCounter >= 15:
                 lowest_bic=np.infty
                 bic=[]
-                maxcomponents=8
+                maxcomponents=1
                 if maxcomponents>len(self.gmm_samples):
                     maxcomponents=len(self.gmm_samples)  
-                #maxcomponents=1
                 for i in range(0,maxcomponents):
                     gmm=mixture.GaussianMixture(n_components=i+1,covariance_type='diag')
                     #raw_input(self.gmm_samples)
@@ -402,7 +366,6 @@ class OrigPSPService(BaseService):
                         lowest_bic = bic[-1]
                         self.sampling_gmm = gmm
 
-                #print(bic)
                 logger.debug(self.sampling_gmm.means_)
                 logger.debug(self.sampling_gmm.covariances_)
                 
