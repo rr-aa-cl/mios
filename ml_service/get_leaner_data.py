@@ -2,8 +2,8 @@ from mongodb_client.mongodb_client import MongoDBClient
 
 
 ## possible tags:     
-tags = ["convergence_test_10.3","modify_length"]    # new robot oritation, tabletop insertion, freshly teached, origPSP, gmm with 8 components
-# tags = ["convergence_test_10.2","modify_length"]    # new robot oritation, tabletop insertion, freshly teached, origPSP, 
+tags = ["convergence_test_10.3"]    # new robot oritation, tabletop insertion, freshly teached, origPSP, gmm with 8 components
+# tags = ["convergence_test_10.2"]    # new robot oritation, tabletop insertion, freshly teached, origPSP, 
 # tags = ["convergence_test_9"]                       # tabletop insertion, freshly teached, origPSP, 
 # tags = ["convergence_test_7"]                       # dualarm insertion, lifted joint impedance hold pose, origPSP
 # tags = ["convergence_test_6", "holdpose"]           # dualarm insertion, cartesian impedance hold pose with contact to table, origPSP
@@ -37,7 +37,7 @@ host = "collective-001.rsi.ei.tum.de"
 
 def request_data(host, tags):
     client = MongoDBClient(host)
-    data = client.read("ml_results","inertion",{"meta.tags":tags})
+    data = client.read("ml_results","insertion",{"meta.tags":tags})
     if len(data) == 0:
         print("no data found on ", host)
         return False
@@ -47,14 +47,15 @@ def request_data(host, tags):
     return data[0]
 
 data = request_data(host, tags)
-
+if not data:
+    print("No data found")
 thetas = []
 costs = []
 for key in data.keys():
     if key[0] != "n":
         continue
     thetas.append(data[key]["theta"])
-    thetas.append(data[key]["q_metric"]["final_cost"])
+    costs.append(data[key]["q_metric"]["final_cost"])
 
 print(costs)
 
