@@ -23,21 +23,21 @@ from desk.mongodb_client import MongoDBClient
 
 modelKnowledge0={'mode':0,
                 'scaling':[1,1,1,1,1,1,1],
-                'actionLimits':[[-2,2],[-2,2],[-2,2],[-2,2],[-2,2],[-2,2],[-2,2]],
-                'sigmaScaling':0.1,
+                'actionLimits':[[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1]],
+                'sigmaScaling':1,
                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 
 
 modelKnowledge1={'mode':1,
                 'scaling':[1,1,1,1,1,1],
                 'actionLimits':[[-2,2],[-2,2],[-2,2],[-2,2],[-2,2],[-2,2]],
-                'sigmaScaling':0.1,
+                'sigmaScaling':1,
                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 #todo
 modelKnowledge2={'mode':1,
                 'scaling':[1,1,1,1,1,1],
                 'actionLimits':[[-3,3],[-3,3],[-3,3],[-3,3],[-3,3],[-3,3]],
-                'sigmaScaling':0.1,
+                'sigmaScaling':1,
                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 #todo
 modelKnowledge3={'mode':1,
@@ -46,13 +46,38 @@ modelKnowledge3={'mode':1,
                 'sigmaScaling':0.1,
                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 
+modelKnowledge4={'mode':2,
+                'scaling':[0.002,0.002,0.002,0.002,0.002,0.002,0.002],
+                'actionLimits':[[-0.002,0.002],[-0.002,0.002],[-0.002,0.002],[-0.002,0.002],[-0.002,0.002],[-0.002,0.002],[-0.002,0.002]],
+                'sigmaScaling':1,
+                'graspOrientation':[1,0,0,0,1,0,0,0,1]}
+
+
+modelKnowledge5={'mode':3,
+                'scaling':[0.001,0.001,0.001,0.001,0.001,0.001],
+                'actionLimits':[[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001]],
+                'sigmaScaling':1,
+                'graspOrientation':[1,0,0,0,1,0,0,0,1]}
+#todo
+modelKnowledge6={'mode':3,
+                'scaling':[0.001,0.001,0.001,0.001,0.001,0.001],
+                'actionLimits':[[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001]],
+                'sigmaScaling':1,
+                'graspOrientation':[1,0,0,0,1,0,0,0,1]}
+#todo
+modelKnowledge7={'mode':3,
+                'scaling':[0.001,0.001,0.001,0.001,0.001,0.001],
+                'actionLimits':[[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001]],
+                'sigmaScaling':0.1,
+                'graspOrientation':[1,0,0,0,1,0,0,0,1]}
+
 learningParams= {'architecture':'sac',
                 'epochs':300,
                 'train':True,
                 'experiment_ID': 0,
-                'number_of_experiments': 5,
+                'number_of_experiments': 3,
                 'saveInterval':100,
-                'frequency': 20,
+                'frequency': 25,
                 'taskID':0,
                 'logging':True,
                 'maxTime':5,
@@ -102,7 +127,7 @@ class CollectiveDeepReinforcementLearner():
         self.tags.append("iteration_"+str(iteration))
 
     def initializeLocalLearners(self):
-        dual_arm_system_IDs=[format(i, '03d') for i in range(0,30)]
+        dual_arm_system_IDs=[format(i, '03d') for i in range(0,50)]
         #dual_arm_system_IDs=[format(i, '03d') for i in range(24,25)]
         def ping_hosts(hosts):
             reachable_hosts = []
@@ -213,7 +238,6 @@ class CollectiveDeepReinforcementLearner():
         for transition in new_transitions:
             self.agents[learner_index].put_data(transition) 
         #3. train model -> improve!
-        #Do i need to change the format?
         #print(self.agents[learner_index].data.data_idx)
         if self.agents[learner_index].data.data_idx > 512: #self.agent_args.learn_start_size: 
             startTime=time.time()
@@ -228,12 +252,12 @@ class CollectiveDeepReinforcementLearner():
         else:
             print("Transfer of weights to "+host+" failed!")   
 
-        #5. Store weights if needed
+        #5. store weights if needed
         if self.epochs[learner_index]%self.saveInterval==0:
             self.storedNetworkWeights[learner_index].append(copy.deepcopy(self.agents[learner_index].state_dict()))     
-        #6. increment respective  epoch
+        #6. increment respective epoch
         self.epochs[learner_index]+=1
-        #7. start new learning epoch again
+        #7. start new learning epoch
         if self.epochs[learner_index]<self.learning_params['epochs']:
             return False
         else:
@@ -329,7 +353,21 @@ class CollectiveDeepReinforcementLearner():
         self.saveExperimentData("experimentData")
 
 for i in range(learningParams['number_of_experiments']):
-    Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge1)
+    Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge0)
     Learner.initializeLocalLearners()
     Learner.learning()
    
+for i in range(learningParams['number_of_experiments']):
+    Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge1)
+    Learner.initializeLocalLearners()
+    Learner.learning()
+
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge2)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge3)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()

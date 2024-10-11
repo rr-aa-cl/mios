@@ -92,9 +92,9 @@ public:
 
     bool safe_mode;
 
-    // calibration parameters (Denavit Hartenberg Parameter):
+    // calibration parameters (Denavit Hartenberg Parameters)
     Eigen::Matrix<double,8,1> DH_a;
-    Eigen::Matrix<double,8,1> DH_b;
+    Eigen::Matrix<double,8,1> DH_d;
     Eigen::Matrix<double,8,1> DH_alpha;
 };
 

@@ -45,7 +45,7 @@ void MoveToPoseStrategy2::get_next_command(Actuator &cmd, [[maybe_unused]] const
         }
         //m_deltaPose.block<3,1>(0,0) = m_T_EE_d.block<3,3>(0,0) * m_deltaPose.block<3,1>(0,0);
         //m_deltaPose.block<3,1>(3,0) = m_T_EE_d.block<3,3>(0,0) * m_deltaPose.block<3,1>(3,0);
-        m_R_delta = mirmi_utils::eulerZYX_to_mat(m_deltaPose(5),m_deltaPose(4),m_deltaPose(3));
+        m_R_delta = mirmi_utils::eulerRPY_to_mat(m_deltaPose(5),m_deltaPose(4),m_deltaPose(3));
         m_q_delta = m_R_delta;
         m_q_t = m_q_delta * m_q_t;
             /*

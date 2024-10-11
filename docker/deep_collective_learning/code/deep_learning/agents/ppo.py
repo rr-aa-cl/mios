@@ -23,9 +23,9 @@ class PPO(nn.Module):
         self.writer = writer
         self.device = device
         
-    def get_action(self,x):
+    def get_action(self,x,scale=1):
         mu,sigma = self.actor(x)
-        return mu,sigma
+        return mu,sigma*scale
     
     def v(self,x):
         return self.critic(x)

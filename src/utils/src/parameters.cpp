@@ -203,7 +203,7 @@ UserParameters::UserParameters(){
     safe_mode=true;
     
     DH_a<<0,0,0,0,0,0,0,0;
-    DH_b<<0,0,0,0,0,0,0,0;
+    DH_d<<0,0,0,0,0,0,0,0;
     DH_alpha<<0,0,0,0,0,0,0,0;
 }
 
@@ -280,8 +280,8 @@ bool UserParameters::from_json(const nlohmann::json &parameters){
         spdlog::error("Could not read Denavit Hartenberg Parameter (DH_a).");
         return false;
     }
-    if(!mirmi_utils::read_json_param(parameters,"DH_b",DH_b)){
-        spdlog::error("Could not read Denavit Hartenberg Parameter (DH_b).");
+    if(!mirmi_utils::read_json_param(parameters,"DH_d",DH_d)){
+        spdlog::error("Could not read Denavit Hartenberg Parameter (DH_d).");
         return false;
     }
     if(!mirmi_utils::read_json_param(parameters,"DH_alpha",DH_alpha)){
@@ -315,7 +315,7 @@ nlohmann::json UserParameters::to_json() const{
 
     json_object["safe_mode"]=safe_mode;
     json_object["DH_a"]=mirmi_utils::from_eigen<double,8,1>(DH_a);
-    json_object["DH_b"]=mirmi_utils::from_eigen<double,8,1>(DH_b);
+    json_object["DH_d"]=mirmi_utils::from_eigen<double,8,1>(DH_d);
     json_object["DH_alpha"]=mirmi_utils::from_eigen<double,8,1>(DH_alpha);
     return json_object;
 }

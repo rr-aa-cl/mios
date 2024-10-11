@@ -59,4 +59,4 @@ for key in data.keys():
 
 print(costs)
 
-
+print(thetas)

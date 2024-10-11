@@ -74,16 +74,22 @@ class LLSender:
             "control": {
                 "control_mode": controller,
                 "joint_imp": {
-                   "K_theta": [50,50,50,50,50,50,10]
+                "K_theta": [5,5,5,5,5,5,1]
                 },
                 "cart_imp": {
-                   "K_x": [10, 10, 10, 2.5, 2.5, 2.5]
+                "K_x": [1, 1, 1, 0.25, 0.25, 0.25]
                 }
             },
             "user":{
                 "F_ext_max": [30, 15]
             }
-        }    
+        }            
+        if controller=="JointPose":
+            llInterface_context["control"]["K_theta"]=[300,300,300,300,100,100,20]
+        elif controller=="CartPose":
+            llInterface_context["control"]["K_x"]=[1000,1000,1000,50,50,50]
+        elif controller=="Twist":
+            llInterface_context["control"]["K_x"]=[1000,1000,1000,50,50,50]
 
         t = Task(self.robot_ip)
         t.add_skill("remote_"+self.mode, "LLInterface", llInterface_context)

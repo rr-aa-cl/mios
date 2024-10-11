@@ -705,11 +705,95 @@ bool PandaBody::set_ee(std::array<double, 16> F_T_EE){
     }
 }
 
+Eigen::Matrix4d PandaBody::dhTransformationMatrix(double theta, double d, double a, double alpha) const {
+    Eigen::Matrix4d T;
+
+    T << cos(theta),                 -sin(theta),                 0,               a,
+         sin(theta) * cos(alpha),    cos(theta) * cos(alpha),    -sin(alpha),     -d * sin(alpha),
+         sin(theta) * sin(alpha),    cos(theta) * sin(alpha),     cos(alpha),      d * cos(alpha),
+         0,                          0,                           0,               1;
+
+    return T;
+}
+
+std::array<double, 16> PandaBody::forward_kinematics(franka::RobotState& state) const{
+    spdlog::trace("PandaBody::forward_kinematics");
+    Eigen::Matrix<double, 8, 1>d = m_memory->get_parameters()->user.DH_d;
+    Eigen::Matrix<double, 8, 1> a = m_memory->get_parameters()->user.DH_a;
+    Eigen::Matrix<double, 8, 1> alpha = m_memory->get_parameters()->user.DH_alpha;
+    Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+
+    for (int i = 0; i < 7; ++i) {
+        Eigen::Matrix4d deltaT = dhTransformationMatrix(state.q[i], d[i], a[i], alpha[i]);
+        T = T * deltaT;
+    }
+
+    Eigen::Matrix4d deltaT = dhTransformationMatrix(-M_PI / 4, d[7], a[7], alpha[7]);
+    T = T * deltaT;
+    
+    std::array<double, 16> O_T_EE;
+
+    for (int row = 0; row < 4; ++row) {
+        for (int col = 0; col < 4; ++col) {
+            O_T_EE[row * 4 + col] = T(row, col);
+        }
+    }
+
+    return O_T_EE;
+
+}
+
+// std::array<double, 16> PandaBody::get_WF_T_EE(franka::RobotState& state) const{
+//     Eigen::Matrix4d WF_T_O;
+//     Eigen::Matrix4d O_T_EE;
+//     Eigen::Matrix4d WF_T_EE;
+//     WF_T_O = m_memory->get_parameters()->frames.WF_T_O;
+//     O_T_EE = Eigen::Map<Eigen::Matrix4d>(state.O_T_EE.data());
+
+//     WF_T_EE=WF_T_O*O_T_EE;
+
+//     std::array<double, 16> _WF_T_EE;
+
+//     for (int row = 0; row < 4; ++row) {
+//         for (int col = 0; col < 4; ++col) {
+//             _WF_T_EE[row * 4 + col] = WF_T_EE(row, col);
+//         }
+//     }
+
+//     return _WF_T_EE;
+// }
+
+// std::array<double, 16> PandaBody::get_TF_T_EE(franka::RobotState& state) const{
+//     Eigen::Matrix4d WF_T_TF;
+//     Eigen::Matrix4d WF_T_EE;
+//     Eigen::Matrix4d TF_T_EE;
+//     WF_T_TF<<m_memory->get_parameters()->frames.WF_T_TF;
+//     O_T_EE = Eigen::Map<Eigen::Matrix4d>(state.WF_T_EE.data());
+
+//     TF_T_EE=WF_T_TF.inverse()*WF_T_EE;
+
+//     std::array<double, 16> _TF_T_EE;
+
+//     for (int row = 0; row < 4; ++row) {
+//         for (int col = 0; col < 4; ++col) {
+//             _TF_T_EE[row * 4 + col] = TF_T_EE(row, col);
+//         }
+//     }
+//     return _TF_T_EE;
+// }
+
+
 bool PandaBody::get_robot_state(franka::RobotState &state) const{
-//    spdlog::trace("PandaBody::get_robot_state");
+    spdlog::trace("PandaBody::get_robot_state");
     if(m_arm_connected){
         try{
             state=m_panda_arm->readOnce();
+
+            //use clibrated kinematics
+            //order matters!
+            //state.O_T_EE=forward_kinematics(state);
+            //state.WF_T_EE=get_WF_T_EE(state);
+            //state.TF_T_EE=get_TF_T_EE(state);
             return true;
         }catch(const franka::InvalidOperationException& e){
             spdlog::debug(e.what());
@@ -720,6 +804,8 @@ bool PandaBody::get_robot_state(franka::RobotState &state) const{
         }
     }else{
         get_default_robot_state(state);
+        //use clibrated kinematics
+        //state.O_T_EE=PandaBody::forward_kinematics(state);
         return true;
     }
 }

@@ -351,7 +351,7 @@ class OrigPSPService(BaseService):
             self.classifier.fit(self.svm_samples,self.success)
             self.classifierActive=True
 
-            if self.svmCounter >= 15:
+            if self.svmCounter >= 15 and self.gmm_samples>1:
                 lowest_bic=np.infty
                 bic=[]
                 maxcomponents=1
@@ -410,6 +410,7 @@ class OrigPSPService(BaseService):
             else:
                 self.success[i]=1
                 self.gmm_samples.append(self.svm_samples[i])
+
 
 
     def _terminate(self):

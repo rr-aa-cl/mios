@@ -68,7 +68,7 @@ learningParams= {'architecture':'sac',
                 'train':True,
                 'experiment_ID': 0,
                 'number_of_experiments': 5,
-                'frequency': 20,
+                'frequency': 25,
                 'taskID':0,
                 'logging':True,
                 'maxTime':5,
@@ -113,8 +113,15 @@ class DeepReinforcementLearner():
         if modelKnowledge['mode']==0:
             self.interface='Torque'
             self.end2end=True
-        else:
+        elif modelKnowledge['mode']==1:
             self.interface='Wrench'
+            self.end2end=False
+            #todo
+        elif modelKnowledge['mode']==2:
+            self.interface='JointPose'
+            self.end2end=False
+        elif modelKnowledge['mode']==3:
+            self.interface='Twist'
             self.end2end=False
             
         self.penaltyMultiplier=0.0001
@@ -183,9 +190,6 @@ class DeepReinforcementLearner():
             self.approachPoses,self.goalPoses=get_poses(self.robotID)
             self.goalPose=self.getEulerFromPose(self.goalPoses["EE"])          
             self.q_init=self.approachPoses["q"]
-            holding_arm_skills.append(("move","MoveToPoseJoint",move_context))
-            self.looped_skill={"agent":self.robot_ip,"port":13000,"skills":holding_arm_skills,"sleep":1}
-            self.other_task=Task(self.robot_ip,13000)
             self.sender=LLSender(self.robot_ip,self.robot_ip,self.interface,self.q_init)
             logger.debug("Done")
             return True
@@ -241,8 +245,18 @@ class DeepReinforcementLearner():
             if modelKnowledge['mode']==0:
                 self.interface='Torque'
                 self.end2end=True
-            else:
+            elif modelKnowledge['mode']==1:
                 self.interface='Wrench'
+                self.actionScaling=modelKnowledge['scaling']
+                self.actionLimits=modelKnowledge['actionLimits']
+                self.actionSamplingVariance=modelKnowledge['sigmaScaling']
+                self.graspOrientation=np.reshape(modelKnowledge['graspOrientation'], (3, 3), order='F')
+                self.end2end=False
+            elif modelKnowledge['mode']==2:
+                self.interface='JointPose'
+                self.end2end=True
+            elif modelKnowledge['mode']==3:
+                self.interface='Twist'
                 self.actionScaling=modelKnowledge['scaling']
                 self.actionLimits=modelKnowledge['actionLimits']
                 self.actionSamplingVariance=modelKnowledge['sigmaScaling']
@@ -363,14 +377,19 @@ class DeepReinforcementLearner():
 
     def processAction(self,action):
         processedAction=copy.deepcopy(action)
-        if self.interface=='Wrench':
+        if self.interface=='Wrench' or self.interface=='Twist':
             for i in range(6):                
                 processedAction[i]*=self.actionScaling[i]
                 processedAction[i]= max(self.actionLimits[i][0], min(processedAction[i], self.actionLimits[i][1]))
 
             processedAction[0:3] = np.dot(self.graspOrientation, processedAction[0:3])
             processedAction[3:6] = np.dot(self.graspOrientation, processedAction[3:6])
-            
+        
+        else:
+            for i in range(7):                
+                processedAction[i]*=self.actionScaling[i]
+                processedAction[i]= max(self.actionLimits[i][0], min(processedAction[i], self.actionLimits[i][1]))
+
         return processedAction
 
     def learning(self, tag=" ", trial=0):
@@ -385,13 +404,7 @@ class DeepReinforcementLearner():
         self.isSuccessful=False
         self.score=[]
 
-        for skill in self.looped_skill["skills"]:
-            self.other_task.add_skill(skill[0]+"-"+str(0),skill[1],skill[2])
-
-
-        call_method(self.robot_ip,12000,"stop_task")
-        call_method(self.robot_ip,13000,"stop_task")
-        self.other_task.start(queue=False)    
+        call_method(self.robot_ip,12000,"stop_task")   
         extract_and_reset(self.robot_ip, self.robotID)   
         
         # record 
@@ -409,17 +422,16 @@ class DeepReinforcementLearner():
             while not done:
 
                 self.state_lst.append(robot_state)
-                mu,sigma = self.agent.get_action(torch.from_numpy(robot_state).float().to(self.device))
+                mu,sigma = self.agent.get_action(torch.from_numpy(robot_state).float().to(self.device),scale=self.actionSamplingVariance)
                 dist = torch.distributions.Normal(mu,sigma[0])
                 action = dist.sample()
-                action=self.processAction(action)
                 log_prob = dist.log_prob(action).sum(-1,keepdim = True)
+                action=self.processAction(action)
 
-                #print("Sent action: "+str(action.tolist()))
-                self.sender.send(action.tolist())
-                for skill in self.looped_skill["skills"]:
-                    self.other_task.add_skill(skill[0]+"-"+str(0),skill[1],skill[2])
-                self.other_task.start(queue=False)   
+                if self.interface=="JointPose":
+                    new_action=robot_state[0:7]+action
+                    action=new_action
+                self.sender.send(action.tolist()) 
                 time.sleep(self.deltaTime-0.0105)
                 try:
                     if call_method(self.robot_ip,12000, "get_state")["result"]["current_task"]=="IdleTask":
@@ -460,23 +472,18 @@ class DeepReinforcementLearner():
                     robot_state = next_robot_state
                     robot_state_ = next_robot_state_
             
-
         else :   
             startingTime=time.time()
             while not done:
-                
                 self.timestep=self.timestep+1
                 if (self.learning_params["train"]==True):
-                    action, _ = self.agent.get_action(torch.from_numpy(np.asarray(robot_state)).float().to(self.device))
+                    action, _ = self.agent.get_action(torch.from_numpy(np.asarray(robot_state)).float().to(self.device),scale=self.actionSamplingVariance)
                 else:
                     action, _ = self.agent.get_groundTruth(torch.from_numpy(np.asarray(robot_state)).float().to(self.device))
                 action = action.cpu().detach().numpy()
                 action=action[0]
                 action=self.processAction(action)
-                self.sender.send(action.tolist())
-                for skill in self.looped_skill["skills"]:
-                    self.other_task.add_skill(skill[0]+"-"+str(0),skill[1],skill[2])
-                self.other_task.start(queue=False)   
+                self.sender.send(action.tolist()) 
                 time.sleep(self.deltaTime-0.0105)
                 try:
                     if call_method(self.robot_ip,12000, "get_state")["result"]["current_task"]=="IdleTask":
@@ -512,7 +519,7 @@ class DeepReinforcementLearner():
 
         call_method(self.robot_ip,12000, "unsubscribe_telemetry",{"subscribe":desired_states,"ip":self.own_ip,"port":8887})    
         self.stop_recording()
-        
+        self.sender.stop()
         return "finished"
 
     def start_recording(self, tag = "xx"):
@@ -543,7 +550,6 @@ if __name__ == "__main__":
         logger.debug("Version: 1.0")
         server = DeepReinforcementLearner(learningParams,modelKnowledge)
         server.start_rpc_server()
-        
         def signal_handler(sig, frame):
             logger.debug("Shutting down the server.")
             server.rpc_server.stop()
