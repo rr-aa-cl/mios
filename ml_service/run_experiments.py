@@ -14,13 +14,13 @@ import json
 ###################################################################################
 list_block_1 = ["001", #"002", 
                 "003", "004", "005", 
-                "006", "007", "008", "036",#"010", 
+                "006", "007", "008", "044",#"010", 
                 "011"]
-list_block_2 = ["012","009","013","014","015","016","017",
+list_block_2 = ["012","043","013","014","015","016","042",
                 # "018",#"020",
                 "041",
                 "021","022"]
-list_U = ["023", "024", "025", "026", "027", "029"] #, 
+list_U = ["023", "024", "025", "026", "047", "029"] #, 
 list_external = ["050"]
 
 # list_all = list_block_1 + list_block_2 + list_U
@@ -51,9 +51,9 @@ def test_learning():
     learn_task("collective-panda-001", pd, sc, ["test_learning"])
 
 
-def learn_insertion(robot: str, approach: str, insertable: str, container: str, tags: list, knowledge=None,
+def learn_insertion(robot: str,host:str, approach: str, insertable: str, container: str, tags: list, knowledge=None,
                     wait: bool=True, n_iterations = 10, service_port=8000):
-    pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
+    pd = InsertionFactory([host], TimeMetric("insertion", {"time": 5}),
                           {"Insertable": insertable, "Container": container,
                            "Approach": approach}).get_problem_definition(insertable)
     sc = SVMLearner().get_configuration()
@@ -2054,7 +2054,7 @@ def convergence_test():
         "collective-013.rsi.ei.tum.de":["C_011", "A_030_shamrock","A_012_ellipsoid-2"],
         "collective-014.rsi.ei.tum.de":["B_016", "B_006_HDMI-1","A_024_moon","C_020"], 
         "collective-015.rsi.ei.tum.de":["C_025", "B_012_DE2DE","A_011"],
-        # #"collective-016.rsi.ei.tum.de":["A_026_cylinder_60", "A_026_cylinder_10","A_026_cylinder_20","A_026_cylinder_30"],  #,,,],"A_026_cylinder_60"
+        "collective-016.rsi.ei.tum.de":["A_026_cylinder_30","A_026_cylinder_60", "A_026_cylinder_10","A_026_cylinder_20",],  #,,,],"A_026_cylinder_60"
         "collective-042.rsi.ei.tum.de":["A_013_hexagram", "A_008_square-1","B_015","C_key_12"],
         # # Checkt 041 for correct teaching:
         "collective-041.rsi.ei.tum.de":["A_009_hexagon-3","A_021_arrow","A_key_24","C_022"],  # check 41_left
@@ -2076,16 +2076,17 @@ def convergence_test():
     threads = []
     dualarm_skills = []
     control = "joint"  # control of the hold skill
-    sc = SVMLearner(1000,10,0,True,False, 0,False).get_configuration()
+    # sc = SVMLearner(1000,10,0,True,False, 0,False).get_configuration()
     #sc = CMAESLearner(10,500,True).get_configuration()
-    #sc = OrigPSPLearner(1000,10,0,True,False, 0,False).get_configuration()
+    sc = OrigPSPLearner(1000,10,0,True,False, 0,False).get_configuration()
     # convergence_test_4 was tagged with origPSP but is was actually normal PSP
     #tags = ["convergence_test_5","5000","success_check", "origPSP"]  # later do with success check -> repeat successful trial 5 times
     #tags = ["convergence_test_6", "500", "success_check", "origPSP", "holdpose"]
     #tags = ["convergence_test_7", "1500", "success_check", "origPSP", "lifted_jointpose","lubricated"]
     # convergence_test_8 is with non optimised poses  -> neglect!
-    tags = ["nullspace", "table_insertion", "convergence_test_10.3","modify_length", "success_check","modifiedPSP"]
+    tags = ["nullspace", "table_insertion", "convergence_test_11","modify_length", "success_check","origPSPenhanced"]
     # tags = ["convergence_test_1","5000"]
+    tags = ["testrun","IROS"]
     for host,insertable in tasks.items():
         
         insertable = insertable+"_table"

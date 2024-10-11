@@ -82,7 +82,7 @@ class OrigPSPService(BaseService):
         self.gmm_samples=[]
         self.bestSample=[]
         self.svmCounter=0
-        self.minCost=np.infty
+        self.minCost=np.inf
         self.success=[]
         self.rewards=[]
         self.svm_samples=[]
@@ -351,8 +351,13 @@ class OrigPSPService(BaseService):
             self.classifier.fit(self.svm_samples,self.success)
             self.classifierActive=True
 
+<<<<<<< HEAD
             if self.svmCounter >= 15 and self.gmm_samples>1:
                 lowest_bic=np.infty
+=======
+            if self.svmCounter >= 15:
+                lowest_bic=np.inf
+>>>>>>> 55f5eb6640150f5c08524c81a813aa87e01cb290
                 bic=[]
                 maxcomponents=1
                 if maxcomponents>len(self.gmm_samples):

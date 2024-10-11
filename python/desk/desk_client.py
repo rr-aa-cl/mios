@@ -286,6 +286,34 @@ class FrankaAPI:
             return True
         else:
             return False
+    
+    def programming(self):
+        temp_body = json.dumps({'token':'%s' % self._spoc_token})
+        self._client.request('POST', '/desk/api/operating-mode/programming', temp_body,
+                             headers={'content-type': 'application/json',
+                                      'Cookie': 'authorization=%s' % self._token})
+
+        response = self._client.getresponse()
+        response_status = response.status
+        response_context = response.read()
+        if response_status == 200:
+            return True
+        else:
+            return False
+    
+    def execution(self):
+        temp_body = json.dumps({'token':'%s' % self._spoc_token})
+        self._client.request('POST', '/desk/api/operating-mode/programming', temp_body,
+                             headers={'content-type': 'application/json',
+                                      'Cookie': 'authorization=%s' % self._token})
+
+        response = self._client.getresponse()
+        response_status = response.status
+        response_context = response.read()
+        if response_status == 200:
+            return True
+        else:
+            return False
 
 
 

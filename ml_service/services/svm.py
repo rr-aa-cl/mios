@@ -82,7 +82,7 @@ class SVMService(BaseService):
         self.gmm_samples = []
         self.bestSample = []
         self.svmCounter = 0
-        self.minCost = np.infty
+        self.minCost = np.inf
         self.success = []
         self.rewards = []
         self.svm_samples = []
@@ -106,7 +106,7 @@ class SVMService(BaseService):
         self.svmCounter=0
         self.neglect_samples = 0  # neglect first part of self.success, self.rewards to calculate self.mean
         self.bad_gmm_prediciton = 0  # counts how often gmm is not able to select samples which satisfy svm-predictions
-        self.minCost=np.infty
+        self.minCost=np.inf
         self.success=[]
         self.rewards=[]
         self.svm_samples=[]
@@ -593,7 +593,7 @@ class SVMService(BaseService):
                     pass
                     # self.gmm_samples.append(x)
 
-                lowest_bic = np.infty
+                lowest_bic = np.inf
                 bic = []
                 maxcomponents = 8
                 if maxcomponents > len(self.gmm_samples):
