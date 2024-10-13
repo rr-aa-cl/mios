@@ -78,8 +78,9 @@ learningParams= {'architecture':'sac',
 def get_poses(module:str):
     client=MongoDBClient("collective-"+module+".rsi.ei.tum.de")
     container=client.read("miosL","environment",
-                          {"name":module+"_left_container"})
+                          {"name":module+"_table_left_container"})
     approach=client.read("miosL","environment",{"name":module+"_table_left_container_approach"})
+    
     if container:
         container_cart=container[0]["O_T_OB"]
         container_q=container[0]["q"]
