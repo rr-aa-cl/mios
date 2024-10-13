@@ -79,7 +79,7 @@ def get_poses(module:str):
     client=MongoDBClient("collective-"+module+".rsi.ei.tum.de")
     container=client.read("miosL","environment",
                           {"name":module+"_left_container"})
-    approach=client.read("miosL","environment",{"name":module+"_left_container_approach"})
+    approach=client.read("miosL","environment",{"name":module+"_table_left_container_approach"})
     if container:
         container_cart=container[0]["O_T_OB"]
         container_q=container[0]["q"]
@@ -242,14 +242,14 @@ class DeepReinforcementLearner():
     def setModelKnowledge(self,modelKnowledge):
         try:
             logger.debug("Setting model knowledge...")
+            self.actionScaling=modelKnowledge['scaling']
+            self.actionLimits=modelKnowledge['actionLimits']
+            self.actionSamplingVariance=modelKnowledge['sigmaScaling']
             if modelKnowledge['mode']==0:
                 self.interface='Torque'
                 self.end2end=True
             elif modelKnowledge['mode']==1:
                 self.interface='Wrench'
-                self.actionScaling=modelKnowledge['scaling']
-                self.actionLimits=modelKnowledge['actionLimits']
-                self.actionSamplingVariance=modelKnowledge['sigmaScaling']
                 self.graspOrientation=np.reshape(modelKnowledge['graspOrientation'], (3, 3), order='F')
                 self.end2end=False
             elif modelKnowledge['mode']==2:
@@ -257,9 +257,6 @@ class DeepReinforcementLearner():
                 self.end2end=True
             elif modelKnowledge['mode']==3:
                 self.interface='Twist'
-                self.actionScaling=modelKnowledge['scaling']
-                self.actionLimits=modelKnowledge['actionLimits']
-                self.actionSamplingVariance=modelKnowledge['sigmaScaling']
                 self.graspOrientation=np.reshape(modelKnowledge['graspOrientation'], (3, 3), order='F')
                 self.end2end=False
             logger.debug("Done")
@@ -393,11 +390,14 @@ class DeepReinforcementLearner():
         return processedAction
 
     def learning(self, tag=" ", trial=0):
+        logger.debug("1")
+
         desired_states=["q","dq","tau_ext","T_T_EE","TF_dX_EE","TF_F_ext_K"]
 
         #subscribe to state
         call_method(self.robot_ip,12000, "subscribe_telemetry",{"subscribe":desired_states,"ip":self.own_ip,"port":8887})
-
+        logger.debug("2")
+        
         self.DataList=[]
         self.state_lst=[]
 
@@ -406,7 +406,7 @@ class DeepReinforcementLearner():
 
         call_method(self.robot_ip,12000,"stop_task")   
         extract_and_reset(self.robot_ip, self.robotID)   
-        
+        logger.debug("3")
         # record 
         # self.start_recording(tag+"_n"+str(trial))  
         self.sender.start()
@@ -414,8 +414,8 @@ class DeepReinforcementLearner():
         self.timestep=0
         robot_state,self.initialPose=self.getState()
         self.actualPose=copy.deepcopy(self.initialPose)
-        logger.debug("PreparationTime: "+str(time.time()-startingTime))
         logger.debug("starting")
+        startingTime=time.time()
         if self.agent_args.on_policy == True:
             robot_state_=copy.deepcopy(robot_state)
             robot_state = np.clip((robot_state_ - self.state_rms.mean) / (self.state_rms.var ** 0.5 + 1e-8), -5, 5)
@@ -472,8 +472,7 @@ class DeepReinforcementLearner():
                     robot_state = next_robot_state
                     robot_state_ = next_robot_state_
             
-        else :   
-            startingTime=time.time()
+        else :  
             while not done:
                 self.timestep=self.timestep+1
                 if (self.learning_params["train"]==True):
@@ -514,8 +513,8 @@ class DeepReinforcementLearner():
                 if done==True:
                     self.sender.stop()
                     break
-            logger.debug("TrialTime:"+str(startingTime-time.time()))
-            logger.debug("finished")
+        logger.debug("TrialTime:"+str(startingTime-time.time()))
+        logger.debug("finished")
 
         call_method(self.robot_ip,12000, "unsubscribe_telemetry",{"subscribe":desired_states,"ip":self.own_ip,"port":8887})    
         self.stop_recording()

@@ -166,10 +166,12 @@ class CollectiveDeepReinforcementLearner():
                     learnerProxy.setLearningParams(self.learning_params)==True and
                     learnerProxy.setID(host,IP)==True):
                         self.robotLearningInstances.append([host,IP])
+                        print("Initialization of "+host+" successful!")
                     else:
                         print("Initialization of "+host+" failed!")
             except:
                 print("Initialization of "+host+" failed!")
+        print("Finished Initialization!")
 
     async def rpc_call_to_learner(self,learnerProxy,index):
         task=self.loop.run_in_executor(None, getattr(learnerProxy, "learning"))
@@ -352,15 +354,25 @@ class CollectiveDeepReinforcementLearner():
         #saving experiment results^
         self.saveExperimentData("experimentData")
 
-for i in range(learningParams['number_of_experiments']):
+for i in range(1):
     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge0)
     Learner.initializeLocalLearners()
     Learner.learning()
    
-for i in range(learningParams['number_of_experiments']):
+for i in range(1):
     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge1)
     Learner.initializeLocalLearners()
     Learner.learning()
+
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge0)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+   
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge1)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
 
 # for i in range(learningParams['number_of_experiments']):
 #     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge2)
