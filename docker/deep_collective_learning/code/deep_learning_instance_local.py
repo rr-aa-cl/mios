@@ -29,6 +29,29 @@ from socketserver import ThreadingMixIn
 import logging
 from video.video_command import VideoRecorder
 
+tasks={'collective-001.rsi.ei.tum.de': 'B_002_IEC-C7',
+ 'collective-003.rsi.ei.tum.de': 'D_028',
+ 'collective-004.rsi.ei.tum.de': 'D_020',
+ 'collective-005.rsi.ei.tum.de': 'D_027',
+ 'collective-006.rsi.ei.tum.de': 'D_021',
+ 'collective-007.rsi.ei.tum.de': 'D_022',
+ 'collective-044.rsi.ei.tum.de': 'D_024',
+ 'collective-012.rsi.ei.tum.de': 'C_007',
+ 'collective-043.rsi.ei.tum.de': 'B_013',
+ 'collective-013.rsi.ei.tum.de': 'C_011',
+ 'collective-014.rsi.ei.tum.de': 'B_016',
+ 'collective-015.rsi.ei.tum.de': 'C_025',
+ 'collective-016.rsi.ei.tum.de': 'A_026_cylinder_30',
+ 'collective-042.rsi.ei.tum.de': 'A_013_hexagram',
+ 'collective-041.rsi.ei.tum.de': 'A_009_hexagon-3',
+ 'collective-021.rsi.ei.tum.de': 'B_RS-232',
+ 'collective-022.rsi.ei.tum.de': 'C_009',
+ 'collective-023.rsi.ei.tum.de': 'C_014',
+ 'collective-024.rsi.ei.tum.de': 'B_014_CN',
+ 'collective-025.rsi.ei.tum.de': 'A_025_heart',
+ 'collective-026.rsi.ei.tum.de': 'A_016_cross-1',
+ 'collective-047.rsi.ei.tum.de': 'B_010_plugF-2'}
+
 logger = logging.getLogger("deep_interface")
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
@@ -77,10 +100,13 @@ learningParams= {'architecture':'sac',
 
 def get_poses(module:str):
     client=MongoDBClient("collective-"+module+".rsi.ei.tum.de")
+    object=tasks["collective-"+module+".rsi.ei.tum.de"]
+    logger.debug(str(object))
+
     container=client.read("miosL","environment",
-                          {"name":module+"_table_left_container"})
-    approach=client.read("miosL","environment",{"name":module+"_table_left_container_approach"})
-    
+                          {"name":object+"_container"})
+    approach=client.read("miosL","environment",{"name":object+"_container_approach"})
+
     if container:
         container_cart=container[0]["O_T_OB"]
         container_q=container[0]["q"]
@@ -92,8 +118,6 @@ def get_poses(module:str):
     approach={"EE":approach_cart,"q":approach_q}
 
     return approach,container
-
-
 
 class DeepReinforcementLearner():
     def __init__(self,learning_params,model_knowledge):
