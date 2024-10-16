@@ -2043,7 +2043,7 @@ def convergence_test():
         "collective-003.rsi.ei.tum.de":["D_028", "D_012", "D_005", "D_018", "A_001_triangle-1"],
         "collective-004.rsi.ei.tum.de":["D_020", "D_019", "A_002_hexagon-1"],
         "collective-005.rsi.ei.tum.de":["D_027", "D_026", "B_001_USB-1", "D_006"],
-        "collective-006.rsi.ei.tum.de":["D_021", "A_32_pentagon-1","D_002", "D_001" ],
+        #"collective-006.rsi.ei.tum.de":["D_021", "A_32_pentagon-1","D_002", "D_001" ],
         # "collective-007.rsi.ei.tum.de":["D_022", "A_004_cylinder-1","D_011"],
         #"collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
         "collective-044.rsi.ei.tum.de":["D_024", "B_003_plugF-1","D_009","D_014","D_025"],#PC 10 is broken and changed to 36 now
