@@ -2076,9 +2076,9 @@ def convergence_test():
     threads = []
     dualarm_skills = []
     control = "joint"  # control of the hold skill
-    # sc = SVMLearner(1000,10,0,True,False, 0,False).get_configuration()
+    sc = SVMLearner(1500,10,0,True,False, 0,False).get_configuration()
     #sc = CMAESLearner(10,500,True).get_configuration()
-    sc = OrigPSPLearner(1500,10,0,True,False, 0,False).get_configuration()
+    # sc = OrigPSPLearner(1500,10,0,True,False, 0,False).get_configuration()
     # convergence_test_4 was tagged with origPSP but is was actually normal PSP
     #tags = ["convergence_test_5","5000","success_check", "origPSP"]  # later do with success check -> repeat successful trial 5 times
     #tags = ["convergence_test_6", "500", "success_check", "origPSP", "holdpose"]
