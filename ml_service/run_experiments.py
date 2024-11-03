@@ -109,7 +109,7 @@ def learn_bend(robot: str, start_pose: str, goal_pose: str, bendable: str, tags:
     learn_task(robot, pd, sc, tags, knowledge=knowledge, n_iterations=n_iterations,service_port=service_port)
 
 
-def learn_multiple_tasks(robot: str, task_instances: list, service_config: ServiceConfiguration, knowledge_configuration: Knowledge, tags: list, iteration = 0, finish_threshold = {}):
+def learn_multiple_tasks(robot: str, task_instances: list, service_config: ServiceConfiguration, knowledge_configuration: dict, tags: list, iteration = 0, finish_threshold = {}):
     for insertable in task_instances:
         container = insertable+"_container"
         approach = container+"_approach"
@@ -123,10 +123,16 @@ def learn_multiple_tasks(robot: str, task_instances: list, service_config: Servi
         if insertable in finish_threshold:
             pd.optimum_thr = finish_threshold[insertable]
         if insertable == "HDMI_plug":  # increase the limits for HDMI_plug
-            pd.domain.limits["p2_f_push_z"] = (0, 25)
-        learn_single_task(robot, pd, service_config, tags, iteration, False, knowledge_configuration, True)
-        print("finished learning ", pd.tags, "\nplacing...")
-        place_insertable(robot, insertable, container, approach, container+"_above")
+            pd.domain.limits["p2_f_push_z"] = (0, 20)
+        try:
+            learn_single_task(robot, pd, service_config, tags, iteration, False, knowledge_configuration, True)
+            print("finished learning ", pd.tags, "\nplacing...")
+            place_insertable(robot, insertable, container, approach, container+"_above")
+        except KeyboardInterrupt:
+            print("stopping...")
+            stop_services([robot])
+            place_insertable(robot, insertable, container, approach, container+"_above")
+            break
 
 
 def delete_results(robot:str, tags:list):
@@ -555,7 +561,10 @@ def get_states(modules):
     states = []
     for ip,xxx in zip(ips,modules):
         print("get state of ",xxx)
-        response = call_method(ip, 12000, "get_state",timeout=3)
+        try:
+            response = call_method(ip, 12000, "get_state",timeout=3)
+        except OSError:
+            response = None
         if response == None:
             states.append(False)
             continue
@@ -2146,8 +2155,24 @@ def convergence_test():
         threads[-1].start()
         time.sleep(1)
              
-           
-def convergence_test2():
+
+def start_local_learning():
+    sc = SVMLearner(130,10,0,False,False, 0,False).get_configuration()
+    tags = ["nullspace", "table_insertion","modify_length", "success_check","origPSPenhanced", "global_knowledge", "stanford"]
+    tags = ["demorun"]
+    knowledge = Knowledge()
+    knowledge.kb_location = "collective-001.rsi.ei.tum.de"
+    knowledge.mode = "global"  # None:isolated parallel (no knowledge from theirself)  # "local": has transfer inside agent
+    knowledge.scope = [] # TODO: may here add the tag of previous running
+    knowledge.scope.extend(tags)
+    # knowledge.scope.append("n"+str(n_current_iter+1)) # searching for knowledge on the database (only works for the slow pipeline);  e.g. [] search all, 
+    knowledge.type = "all"  # all: 
+    for i in range(50):
+        print(i,"deleting knowledge on 172.24.69.1")
+
+        learn_multiple_tasks("172.24.69.1", ["key", "hexagon_27", "A_015"], sc, knowledge.to_dict(), tags, i, {"key":0.6,"hexagon_27":0.6,"A_015":0.6})
+        print(i, "th iteration finished.")
+def start_learning():
     '''
     007 is teached to above insted of approach
     005 probably did this result 
@@ -2157,111 +2182,90 @@ def convergence_test2():
         "collective-003.rsi.ei.tum.de":["D_028", "D_012", "D_005", "D_018", "A_001_triangle-1"],
         "collective-004.rsi.ei.tum.de":["D_020", "D_019", "A_002_hexagon-1"],
         "collective-005.rsi.ei.tum.de":["D_027", "D_026", "B_001_USB-1", "D_006"],
-        "collective-006.rsi.ei.tum.de":["D_021", "A_32_pentagon-1","D_002", "D_001" ],
-        #"collective-007.rsi.ei.tum.de":["D_022", "A_004_cylinder-1","D_011"],
-        #"collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
-        "collective-044.rsi.ei.tum.de":["D_024", "B_003_plugF-1","D_009","D_014","D_025"],#PC 10 is broken and changed to 36 now
+        #"collective-006.rsi.ei.tum.de":["D_021", "A_32_pentagon-1","D_002", "D_001" ],
+        "collective-007.rsi.ei.tum.de":["D_022", "A_004_cylinder-1","D_011"],
+        "collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
+        #"collective-044.rsi.ei.tum.de":["D_024", "B_003_plugF-1","D_009","D_014","D_025"],#PC 10 is broken and changed to 36 now
         
         #"collective-011.rsi.ei.tum.de":["B_004_audioJack-35", "D_010", "D_015","D_023"],
-        "collective-012.rsi.ei.tum.de":["C_007", "B_005_IEC-C13", "C_006"], #"C_key_05" is lost
-        "collective-043.rsi.ei.tum.de":["B_013", "A_005_cylinder-2","A_015_trapezoid","B_017_IT2DE"],
+        "collective-033.rsi.ei.tum.de":["D_023"],  # replacement for 011
+        #"collective-012.rsi.ei.tum.de":["C_007", "B_005_IEC-C13", "C_006"], #"C_key_05" is lost
+        "collective-035.rsi.ei.tum.de":["C_007"],  # replacement for 012
+        #"collective-043.rsi.ei.tum.de":["B_013", "A_005_cylinder-2","A_015_trapezoid","B_017_IT2DE"],
         "collective-013.rsi.ei.tum.de":["C_011", "A_030_shamrock","A_012_ellipsoid-2"],
         "collective-014.rsi.ei.tum.de":["B_016", "B_006_HDMI-1","A_024_moon","C_020"], 
         "collective-015.rsi.ei.tum.de":["C_025", "B_012_DE2DE","A_011"],
-        "collective-016.rsi.ei.tum.de":["A_026_cylinder_30","A_026_cylinder_60", "A_026_cylinder_10","A_026_cylinder_20",],  #,,,],"A_026_cylinder_60"
-        "collective-042.rsi.ei.tum.de":["A_013_hexagram", "A_008_square-1","B_015","C_key_12"],
+        "collective-016.rsi.ei.tum.de":["A_026_cylinder_30", "A_026_cylinder_60", "A_026_cylinder_10","A_026_cylinder_20"],  #,,,],"A_026_cylinder_60"
+        "collective-042.rsi.ei.tum.de":["mercedes_star", "A_008_square-1","B_015","C_key_12"],  #,"A_013_hexagram" is broken
         # # Checkt 041 for correct teaching:
         "collective-041.rsi.ei.tum.de":["A_009_hexagon-3","A_021_arrow","A_key_24","C_022"],  # check 41_left
         "collective-021.rsi.ei.tum.de":["B_RS-232", "A_010_square-2","C_018","C_019"],  #A_020_pentagram is broken
         "collective-022.rsi.ei.tum.de":["C_009", "B_007_audioJack","C_010","C_013"],
         "collective-023.rsi.ei.tum.de":["C_014", "B_008_USB-2","A_019_oneline","C_key_08"],
         "collective-024.rsi.ei.tum.de":["B_014_CN", "C_015", "C_017"],
-        #"collective-025.rsi.ei.tum.de":["A_025_heart", "A_014_doji-1","A_023_stairs"],
+        "collective-025.rsi.ei.tum.de":["A_025_heart", "A_014_doji-1","A_023_stairs"],
         "collective-026.rsi.ei.tum.de":["A_016_cross-1","B_018","A_022_diamond"],    #["026_left","B-014","A_022_diamond","B-018"],
-       # "collective-047.rsi.ei.tum.de":["B_010_plugF-2","C_016","C_key_23","A_031_audi"]
+        "collective-047.rsi.ei.tum.de":["B_010_plugF-2","C_016","C_key_23","A_031_audi"]
         # "collective-040.rsi.ei.tum.de":[], # teach 40
         #"collective-029.rsi.ei.tum.de":["029_left","A_016_sector","A_018_cross-2", "A_016_cross-1"]
-        }
+    }
     tasks = {}
     for host, insertables in tasks_orig.items():
-        tasks[host] = insertables[0]
-
-    robot_count = 0
+        tasks[host] = insertables[0] + "_table" 
+   # tasks["172.24.69.1"] = ["key","hexagon_27","A_015"]
     threads = []
-    dualarm_skills = []
-    control = "joint"  # control of the hold skill
-    sc = OrigPSPLearner(130,10,0,True,False, 0,False).get_configuration()
-    tags = ["nullspace", "table_insertion", "IROS","modify_length", "success_check","origPSPenhanced", "global_knowledge"]
+    sc = SVMLearner(1500,10,0,True,False, 0,False).get_configuration()
+    tags = ["nullspace", "table_insertion","modify_length", "success_check","origPSPenhanced", "global_knowledge", "stanford"]
     tags = ["demorun"]
-    for host,insertable in tasks.items():
+    knowledge = Knowledge()
+    knowledge.kb_location = "collective-001.rsi.ei.tum.de"
+    knowledge.mode = "global"  # None:isolated parallel (no knowledge from theirself)  # "local": has transfer inside agent
+    knowledge.scope = [] # TODO: may here add the tag of previous running
+    knowledge.scope.extend(tags)
+    # knowledge.scope.append("n"+str(n_current_iter+1)) # searching for knowledge on the database (only works for the slow pipeline);  e.g. [] search all, 
+    knowledge.type = "all"  # all: 
         
-        insertable = insertable+"_table"
+    #print("deleting knowledge on 172.24.69.1")
+
+    #threads.append(Thread(target=learn_multiple_tasks, 
+    #                      args=("172.24.69.1", ["key", "hexagon_27", "A_015"], sc, knowledge.to_dict(), tags, 0, {"key":0.6,"hexagon_27":0.6,"A_015":0.6})))
+    #threads[-1].start()
+
+    for host,insertable in tasks.items():
+        if not get_states([host[11:14]]):
+            continue
+        
+        #if insertable not in ("key","hexagon_27","A_015"):
+        #    insertable = insertable+"_table"
         if not check_object(host,insertable):
             print("check ", host, insertable)
             continue
         
-        print(host, insertable)
-        knowledge = Knowledge("global")
-        knowledge.kb_location = "collective-001.rsi.ei.tum.de"
-        knowledge.mode = "global"  # None:isolated parallel (no knowledge from theirself)  # "local": has transfer inside agent
-        knowledge.scope = [] # TODO: may here add the tag of previous running
-        knowledge.scope.extend(tags)
-       # knowledge.scope.append("n"+str(n_current_iter+1)) # searching for knowledge on the database (only works for the slow pipeline);  e.g. [] search all, 
-        knowledge.type = "all"  # all: 
-          
+        print(host, insertable) 
+
+        print("deleting knowledge on", host)
+        
         container = insertable+"_container" 
         approach = container+"_approach"
         pd = InsertionFactory([host], TimeMetric("insertion", {"time": 5}),
                                 {"Insertable": insertable, "Container": container,
                                 "Approach": approach}).get_problem_definition(insertable)
-        pd.n_variations = 3
-        pd.variate_only_success = True
+        #pd.n_variations = 1
+        #pd.variate_only_success = True
         if insertable == "B_010_plugF-2" or insertable == "B_013" or insertable == "B_014_CN" or insertable == "B_010_plugF-2" or insertable == "B_016":
                     print("increase limits for ",insertable)
                     pd.domain.limits["p2_f_push_z"] = (0,60)
-
-        move_context = {
-            "skill": {
-                "speed": 0.5,
-                "acc": 1,
-                "q_g": [0, 0, 0, 0, 0, 0, 0],
-                "objects": {
-                    "goal_pose": "hold_"+insertable}},
-            "control": {
-                "control_mode": 3},
-            "user": {
-                "env_X": [0.001, 0.001, 0.001, 0.001, 0.001, 0.001],
-                "F_ext_max": [100, 50]}}
-        hold_context = {
-            "skill": {
-                "t_max": 3600,
-            },
-            "control": {
-                "control_mode": 1,
-                "joint_imp":{
-                    "K_theta":[10000,10000,10000,10000,10000,10000,10000]
-                }
-                
-            },
-            "user": {"F_ext_max": [100, 50]}
-        }
-        if control == "cart":
-            hold_context["control"] = { "control_mode": 0,
-                                        "cart_imp": {
-                                            "K_x": [3000, 3000, 3000, 200, 200, 200]
-                                            }
-                                        }
-        dualarm_skills.append(("move", "MoveToPoseJoint", move_context))
-        dualarm_skills.append(("hold", "HoldPose", hold_context))
-        dualarm_cmd = {"agent":host,"port":13000,"skills":dualarm_skills,"sleep":1}
-        threads.append(Thread(target=learn_single_task, args=(host, pd, sc, tags, 0, False, knowledge.to_dict(), True, 8000, dualarm_cmd)))
+        threads.append(Thread(target=learn_single_task, args=(host, pd, sc, tags, 0, False, knowledge.to_dict(), True, 8000)))
         threads[-1].start()
         time.sleep(1)
  
 
 
 def check_object(host, obj):
-    result = call_method(host, 12000, "get_state", timeout=5)
+    try:
+        result = call_method(host, 12000, "get_state", timeout=2)
+    except OSError:
+        result = None
     if result is None:
         return False
     if type(result) == dict:

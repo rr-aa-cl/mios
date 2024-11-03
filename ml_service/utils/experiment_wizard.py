@@ -78,7 +78,7 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
         while True:
             try:
                 if s.is_busy():
-                    time.sleep(5)
+                    time.sleep(2)
                 else:
                     break
             except TimeoutError:
