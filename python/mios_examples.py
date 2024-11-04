@@ -236,6 +236,20 @@ def insert2(robot, insertable, approach, container, deltaX =[0,0,0,0,0,0], port=
     t.start(queue=False)
     return t.wait()
 
+def press_button(robot,tippable, approach):
+    path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
+    f = open(path_to_default_context + "press_button.json")
+    move_context = json.load(f)
+    move_context["skill"]["objects"]["Button"] = tippable
+    move_context["skill"]["objects"]["Approach"] = approach
+    move_context["skill"]["condition_level_success"] = "Model"
+    move_context["skill"]["condition_level_error"] = "Model"
+    t = Task(robot)
+    t.add_skill("press_button","TaxPressButton",move_context)
+    t.start(queue=False)
+    return t.wait()
+
+
 def teach_dualarm(module:str, object_name:str):
     insertable = object_name
     robot = get_ips([module])[0]
@@ -303,4 +317,55 @@ def handguiding(robot):
     input("stop now?")
     result = t.stop()
     print("Result: " + str(result))
+
+def update_object(robot, name, content={}):
+    obj = call_method(robot,12000,"download_object_context",{"object":name})
+    obj = obj["result"]["context"]
+    for key, o in content.items():
+        if key in obj["result"]["context"]:
+            obj["result"]["context"] = content[key]
+    obj["object"] = obj["name"]
+    call_method(robot,12000,"set_object",o)
+
+def taskboard(robot):
+    input("teach pose above box")
+    call_method(robot,12000,"teach_object",{"object":"taskboard_default"})
+    input("teach pose button red")
+    call_method(robot,12000,"teach_object",{"object":"button_red"})
+    input("teach pose button blue")
+    call_method(robot,12000,"teach_object",{"object":"button_blue"})
+    input("teach pose door handle closed")
+    call_method(robot,12000,"teach_object",{"object":"handle_closed"})
+    input("teach pose door handle open")
+    call_method(robot,12000,"teach_object",{"object":"handle_open"})
+    input("teach pose probe pin default")
+    call_method(robot,12000,"teach_object",{"object":"probe_pin_default"})
+    input("teach pose probing")
+    call_method(robot,12000,"teach_object",{"object":"probe_pin_test"})
+    input("teach pose probe plug 1")
+    call_method(robot,12000,"teach_object",{"object":"probe_plug_1"})
+    input("teach pose probe plug 2")
+    call_method(robot,12000,"teach_object",{"object":"probe_plug_2"})
+    input("teach pose slider start")
+    call_method(robot,12000,"teach_object",{"object":"slider_start"})
+    input("teach pose slider end")
+    call_method(robot,12000,"teach_object",{"object":"slider_end"})
+    input("teach pose slider triangle")
+    call_method(robot,12000,"teach_object",{"object":"slider_triangle"})
+
+    move_joint(robot,"taskboard_default")
+
+    call_method(robot,12000,"grasp",{"width":0,"force":1,"speed":1,"epsilon_inner":1,"epsilon_outer":1})
+    move_joint(robot, "button_red")
+    press_button(robot, "button_red","taskboard_default")
+    call_method(robot,12000,"release_object")
+
+
+    move_joint(robot, "slider_start")
+    call_method(robot,12000, "grasp",{"width":0,"force":1,"speed":1,"epsilon_inner":1,"epsilon_outer":1})
+    move(robot,"slider_end")
+    move(robot,"slider_triangle")
+    call_method(robot,12000,"release_object")
+
+
    

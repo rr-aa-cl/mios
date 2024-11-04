@@ -141,8 +141,12 @@ def move_joint(robot, location,port=12000, wait=True):
 
 def check_location(robot, pose_name, port=12000):
     client = MongoDBClient(robot)
-    pose_object = client.read("mios","environment",{"name":pose_name})[0]
-    if not pose_object:
+    try:
+        pose = call_method(robot, 12000, "download_object_context",{"object":pose_name})
+        pose_object = pose["result"]["context"]
+    except KeyError:
+        return False
+    except TypeError:
         return False
     cart_coordinates_g = pose_object["O_T_OB"][12:15]
     cart_coordinates_current = call_method(robot,port,"get_state")["result"]["O_T_EE"][12:15]
@@ -243,7 +247,11 @@ def grasp_insertable(robot:str, insertable = "generic_insertable", container = "
     while True:
         alternation=alternation*(-1)
         #print("current object grasped: ", call_method(robot,12000,"get_state")["result"]['grasped_object'] )
-        if call_method(robot,port,"get_state")["result"]['grasped_object'] == 'NullObject':
+        grasped_object = call_method(robot,port,"get_state")["result"]['grasped_object']
+        if grasped_object == insertable:
+            print("object is already grasped")
+            return True
+        if grasped_object == 'NullObject':
             call_method(robot, port, "release_object")
         else:
             print("I am already grasping something")
@@ -277,8 +285,9 @@ def grasp_insertable(robot:str, insertable = "generic_insertable", container = "
             count = 0
             while success_moving == False:
                 #call_method(robot, 12000, "move_gripper",{"width":0.07,"speed":1,"force":100})
-                t1.start()
-                success_moving = t1.wait()["result"]["task_result"]["success"]
+                #t1.start()
+                success_moving = move_joint(robot,insertable, wait=True)["result"]["task_result"]["success"]
+                #success_moving = t1.wait()["result"]["task_result"]["success"]
                 if not success_moving:
                     print(robot, ": moving success = ", success_moving)
                 count += 1

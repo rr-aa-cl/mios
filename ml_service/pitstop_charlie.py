@@ -58,27 +58,29 @@ tasks = {
         "collective-004.rsi.ei.tum.de":["D_020", "D_019", "A_002_hexagon-1"],
         "collective-005.rsi.ei.tum.de":["D_027", "D_026", "B_001_USB-1", "D_006"],
         "collective-006.rsi.ei.tum.de":["D_021", "A_32_pentagon-1","D_002", "D_001" ],
-        #"collective-007.rsi.ei.tum.de":["D_022", "A_004_cylinder-1","D_011"],
-        #"collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
-        "collective-044.rsi.ei.tum.de":["D_024", "B_003_plugF-1","D_009","D_014","D_025"],#PC 10 is broken and changed to 36 now
+        "collective-007.rsi.ei.tum.de":["D_022", "A_004_cylinder-1","D_011"],
+        "collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
+        #"collective-044.rsi.ei.tum.de":["D_024", "B_003_plugF-1","D_009","D_014","D_025"],#PC 10 is broken and changed to 36 now
         
         #"collective-011.rsi.ei.tum.de":["B_004_audioJack-35", "D_010", "D_015","D_023"],
-        "collective-012.rsi.ei.tum.de":["C_007", "B_005_IEC-C13", "C_006"], #"C_key_05" is lost
+        "collective-033.rsi.ei.tum.de":["D_023"],  # replacement for 011
+        #"collective-012.rsi.ei.tum.de":["C_007", "B_005_IEC-C13", "C_006"], #"C_key_05" is lost
+        "collective-035.rsi.ei.tum.de":["C_007"],  # replacement for 012
         "collective-043.rsi.ei.tum.de":["B_013", "A_005_cylinder-2","A_015_trapezoid","B_017_IT2DE"],
         "collective-013.rsi.ei.tum.de":["C_011", "A_030_shamrock","A_012_ellipsoid-2"],
         "collective-014.rsi.ei.tum.de":["B_016", "B_006_HDMI-1","A_024_moon","C_020"], 
         "collective-015.rsi.ei.tum.de":["C_025", "B_012_DE2DE","A_011"],
         "collective-016.rsi.ei.tum.de":["A_026_cylinder_30", "A_026_cylinder_60", "A_026_cylinder_10","A_026_cylinder_20"],  #,,,],"A_026_cylinder_60"
-        "collective-042.rsi.ei.tum.de":["A_013_hexagram", "A_008_square-1","B_015","C_key_12"],
+        "collective-042.rsi.ei.tum.de":["mercedes_star", "A_008_square-1","B_015","C_key_12"],  #,"A_013_hexagram" is broken
         # # Checkt 041 for correct teaching:
         "collective-041.rsi.ei.tum.de":["A_009_hexagon-3","A_021_arrow","A_key_24","C_022"],  # check 41_left
         "collective-021.rsi.ei.tum.de":["B_RS-232", "A_010_square-2","C_018","C_019"],  #A_020_pentagram is broken
         "collective-022.rsi.ei.tum.de":["C_009", "B_007_audioJack","C_010","C_013"],
         "collective-023.rsi.ei.tum.de":["C_014", "B_008_USB-2","A_019_oneline","C_key_08"],
         "collective-024.rsi.ei.tum.de":["B_014_CN", "C_015", "C_017"],
-       # "collective-025.rsi.ei.tum.de":["A_025_heart", "A_014_doji-1","A_023_stairs"],
+        "collective-025.rsi.ei.tum.de":["A_025_heart", "A_014_doji-1","A_023_stairs"],
         "collective-026.rsi.ei.tum.de":["A_016_cross-1","B_018","A_022_diamond"],    #["026_left","B-014","A_022_diamond","B-018"],
-        #"collective-047.rsi.ei.tum.de":["B_010_plugF-2","C_016","C_key_23","A_031_audi"]
+        "collective-047.rsi.ei.tum.de":["B_010_plugF-2","C_016","C_key_23","A_031_audi"]
         # "collective-040.rsi.ei.tum.de":[], # teach 40
         #"collective-029.rsi.ei.tum.de":["029_left","A_016_sector","A_018_cross-2", "A_016_cross-1"]
         }
@@ -105,19 +107,25 @@ def set_all_object(tasks=tasks, tablemount = False):
         if tablemount:
             next_obj = next_obj + "_table"
         print("set ", next_obj, " for ", robot)
-        call_method(ip,12000,"grasp",{"speed":0.2,"force":100,"width":0,"epsilon_inner":1,"epsilon_outer":1})
-        call_method(ip,13000,"grasp",{"speed":0.2,"force":100,"width":0,"epsilon_inner":1,"epsilon_outer":1})
-        set_result = call_method(ip,12000,"set_grasped_object",{"object":next_obj})
-        # print(set_)
-        call_method(ip,13000,"set_grasped_object",{"object":"hold_"+next_obj})
+        try:
+            call_method(ip,12000,"grasp",{"speed":0.2,"force":100,"width":0,"epsilon_inner":1,"epsilon_outer":1})
+            call_method(ip,13000,"grasp",{"speed":0.2,"force":100,"width":0,"epsilon_inner":1,"epsilon_outer":1})
+            set_result = call_method(ip,12000,"set_grasped_object",{"object":next_obj})
+            # print(set_)
+            call_method(ip,13000,"set_grasped_object",{"object":"hold_"+next_obj})
+        except OSError:
+            pass
     
     # print all current object for double-check
     for robot in tasks:
         ip = get_ips([robot.split(".")[0][-3:]])[0]
-        result = call_method(ip, 12000, "get_state")
-        if type(result) == dict:
-            print(robot, " is grasping ", result["result"]["grasped_object"])
-        else:
+        try:
+            result = call_method(ip, 12000, "get_state")
+            if type(result) == dict:
+                print(robot, " is grasping ", result["result"]["grasped_object"])
+            else:
+                print("cannot reach ", robot)
+        except OSError:
             print("cannot reach ", robot)
 class have_a_rest:
     def __init__(self):
@@ -344,7 +352,11 @@ def collective25(n_current_iter:int, tags_addon:list = ["demorun","ps_charlie", 
     return "finished :)"
 
 def check_object(host, obj):
-    result = call_method(host, 12000, "get_state")
+    result = None
+    try:
+        result = call_method(host, 12000, "get_state")
+    except:
+        pass
     if type(result) == dict:
         if result["result"]["grasped_object"] == obj:
             if host in waiting_robots:
@@ -357,6 +369,7 @@ def check_object(host, obj):
             move_joint(host, "raise_hand")
             print("wainting for ",host, " to grasp ", obj)
             return False
+    return False
         
 def set_next_object(module, obj:int|str = None):
     addr = "collective-"+module+".rsi.ei.tum.de"
