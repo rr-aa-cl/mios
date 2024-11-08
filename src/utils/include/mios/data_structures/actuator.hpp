@@ -9,8 +9,9 @@
 namespace mios {
 
 enum CommandPattern{CommandPatternCartesianPose,CommandPatternJointPose,CommandPatternNullspacePose,CommandPatternDesiredWrench,CommandPatternDesiredTorque,
-                   CommandPatternCartesianCompliance,CommandPatternJointCompliance,CommandPatternCartesianTwist,CommandPatternCartesianFFWrench,
-                   CommandPatternJointVelocities,CommandPatternJointFFTorque,CommandPatternO_R_T,CommandPatternGripper,CommandPatternIdle};
+                   CommandPatternCartesianCompliance,CommandPatternCartesianJointCompliance,CommandPatternJointCompliance,CommandPatternCartesianTwist,CommandPatternCartesianFFWrench,
+                   CommandPatternJointVelocities,CommandPatternJointFFTorque,CommandPatternO_R_T,CommandPatternGripper,CommandPatternCartesianJointPose,
+                   CommandPatternCartesianJointTwist,CommandPatternIdle};
 
 enum GripperRequest{None,Grasp,Move};
 

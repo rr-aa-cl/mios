@@ -3,6 +3,7 @@ set(MODULE_NAME controller_pipeline)
 set(${MODULE_NAME}_SRC
     src/cart_torque_pipeline.cpp
     src/cart_velocity_pipeline.cpp
+    src/cart_joint_torque_pipeline.cpp
     src/joint_torque_pipeline.cpp
     src/joint_velocity_pipeline.cpp
     src/null_pipeline.cpp
@@ -11,6 +12,7 @@ set(${MODULE_NAME}_SRC
 set(${MODULE_NAME}_HEADER_FILES
     include/${PROJECT_NAME}/${MODULE_NAME}/controller_pipeline.hpp
     include/${PROJECT_NAME}/${MODULE_NAME}/cart_torque_pipeline.hpp
+    include/${PROJECT_NAME}/${MODULE_NAME}/cart_joint_torque_pipeline.hpp
     include/${PROJECT_NAME}/${MODULE_NAME}/cart_velocity_pipeline.hpp
     include/${PROJECT_NAME}/${MODULE_NAME}/joint_torque_pipeline.hpp
     include/${PROJECT_NAME}/${MODULE_NAME}/joint_velocity_pipeline.hpp
