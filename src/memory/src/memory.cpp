@@ -111,8 +111,8 @@ std::optional<nlohmann::json> Memory::get_live_parameter(const std::string &para
     return m_st_memory.get_live_parameter(parameter);
 }
 
-bool Memory::update_object(const std::string &name, bool teach_width,const Percept &p){
-    return m_st_memory.update_object(name,teach_width,p);
+bool Memory::update_object(const std::string &name, bool teach_width,double teach_force, const Percept &p){
+    return m_st_memory.update_object(name,teach_width,teach_force,p);
 }
 
 bool Memory::update_object(const std::string &name, const nlohmann::json &description){

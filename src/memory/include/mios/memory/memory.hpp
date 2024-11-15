@@ -39,7 +39,7 @@ public:
 
     void set_live_parameter(const std::string& key, const nlohmann::json& value);
 
-    bool update_object(const std::string& name, bool teach_width, const Percept& p);
+    bool update_object(const std::string& name, bool teach_width, double teach_force, const Percept& p);
     bool update_object(const std::string& name, const nlohmann::json& description);
     bool update_partial_object(const std::string& name, const nlohmann::json& description);
 

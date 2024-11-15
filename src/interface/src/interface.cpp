@@ -254,15 +254,17 @@ nlohmann::json CommandInterface::teach_object(const nlohmann::json &request){
     nlohmann::json response;
     std::string object_name;
     bool teach_width=false;
+    double teach_force=100;
     request["object"].get_to(object_name);
-    request["teach_width"].get_to(teach_width);
+    request["width"].get_to(teach_width);
+    request["force"].get_to(teach_force);
     bool result=true;
     std::string error_message="";
     if(!m_core->refresh_percept({})){
         error_message="Could not teach the object because no current percept is available.";
         result=false;
     }
-    if(!m_memory->update_object(object_name,teach_width,*m_core->get_percept())){
+    if(!m_memory->update_object(object_name,teach_width,teach_force,*m_core->get_percept())){
         error_message="Could not teach object because memory returned an error.";
         result=false;
     }

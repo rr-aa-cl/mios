@@ -258,7 +258,7 @@ void STMemory::merge_live_context(){
     }
 }
 
-bool STMemory::update_object(const std::string &name, bool teach_width, const Percept& p){
+bool STMemory::update_object(const std::string &name, bool teach_width, double teach_force, const Percept& p){
     spdlog::trace("STMemory::update_object(string,bool,Percept)");
     if(name=="NullObject" || name=="NoneObject"){
         spdlog::error("Cannot overwrite NullObject or NoneObject.");
@@ -272,6 +272,7 @@ bool STMemory::update_object(const std::string &name, bool teach_width, const Pe
     if(teach_width){
         m_environment.at(name).grasp_width=p.proprioception.finger_width;
     }
+    m_environment.at(name).grasp_force=teach_force;
     if(!m_lt_memory->upload_environment_element(m_environment.at(name))){
         return false;
     }
