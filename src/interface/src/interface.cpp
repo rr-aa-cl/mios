@@ -256,8 +256,12 @@ nlohmann::json CommandInterface::teach_object(const nlohmann::json &request){
     bool teach_width=false;
     double teach_force=100;
     request["object"].get_to(object_name);
-    request["width"].get_to(teach_width);
-    request["force"].get_to(teach_force);
+    if(request.contains("width")){
+        request["width"].get_to(teach_width);
+    }
+    if(request.contains("force")){
+        request["force"].get_to(teach_force);
+    }
     bool result=true;
     std::string error_message="";
     if(!m_core->refresh_percept({})){

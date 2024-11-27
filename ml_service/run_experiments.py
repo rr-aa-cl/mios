@@ -2158,7 +2158,6 @@ def convergence_test():
 
 def start_local_learning():
     sc = SVMLearner(130,10,0,False,False, 0,False).get_configuration()
-    tags = ["nullspace", "table_insertion","modify_length", "success_check","origPSPenhanced", "global_knowledge", "stanford"]
     tags = ["demorun"]
     knowledge = Knowledge()
     knowledge.kb_location = "collective-001.rsi.ei.tum.de"
@@ -2170,8 +2169,6 @@ def start_local_learning():
     for i in range(50):
         print(i,"deleting knowledge on 172.24.69.1")
 
-        learn_multiple_tasks("172.24.69.1", ["key", "hexagon_27", "A_015"], sc, knowledge.to_dict(), tags, i, {"key":0.6,"hexagon_27":0.6,"A_015":0.6})
-        print(i, "th iteration finished.")
 def start_learning():
     '''
     007 is teached to above insted of approach
