@@ -292,7 +292,7 @@ bool PandaBody::is_robot(const std::string &ip){
         pybind11::object in_control = desk_client.attr("in_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
         spdlog::debug("PandaBody::is_robot("+ip+")" );
         if(!in_control.cast<bool>()){
-            spdlog::debug("PandaBody::is_robot("+ip+"): not in control of DESK, aquire control... , in_control="+std::to_string(in_control.cast<bool>()));
+            spdlog::debug("PandaBody::is_robot("+ip+"): not in control of DESK, aquire control... , in_control=");
             pybind11::object take_control_result = desk_client.attr("take_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
             bool desk_in_control = take_control_result.cast<bool>();
             if(!desk_in_control){
