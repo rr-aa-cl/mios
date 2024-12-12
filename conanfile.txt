@@ -6,7 +6,7 @@ simple-websocket-server/2.0.2
 cpp-httplib/0.10.1
 catch2/2.13.8
 spdlog/1.9.2
-pybind11/2.10.4
+pybind11/2.13.5
 cxxopts/3.0.0
 mongo-cxx-driver/3.8.1
 openssl/1.1.1j
