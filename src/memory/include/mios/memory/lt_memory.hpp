@@ -38,7 +38,7 @@ public:
 
     bool load_environment(std::unordered_map<std::string, Object> &environment);
     bool upload_environment_element(const Object &element);
-
+    bool upload_log_element(const nlohmann::json& log_entry, const nlohmann::json& meta_information);
     bool update_database();
 
     unsigned m_database_port;

@@ -383,6 +383,10 @@ bool LTMemory::upload_environment_element(const Object& element){
     spdlog::trace("LTMemory::upload_environment_element");
     return m_mongodb_client.write_document(element.name,"environment",element.to_json(),true);
 }
+bool LTMemory::upload_log_element(const nlohmann::json& log_entry, const nlohmann::json& meta_information){
+    spdlog::trace("LTMemory::upload_log_element");
+    return m_mongodb_client.write_large_document("datalogs",log_entry, meta_information);
+}
 
 bool LTMemory::update_database(){
     spdlog::trace("LTMemory::update_database");

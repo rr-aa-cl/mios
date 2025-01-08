@@ -156,6 +156,49 @@ bool MongodbClient::write_documents(const std::string &collection, const std::se
     return true;
 }
 
+bool MongodbClient::write_large_document(const std::string& collection, const nlohmann::json &descr, const nlohmann::json &meta_information){
+    spdlog::trace("MongodbClient::write_large_document");
+    std::scoped_lock<std::mutex> lock(m_mutex_db_access);
+    try{
+        // ToDo check if size is >16mb  -> divide into several documents
+        /*
+        std::vector<std::uint8_t> v = nlohmann::json::to_bson(descr);
+        if(v.size() > 16*1000*1000){
+            // file size larger than 16mb not allowed for mongoDB
+            spdlog::error("MongodbClient::write_large_document(): File Size is too large ("+std::to_string(v.size()/1000000)
+            +" mb) Breaking up the large file is not implemented yet.");
+            return false;
+        }*/
+        nlohmann::json db_entry;
+        db_entry["content"] = descr;
+        db_entry["meta"] = meta_information;
+        bsoncxx::document::view_or_value doc=bsoncxx::from_json(db_entry.dump());
+        m_mongodb[collection].insert_one(doc);
+
+    }catch(const mongocxx::query_exception& e){
+        spdlog::error("Writing of document with name of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const mongocxx::operation_exception& e){
+        spdlog::error("Writing of document with name of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const mongocxx::logic_error& e){
+        spdlog::error("Writing of document with name of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const bsoncxx::exception& e){
+        spdlog::error("Writing of document with name of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }catch(const nlohmann::detail::type_error& e){
+        spdlog::error("Writing of document with name of type "+collection+ " has failed.");
+        spdlog::debug(e.what());
+        return false;
+    }
+    return true;
+}
+
 bool MongodbClient::write_document(const std::string& name, const std::string& collection, const nlohmann::json &descr, bool overwrite){
     spdlog::trace("MongodbClient::write_document");
     std::scoped_lock<std::mutex> lock(m_mutex_db_access);

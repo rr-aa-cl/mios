@@ -824,6 +824,7 @@ SkillParameters::SkillParameters(){
     log_data=false;
     data_length=0;
     log_name="";
+    log_meta=nlohmann::json();
 }
 
 bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
@@ -857,6 +858,10 @@ bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
     }
     if(!mirmi_utils::read_json_param(p,"log_name",log_name)){
         spdlog::error("Could not read log_name.");
+        return false;
+    }
+    if(!mirmi_utils::read_json_param(p,"meta",log_meta)){
+        spdlog::error("Could not read log_meta.");
         return false;
     }
     if(p.find("objects")!=p.end()){
@@ -948,7 +953,14 @@ void SkillParameters::read_skill_objects_modifier(const nlohmann::json &p){
 }
 
 nlohmann::json SkillParameters::get_default_values(){
+    nlohmann::json log_meta;  //just some information about the skill
+    log_meta["description"]="";
+    log_meta["tags"]=nlohmann::json::array({"",""});
+    log_meta["skill_class"]="";  // will be set from mios according to skill object if available 
+    log_meta["skill_instance"]="";  // will be set from mios according to skill object if available 
+    
     nlohmann::json default_values;
+    default_values["meta"]=log_meta;
     default_values["time_max"]=0;;
     default_values["parallels_frequency"]=1000;
     default_values["ignore_settling"]=true;
@@ -968,6 +980,7 @@ nlohmann::json SkillParameters::get_default_values(){
 
 nlohmann::json SkillParameters::to_json() const{
     nlohmann::json json_object;
+    json_object["meta"]=log_meta;
     json_object["time_max"]=time_max;
     json_object["parallels_frequency"]=parallels_frequency;
     json_object["ignore_settling"]=ignore_settling;

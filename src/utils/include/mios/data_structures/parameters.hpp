@@ -262,6 +262,7 @@ public:
     bool log_data;
     double data_length;
     std::string log_name;
+    nlohmann::json log_meta; 
 
     SkillConditionLevel condition_level_pre;
     SkillConditionLevel condition_level_success;

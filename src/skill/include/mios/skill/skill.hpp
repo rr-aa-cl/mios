@@ -35,6 +35,7 @@ enum SkillLifeCycle{slInit,slTransition,slExecution,slSettle,slTerminate};
  * The skill base class provides handling of manipulation primitives, error handling and more. Every skill inherits from this class.
  */
 class Skill{
+    friend class SkillEngine;
 public:
     /**
      * The skill base constructor. It is called by the constructor of any derived skill class.
@@ -173,7 +174,7 @@ protected:
      */
     virtual void auxiliaries(const Percept& p);
 
-    void log_data(const Percept& p);
+    //void log_data(const Percept& p);
 
     /**
      * Specify the initial manipulation primitive.
