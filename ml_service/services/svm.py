@@ -288,7 +288,8 @@ class SVMService(BaseService):
                     if random.random() < self.request_probability:
                         print("requesting 1 trial with ", self.similarity_estimate, " \nfrom ",self.task_identity_name)
                         try:
-                            new_trial = self.kb.request_trials(str(self.task_identity_name), 1, self.similarity_estimate)[0]  # take first Tuple of the list
+                            #new_trial = self.kb.request_trials(str(self.task_identity_name), 1, self.similarity_estimate)[0]  # take first Tuple of the list
+                            new_trial = self.knowledge_manager.receive_trial_fast_pipe(self.problem_definition.skill_instance,self.problem_definition.tags, self.problem_definition.skill_class)
                             external = new_trial[2]
                             uuid = self.push_trial(new_trial[0], external=external)
                         except IndexError:

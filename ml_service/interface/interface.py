@@ -1,4 +1,3 @@
-from lib2to3.pytree import Node
 import logging
 from threading import Thread
 from threading import Lock

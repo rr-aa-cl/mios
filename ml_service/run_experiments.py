@@ -56,8 +56,15 @@ def learn_insertion(robot: str, approach: str, insertable: str, container: str, 
     pd = InsertionFactory([robot], TimeMetric("insertion", {"time": 5}),
                           {"Insertable": insertable, "Container": container,
                            "Approach": approach}).get_problem_definition(insertable)
-    sc = SVMLearner(3000,10,0,True,False, -1,True).get_configuration()
-    learn_task(robot, pd, sc, tags, knowledge=knowledge, n_iterations=n_iterations,service_port=service_port)
+    #sc = SVMLearner(3000,10,0,True,False, -1,True).get_configuration()
+    sc = OrigPSPLearner(3000,10,0,True,False, -1, True).get_configuration()
+    pd.n_variations = 5
+    pd.variate_only_success = True
+    try:
+        learn_task(robot, pd, sc, tags, knowledge=knowledge, n_iterations=n_iterations,service_port=service_port,wait=wait)
+    except KeyboardInterrupt:
+        print("stop learning ",robot)
+        stop_services([robot])
 
 
 def learn_extraction(robot: str, extract_to: str, extractable: str, container: str, tags: list, knowledge=None,
@@ -2157,6 +2164,10 @@ def convergence_test():
              
 
 def start_local_learning():
+    #used at stanford
+    robot = "172.24.101.217"
+    grasp_insertable(robot, "key","key_container","key_container_approach_offset")
+    learn_insertion(robot,"key_container_approach","key","key_container",["without_knowledge"],n_iterations=1)
     sc = SVMLearner(130,10,0,False,False, 0,False).get_configuration()
     tags = ["demorun"]
     knowledge = Knowledge()
@@ -2166,8 +2177,25 @@ def start_local_learning():
     knowledge.scope.extend(tags)
     # knowledge.scope.append("n"+str(n_current_iter+1)) # searching for knowledge on the database (only works for the slow pipeline);  e.g. [] search all, 
     knowledge.type = "all"  # all: 
-    for i in range(50):
-        print(i,"deleting knowledge on 172.24.69.1")
+    learn_multiple_tasks(robot, ["key"], sc, knowledge.to_dict(), tags, 1, {"key":0.6,})
+    wiggle_context = {
+        "skill": {
+            "dX_fourier_a_a": [0, 0.05, 0.05, 0, 0, 0],
+            "dX_fourier_a_phi": [0, 1.5, 0.0, 0, 0, 0],
+            "dX_fourier_a_f": [0, 0.5, 1, 0, 0, 0],
+            "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
+            "use_EE": True,
+            "time_max": 5
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    t = Task(robot)
+    t.add_skill("success", "GenericWiggleMotion", wiggle_context)
+    t.start(False)
+    return t.wait()
 
 def start_learning():
     '''
@@ -2182,7 +2210,7 @@ def start_learning():
         #"collective-006.rsi.ei.tum.de":["D_021", "A_32_pentagon-1","D_002", "D_001" ],
         "collective-007.rsi.ei.tum.de":["D_022", "A_004_cylinder-1","D_011"],
         "collective-008.rsi.ei.tum.de":["008_left","D_008", "D_004","D_013"],
-        #"collective-044.rsi.ei.tum.de":["D_024", "B_003_plugF-1","D_009","D_014","D_025"],#PC 10 is broken and changed to 36 now
+        "collective-044.rsi.ei.tum.de":["D_024", "B_003_plugF-1","D_009","D_014","D_025"],#PC 10 is broken and changed to 36 now
         
         #"collective-011.rsi.ei.tum.de":["B_004_audioJack-35", "D_010", "D_015","D_023"],
         "collective-033.rsi.ei.tum.de":["D_023"],  # replacement for 011
