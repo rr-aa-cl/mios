@@ -1,4 +1,3 @@
-from ast import mod
 from concurrent.futures import thread
 from desk.mongodb_client import MongoDBClient
 from xmlrpc.client import ServerProxy
@@ -6,6 +5,7 @@ import os
 from threading import Thread
 import copy
 from utils.ws_client import *
+import numpy as np
 import json
 import socket
 import struct
@@ -346,6 +346,95 @@ def kitchen_aid():
     move_joint(robot,"kitchen_top",port=13000)
     move_joint(robot,"kitchen_default",port=13000)
     
+def object_test(robot, object):
+    call_method(robot, 12000, "set_grasped_object",{"object":object})
+    wiggle_contextx = {
+        "skill": {
+            "dX_fourier_a_a": [-0, -0, -0, 0.15, 0, 0],
+            "dX_fourier_a_phi": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_a_f": [0, -0, -0, 0.5, 0, 0],
+            "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
+            "use_EE": True,
+            "time_max": 5
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    wiggle_contexty = {
+        "skill": {
+            "dX_fourier_a_a": [-0, -0, -0, 0, 0.15, 0],
+            "dX_fourier_a_phi": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_a_f": [0, -0, -0, 0, 0.5, 0],
+            "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
+            "use_EE": True,
+            "time_max": 5
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    wiggle_contextz = {
+        "skill": {
+            "dX_fourier_a_a": [-0, -0, -0, 0, 0, 0.15],
+            "dX_fourier_a_phi": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_a_f": [0, -0, -0, 0, 0, 0.5],
+            "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
+            "use_EE": True,
+            "time_max": 5
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+
+    tr = Task(robot,12000)
+    tr.add_skill("wigglex", "GenericWiggleMotion", wiggle_contextx)
+    tr.add_skill("wiggley", "GenericWiggleMotion", wiggle_contexty)
+    tr.add_skill("wigglez", "GenericWiggleMotion", wiggle_contextz)
+    tr.start()
+    try: 
+        tr.wait()
+    except KeyboardInterrupt:
+        call_method(robot, 12000, "stop_task")
+
+def modify_object_transformations(module, object, z_mm, y_mm=0.0, x_mm=0.0, mass=0.0,y_ang=0):
+    ip = get_ips([module])[0]
+    client = MongoDBClient(ip)
+    o = client.read("miosL", "environment", {"name":object})[0]
+    o = call_method(ip,12000,"download_object_context",{"object":object})["result"]["context"]
+
+    o["OB_T_TCP"] = [   np.cos(y_ang),   0,   -np.sin(y_ang),  0,
+                        0,               1,   0,               0,
+                        np.sin(y_ang),   0,   np.cos(y_ang),   0,
+                        0,               0,   0,               1]
+    #o["OB_T_gp"] = o["OB_T_TCP"]
+    #o["OB_T_TCP"] = [   np.cos(y_ang),    np.sin(y_ang),    0,  0,
+    #                    -np.sin(y_ang),   np.cos(y_ang),    0,  0,
+    #                    0,                0,                1,  0,
+    #                    0,                0,                0,  1]
+    o["OB_T_TCP"] = [   1,   0,             0,              0,
+                        0,   np.cos(y_ang), -np.sin(y_ang), 0,
+                        0,   np.sin(y_ang), np.cos(y_ang),  0,
+                        0,   0,             0,              1]
+ 
+    o["OB_T_TCP"][14] = z_mm/1000
+    o["OB_T_gp"][14] = 0#-z_mm/1000
+
+    o["OB_T_TCP"][13] = y_mm/1000
+    o["OB_T_gp"][13] = 0#-y_mm/1000
+
+    o["OB_T_TCP"][12] = x_mm/1000
+    o["OB_T_gp"][12] = 0#-x_mm/1000
+
+    o["mass"] = mass
+    
+    o["object"] = o["name"]
+    call_method(ip,12000, "set_object", o)
+    
 
 
 def raise_banner():
@@ -497,7 +586,7 @@ def init_position(robot):
     return start_task(robot, "MoveToJointPose", parameters={"parameters": {"q_g": initial_joint_pose, "pose":"NoneObject"}})
 
 
-def move_joint(robot, location, port=12000, offset=[0,0,0,0,0,0,0], wait=True, speed = [], q_g=[]):
+def move_joint(robot, location, port=12000, offset=[0,0,0,0,0,0,0], wait=True, speed = [], q_g=[],F_ext=[50,50]):
     path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
     f = open(path_to_default_context + "move_joint.json")
     move_context = json.load(f)
@@ -512,7 +601,7 @@ def move_joint(robot, location, port=12000, offset=[0,0,0,0,0,0,0], wait=True, s
 
     move_context["skill"]["time_max"] = 10
     move_context["user"]["env_X"] = [0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001]
-    move_context["user"]["F_ext_max"] = [15,15]
+    move_context["user"]["F_ext_max"] = F_ext
     if speed:
         move_context["skill"]["speed"] = speed[0]
         move_context["skill"]["acc"] = speed[1]
@@ -659,17 +748,18 @@ def telepresence_udp_test(module = "013"):
     t_left.wait()
 
 
-def lltest(module = "013"):
-    robot_ip = copy.deepcopy(get_ips([module]))[0]
-    own_ip = "10.0.2.35"
+def lltest(robot_ip = "neuro-robot-pc.rsi.ei.tum.de"):
+    #robot_ip = copy.deepcopy(get_ips([module]))[0]
+    own_ip = "172.24.206.220"
+    own_ip = "10.0.2.19"
     move_joint(robot_ip, "test")
-    current_state = get_current_percept(robot_ip, "10.0.2.35", 12345,["tau"])["tau"]
+    current_state = get_current_percept(robot_ip, own_ip, 12345,["tau"])["tau"]
     llInterface_context = {
         "skill": {
             "ip_dst": own_ip,  # IP to send answers to
             "port_dst": 8888,  # port to send answers to
             "port_src": 8888,  # receiving port
-            "LLInterface_mode": "Torque", #CartPose  Torque  JointPose
+            "LLInterface_mode": "Twist",  #"Torque", #CartPose  Torque  JointPose
             "twist": {"static_frame": True}
         },
         "control": {
@@ -688,32 +778,35 @@ def lltest(module = "013"):
     t = Task(robot_ip)
     t.add_skill("test_llInterface", "LLInterface", llInterface_context)
     t.start()
-    current_q = get_current_percept(robot_ip, "10.0.2.35", 12345,["q"])["q"]
+    current_q = get_current_percept(robot_ip, own_ip, 12345,["q"])["q"]
     call_method(robot_ip,12000,"post_event",{"name":"handshake","content":{"q_init":current_q}})
-    result, addr = udp_receive_message("10.0.2.35", 8888)
+    current_q = get_current_percept(robot_ip, own_ip, 12345,["O_dX_EE"])["O_dX_EE"]
+    result, addr = udp_receive_message(own_ip, 8888)
     print("handshake: ", result)
     udp_send_message(addr[0], addr[1], {"result":True})
     increase_angle = True
     counter = 0
+    print(current_q)
     try:
         while True:
             if increase_angle:
-                current_state[-2] += 0.5
+                current_q[-1] += 0.05
             else:
-                current_state[-2] -= 0.5
-            if current_state[-2] > 10 and increase_angle:
+                current_q[-1] -= 0.05
+            if current_q[-1] > 0.5 and increase_angle:
                 increase_angle = False
-            if current_state[-2] < -10 and not increase_angle:
+            if current_q[-1] < -0.5 and not increase_angle:
                 increase_angle = True
             #current_state[0] = 0.05
-            udp_send_message_teleformat(robot_ip, 8888, current_state, counter=counter)
-            print(current_state)
-            time.sleep(0.01)
+            print(current_q)
+            udp_send_message_teleformat(robot_ip, 8888, current_q, counter=counter)
+            
+            time.sleep(0.5)
     except KeyboardInterrupt:
         print("stop sending...")
         call_method(robot_ip,12000,"stop_task")
-    except:
-        call_method(robot_ip,12000,"stop_task")
+    #except:
+    #    call_method(robot_ip,12000,"stop_task")
     t.wait()
 
 def subscrib_telemetry(robot_ip, receiving_ip, receiving_port, data:list):
@@ -729,13 +822,16 @@ def get_current_percept(robot_ip,receiving_ip,receiving_port, percepts:list):
     return result
 
 def udp_send_message_teleformat(ip,port,payload:list,counter=0):
+    #print("here")
     sock = socket.socket(socket.AF_INET, # Internet
                         socket.SOCK_DGRAM) # UDP
     format = "<6b"+str(len(payload))+"f4b"  # 127,127,127,127,package counter, payload size, payload (4 bytes/value), 126,126,126,126
     message = struct.pack(format, 127,127,127,127, counter, len(payload)*4,*payload, 126,126,126,126)
+    #print(message)
     sock.sendto(message, (ip, port))
 
 def udp_send_message(ip, port, message):
+    print("udp_send_message to ",ip, port, "\n",message)
     sock = socket.socket(socket.AF_INET, # Internet
                         socket.SOCK_DGRAM) # UDP
     sock.sendto(json.dumps(message).encode(), (ip, port))

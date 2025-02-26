@@ -3,6 +3,7 @@ from mongodb_client.mongodb_client import MongoDBClient
 from problem_definition.problem_definition import ProblemDefinition
 from collective_manager.learning_config import LearningConfig
 from python.examples import task
+from utils.helper_functions import *
 from run_experiments import *
 from threading import Thread
 import ipaddress
@@ -56,6 +57,7 @@ class CollectiveModule:
         self.connectivity = "no Information"  # possible: "no Information", "not connected", "not pingalbe", "connected"
         self.arm_raised = False
         self.lc = None  # learning configuration for current problem
+        self.lc_sequence = []  # list of learning configurations
         self.current_problem_uuid = None
         self.keep_monitoring = False
         self.monitoring_thread = None
@@ -325,12 +327,29 @@ class CollectiveModule:
                     continue
                 else:
                     self.current_problem_uuid = None
+                    self.place_insertable(self.object_left)
+            #set next problem:
+            if self.lc_sequence:
+                self.lc = self.lc_sequence.pop(0)
+                self.move_camera(self.lc.pd.default_context["skills"]["insertion"]["skill"]["objects"]["Insertable"])
+                self.grasp_insertable(self.lc.pd.default_context["skills"]["insertion"]["skill"]["objects"]["Insertable"])
+                self.move_to_approach_pose(self.lc.pd.default_context["skills"]["insertion"]["skill"]["objects"]["Insertable"])
+
             if self.lc:
                 if self.object_left != self.lc.pd.default_context["skills"]["insertion"]["skill"]["objects"]["Insertable"]:
                     self.raise_hand()
                 else:
                     self.move_to_approach_pose(self.lc.pd.default_context["skills"]["insertion"]["skill"]["objects"]["Insertable"])
             self.stop_monitoring()
+            
+    def move_camera(self, inseratble):
+        pass
+    
+    def place_insertable(self, insertable):
+        place_insertable(self.ip,self.object_left,self.object_left+"_container",self.object_left+"_container_approach",self.object_left+"_container_above",12000)
+    
+    def grasp_insertable(self, insertable):
+        grasp_insertable(self.ip,self.object_left,self.object_left+"_container",self.object_left+"_container_approach",self.object_left+"_container_above",12000)
 
     def _data_storing(self, mongo_id:str):
         while self.keep_monitoring:
@@ -416,6 +435,8 @@ class CollectiveModule:
     
     def finished(self, uuid):
         pass
+
+    
 class CollectiveExperiment:
     def __init__(self, name:str, modules:dict[str, CollectiveModule], problem_definitions:list[ProblemDefinition] = None, knowledge_configs:list[Knowledge] = None,
                   service_configs:list[ServiceConfiguration] = None, n_agents:int = False, keep_allocation:bool = False, global_db_ip:str = "10.157.175.119"):
