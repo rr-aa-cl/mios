@@ -203,6 +203,7 @@ class BaseService(metaclass=ABCMeta):
         else:
             logger.debug("base_service.initialize(): No Knowledge used as initial centroid!!!")
 
+        self.knowledge_manager.fast_pipe_ip = knowledge.kb_location
         self.engine = Engine(agents, mios_port=self.mios_port, mongo_port=self.mongo_port)
         self.database_results_id = self.engine.initialize(self.problem_definition, configuration.exploration_mode)
 
