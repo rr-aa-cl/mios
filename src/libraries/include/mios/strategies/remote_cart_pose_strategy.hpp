@@ -5,7 +5,7 @@
 #include <array>
 #include <memory>
 
-namespace msrm_utils{
+namespace mirmi_utils{
 class UDPStreamReceiver;
 }
 
@@ -21,13 +21,13 @@ public:
     void terminate(const Percept &p) override;
     bool finished() override;
 
-    bool connect(Portal* portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us, unsigned max_lost_packets, bool multicast=false);
+    bool connect(Portal* portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us, unsigned max_lost_packets, bool multicast, const std::optional<std::string> &host, const std::optional<std::string> &multicast_group);
 
 private:
     void read_stream(std::vector<double> &data);
 
     std::deque<std::array<double,16> > m_O_T_EE_d_in;
-    std::shared_ptr<msrm_utils::UDPStreamReceiver> m_receiver;
+    std::shared_ptr<mirmi_utils::UDPStreamReceiver> m_receiver;
     Portal* m_portal;
     std::string m_stream_name;
 

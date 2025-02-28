@@ -19,32 +19,32 @@ bool SkillParametersTaxMove::from_json(const nlohmann::json &parameters){
         spdlog::error("Parameters for primitive 0 are missing.");
         return false;
     }else if(parameters.find("p0")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
             spdlog::error("Missing parameter: p0.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
             spdlog::error("Missing parameter: p0.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
             spdlog::error("Missing parameter: p0.ddX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,4,4>(parameters["p0"],"T_T_EE_g_offset",p0.T_T_EE_g_offset)){
+        if(!mirmi_utils::read_json_param<double,4,4>(parameters["p0"],"T_T_EE_g_offset",p0.T_T_EE_g_offset)){
             p0.T_T_EE_g_offset.setIdentity();
         }
-        if(!msrm_utils::read_json_param<double,4,4>(parameters["p0"],"T_T_EE_g",p0.T_T_EE_g) && !object_set){
+        if(!mirmi_utils::read_json_param<double,4,4>(parameters["p0"],"T_T_EE_g",p0.T_T_EE_g) && !object_set){
             spdlog::error("Missing parameter: p0.T_T_EE_g or GoalPose object.");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p0"],"finger_width",p0.finger_width)){
+        if(!mirmi_utils::read_json_param(parameters["p0"],"finger_width",p0.finger_width)){
             p0.finger_width=-1;
         }
-        if(!msrm_utils::read_json_param(parameters["p0"],"finger_speed",p0.finger_speed)){
+        if(!mirmi_utils::read_json_param(parameters["p0"],"finger_speed",p0.finger_speed)){
             p0.finger_speed=0;
         }
-        if(!msrm_utils::read_json_param(parameters["p0"],"t_settle",p0.t_settle)){
+        if(!mirmi_utils::read_json_param(parameters["p0"],"t_settle",p0.t_settle)){
             p0.t_settle=0;
         }
     }
@@ -67,7 +67,7 @@ std::shared_ptr<ManipulationPrimitive> TaxMove::create_move_mp(const Percept &p)
     spdlog::trace("TaxMove::create_move_mp");
     std::shared_ptr<SkillParametersTaxMove> skill_params = get_parameters<SkillParametersTaxMove>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p);
-    mp->create_strategy<MoveToPoseStrategy>("move",1);
+    mp->create_strategy<MoveToPoseStrategy>("move",1);  
     if(this->get_object("GoalPose")->name=="NullObject"){
         m_T_T_EE_g=skill_params->p0.T_T_EE_g;
     }else{
@@ -76,10 +76,11 @@ std::shared_ptr<ManipulationPrimitive> TaxMove::create_move_mp(const Percept &p)
     m_T_T_EE_g.block<3,1>(0,3)+=skill_params->p0.T_T_EE_g_offset.block<3,1>(0,3);
     m_T_T_EE_g.block<3,3>(0,0)=skill_params->p0.T_T_EE_g_offset.block<3,3>(0,0)*m_T_T_EE_g.block<3,3>(0,0);
     mp->get_strategy<MoveToPoseStrategy>("move")->set_goal(m_T_T_EE_g,skill_params->p0.dX_d,skill_params->p0.ddX_d);
+  
     Eigen::Matrix<double,2,1> scale;
     scale<<1,1;
     mp->get_strategy<MoveToPoseStrategy>("move")->set_scale(scale);
-
+    
     if(skill_params->p0.finger_width!=-1 || skill_params->p0.finger_speed!=0){
         mp->create_strategy<GripperStrategy>("gripper",1);
         mp->get_strategy<GripperStrategy>("gripper")->move(skill_params->p0.finger_width,skill_params->p0.finger_speed);
@@ -90,7 +91,7 @@ std::shared_ptr<ManipulationPrimitive> TaxMove::create_move_mp(const Percept &p)
 }
 
 bool TaxMove::check_local_suc_conditions(const Percept &p){
-    if(get_active_mp()->get_strategy<MoveToPoseStrategy>("move")->finished()){
+    if(get_active_mp()->get_strategy<MoveToPoseStrategy>("move")->finished()){  
         if(!m_finished){
             m_finished=true;
             m_t_finished=std::chrono::high_resolution_clock::now();

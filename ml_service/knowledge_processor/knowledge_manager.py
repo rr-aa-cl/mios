@@ -3,6 +3,7 @@ import numpy as np
 import copy
 import time
 import random
+from services.knowledge import Knowledge
 from mongodb_client.mongodb_client import MongoDBClient
 from knowledge_processor.knowledge_processor_v2 import KnowledgeProcessor
 from knowledge_processor.kg_random_forest import KGRandomForest
@@ -19,14 +20,21 @@ logger = logging.getLogger("ml_service")
 
 
 class KnowledgeManager:
-    def __init__(self, host='localhost', port=27017):
+    def __init__(self, host='localhost', port=27017, fast_pipe_ip="10.157.175.119"):
         self.DBclient = MongoDBClient(host, port)
         self.data_db = "ml_results"
         self.knowledge_db = "local_knowledge"
+        self.fast_pipe_ip = fast_pipe_ip
+        self.similarties = {}
+        self.fast_pipe_data = []
+        self.fast_pipe_last_update = 0
+        self.received_fast_pipe_trials = {}
         self.predictor = None
         self.validation_per = 0.2
         self.n_retrain = 10  # how many times the generalizer is retrained before prediction
-        self.data_storage = dict()
+        self.data_storage = dict()  # {"<name of origin>": Tuple(Theta, Cost, list(already requested by agents))}
+        self.batch_count = dict()
+
         self.k_neighbors = KNeighborsRegressor(n_neighbors=6)
         self.mlp1 = MLPRegressor(hidden_layer_sizes=(14,), max_iter=400)
         self.mlp2 = MLPRegressor(hidden_layer_sizes=(14,), max_iter=400)
@@ -70,8 +78,8 @@ class KnowledgeManager:
         if knowledge is None:
             return None
 
-        if "tags" in knowledge["meta"]:
-            del knowledge["meta"]["tags"]
+        #if "tags" in knowledge["meta"]:  # why should I delete tags??????
+        #    del knowledge["meta"]["tags"]
 
         knowledge["meta"]["scope"] = scope
 
@@ -100,7 +108,7 @@ class KnowledgeManager:
                                   knowledge_db: str = "local_knowledge") -> str or None:
         '''process raw data from trials to knowledge; working from and on the database'''
         # allocate all ml_data with same task identity:
-        doc = self.collect_data(db_client, task_identifier, data_db)
+        doc = self.collect_data(db_client, task_identifier["identity"], data_db)
         if not doc:
             return None
         # save knowledge source
@@ -111,14 +119,43 @@ class KnowledgeManager:
 
         successful_trials, vector_mapping, mean_optimum_weights, confidence = self.get_successful_trials(doc)
         # process knowledge:
-        knowledge_processor = KnowledgeProcessor(vector_mapping, task_identifier, mean_optimum_weights, confidence)
+        knowledge_processor = KnowledgeProcessor(vector_mapping, task_identifier,task_identifier["tags"], mean_optimum_weights, confidence)
         knowledge = knowledge_processor.process_knowledge(successful_trials)
 
         if not knowledge:
             logger.error("KnowledgeManager.process_knowledge: Knowledge cant be processed!")
             return None
 
-        knowledge["meta"]["knowledge_source"] = uuids
+        knowledge["meta"]["source"] = uuids
+        knowledge["meta"]["prediction"] = False
+
+        return knowledge
+
+    def get_knowledge_by_id(self, db_client, task_identifier: dict, id: str, data_db: str = "ml_results",
+                                  knowledge_db: str = "local_knowledge") -> str or None:
+        '''process raw data from trials to knowledge; working from and on the database'''
+        # allocate all ml_data with same task identity:
+        print("get_knowledge: ",str(task_identifier),"  ",id)
+        doc = db_client.read(data_db, task_identifier["skill_class"], {"_id":id})
+
+        if not doc:
+            return None
+        # save knowledge source
+        uuids = []
+        tags = set()
+        for d in doc:
+            uuids.append(d["meta"]["uuid"])
+        print("knwledge_manager.get_knowledge_by_id: id=",id, "  found entries: ", len(doc))
+        successful_trials, vector_mapping, mean_optimum_weights, confidence = self.get_successful_trials(doc)
+        # process knowledge:
+        knowledge_processor = KnowledgeProcessor(vector_mapping, task_identifier, task_identifier["tags"], mean_optimum_weights, confidence)
+        knowledge = knowledge_processor.process_knowledge(successful_trials)
+
+        if not knowledge:
+            logger.error("KnowledgeManager.process_knowledge: Knowledge cant be processed!: "+str(knowledge))
+            return None
+
+        knowledge["meta"]["source"] = uuids
         knowledge["meta"]["prediction"] = False
 
         return knowledge
@@ -138,9 +175,8 @@ class KnowledgeManager:
         print(task_identity)
 
         successful_trials, vector_mapping, mean_optimum_weights, confidence = self.get_successful_trials(doc)
-        self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, mean_optimum_weights, confidence)
-        knowledge = self.knowledge_processor.process_knowledge(successful_trials)
-        return knowledge
+        self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, filter,  mean_optimum_weights, confidence)
+        return self.knowledge_processor.process_knowledge(successful_trials)
 
     def process_knowledge_local(self, db_client, task_identity: dict, data_db: str = "ml_results") -> str("_id"):
         """process raw data from trials to knowledge; working from and on the database"""
@@ -156,7 +192,7 @@ class KnowledgeManager:
 
         successful_trials, vector_mapping = self.get_successful_trials(doc)
         # process knowledge:
-        self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity)
+        self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, task_identity["tags"])
         knowledge = self.knowledge_processor.process_knowledge(successful_trials)
 
         knowledge["meta"]["knowledge_source"] = uuids
@@ -207,24 +243,24 @@ class KnowledgeManager:
             "meta.scope": scope,
             "meta.skill_class": skill_class
         }
-
+        knowledge = Knowledge()
         doc = self.collect_knowledge(self.DBclient, knowledge_db, skill_class, knowledge_filter)
 
         if not doc:
             logger.error("KnowledgeManager: Cannot predict for identity " + str(identity) + ". No knowledge on " + str(
                 knowledge_db) + " for skill class " + skill_class + " and scope " + str(scope) + ".")
-            return False
+            return knowledge.to_dict()
         # check if knowledge fits together:
         vector_mapping = doc[0]["parameters"].keys()
         for d in doc:
             if vector_mapping != d["parameters"].keys():
                 logger.error(
                     "KnowledgeManager.predict_knowledge: found knowledge doesnt fit together: different vector mappings!")
-                return False
+                return knowledge.to_dict()
         if len(doc) * (1 - self.validation_per) < 5:  # if no predictions can be made: use similar knowledge
             logger.error("KnowledgeManager: Cannot predict for identity " + str(identity) + ". Not enough knowledge on " + str(
                 knowledge_db) + " for skill class " + skill_class + " and scope " + str(scope) + ".")
-            return False
+            return knowledge.to_dict()
 
         # get best predictor:
         if predictor is None:
@@ -307,23 +343,21 @@ class KnowledgeManager:
         parameter_dict = {}
         for key_name, parameter in zip(vector_mapping, prediction):
             parameter_dict[key_name] = float(parameter)  # use python float because of rpc restrictions
-        meta = dict()
-        meta["expected_cost"] = float(expected_cost[0])
-        meta["prediction_error"] = best_error
+
+        knowledge.expected_cost = float(expected_cost[0])
+        knowledge.prediction_error = best_error
         # confidence gives no good results when predicting
         # meta["confidence"] = float(best_error / np.sqrt(len(training_data_x_normalized)))  # divided by root of n_parameters because max error is root(n_parameters)
-        meta["identity"] = identity
-        meta["skill_class"] = skill_class
-        meta["scope"] = scope
-        meta["time"] = time.ctime()
-        meta["prediction"] = True
+        knowledge.identity = identity
+        knowledge.skill_class = skill_class
+        knowledge.scope = scope
+        knowledge.time= time.ctime()
+        knowledge.prediction = True
+        knowledge.parameters = parameter_dict
 
-        knowledge = {"parameters": parameter_dict,
-                     "meta": meta}
+        return knowledge.to_dict()
 
-        return knowledge
-
-    def get_similar_knowledge(self, task_identifier: dict, scope: dict, knowledge_db: str = "local_knowledge",
+    def get_similar_knowledge(self, task_identifier: dict, scope: list, knowledge_db: str = "local_knowledge",
                               data_db: str = "ml_results"):
         '''searches for most similar knowledge / creates knowledge from similar results'''
         collection = task_identifier["skill_class"]
@@ -333,17 +367,30 @@ class KnowledgeManager:
         knowledge_filter = {"meta.scope": scope,
                             "meta.skill_class": task_identifier["skill_class"]
                             }
-
+        knowledge = Knowledge()
         docs = self.DBclient.read(knowledge_db, collection, knowledge_filter)
         if len(docs) >= 1:
             logger.debug("knowledge_processor.get_similar_knowledge(): found knowledge on task identity" + str(
                 task_identifier) + " at " + str(knowledge_db) + "." + str(collection))
             # take most similar knowledge according to cost function ("optimum_weights"):
-            return self.get_most_similar_task(docs, identity)
+
+            knowledge.from_dict(self.get_most_similar_task(docs, identity))
+            return knowledge.to_dict()
         logger.debug("knowledge_manager.get_similar_knowledge(): can\'t find knowledge for " +
                      str(task_identifier) + " under scope " + str(scope) + " at " + str(collection))
 
-        return False
+        return knowledge.to_dict()
+
+    def get_knowledge(self, task_identifier: dict, scope: list, knowledge_db: str = "local_knowledge"):
+        '''searches for all knowledge entries and returns them in a list'''
+        
+        knowledge_filter = {"meta.skill_class": task_identifier["skill_class"],
+                            "meta.tags": scope
+        }
+        docs = self.DBclient.read(knowledge_db, task_identifier["skill_class"], knowledge_filter)
+        docs.sort(key=lambda t: abs(np.sum(np.array(t["meta"]["identity"]) - np.array(task_identifier["identity"]))))
+        logger.debug("knoweldge_manger.get_knowledge: search for "+str(scope)+" on "+str(knowledge_db)+". Found "+str(len(docs)))
+        return docs
 
     def get_successful_trials(self, doc):
         metainfo = []
@@ -355,14 +402,15 @@ class KnowledgeManager:
             for d in doc:
                 metainfo.append(d["meta"])
                 # get raw ml data:
-                trials = self.get_raw_data(d)
-                if len(trials) > 0:
-                    optimum_weights.append(d["meta"]["cost_function"]["optimum_weights"])
+                trials = self.get_raw_data(d)  # successful trials
+                # if len(trials) > 0:
+                    # optimum_weights.append(d["meta"]["cost_function"]["optimum_weights"])
                 for t in trials:
                     alltrials.append(t)
             successful_trials = alltrials
+            optimum_weights = d["meta"]["cost_function"]["optimum_weights"]
             print(optimum_weights)
-            optimum_weights = list(np.mean(optimum_weights, axis=0))
+            #optimum_weights = list(np.mean(optimum_weights, axis=0))  ## Todo: find optimum weights mean!
         else:
             doc = doc[0]
             # get raw ml data:
@@ -408,8 +456,12 @@ class KnowledgeManager:
         for nr in range(len(d)):
             key = "n" + str(nr)
             if d.get(key, False):  # if trial number available
-                if (d[key]["q_metric"]["success"] == True):  # if trial was successfull
-                    successful_trials.append(d[key])
+                if "q_metric" in d[key]:
+                    if (d[key]["q_metric"]["success"] == True):  # if trial was successfull
+                        successful_trials.append(d[key])
+                else:
+                    if (d[key]["success"] == True):  # if trial was successfull
+                        successful_trials.append(d[key])
         return successful_trials
 
     def dict_to_list(self, d):
@@ -418,43 +470,205 @@ class KnowledgeManager:
         for key in d.keys():
             l.append(d[key])
         return l
-
-    def push_trial(self, agent: str, theta: list, cost: float, keep_size: int):
-        if agent not in self.data_storage:
-            self.data_storage[agent] = []
-        if len(self.data_storage[agent]) >= keep_size:
-            self.data_storage[agent].pop(0)
-        self.data_storage[agent].append((theta, cost))
-
-    def request_trials(self, n_trials: int):
-        n_available = 0
-        n_per_agent = int(np.floor(n_trials / len(self.data_storage)))
-        for a in self.data_storage.keys():
-            n_available += len(self.data_storage[a])
-            if len(self.data_storage[a]) < n_per_agent:
-                return False
-
-        if n_available < n_trials:
-            logger.error("Number of requested trials is larger than number of available trials.")
+    
+    def push_trial_fast_pipe(self, task:str, theta:dict, cost:float, tags:list, skill_class:str):
+        if self.fast_pipe_ip is None:
             return False
+        fast_pipe_client = MongoDBClient(self.fast_pipe_ip)
+        document = {
+                    "task": task,
+                    "time": time.time(),
+                    "theta": theta,
+                    "cost":cost,
+                    "tags":tags
+                    }
+        while not fast_pipe_client.write("fast_knowledge_pipe", skill_class,document=document):
+            logger.error("could not reach database at "+self.fast_pipe_ip+"  ...retrying...")
+            time.sleep(1)
 
+    def receive_trial_fast_pipe(self, task, tags, skill_class):
+        fast_pipe_client = MongoDBClient(self.fast_pipe_ip)
 
-        trials = []
-        n_rest = n_trials % len(self.data_storage)
-        cnt_rest = 0
-        for a in self.data_storage.keys():
-            if cnt_rest < n_rest:
-                mod_rest = 1
-            else:
-                mod_rest = 0
-            cnt_rest += 1
-            trials_per_agent = self.data_storage[a].copy()
-            random.shuffle(trials_per_agent)
-            trials_per_agent = trials_per_agent[:n_per_agent + mod_rest]
-            for t in trials_per_agent:
-                trials.append(t)
+        #update fast_pipe_data with data since last update
+        #tags[2:] neglect skill_class and inserbale from tags
+        self.fast_pipe_data.extend(fast_pipe_client.read("fast_knowledge_pipe",skill_class, {"tags":tags[2:], "time":{"$lt":self.fast_pipe_last_update}}))  
+        self.fast_pipe_last_update = time.time()
 
+        remove_indexs = []
+        for i,trial in enumerate(self.fast_pipe_data):
+            if trial["task"] is task:  #remove all occurences of own task:
+                remove_indexs.append(i)
+            if trial["task"] in self.received_fast_pipe_trials:  #remove trials already tried out:
+                if trial["time"] in self.received_fast_pipe_trials[trial["task"]]:
+                    remove_indexs.append(i)
+        for i in remove_indexs:
+            self.fast_pipe_data.pop(i)
+
+        for fast_pipe_trial in self.fast_pipe_data:
+            if fast_pipe_trial["task"] not in self.similarties:
+                self.similarties[fast_pipe_trial["task"]] = 1  # create new similarity entry for unknown task
+        #similarity update:
+        for key in self.similarties.keys():
+            if self.similarties[key] <= 0:
+                self.similarties[key] = 0.01 
+            similarity_sum = sum(self.similarties.values())
+            for key in self.similarties.keys():
+                self.similarties[key] = self.similarties[key] / similarity_sum  # calculate probability for picking trial from this agent (=key)
+        #save similarities in mongo:
+        self.DBclient.write("similarities",task,{"tags":tags, "time":time.time(),"similarities":self.similarties})
+
+        source_task = str(np.random.choice(list(self.similarties.keys()), p=[self.similarties[key] for key in self.similarties.keys()]))  # random pick task according to probability
+        #pick best trial from this task:
+        best_cost = float('inf')
+        best_trial_index = None
+        for i,trial in enumerate(self.fast_pipe_data):
+            if trial["task"] is not source_task:
+                continue
+            if trial["cost"] < best_cost:
+                best_trial_index = i
+        if best_trial_index is not None:       
+            selected_trial = self.fast_pipe_data[best_trial_index]
+        else:
+            logger.error("No trial found to receive in fast Pipe")
+        
+        return selected_trial["theta"], selected_trial["cost"], selected_trial["task"]
+
+    def push_trial(self, task: str, theta: list, cost: float, keep_size: int = 250):
+        '''
+        the trial (theta) will be stored in self.data_storage under key "<task>" {"<name of origin>": Tuple(Theta, Cost, list(already requested by agents))}
+        the stored trials will not exceed keep_size
+        always the trial which was used by the most agents will be poped
+        '''
+        logger.debug("push_trial: store trial from "+task)
+        if task not in self.data_storage:
+            self.data_storage[task] = []
+        if len(self.data_storage[task]) >= keep_size:  # delte the trial that was requested the most already
+            index = -1
+            requested_from_n_others = 0
+            for i in range(len(self.data_storage[task])):  # pop the trial which was already requested by the most other agents
+                if len(self.data_storage[task][i])>requested_from_n_others:
+                    index = i
+                    requested_from_n_others = len(self.data_storage[task][i])
+            logger.warning("knowlege_manager.push_trial: Delete Trial fromo Datastroage because of keep_size="+str(keep_size)+". Trial was forwarded to "+str(requested_from_n_others)+" others.")
+            self.data_storage[task].pop(index)
+        self.data_storage[task].append((theta, cost, []))
+        self.data_storage[task].sort(key=lambda t: t[1] )  # sort according to cost
+        
+
+    def request_trials(self, task:str, n_trials: int, similarity: dict = {}) -> list:
+        '''
+        self.data_storage: {"<name of origin>": Tuple(Theta, Cost, list(already requested by agents))}
+        
+        sends back a list of tuples: [Tuple(Theta, Cost, Origin)]   where origin is the agent where the trial originated
+        the list will be of size n_trials
+
+        '''
+        data_storage_keys = list(self.data_storage.keys())
+
+        #print("knowledge_manager.request_trials: These agent uploaded successfull trials: ", list(self.data_storage.keys()))
+        if n_trials<1:
+            logger.debug("KnowledgeManager.request_trials: requested less than 1 trial -> return False")
+            return []
+        
+        
+        random.shuffle(data_storage_keys)
+        if data_storage_keys == []:
+            return []
+        try:
+            data_storage_keys.pop(data_storage_keys.index(task))  # neglet requesting agent
+        except ValueError:
+            pass 
+        try:
+            similarity.pop(task)  # neglet requesting agent
+        except KeyError:
+            pass 
+        
+          # if no similarity is given: initialise with equal probability
+        for key in data_storage_keys:
+            if key not in similarity:
+                similarity[key] = 1  # assume good similarity at first
+        for key in list(similarity.keys()):
+            if key not in data_storage_keys:
+                similarity.pop(key)
+        
+        #print("knowledge_manager.request_trials: ", task, " is requesting ", n_trials, " trials with similarity_dict:\n",similarity,"\n size of data_storage_keys ",len(data_storage_keys),
+        #        " size of similarity:",len(similarity.keys()))
+        trials=[]
+        n_available_trials = 0
+        for a in range(len(data_storage_keys)):
+            for t in self.data_storage[data_storage_keys[a]]:
+                if task in t[2]:  # check if trial was already forwarded to agent
+                    continue
+                n_available_trials += 1
+        #print("knowledge_manager.request_trials: Number of available trials: ", n_available_trials)
+        if n_available_trials <= n_trials:  # we dont have enougth trials -> take everything
+            for a in range(len(data_storage_keys)):
+                for t in self.data_storage[data_storage_keys[a]]:
+                    if task not in t[2]:  # if trials wasn't already sent to agent
+                        trials.append((t[0],t[1],data_storage_keys[a]))
+                        t[2].append(task)  # save agent name for this trial
+        else:
+            for key in similarity.keys():
+                if similarity[key] <= 0:
+                    similarity[key] = 0.01 
+            similarity_sum = sum(similarity.values())
+            for key in similarity.keys():
+                similarity[key] = similarity[key] / similarity_sum  # calculate probability for picking trial from this agent (=key)
+            index = 0  # go throu the data_storage and add one trial from every agent, repeat afterwards
+            #print(task, "similartiy= ",similarity, ",  sum= ",sum(similarity.values()))
+            while(n_trials > len(trials)):
+                source_task = str(np.random.choice(data_storage_keys, p=[similarity[key] for key in similarity.keys()]))  # random pick an agent according to probability
+                for t in self.data_storage[source_task]:
+                    if task not in t[2]:
+                        trials.append((t[0],t[1],source_task))
+                        t[2].append(task)
+                        break
+                if index < 100:  # index = count
+                    index +=1
+                else:
+                    break
+                
+                #for t in self.data_storage[data_storage_keys[index]]:  #old (without probability)
+                #    if agent not in t[2]:  # if trials wasn't already sent to agent
+                #        trials.append((t[0],t[1], data_storage_keys[index]))
+                #        t[2].append(agent)  # save agent name for this trial
+                #        break  # break after one trial is found and re-check
+                #index += 1
+                #if index >= len(data_storage_keys): 
+                #    index = 0
+        #print("knowledge_manager.request_trials: Sending ",len(trials), " trials to ", task)
         return trials
+
+    # def request_trials(self, agent:str, n_trials: int):
+    #     logger.debug("request trials" + str(n_trials))
+    #     n_available = 0
+    #     n_per_agent = int(np.floor(n_trials / len(self.data_storage)))
+    #     for a in self.data_storage.keys():
+    #         n_available += len(self.data_storage[a])
+    #         if len(self.data_storage[a]) < n_per_agent:
+    #             return False
+
+    #     if n_available < n_trials:
+    #         logger.error("Number of requested trials is larger than number of available trials.")
+    #         return False
+
+
+    #     trials = []
+    #     n_rest = n_trials % len(self.data_storage)
+    #     cnt_rest = 0
+    #     for a in self.data_storage.keys():
+    #         if cnt_rest < n_rest:
+    #             mod_rest = 1
+    #         else:
+    #             mod_rest = 0
+    #         cnt_rest += 1
+    #         trials_per_agent = self.data_storage[a].copy()
+    #         random.shuffle(trials_per_agent)
+    #         trials_per_agent = trials_per_agent[:n_per_agent + mod_rest]
+    #         for t in trials_per_agent:
+    #             trials.append(t)
+
+    #     return trials
 
     def push_trial_2(self, theta: list, cost: float, task_parameter: float):
         theta.append(task_parameter)
@@ -507,6 +721,21 @@ class KnowledgeManager:
         self.trial_data_x.clear()
         self.trial_data_y.clear()
         self.data_storage.clear()
+    
+    def wait_for_batch(self, agent:str, batch:int):
+        '''
+        for synchronisation of the collective so everyone is on the same batch (svm.py)
+        all agent upload their finished batch number and check if all others have also finised this batch number
+        if not -> return True
+        '''
+        self.batch_count[agent] = batch
+        wait = False
+        for r in self.batch_count.keys():
+            if self.batch_count[r] != batch:
+                wait = True
+        logger.debug(agent+" is at batch "+str(batch)+". Waiting="+str(wait))
+        return wait
+
 
     def train_mlp1(self, x, y):
         if self.lock_mlp1.acquire(False) is False:

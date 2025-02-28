@@ -10,14 +10,18 @@ def teach_location(robot: str, location: str):
 def move_to_location(robot: str, location: str):
     context = {
         "skill": {
-            "speed": [0.1, 0.5],
-            "acc": [0.5, 1],
+            "p0":{
+                "dX_d": [0.1, 0.5],
+                "ddX_d": [0.5, 1],
+                "K_x": [1500, 1500, 1500, 150, 150, 150],
+
+            },
             "objects": {
-                "GoalPose": location
-            }
+                    "GoalPose": location
+                }
         },
         "control": {
-            "control_mode": 0
+            "control_mode": 2
         }
     }
     t = Task(robot)

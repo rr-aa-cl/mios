@@ -10,6 +10,7 @@ struct SkillParametersMoveTrajectory : public SkillParameters{
     std::string file;
     bool plane;
     Eigen::Matrix<double,6,1> F_ff;
+    bool joint_mode;
 };
 
 class MoveTrajectory : public Skill{
@@ -22,12 +23,15 @@ public:
 private:
     bool check_local_suc_conditions(const Percept &p);
     bool read_trajectory_from_file(const std::string &file, std::vector<std::array<double, 16> > &data);
+    bool read_trajectory_from_file(const std::string &file, std::vector<std::array<double, 7> > &data);
 
 private:
     bool m_finished;
     std::chrono::high_resolution_clock::time_point m_t_finished;
 
     std::vector<std::array<double,16> > m_data;
+    std::vector<std::array<double,7> > m_data_joint;
+
     std::string m_file;
 };
 

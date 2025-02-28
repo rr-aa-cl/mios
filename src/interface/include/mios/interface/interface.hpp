@@ -53,6 +53,7 @@ private:
     nlohmann::json unlock_brakes(const nlohmann::json& request);
     nlohmann::json lock_brakes(const nlohmann::json& request);
     nlohmann::json shutdown(const nlohmann::json& request);
+    nlohmann::json reboot(const nlohmann::json& request);
     nlohmann::json pack_pose(const nlohmann::json& request);
 
     nlohmann::json set_live_parameter(const nlohmann::json& request);

@@ -1,4 +1,4 @@
-from definitions_base import *
+from definitions.definitions_base import *
 
 
 class InsertionFactory(ProblemDefinitionFactory):
@@ -111,7 +111,8 @@ def insertion(objects: dict, cost_function: str, max_cost: float) -> ProblemDefi
 
 
 
-
+    ĺimits = InsertionFactory.get_limits()
+    context_mapping = InsertionFactory.get_mapping()
 
     domain = Domain(limits, context_mapping, x_0)
     default_skill_context = {

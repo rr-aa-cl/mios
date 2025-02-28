@@ -5,18 +5,18 @@
 namespace mios {
 
 bool SkillParametersMoveToPoseCart::from_json(const nlohmann::json &p){
-    if(!msrm_utils::read_json_param(p,"t_settle",t_settle)){
+    if(!mirmi_utils::read_json_param(p,"t_settle",t_settle)){
         t_settle=0;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(p,"speed",speed)){
+    if(!mirmi_utils::read_json_param<double,2,1>(p,"speed",speed)){
         spdlog::error("Parameter speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(p,"acc",acc)){
+    if(!mirmi_utils::read_json_param<double,2,1>(p,"acc",acc)){
         spdlog::error("Parameter acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,4,4>(p,"T_T_EE_g_offset",T_T_EE_g_offset)){
+    if(!mirmi_utils::read_json_param<double,4,4>(p,"T_T_EE_g_offset",T_T_EE_g_offset)){
         T_T_EE_g_offset.setIdentity();
     }
     bool object_set=false;
@@ -26,7 +26,7 @@ bool SkillParametersMoveToPoseCart::from_json(const nlohmann::json &p){
         }
     }
 
-    if(!msrm_utils::read_json_param<double,4,4>(p,"T_T_EE_g",T_T_EE_g) && !object_set){
+    if(!mirmi_utils::read_json_param<double,4,4>(p,"T_T_EE_g",T_T_EE_g) && !object_set){
         spdlog::error("Parameter T_T_EE_g could not be loaded but is mandatory.");
         return false;
     }
@@ -46,7 +46,7 @@ std::shared_ptr<ManipulationPrimitive> MoveToPoseCart::get_initial_mp(const Perc
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("move",p_0);
     mp->create_strategy<MoveToPoseStrategy>("s_0",1);
     Eigen::Matrix<double,4,4> T_g;
-    if(this->get_object("goal_pose")->name=="NoneObject"){
+    if(this->get_object("goal_pose")->name=="NoneObject" || this->get_object("goal_pose")->name=="NullObject"){
         T_g=skill_params->T_T_EE_g;
     }else{
         T_g=get_object("goal_pose")->O_T_OB;

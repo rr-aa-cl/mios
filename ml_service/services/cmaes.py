@@ -40,8 +40,8 @@ class CMAESConfiguration(ServiceConfiguration):
 
 
 class CMAESService(BaseService):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, mios_port=12000, mongo_port=27017):
+        super().__init__(mios_port,mongo_port)
 
         self.success_ratio = 0
 
@@ -115,10 +115,10 @@ class CMAESService(BaseService):
 
         costs = []
         self.success_ratio = 0
-        if self.knowledge_source is None:
+        if self.knowledge.kb_location is None:
             kb = None
         else:
-            kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
+            kb = ServerProxy("http://" + self.knowledge.kb_location + ":8001")
         for uuid in trial_uuids.keys():
             result = self.wait_for_result(uuid)
             if result.q_metric.final_cost is None:
@@ -132,11 +132,9 @@ class CMAESService(BaseService):
             for i in range(len(trial_uuids[uuid])):
                 theta.append(float(trial_uuids[uuid][i]))
             if kb is not None:
+                pass
                 #kb.push_trial(self.host_name, theta, float(result.q_metric.final_cost), self.configuration.n_ind)
-                print(theta)
-                print(result.q_metric.final_cost)
-                print(self.problem_definition.cost_function.geometry_factor)
-                kb.push_trial_2(theta, float(result.q_metric.final_cost), self.problem_definition.cost_function.geometry_factor)
+                # kb.push_trial_2(theta, float(result.q_metric.final_cost), self.problem_definition.cost_function.geometry_factor)
         self.success_ratio /= float(len(trial_uuids.keys()))
 
         logger.debug("CMAES costs: " + str(costs))
@@ -148,10 +146,10 @@ class CMAESService(BaseService):
         logbook.header = ['gen', 'nevals'] + (stats.fields if stats else [])
         self.population = None
 
-        if self.knowledge_source is None:
+        if self.knowledge.kb_location is None:
             kb = None
         else:
-            kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
+            kb = ServerProxy("http://" + self.knowledge.kb_location + ":8001")
 
         for gen in range(ngen):
             # Generate a new population
@@ -161,22 +159,22 @@ class CMAESService(BaseService):
                 separated_pop = self.population[len(self.population) - self.configuration.n_immigrant:]
                 self.population = self.population[:len(self.population) - self.configuration.n_immigrant]
             fitnesses = toolbox.map(toolbox.evaluate, self.population)
-            if kb is not None:
-                theta = []
-                for i in range(self.configuration.n_immigrant):
-                    theta.append([])
-                    for j in range(len(separated_pop[i])):
-                        theta[i].append(float(separated_pop[i][j]))
-                while True:
-                    cost = kb.request_online_evaluation(theta, self.problem_definition.cost_function.geometry_factor)
-                    if cost is not False:
-                        for i in range(self.configuration.n_immigrant):
-                            fitnesses.append((cost[i],))
-                        self.population.extend(separated_pop)
-                        break
-                    else:
-                        time.sleep(1)
-                        continue
+            # if kb is not None:
+            #     theta = []
+            #     for i in range(self.configuration.n_immigrant):
+            #         theta.append([])
+            #         for j in range(len(separated_pop[i])):
+            #             theta[i].append(float(separated_pop[i][j]))
+            #     while True:
+            #         cost = kb.request_online_evaluation(theta, self.problem_definition.cost_function.geometry_factor)
+            #         if cost is not False:
+            #             for i in range(self.configuration.n_immigrant):
+            #                 fitnesses.append((cost[i],))
+            #             self.population.extend(separated_pop)
+            #             break
+            #         else:
+            #             time.sleep(1)
+            #             continue
                 # while True:
                 #     new_population = kb.request_trials(self.configuration.n_immigrant)
                 #     if new_population is False:

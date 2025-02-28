@@ -14,8 +14,8 @@ robots = ["collective-panda-prime",
   "collective-panda-002",
   #        "collective-panda-008",
            "collective-panda-003",
-            "collective-panda-001",
-          "collective-panda-009"]#,
+            "collective-panda-004",
+          "collective-panda-008"]#,
    #        "collective-panda-010",
    #         "collective-panda-004"]
 

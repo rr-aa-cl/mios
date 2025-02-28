@@ -5,15 +5,15 @@
 namespace mios{
 
 bool SkillParametersTip::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param(parameters,"f_contact",f_contact)){
+    if(!mirmi_utils::read_json_param(parameters,"f_contact",f_contact)){
         spdlog::error("Parameter f_contact could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"speed",speed)){
+    if(!mirmi_utils::read_json_param(parameters,"speed",speed)){
         spdlog::error("Parameter speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"acceleration",acceleration)){
+    if(!mirmi_utils::read_json_param(parameters,"acceleration",acceleration)){
         spdlog::error("Parameter acceleration could not be loaded but is mandatory.");
         return false;
     }

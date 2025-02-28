@@ -39,14 +39,14 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
     ${PROJECT_NAME}::core
     ${PROJECT_NAME}::memory
-    msrm_cpp_utils::system
-    msrm_cpp_utils::files
+    mirmi_cpp_utils::system
+    mirmi_cpp_utils::files
     PUBLIC
     ${PROJECT_NAME}::portal
     ${PROJECT_NAME}::skill
     ${PROJECT_NAME}::utils
     ${PROJECT_NAME}::tasks
-    msrm_cpp_utils::json
+    mirmi_cpp_utils::json
     nlohmann_json::nlohmann_json
     Eigen3::Eigen
     )

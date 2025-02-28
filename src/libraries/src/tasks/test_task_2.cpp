@@ -26,23 +26,23 @@ void TestTask2::write_custom_results(nlohmann::json &custom_results){
     custom_results["t2_s2"]=get_result().skill_results["t2_s1"].results;
     custom_results["t2_t1"]=get_subtask_result("t2_t1").custom_results;
 
-    msrm_utils::write_json_array<double,2,1>(custom_results["d"],m_d);
+    mirmi_utils::write_json_array<double,2,1>(custom_results["d"],m_d);
     custom_results["e"]=m_e;
     custom_results["f"]=m_f;
 }
 bool TestTask2::read_parameters(const nlohmann::json& params){
 
     spdlog::debug("Reading parameters for task "+get_id());
-    if(!msrm_utils::read_json_param<double,2,1>(params,"d",m_d)){
+    if(!mirmi_utils::read_json_param<double,2,1>(params,"d",m_d)){
         m_d.setZero();
     }
-    if(!msrm_utils::read_json_param(params,"e",m_e)){
+    if(!mirmi_utils::read_json_param(params,"e",m_e)){
         m_e=false;
     }
-    if(!msrm_utils::read_json_param(params,"success",m_success)){
+    if(!mirmi_utils::read_json_param(params,"success",m_success)){
         m_success=false;
     }
-    if(!msrm_utils::read_json_param(params,"stop_level",m_stop_level)){
+    if(!mirmi_utils::read_json_param(params,"stop_level",m_stop_level)){
         m_stop_level=0;
     }
     spdlog::debug("########## Task parameters ###########");

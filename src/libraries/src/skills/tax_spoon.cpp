@@ -1,44 +1,44 @@
 #include "mios/skills/tax_spoon.hpp"
 #include "mios/strategies/null_strategy.hpp"
 #include "mios/strategies/move_to_pose.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios{
 
 bool SkillParametersTaxSpoon::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_x",ROI_x)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"ROI_x",ROI_x)){
         spdlog::error("Parameter ROI_x could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_phi",ROI_phi)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"ROI_phi",ROI_phi)){
         spdlog::error("Parameter ROI_phi could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"dip_speed",dip_speed)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"dip_speed",dip_speed)){
         spdlog::error("Parameter dip_speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"dip_acc",dip_acc)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"dip_acc",dip_acc)){
         spdlog::error("Parameter dip_acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"gather_speed",gather_speed)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"gather_speed",gather_speed)){
         spdlog::error("Parameter gather_speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"gather_acc",gather_acc)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"gather_acc",gather_acc)){
         spdlog::error("Parameter gather_acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"emerge_speed",emerge_speed)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"emerge_speed",emerge_speed)){
         spdlog::error("Parameter emerge_speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"emerge_acc",emerge_acc)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"emerge_acc",emerge_acc)){
         spdlog::error("Parameter emerge_acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"liquid_weight",liquid_weight)){
+    if(!mirmi_utils::read_json_param(parameters,"liquid_weight",liquid_weight)){
         spdlog::error("Parameter liquid_weight could not be loaded but is mandatory.");
         return false;
     }

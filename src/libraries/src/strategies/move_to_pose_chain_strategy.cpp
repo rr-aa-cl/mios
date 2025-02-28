@@ -1,6 +1,6 @@
 #include "mios/strategies/move_to_pose_chain_strategy.hpp"
 #include <iostream>
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios{
 
@@ -33,10 +33,10 @@ void MoveToPoseChainStrategy::get_next_command(Actuator &cmd, [[maybe_unused]] c
         double diff_TF_dX_d_t = m_TF_dX_d(i)-m_TF_dX_d_limiter(i);
         double diff_TF_dX_d_r = m_TF_dX_d(i+3)-m_TF_dX_d_limiter(i+3);
         if(fabs(diff_TF_dX_d_t)/0.001>m_ddX_d(0)){
-            cmd.TF_dX_d(i)=m_TF_dX_d_limiter(i)+msrm_utils::sgn(diff_TF_dX_d_t)*m_ddX_d(0)*0.001;
+            cmd.TF_dX_d(i)=m_TF_dX_d_limiter(i)+mirmi_utils::sgn(diff_TF_dX_d_t)*m_ddX_d(0)*0.001;
         }
         if(fabs(diff_TF_dX_d_r)/0.001>m_ddX_d(1)){
-            cmd.TF_dX_d(i+3)=m_TF_dX_d_limiter(i+3)+msrm_utils::sgn(diff_TF_dX_d_r)*m_ddX_d(1)*0.001;
+            cmd.TF_dX_d(i+3)=m_TF_dX_d_limiter(i+3)+mirmi_utils::sgn(diff_TF_dX_d_r)*m_ddX_d(1)*0.001;
         }
     }
     m_TF_dX_d_limiter=cmd.TF_dX_d;

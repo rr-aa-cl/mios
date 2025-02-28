@@ -1,7 +1,7 @@
 from mongodb_client.mongodb_client import MongoDBClient
 import logging
 from plotting.result import Result
-from plotting.result import Knowledge
+from plotting.result import KnowledgePoint
 
 logger = logging.getLogger("ml_service")
 
@@ -34,14 +34,13 @@ def get_multiple_experiment_data(host: str, task_type: str, results_db: str = "m
     if filter is None:
         filter = {}
     docs = db_client.read(results_db, task_type, filter)
-
+    
     if len(docs) == 0:
         raise DataNotFoundError
 
     results = []
     for d in docs:
         results.append(Result(d))
-
     return results
 
 def get_multiple_knowledge_data(host: str, task_type: str, type: str = "local", filter: dict = None):

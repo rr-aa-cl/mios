@@ -441,3 +441,49 @@ def plot_experiment(host: str, skill_class: str, database: str, tags: list, max_
     axes[1].tick_params(axis='both', which='major', labelsize=12)
 
     plt.show()
+
+def plot_skill_table():
+    fig, axes = plt.subplots(1, 1, gridspec_kw={'hspace': 0, 'wspace': 0})
+    skills = ["insertion", "screw_in", "screw_out", "polishing", "wiping", "grinding", "pulling/pushing", " filing", "hammering", "levering"]
+    dataset_sources = [("Programmed",len(skills)), ("Reinforcement Learning",1), ("Residual Learning",1),("Octo Framework \n(Open X-Embodiment)",1),("GGTWrep",len(skills)), ("GGTWrep \n+ Collective",1)]
+    RL_output = ["wrench", "torque", "velocity", "delta_position"]
+    RL_algorithms = ["DDPG", "SAC", "PPO"]
+    
+    bar_hight = 0.8
+    bar_hight_RL = 2.8
+    n_small_bars = len(RL_output)*len(RL_algorithms)
+    #small_bar_hight = bar_hight_RL/n_small_bars - len(RL_output)-1*0.05
+    small_bar_hight = ((bar_hight_RL/len(RL_output))*bar_hight)/len(RL_algorithms)
+    small_bar_loc = []
+    bars = []
+    for i,rl in zip([0.95, 1.65, 2.35, 3.05],RL_output):
+        bars.append(axes.barh(i-small_bar_hight,1,height=small_bar_hight, label="DDPG", color = "b"))
+        axes.bar_label(bars[-1], ["DDPG"],padding=-30, fontsize=8)
+
+        bars.append(axes.barh(i,1,height=small_bar_hight, label="SAC", color = "royalblue"))
+        axes.bar_label(bars[-1], ["SAC"], padding=-30, fontsize=8)
+        axes.bar_label(bars[-1], [rl], padding=10)
+
+        bars.append(axes.barh(i+small_bar_hight,1,height=small_bar_hight, label="PPO", color="darkblue"))
+        axes.bar_label(bars[-1], ["PPO"], padding=-30, fontsize=8)
+
+
+    print(small_bar_loc)
+    dataset_sources_loc = [0,2,4,5,6,7]
+
+    #small_bar_loc = np.linspace(0.6,3.4,12)
+
+    
+    for i,(source_name,solved) in enumerate(dataset_sources):
+        if source_name == "Reinforcement Learning":
+            #axes.barh(dataset_sources_loc[i], solved,height=bar_hight_RL,color="b",alpha=0.3)
+            continue
+        bar = axes.barh(dataset_sources_loc[i], solved,height=bar_hight,color="b")
+
+
+    plt.yticks(dataset_sources_loc,[d[0] for d in dataset_sources], rotation=45)  
+    plt.xticks(list(range(1,len(skills)+1)),skills, rotation=45)
+    plt.xlabel("skills",fontsize=20)
+    plt.ylabel("dataset",fontsize=20)
+    #plt.legend(bars[-3:]+[bar],[])
+    plt.show()

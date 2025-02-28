@@ -5,9 +5,10 @@
 cmake_minimum_required(VERSION 3.16...3.20)
 
 set(PROJECT_VERSION_MAJOR 0)
-set(PROJECT_VERSION_MINOR 21)
-set(PROJECT_VERSION_PATCH 1)
+set(PROJECT_VERSION_MINOR 22)
+set(PROJECT_VERSION_PATCH 0)
 set(PROJECT_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH})
+#set(CMAKE_FIND_DEBUG_MODE 1)
 
 configure_file (
     "${CMAKE_SOURCE_DIR}/include/commons/config.hpp.in"
@@ -57,7 +58,7 @@ option(FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)
 option(DEBUG_LOGGING "Enabling debug logging" OFF)
 option(ENABLE_IPO "Enable Interprocedural Optimization, aka Link Time Optimization (LTO)" OFF)
 option(ENABLE_PCH "Enable Precompiled Headers" ON)
-option(ENABLE_UNITY_BUILD "Enable unity build" ON)
+option(ENABLE_UNITY_BUILD "Enable unity build" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/src/plugins)
@@ -144,7 +145,8 @@ add_library(${PROJECT_NAME}::${PROJECT_NAME}_project_warnings ALIAS ${PROJECT_NA
 add_library(${PROJECT_NAME}::${PROJECT_NAME}_project_deps ALIAS ${PROJECT_NAME}_project_deps)
 
 find_package(spdlog REQUIRED)
-find_package(Boost REQUIRED)
+#find_package(Boost REQUIRED)
+message("Boost Version:\t ${Boost_VERSION}")
 
 target_link_libraries(${PROJECT_NAME}_project_deps
     INTERFACE
@@ -173,3 +175,6 @@ message("#########################################")
         message("------------------------------------------")
         message("Version:          \t ${PROJECT_VERSION}")
         message("########################################")
+        #message("Boost_include_dir ${Boost_INCLUDE_DIRS}")
+        #message("Boost_library_dir ${Boost_LIBRARY_DIRS}")
+        #message("Boost_libraries linked ${Boost_LIBRARIES}")

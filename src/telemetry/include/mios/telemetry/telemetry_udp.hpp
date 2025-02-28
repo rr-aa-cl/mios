@@ -17,7 +17,7 @@
 #include "nlohmann/json.hpp"
 #include "Eigen/Core"
 
-namespace msrm_utils{
+namespace mirmi_utils{
 class UDPStreamSender;
 }
 
@@ -33,7 +33,7 @@ struct Subscriber{
     std::string address;
     std::vector<std::string> subscriptions;
     bool sendWithTerminatingNullCharacter;
-    std::shared_ptr<msrm_utils::UDPStreamSender> stream;
+    std::shared_ptr<mirmi_utils::UDPStreamSender> stream;
 };
 
 class TelemetryUDP{
@@ -60,7 +60,7 @@ private:
     bool m_thread_running;
     std::mutex m_mtx_subscriber;
 
-    unsigned m_frequency;  //ms
+    std::chrono::milliseconds m_frequency;  //ms
     std::chrono::time_point<std::chrono::high_resolution_clock> m_time_1;
     std::chrono::time_point<std::chrono::high_resolution_clock> m_time_2;
     std::chrono::duration<double, std::milli> m_time_duration;

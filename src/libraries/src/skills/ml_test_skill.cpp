@@ -4,14 +4,14 @@
 namespace mios{
 
 bool SkillParametersMLTestSkill::from_json(const nlohmann::json &parameters){
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"x",x)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"x",x)){
         spdlog::error("Missing parameter: x");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"A",A)){
+    if(!mirmi_utils::read_json_param(parameters,"A",A)){
         A=10;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"x_0",x_0)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"x_0",x_0)){
         x_0.setZero();
     }
     return true;

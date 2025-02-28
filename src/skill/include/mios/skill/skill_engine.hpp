@@ -44,7 +44,7 @@ public:
     void log_data(const Percept& p);
 
 private:
-    void init_logs();
+    void init_logs(const nlohmann::json& log_meta);
     void write_logs();
     bool get_percept(const Percept& p);
     bool load_skill(std::shared_ptr<Skill> skill);
@@ -59,6 +59,7 @@ private:
     bool m_queue;
 
     std::vector<nlohmann::json> m_data_log;
+    nlohmann::json m_log_meta;
     long m_log_cnt;
 
 };

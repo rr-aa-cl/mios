@@ -4,22 +4,22 @@
 
 namespace mios{
 bool SkillParametersShove::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param<double,4,4>(parameters,"O_T_OB_g",O_T_OB_g)){
+    if(!mirmi_utils::read_json_param<double,4,4>(parameters,"O_T_OB_g",O_T_OB_g)){
         spdlog::error("Parameter O_T_OB_g could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"speed",speed)){
+    if(!mirmi_utils::read_json_param(parameters,"speed",speed)){
         spdlog::error("Parameter speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"acceleration",acceleration)){
+    if(!mirmi_utils::read_json_param(parameters,"acceleration",acceleration)){
         spdlog::error("Parameter acceleration could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"t_contactless",t_contactless)){
+    if(!mirmi_utils::read_json_param(parameters,"t_contactless",t_contactless)){
         t_contactless=0;
     }
-    if(!msrm_utils::read_json_param(parameters,"delta_x",delta_x)){
+    if(!mirmi_utils::read_json_param(parameters,"delta_x",delta_x)){
         delta_x=0;
     }
     return true;

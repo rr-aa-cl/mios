@@ -4,8 +4,8 @@
 #include "mios/skills/move_to_pose_cart.hpp"
 #include "mios/skills/move_to_contact.hpp"
 #include "mios/skills/insertion.hpp"
-#include "msrm_cpp_utils/json/json.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/json/json.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios{
 
@@ -41,10 +41,10 @@ void InsertObject::execute(){
     write_skill_object("fine_approach","goal_pose",m_insert_approach);
     write_skill_object("contact","goal_pose",m_insert_into);
     Eigen::Matrix<double,4,4> T_T_EE_g_offset;
-    T_T_EE_g_offset.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(m_offset(3),m_offset(4),m_offset(5));
+    T_T_EE_g_offset.block<3,3>(0,0)=mirmi_utils::eulerRPY_to_mat(m_offset(3),m_offset(4),m_offset(5));
     T_T_EE_g_offset.block<3,1>(0,3)=m_offset.block<3,1>(0,0);
-    overwrite_context("fine_approach","skill","T_T_EE_g",msrm_utils::from_eigen<double,4,4>(m_memory->get_object(m_insert_approach)->O_T_OB));
-    overwrite_context("fine_approach","skill","T_T_EE_g_offset",msrm_utils::from_eigen<double,4,4>(T_T_EE_g_offset));
+    overwrite_context("fine_approach","skill","T_T_EE_g",mirmi_utils::from_eigen<double,4,4>(m_memory->get_object(m_insert_approach)->O_T_OB));
+    overwrite_context("fine_approach","skill","T_T_EE_g_offset",mirmi_utils::from_eigen<double,4,4>(T_T_EE_g_offset));
     write_skill_object("insertion","Insertable",m_insertable);
     write_skill_object("insertion","InsertInto",m_insert_into);
 
@@ -64,19 +64,19 @@ void InsertObject::execute(){
 }
 
 bool InsertObject::read_parameters(const nlohmann::json& params){
-    if(!msrm_utils::read_json_param(params,"insertable",m_insertable)){
+    if(!mirmi_utils::read_json_param(params,"insertable",m_insertable)){
         spdlog::error("Missing parameter: insertable");
         return false;
     }
-    if(!msrm_utils::read_json_param(params,"insert_into",m_insert_into)){
+    if(!mirmi_utils::read_json_param(params,"insert_into",m_insert_into)){
         spdlog::error("Missing parameter: insert_into");
         return false;
     }
-    if(!msrm_utils::read_json_param(params,"insert_approach",m_insert_approach)){
+    if(!mirmi_utils::read_json_param(params,"insert_approach",m_insert_approach)){
         spdlog::error("Missing parameter: insert_approach");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(params,"offset",m_offset)){
+    if(!mirmi_utils::read_json_param<double,6,1>(params,"offset",m_offset)){
         spdlog::error("Missing parameter: offset");
         return false;
     }

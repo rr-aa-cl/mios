@@ -20,7 +20,7 @@ class SkillLibrary;
 
 class LTMemory{
 public:
-    LTMemory(unsigned database_port);
+    LTMemory(unsigned database_port, std::string robot_arm);
     bool is_ok() const;
     void link_to_st_memory(STMemory* st_memory);
     void link_to_skill_library(SkillLibrary* skill_library);
@@ -38,8 +38,10 @@ public:
 
     bool load_environment(std::unordered_map<std::string, Object> &environment);
     bool upload_environment_element(const Object &element);
-
+    bool upload_log_element(const nlohmann::json& log_entry, const nlohmann::json& meta_information);
     bool update_database();
+
+    unsigned m_database_port;
 
 private:
     bool make_database_consistent();

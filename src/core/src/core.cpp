@@ -1,9 +1,9 @@
 #include "mios/core/core.hpp"
 
-#include "msrm_cpp_utils/math/math.hpp"
-#include "msrm_cpp_utils/conversion/conversion.hpp"
-#include "msrm_cpp_utils/json/json.hpp"
-#include "msrm_cpp_utils/system/system.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/conversion/conversion.hpp"
+#include "mirmi_cpp_utils/json/json.hpp"
+#include "mirmi_cpp_utils/system/system.hpp"
 #include "mios/utils/exceptions.hpp"
 #include "mios/skill/skill.hpp"
 
@@ -26,11 +26,11 @@
 
 namespace mios {
 
-Core::Core(unsigned database_port, unsigned robot_configuration):m_memory(database_port),m_skill_engine(SkillEngine(this)),m_panda_body(PandaBody(&m_memory)),
-    m_portal(Portal("0.0.0.0",12000,"mios/core","0.0.0.0",12001,12002)),m_task_engine(TaskEngine(this)),
-    m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),m_ros_node(this,&m_task_engine,&m_portal,&m_memory),
+Core::Core(unsigned database_port, unsigned robot_configuration, std::string robot_arm):m_memory(database_port, robot_arm),m_skill_engine(SkillEngine(this)),m_panda_body(PandaBody(&m_memory)),
+    m_portal(Portal("0.0.0.0",(robot_arm == "left") ? 12000 : 13000,"mios/core","0.0.0.0",(robot_arm == "left") ? 12001 : 13001,(robot_arm == "left") ? 12002 : 13002)),m_task_engine(TaskEngine(this)),
+    m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),//m_ros_node(this,&m_task_engine,&m_portal,&m_memory),
     m_telemetry(TelemetryUDP(this,&m_portal)),m_controller_pipeline(std::make_unique<NullControllerPipeline>()),m_is_ready(false),
-    m_robot_configuration(robot_configuration),m_blend_skill(false),m_hand_grace_period(0){
+    m_robot_configuration(robot_configuration),m_robot_arm(robot_arm) ,m_blend_skill(false),m_hand_grace_period(0){
     spdlog::trace("Core::Core()");
 }
 
@@ -59,7 +59,7 @@ bool Core::initialize(){
 
     spdlog::info("Acquiring initial percept...");
     if(!refresh_percept({})){
-        spdlog::error("Could not acquire iniital percept.");
+        spdlog::error("Could not acquire initial percept.");
         return false;
     }
     spdlog::info("Initializing interfaces...");
@@ -67,7 +67,7 @@ bool Core::initialize(){
         spdlog::error("Could not initialize portal.");
         return false;
     }
-    m_ros_node.start();
+    //m_ros_node.start();
 
     m_is_ready=true;
     return true;
@@ -81,6 +81,7 @@ void Core::start(){
 
 void Core::terminate(){
     spdlog::trace("Core::terminate()");
+    m_task_engine.stop();
     m_panda_body.disconnect_from_robot();
     m_panda_body.disconnect_from_gripper();
 }
@@ -104,11 +105,11 @@ TaskEngine* Core::get_task_engine(){
 CommandInterface* Core::get_command_interface(){
     return &m_command_interface;
 }
-
+/*
 RosNode* Core::get_ros_node(){
     return &m_ros_node;
 }
-
+*/
 LearningModule* Core::get_learning_module(){
     return &m_learning_module;
 }
@@ -327,9 +328,9 @@ bool Core::grasp_object(const std::string &name,double speed){
         m_memory.get_live_context()->grasped_object=object;
         m_memory.internal_update(m_percept);
         m_memory.get_parameters()->user.load_m=object->mass;
-        m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+        m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
-        m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+        m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
         if(!m_panda_body.set_robot_parameters()){
             return false;
         }
@@ -373,9 +374,9 @@ bool Core::grasp(double width, double speed, double force,double epsilon_inner,d
         spdlog::warn("Could not update datebase.");
     }
     m_memory.get_parameters()->user.load_m=object->mass;
-    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
     m_memory.get_parameters()->user.load_I=object->OB_I;
-    m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+    m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
     m_percept.internal_model.hand_activity_state=HandActivityState::hsFinished;
     return result;
 }
@@ -395,9 +396,9 @@ bool Core::move_gripper(double width, double speed){
         spdlog::warn("Could not update datebase.");
     }
     m_memory.get_parameters()->user.load_m=object->mass;
-    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
     m_memory.get_parameters()->user.load_I=object->OB_I;
-    m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+    m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
     m_percept.internal_model.hand_activity_state=HandActivityState::hsFinished;
     return result;
 }
@@ -428,9 +429,9 @@ bool Core::set_grasped_object(const std::string &name){
         spdlog::warn("Could not update datebase.");
     }
     m_memory.get_parameters()->user.load_m=object->mass;
-    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+    m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
     m_memory.get_parameters()->user.load_I=object->OB_I;
-    m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+    m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
     return m_panda_body.set_robot_parameters();
 }
 
@@ -457,9 +458,9 @@ bool Core::release_object(std::optional<double> width, double speed){
         m_memory.get_live_context()->grasped_object=object;
         m_memory.internal_update(m_percept);
         m_memory.get_parameters()->user.load_m=object->mass;
-        m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*msrm_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
+        m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
-        m_memory.get_parameters()->frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
+        m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
         m_panda_body.set_robot_parameters();
         return true;
     }else{
@@ -474,6 +475,7 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
         return true;
     }
     bool read_successful=false;
+    int count=0;
     if(wait){
         while(!read_successful){
             if(is_busy()){
@@ -494,15 +496,30 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
             }else{
                 break;
             }
+            if(count>6){
+                count = 0;
+                spdlog::debug("reconnecting to Robot and Gripper");
+                m_panda_body.connect_to_robot(m_memory.get_parameters()->system.robot_ip);
+                m_panda_body.connect_to_gripper(m_memory.get_parameters()->system.robot_ip);
+            }
+            count++;
         }
     }else{
         if(!m_panda_body.get_robot_state(robot_state)){
             spdlog::debug("Core::refresh_percept.failed_to_acquire_robot_state");
-            return false;
+            spdlog::debug("reconnecting to Robot");
+            m_panda_body.connect_to_robot(m_memory.get_parameters()->system.robot_ip);
+            if(!m_panda_body.get_robot_state(robot_state)){
+                return false;
+            }
         }
         if(!m_panda_body.get_gripper_state(gripper_state)){
             spdlog::debug("Core::refresh_percept.failed_to_acquire_gripper_state");
-            return false;
+            spdlog::debug("reconnecting to Gripper");
+            m_panda_body.connect_to_gripper(m_memory.get_parameters()->system.robot_ip);
+            if(!m_panda_body.get_gripper_state(gripper_state)){
+                return false;
+            }
         }
 
     }
@@ -525,6 +542,11 @@ bool Core::lock_body(){
 bool Core::shutdown_body(){
     spdlog::trace("Core::shutdown_body()");
     return m_panda_body.shutdown_robot(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
+}
+
+bool Core::reboot_body(){
+    spdlog::trace("Core::reboot_body()");
+    return m_panda_body.reboot_robot(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
 }
 
 bool Core::pack_body(){

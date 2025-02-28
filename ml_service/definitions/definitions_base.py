@@ -32,13 +32,14 @@ class CostFunctionFactory(ABC):
 class ProblemDefinitionFactory(ABC):
 
     def __init__(self, robots: list, skill_class: str, learn_skills: list, setup_skills: list, reset_skills: list,
-                 termination_skills: list, cost_function: CostFunctionFactory, objects: dict):
+                 termination_skills: list, cost_function: CostFunctionFactory, objects: dict, mios_port=12000):
         self.path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
         self.skill_class = skill_class
         self.cost_function = cost_function
-        print(robots)
+        #print(robots)
         self.robots = robots
         self.objects = objects
+        self.mios_port = mios_port
 
         self.learn_context = dict()
         self.setup_instructions = list()
@@ -90,6 +91,11 @@ class ProblemDefinitionFactory(ABC):
             self.learn_context["skills"][s[1]] = json.load(f)
             self.learn_context["parameters"]["skill_types"].append(s[0])
             self.learn_context["parameters"]["skill_names"].append(s[1])
+            self.learn_context["skills"][s[1]]["control"]["nullspace"] = {
+                                                                            "K_theta": [20, 20, 15, 10, 7, 5, 2],
+                                                                            "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
+                                                                            "active": True
+                                                                        }
 
         setup_context = {
             "name": "GenericTask",
@@ -104,6 +110,11 @@ class ProblemDefinitionFactory(ABC):
             setup_context["skills"][s[1]] = json.load(f)
             setup_context["parameters"]["skill_types"].append(s[0])
             setup_context["parameters"]["skill_names"].append(s[1])
+            setup_context["skills"][s[1]]["control"]["nullspace"] = {
+                                                                        "K_theta": [20, 20, 15, 10, 7, 5, 2],
+                                                                        "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
+                                                                        "active": True
+                                                                    }
 
         self.setup_instructions.append({"method": "start_task", "parameters": setup_context})
 
@@ -120,6 +131,11 @@ class ProblemDefinitionFactory(ABC):
             reset_context["skills"][s[1]] = json.load(f)
             reset_context["parameters"]["skill_types"].append(s[0])
             reset_context["parameters"]["skill_names"].append(s[1])
+            reset_context["skills"][s[1]]["control"]["nullspace"] = {
+                                                                        "K_theta": [20, 20, 15, 10, 7, 5, 2],
+                                                                        "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
+                                                                        "active": True
+                                                                    }
 
         self.reset_instructions.append({"method": "start_task", "parameters": reset_context})
 
@@ -137,6 +153,11 @@ class ProblemDefinitionFactory(ABC):
             termination_context["skills"][s[1]] = json.load(f)
             termination_context["parameters"]["skill_types"].append(s[0])
             termination_context["parameters"]["skill_names"].append(s[1])
+            termination_context["skills"][s[1]]["control"]["nullspace"] = {
+                                                                        "K_theta": [20, 20, 15, 10, 7, 5, 2],
+                                                                        "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
+                                                                        "active": True
+                                                                    }
 
         self.termination_instructions.append({"method": "start_task", "parameters": termination_context})
 

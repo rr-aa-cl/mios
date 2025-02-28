@@ -1,5 +1,6 @@
 from utils.experiment_wizard import *
 from services.svm import SVMConfiguration
+from services.orig_psp import OrigPSPConfiguration
 from services.cmaes import CMAESConfiguration
 from utils.ws_client import call_method
 from utils.database import delete_local_results

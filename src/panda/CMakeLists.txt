@@ -41,8 +41,8 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
     ${PROJECT_NAME}::memory
-    msrm_cpp_utils::network
-    msrm_cpp_utils::conversion
+    mirmi_cpp_utils::network
+    mirmi_cpp_utils::conversion
     CONAN_PKG::pybind11
     conv_vel2pose::conv_vel2pose
     PUBLIC

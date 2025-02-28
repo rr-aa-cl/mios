@@ -29,9 +29,9 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}::manipulation_primitive
     ${PROJECT_NAME}::portal
-    msrm_cpp_utils::math
-    msrm_cpp_utils::files
-    msrm_cpp_utils::conversion
+    mirmi_cpp_utils::math
+    mirmi_cpp_utils::files
+    mirmi_cpp_utils::conversion
     PUBLIC
     mogen_p2p::mogen_p2p
     mogen_p2p_joint::mogen_p2p_joint
@@ -67,9 +67,9 @@ target_link_libraries(${MODULE_NAME}
     PRIVATE
     ${PROJECT_NAME}::${PROJECT_NAME}_project_options
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
-    msrm_cpp_utils::files
-    msrm_cpp_utils::conversion
-    msrm_cpp_utils::math
+    mirmi_cpp_utils::files
+    mirmi_cpp_utils::conversion
+    mirmi_cpp_utils::math
     ${PROJECT_NAME}::strategies
     PUBLIC
     ${PROJECT_NAME}::skill
@@ -105,9 +105,9 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::${PROJECT_NAME}_project_warnings
     ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
     ${PROJECT_NAME}::skills
-    msrm_cpp_utils::json
-    msrm_cpp_utils::math
-    msrm_cpp_utils::files
+    mirmi_cpp_utils::json
+    mirmi_cpp_utils::math
+    mirmi_cpp_utils::files
     PUBLIC
     ${PROJECT_NAME}::task
     )

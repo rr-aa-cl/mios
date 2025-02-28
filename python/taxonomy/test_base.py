@@ -7,7 +7,7 @@ import random
 class BaseTest(ABC):
 
     def __init__(self, robot: str, skill_class: str):
-        self.db_host = "collective-control-001"
+        self.db_host = "collective-012.rsi.ei.tum.de"
         self.db = "taxonomy"
         self.robot = robot
         self.path_to_default_context = os.getcwd() + "/default_contexts/"

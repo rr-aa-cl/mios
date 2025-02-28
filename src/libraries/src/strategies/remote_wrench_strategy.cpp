@@ -1,6 +1,6 @@
 #include "mios/strategies/remote_wrench_strategy.hpp"
 #include "mios/portal/portal.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 #include <functional>
 
 namespace mios {
@@ -23,12 +23,12 @@ void RemoteWrenchStrategy::get_next_command(Actuator &cmd, const Percept &p){
         if(power_scale>p_thr)power_scale=0;
         if(power_scale<=0)power_scale=1;
         if(power_in<0){
-            cmd.TF_F_ff(i)-=m_alpha(i)*msrm_utils::sgn(p.proprioception.TF_dX_EE(i))*fabs(power_in);
+            cmd.TF_F_ff(i)-=m_alpha(i)*mirmi_utils::sgn(p.proprioception.TF_dX_EE(i))*fabs(power_in);
         }
     }
-    cmd.TF_F_ff(3)=0;
-    cmd.TF_F_ff(4)=0;
-    cmd.TF_F_ff(5)=0;
+    //cmd.TF_F_ff(3)=0;
+    //cmd.TF_F_ff(4)=0;
+    //cmd.TF_F_ff(5)=0;
     if(!cmd.is_valid()){
         cmd.TF_F_ff.setZero();
     }
@@ -51,10 +51,10 @@ void RemoteWrenchStrategy::set_damping(Eigen::Matrix<double, 6, 1> alpha){
     m_alpha=alpha;
 }
 
-bool RemoteWrenchStrategy::connect(Portal *portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us,unsigned max_lost_packets){
+bool RemoteWrenchStrategy::connect(Portal *portal, const std::string name, unsigned port, unsigned buffer_size, unsigned timeout_s, unsigned timeout_us,unsigned max_lost_packets, bool multicast, const std::optional<std::string> &host, const std::optional<std::string> &multicast_group){
     m_portal=portal;
     m_stream_name=name;
-    m_receiver = m_portal->open_udp_instream(m_stream_name,port,buffer_size,timeout_s,timeout_us,max_lost_packets,std::bind(&RemoteWrenchStrategy::read_stream,this,std::placeholders::_1),false);
+    m_receiver = m_portal->open_udp_instream(m_stream_name,port,buffer_size,timeout_s,timeout_us,max_lost_packets,std::bind(&RemoteWrenchStrategy::read_stream,this,std::placeholders::_1),multicast,host, multicast_group);
     if(m_receiver==nullptr){
         return false;
     }

@@ -13,8 +13,9 @@ public:
     bool finished() override;
 
     void set_coefficients(Eigen::Matrix<double,6,1> a, Eigen::Matrix<double,6,1> f, Eigen::Matrix<double,6,1> phi);
-
+    void set_coefficients(Eigen::Matrix<double,6,1> c, Eigen::Matrix<double,6,1> a, Eigen::Matrix<double,6,1> f, Eigen::Matrix<double,6,1> phi);
 private:
+    Eigen::Matrix<double,6,1> m_c;
     Eigen::Matrix<double,6,1> m_a;
     Eigen::Matrix<double,6,1> m_f;
     Eigen::Matrix<double,6,1> m_phi;

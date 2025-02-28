@@ -1,3 +1,4 @@
+from typing import Optional
 from problem_definition.domain import Domain
 from engine.task_result import TaskResult
 from engine.task_result import QMetric
@@ -18,7 +19,7 @@ class CostFunction:
         self.max_cost = dict.fromkeys(cost_types, 1)
         self.heuristic_skills = []
         self.heuristic_expressions = "var"
-        self.finish_thr = 0
+        self.finish_thr = 1  # finsih threshold states how often optimal_thr needs to be undercut to finish
         self.normal_cost = 1
 
     def to_dict(self):
@@ -50,9 +51,10 @@ class ProblemDefinition:
     def __init__(self, skill_class: str, skill_instance: str, domain: Domain, default_context: dict,
                  setup_instructions: list, termination_instruction: list, reset_instruction: list,
                  cost_function: CostFunction, identity: list, identity_weights: list = None, tags=None,
-                 object_modifier: dict = {}, n_variations = 1):
+                 object_modifier: dict = {}, n_variations = 1, optimum_threshold:float = 0, host:str=None, variate_only_success:bool=False):
         if tags is None:
             tags = []
+        self.host = host
         self.domain = domain
         self.object_modifier = object_modifier
         self.default_context = default_context
@@ -64,8 +66,9 @@ class ProblemDefinition:
         self.skill_instance = skill_instance
         self.cost_function = cost_function
         self.tags = tags
-        self.optimum_thr = 0
+        self.optimum_thr = optimum_threshold
         self.n_variations = n_variations
+        self.variate_only_success = variate_only_success  # with an empty object_modifier this can be used to repeat successfull trials for n_variations
         if identity is None:
             self.identity = [0]
         else:
@@ -87,7 +90,10 @@ class ProblemDefinition:
         return healthy
 
     def get_task_identifier(self) -> dict:
-        return {"skill_class": self.skill_class, "tags": self.tags, "identity": self.identity}
+        return {"skill_class": self.skill_class, "tags": self.tags, "identity": self.identity,"skill_instance":self.skill_instance}
+
+    def get_identification_name(self) -> str:
+        return str(self.get_task_identifier())
 
     def to_dict(self) -> dict:
         problem_definition = {
@@ -105,7 +111,9 @@ class ProblemDefinition:
             "identity": self.identity,
             "identity_weights": self.identity_weights,
             "object_modifier": self.object_modifier,
-            "n_variations": self.n_variations
+            "n_variations": self.n_variations,
+            "optimum_threshold": self.optimum_thr,
+            "variate_only_success": self.variate_only_success
         }
         return problem_definition
 
@@ -116,7 +124,8 @@ class ProblemDefinition:
                                pd_dict["termination_instructions"], pd_dict["reset_instructions"],
                                CostFunction.from_dict(pd_dict["cost_function"]), pd_dict["identity"],
                                pd_dict["identity_weights"], pd_dict["tags"], object_modifier=pd_dict["object_modifier"],
-                               n_variations=pd_dict["n_variations"])
+                               n_variations=pd_dict["n_variations"],optimum_threshold=pd_dict["optimum_threshold"],
+                               variate_only_success=pd_dict["variate_only_success"])
         pd.domain = Domain.from_dict(pd_dict["domain"])
         pd.cost_function = CostFunction.from_dict(pd_dict["cost_function"])
         return pd

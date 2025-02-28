@@ -30,29 +30,29 @@ void TestTask3::write_custom_results(nlohmann::json &custom_results){
     custom_results["t3_s3"]=get_result().skill_results["t3_s3"].results;
     custom_results["t3_t1"]=get_subtask_result("t3_t1").custom_results;
     custom_results["t3_t2"]=get_subtask_result("t3_t2").custom_results;
-    msrm_utils::write_json_array<double,4,1>(custom_results["g"],m_g);
+    mirmi_utils::write_json_array<double,4,1>(custom_results["g"],m_g);
     custom_results["h"]=m_h;
     custom_results["i"]=m_i;
     custom_results["recovered"]=recovered;
 }
 bool TestTask3::read_parameters(const nlohmann::json& params){
     spdlog::debug("Reading parameters for task "+this->get_id());
-    if(!msrm_utils::read_json_param<double,4,1>(params,"g",m_g)){
+    if(!mirmi_utils::read_json_param<double,4,1>(params,"g",m_g)){
         m_g.setZero();
     }
-    if(!msrm_utils::read_json_param(params,"h",m_h)){
+    if(!mirmi_utils::read_json_param(params,"h",m_h)){
         m_h=false;
     }
-    if(!msrm_utils::read_json_param(params,"i",m_i)){
+    if(!mirmi_utils::read_json_param(params,"i",m_i)){
         m_i=0;
     }
-    if(!msrm_utils::read_json_param(params,"j",m_j)){
+    if(!mirmi_utils::read_json_param(params,"j",m_j)){
         m_j="none";
     }
-    if(!msrm_utils::read_json_param(params,"success",m_success)){
+    if(!mirmi_utils::read_json_param(params,"success",m_success)){
         m_success=false;
     }
-    if(!msrm_utils::read_json_param(params,"stop_level",m_stop_level)){
+    if(!mirmi_utils::read_json_param(params,"stop_level",m_stop_level)){
         m_stop_level=0;
     }
     spdlog::debug("########## Task parameters ###########");

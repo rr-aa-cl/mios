@@ -1,20 +1,20 @@
 #include "mios/skills/push.hpp"
 //#include "mios/strategies/desired_wrench_strategy.hpp"
 #include "mios/strategies/ff_strategy.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios{
 
 bool SkillParametersPush::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param<double,3,1>(parameters,"F_push",F_push)){
+    if(!mirmi_utils::read_json_param<double,3,1>(parameters,"F_push",F_push)){
         spdlog::error("Parameter F_push could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,3,1>(parameters,"DX_max",DX_max)){
+    if(!mirmi_utils::read_json_param<double,3,1>(parameters,"DX_max",DX_max)){
         spdlog::error("Parameter DX_max could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"duration",duration)){
+    if(!mirmi_utils::read_json_param(parameters,"duration",duration)){
         spdlog::error("Parameter duration could not be loaded but is mandatory.");
         return false;
     }
@@ -53,7 +53,7 @@ bool Push::check_local_suc_conditions(const Percept &p){
     }
     bool reached_distance=true;
     for(unsigned i=0;i<3;i++){
-        if((p.proprioception.T_T_EE(i,3)-m_TF_T_EE_0(i,3))*msrm_utils::sgn(skill_params->F_push(i))<skill_params->DX_max(i)){
+        if((p.proprioception.T_T_EE(i,3)-m_TF_T_EE_0(i,3))*mirmi_utils::sgn(skill_params->F_push(i))<skill_params->DX_max(i)){
             reached_distance=false;
         }
     }

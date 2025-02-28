@@ -9,48 +9,48 @@ namespace mios{
 
 
 bool SkillParametersDraw::from_json(const nlohmann::json &parameters){
-    if(!msrm_utils::read_json_param(parameters,"path_file",path_file)){
+    if(!mirmi_utils::read_json_param(parameters,"path_file",path_file)){
         spdlog::error("Parameter path_file could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"f_draw",f_draw)){
+    if(!mirmi_utils::read_json_param(parameters,"f_draw",f_draw)){
         spdlog::error("Parameter f_draw could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"file_mode",file_mode)){
+    if(!mirmi_utils::read_json_param(parameters,"file_mode",file_mode)){
         spdlog::error("Parameter file_mode could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"port_src",port_src)){
+    if(!mirmi_utils::read_json_param(parameters,"port_src",port_src)){
         spdlog::error("Parameter port_src could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"surface_distance",surface_distance)){
+    if(!mirmi_utils::read_json_param(parameters,"surface_distance",surface_distance)){
         spdlog::error("Parameter surface_distance could not be loaded but is mandatory.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_speed",approach_speed)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"approach_speed",approach_speed)){
         spdlog::error("Parameter approach_speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"approach_acc",approach_acc)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"approach_acc",approach_acc)){
         spdlog::error("Parameter approach_acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"contact_speed",contact_speed)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"contact_speed",contact_speed)){
         spdlog::error("Parameter contact_speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"contact_acc",contact_acc)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"contact_acc",contact_acc)){
         spdlog::error("Parameter contact_acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"draw_speed",draw_speed)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"draw_speed",draw_speed)){
         spdlog::error("Parameter draw_speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"draw_acc",draw_acc)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"draw_acc",draw_acc)){
         spdlog::error("Parameter draw_acc could not be loaded but is mandatory.");
         return false;
     }

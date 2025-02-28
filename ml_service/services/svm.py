@@ -3,9 +3,12 @@ import numpy as np
 import random
 import deap
 import time
+import json
+from socket import timeout
 
 from sklearn.svm import SVC
 from sklearn import mixture
+from sklearn.model_selection import KFold, cross_val_score
 
 from deap import creator
 
@@ -28,6 +31,9 @@ class SVMConfiguration(ServiceConfiguration):
         self.n_trials = 400
         self.batch_width = 1  # retrain after every trial
         self.n_immigrant = 0
+        self.batch_synchronisation = False
+        self.request_probability = 0.0
+        self.request_probability_decrease = False
 
     def __del__(self):
         print("DESTRUCTOR")
@@ -38,7 +44,10 @@ class SVMConfiguration(ServiceConfiguration):
             "n_trials": self.n_trials,
             "target_cost": self.target_cost,
             "batch_width": self.batch_width,
-            "n_immigrant": self.n_immigrant
+            "n_immigrant": self.n_immigrant,
+            "batch_synchronisation": self.batch_synchronisation,
+            "request_probability": self.request_probability,
+            "request_probability_decrease": self.request_probability_decrease,
         }
         return config
 
@@ -48,11 +57,14 @@ class SVMConfiguration(ServiceConfiguration):
         self.target_cost = config_dict["target_cost"]
         self.batch_width = config_dict["batch_width"]
         self.n_immigrant = config_dict["n_immigrant"]
+        self.batch_synchronisation = config_dict["batch_synchronisation"]
+        self.request_probability = config_dict["request_probability"]
+        self.request_probability_decrease =config_dict["request_probability_decrease"]
 
 
 class SVMService(BaseService):
-    def __init__(self):
-        super(SVMService, self).__init__()
+    def __init__(self, mios_port=12000, mongo_port=27017):
+        super(SVMService, self).__init__(mios_port, mongo_port)
 
         self.constraints_multiplier = []
         self.failure_cost = None
@@ -68,7 +80,7 @@ class SVMService(BaseService):
         self.gmm_samples = []
         self.bestSample = []
         self.svmCounter = 0
-        self.minCost = np.infty
+        self.minCost = np.inf
         self.success = []
         self.rewards = []
         self.svm_samples = []
@@ -92,21 +104,30 @@ class SVMService(BaseService):
         self.svmCounter=0
         self.neglect_samples = 0  # neglect first part of self.success, self.rewards to calculate self.mean
         self.bad_gmm_prediciton = 0  # counts how often gmm is not able to select samples which satisfy svm-predictions
-        self.minCost=np.infty
+        self.minCost=np.inf
         self.success=[]
         self.rewards=[]
         self.svm_samples=[]
         self.classifierActive=False
         self.gmm_active=False
         self.mean=0
+        self.task_identity_name = self.problem_definition.get_identification_name()
+        self.request_probability = self.configuration.request_probability
 
         self.episodes=int(self.configuration.n_trials/self.configuration.batch_width)
 
         self.limits = self.problem_definition.domain.limits
-
+        self.kb = None
         self.engine.register_stop_condition(self._is_learned)
 
     def _learn_task(self):
+        if self.knowledge:
+            if self.knowledge.kb_location is not None:
+                print("kb_location = ",self.knowledge.kb_location)
+                self.kb = ServerProxy("http://" + self.knowledge.kb_location + ":8001")
+        else:
+            self.kb = None
+
         self.mat_bounds = []
         self.numberOfParameters = len(self.limits)
         for p in self.limits.keys():
@@ -120,6 +141,8 @@ class SVMService(BaseService):
 
         for i in range(0, int(self.configuration.n_trials / self.configuration.batch_width)):
             if self.keep_running is False:
+                break
+            if self.minCost < self.problem_definition.optimum_thr:
                 break
             self._setSamples(self.cnt_batch)#done
             self._run_trial_par(self.action_list_norm)#td
@@ -145,77 +168,204 @@ class SVMService(BaseService):
 
     def _run_trial_par(self, x_set: list):
         """ create array of rpc params for input """
-        self.cnt_trial = 0
         print("Evaluating batch " + str(self.cnt_batch))
-        self.cnt_batch += 1
 
-        self.cnt_trial += 1
+        if self.configuration.batch_synchronisation:
+            if self.kb is not None:
+                while self.kb.wait_for_collective(self.host_name, int(self.cnt_batch)):
+                    time.sleep(5)
+            else:
+                logger.error("SVM: Batch synchronisation is ON but no kb_location was set.")
+        
+
+        self.cnt_trial += self.configuration.batch_width
 
         trial_uuids = dict()
 
-        if self.knowledge_source is None:
-            kb = None
+        x_set_external = []
+        new_set = []
+        if self.kb is not None and self.configuration.request_probability == 0 and self.configuration.n_immigrant > 0:
+            while True:
+                try:
+                    new_set = self.kb.request_trials(str(self.task_identity_name), self.configuration.n_immigrant)  # new_set: list of tuples: [(Theta, Cost, Origin), ...]
+                    break
+                except timeout:
+                    time.sleep(random.randint(5,10))
+            if len(new_set) > 0:
+                x_set_external = x_set[-len(new_set):]
+                x_set = x_set[:-len(new_set)]
+                for i in range(len(new_set)):   # checking for non_sharable parts of the parameter vector which would be not overwritten (don't used as default)
+                    for j in range(len(new_set[i])):
+                        if self.problem_definition.domain.vector_mapping[j] in self.problem_definition.domain.non_shareables:
+                            print("Not sharing: " + self.problem_definition.domain.vector_mapping[j])
+                            new_set[i][j] = x_set_external[i][j]
+                for i in new_set:
+                    x_set.append(i[0])
+                    #costs.append((i[1],))    # we evaluate the cost on this robot again
+                new_set.reverse()
         else:
-            kb = ServerProxy("http://" + self.knowledge_source["kb_location"] + ":8001")
+            print("no external trials")
 
-        x_set_external = x_set[len(x_set) - self.configuration.n_immigrant:]
-        x_set = x_set[:len(x_set) - self.configuration.n_immigrant]
-        print(len(x_set) + len(x_set_external))
-
-        for x in x_set:
-            uuid = self.push_trial(x)
-            trial_uuids[uuid] = x
-
+        
+        x_set.reverse() # so the external trials come first
+        
         costs = []
         self.success_ratio = 0
-        for uuid in trial_uuids:
-            result = self.wait_for_result(uuid)
-            if result.q_metric.final_cost is None:
-                logger.error("None was returned as cost, invoking stop.")
-                self.stop()
-                costs.append((0,))
-            else:
-                self.success_ratio += result.q_metric.success
-                costs.append((result.q_metric.final_cost,))
-            if kb is not None:
+        if self.cnt_batch==0 and len(self.initial_knowledge_list)>0:
+            len_first_batch = len(self.initial_knowledge_list)
+            if len_first_batch < self.configuration.batch_width:
+                len_first_batch = self.configuration.batch_width
+            for i in range(len_first_batch):
                 theta = []
-                for i in range(len(trial_uuids[uuid])):
-                    theta.append(float(trial_uuids[uuid][i]))
-                kb.push_trial(self.host_name, theta, float(result.q_metric.final_cost), self.configuration.batch_width)
-                # kb.push_trial_2(theta, float(result.final_cost), self.problem_definition.cost_function.geometry_factor)
+                try:
+                    external = self.initial_knowledge_list[i].identification_name
+                    for key in self.initial_knowledge_list[i].parameters:
+                        theta.append(self.initial_knowledge_list[i].parameters[key])
+                    theta = self.problem_definition.domain.normalize(np.asarray(theta))
+                except IndexError:
+                    external = False
+                    theta = x_set[i]
+                try:
+                    x_set[i] = theta
+                except IndexError:
+                    x_set.append(theta)
+                uuid = self.push_trial(theta, external=external)
+                trial_uuids[uuid] = theta
+                ##same as below:
+                result = self.wait_for_result(uuid)
+                if result.q_metric.final_cost is None:
+                    logger.error("None was returned as cost, invoking stop.")
+                    self.stop()
+                    costs.append((0,))
+                else:
+                    self.success_ratio += result.q_metric.success
+                    costs.append((result.q_metric.final_cost,))
+                print("result.q_metric.success: ",result.q_metric.success)
+                if external:
+                    if external not in self.external_success:
+                        self.external_success[external] = [] 
+                    self.external_success[external].append(int(result.q_metric.success))
+                    self.similarity_estimate[external] = float(np.mean(self.external_success[external]))
+                    if self.configuration.request_probability_decrease:  # calculate request probability
+                        max_sim = max(self.similarity_estimate.values())
+                        if self.request_probability > 0.5:
+                            self.request_probability = self.request_probability * 0.96  # takes 17 external trial for request_probabiltiy of 1 to fall under 0.45
+                        else:
+                            if max_sim > 0:
+                                if np.mean(self.internal_success)/max_sim > 1:  # internal trials are better than external
+                                    self.request_probability = self.request_probability * 0.96
+                                else:  #external trials are better
+                                    self.request_probability = self.request_probability * 1.04
+                            else:
+                                self.request_probability = self.request_probability * 0.96
+                else:
+                    self.internal_success.append(result.q_metric.success)
+                #if self.configuration.request_probability_decrease:
+                #    max_sim = max(self.similarity_estimate.values())
+                #    self.request_probability = np.tanh(max_sim*2.5)  # map the best similarity (0..1) to request probability
+                if self.request_probability<0.01 and self.request_probability>0:
+                    self.request_probability = 0.05
+                if result.q_metric.success:
+                    if self.kb is not None:
+                        theta = []
+                        for i in range(len(trial_uuids[uuid])):
+                            theta.append(float(trial_uuids[uuid][i]))
+                        while True:
+                            try:
+                                self.kb.push_trial(self.task_identity_name, theta, float(result.q_metric.final_cost), self.configuration.batch_width*5)
+                                break
+                            except timeout:
+                                time.sleep(random.randint(5,10))
+        else:
+            for i in range(len(x_set)):
+                external = False
+                if i<len(x_set_external):  # mark the first trials as external (if n_immigrants is used, wont happen for request_probability)
+                    external=new_set[i][2]  # agent name of trial origin
+                print("\n\n request_probability",self.request_probability)
+                if self.request_probability > 0:
+                    if random.random() < self.request_probability:
+                        print("requesting 1 trial with ", self.similarity_estimate, " \nfrom ",self.task_identity_name)
+                        try:
+                            #new_trial = self.kb.request_trials(str(self.task_identity_name), 1, self.similarity_estimate)[0]  # take first Tuple of the list
+                            new_trial = self.knowledge_manager.receive_trial_fast_pipe(self.problem_definition.skill_instance,self.problem_definition.tags, self.problem_definition.skill_class)
+                            external = new_trial[2]
+                            uuid = self.push_trial(new_trial[0], external=external)
+                        except IndexError:
+                            print("request_trial was returning 0 trials")
+                            uuid = self.push_trial(x_set[i], external=external)
+                    else:
+                        uuid = self.push_trial(x_set[i], external=external)
+                else:
+                    uuid = self.push_trial(x_set[i], external=external)  # evalutae the trials (->engine->mios)
+                trial_uuids[uuid] = x_set[i]
+                ##same as above:
+                result = self.wait_for_result(uuid)
+                if result.q_metric.final_cost is None:
+                    logger.error("None was returned as cost, invoking stop.")
+                    self.stop()
+                    costs.append((0,))
+                else:
+                    self.success_ratio += result.q_metric.success
+                    costs.append((result.q_metric.final_cost,))
+                print("result.q_metric.success: ",result.q_metric.success)
+                if external:
+                    if external not in self.external_success:
+                        self.external_success[external] = []
+                    self.external_success[external].append(int(result.q_metric.success))
+                    self.similarity_estimate[external] = float(np.mean(self.external_success[external]))
+                    if self.configuration.request_probability_decrease:  # calculate request probability
+                        max_sim = max(self.similarity_estimate.values())
+                        if self.request_probability > (self.configuration.request_probability/2):
+                            self.request_probability = self.request_probability * 0.93  
+                        else:
+                            if max_sim > 0:
+                                if np.mean(self.internal_success)/max_sim > 1:  # internal trials are better than external
+                                    self.request_probability = self.request_probability * 0.93
+                                else:  #external trials are better
+                                    self.request_probability = self.request_probability * 1.04
+                            else: 
+                                self.request_probability = self.request_probability * 0.93
+                else:
+                    self.internal_success.append(result.q_metric.success)
+                if result.q_metric.success:
+                    if self.kb is not None:
+                        theta = []
+                        for i in range(len(trial_uuids[uuid])):
+                            theta.append(float(trial_uuids[uuid][i]))
+                        while True:
+                            try:
+                                self.kb.push_trial(self.task_identity_name, theta, float(result.q_metric.final_cost), self.configuration.batch_width*5)
+                                break
+                            except timeout:
+                                time.sleep(random.randint(5,10))
+        for key in self.similarity_estimate:
+            if self.similarity_estimate[key] <= 0:
+                self.similarity_estimate[key] = 0.05  # small chance to sill get trials from this Task
+        # for uuid in trial_uuids:
+        #     result = self.wait_for_result(uuid)
+        #     if result.q_metric.final_cost is None:
+        #         logger.error("None was returned as cost, invoking stop.")
+        #         self.stop()
+        #         costs.append((0,))
+        #     else:
+        #         self.success_ratio += result.q_metric.success
+        #         costs.append((result.q_metric.final_cost,))
+
+        #     print("result.q_metric.success: ",result.q_metric.success)
+        #     if result.q_metric.success:
+        #         if self.kb is not None:
+        #             theta = []
+        #             for i in range(len(trial_uuids[uuid])):
+        #                 theta.append(float(trial_uuids[uuid][i]))
+        #             while True:
+        #                 try:
+        #                     self.kb.push_trial(self.task_identity_name, theta, float(result.q_metric.final_cost), self.configuration.batch_width*5)
+        #                     break
+        #                 except timeout:
+        #                     time.sleep(random.randint(5,10))
+        #             # kb.push_trial_2(theta, float(result.final_cost), self.problem_definition.cost_function.geometry_factor)
 
         self.success_ratio /= float(len(trial_uuids))
-
-        if kb is not None:
-            while True:
-                new_set = kb.request_trials(self.configuration.n_immigrant)
-                # x_set_external_tmp = []
-                # for i in range(len(x_set_external)):
-                #     x_set_external_tmp.append([])
-                #     for j in range(len(x_set_external[i])):
-                #         x_set_external_tmp[i].append(float(x_set_external[i][j]))
-                # cost_external = kb.request_online_evaluation(x_set_external_tmp, self.problem_definition.cost_function.geometry_factor)
-                if new_set is False:
-                    print("Not enought yet")
-                    time.sleep(1)
-                    continue
-                else:
-                    break
-            print("LEN new_set: " + str(len(new_set)))
-            print("LEN x_set_external: " + str(len(x_set_external)))
-            for i in new_set:
-                x_set.append(i[0])
-                costs.append((i[1],))
-            # for i in range(len(x_set_external)):
-            #     x_set.append(x_set_external[i])
-            #     costs.append((cost_external[i],))
-            for i in range(len(new_set)):
-                for j in range(len(new_set[i])):
-                    print("###################################")
-                    print(self.problem_definition.domain.non_shareables)
-                    if self.problem_definition.domain.vector_mapping[j] in self.problem_definition.domain.non_shareables:
-                        print("Not sharing: " + self.problem_definition.domain.vector_mapping[j])
-                        new_set[i][j] = x_set_external[i][j]
 
         costs_tmp = []
         for c in costs:
@@ -243,6 +393,7 @@ class SVMService(BaseService):
                 self.maxReward = reward
                 self.bestSample = x_set[i]
         logger.debug("SVM costs: " + str(costs))
+        self.cnt_batch += 1
         return costs
 
     def _run_trial(self, x):
@@ -279,17 +430,36 @@ class SVMService(BaseService):
         i = 0
         counter = 0
         if index == 0:  # when first run use knowledge if available
+
             if self.centroid is not None:
                 if not self.confidence:
                     self.confidence = 0.1
                 self.action_list_norm.append([float(param) for param in self.centroid])  # add centroid ("knowledge") to action list
                 for i in range(1,self.configuration.batch_width):  # fill up batch with random trials around centroid
                     random_trial = np.random.normal(0, self.confidence, self.numberOfParameters) + self.centroid
-                    self.action_list_norm.append(list(random_trial))       
+                    self.action_list_norm.append(list(random_trial))   
             else:
                 temp_param_norm_samples = lhs(self.numberOfParameters, samples=self.configuration.batch_width)
                 for t in temp_param_norm_samples:
                     self.action_list_norm.append(t)
+            if self.knowledge.equal_start:
+                logger.debug("svm._setSamples: searching for first batch to set equal starting conditions.")
+                while True:
+                    try:
+                        result = self.kb.get_result("ml_results", self.problem_definition.skill_class, {"meta.tags": self.knowledge.equal_tags})
+                        break
+                    except timeout:
+                        time.sleep(random.randint(5,10))
+                if result:
+                    if len(result.keys()) < (self.configuration.batch_width+2):
+                        print("found result has no full batch size")
+                        return
+                    self.action_list_norm = []
+                    for i in range(1,self.configuration.batch_width+1):
+                        self.action_list_norm.append(self.problem_definition.domain.normalize(np.asarray(self.get_params(result["n"+str(i)]["theta"]))))
+                    self.action_list_norm.reverse()
+                else:
+                    logger.debug("svm._setSamples: no equal starting batch size was found")
         else:
             while i < self.configuration.batch_width:
                 if counter>=1000:
@@ -334,11 +504,12 @@ class SVMService(BaseService):
 
                     if prediction==1:
                         #raw_input("es passiert was!")
+                        #print("accepted")
                         self.action_list_norm.append(action_norm)
                         i += 1
 
                     else:
-                        # print " rejected"
+                        #print(" rejected")
                         counter += 1
                         continue
                 else:
@@ -368,6 +539,7 @@ class SVMService(BaseService):
         return x
 
     def _trainSVM(self):
+        self.svmCounter = sum(self.success)
         if self.svmCounter >= 5:
             if self.bad_gmm_prediciton >= self.configuration.batch_width:
                 self.neglect_samples = len(self.rewards) - self.configuration.batch_width  # neglect everything bevor last (bad) batch when calculating self.mean
@@ -379,34 +551,53 @@ class SVMService(BaseService):
 
             # self.classifier.fit(self.svm_samples,self.success)
 
+            #if self.neglect_samples > 0:
+            #    print("sucess:",self.success,"\n","svm_samples:",self.svm_samples)
+            
+            # Kfold active:
+            k_fold = KFold(n_splits=5)
+            best_score = 0
             tt = 0
-            if self.neglect_samples > 0:
-                print("sucess:",self.success,"\n","svm_samples:",self.svm_samples)
-            clf = SVC(C=100000)
-            clf.fit(self.svm_samples, self.success)
-            temp = np.abs(clf.decision_function(self.svm_samples))
-            # print(clf.decision_function(self.svm_samples))
+            for train, test in k_fold.split(self.svm_samples):
+                if len(np.unique(np.asarray(self.success)[train])) > 1:  # number of classes has to be greater than 1
+                    clf = SVC(C=100000)
+                    clf.fit(np.asarray(self.svm_samples)[train], np.asarray(self.success)[train])
+                    score = clf.score(np.asarray(self.svm_samples)[test],np.asarray(self.success)[test])
+                    print("score = ",score)
+                    print("descision_function: ", clf.decision_function(self.svm_samples))
+                    if score > best_score:  # takes best score
+                        best_score = score
+                        temp = np.mean(np.abs(clf.decision_function(self.svm_samples)))
+                        if tt < temp:  # takes best decision function mean
+                            tt = temp
+                            self.classifier = clf
+                            self.classifierActive = True
 
-            if tt < temp.min():
-                tt = temp.min()
-                self.classifier = clf
 
-            # self._plotData()
+            ## Kfold inactive:
+            #if len(np.unique(np.asarray(self.success))) > 1:
+            #    clf = SVC(C=100000)
+            #    clf.fit(self.svm_samples, self.success)
+            #    self.classifierActive = True
+            #    temp = np.mean(np.abs(clf.decision_function(self.svm_samples)))
+            #    tt = 0
+            #    if tt < temp:
+            #        tt = temp
+            #        self.classifier = clf
 
-            self.classifierActive = True
-
+            print("SVM active = ",self.classifierActive)
             if self.svmCounter >= 15 and len(self.gmm_samples) > 2:    # gmm_samples > mean
 
                 for x in self.classifier.support_vectors_:
                     pass
                     # self.gmm_samples.append(x)
 
-                lowest_bic = np.infty
+                lowest_bic = np.inf
                 bic = []
                 maxcomponents = 8
                 if maxcomponents > len(self.gmm_samples):
                     maxcomponents = len(self.gmm_samples)
-                maxcomponents = 1
+                #maxcomponents = 1
                 self.sampling_gmm = mixture.BayesianGaussianMixture(n_components=maxcomponents, covariance_type='diag', n_init=3)
                 self.sampling_gmm.fit(np.asarray(self.gmm_samples))
 

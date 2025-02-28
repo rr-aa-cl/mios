@@ -2,8 +2,8 @@
 #include "mios/memory/lt_memory.hpp"
 #include "spdlog/spdlog.h"
 
-#include "msrm_cpp_utils/json/json.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/json/json.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
 
 namespace mios {
 
@@ -252,13 +252,13 @@ void STMemory::merge_live_context(){
     spdlog::trace("STMemory::merge_live_context");
     if(m_live_context.grasped_object->name!="NullObject"){
         m_parameters.user.load_m=m_live_context.grasped_object->mass;
-        m_parameters.user.load_com=(m_parameters.frames.F_T_EE*msrm_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp)).block<3,1>(0,3);
+        m_parameters.user.load_com=(m_parameters.frames.F_T_EE*mirmi_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp)).block<3,1>(0,3);
         m_parameters.user.load_I=m_live_context.grasped_object->OB_I;
-        m_parameters.frames.EE_T_TCP=msrm_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp)*m_live_context.grasped_object->OB_T_TCP;
+        m_parameters.frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp)*m_live_context.grasped_object->OB_T_TCP;
     }
 }
 
-bool STMemory::update_object(const std::string &name, bool teach_width, const Percept& p){
+bool STMemory::update_object(const std::string &name, bool teach_width, double teach_force, const Percept& p){
     spdlog::trace("STMemory::update_object(string,bool,Percept)");
     if(name=="NullObject" || name=="NoneObject"){
         spdlog::error("Cannot overwrite NullObject or NoneObject.");
@@ -267,11 +267,12 @@ bool STMemory::update_object(const std::string &name, bool teach_width, const Pe
     if(m_environment.find(name)==m_environment.end()){
         m_environment.insert(std::make_pair(name,Object(name)));
     }
-    m_environment.at(name).O_T_OB=p.proprioception.O_T_EE*msrm_utils::invert_transformation_matrix(m_environment.at(name).OB_T_gp);
+    m_environment.at(name).O_T_OB=p.proprioception.O_T_EE*mirmi_utils::invert_transformation_matrix(m_environment.at(name).OB_T_gp);
     m_environment.at(name).q=p.proprioception.q;
     if(teach_width){
         m_environment.at(name).grasp_width=p.proprioception.finger_width;
     }
+    m_environment.at(name).grasp_force=teach_force;
     if(!m_lt_memory->upload_environment_element(m_environment.at(name))){
         return false;
     }
@@ -323,7 +324,7 @@ bool STMemory::update_partial_object(const std::string &name, const nlohmann::js
     }
     if(description.find("R")!=description.end()){
         Eigen::Matrix<double,3,3> R_tmp;
-        if(!msrm_utils::read_json_param<double,3,3>(description,"R",R_tmp)){
+        if(!mirmi_utils::read_json_param<double,3,3>(description,"R",R_tmp)){
             spdlog::error("Partial object data update: Rotation matrix is invalid.");
             return false;
         }
@@ -344,7 +345,7 @@ void STMemory::internal_update(const Percept &p){
     m_environment.at("EndEffector").O_T_OB=p.proprioception.O_T_EE;
     m_environment.at("EndEffector").q=p.proprioception.q;
 
-//    m_environment.at(m_live_context.grasped_object->name).O_T_OB=p.proprioception.O_T_EE*msrm_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp);
+//    m_environment.at(m_live_context.grasped_object->name).O_T_OB=p.proprioception.O_T_EE*mirmi_utils::invert_transformation_matrix(m_live_context.grasped_object->OB_T_gp);
 //    m_environment.at(m_live_context.grasped_object->name).q=p.proprioception.q;
 }
 

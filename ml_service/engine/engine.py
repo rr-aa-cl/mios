@@ -8,6 +8,7 @@ from queue import Empty
 from copy import deepcopy
 import uuid
 import numpy as np
+from xmlrpc.client import ServerProxy
 from mongodb_client.mongodb_client import MongoDBClient
 from problem_definition.problem_definition import ProblemDefinition
 from engine.task_result import TaskResult
@@ -19,7 +20,7 @@ logger = logging.getLogger("ml_service")
 
 
 class Trial:
-    def __init__(self, task_context: dict, reset_instructions: list, theta: dict, log: bool = True):
+    def __init__(self, task_context: dict, reset_instructions: list, theta: dict, log: bool = True, external = False):
         self.task_context = task_context
         self.reset_instructions = reset_instructions
         self.theta = theta
@@ -36,6 +37,28 @@ class Trial:
         self.trial_number = 0
         self.log = log
 
+        self.external = external
+
+    def to_dict(self):
+        for key in self.theta.keys():
+            self.theta[key] = float(self.theta[key])
+        trial_dict = {
+            "task_context": self.task_context,
+            "reset_instructions": self.reset_instructions,
+            "theta": self.theta,
+            "task_result": self.task_result.to_dict(),
+            "t_0": self.t_0,
+            "t_1": self.t_1,
+            "t_delta": self.t_delta,
+            "task_uuid": self.task_uuid,
+            "trial_uuid": self.trial_uuid,
+            "agent": self.agent,
+            "trial_number": self.trial_number,
+            "log": self.log,
+            "external": self.external
+        }
+        return trial_dict
+
     def is_valid(self):
         if "name" not in self.task_context:
             logger.error("Task context has no name.")
@@ -44,16 +67,18 @@ class Trial:
 
 
 class Engine:
-    def __init__(self, agents: set = None):
+    def __init__(self, agents: set = None, mios_port=12000, mongo_port=27017):
         logger.debug("Engine.__init__(" + str(agents) + ")")
         if agents is None:
             agents = set()
+        self.mios_port = mios_port
+        self.mongo_port = mongo_port
         self.agents = agents
         self.free_agents = agents
         self.queued_trials = Queue()
         self.completed_trials = dict()
 
-        self.database_client = MongoDBClient()
+        self.database_client = MongoDBClient(port=self.mongo_port)
         self.database_results_collection = None
         self.database_results_id = None
 
@@ -61,6 +86,7 @@ class Engine:
         self.meta_data = dict()
 
         self.keep_running = False
+        self.pause_execution = False
         self.max_trial_repeats = 3
 
         self.cnt_trial = 0
@@ -95,6 +121,12 @@ class Engine:
 
     def stop(self):
         self.keep_running = False
+    
+    def pause(self):
+        self.pause_execution = True
+
+    def resume(self):
+        self.pause_execution = False
 
     def push_trial(self, trial: Trial) -> str:
         logger.debug("Engine.push_trial()")
@@ -126,7 +158,9 @@ class Engine:
         self.problem_definition = problem_definition
         self.meta_data = problem_definition.to_dict()
         self.meta_data["t_0"] = time.time()
-        self.meta_data["date"] = str(datetime.datetime.now())
+        now = datetime.datetime.now()
+        now.strftime("%Y-%m-%d_%H:%M:%S")
+        self.meta_data["date"] = now.strftime("%Y-%m-%d_%H:%M:%S")
         self.database_results_collection = self.database_client.client.ml_results[problem_definition.skill_class]
         self.database_results_id = self.database_results_collection.insert_one(
             {"meta": self.meta_data}).inserted_id
@@ -136,7 +170,7 @@ class Engine:
         if self.exploration_mode is True:
             return False
         else:
-            return self.cnt_optimal > self.problem_definition.cost_function.finish_thr
+            return self.cnt_optimal > self.problem_definition.cost_function.finish_thr  # finsih threshold states how often a optimal_thr was undercut to finish
 
     def main_loop(self):
         logger.debug("Engine.main_loop()")
@@ -158,7 +192,7 @@ class Engine:
 
         while self.keep_running is True:
             try:
-                # logger.debug("Engine::main_loop.get_trial")
+                #logger.debug("Engine::main_loop.get_trial")
                 trial = self.queued_trials.get(False)
                 # logger.debug("Engine::main_loop.new_trial: " + trial.trial_uuid)
             except Empty:
@@ -178,12 +212,12 @@ class Engine:
                         # time.sleep(1)
                         continue
                     if worker_threads[a] is not None and worker_threads[a].is_alive() is True:
-                        logger.debug("Thread of agent " + a + " is alive")
-                        # time.sleep(1)
+                        # logger.debug("Thread of agent " + a + " is alive")
+                        time.sleep(0.1)
                         continue
 
                     # logger.debug("Engine.main_loop().is_busy(" + a + ")")
-                    response = call_method(a, 12000, "is_busy")
+                    response = call_method(a, self.mios_port, "is_busy")
                     if response is None:
                         logger.debug("is_busy on agent " + a + ": response is None")
                         # time.sleep(1)
@@ -214,19 +248,37 @@ class Engine:
         self._run_trial(agent, trial)
         self.free_agents.add(agent)
         logger.debug("Free agent " + agent)
+        try:  # just to be sure
+            with ServerProxy("http://" + agent + ":9000") as s:
+                logger.debug("stop_recoring video")
+                s.stop_recording()
+        except:
+            pass
 
     def _run_trial(self, agent: str, trial: Trial):
         if trial.is_valid() is False:
             raise ProblemDefinitionError
-
         trial.trial_number = self.cnt_trial
         self.cnt_trial += 1
         trial.t_0 = time.time()
+        # start video recording
+        try:
+            with ServerProxy("http://" + agent + ":9000") as s:
+                folder = ""
+                for tag in self.problem_definition.tags:
+                    folder = folder + tag
+                folder = folder +"/" + self.meta_data["date"] + "/"
+                trial_name = "n"+str(trial.trial_number)+"_"+str(trial.t_0)
+                logger.debug("start recording at "+folder+trial_name+".mp4")
+                s.start_recording(folder+trial_name)
+                time.sleep(2)
+        except:
+            pass
+
         for i in range(self.problem_definition.n_variations):
-            print("Running variation " + str(i))
+            #print("Running variation " + str(i))
             self.problem_definition.apply_object_modifiers(trial.task_context)
             result, variation_result = self._execute_task(agent, trial)
-
             if self.keep_running is True:
                 if result is False:
                     logger.warning("Could not execute task for agent " + agent + ". Trial will be re-inserted into queue.")
@@ -234,6 +286,7 @@ class Engine:
                     self._reset_task(agent, trial)
                     return
             else:
+                self._reset_task(agent, trial)
                 break
 
             theta = np.zeros((1, (len(self.problem_definition.domain.limits))))
@@ -247,7 +300,6 @@ class Engine:
 
             trial.t_1 = time.time()
             trial.t_delta = trial.t_1 - trial.t_0
-            print("#######################")
             print(trial.trial_number)
 
             self.lock_data.acquire()
@@ -256,7 +308,17 @@ class Engine:
                 self.y = np.append(self.y, trial.task_result.q_metric.final_cost)
             self.lock_data.release()
             self._reset_task(agent, trial)
-
+            logger.debug("ENGINE: success "+str(trial.task_result.q_metric.success)+ ", do vaiation only on success? "+str(self.problem_definition.variate_only_success) )
+            if self.problem_definition.variate_only_success is True and trial.task_result.q_metric.success is False:
+                logger.debug("ENGINE: do not variate")
+                break
+            logger.debug("ENGINE:"+ str(i+1)+ ". variation done. Do "+str(self.problem_definition.n_variations)+" in total. ")
+        try:
+            with ServerProxy("http://" + agent + ":9000") as s:
+                logger.debug("stop_recoring video")
+                s.stop_recording()
+        except:
+            pass
         logger.debug("Cost: " + str(trial.task_result.q_metric.final_cost))
         logger.debug("FINISHED trial " + str(self.cnt_trial) + " with uuid " + trial.trial_uuid)
         if trial.task_result.q_metric.optimal is True:
@@ -283,8 +345,6 @@ class Engine:
                 logger.error("Result was False after start_task")
                 return False, None
             result, variation_result = self._wait_for_task(agent, task_uuid)
-            variation_result.q_metric = self.problem_definition.calculate_cost(variation_result)
-            print(variation_result.q_metric.final_cost)
             if result is False:
                 logger.error("Result was False after wait_for_task")
                 return False, None
@@ -300,7 +360,8 @@ class Engine:
                 logger.warning("Received a user stop error, trial will be repeated.")
                 time.sleep(1)
                 return False, None
-
+            variation_result.q_metric = self.problem_definition.calculate_cost(variation_result)
+            #print(variation_result.q_metric.final_cost)
             break
         logger.debug("Engine::_execute_task.end")
         return cnt_repeat < self.max_trial_repeats and self.keep_running is True, variation_result
@@ -308,10 +369,10 @@ class Engine:
     def _reset_task(self, agent: str, trial: Trial):
         logger.debug("Engine::_reset_task()")
         for i in trial.reset_instructions:
-            logger.debug("Engine::_reset_task.instructions: " + str(i["parameters"]))
+            #logger.debug("Engine::_reset_task.instructions: " + str(i["parameters"]))
             instruction_done = False
             while instruction_done is False:
-                logger.debug("Engine::_reset_task.loop")
+                #logger.debug("Engine::_reset_task.loop")
                 if i["method"] == "start_task":
                     result, task_uuid = self._start_task(agent, i["parameters"])
                     if result is False:
@@ -327,7 +388,7 @@ class Engine:
                         time.sleep(1)
                         continue
                 else:
-                    response = call_method(agent, 12000, i["method"], i["parameters"])
+                    response = call_method(agent, self.mios_port, i["method"], i["parameters"])
                     if response is None:
                         logger.debug(response)
                         time.sleep(1)
@@ -335,14 +396,16 @@ class Engine:
 
                 instruction_done = True
 
-        logger.debug("Engine::_reset_task.end")
+        #logger.debug("Engine::_reset_task.end")
 
     def _start_task(self, agent: str, task_context: dict) -> (bool, str):
         task_uuid = "INVALID"
         task_name = task_context["name"]
-        logger.info("Executing task " + task_name + " on agent " + agent + ".")
+        while(self.pause_execution and self.keep_running):
+            time.sleep(1)
+        logger.info("_start_task::Executing task " + task_name + " on agent " + agent + ".")
         # logger.debug("Task context: " + str(task_context))
-        response = start_task(agent, task_name, task_context, True)
+        response = start_task(agent, task_name, task_context, True, port=self.mios_port)
         if response is None:
             logger.warning("Agent " + agent + " is not responding.")
             time.sleep(1)
@@ -366,12 +429,12 @@ class Engine:
             return False, task_uuid
 
         task_uuid = response["result"]["task_uuid"]
-        logger.debug("Engine::_start_Task.end")
+        #logger.debug("Engine::_start_Task.end")
         return True, task_uuid
 
     def _wait_for_task(self, agent: str, task_uuid: str) -> (bool, TaskResult):
         task_result = TaskResult()
-        response = wait_for_task(agent, task_uuid)
+        response = wait_for_task(agent, task_uuid, port=self.mios_port)
         # logger.debug("Engine._wait_for_task.response: " + str(response))
         if response is None:
             logger.warning("Agent " + agent + " is not responding.")
@@ -419,7 +482,7 @@ class Engine:
                         time.sleep(1)
                         continue
                 else:
-                    response = call_method(agent, 12000, i["method"], i["parameters"])
+                    response = call_method(agent, self.mios_port, i["method"], i["parameters"])
                     if response is None:
                         logger.debug(response)
                         time.sleep(1)
@@ -444,7 +507,8 @@ class Engine:
             "t_0": trial.t_0,
             "t_1": trial.t_1,
             "t_delta": trial.t_delta,
-            "agent": trial.agent
+            "agent": trial.agent,
+            "external": trial.external
         }
         logger.debug("Engine::write_task_result.data: " + str(data))
         self.database_results_collection.update_one({'_id': self.database_results_id},

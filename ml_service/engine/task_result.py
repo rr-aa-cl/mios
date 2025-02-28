@@ -34,8 +34,22 @@ class TaskResult:
         self.errors = []
         self.q_metric = QMetric()
         self.n_variations = 1
+    
+    def to_dict(self):
+        task_result_dict = {
+            "q_metric":self.q_metric.to_dict(),
+            "n_varialtions": self.n_variations,
+            "errors": self.errors
+        }
+        return task_result_dict
 
     def add_variation(self, q_metric: QMetric):
+        '''
+        combine q_metrics: 
+        - set success according to worst q_metric in all variations
+        - calculate success_rate, cost and heuristic as mean of all variations
+        - if success of all q_metric is equal: calculate final_cost as mean of all variations
+        '''
         self.n_variations += 1
         if q_metric.success is False and self.q_metric.success is True:
             self.q_metric.final_cost = q_metric.final_cost
@@ -55,6 +69,10 @@ class TaskResult:
             self.q_metric.cost[c] = (self.q_metric.cost[c] * (self.n_variations - 1) + q_metric.cost[c]) / self.n_variations
 
     def calculate(self, result: dict) -> bool:
+        '''
+        calculate q_metric from mios task result
+        input: result (dict) is the feedback json comming from mios
+        '''
         if "success" not in result:
             logger.error("No success indicator in result.")
             return False
@@ -67,6 +85,8 @@ class TaskResult:
         self.q_metric.heuristic = 0
         for skill, r in result["skill_results"].items():
             for cost_type, cost_value in r["cost"].items():
+                if r["cost"][cost_type] is None:
+                    return False
                 self.q_metric.cost[cost_type] += r["cost"][cost_type]
                 if r["heuristic"] is not None:
                     self.q_metric.heuristic += r["heuristic"]

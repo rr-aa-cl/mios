@@ -17,6 +17,7 @@
 #include <functional>
 #include <atomic>
 #include <mutex>
+#include <Eigen/Dense>
 
 namespace mios {
 
@@ -38,6 +39,7 @@ public:
     bool stop_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string &password);
     void wait_for_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string& password);
     bool shutdown_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password);
+    bool reboot_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password);
     bool move_to_pack_pose(const std::optional<std::string> &ip, const std::string user, const std::string& password);
     bool unlock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password);
     bool lock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password);
@@ -48,6 +50,8 @@ public:
     bool stop_gripper();
     bool home_gripper() const;
     bool is_hand_active();
+    bool activate_fci();
+    bool deactivate_fci();
 
 public:
     ControlReturnType control(std::function<franka::Torques(const franka::RobotState &, franka::Duration)> controller_callback);
@@ -77,8 +81,14 @@ private:
     std::optional<std::string> get_robot_ip(const std::optional<std::string>& last_ip);
     bool is_robot(const std::string& ip);
     std::optional<std::string> find_robot();
+    std::optional<std::string> find_device(const std::string &network_interface);
+    std::optional<std::string> ping_robot(const std::optional<std::string> &last_ip);
     void get_default_robot_state(franka::RobotState& state) const;
     void get_default_gripper_state(franka::GripperState& state) const;
+    std::array<double, 16> forward_kinematics(franka::RobotState& state) const;
+    Eigen::Matrix4d dhTransformationMatrix(double theta, double d, double a, double alpha) const;
+    //std::array<double, 16> get_WF_T_EE(franka::RobotState& state) const;
+    //std::array<double, 16> get_TF_T_EE(franka::RobotState& state) const;
 
 private:
     std::unique_ptr<franka::Robot> m_panda_arm;

@@ -5,31 +5,31 @@
 namespace mios {
 
 bool SkillParametersInsertion::from_json(const nlohmann::json &parameters){
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"traj_speed",traj_speed)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"traj_speed",traj_speed)){
         spdlog::error("Parameter traj_speed could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"traj_acc",traj_acc)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"traj_acc",traj_acc)){
         spdlog::error("Parameter traj_acc could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"stuck_dx_thr",stuck_dx_thr)){
+    if(!mirmi_utils::read_json_param(parameters,"stuck_dx_thr",stuck_dx_thr)){
         spdlog::error("Parameter stuck_dx_thr could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"search_a",search_a)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"search_a",search_a)){
         spdlog::error("Parameter search_a could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"search_f",search_f)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"search_f",search_f)){
         spdlog::error("Parameter search_f could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_x",ROI_x)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"ROI_x",ROI_x)){
         spdlog::error("Parameter ROI_x could not be loaded but is mandatory.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"ROI_phi",ROI_phi)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"ROI_phi",ROI_phi)){
         spdlog::error("Parameter ROI_phi could not be loaded but is mandatory.");
         return false;
     }

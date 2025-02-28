@@ -59,6 +59,8 @@ private:
     std::shared_ptr<ManipulationPrimitive> create_contact_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_insert_mp(const Percept& p);
     std::shared_ptr<ManipulationPrimitive> create_wiggle_mp(const Percept& p);
+    std::shared_ptr<ManipulationPrimitive> create_calibration_mp(const Percept &p);
+
 
     bool check_local_pre_conditions(const Percept &p) override;
     bool check_local_suc_conditions(const Percept &p) override;
@@ -77,6 +79,8 @@ private:
     std::vector<double> m_dx_avg_mem;
 
     bool m_is_stuck;
+    Eigen::Matrix<double,6,1> Bias;
+    int dataCount;
 };
 
 }

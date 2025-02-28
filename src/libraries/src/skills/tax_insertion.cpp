@@ -5,7 +5,9 @@
 #include "mios/strategies/ff_wiggle_strategy.hpp"
 #include "mios/strategies/ff_wrench_lissajous_strategy.hpp"
 #include "mios/strategies/twist_strategy.hpp"
-#include "msrm_cpp_utils/math/math.hpp"
+#include "mirmi_cpp_utils/math/math.hpp"
+#include "mios/strategies/null_strategy.hpp"
+
 
 namespace mios {
 
@@ -15,19 +17,19 @@ bool SkillParametersTaxInsertion::from_json(const nlohmann::json &parameters){
         spdlog::error("Parameters for primitive 0 are missing.");
         return false;
     }else if(parameters.find("p0")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p0"],"K_x",p0.K_x)){
             spdlog::error("Missing parameter: p0.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p0"],"DeltaX",p0.DeltaX)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p0"],"DeltaX",p0.DeltaX)){
             spdlog::error("Missing parameter: p0.DeltaX");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"dX_d",p0.dX_d)){
             spdlog::error("Missing parameter: p0.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p0"],"ddX_d",p0.ddX_d)){
             spdlog::error("Missing parameter: p0.ddX_d");
             return false;
         }
@@ -37,15 +39,15 @@ bool SkillParametersTaxInsertion::from_json(const nlohmann::json &parameters){
         spdlog::error("Parameters for primitive 1 are missing.");
         return false;
     }else if(parameters.find("p1")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p1"],"K_x",p1.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p1"],"K_x",p1.K_x)){
             spdlog::error("Missing parameter: p1.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p1"],"dX_d",p1.dX_d)){
             spdlog::error("Missing parameter: p1.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p1"],"ddX_d",p1.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p1"],"ddX_d",p1.ddX_d)){
             spdlog::error("Missing parameter: p1.ddX_d");
             return false;
         }
@@ -55,31 +57,31 @@ bool SkillParametersTaxInsertion::from_json(const nlohmann::json &parameters){
         spdlog::error("Parameters for primitive 2 are missing.");
         return false;
     }else if(parameters.find("p2")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"K_x",p2.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"K_x",p2.K_x)){
             spdlog::error("Missing parameter: p2.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"search_a",p2.search_a)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"search_a",p2.search_a)){
             spdlog::error("Missing parameter: p2.search_a");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"search_f",p2.search_f)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"search_f",p2.search_f)){
             spdlog::error("Missing parameter: p2.search_f");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"search_phi",p2.search_phi)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"search_phi",p2.search_phi)){
             spdlog::error("Missing parameter: p2.search_phi");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p2"],"f_push",p2.f_push)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p2"],"f_push",p2.f_push)){
             spdlog::error("Missing parameter: p2.f_push");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p2"],"dX_d",p2.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p2"],"dX_d",p2.dX_d)){
             spdlog::error("Missing parameter: p2.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p2"],"ddX_d",p2.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p2"],"ddX_d",p2.ddX_d)){
             spdlog::error("Missing parameter: p2.ddX_d");
             return false;
         }
@@ -89,19 +91,19 @@ bool SkillParametersTaxInsertion::from_json(const nlohmann::json &parameters){
         spdlog::error("Parameters for primitive 3 are missing.");
         return false;
     }else if(parameters.find("p3")!=parameters.end()){
-        if(!msrm_utils::read_json_param<double,6,1>(parameters["p3"],"K_x",p3.K_x)){
+        if(!mirmi_utils::read_json_param<double,6,1>(parameters["p3"],"K_x",p3.K_x)){
             spdlog::error("Missing parameter: p3.K_x");
             return false;
         }
-        if(!msrm_utils::read_json_param(parameters["p3"],"f_push",p3.f_push)){
+        if(!mirmi_utils::read_json_param(parameters["p3"],"f_push",p3.f_push)){
             spdlog::error("Missing parameter: p3.f_push");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"dX_d",p3.dX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p3"],"dX_d",p3.dX_d)){
             spdlog::error("Missing parameter: p3.dX_d");
             return false;
         }
-        if(!msrm_utils::read_json_param<double,2,1>(parameters["p3"],"ddX_d",p3.ddX_d)){
+        if(!mirmi_utils::read_json_param<double,2,1>(parameters["p3"],"ddX_d",p3.ddX_d)){
             spdlog::error("Missing parameter: p3.ddX_d");
             return false;
         }
@@ -130,41 +132,44 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::get_initial_mp(const Percep
     return create_approach_mp(p_0);
 }
 
+Eigen::Matrix<double,6,1> calcBias(Eigen::Matrix<double,6,1> newData, Eigen::Matrix<double,6,1> currentBias, int dataCount) 
+{
+    return (newData - currentBias) / (dataCount + 1) + currentBias;
+}
+
 std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_transition(const Percept &p){
     if(get_active_mp()->get_name()=="approach"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
+            spdlog::warn("------------------------------- start calibration ------------------------------------");
             return create_contact_mp(p);
         }
     }
+
+    if(get_active_mp()->get_name()=="calibration"){  //skipped for now
+        Bias = calcBias(p.proprioception.K_F_ext_K, Bias, dataCount);
+        dataCount++;
+        if (dataCount > 1999){
+            std::ostringstream oss;
+            oss << Bias;
+            spdlog::warn("Bias of K_F_ext_K: [{}]", oss.str());
+            spdlog::warn("------------------------------- start contact ------------------------------------");
+            return create_contact_mp(p);
+        }
+    }
+
+
     if(get_active_mp()->get_name()=="contact"){
-        if(p.proprioception.TF_F_ext_K(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
+        if(p.proprioception.TF_F_ext_K(2) - Bias(2)>m_memory->read_parameters()->user.F_ext_contact(0)){
+            spdlog::warn("------------------------------- start wiggle ------------------------------------");
             return create_wiggle_mp(p);
         }
     }
-//    if(get_active_mp()->get_name()=="insert"){
-//        if(is_stuck(p)){
-//            return create_wiggle_mp(p);
-//        }
-//    }
+
     if(get_active_mp()->get_name()=="wiggle"){
 //        if(!is_stuck(p)){
 //            return create_insert_mp(p);
 //        }
     }
-//    if(get_active_mp()->get_name()=="insert"){
-//        if(!is_stuck(p)){
-//            return {};
-//        }else{
-//            return create_wiggle_mp(p);
-//        }
-//    }
-//    if(get_active_mp()->get_name()=="wiggle"){
-//        if(!is_stuck(p)){
-//            return create_insert_mp(p);
-//        }else{
-//            return {};
-//        }
-//    }
     return {};
 }
 
@@ -175,7 +180,7 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_approach_mp(const Pe
     mp->create_strategy<MoveToPoseStrategy>("move",1);
     std::shared_ptr<MoveToPoseStrategy> move = mp->get_strategy<MoveToPoseStrategy>("move");
     Eigen::Matrix<double,4,4> T_a_offset = get_object_pose_T("Approach");
-    T_a_offset.block<3,3>(0,0)=msrm_utils::eulerRPY_to_mat(skill_params->p0.DeltaX(3),skill_params->p0.DeltaX(4),skill_params->p0.DeltaX(5));
+    T_a_offset.block<3,3>(0,0)=mirmi_utils::eulerRPY_to_mat(skill_params->p0.DeltaX(3),skill_params->p0.DeltaX(4),skill_params->p0.DeltaX(5));
     Eigen::Matrix<double,4,4> T_a = get_object_pose_T("Approach");
     T_a.block<3,3>(0,0)=T_a_offset.block<3,3>(0,0)*T_a.block<3,3>(0,0);
     T_a.block<3,1>(0,3)+=skill_params->p0.DeltaX.block<3,1>(0,0);
@@ -185,8 +190,18 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_approach_mp(const Pe
     return mp;
 }
 
+std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_calibration_mp(const Percept &p){
+    spdlog::trace("TaxInsertion::create_calibration_mp()");
+    Bias.setZero();
+    dataCount = 0;
+    std::shared_ptr<ManipulationPrimitive> mp = create_mp("calibration",p);
+    mp->create_strategy<NullStrategy>("hold",1);
+    return mp;
+}
+
+
 std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_contact_mp(const Percept &p){
-    spdlog::trace("TaxInsertion::create_contact_mp()");
+    spdlog::debug("TaxInsertion::create_contact_mp()");
     std::shared_ptr<SkillParametersTaxInsertion> skill_params = get_parameters<SkillParametersTaxInsertion>();
     std::shared_ptr<ManipulationPrimitive> mp = create_mp("contact",p);
     mp->create_strategy<TwistStrategy>("move",1);
@@ -242,6 +257,7 @@ std::shared_ptr<ManipulationPrimitive> TaxInsertion::create_wiggle_mp(const Perc
 //    Eigen::Matrix<double,6,1> f_push;
 //    f_push<<0,0,skill_params->p2.f_push,0,0,0;
     mp->get_strategy<FFStrategy>("push")->set_TF_F_ff(skill_params->p2.f_push,m_memory->read_parameters()->limits.cartesian_space.dF_J_max);
+    mp->get_strategy<FFStrategy>("push")->set_frame(true);
     Eigen::Matrix<double,6,1> K_x=skill_params->p2.K_x;
     K_x(2)=0;
     Eigen::Matrix<double,6,1> xi_x=m_memory->read_parameters()->control.cart_imp.xi_x;
@@ -273,6 +289,39 @@ bool TaxInsertion::check_local_suc_conditions(const Percept &p){
 }
 
 bool TaxInsertion::check_local_err_conditions(const Percept &p){
+
+    if(get_active_mp()->get_name()=="approach"){
+        bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
+        if(lateral){
+            spdlog::error("searching out of ROI range in mp approach");
+        }
+        return lateral;
+    }    
+
+    if(get_active_mp()->get_name()=="contact"){
+        bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
+        bool depth = p.proprioception.T_T_EE(2,3) > get_object_pose_T("Container")(2,3) + 0.015;
+
+        if(lateral){
+            spdlog::error("searching out of ROI range in mp contact");
+        }
+        if(depth){
+            spdlog::error("Too deep");
+        }
+        return lateral && depth;
+    }
+    if(get_active_mp()->get_name()=="wiggle"){
+        bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
+        bool depth = p.proprioception.T_T_EE(2,3) > get_object_pose_T("Container")(2,3) + 0.015;
+
+        if(lateral){
+            spdlog::error("searching out of ROI range in wiggle contact");
+        }
+        if(depth){
+            spdlog::error("Too deep in wiggle mp");
+        }
+        return lateral && depth;
+    }
     return false;
 }
 

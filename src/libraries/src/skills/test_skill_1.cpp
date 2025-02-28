@@ -6,31 +6,31 @@
 namespace mios{
 
 bool SkillParametersTestSkill1::from_json(const nlohmann::json& parameters){
-    if(!msrm_utils::read_json_param(parameters,"run_time",run_time)){
+    if(!mirmi_utils::read_json_param(parameters,"run_time",run_time)){
         spdlog::debug("Could not load parameter: run_time [double]");
         run_time=0;
     }
-    if(!msrm_utils::read_json_param(parameters,"success",success)){
+    if(!mirmi_utils::read_json_param(parameters,"success",success)){
         spdlog::debug("Could not load parameter: success [bool]");
         success=false;
     }
-    if(!msrm_utils::read_json_param(parameters,"t_exception",t_exception)){
+    if(!mirmi_utils::read_json_param(parameters,"t_exception",t_exception)){
         spdlog::debug("Could not load parameter: t_exception [double]");
         t_exception=0;
     }
-    if(!msrm_utils::read_json_param(parameters,"exception",exception)){
+    if(!mirmi_utils::read_json_param(parameters,"exception",exception)){
         spdlog::debug("Could not load parameter: exception [string]");
         exception="none";
     }
-    if(!msrm_utils::read_json_param(parameters,"cost_suc",cost_suc)){
+    if(!mirmi_utils::read_json_param(parameters,"cost_suc",cost_suc)){
         spdlog::debug("Could not load parameter: cost_suc [double]");
         cost_suc=0;
     }
-    if(!msrm_utils::read_json_param(parameters,"cost_err",cost_err)){
+    if(!mirmi_utils::read_json_param(parameters,"cost_err",cost_err)){
         spdlog::debug("Could not load parameter: cost_err [double]");
         cost_err=0;
     }
-    if(!msrm_utils::read_json_param<int>(parameters,"mp_sequence",mp_sequence)){
+    if(!mirmi_utils::read_json_param<int>(parameters,"mp_sequence",mp_sequence)){
         spdlog::debug("Could not load parameter: mp_sequence [vector<int>]");
         mp_sequence.resize(0);
     }
@@ -163,7 +163,7 @@ void TestSkill1::write_custom_results(nlohmann::json& custom_results){
 
 void TestSkill1::parallels(){
     double cnt=0;
-    msrm_utils::read_json_param(get_custom_results(),"parallels_cnt",cnt);
+    mirmi_utils::read_json_param(get_custom_results(),"parallels_cnt",cnt);
     get_custom_results()["parallels_cnt"]=cnt+1;
 }
 

@@ -1,6 +1,6 @@
 #include "mios/data_structures/parameters.hpp"
 #include "spdlog/spdlog.h"
-#include "msrm_cpp_utils/json/json.hpp"
+#include "mirmi_cpp_utils/json/json.hpp"
 #include "nlohmann/json.hpp"
 #include "mios/skills/null_skill.hpp"
 
@@ -43,100 +43,100 @@ bool LimitParameters::from_json(const nlohmann::json &parameters){
         return false;
     }
 
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"dddq_max",joint_space.dddq_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"dddq_max",joint_space.dddq_max)){
         spdlog::error("Could not read dddq_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"ddq_max",joint_space.ddq_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"ddq_max",joint_space.ddq_max)){
         spdlog::error("Could not read joint_space.ddq_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"dq_max",joint_space.dq_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"dq_max",joint_space.dq_max)){
         spdlog::error("Could not read joint_space.dq_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"q_upper",joint_space.q_upper)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"q_upper",joint_space.q_upper)){
         spdlog::error("Could not read joint_space.q_upper.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"q_lower",joint_space.q_lower)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"q_lower",joint_space.q_lower)){
         spdlog::error("Could not read joint_space.q_lower.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"tau_J_max",joint_space.tau_J_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"tau_J_max",joint_space.tau_J_max)){
         spdlog::error("Could not read joint_space.tau_J_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"dtau_J_max",joint_space.dtau_J_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"dtau_J_max",joint_space.dtau_J_max)){
         spdlog::error("Could not read joint_space.dtau_J_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"tau_ext_max",joint_space.tau_ext_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"tau_ext_max",joint_space.tau_ext_max)){
         spdlog::error("Could not read joint_space.tau_ext_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"K_theta_max",joint_space.K_theta_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"K_theta_max",joint_space.K_theta_max)){
         spdlog::error("Could not read joint_space.K_theta_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"dK_theta_max",joint_space.dK_theta_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"dK_theta_max",joint_space.dK_theta_max)){
         spdlog::error("Could not read joint_space.dK_theta_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"xi_theta_max",joint_space.xi_theta_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"xi_theta_max",joint_space.xi_theta_max)){
         spdlog::error("Could not read joint_space.xi_theta_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_space"],"dxi_theta_max",joint_space.dxi_theta_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_space"],"dxi_theta_max",joint_space.dxi_theta_max)){
         spdlog::error("Could not read joint_space.dxi_theta_max.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"dddX_max",cartesian_space.dddX_max)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"dddX_max",cartesian_space.dddX_max)){
         spdlog::error("Could not read cartesian_space.dddX_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"ddX_max",cartesian_space.ddX_max)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"ddX_max",cartesian_space.ddX_max)){
         spdlog::error("Could not read cartesian_space.ddX_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"dX_max",cartesian_space.dX_max)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"dX_max",cartesian_space.dX_max)){
         spdlog::error("Could not read cartesian_space.dX_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,3,1>(parameters["cartesian_space"],"x_upper",cartesian_space.x_upper)){
+    if(!mirmi_utils::read_json_param<double,3,1>(parameters["cartesian_space"],"x_upper",cartesian_space.x_upper)){
         spdlog::error("Could not read cartesian_space.x_upper.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,3,1>(parameters["cartesian_space"],"x_lower",cartesian_space.x_lower)){
+    if(!mirmi_utils::read_json_param<double,3,1>(parameters["cartesian_space"],"x_lower",cartesian_space.x_lower)){
         spdlog::error("Could not read cartesian_space.x_lower.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"F_J_max",cartesian_space.F_J_max)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"F_J_max",cartesian_space.F_J_max)){
         spdlog::error("Could not read cartesian_space.F_J_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"dF_J_max",cartesian_space.dF_J_max)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"dF_J_max",cartesian_space.dF_J_max)){
         spdlog::error("Could not read cartesian_space.dF_J_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"F_ext_max",cartesian_space.F_ext_max)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters["cartesian_space"],"F_ext_max",cartesian_space.F_ext_max)){
         spdlog::error("Could not read cartesian_space.F_ext_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cartesian_space"],"K_x_max",cartesian_space.K_x_max)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cartesian_space"],"K_x_max",cartesian_space.K_x_max)){
         spdlog::error("Could not read cartesian_space.K_x_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cartesian_space"],"dK_x_max",cartesian_space.dK_x_max)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cartesian_space"],"dK_x_max",cartesian_space.dK_x_max)){
         spdlog::error("Could not read cartesian_space.dK_x_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cartesian_space"],"xi_x_max",cartesian_space.xi_x_max)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cartesian_space"],"xi_x_max",cartesian_space.xi_x_max)){
         spdlog::error("Could not read cartesian_space.xi_x_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cartesian_space"],"dxi_x_max",cartesian_space.dxi_x_max)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cartesian_space"],"dxi_x_max",cartesian_space.dxi_x_max)){
         spdlog::error("Could not read cartesian_space.dxi_x_max.");
         return false;
     }
@@ -147,32 +147,32 @@ nlohmann::json LimitParameters::to_json() const{
     nlohmann::json json_object;
     nlohmann::json json_joint_space;
     nlohmann::json json_cartesian_space;
-    json_joint_space["dddq_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.dddq_max);
-    json_joint_space["ddq_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.ddq_max);
-    json_joint_space["dq_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.dq_max);
-    json_joint_space["q_upper"]=msrm_utils::from_eigen<double,7,1>(joint_space.q_upper);
-    json_joint_space["q_lower"]=msrm_utils::from_eigen<double,7,1>(joint_space.q_lower);
-    json_joint_space["tau_J_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.tau_J_max);
-    json_joint_space["dtau_J_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.dtau_J_max);
-    json_joint_space["K_theta_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.K_theta_max);
-    json_joint_space["dK_theta_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.dK_theta_max);
-    json_joint_space["xi_theta_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.xi_theta_max);
-    json_joint_space["dxi_theta_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.dxi_theta_max);
-    json_joint_space["tau_ext_max"]=msrm_utils::from_eigen<double,7,1>(joint_space.tau_ext_max);
+    json_joint_space["dddq_max"]=mirmi_utils::from_eigen<double,7,1>(joint_space.dddq_max);
+    json_joint_space["ddq_max"]=mirmi_utils::from_eigen<double,7,1>(joint_space.ddq_max);
+    json_joint_space["dq_max"]=mirmi_utils::from_eigen<double,7,1>(joint_space.dq_max);
+    json_joint_space["q_upper"]=mirmi_utils::from_eigen<double,7,1>(joint_space.q_upper);
+    json_joint_space["q_lower"]=mirmi_utils::from_eigen<double,7,1>(joint_space.q_lower);
+    json_joint_space["tau_J_max"]=mirmi_utils::from_eigen<double,7,1>(joint_space.tau_J_max);
+    json_joint_space["dtau_J_max"]=mirmi_utils::from_eigen<double,7,1>(joint_space.dtau_J_max);
+    json_joint_space["K_theta_max"]=mirmi_utils::from_eigen<double,7,1>(joint_space.K_theta_max);
+    json_joint_space["dK_theta_max"]=mirmi_utils::from_eigen<double,7,1>(joint_space.dK_theta_max);
+    json_joint_space["xi_theta_max"]=mirmi_utils::from_eigen<double,7,1>(joint_space.xi_theta_max);
+    json_joint_space["dxi_theta_max"]=mirmi_utils::from_eigen<double,7,1>(joint_space.dxi_theta_max);
+    json_joint_space["tau_ext_max"]=mirmi_utils::from_eigen<double,7,1>(joint_space.tau_ext_max);
 
-    json_cartesian_space["x_upper"]=msrm_utils::from_eigen<double,3,1>(cartesian_space.x_upper);
-    json_cartesian_space["x_lower"]=msrm_utils::from_eigen<double,3,1>(cartesian_space.x_lower);
-    json_cartesian_space["dX_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.dX_max);
-    json_cartesian_space["ddX_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.ddX_max);
-    json_cartesian_space["dddX_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.dddX_max);
-    json_cartesian_space["F_ext_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.F_ext_max);
-    json_cartesian_space["F_J_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.F_J_max);
-    json_cartesian_space["dF_J_max"]=msrm_utils::from_eigen<double,2,1>(cartesian_space.dF_J_max);
+    json_cartesian_space["x_upper"]=mirmi_utils::from_eigen<double,3,1>(cartesian_space.x_upper);
+    json_cartesian_space["x_lower"]=mirmi_utils::from_eigen<double,3,1>(cartesian_space.x_lower);
+    json_cartesian_space["dX_max"]=mirmi_utils::from_eigen<double,2,1>(cartesian_space.dX_max);
+    json_cartesian_space["ddX_max"]=mirmi_utils::from_eigen<double,2,1>(cartesian_space.ddX_max);
+    json_cartesian_space["dddX_max"]=mirmi_utils::from_eigen<double,2,1>(cartesian_space.dddX_max);
+    json_cartesian_space["F_ext_max"]=mirmi_utils::from_eigen<double,2,1>(cartesian_space.F_ext_max);
+    json_cartesian_space["F_J_max"]=mirmi_utils::from_eigen<double,2,1>(cartesian_space.F_J_max);
+    json_cartesian_space["dF_J_max"]=mirmi_utils::from_eigen<double,2,1>(cartesian_space.dF_J_max);
 
-    json_cartesian_space["K_x_max"]=msrm_utils::from_eigen<double,6,1>(cartesian_space.K_x_max);
-    json_cartesian_space["dK_x_max"]=msrm_utils::from_eigen<double,6,1>(cartesian_space.dK_x_max);
-    json_cartesian_space["xi_x_max"]=msrm_utils::from_eigen<double,6,1>(cartesian_space.xi_x_max);
-    json_cartesian_space["dxi_x_max"]=msrm_utils::from_eigen<double,6,1>(cartesian_space.dxi_x_max);
+    json_cartesian_space["K_x_max"]=mirmi_utils::from_eigen<double,6,1>(cartesian_space.K_x_max);
+    json_cartesian_space["dK_x_max"]=mirmi_utils::from_eigen<double,6,1>(cartesian_space.dK_x_max);
+    json_cartesian_space["xi_x_max"]=mirmi_utils::from_eigen<double,6,1>(cartesian_space.xi_x_max);
+    json_cartesian_space["dxi_x_max"]=mirmi_utils::from_eigen<double,6,1>(cartesian_space.dxi_x_max);
 
     json_object["joint_space"]=json_joint_space;
     json_object["cartesian_space"]=json_cartesian_space;
@@ -201,75 +201,91 @@ UserParameters::UserParameters(){
     env_dq=0.005;
 
     safe_mode=true;
+    
+    DH_a<<0,0,0,0,0,0,0,0;
+    DH_d<<0,0,0,0,0,0,0,0;
+    DH_alpha<<0,0,0,0,0,0,0,0;
 }
 
 bool UserParameters::from_json(const nlohmann::json &parameters){
     spdlog::trace("UserParameters::from_json");
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"dX_default",dX_default)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"dX_default",dX_default)){
         spdlog::error("Could not read dX_default.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"ddX_default",ddX_default)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"ddX_default",ddX_default)){
         spdlog::error("Could not read ddX_default.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"dq_default",dq_default)){
+    if(!mirmi_utils::read_json_param(parameters,"dq_default",dq_default)){
         spdlog::error("Could not read dq_default.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"ddq_default",ddq_default)){
+    if(!mirmi_utils::read_json_param(parameters,"ddq_default",ddq_default)){
         spdlog::error("Could not read ddq_default.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"F_ext_contact",F_ext_contact)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"F_ext_contact",F_ext_contact)){
         spdlog::error("Could not read F_ext_contact.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,2,1>(parameters,"F_ext_max",F_ext_max)){
+    if(!mirmi_utils::read_json_param<double,2,1>(parameters,"F_ext_max",F_ext_max)){
         spdlog::error("Could not read F_ext_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters,"tau_ext_contact",tau_ext_contact)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters,"tau_ext_contact",tau_ext_contact)){
         spdlog::error("Could not read tau_ext_contact.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters,"tau_ext_max",tau_ext_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters,"tau_ext_max",tau_ext_max)){
         spdlog::error("Could not read tau_ext_max.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param(parameters,"load_m",load_m)){
+    if(!mirmi_utils::read_json_param(parameters,"load_m",load_m)){
         spdlog::error("Could not read load_m.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,3,1>(parameters,"load_com",load_com)){
+    if(!mirmi_utils::read_json_param<double,3,1>(parameters,"load_com",load_com)){
         spdlog::error("Could not read load_com.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,3,3>(parameters,"load_I",load_I)){
+    if(!mirmi_utils::read_json_param<double,3,3>(parameters,"load_I",load_I)){
         spdlog::error("Could not read load_I.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"env_X",env_X)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"env_X",env_X)){
         spdlog::error("Could not read env_X.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters,"env_dX",env_dX)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters,"env_dX",env_dX)){
         spdlog::error("Could not read env_dX.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"env_q",env_q)){
+    if(!mirmi_utils::read_json_param(parameters,"env_q",env_q)){
         spdlog::error("Could not read env_q.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"env_dq",env_dq)){
+    if(!mirmi_utils::read_json_param(parameters,"env_dq",env_dq)){
         spdlog::error("Could not read env_dq.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param(parameters,"safe_mode",safe_mode)){
+    if(!mirmi_utils::read_json_param(parameters,"safe_mode",safe_mode)){
         spdlog::error("Could not read safe_mode.");
+        return false;
+    }
+    if(!mirmi_utils::read_json_param(parameters,"DH_a",DH_a)){
+        spdlog::error("Could not read Denavit Hartenberg Parameter (DH_a).");
+        return false;
+    }
+    if(!mirmi_utils::read_json_param(parameters,"DH_d",DH_d)){
+        spdlog::error("Could not read Denavit Hartenberg Parameter (DH_d).");
+        return false;
+    }
+    if(!mirmi_utils::read_json_param(parameters,"DH_alpha",DH_alpha)){
+        spdlog::error("Could not read Denavit Hartenberg Parameter (DH_alpha).");
         return false;
     }
     return true;
@@ -278,26 +294,29 @@ bool UserParameters::from_json(const nlohmann::json &parameters){
 nlohmann::json UserParameters::to_json() const{
     spdlog::trace("UserParameters::to_json");
     nlohmann::json json_object;
-    json_object["dX_default"]=msrm_utils::from_eigen<double,2,1>(dX_default);
-    json_object["ddX_default"]=msrm_utils::from_eigen<double,2,1>(ddX_default);
+    json_object["dX_default"]=mirmi_utils::from_eigen<double,2,1>(dX_default);
+    json_object["ddX_default"]=mirmi_utils::from_eigen<double,2,1>(ddX_default);
     json_object["dq_default"]=dq_default;
     json_object["ddq_default"]=ddq_default;
 
-    json_object["F_ext_contact"]=msrm_utils::from_eigen<double,2,1>(F_ext_contact);
-    json_object["F_ext_max"]=msrm_utils::from_eigen<double,2,1>(F_ext_max);
-    json_object["tau_ext_contact"]=msrm_utils::from_eigen<double,7,1>(tau_ext_contact);
-    json_object["tau_ext_max"]=msrm_utils::from_eigen<double,7,1>(tau_ext_max);
+    json_object["F_ext_contact"]=mirmi_utils::from_eigen<double,2,1>(F_ext_contact);
+    json_object["F_ext_max"]=mirmi_utils::from_eigen<double,2,1>(F_ext_max);
+    json_object["tau_ext_contact"]=mirmi_utils::from_eigen<double,7,1>(tau_ext_contact);
+    json_object["tau_ext_max"]=mirmi_utils::from_eigen<double,7,1>(tau_ext_max);
 
     json_object["load_m"]=load_m;
-    json_object["load_com"]=msrm_utils::from_eigen<double,3,1>(load_com);
-    json_object["load_I"]=msrm_utils::from_eigen<double,3,3>(load_I);
+    json_object["load_com"]=mirmi_utils::from_eigen<double,3,1>(load_com);
+    json_object["load_I"]=mirmi_utils::from_eigen<double,3,3>(load_I);
 
-    json_object["env_X"]=msrm_utils::from_eigen<double,6,1>(env_X);
-    json_object["env_dX"]=msrm_utils::from_eigen<double,6,1>(env_dX);
+    json_object["env_X"]=mirmi_utils::from_eigen<double,6,1>(env_X);
+    json_object["env_dX"]=mirmi_utils::from_eigen<double,6,1>(env_dX);
     json_object["env_q"]=env_q;
     json_object["env_dq"]=env_dq;
 
     json_object["safe_mode"]=safe_mode;
+    json_object["DH_a"]=mirmi_utils::from_eigen<double,8,1>(DH_a);
+    json_object["DH_d"]=mirmi_utils::from_eigen<double,8,1>(DH_d);
+    json_object["DH_alpha"]=mirmi_utils::from_eigen<double,8,1>(DH_alpha);
     return json_object;
 }
 
@@ -306,22 +325,24 @@ FramesParameters::FramesParameters(){
     F_T_EE=Eigen::Matrix<double,4,4>::Identity();
     EE_T_TCP=Eigen::Matrix<double,4,4>::Identity();
     EE_T_K=Eigen::Matrix<double,4,4>::Identity();
+    WF_T_O=Eigen::Matrix<double,4,4>::Identity();
+    WF_T_TF=Eigen::Matrix<double,4,4>::Identity();
 }
 
 bool FramesParameters::from_json(const nlohmann::json &parameters){
-    if(!msrm_utils::read_json_param<double,3,3>(parameters,"O_R_T",O_R_T)){
+    if(!mirmi_utils::read_json_param<double,3,3>(parameters,"O_R_T",O_R_T)){
         spdlog::error("Could not read O_R_T.");
         return false;
     }
-//    if(!msrm_utils::read_json_param<double,4,4>(parameters,"F_T_EE",F_T_EE)){
+//    if(!mirmi_utils::read_json_param<double,4,4>(parameters,"F_T_EE",F_T_EE)){
 //        spdlog::error("Could not read F_T_EE.");
 //        return false;
 //    }
-//    if(!msrm_utils::read_json_param<double,4,4>(parameters,"EE_T_TCP",EE_T_TCP)){
+//    if(!mirmi_utils::read_json_param<double,4,4>(parameters,"EE_T_TCP",EE_T_TCP)){
 //        spdlog::error("Could not read EE_T_TCP.");
 //        return false;
 //    }
-//    if(!msrm_utils::read_json_param<double,4,4>(parameters,"EE_T_K",EE_T_K)){
+//    if(!mirmi_utils::read_json_param<double,4,4>(parameters,"EE_T_K",EE_T_K)){
 //        spdlog::error("Could not read EE_T_K.");
 //        return false;
 //    }
@@ -330,10 +351,12 @@ bool FramesParameters::from_json(const nlohmann::json &parameters){
 
 nlohmann::json FramesParameters::to_json() const{
     nlohmann::json json_object;
-    json_object["O_R_T"]=msrm_utils::from_eigen<double,3,3>(O_R_T);
-    json_object["F_T_EE"]=msrm_utils::from_eigen<double,4,4>(F_T_EE);
-    json_object["EE_T_TCP"]=msrm_utils::from_eigen<double,4,4>(EE_T_TCP);
-    json_object["EE_T_K"]=msrm_utils::from_eigen<double,4,4>(EE_T_K);
+    json_object["O_R_T"]=mirmi_utils::from_eigen<double,3,3>(O_R_T);
+    json_object["F_T_EE"]=mirmi_utils::from_eigen<double,4,4>(F_T_EE);
+    json_object["EE_T_TCP"]=mirmi_utils::from_eigen<double,4,4>(EE_T_TCP);
+    json_object["EE_T_K"]=mirmi_utils::from_eigen<double,4,4>(EE_T_K);
+    json_object["WF_T_O"]=mirmi_utils::from_eigen<double,4,4>(WF_T_O);
+    json_object["WF_T_TF"]=mirmi_utils::from_eigen<double,4,4>(WF_T_TF);
     return json_object;
 }
 
@@ -344,27 +367,38 @@ SystemParameters::SystemParameters(){
 
     has_robot=false;
     gripper=PandaHandNone;
+
+    spoc_token = "";
+    spoc_in_control = false;
 }
 
 bool SystemParameters::from_json(const nlohmann::json &parameters){
-    if(!msrm_utils::read_json_param(parameters,"robot_ip",robot_ip)){
+    if(!mirmi_utils::read_json_param(parameters,"robot_ip",robot_ip)){
         spdlog::error("Could not read robot_ip.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"desk_name",desk_user)){
+    if(!mirmi_utils::read_json_param(parameters,"desk_name",desk_user)){
         spdlog::error("Could not read desk_name.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"desk_pwd",desk_pwd)){
+    if(!mirmi_utils::read_json_param(parameters,"desk_pwd",desk_pwd)){
         spdlog::error("Could not read desk_pwd.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters,"has_robot",has_robot)){
+    if(!mirmi_utils::read_json_param(parameters,"has_robot",has_robot)){
         spdlog::error("Could not read has_robot.");
         return false;
     }
+    if(!mirmi_utils::read_json_param(parameters,"spoc_token",spoc_token)){
+        spdlog::error("Could not read spoc_token.");
+        return false;
+    }
+    if(!mirmi_utils::read_json_param(parameters,"spoc_in_control",spoc_in_control)){
+        spdlog::error("Could not read spoc_in_control.");
+        return false;
+    }
     std::string gripper_tmp;
-    if(!msrm_utils::read_json_param(parameters,"gripper",gripper_tmp)){
+    if(!mirmi_utils::read_json_param(parameters,"gripper",gripper_tmp)){
         spdlog::error("Could not read gripper.");
         return false;
     }
@@ -384,6 +418,8 @@ nlohmann::json SystemParameters::to_json() const{
     json_object["desk_name"]=desk_user;
     json_object["desk_pwd"]=desk_pwd;
     json_object["has_robot"]=has_robot;
+    json_object["spoc_token"]=spoc_token;
+    json_object["spoc_in_control"]=spoc_in_control;
     std::string gripper_tmp;
     if(gripper==PandaHandNone){
         gripper_tmp="None";
@@ -437,86 +473,86 @@ bool SafetyParameters::from_json(const nlohmann::json &parameters){
         spdlog::error("Safety parameters do not have virtual_joint_walls subsection.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["velocity_walls"],"walls",velocity_walls.walls)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["velocity_walls"],"walls",velocity_walls.walls)){
         spdlog::error("Could not read velocity_walls.walls.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["velocity_walls"],"brake_distance",velocity_walls.brake_distance)){
+    if(!mirmi_utils::read_json_param(parameters["velocity_walls"],"brake_distance",velocity_walls.brake_distance)){
         spdlog::error("Could not read velocity_walls.brake_distance.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["velocity_walls"],"active",velocity_walls.active)){
+    if(!mirmi_utils::read_json_param(parameters["velocity_walls"],"active",velocity_walls.active)){
         spdlog::error("Could not read velocity_walls.active.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param(parameters["virtual_cube"],"damping",virtual_cube.damping)){
+    if(!mirmi_utils::read_json_param(parameters["virtual_cube"],"damping",virtual_cube.damping)){
         spdlog::error("Could not read virtual_cube.damping.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["virtual_cube"],"damping_dist",virtual_cube.damping_dist)){
+    if(!mirmi_utils::read_json_param(parameters["virtual_cube"],"damping_dist",virtual_cube.damping_dist)){
         spdlog::error("Could not read virtual_cube.damping_dist.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["virtual_cube"],"eta",virtual_cube.eta)){
+    if(!mirmi_utils::read_json_param(parameters["virtual_cube"],"eta",virtual_cube.eta)){
         spdlog::error("Could not read virtual_cube.eta.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["virtual_cube"],"rho_min",virtual_cube.rho_min)){
+    if(!mirmi_utils::read_json_param(parameters["virtual_cube"],"rho_min",virtual_cube.rho_min)){
         spdlog::error("Could not read virtual_cube.rho_min.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["virtual_cube"],"walls",virtual_cube.walls)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["virtual_cube"],"walls",virtual_cube.walls)){
         spdlog::error("Could not read virtual_cube.walls.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["virtual_cube"],"f_max",virtual_cube.f_max)){
+    if(!mirmi_utils::read_json_param(parameters["virtual_cube"],"f_max",virtual_cube.f_max)){
         spdlog::error("Could not read virtual_cube.f_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["virtual_cube"],"active",virtual_cube.active)){
+    if(!mirmi_utils::read_json_param(parameters["virtual_cube"],"active",virtual_cube.active)){
         spdlog::error("Could not read virtual_cube.active.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"damping",virtual_joint_walls.damping)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"damping",virtual_joint_walls.damping)){
         spdlog::error("Could not read virtual_joint_walls.damping.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"damping_dist",virtual_joint_walls.damping_dist)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"damping_dist",virtual_joint_walls.damping_dist)){
         spdlog::error("Could not read virtual_joint_walls.damping_dist.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"eta",virtual_joint_walls.eta)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"eta",virtual_joint_walls.eta)){
         spdlog::error("Could not read virtual_joint_walls.eta.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"rho_min",virtual_joint_walls.rho_min)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"rho_min",virtual_joint_walls.rho_min)){
         spdlog::error("Could not read virtual_joint_walls.rho_min.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"tau_max",virtual_joint_walls.tau_max)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["virtual_joint_walls"],"tau_max",virtual_joint_walls.tau_max)){
         spdlog::error("Could not read virtual_joint_walls.tau_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,14,1>(parameters["virtual_joint_walls"],"walls",virtual_joint_walls.walls)){
+    if(!mirmi_utils::read_json_param<double,14,1>(parameters["virtual_joint_walls"],"walls",virtual_joint_walls.walls)){
         spdlog::error("Could not read virtual_joint_walls.walls.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["virtual_joint_walls"],"active",virtual_joint_walls.active)){
+    if(!mirmi_utils::read_json_param(parameters["virtual_joint_walls"],"active",virtual_joint_walls.active)){
         spdlog::error("Could not read virtual_joint_walls.active.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param(parameters["cartesian_velocity_damping"],"active",cartesian_velocity_damping.active)){
+    if(!mirmi_utils::read_json_param(parameters["cartesian_velocity_damping"],"active",cartesian_velocity_damping.active)){
         spdlog::error("Could not read cartesian_velocity_damping.active.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cartesian_velocity_damping"],"dX_thr",cartesian_velocity_damping.dX_thr)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cartesian_velocity_damping"],"dX_thr",cartesian_velocity_damping.dX_thr)){
         spdlog::error("Could not read cartesian_velocity_damping.dX_thr.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cartesian_velocity_damping"],"D_x",cartesian_velocity_damping.D_x)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cartesian_velocity_damping"],"D_x",cartesian_velocity_damping.D_x)){
         spdlog::error("Could not read cartesian_velocity_damping.D_x.");
         return false;
     }
@@ -531,7 +567,7 @@ nlohmann::json SafetyParameters::to_json() const{
     nlohmann::json json_virtual_joint_walls;
     nlohmann::json json_cartesian_velocity_damping;
 
-    json_velocity_walls["walls"]=msrm_utils::from_eigen<double,6,1>(velocity_walls.walls);
+    json_velocity_walls["walls"]=mirmi_utils::from_eigen<double,6,1>(velocity_walls.walls);
     json_velocity_walls["brake_distance"]=velocity_walls.brake_distance;
     json_velocity_walls["active"]=velocity_walls.active;
 
@@ -539,21 +575,21 @@ nlohmann::json SafetyParameters::to_json() const{
     json_virtual_cube["damping_dist"]=virtual_cube.damping_dist;
     json_virtual_cube["eta"]=virtual_cube.eta;
     json_virtual_cube["rho_min"]=virtual_cube.rho_min;
-    json_virtual_cube["walls"]=msrm_utils::from_eigen<double,6,1>(virtual_cube.walls);
+    json_virtual_cube["walls"]=mirmi_utils::from_eigen<double,6,1>(virtual_cube.walls);
     json_virtual_cube["f_max"]=virtual_cube.f_max;
     json_virtual_cube["active"]=virtual_cube.active;
 
-    json_virtual_joint_walls["damping"]=msrm_utils::from_eigen<double,7,1>(virtual_joint_walls.damping);
-    json_virtual_joint_walls["damping_dist"]=msrm_utils::from_eigen<double,7,1>(virtual_joint_walls.damping_dist);
-    json_virtual_joint_walls["eta"]=msrm_utils::from_eigen<double,7,1>(virtual_joint_walls.eta);
-    json_virtual_joint_walls["rho_min"]=msrm_utils::from_eigen<double,7,1>(virtual_joint_walls.rho_min);
-    json_virtual_joint_walls["walls"]=msrm_utils::from_eigen<double,14,1>(virtual_joint_walls.walls);
-    json_virtual_joint_walls["tau_max"]=msrm_utils::from_eigen<double,7,1>(virtual_joint_walls.tau_max);
+    json_virtual_joint_walls["damping"]=mirmi_utils::from_eigen<double,7,1>(virtual_joint_walls.damping);
+    json_virtual_joint_walls["damping_dist"]=mirmi_utils::from_eigen<double,7,1>(virtual_joint_walls.damping_dist);
+    json_virtual_joint_walls["eta"]=mirmi_utils::from_eigen<double,7,1>(virtual_joint_walls.eta);
+    json_virtual_joint_walls["rho_min"]=mirmi_utils::from_eigen<double,7,1>(virtual_joint_walls.rho_min);
+    json_virtual_joint_walls["walls"]=mirmi_utils::from_eigen<double,14,1>(virtual_joint_walls.walls);
+    json_virtual_joint_walls["tau_max"]=mirmi_utils::from_eigen<double,7,1>(virtual_joint_walls.tau_max);
     json_virtual_joint_walls["active"]=virtual_joint_walls.active;
 
     json_cartesian_velocity_damping["active"]=cartesian_velocity_damping.active;
-    json_cartesian_velocity_damping["dX_thr"]=msrm_utils::from_eigen<double,6,1>(cartesian_velocity_damping.dX_thr);
-    json_cartesian_velocity_damping["D_x"]=msrm_utils::from_eigen<double,6,1>(cartesian_velocity_damping.D_x);
+    json_cartesian_velocity_damping["dX_thr"]=mirmi_utils::from_eigen<double,6,1>(cartesian_velocity_damping.dX_thr);
+    json_cartesian_velocity_damping["D_x"]=mirmi_utils::from_eigen<double,6,1>(cartesian_velocity_damping.D_x);
 
     json_object["velocity_walls"]=json_velocity_walls;
     json_object["virtual_cube"]=json_virtual_cube;
@@ -617,7 +653,7 @@ bool ControlParameters::from_json(const nlohmann::json &parameters){
     }
 
     int control_mode_tmp;
-    if(!msrm_utils::read_json_param(parameters,"control_mode",control_mode_tmp)){
+    if(!mirmi_utils::read_json_param(parameters,"control_mode",control_mode_tmp)){
         spdlog::error("Could not read control_mode.");
         return false;
     }
@@ -633,95 +669,95 @@ bool ControlParameters::from_json(const nlohmann::json &parameters){
         control_mode=ControlMode::mNoControl;
     }
 
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cart_imp"],"K_x",cart_imp.K_x)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cart_imp"],"K_x",cart_imp.K_x)){
         spdlog::error("Could not read cart_imp.K_x.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cart_imp"],"xi_x",cart_imp.xi_x)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cart_imp"],"xi_x",cart_imp.xi_x)){
         spdlog::error("Could not read cart_imp.xi_x.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"L",cart_imp_adaptation_stage.L)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"L",cart_imp_adaptation_stage.L)){
         spdlog::error("Could not read cart_imp_adaptation_stage.L.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"F_ff_0",cart_imp_adaptation_stage.F_ff_0)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"F_ff_0",cart_imp_adaptation_stage.F_ff_0)){
         spdlog::error("Could not read cart_imp_adaptation_stage.F_ff_0.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"alpha",cart_imp_adaptation_stage.alpha)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"alpha",cart_imp_adaptation_stage.alpha)){
         spdlog::error("Could not read cart_imp_adaptation_stage.alpha.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"beta",cart_imp_adaptation_stage.beta)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"beta",cart_imp_adaptation_stage.beta)){
         spdlog::error("Could not read cart_imp_adaptation_stage.beta.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"gamma_a",cart_imp_adaptation_stage.gamma_a)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"gamma_a",cart_imp_adaptation_stage.gamma_a)){
         spdlog::error("Could not read cart_imp_adaptation_stage.gamma_a.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"gamma_b",cart_imp_adaptation_stage.gamma_b)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["cart_imp_adaptation_stage"],"gamma_b",cart_imp_adaptation_stage.gamma_b)){
         spdlog::error("Could not read cart_imp_adaptation_stage.gamma_b.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["cart_imp_adaptation_stage"],"kappa",cart_imp_adaptation_stage.kappa)){
+    if(!mirmi_utils::read_json_param(parameters["cart_imp_adaptation_stage"],"kappa",cart_imp_adaptation_stage.kappa)){
         spdlog::error("Could not read cart_imp_adaptation_stage.kappa.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_imp"],"K_theta",joint_imp.K_theta)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_imp"],"K_theta",joint_imp.K_theta)){
         spdlog::error("Could not read joint_imp.K_theta.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["joint_imp"],"xi_theta",joint_imp.xi_theta)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["joint_imp"],"xi_theta",joint_imp.xi_theta)){
         spdlog::error("Could not read joint_imp.xi_theta.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["force_control"],"k_p",force_control.k_p)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["force_control"],"k_p",force_control.k_p)){
         spdlog::error("Could not read force_control.k_p.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["force_control"],"k_i",force_control.k_i)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["force_control"],"k_i",force_control.k_i)){
         spdlog::error("Could not read force_control.k_i.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["force_control"],"k_d",force_control.k_d)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["force_control"],"k_d",force_control.k_d)){
         spdlog::error("Could not read force_control.k_d.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["force_control"],"k_d_N",force_control.k_d_N)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["force_control"],"k_d_N",force_control.k_d_N)){
         spdlog::error("Could not read force_control.k_d_N.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,3,1>(parameters["force_control"],"d_max",force_control.d_max)){
+    if(!mirmi_utils::read_json_param<double,3,1>(parameters["force_control"],"d_max",force_control.d_max)){
         spdlog::error("Could not read force_control.d_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["force_control"],"phi_max",force_control.phi_max)){
+    if(!mirmi_utils::read_json_param(parameters["force_control"],"phi_max",force_control.phi_max)){
         spdlog::error("Could not read force_control.phi_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(parameters["force_control"],"active",force_control.active)){
+    if(!mirmi_utils::read_json_param<double,6,1>(parameters["force_control"],"active",force_control.active)){
         spdlog::error("Could not read force_control.active.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["force_control"],"sf_on",force_control.sf_on)){
+    if(!mirmi_utils::read_json_param(parameters["force_control"],"sf_on",force_control.sf_on)){
         spdlog::error("Could not read force_control.sf_on.");
         return false;
     }
 
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["nullspace_control"],"K_theta",nullspace_control.K_theta)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["nullspace_control"],"K_theta",nullspace_control.K_theta)){
         spdlog::error("Could not read nullspace_control.K_theta.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,7,1>(parameters["nullspace_control"],"xi_theta",nullspace_control.xi_theta)){
+    if(!mirmi_utils::read_json_param<double,7,1>(parameters["nullspace_control"],"xi_theta",nullspace_control.xi_theta)){
         spdlog::error("Could not read nullspace_control.xi_theta.");
         return false;
     }
-    if(!msrm_utils::read_json_param(parameters["nullspace_control"],"active",nullspace_control.active)){
+    if(!mirmi_utils::read_json_param(parameters["nullspace_control"],"active",nullspace_control.active)){
         spdlog::error("Could not read nullspace_control.active.");
         return false;
     }
@@ -739,32 +775,32 @@ nlohmann::json ControlParameters::to_json() const{
 
     json_object["control_mode"]=control_mode;
 
-    json_cart_imp["K_x"]=msrm_utils::from_eigen<double,6,1>(cart_imp.K_x);
-    json_cart_imp["xi_x"]=msrm_utils::from_eigen<double,6,1>(cart_imp.xi_x);
+    json_cart_imp["K_x"]=mirmi_utils::from_eigen<double,6,1>(cart_imp.K_x);
+    json_cart_imp["xi_x"]=mirmi_utils::from_eigen<double,6,1>(cart_imp.xi_x);
 
-    json_cart_imp_adaptation_stage["alpha"]=msrm_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.alpha);
-    json_cart_imp_adaptation_stage["beta"]=msrm_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.beta);
-    json_cart_imp_adaptation_stage["gamma_a"]=msrm_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.gamma_a);
-    json_cart_imp_adaptation_stage["gamma_b"]=msrm_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.gamma_b);
-    json_cart_imp_adaptation_stage["L"]=msrm_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.L);
-    json_cart_imp_adaptation_stage["F_ff_0"]=msrm_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.F_ff_0);
+    json_cart_imp_adaptation_stage["alpha"]=mirmi_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.alpha);
+    json_cart_imp_adaptation_stage["beta"]=mirmi_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.beta);
+    json_cart_imp_adaptation_stage["gamma_a"]=mirmi_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.gamma_a);
+    json_cart_imp_adaptation_stage["gamma_b"]=mirmi_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.gamma_b);
+    json_cart_imp_adaptation_stage["L"]=mirmi_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.L);
+    json_cart_imp_adaptation_stage["F_ff_0"]=mirmi_utils::from_eigen<double,6,1>(cart_imp_adaptation_stage.F_ff_0);
     json_cart_imp_adaptation_stage["kappa"]=cart_imp_adaptation_stage.kappa;
 
-    json_joint_imp["K_theta"]=msrm_utils::from_eigen<double,7,1>(joint_imp.K_theta);
-    json_joint_imp["xi_theta"]=msrm_utils::from_eigen<double,7,1>(joint_imp.xi_theta);
+    json_joint_imp["K_theta"]=mirmi_utils::from_eigen<double,7,1>(joint_imp.K_theta);
+    json_joint_imp["xi_theta"]=mirmi_utils::from_eigen<double,7,1>(joint_imp.xi_theta);
 
-    json_force_control["k_p"]=msrm_utils::from_eigen<double,6,1>(force_control.k_p);
-    json_force_control["k_i"]=msrm_utils::from_eigen<double,6,1>(force_control.k_i);
-    json_force_control["k_d"]=msrm_utils::from_eigen<double,6,1>(force_control.k_d);
-    json_force_control["k_d_N"]=msrm_utils::from_eigen<double,6,1>(force_control.k_d_N);
-    json_force_control["active"]=msrm_utils::from_eigen<double,6,1>(force_control.active);
-    json_force_control["d_max"]=msrm_utils::from_eigen<double,3,1>(force_control.d_max);
+    json_force_control["k_p"]=mirmi_utils::from_eigen<double,6,1>(force_control.k_p);
+    json_force_control["k_i"]=mirmi_utils::from_eigen<double,6,1>(force_control.k_i);
+    json_force_control["k_d"]=mirmi_utils::from_eigen<double,6,1>(force_control.k_d);
+    json_force_control["k_d_N"]=mirmi_utils::from_eigen<double,6,1>(force_control.k_d_N);
+    json_force_control["active"]=mirmi_utils::from_eigen<double,6,1>(force_control.active);
+    json_force_control["d_max"]=mirmi_utils::from_eigen<double,3,1>(force_control.d_max);
 
     json_force_control["phi_max"]=force_control.phi_max;
     json_force_control["sf_on"]=force_control.sf_on;
 
-    json_nullspace_control["K_theta"]=msrm_utils::from_eigen<double,7,1>(nullspace_control.K_theta);
-    json_nullspace_control["xi_theta"]=msrm_utils::from_eigen<double,7,1>(nullspace_control.xi_theta);
+    json_nullspace_control["K_theta"]=mirmi_utils::from_eigen<double,7,1>(nullspace_control.K_theta);
+    json_nullspace_control["xi_theta"]=mirmi_utils::from_eigen<double,7,1>(nullspace_control.xi_theta);
     json_nullspace_control["active"]=nullspace_control.active;
 
     json_object["cart_imp"]=json_cart_imp;
@@ -788,39 +824,44 @@ SkillParameters::SkillParameters(){
     log_data=false;
     data_length=0;
     log_name="";
+    log_meta=nlohmann::json();
 }
 
 bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
-    if(!msrm_utils::read_json_param(p,"time_max",time_max)){
+    if(!mirmi_utils::read_json_param(p,"time_max",time_max)){
         spdlog::error("Could not read time_max.");
         return false;
     }
-    if(!msrm_utils::read_json_param(p,"parallels_frequency",parallels_frequency)){
+    if(!mirmi_utils::read_json_param(p,"parallels_frequency",parallels_frequency)){
         spdlog::error("Could not read parallels_frequency.");
         return false;
     }
-    if(!msrm_utils::read_json_param(p,"ignore_settling",ignore_settling)){
+    if(!mirmi_utils::read_json_param(p,"ignore_settling",ignore_settling)){
         spdlog::error("Could not read ignore_settling.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(p,"ROI_x",ROI_x)){
+    if(!mirmi_utils::read_json_param<double,6,1>(p,"ROI_x",ROI_x)){
         spdlog::error("Could not read ROI_x.");
         return false;
     }
-    if(!msrm_utils::read_json_param<double,6,1>(p,"ROI_phi",ROI_phi)){
+    if(!mirmi_utils::read_json_param<double,6,1>(p,"ROI_phi",ROI_phi)){
         spdlog::error("Could not read ROI_phi.");
         return false;
     }
-    if(!msrm_utils::read_json_param(p,"log_data",log_data)){
+    if(!mirmi_utils::read_json_param(p,"log_data",log_data)){
         spdlog::error("Could not read log_data.");
         return false;
     }
-    if(!msrm_utils::read_json_param(p,"data_length",data_length)){
+    if(!mirmi_utils::read_json_param(p,"data_length",data_length)){
         spdlog::error("Could not read data_length.");
         return false;
     }
-    if(!msrm_utils::read_json_param(p,"log_name",log_name)){
+    if(!mirmi_utils::read_json_param(p,"log_name",log_name)){
         spdlog::error("Could not read log_name.");
+        return false;
+    }
+    if(!mirmi_utils::read_json_param(p,"meta",log_meta)){
+        spdlog::error("Could not read log_meta.");
         return false;
     }
     if(p.find("objects")!=p.end()){
@@ -830,22 +871,22 @@ bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
         read_skill_objects_modifier(p["objects_modifier"]);
     }
     std::string level_pre;
-    if(!msrm_utils::read_json_param(p,"condition_level_pre",level_pre)){
+    if(!mirmi_utils::read_json_param(p,"condition_level_pre",level_pre)){
         spdlog::error("Could not read condition_level_pre.");
         return false;
     }
     std::string level_success;
-    if(!msrm_utils::read_json_param(p,"condition_level_success",level_success)){
+    if(!mirmi_utils::read_json_param(p,"condition_level_success",level_success)){
         spdlog::error("Could not read condition_level_success.");
         return false;
     }
     std::string level_error;
-    if(!msrm_utils::read_json_param(p,"condition_level_error",level_error)){
+    if(!mirmi_utils::read_json_param(p,"condition_level_error",level_error)){
         spdlog::error("Could not read condition_level_error.");
         return false;
     }
     std::string level_exit;
-    if(!msrm_utils::read_json_param(p,"condition_level_exit",level_exit)){
+    if(!mirmi_utils::read_json_param(p,"condition_level_exit",level_exit)){
         spdlog::error("Could not read condition_level_exit.");
         return false;
     }
@@ -912,7 +953,14 @@ void SkillParameters::read_skill_objects_modifier(const nlohmann::json &p){
 }
 
 nlohmann::json SkillParameters::get_default_values(){
+    nlohmann::json log_meta;  //just some information about the skill
+    log_meta["description"]="";
+    log_meta["tags"]=nlohmann::json::array({"",""});
+    log_meta["skill_class"]="";  // will be set from mios according to skill object if available 
+    log_meta["skill_instance"]="";  // will be set from mios according to skill object if available 
+    
     nlohmann::json default_values;
+    default_values["meta"]=log_meta;
     default_values["time_max"]=0;;
     default_values["parallels_frequency"]=1000;
     default_values["ignore_settling"]=true;
@@ -932,6 +980,7 @@ nlohmann::json SkillParameters::get_default_values(){
 
 nlohmann::json SkillParameters::to_json() const{
     nlohmann::json json_object;
+    json_object["meta"]=log_meta;
     json_object["time_max"]=time_max;
     json_object["parallels_frequency"]=parallels_frequency;
     json_object["ignore_settling"]=ignore_settling;
@@ -941,8 +990,8 @@ nlohmann::json SkillParameters::to_json() const{
     json_object["objects"]={};
     json_object["objects_modifier"]={};
 
-    json_object["ROI_x"]=msrm_utils::from_eigen<double,6,1>(ROI_x);
-    json_object["ROI_phi"]=msrm_utils::from_eigen<double,6,1>(ROI_phi);
+    json_object["ROI_x"]=mirmi_utils::from_eigen<double,6,1>(ROI_x);
+    json_object["ROI_phi"]=mirmi_utils::from_eigen<double,6,1>(ROI_phi);
 
     if(condition_level_pre==SkillConditionLevel::sclModel){
         json_object["condition_level_pre"]="Model";

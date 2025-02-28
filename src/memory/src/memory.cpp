@@ -3,10 +3,11 @@
 
 namespace mios {
 
-Memory::Memory(unsigned database_port):m_lt_memory(database_port){
+Memory::Memory(unsigned database_port, std::string robot_arm):m_lt_memory(database_port, robot_arm){
     spdlog::trace("Memory::Memory");
     m_st_memory.link_to_lt_memory(&m_lt_memory);
     m_lt_memory.link_to_st_memory(&m_st_memory);
+    m_robot_arm = robot_arm;
 }
 
 bool Memory::is_ok() const{
@@ -102,6 +103,10 @@ void Memory::store_task_data(const std::string &uuid, const std::string& task_id
     m_lt_memory.store_task_data(uuid, task_id, context, result);
 }
 
+void Memory::store_log_data(const nlohmann::json &content, const nlohmann::json meta_information){
+    m_lt_memory.upload_log_element(content, meta_information);
+}
+
 void  Memory::set_live_parameter(const std::string &key, const nlohmann::json &value){
     m_st_memory.set_live_parameter(key,value);
 }
@@ -110,8 +115,8 @@ std::optional<nlohmann::json> Memory::get_live_parameter(const std::string &para
     return m_st_memory.get_live_parameter(parameter);
 }
 
-bool Memory::update_object(const std::string &name, bool teach_width,const Percept &p){
-    return m_st_memory.update_object(name,teach_width,p);
+bool Memory::update_object(const std::string &name, bool teach_width,double teach_force, const Percept &p){
+    return m_st_memory.update_object(name,teach_width,teach_force,p);
 }
 
 bool Memory::update_object(const std::string &name, const nlohmann::json &description){
