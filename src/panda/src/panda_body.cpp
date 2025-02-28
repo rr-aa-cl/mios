@@ -833,6 +833,34 @@ bool PandaBody::shutdown_robot(const std::optional<std::string> &ip, const std::
     return result;
 }
 
+bool PandaBody::reboot_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password){
+    spdlog::trace("PandaBody::reboot_robot");
+    bool reconnect_arm = m_has_arm;
+    bool reconnect_hand = m_arm_connected;
+    //disconnect_from_gripper();
+    //disconnect_from_robot();
+    //deactivate_fci();
+    bool result;
+    try{
+        pybind11::module desk_client = pybind11::module::import("desk_client");
+        pybind11::object py_result = desk_client.attr("reboot")(ip.value(), user, password, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
+        result = py_result.cast<bool>();
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot reboot, error when calling the python desk client.");
+        result=false;
+    }
+    /*if(result){
+        spdlog::info("Rebooting Robot... Wait until re-initialising.");
+        std::this_thread::sleep_for(std::chrono::seconds(120));
+        result=false;
+        if(this->initialize()){
+            result = true;
+        }
+    }*/
+    return result;
+}
+
 bool PandaBody::unlock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password){
     spdlog::trace("PandaBody::unlock_brakes");
     bool result;
