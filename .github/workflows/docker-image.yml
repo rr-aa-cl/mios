@@ -1,18 +1,38 @@
-name: Docker Image CI
+name: Docker Build
 
 on:
   push:
-    branches: [ "local_dev" ]
+    branches:
+      - local_dev
   pull_request:
-    branches: [ "local_dev" ]
+    branches:
+      - local_dev
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build mios Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./docker/core
+          file: Dockerfile
+          push: false
+          tags: mios:${{ github.sha }}
+
+      - name: Build mios_mls Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./docker/ml_service
+          file: Dockerfile
+          push: false
+          tags: mios_mls:${{ github.sha }}
+
+      
