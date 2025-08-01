@@ -1,0 +1,23 @@
+{
+	"skill": {
+	    "time_max": 5,
+		"p0": {
+			"dX_d": [0.1, 0.5],
+			"ddX_d": [0.5, 1],
+			"K_x": [1000, 1000, 1000, 150, 150, 150],
+			"radius": 0,
+			"n_turns": 0,
+			"clockwise": false
+		},
+        "objects": {
+            "Bendable": "Bendable",
+            "GoalPose": "GoalPose"
+        }
+    },
+    "user": {
+        "env_X": [0.01, 0.01, 0.01, 0.03, 0.03, 0.03]
+    },
+    "control": {
+        "control_mode": 0
+    }
+}

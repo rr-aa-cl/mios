@@ -1,0 +1,14 @@
+{
+	"skill": {
+        "speed": 0.05,
+        "objects": {
+            "goal_pose": "GoalPose"
+        }
+    },
+    "control": {
+        "control_mode": 0
+    },
+    "user": {
+        "env_X": [0.005, 0.005, 0.005, 0.0175, 0.0175, 0.0175]
+    }
+}
