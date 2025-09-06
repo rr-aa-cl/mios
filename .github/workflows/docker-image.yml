@@ -3,10 +3,10 @@ name: Docker Build
 on:
   push:
     branches:
-      - local_dev
+      - build
   pull_request:
     branches:
-      - local_dev
+      - build
 
 jobs:
   build:
