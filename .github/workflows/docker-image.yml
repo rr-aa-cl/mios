@@ -26,31 +26,39 @@ jobs:
           cd $GITHUB_WORKSPACE/docker
           ls -al
           bash core_dep.sh
-  # build_images:
-  #   runs-on: ubuntu-latest
-  #   container: mios_build:latest
-
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v2
-
-  #       - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v1
-
-  #       - name: Build mios Docker image
-  #       uses: docker/build-push-action@v2
-  #       with:
-  #         context: ./docker/core
-  #         file: ./docker/core/Dockerfile
-  #         push: false
-  #         tags: mios:${{ github.sha }}
-
-  #       - name: Build mios_mls Docker image
-  #       uses: docker/build-push-action@v2
-  #       with:
-  #         context: ./docker/ml_service
-  #         file: ./docker/ml_service/Dockerfile
-  #         push: false
-  #         tags: mios_mls:${{ github.sha }}
-
       
+      - name: Upload workspace
+        uses: actions/upload-artifact@v3
+        with:
+          name: workspace
+          path: .
+
+  build_images:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download workspace
+        uses: actions/download-artifact@v3
+        with:
+          name: workspace
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build mios Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./docker/core
+          file: ./docker/core/Dockerfile
+          push: false
+          tags: mios:${{ github.sha }}
+
+      - name: Build mios_mls Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./docker/ml_service
+          file: ./docker/ml_service/Dockerfile
+          push: false
+          tags: mios_mls:${{ github.sha }}
+
+    
