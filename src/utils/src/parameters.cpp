@@ -7,30 +7,33 @@
 namespace mios {
 
 LimitParameters::LimitParameters(){
-    joint_space.dddq_max<<7500,3750,5000,6250,7500,10000,10000;
-    joint_space.ddq_max<<15,7.5,10,12.5,15,20,20;
-    joint_space.dq_max<<2.1,2.1,2.1,2.1,2.6,2.6,2.6;
-    joint_space.q_upper<<2.85,1.7,2.85,0,2.85,3.7,2.85;
-    joint_space.q_lower<<-2.85,-1.7,-2.85,-3,-2.85,-0.05,-2.85;
-    joint_space.tau_J_max<<87,87,87,87,12,12,12;
-    joint_space.dtau_J_max<<1000,1000,1000,1000,1000,1000,1000;
-    joint_space.tau_ext_max<<87,87,87,87,12,12,12;
-    joint_space.K_theta_max<<10000,10000,10000,10000,10000,10000,10000;
-    joint_space.dK_theta_max<<10000,10000,10000,10000,10000,10000,10000;
-    joint_space.xi_theta_max<<2,2,2,2,2,2,2;
-    joint_space.dxi_theta_max<<10,10,10,10,10,10,10;
 
-    cartesian_space.x_upper<<0.96,0.96,1.3;
-    cartesian_space.x_lower<<-0.96,-0.96,-0.4;
-    cartesian_space.dX_max<<1.7,2.5;
-    cartesian_space.ddX_max<<13,25;
-    cartesian_space.dddX_max<<6500,12500;
-    cartesian_space.F_J_max<<100,50;
-    cartesian_space.dF_J_max<<1000,500;
-    cartesian_space.K_x_max<<3000,3000,3000,200,200,200;
-    cartesian_space.dK_x_max<<5000,5000,5000,500,500,500;
-    cartesian_space.xi_x_max<<2,2,2,2,2,2;
-    cartesian_space.dxi_x_max<<10,10,10,10,10,10;
+    // FR3 joint space limits
+    joint_space.dddq_max << 5000, 5000, 5000, 5000, 5000, 5000, 5000;
+    joint_space.ddq_max << 10, 10, 10, 10, 10, 10, 10;
+    joint_space.dq_max << 2.62, 2.62, 2.62, 2.62, 5.26, 4.18, 5.26;
+    joint_space.q_upper << 2.7437, 1.7837, 2.9007, -0.1518, 2.8065, 4.5169, 3.0159;
+    joint_space.q_lower << -2.7437, -1.7837, -2.9007, -3.0421, -2.8065, 0.5445, -3.0159;
+    joint_space.tau_J_max << 87, 87, 87, 87, 12, 12, 12;
+    joint_space.dtau_J_max << 1000, 1000, 1000, 1000, 1000, 1000, 1000;
+    joint_space.tau_ext_max << 87, 87, 87, 87, 12, 12, 12;
+    joint_space.K_theta_max << 10000, 10000, 10000, 10000, 10000, 10000, 10000;
+    joint_space.dK_theta_max << 10000, 10000, 10000, 10000, 10000, 10000, 10000;
+    joint_space.xi_theta_max << 2, 2, 2, 2, 2, 2, 2;
+    joint_space.dxi_theta_max << 10, 10, 10, 10, 10, 10, 10;
+
+    // FR3 cartesian space limits
+    cartesian_space.x_upper << 3.0, 2.5, 2.62;
+    cartesian_space.x_lower << -3.0, -2.5, -2.62;
+    cartesian_space.dX_max << 9.0, 17.0;
+    cartesian_space.ddX_max << 10.0, 10.0;
+    cartesian_space.dddX_max << 4500.0, 8500.0;
+    cartesian_space.F_J_max << 100, 50; // Not specified for FR3, kept as previous
+    cartesian_space.dF_J_max << 1000, 500; // Not specified for FR3, kept as previous
+    cartesian_space.K_x_max << 3000, 3000, 3000, 200, 200, 200; // Not specified for FR3, kept as previous
+    cartesian_space.dK_x_max << 5000, 5000, 5000, 500, 500, 500; // Not specified for FR3, kept as previous
+    cartesian_space.xi_x_max << 2, 2, 2, 2, 2, 2;
+    cartesian_space.dxi_x_max << 10, 10, 10, 10, 10, 10;
 }
 
 bool LimitParameters::from_json(const nlohmann::json &parameters){
