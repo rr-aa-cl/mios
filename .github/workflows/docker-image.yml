@@ -56,7 +56,7 @@ jobs:
           context: .
           file: ./docker/core/Dockerfile
           push: false
-          tags: ghcr.io/ciai-engineering//mios:${{ github.sha }}
+          tags: ghcr.io/ciai-engineering//mios:test
 
       - name: Build mios_mls Docker image
         uses: docker/build-push-action@v5
@@ -64,6 +64,6 @@ jobs:
             context: .
             file: ./docker/ml_service/Dockerfile
             push: false
-            tags: ghcr.io/ciai-engineering/mios/mios_mls:${{ github.sha }}
+            tags: ghcr.io/ciai-engineering/mios/mios_mls:test
 
   
