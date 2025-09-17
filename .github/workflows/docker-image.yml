@@ -56,7 +56,7 @@ jobs:
           context: .
           file: ./docker/core/Dockerfile
           push: false
-          tags: ghcr.io/ciai-engineering//mios:test
+          tags: ghcr.io/ciai-engineering/mios/mios:test
 
       - name: Build mios_mls Docker image
         uses: docker/build-push-action@v5
