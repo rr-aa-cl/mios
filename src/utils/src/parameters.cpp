@@ -7,6 +7,12 @@
 namespace mios {
 
 LimitParameters::LimitParameters(){
+    /*
+    Reference: 
+    Docs: https://frankarobotics.github.io/docs/control_parameters.html#limits-for-franka-research-3
+    Manual: https://download.franka.de/documents/Product%20Manual%20Franka%20Research%203_R02210_1.0_EN.pdf
+    Franka Hand Size: 103.4mm
+    */
 
     // FR3 joint space limits
     joint_space.dddq_max << 5000, 5000, 5000, 5000, 5000, 5000, 5000;
@@ -23,10 +29,10 @@ LimitParameters::LimitParameters(){
     joint_space.dxi_theta_max << 10, 10, 10, 10, 10, 10, 10;
 
     // FR3 cartesian space limits
-    cartesian_space.x_upper << 3.0, 2.5, 2.62;
-    cartesian_space.x_lower << -3.0, -2.5, -2.62;
-    cartesian_space.dX_max << 9.0, 17.0;
-    cartesian_space.ddX_max << 10.0, 10.0;
+    cartesian_space.x_upper << 0.96, 0.96, 1.3;
+    cartesian_space.x_lower << -0.96, -0.96, -1.3;
+    cartesian_space.dX_max << 3.0, 2.5;  
+    cartesian_space.ddX_max << 9.0, 17.0;
     cartesian_space.dddX_max << 4500.0, 8500.0;
     cartesian_space.F_J_max << 100, 50; // Not specified for FR3, kept as previous
     cartesian_space.dF_J_max << 1000, 500; // Not specified for FR3, kept as previous
@@ -35,6 +41,7 @@ LimitParameters::LimitParameters(){
     cartesian_space.xi_x_max << 2, 2, 2, 2, 2, 2;
     cartesian_space.dxi_x_max << 10, 10, 10, 10, 10, 10;
 }
+
 
 bool LimitParameters::from_json(const nlohmann::json &parameters){
     if(parameters.find("joint_space")==parameters.end()){
