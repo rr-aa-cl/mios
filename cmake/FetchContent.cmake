@@ -1,4 +1,7 @@
+list(APPEND CMAKE_PREFIX_PATH "/opt/openrobots/lib/cmake")
+
 find_package(Eigen3 REQUIRED)
+find_package(pinocchio REQUIRED)
 
 message("################################## ENTERING FETCHCONTENT FILE ##################################")
 if(NOT TARGET Eigen3::Eigen3)
@@ -16,11 +19,12 @@ set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/_deps)
 
 FetchContent_Declare(
     libfranka
-    GIT_REPOSITORY https://github.com/frankaemika/libfranka-release.git
-    GIT_TAG upstream/0.9.2)
+    #GIT_REPOSITORY https://github.com/frankaemika/libfranka-release.git
+    #GIT_TAG upstream/0.9.2)
     #GIT_REPOSITORY https://github.com/frankaemika/libfranka-release.git
     #GIT_TAG upstream/0.5.0)
-    
+    GIT_REPOSITORY https://github.com/frankarobotics/libfranka.git
+    GIT_TAG 0.15.3)
     #GIT_REPOSITORY https://github.com/frankaemika/libfranka.git
     #GIT_TAG 0.13.6)
 set(BUILD_EXAMPLES OFF CACHE INTERNAL "No examples")
