@@ -1,17 +1,10 @@
-from ast import mod
-from concurrent.futures import thread
 from desk.mongodb_client import MongoDBClient
-from xmlrpc.client import ServerProxy
 import os
-from threading import Thread
-import copy
 from utils.ws_client import *
 import json
 import socket
-import struct
 
 import time
-import copy
 
 class Task:
     def __init__(self, robot, port=12000):
