@@ -64,14 +64,14 @@ jobs:
           context: .
           file: ./docker/core/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}/mios:test
+          tags: ghcr.io/${{ github.repository }}/mios:${{ github.sha }}
 
       - name: Build mios_mls Docker image
         uses: docker/build-push-action@v5
         with:
-            context: .
-            file: ./docker/ml_service/Dockerfile
-            push: true
-            tags: ghcr.io/${{ github.repository }}/mios_mls:test
+              context: .
+              file: ./docker/ml_service/Dockerfile
+              push: true
+              tags: ghcr.io/${{ github.repository }}/mios_mls:${{ github.sha }}
 
   
