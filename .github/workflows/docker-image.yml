@@ -63,7 +63,7 @@ jobs:
         with:
           context: .
           file: ./docker/core/Dockerfile
-          push: false
+          push: true
           tags: ghcr.io/${{ github.repository }}/mios:test
 
       - name: Build mios_mls Docker image
@@ -71,7 +71,7 @@ jobs:
         with:
             context: .
             file: ./docker/ml_service/Dockerfile
-            push: false
+            push: true
             tags: ghcr.io/${{ github.repository }}/mios_mls:test
 
   
