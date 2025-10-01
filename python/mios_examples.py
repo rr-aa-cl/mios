@@ -1,17 +1,10 @@
-from ast import mod
-from concurrent.futures import thread
 from desk.mongodb_client import MongoDBClient
-from xmlrpc.client import ServerProxy
 import os
-from threading import Thread
-import copy
 from utils.ws_client import *
 import json
 import socket
-import struct
 
 import time
-import copy
 
 class Task:
     def __init__(self, robot, port=12000):
@@ -189,8 +182,13 @@ def hold_pose(robot, duration, port, control="joint"):
     t.add_skill("hold","HoldPose",hold_context)
     t.start(queue=False)
 
+def insert(robot:str, object_name:str):
+    return insertion(robot, object_name,object_name+"_container_approach",object_name+"_container")
 
-def extract(robot, extractable, extractTo, container, port=12000):
+def extract(robot:str, object_name:str):
+    return extraction(robot, object_name,object_name+"_container_approach",object_name+"_container")
+
+def extraction(robot, extractable, extractTo, container, port=12000):
     path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
     f = open(path_to_default_context + "extraction.json")
     move_context = json.load(f)
@@ -204,7 +202,7 @@ def extract(robot, extractable, extractTo, container, port=12000):
     t.start(queue=False)
     return t.wait()
 
-def insert(robot, insertable, approach, container, deltaX =[0,0,0,0,0,0], port=12000):
+def insertion(robot, insertable, approach, container, deltaX =[0,0,0,0,0,0], port=12000):
     path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
     f = open(path_to_default_context + "insertion.json")
     move_context = json.load(f)
@@ -255,57 +253,26 @@ def press_button(robot,tippable, approach):
     return t.wait()
 
 
-def teach_dualarm(module:str, object_name:str):
+def teach_insertion(robot:str, object_name:str):
     insertable = object_name
-    robot = get_ips([module])[0]
+    
     print("\nteaching ",insertable, "for ", robot,"\n")
-    input("teach hold position of right arm")
-    call_method(robot, 13000, "teach_object",{"object":"hold_"+insertable})
-    input("Press key to start teaching. [Pose above container, without object]")
-    call_method(robot,12000,"release_object")
-    call_method(robot, 12000, "teach_object", {"object": insertable+"_container_above"})
-    input("Teach where to grab object")
+
+    handguiding(robot, "Insert the object into the robot\'s fingers. [Press any key to continue]")
     call_method(robot, 12000, "grasp", {"width":0,"speed":1,"force":100})
-    call_method(robot, 12000, "teach_object", {"object": insertable, "teach_width":True})
+    call_method(robot, 12000, "teach_object", {"object": insertable, "width":True})
     current_finger_width = call_method(robot,12000,"get_state")["result"]["gripper_width"]
     call_method(robot,12000,"move_gripper",{"speed":1,"force":100,"width":current_finger_width+0.005})
-    #call_method(robot, mios_port, "grasp", {"width":0,"speed":1,"force":100,"epsilon_outer":1})
-    #call_method(robot, mios_port, "set_grasped_object", {"object": insertable})
-    time.sleep(1)
-    print("closing gripper")
+    time.sleep(0.2)
     print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
-    input("Teach approach [with object]")
+    handguiding(robot, "Teach approach pose slightly above the object\'s container. [Press any key to continue]")
     call_method(robot, 12000, "teach_object", {"object": insertable+"_container_approach"})
-    input("Teach container [with object]")
+    handguiding(robot, "Teach container pose with the object fully inserted into the container. [Press any key to continue]")
     call_method(robot, 12000, "teach_object", {"object": insertable+"_container"})
     # print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
-    
-    print(call_method(robot, 12000, "set_grasped_object",{"object":insertable}))      
+    handguiding(robot, "Extract robot and object again. [Press any key to continue]")
 
-
-def test_auto_object_exchange():
-    pass
-
-def teach_dualarm_without_homing(robot:str, object_name:str):
-    insertable = object_name
-    print("\nteaching ",insertable, "for ", robot,"\n")
-
-    input("insert objects")
-    call_method(robot, 12000, "grasp", {"width":0,"speed":1,"force":100,"epsilon_outer":1})
-
-    call_method(robot, 12000, "teach_object",{"object":insertable, "teach_width":True})
-    call_method(robot, 12000, "set_grasped_object",{"object":insertable})
-
-    input("Press key to start teaching. [Pose above container")
-    call_method(robot, 12000, "teach_object", {"object": insertable+"_container_above"})
-
-    input("Teach approach [with object]")
-    call_method(robot, 12000, "teach_object", {"object": insertable+"_container_approach"})
-
-    input("Teach container [with object]")
-    call_method(robot, 12000, "teach_object", {"object": insertable+"_container"})
-
-def handguiding(robot):
+def handguiding(robot:str, message:str="Press any key to stop"):
     context = {
         "skill": {
             "record_trajectory": False,
@@ -320,7 +287,7 @@ def handguiding(robot):
     t = Task(robot)
     t.add_skill("record_trajectory", "HandGuiding", context)
     t.start()
-    input("stop now?")
+    input(message)
     result = t.stop()
     print("Result: " + str(result))
 
