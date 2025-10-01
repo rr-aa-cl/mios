@@ -84,9 +84,9 @@ jobs:
           context: .
           file: ./docker/core/Dockerfile
           push: true
-          tags:
-            - ghcr.io/${{ github.repository }}/mios:${{ github.sha }}
-            - ghcr.io/${{ github.repository }}/mios:local_dev
+          tags: |
+            ghcr.io/${{ github.repository }}/mios:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/mios:local_dev
 
       - name: Build mios_mls Docker image
         uses: docker/build-push-action@v5
@@ -94,8 +94,8 @@ jobs:
           context: .
           file: ./docker/ml_service/Dockerfile
           push: true
-          tags:
-            - ghcr.io/${{ github.repository }}/mios_mls:${{ github.sha }}
-            - ghcr.io/${{ github.repository }}/mios_mls:local_dev
+          tags: |
+            ghcr.io/${{ github.repository }}/mios_mls:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/mios_mls:local_dev
 
   
