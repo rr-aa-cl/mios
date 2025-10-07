@@ -7,11 +7,11 @@ permissions:
 on:
   push:
     branches:
-      - python_lint
+      # - python_lint
       - local_dev
   pull_request:
     branches:
-      - python_lint
+      # - python_lint
       - local_dev
 
 jobs:
