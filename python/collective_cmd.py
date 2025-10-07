@@ -291,7 +291,6 @@ def stir():
     robot = "collective-036.rsi.ei.tum.de"
     move_joint(robot, "kitchen_whip_pan")
     pi = 3.14159265359
-    speed = 0.36
     wiggle_context1 = {
             "skill": {
                 "dX_fourier_a_a": [0.01, 0, 0.01, 0, 0, 0],
@@ -460,8 +459,9 @@ def populate_database(host, db, ip, user_name="franka", user_pw="frankaRSI"):
         new_params = {"desk_name":user_name, "desk_pwd":user_pw,"robot_ip":ip, "spoc_token":"","spoc_in_control":False}
         client.update(db,"parameters",{"name":"system"}, new_params)
         print("updated ", host,": ",db)
-    except:
-            print(host, " not updated")
+    except Exception as exc:
+        print(host, " not updated")
+        print(exc)
 def populate_databases(db, ip, user_name="franka", user_pw="frankaRSI"):
     for host in get_ips(modules):
         populate_database(host,db,ip,user_name,user_pw)
@@ -650,7 +650,7 @@ def wink_thread(robot, port, duration=False):
     #t0.add_skill("reset_again", "MoveToPoseJoint", move6_context)
 
     t0.start()
-    result = t0.wait()
+    t0.wait()
     
 
 def move_all(pose = "default_pose"):
@@ -751,7 +751,6 @@ def lltest(robot_ip = "neuro-robot-pc.rsi.ei.tum.de"):
     own_ip = "172.24.206.220"
     own_ip = "10.0.2.19"
     move_joint(robot_ip, "test")
-    current_state = get_current_percept(robot_ip, own_ip, 12345,["tau"])["tau"]
     llInterface_context = {
         "skill": {
             "ip_dst": own_ip,  # IP to send answers to
@@ -847,10 +846,9 @@ def udp_receive_message(ip, port):
 
 def udp_receiver(ip, port):
     #receiver
-    import pprint
     def write_incomming_udp(ip, port):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  
-        s.bind((ip, port)) 
+        s.bind((ip, port))
         try:
             print("listening at ", ip, ":", port,"\n")
             print("   --- Interrupt writing ctrl+c ---")
@@ -858,7 +856,7 @@ def udp_receiver(ip, port):
                 data, adrr = s.recvfrom(8192) 
                 data_dict = json.loads(data.decode("utf-8"))
                 for key, value in data_dict.items():
-                    if type(value) == list:
+                    if isinstance(value, list):
                         print(key, ": ", [float("{0:0.2f}".format(v)) for v in value])
                     else: 
                         print(key, ": ", value)
