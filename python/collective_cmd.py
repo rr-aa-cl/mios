@@ -1,17 +1,15 @@
-from concurrent.futures import thread
 from desk.mongodb_client import MongoDBClient
 from xmlrpc.client import ServerProxy
 import os
 from threading import Thread
 import copy
-from utils.ws_client import *
+from utils.ws_client import call_method, start_task, stop_task, wait_for_task, start_task_and_wait
 import numpy as np
 import json
 import socket
 import struct
 
 import time
-import copy
 
 
 ###################################################################################
