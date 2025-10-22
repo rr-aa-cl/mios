@@ -7,11 +7,11 @@ permissions:
 on:
   push:
     branches:
-      - builddev_lingyun_fr3
+      - dev_lingyun_fr3
       - local_dev
   pull_request:
     branches:
-      - builddev_lingyun_fr3
+      - dev_lingyun_fr3
       - local_dev
 
 jobs:
