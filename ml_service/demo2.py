@@ -363,7 +363,7 @@ def learn_multiple_tasks(robot: str, task_instances: list, service_config: Servi
                                     {"Insertable": insertable, "Container": container,
                                     "Approach": approach}).get_problem_definition(insertable)
         if insertable in finish_threshold:
-            pd.optimum_thr = finish_threshold[insertable]
+            service_config.finish_cost = finish_threshold[insertable]
         if insertable == "HDMI_plug":  # increase the limits for HDMI_plug
             pd.domain.limits["p2_f_push_z"] = (0, 25)
         learn_single_task(robot, pd, service_config, tags, iteration, False, knowledge_configuration, True)

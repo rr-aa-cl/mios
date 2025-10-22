@@ -1,5 +1,7 @@
-from math import isclose, ceil
-from sys import exception
+from ast import Num
+from asyncio import FastChildWatcher
+from cProfile import label
+from math import isclose
 import numpy as np
 import copy
 from plotting.data_acquisition import *
@@ -13,22 +15,20 @@ import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 import csv
-from pymongo.errors import ServerSelectionTimeoutError
 import scipy.stats as st
 from matplotlib import colors
 import seaborn as sns
-import pickle
 
 plot = Plotter()
 
 list_block_1 = ["001", #"002", 
                 "003", "004", "005", 
-                "006", "007", "008", "044", 
+                "006", "007", "008", "010", 
                 "011", "012"]
-list_block_2 = ["043","013","014","015","016","042",
+list_block_2 = ["009","013","014","015","016","017",
                 "041",#"020",
                 "021","022"]
-list_U = ["023", "024", "025", "026","047", "040", "029"] #, , "028"
+list_U = ["023", "024", "025", "027", "028", "029"] #, "026"
 list_external = ["050"]
 cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
             '003_left': 0.68016,
@@ -46,7 +46,7 @@ cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
             '015_left': 0.68184,
             '016_left': 0.9,   #
             '017_left': 0.63864,
-            '041_left': 0.63144,  # '018_left': 0.63144,09
+            '041_left': 0.63144,  # '018_left': 0.63144,
             '021_left': 0.63528,
             '022_left': 0.6828000000000001,
             '023_left': 0.6648000000000001,
@@ -66,7 +66,7 @@ def check_cutoff():
             print(m, "performed better than", cutoff[m+"_left"], " for ", undercuts, "times")
 
 
-def plot_single_experiment(host: str, task_type:str = "insertion", database:str = "ml_results", tags: list = None, uuid: str = None):
+def plot_single_experiment(host: str, task_type: str, database: str, tags: list = None, uuid: str = None):
     p = DataProcessor()
 
     if tags is not None:
@@ -77,8 +77,7 @@ def plot_single_experiment(host: str, task_type:str = "insertion", database:str 
         return
     cost, confidence = result.get_cost_per_time()
     cost_mono = p.get_monotonically_decreasing_cost(cost)
-
-    plt.plot(cost)
+    plt.plot(cost_mono)
     plt.ylim((0, 10))
     plt.show()
     # plot.plot_cost_over_trials())
@@ -2067,76 +2066,36 @@ def get_confidence(listoflists, confidence=0.95):
         interval.append(st.t.interval(confidence=confidence, df=len(points)-1, loc=mean[-1], scale=st.sem(points)))
     return mean, interval
 
-def get_confidence_time(listoflists, confidence=0.95, n_points=1000):
-    '''calculates the everage and confidence-interval of listoflists (used for trials with timestemp)
-        input: list of lists with (time, cost)
-        n_points: resolution; How many points the output should have  
-        output: mean, interval and time points (size = n_points)  
-    '''
-    if len(listoflists) < 1:
-        return False, False, False
-    longest_time = 0
-    for data in listoflists:  # find longest time
-        max_time_i = max([time for (time,cost) in data])  # max time for this iteration
-        if max_time_i>longest_time:
-            longest_time = max_time_i
-    mean = []
-    interval = []
-    for time_i in np.linspace(0, ceil(longest_time), n_points):
-        # calculate mean and interval for every time_i:
-        temp = []
-        for i in range(len(listoflists)):
-            # append last cost entry before time_i
-            trials_before_time = [trial for trial in listoflists[i] if trial[0] <= time_i]
-            if trials_before_time:  # is not empty
-                temp.append(trials_before_time[-1][1]) #append latest cost  
-        if len(temp) <= 1:
-            mean.append(float('nan'))
-            interval.append(float('nan'))
-        else:
-            mean.append(np.mean(temp))
-            interval.append(st.t.interval(confidence=confidence, df=len(temp)-1, loc=mean[-1], scale=st.sem(temp)))
-    print(mean)
-    for i in range(len(mean)-1,-1,-1):
-        if mean[i] != mean[i]:
-            mean[i] = mean[i+1]
-        if interval[i] != interval[i]:
-            interval[i] = interval[i+1]
-    return mean, interval, np.linspace(0, ceil(longest_time), n_points)
-
-def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], single_agent=False, cutoff=None, skip_module=set(), only_full_sets = True, monocally_decreasing=True,min_length=10):
+def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], single_agent=False, cutoff=None, skip_module=set()):
+    
     p = DataProcessor()
     if cutoff is None:  #plot old comparison
-        # cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
-        #             '003_left': 0.68016,
-        #             '004_left': 0.74976,
-        #             '005_left': 0.65, #
-        #             '006_left': 0.6127199999999999,
-        #             '007_left': 0.62616,
-        #             '008_left': 0.6371999999999999,
-        #             '010_left': 0.6888000000000001,
-        #             '011_left': 0.63816,
-        #             '012_left': 0.75528,
-        #             '009_left': 0.6943199999999999,
-        #             '013_left': 0.6348,
-        #             '014_left': 0.6,
-        #             '015_left': 0.68184,
-        #             '016_left': 0.9,   #
-        #             '017_left': 0.63864,
-        #             #'018_left': 0.63144,  # '018_left': 0.63144,
-        #             '041_left': 0.63144,
-        #             '021_left': 0.63528,
-        #             '022_left': 0.6828000000000001,
-        #             '023_left': 0.6648000000000001,
-        #             '024_left': 0.9187199999999999,
-        #             '025_left': 0.64752,
-        #             '027_left': 0.68448,
-        #             '040_left':  0.61824,#'028_left': 0.61824,
-        #             '029_left': 0.68088}
+        cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
+                    '003_left': 0.68016,
+                    '004_left': 0.74976,
+                    '005_left': 0.65, #
+                    '006_left': 0.6127199999999999,
+                    '007_left': 0.62616,
+                    '008_left': 0.6371999999999999,
+                    '010_left': 0.6888000000000001,
+                    '011_left': 0.63816,
+                    '012_left': 0.75528,
+                    '009_left': 0.6943199999999999,
+                    '013_left': 0.6348,
+                    '014_left': 0.6,
+                    '015_left': 0.68184,
+                    '016_left': 0.9,   #
+                    '017_left': 0.63864,
+                    '018_left': 0.63144,  # '018_left': 0.63144,
+                    '021_left': 0.63528,
+                    '022_left': 0.6828000000000001,
+                    '023_left': 0.6648000000000001,
+                    '024_left': 0.9187199999999999,
+                    '025_left': 0.64752,
+                    '027_left': 0.68448,
+                    '028_left': 0.61824,
+                    '029_left': 0.68088}
         modules = list_block_1 + list_block_2 + list_U
-        cutoff = {}
-        for m in modules:
-            cutoff[m] = float("inf")
         modules.pop(modules.index("041"))
         modules.append("018")
     else:
@@ -2149,24 +2108,15 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
     for xxx in modules:
         if xxx in skip_module:
             continue
-        try:
-            results = get_multiple_experiment_data("collective-"+xxx+".rsi.ei.tum.de", "insertion", "ml_results", {"meta.tags": tags})
-        except DataNotFoundError:
-            print("data not found on ",xxx)
-            continue
-        except ServerSelectionTimeoutError:
-            continue
-        print(len(results), "results found for ",xxx)
+        results = get_multiple_experiment_data("collective-"+xxx+".rsi.ei.tum.de", "insertion", "ml_results", {"meta.tags": tags})
+        #print(len(results), "results found for ",xxx)
         for result in results:
-            if result.instance[-6:] == "_table":
-                result.instance = result.instance[:-6]
             iteration = get_iteration(result.tags)
             #if xxx == "001":
             #    print(xxx,"_left iterations",iteration, "best cost: ",min(result.costs))
-            if len(result.costs)<min_length:
-                print("less than ",min_length," trials. Skipping...")
+            if len(result.costs)<10:
                 continue
-            learning_time = result.get_time_until_threshold(cutoff[xxx])
+            learning_time = result.get_time_until_threshold(cutoff[xxx+"_left"])
             if not learning_time:
                 #print(xxx," iteration",iteration, "didnt fully learn the task")
                 learning_time = result.times[-1]
@@ -2175,31 +2125,22 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
                                             "times_of_taskFinish":[], 
                                             "accumulated_costs_times":[], 
                                             "starting_times":[],
-                                            "instances":[],
-                                            "costs_times":[],
-                                            "successes_times":[]}
+                                            "instances":[]}
             if result.instance in results_dict[iteration]["instances"]:  # ignore the whole iteration if is was done twice 
-                print("ignore iteration because it was done twice")
                 double_iteration_index = results_dict[iteration]["instances"].index(result.instance)
                 results_dict.pop(iteration)
                 continue
             if results_dict[iteration]["earliest_starting_time"] > result.starting_time:  # save lowest starting time
                 results_dict[iteration]["earliest_starting_time"] = result.starting_time
-            if monocally_decreasing: 
-                monotonically_decreading_costs = p.get_monotonically_decreasing_cost(result.costs)
-            else:
-                monotonically_decreading_costs = result.costs
+            monotonically_decreading_costs = p.get_monotonically_decreasing_cost(result.costs)
             times_costs = [(t,c) for t,c in zip(result.times, monotonically_decreading_costs)]  # list of tupels [(cost,time),(cost,time),...]
             results_dict[iteration]["accumulated_costs_times"].append(times_costs)
-            results_dict[iteration]["costs_times"].append(times_costs)
             results_dict[iteration]["starting_times"].append(result.starting_time)
             results_dict[iteration]["times_of_taskFinish"].append(learning_time)
             results_dict[iteration]["instances"].append(result.instance)
-            results_dict[iteration]["successes_times"].append(result.get_successes_per_time())
-            
       #      sorted(results_dict[iteration]["accumulated_costs_times"])
-      #  if xxx == "007":
-      #      print(results_dict["n1"])
+        if xxx == "007":
+            print(results_dict["n1"])
     max_instances = 0
     all_instaces = []
     #print(results_dict.keys())
@@ -2211,7 +2152,7 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
     #rearranging data for plotting and adding time offeset relative to experiment beginning
     for iteration in list(results_dict.keys()):
         results = results_dict[iteration]
-        if len(results["instances"]) < max_instances and only_full_sets:
+        if len(results["instances"]) < max_instances:
             missing = [x for x in all_instaces if x not in results["instances"]]
             print("pop iteration ",iteration, "\n" ,"missing instances: ",missing)
             del results_dict[iteration]
@@ -2243,276 +2184,7 @@ def get_big_collective_data(tags:list = ["5agents_25tasks", "collective"], singl
     # inserting 0 at the beginning for better plotting
     times_of_finished_tasks_mean.insert(0,0)
     times_of_finished_tasks_confidence.insert(0,(0,0))
-    return times_of_finished_tasks_mean, times_of_finished_tasks_confidence, results_dict
-
-
-def get_global_collective_data(tags_list:list = [["10agents_25tasks", "collective", "n2",'ps_alpha_5'],["100collective",'ps_alpha_5']], 
-                               single_agent=False, cutoff=None, skip_module=set(), store_data_ip:str = False):
-    p = DataProcessor()
-    tasks = {   
-        "001":["001_left","D_007","D_016","D_017"],
-        "003":["003_left","D_012","D_005","D_018","D_028"],
-        "004":["004_left","D_019","D_020"],
-        "005":["005_left","D_006", "D_026", "D_027"],
-        "006":["006_left","D_002", "D_001", "D_021"],
-        "007":["007_left","D_022","D_011"],
-        "008":["008_left","D_008", "D_004","D_013"],
-        "010":["010_left","D_009","D_014","D_024","D_025"],
-        "011":["011_left","D_010", "D_015","D_023"],
-        "012":["012_left","C_007","C_key_05","C_006"],
-        "009":["009_left","A_015_trapezoid","B_017_IT2DE","B_013"],
-        "013":["013_left","A_030_shamrock","A_012_ellipsoid-2", "C_011"],
-        "014":["014_left","A_024_moon","C_020","B_016"],
-        "015":["015_left","B_012_DE2DE","A_011","C_025"],
-        "016":["016_left","A_026_cylinder_10","A_026_cylinder_20","A_026_cylinder_50","A_026_cylinder_30"],  #,,,],"A_026_cylinder_60"
-        "017":["017_left","B_015","C_key_12","A_013_hexagram"],
-        "041":["020_left","A_021_arrow","A_key_24","C_022"],
-        "021":["021_left","C_018","A_020_pentagram","C_019"],
-        "022":["022_left","C_010","C_013","C_009"],
-        "023":["023_left","A_019_oneline","C_key_08","C_014"],
-        "024":["024_left","C_017","C_015","C_key_24"],
-        "025":["025_left","A_014_doji-1","A_023_stairs","A_025_heart"],
-        "026":["B-014","A_022_diamond","B-018"],
-        "027":["027_left","C_016","C_key_23","A_031_audi"],
-        "040":["028_left"],
-        "029":["029_left","A_016_sector","A_018_cross-2", "A_016_cross-1"]
-        }
-    if cutoff is None:  #plot old comparison
-        cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
-                    '003_left': 0.68016,
-                    '004_left': 0.74976,
-                    '005_left': 0.65, #
-                    '006_left': 0.6127199999999999,
-                    '007_left': 0.62616,
-                    '008_left': 0.6371999999999999,
-                    '010_left': 0.6888000000000001,
-                    '011_left': 0.63816,
-                    '012_left': 0.75528,
-                    '009_left': 0.6943199999999999,
-                    '013_left': 0.6348,
-                    '014_left': 0.6,
-                    '015_left': 0.68184,
-                    '016_left': 0.9,   #
-                    '017_left': 0.63864,
-                    '041_left': 0.63144,  # '018_left': 0.63144,
-                    '021_left': 0.63528,
-                    '022_left': 0.6828000000000001,
-                    '023_left': 0.6648000000000001,
-                    '024_left': 0.9187199999999999,
-                    '025_left': 0.64752,
-                    '027_left': 0.68448,
-                    '028_left': 0.61824,
-                    '029_left': 0.68088,
-                    
-                    }
-        modules = list_block_1 + list_block_2 + list_U
-        modules.pop(modules.index("041"))
-        modules.append("018")
-
-    else:
-        modules = list_block_1+list_block_2+list_U
-
-    #getting data
-    results_dict = {}
-    max_instances = 0
-    task_finished_times = []
-    for xxx in modules:
-        if xxx in skip_module:
-            continue
-        results = []
-        for tags in tags_list:
-            try:
-                results.extend(get_multiple_experiment_data("collective-"+xxx+".local", "insertion", "ml_results", {"meta.tags": tags}))  #.rsi.ei.tum.de
-            except DataNotFoundError:
-                print("data not found on ",xxx)
-                continue
-            except ServerSelectionTimeoutError:
-                print("cannot connect to ",xxx)
-        for r in results:
-            print("found", r.tags, " on ",xxx)
-        #print(len(results), "results found for ",xxx)
-        for result in results:
-            iteration = get_iteration(result.tags)
-            #if xxx == "001":
-            #    print(xxx,"_left iterations",iteration, "best cost: ",min(result.costs))
-            if len(result.costs)<10:
-                continue
-            if xxx+"_left" in cutoff:
-                learning_time = result.get_time_until_threshold(cutoff[xxx+"_left"])
-            else:
-                learning_time = result.get_time_until_threshold(0.8)
-            if not learning_time:
-                if len(result.times) > 300:
-                    learning_time = result.times[299]
-                    result.times = result.times[:300]
-                else:
-                    learning_time = result.times[-1]
-            if iteration not in results_dict.keys():
-                results_dict[iteration] = {}
-            if xxx not in results_dict[iteration]:
-                results_dict[iteration][xxx] = { "earliest_starting_time":float('inf'), 
-                                            "times_of_taskFinish":[], 
-                                            "accumulated_costs_times":[], 
-                                            "starting_times":[],
-                                            "instances":[],
-                                            "first_success":[]}
-            if not xxx in results_dict[iteration]:
-                results_dict[iteration][xxx] = {}
-            
-            monotonically_decreading_costs = p.get_monotonically_decreasing_cost(result.costs)
-            times_costs = [(t,c) for t,c in zip(result.times, monotonically_decreading_costs)]
-            results_dict[iteration][xxx]["starting_times"].append(result.starting_time)
-            results_dict[iteration][xxx]["times_of_taskFinish"].append(learning_time)
-            results_dict[iteration][xxx]["instances"].append(result.instance)
-            s_list,t_list =  result.get_successes_per_time()
-            try:
-                first_success = [t for s,t in zip(s_list,t_list) if s==True][0]
-            except IndexError:
-                first_success = result.times[-1]
-            print("first_success: ", first_success)
-            results_dict[iteration][xxx]["first_success"].append( first_success)
-
-            
-    for xxx in modules:
-        if xxx not in results_dict:
-            continue
-        sort_this = zip(results_dict[iteration][xxx]["times_of_taskFinish"],results_dict[iteration][xxx]["instances"],results_dict[iteration][xxx]["starting_times"],results_dict[iteration][xxx]["fist_success"])
-        this_is_sorted = sorted(sort_this, key=lambda x: tasks[xxx].index(x[1]))
-        results_dict[iteration][xxx]["times_of_taskFinish"] = [x[0] for x in this_is_sorted]
-        results_dict[iteration][xxx]["instances"] = [x[1] for x in this_is_sorted]
-        results_dict[iteration][xxx]["starting_times"] = [x[2] for x in this_is_sorted]
-        results_dict[iteration][xxx]["first_success"] = [x[3] for x in this_is_sorted]
-      #      sorted(results_dict[iteration]["accumulated_costs_times"])
-        #if xxx == "007":
-        #    print(results_dict["n1"])
-    max_instances = 0
-    all_instaces = []
-    #print(results_dict.keys())
-    #for r in results_dict.values():
-    #    if len(r["instances"]) > max_instances:
-   #         max_instances = len(r["instances"])
-   #         all_instaces = r["instances"]
-    
-    s = 0
-    for instances in results_dict.keys():
-        for key in results_dict[instances].keys():
-            print(key, " instances: ", len(results_dict[instances][key]["instances"]))
-            s += len(results_dict[instances][key]["instances"])
-    print("total=",s)
-    if store_data_ip:
-        global_client = MongoDBClient(store_data_ip)
-        global_client.write("pitstop_charlie","backup_plotting",{"results":results_dict,"tags":tags_list})
-    #rearranging data for plotting and adding time offeset relative to experiment beginning
-    results_dict2 = copy.deepcopy(results_dict)
-    for iteration in list(results_dict.keys()):  # only one iteration assumed check if it works for more...
-        currently_running = {}
-        for m in results_dict2[iteration].keys():
-            currently_running[m] = {"finishes_at":0,
-                                    "tasks_count":0,
-                                    "active":False}
-        parallel_agents = 10
-        agent_list = [(0,"host")]*parallel_agents
-
-        task_finished_times = []
-        first_successes = []
-        stop_while = False
-        time_from = False
-        start_next = False
-        lowest_time = 0
-        available_modules =[]
-        while len(results_dict2[iteration]) > 0:
-            aktive_agents = 0
-            # try:
-            #     lowest_time = min([currently_running[x]["finishes_at"] for x in currently_running if currently_running[x]["finishes_at"] > 0])
-                
-            # except ValueError:
-            #     print("cant all finsished_at are 0", currently_running)
-            #     lowest_time = 0
-            for xxx in results_dict[iteration]:
-                if len(results_dict2[iteration]) == 0:
-                    stop_while = True
-                    break
-                if xxx in results_dict2[iteration]:
-                    if len(results_dict2[iteration][xxx]["times_of_taskFinish"]) == 0:
-                        try:
-                            results_dict2[iteration].pop(xxx)
-                            currently_running[xxx]["finishes_at"] = float("inf")
-                            # lowest_time = min([currently_running[x]["finishes_at"] for x in currently_running])
-                            # print("reevaluate lowest time ", lowest_time,currently_running)
-                        except KeyError:  #already poped
-                            print("already poped", xxx)
-                            pass
-                        continue
-                else:
-                    continue
-                active_agents = sum([currently_running[x]["active"] for x in currently_running])
-                if active_agents < parallel_agents:
-                    finished_time = results_dict2[iteration][xxx]["times_of_taskFinish"].pop(0)
-                    first_success = results_dict2[iteration][xxx]["first_success"].pop(0)
-                    if len(results_dict2[iteration][xxx]["times_of_taskFinish"]) == 0:
-                        results_dict2[iteration].pop(xxx)
-                    currently_running[xxx]["finishes_at"] = finished_time
-                    currently_running[xxx]["active"] = True
-                    task_finished_times.append(finished_time)
-                    first_successes.append(first_success)
-                    agent_list.pop(0)
-                    agent_list.append((finished_time,xxx))
-                    agent_list.sort(key=lambda x: x[0])
-
-                    available_modules = []
-                    for x in currently_running:
-                        available_modules.append((currently_running[x]["finishes_at"], x))
-                else:
-                    pass
-            #print("\n")
-            #print(agent_list)
-            lowest_time, agent = agent_list.pop(0)
-            #print(agent, " finished at ", lowest_time)
-
-            starting_time = copy.deepcopy(lowest_time)
-            keys = list(results_dict2[iteration].keys())
-            if len(keys) <= 0:
-                break
-            keys.reverse()
-            start_next = False
-            for x in keys:
-                if currently_running[x]["finishes_at"] <= lowest_time:
-                    lowest_time = currently_running[x]["finishes_at"]
-                    start_next = (starting_time, x)
-            if not start_next:
-                lowest_time = float('inf')
-                for x in results_dict2[iteration]:
-                    if currently_running[x]["finishes_at"] < lowest_time:
-                        lowest_time = currently_running[x]["finishes_at"]
-                        start_next = (lowest_time, x)
-            finished_time = results_dict2[iteration][start_next[1]]["times_of_taskFinish"].pop(0) + start_next[0] + 30
-            first_success = results_dict2[iteration][start_next[1]]["first_success"].pop(0) + start_next[0] + 30
-            
-            if len(results_dict2[iteration][start_next[1]]["times_of_taskFinish"]) == 0:
-                results_dict2[iteration].pop(start_next[1])
-
-            task_finished_times.append(finished_time)
-            first_successes.append(first_success)
-            #print("starting on ",start_next[1], "unitl ",finished_time)
-            agent_list.append((finished_time, start_next[1]))
-            agent_list.sort(key=lambda x: x[0])
-            currently_running[start_next[1]]["finishes_at"] = finished_time
-
-            if stop_while:
-                break
-        
-        
-        task_finished_times = sorted(task_finished_times)
-        first_successes = sorted(first_successes)
-
-    print("full set of experiments: ", len(task_finished_times))
-    print()
-    
-    # inserting 0 at the beginning for better plotting
-    task_finished_times.insert(0,0)
-    first_successes.insert(0,0)
-    #times_of_finished_tasks_confidence.insert(0,(0,0))
-    return task_finished_times, first_successes, s
+    return times_of_finished_tasks_mean, times_of_finished_tasks_confidence
 
 def plot_big_collective():
     new_cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
@@ -2541,175 +2213,29 @@ def plot_big_collective():
                     '028_left': 0.61824,
                     '029_left': 0.68088}
     colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
-    plt.style.use('dark_background')
     fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
     
     print("\ngetting collective data")
-    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective"],cutoff=new_cutoff,skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks","collective"]
+    mean_collective, confidence_collective = get_big_collective_data(["10agents_25tasks","collective","ps_alpha_5"],cutoff=new_cutoff)  # history: ["5agents_25tasks","collective"]
     mean_collective = [x/60 for x in mean_collective]
     lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
     upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing")
+    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing (10 agents)")
     axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2)
-
     print("\ngetting collective data")
-    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective","ps_alpha_5_reverse"],cutoff=new_cutoff,skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks","collective"]
+    mean_collective, confidence_collective = get_big_collective_data(["10agents_25tasks","collective","ps_alpha_5_reverse"],cutoff=new_cutoff)  # history: ["5agents_25tasks","collective"]
     mean_collective = [x/60 for x in mean_collective]
     lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
     upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing\n(10 aoptimised sequence)",color="tab:pink")
-    axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2,color="tab:pink")
+    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing (10 agents) reverse sheduled")
+    axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2)
     print("\ngetting collective data")
-    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective"],skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks","collective"]
+    mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective"])  # history: ["5agents_25tasks","collective"]
     mean_collective = [x/60 for x in mean_collective]
     lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
     upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
     legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing (5 agents)")
     axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2)
-    print("\ngetting parallel isolated data")
-    mean_isolated, confidence_isolated = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"],skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks_local","isolated_local_noFastPipeline"]
-    mean_isolated = [x/60 for x in mean_isolated]
-    lower_bound_confindece_isolated = [x[0]/60 for x in confidence_isolated]
-    upper_bound_confindece_isolated = [x[1]/60 for x in confidence_isolated]
-    legend_isolated = axes1.plot(mean_isolated, range(len(mean_isolated)), label="isolated parallel learning")
-    axes1.fill_betweenx(range(len(mean_isolated)), lower_bound_confindece_isolated, upper_bound_confindece_isolated, alpha=0.2)
-    print("\ngetting single isolated data")
-    mean_isolated_single, confidence_isolated_single = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"], single_agent=True,skip_module=set(["018","010","020"]))  #history: ["5agents_25tasks_local","isolated_local_noFastPipeline"]
-    mean_isolated_single = [x/60 for x in mean_isolated_single]
-    lower_bound_confindece_isolated_single = [x[0]/60 for x in confidence_isolated_single]
-    upper_bound_confindece_isolated_single = [x[1]/60 for x in confidence_isolated_single]
-    legend_isolated_single = axes1.plot(mean_isolated_single, range(len(mean_isolated_single)), label="isolated single learning",color = "tab:green")
-    axes1.fill_betweenx(range(len(mean_isolated_single)), lower_bound_confindece_isolated_single, upper_bound_confindece_isolated_single, alpha=0.2,color = "tab:green")
-    print(["\n5agents_25tasks_rearanged", "collective"])
-    mean_collective_re, confidence_collective_re = get_big_collective_data(["5agents_25tasks_rearanged", "collective"],skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks_rearanged", "collective"]
-    mean_collective_re = [x/60 for x in mean_collective_re]
-    lower_bound_confindece_collective_re = [x[0]/60 for x in confidence_collective_re]
-    upper_bound_confindece_collective_re = [x[1]/60 for x in confidence_collective_re]
-    legend_collective_re = axes1.plot(mean_collective_re, range(len(mean_collective_re)), label="collective knowledge sharing\n(5 agents, optimised sequence)",color="tab:red")
-    axes1.fill_betweenx(range(len(mean_collective_re)), lower_bound_confindece_collective_re, upper_bound_confindece_collective_re, alpha=0.2,color="tab:red")
-        
-    
-
-   
-    axes1.set_xlabel("time [min]", fontsize=14)
-    axes1.set_ylabel("learned skills [1]", fontsize=14)
-    axes1.set_title("learn 25 skills", fontsize=14)
-    axes1.set_xlim((0,700))
-    #axes1.set_xlim((0,220))
-    axes1.grid()
-    axes1.legend(loc="center right", fontsize=14)  #lower right
-    plt.show(block=False)
-
-
-def plot_100_collective(global_ip = False):
-    new_cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
-                    '003_left': 0.68016,
-                    '004_left': 0.74976,
-                    '005_left': 0.65, #
-                    '006_left': 0.6127199999999999,
-                    '007_left': 0.62616,
-                    '008_left': 0.6371999999999999,
-                    '010_left': 0.6888000000000001,
-                    '011_left': 0.63816,
-                    '012_left': 0.75528,
-                    '009_left': 0.6943199999999999,
-                    '013_left': 0.6348,
-                    '014_left': 0.6,
-                    '015_left': 0.68184,
-                    '016_left': 0.9,   #
-                    '017_left': 0.63864,
-                    '041_left': 0.63144,  # '018_left': 0.63144,
-                    '021_left': 0.63528,
-                    '022_left': 0.6828000000000001,
-                    '023_left': 0.6648000000000001,
-                    '024_left': 0.9187199999999999,
-                    '025_left': 0.64752,
-                    '027_left': 0.68448,
-                    '028_left': 0.61824,
-                    '029_left': 0.68088}
-    colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
-    plt.style.use('dark_background')
-    fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
-    
-    # print("\ngetting collective data")
-    # mean_collective, confidence_collective = get_big_collective_data(["10agents_25tasks","collective","ps_alpha_5"],cutoff=new_cutoff)  # history: ["5agents_25tasks","collective"]
-    # mean_collective = [x/60 for x in mean_collective]
-    # lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
-    # upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
-    # legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing (10 agents)")
-    # axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2)
-
-
-    print("\ngetting 100 collective data")
-    mean_collective, first_successes, n_tasks = get_global_collective_data(cutoff=new_cutoff,skip_module=set(["018","010","020"]),store_data_ip=global_ip)  # history: ["5agents_25tasks","collective"]
-    mean_collective = [x/60 for x in mean_collective]
-    first_successes = [x/60 for x in first_successes]
-    print(len(first_successes)," vs ", len(mean_collective))
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="pitstop_charlie (ICRA)\n(25 agents, %i objects)"%n_tasks, color="tab:blue",linewidth=2)
-    #legend_collective = axes1.plot(first_successes, range(len(first_successes)), label="first successes(10 agents, %i objects)"%n_tasks, color="tab:olive",linewidth=2)
-    
-    print("\ngetting 100 collective data")
-    mean_collective, first_successes, n_tasks = get_global_collective_data(tags_list=[["ps_charlie_2"]],cutoff=new_cutoff,skip_module=set(["018","010","020"]),store_data_ip=global_ip)  # history: ["5agents_25tasks","collective"]
-    mean_collective = [x/60 for x in mean_collective]
-    first_successes = [x/60 for x in first_successes]
-    print(len(first_successes)," vs ", len(mean_collective))
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="pitstop_charlie\n(15 agents, %i objects)"%n_tasks, color="tab:cyan",linewidth=2)
-    #legend_collective = axes1.plot(first_successes, range(len(first_successes)), label="first successes(10 agents, %i objects)"%n_tasks, color="tab:olive",linewidth=2)
-    print("\ngetting 100 collective data")
-    mean_collective, first_successes, n_tasks = get_global_collective_data(tags_list=[["ps_charlie_test", "n2"]],cutoff=new_cutoff,skip_module=set(["018","010","020"]),store_data_ip=global_ip)  # history: ["5agents_25tasks","collective"]
-    mean_collective = [x/60 for x in mean_collective]
-    first_successes = [x/60 for x in first_successes]
-    print(len(first_successes)," vs ", len(mean_collective))
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="pitstop_charlie\n(15 agents, %i objects)"%n_tasks, color="tab:olive",linewidth=2)
-    #legend_collective = axes1.plot(first_successes, range(len(first_successes)), label="first successes(10 agents, %i objects)"%n_tasks, color="tab:olive",linewidth=2)
-    print("\ngetting 100 collective data")
-    mean_collective, first_successes, n_tasks = get_global_collective_data(tags_list=[["ps_charlie_test", "n3"]],cutoff=new_cutoff,skip_module=set(["018","010","020"]),store_data_ip=global_ip)  # history: ["5agents_25tasks","collective"]
-    mean_collective = [x/60 for x in mean_collective]
-    first_successes = [x/60 for x in first_successes]
-    print(len(first_successes)," vs ", len(mean_collective))
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="pitstop_charlie\n(15 agents, %i objects)"%n_tasks, color="tab:orange",linewidth=2)
-    #legend_collective = axes1.plot(first_successes, range(len(first_successes)), label="first successes(10 agents, %i objects)"%n_tasks, color="tab:olive",linewidth=2)
-    print("\ngetting 100 collective data")
-    mean_collective, first_successes, n_tasks = get_global_collective_data(tags_list=[["ps_charlie_test", "n4"]],cutoff=new_cutoff,skip_module=set(["018","010","020"]),store_data_ip=global_ip)  # history: ["5agents_25tasks","collective"]
-    mean_collective = [x/60 for x in mean_collective]
-    first_successes = [x/60 for x in first_successes]
-    print(len(first_successes)," vs ", len(mean_collective))
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="pitstop_charlie\n(15 agents, %i objects)"%n_tasks, color="tab:grey",linewidth=2)
-    #legend_collective = axes1.plot(first_successes, range(len(first_successes)), label="first successes(10 agents, %i objects)"%n_tasks, color="tab:olive",linewidth=2)
-    print("\ngetting 100 collective data")
-    mean_collective, first_successes, n_tasks = get_global_collective_data(tags_list=[["ps_charlie_test","n6"]],cutoff=new_cutoff,skip_module=set(["018","010","020"]),store_data_ip=global_ip)  # history: ["5agents_25tasks","collective"]
-    mean_collective = [x/60 for x in mean_collective]
-    first_successes = [x/60 for x in first_successes]
-    print(len(first_successes)," vs ", len(mean_collective))
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="pitstop_charlie\n(15 agents, %i objects)"%n_tasks, color="tab:brown",linewidth=2)
-    #legend_collective = axes1.plot(first_successes, range(len(first_successes)), label="first successes(10 agents, %i objects)"%n_tasks, color="tab:olive",linewidth=2)
-    mean_collective, first_successes, n_tasks = get_global_collective_data(tags_list=[["ps_charlie_test","n7"]],cutoff=new_cutoff,skip_module=set(["018","010","020"]),store_data_ip=global_ip)  # history: ["5agents_25tasks","collective"]
-    mean_collective = [x/60 for x in mean_collective]
-    first_successes = [x/60 for x in first_successes]
-    print(len(first_successes)," vs ", len(mean_collective))
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="pitstop_charlie\n(15 agents, %i objects)"%n_tasks, color="tab:purple",linewidth=2)
-    #legend_collective = axes1.plot(first_successes, range(len(first_successes)), label="first successes(10 agents, %i objects)"%n_tasks, color="tab:olive",linewidth=2)
-    mean_collective, first_successes, n_tasks = get_global_collective_data(tags_list=[["ps_charlie_test","n8"]],cutoff=new_cutoff,skip_module=set(["018","010","020"]),store_data_ip=global_ip)  # history: ["5agents_25tasks","collective"]
-    mean_collective = [x/60 for x in mean_collective]
-    first_successes = [x/60 for x in first_successes]
-    print(len(first_successes)," vs ", len(mean_collective))
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="pitstop_charlie\n(15 agents, %i objects)"%n_tasks, color="w",linewidth=2)
-    #legend_collective = axes1.plot(first_successes, range(len(first_successes)), label="first successes(10 agents, %i objects)"%n_tasks, color="tab:olive",linewidth=2)
-
-    print("\ngetting collective data")
-    mean_collective, confidence_collective = get_big_collective_data(["10agents_25tasks","collective","ps_alpha_5_reverse"],cutoff=new_cutoff,skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks","collective"]
-    mean_collective = [x/60 for x in mean_collective]
-    lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
-    upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
-    legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="pitstop_alpha\n(10 agents)",color="tab:pink",linewidth=2)
-    axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2,color="tab:pink")
-    # print("\ngetting collective data")
-    # mean_collective, confidence_collective = get_big_collective_data(["5agents_25tasks","collective"],skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks","collective"]
-    # mean_collective = [x/60 for x in mean_collective]
-    # lower_bound_confindece_collective = [x[0]/60 for x in confidence_collective]
-    # upper_bound_confindece_collective = [x[1]/60 for x in confidence_collective]
-    # legend_collective = axes1.plot(mean_collective, range(len(mean_collective)), label="collective knowledge sharing (5 agents)")
-    # axes1.fill_betweenx(range(len(mean_collective)), lower_bound_confindece_collective, upper_bound_confindece_collective, alpha=0.2)
     #print("\ngetting parallel isolated data")
     #mean_isolated, confidence_isolated = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"])  # history: ["5agents_25tasks_local","isolated_local_noFastPipeline"]
     #mean_isolated = [x/60 for x in mean_isolated]
@@ -2718,763 +2244,29 @@ def plot_100_collective(global_ip = False):
     #legend_isolated = axes1.plot(mean_isolated, range(len(mean_isolated)), label="isolated parallel learning")
     #axes1.fill_betweenx(range(len(mean_isolated)), lower_bound_confindece_isolated, upper_bound_confindece_isolated, alpha=0.2)
     print("\ngetting single isolated data")
-    mean_isolated_single, confidence_isolated_single = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"], single_agent=True,skip_module=set(["018","010","020"]))  #history: ["5agents_25tasks_local","isolated_local_noFastPipeline"]
+    mean_isolated_single, confidence_isolated_single = get_big_collective_data(["5agents_25tasks_local","isolated_local_noFastPipeline"], single_agent=True)  #history: ["5agents_25tasks_local","isolated_local_noFastPipeline"]
     mean_isolated_single = [x/60 for x in mean_isolated_single]
     lower_bound_confindece_isolated_single = [x[0]/60 for x in confidence_isolated_single]
     upper_bound_confindece_isolated_single = [x[1]/60 for x in confidence_isolated_single]
-    legend_isolated_single = axes1.plot(mean_isolated_single, range(len(mean_isolated_single)), label="isolated single learning",color = "tab:green",linewidth=2)
-    axes1.fill_betweenx(range(len(mean_isolated_single)), lower_bound_confindece_isolated_single, upper_bound_confindece_isolated_single, alpha=0.2,color = "tab:green")
+    legend_isolated_single = axes1.plot(mean_isolated_single, range(len(mean_isolated_single)), label="isolated single learning")
+    axes1.fill_betweenx(range(len(mean_isolated_single)), lower_bound_confindece_isolated_single, upper_bound_confindece_isolated_single, alpha=0.2)
     print(["\n5agents_25tasks_rearanged", "collective"])
-    mean_collective_re, confidence_collective_re = get_big_collective_data(["5agents_25tasks_rearanged", "collective"],skip_module=set(["018","010","020"]))  # history: ["5agents_25tasks_rearanged", "collective"]
+    mean_collective_re, confidence_collective_re = get_big_collective_data(["5agents_25tasks_rearanged", "collective"])  # history: ["5agents_25tasks_rearanged", "collective"]
     mean_collective_re = [x/60 for x in mean_collective_re]
     lower_bound_confindece_collective_re = [x[0]/60 for x in confidence_collective_re]
     upper_bound_confindece_collective_re = [x[1]/60 for x in confidence_collective_re]
-    legend_collective_re = axes1.plot(mean_collective_re, range(len(mean_collective_re)), label="pitstop_alpha\n(5 agents)",color="tab:red",linewidth=2)
-    axes1.fill_betweenx(range(len(mean_collective_re)), lower_bound_confindece_collective_re, upper_bound_confindece_collective_re, alpha=0.2,color="tab:red")
-        
-        
+    legend_collective_re = axes1.plot(mean_collective_re, range(len(mean_collective_re)), label="collective knowledge sharing (5 agents, optimised sequence)")
+    axes1.fill_betweenx(range(len(mean_collective_re)), lower_bound_confindece_collective_re, upper_bound_confindece_collective_re, alpha=0.2)
+    
     axes1.set_xlabel("time [min]", fontsize=14)
     axes1.set_ylabel("learned skills [1]", fontsize=14)
-    axes1.set_title("learn %i skills"%n_tasks, fontsize=14)
+    axes1.set_title("learn 25 skills | 5 agent collective VS 10 agent collective", fontsize=14)
     axes1.set_xlim((0,700))
-    axes1.set_xlim((0,220))
-    axes1.set_ylim((0,100))
-    axes1.grid()
-    axes1.legend(loc="center right", fontsize=14)  #lower right
-    plt.show(block=False)
-
-    fig2, axes2 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=2)
-    print(first_successes)
-    legend_collective = axes2.plot(first_successes, range(len(first_successes)), label="first successes(10 agents, %i objects)"%n_tasks,linewidth=2)
-    axes2.set_title("first successes (100 skills)")
-    axes2.set_xlabel("time [min]", fontsize=14)
-    axes2.set_ylabel("first successful trial [1]", fontsize=14)
-    axes2.set_title("learn %i skills"%n_tasks, fontsize=14)
-    axes2.set_xlim((0,700))
-    axes2.set_xlim((0,220))
-    axes2.set_ylim((0,100))
-    axes2.legend(loc="lower right", fontsize=14) 
-    axes2.grid()
-
-    plt.show()
-
-
-
-def plot_alpha_transfer():
-    new_cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
-                    '003_left': 0.68016,
-                    '004_left': 0.74976,
-                    '005_left': 0.65, #
-                    '006_left': 0.6127199999999999,
-                    '007_left': 0.62616,
-                    '008_left': 0.6371999999999999,
-                    '010_left': 0.6888000000000001,
-                    '011_left': 0.63816,
-                    '012_left': 0.75528,
-                    '009_left': 0.6943199999999999,
-                    '013_left': 0.6348,
-                    '014_left': 0.6,
-                    '015_left': 0.68184,
-                    '016_left': 0.9,   #
-                    '017_left': 0.63864,
-                    '041_left': 0.63144,  # '018_left': 0.63144,
-                    '021_left': 0.63528,
-                    '022_left': 0.6828000000000001,
-                    '023_left': 0.6648000000000001,
-                    '024_left': 0.9187199999999999,
-                    '025_left': 0.64752,
-                    '027_left': 0.68448,
-                    '028_left': 0.61824,
-                    '029_left': 0.68088}
-    colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
-    plt.style.use('dark_background')
-    fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
-    
-    print("\ngetting single isolated data")
-    mean_isolated_single, confidence_isolated_single, results_dict_single = get_big_collective_data(['noKnowledge', 'noSharing', 'isolated',], single_agent=False, skip_module=set(["028", "018","010"])) 
-    mean_isolated_single = [x/60 for x in mean_isolated_single]
-    lower_bound_confindece_isolated_single = [x[0]/60 for x in confidence_isolated_single]
-    upper_bound_confindece_isolated_single = [x[1]/60 for x in confidence_isolated_single]
-    legend_isolated_single = axes1.plot(mean_isolated_single, range(len(mean_isolated_single)), label="isolated single learning (PSP)")
-    axes1.fill_betweenx(range(len(mean_isolated_single)), lower_bound_confindece_isolated_single, upper_bound_confindece_isolated_single, alpha=0.2)
-    print("\ngetting alpha transfer  data")
-    mean_isolated_alpha, confidence_isolated_alpha, results_dict_alpha = get_big_collective_data(["alpha_task_transfer","default_context"], single_agent=False, skip_module=set(["028", "018","010"])) 
-    mean_isolated_alpha = [x/60 for x in mean_isolated_alpha]
-    lower_bound_confindece_isolated_alpha = [x[0]/60 for x in confidence_isolated_alpha]
-    upper_bound_confindece_isolated_alpha = [x[1]/60 for x in confidence_isolated_alpha]
-    legend_isolated_alpha = axes1.plot(mean_isolated_alpha, range(len(mean_isolated_alpha)), label="alpha task transfer, isolated (PSP)")
-    axes1.fill_betweenx(range(len(mean_isolated_alpha)), lower_bound_confindece_isolated_alpha, upper_bound_confindece_isolated_alpha, alpha=0.2)
-    
-
-    print("\ngetting single isolated data CMAES")
-    mean_isolated_single, confidence_isolated_single, results_dict_single_cmaes = get_big_collective_data(["isolated", "CMAES", "25Tasks", "9ind20gen","additional_run"], single_agent=False, skip_module=set(["028", "018","010","023"])) 
-    mean_isolated_single = [x/60 for x in mean_isolated_single]
-    lower_bound_confindece_isolated_single = [x[0]/60 for x in confidence_isolated_single]
-    upper_bound_confindece_isolated_single = [x[1]/60 for x in confidence_isolated_single]
-    legend_isolated_single = axes1.plot(mean_isolated_single, range(len(mean_isolated_single)), label="isolated single learning (CMA-ES)")
-    axes1.fill_betweenx(range(len(mean_isolated_single)), lower_bound_confindece_isolated_single, upper_bound_confindece_isolated_single, alpha=0.2)
-    print("\ngetting alpha transfer  data CMAES")
-    mean_isolated_alpha, confidence_isolated_alpha, results_dict_alpha_cmaes = get_big_collective_data(["alpha_task_transfer_cmaes","default_context"], single_agent=False, skip_module=set(["028", "018","010"])) 
-    mean_isolated_alpha = [x/60 for x in mean_isolated_alpha]
-    lower_bound_confindece_isolated_alpha = [x[0]/60 for x in confidence_isolated_alpha]
-    upper_bound_confindece_isolated_alpha = [x[1]/60 for x in confidence_isolated_alpha]
-    legend_isolated_alpha = axes1.plot(mean_isolated_alpha, range(len(mean_isolated_alpha)), label="alpha task transfer, isolated (CMA-ES)")
-    axes1.fill_betweenx(range(len(mean_isolated_alpha)), lower_bound_confindece_isolated_alpha, upper_bound_confindece_isolated_alpha, alpha=0.2)
-    
-    fig2, axes2 = plt.subplots(6, 4, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=2)
-    results = {}
-    for iter in results_dict_alpha.keys():
-        for i in range(len(results_dict_alpha[iter]["instances"])):
-            instance = results_dict_alpha[iter]["instances"][i]
-            if instance not in results:
-                results[instance] = {"alpha":[], "isolated":[], "alpha_cmaes":[], "isolated_cmaes":[]}
-            results[instance]["alpha"].append(results_dict_alpha[iter]["costs_times"][i])
-            index_isolated = results_dict_single[iter]["instances"].index(instance)
-            results[instance]["isolated"].append(results_dict_single[iter]["costs_times"][index_isolated])
-            
-            if iter in results_dict_alpha_cmaes:
-                try:
-                    index_alpha_cmaes = results_dict_alpha_cmaes[iter]["instances"].index(instance)
-                    results[instance]["alpha_cmaes"].append(results_dict_alpha_cmaes[iter]["costs_times"][index_alpha_cmaes])
-                except ValueError:
-                    pass
-            if iter in results_dict_single_cmaes:
-                try:
-                    index_isolated_cmaes = results_dict_single_cmaes[iter]["instances"].index(instance)
-                    results[instance]["isolated_cmaes"].append(results_dict_single_cmaes[iter]["costs_times"][index_isolated_cmaes])
-                except ValueError:
-                    pass
-
-    for i, instance in enumerate(results.keys()):
-        mean, interval, time_points = get_confidence_time(results[instance]["isolated"], n_points=1000)
-        time_points = [s/60 for s in time_points]
-        label = labels[modules.index(instance[:3])]
-        axes2[i%6,int(i/6)].set_title(label)
-        line_psp_no = axes2[i%6,int(i/6)].plot(time_points, mean, label = "no Knowledge, PSP")
-        lower_confidence = [x[0] for x in interval]
-        upper_confidence = [x[1] for x in interval]
-        axes2[i%6,int(i/6)].fill_between(time_points, lower_confidence, upper_confidence, alpha=0.2)
-
-        mean, interval, time_points = get_confidence_time(results[instance]["alpha"], n_points=1000)
-        time_points = [s/60 for s in time_points]
-        label = labels[modules.index(instance[:3])]
-        axes2[i%6,int(i/6)].set_title(label)
-        line_psp_alpha = axes2[i%6,int(i/6)].plot(time_points, mean, label = "alpha, PSP")
-        lower_confidence = [x[0] for x in interval]
-        upper_confidence = [x[1] for x in interval]
-        axes2[i%6,int(i/6)].fill_between(time_points, lower_confidence, upper_confidence, alpha=0.2)
-
-        if results[instance]["isolated_cmaes"]:
-            mean, interval, time_points = get_confidence_time(results[instance]["isolated_cmaes"], n_points=1000)
-            time_points = [s/60 for s in time_points]
-            label = labels[modules.index(instance[:3])]
-            axes2[i%6,int(i/6)].set_title(label)
-            line_cmaes_no = axes2[i%6,int(i/6)].plot(time_points, mean, label = "no Knowledge, CMA-ES")
-            lower_confidence = [x[0] for x in interval]
-            upper_confidence = [x[1] for x in interval]
-            axes2[i%6,int(i/6)].fill_between(time_points, lower_confidence, upper_confidence, alpha=0.2)
-        if results[instance]["alpha_cmaes"]:
-            mean, interval, time_points = get_confidence_time(results[instance]["alpha_cmaes"], n_points=1000)
-            time_points = [s/60 for s in time_points]
-            label = labels[modules.index(instance[:3])]
-            axes2[i%6,int(i/6)].set_title(label)
-            line_cmaes_alpha = axes2[i%6,int(i/6)].plot(time_points, mean, label = "alpha, CMA-ES")
-            lower_confidence = [x[0] for x in interval]
-            upper_confidence = [x[1] for x in interval]
-            axes2[i%6,int(i/6)].fill_between(time_points, lower_confidence, upper_confidence, alpha=0.2)
-
-        #axes2[i%6,int(i/6)].legend(loc="upper right")
-        axes2[i%6,int(i/6)].set_ylim((0,2))
-        axes2[i%6,int(i/6)].set_xlabel("time [min]")
-        axes2[i%6,int(i/6)].set_ylabel("cost [1]")
-    
-    #lines = []
-    #legend_texts = []
-    #for ax in axes2: 
-    #    Line, Label = ax.get_legend_handles_labels() 
-    #    # print(Label) 
-    #    lines.extend(Line) 
-    #    legend_texts.extend(Label) 
-    #fig2.legend(lines, legend_texts, loc="bottom right")
-    lines, texts = axes2[0,2].get_legend_handles_labels()
-    fig2.legend(lines, texts, loc = "lower right")
-    print("130 trials for each run (alpha and noKnowledge)")
-
-    axes1.set_xlabel("time [min]", fontsize=14)
-    axes1.set_ylabel("learned skills [1]", fontsize=14)
-    axes1.set_title("alpha task transfer VS no knowledge", fontsize=14)
-    axes1.set_xlim((0,55))
+    axes1.set_xlim((0,180))
     axes1.grid()
     axes1.legend(loc="lower right", fontsize=14)
     plt.show()
 
-
-def plot_robustness_test():
-    colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
-    plt.style.use('dark_background')
-    fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
-    labels = ["IEC(C7)", "Triangle-1", "Hexagon-1", "USB-1", "Triangle-2", "Cylinder-1", "Key-1", "Plug(type F)-1", "Audio Jack(3.5mm)", "IEC(C13)", "Cylinder-2", "Hexagon-2", "HDMI-1", "Key-2", "Cylinder-3", "Square-1", "Hexagon-3", "Square-2", "Audio jack(6.35mm)", "USB-2", "Plug(type C)", "Key-3", "Plug(type F)-2", "HDMI-2", "Key-4"]
-    modules = list_block_1 + list_block_2 + list_U
-
-    print("\ngetting alpha transfer  data CMAES")
-    # ["robustness_test","n2"]
-    mean_reboot, confidence_reboot, reboot = get_big_collective_data(["robustness_test","n2"], single_agent=True, skip_module=set(["028", "018","010","029","017","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90) 
-    print("\ngetting alpha transfer  data CMAES")
-    # ["robustness_test","n2"]
-    mean_isolated_alpha, confidence_isolated_alpha, directly = get_big_collective_data(["robustness_test","directly_after_learning"], single_agent=True, skip_module=set(["028", "018","010","029","017","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-    fig2, axes2 = plt.subplots(6, 5, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=2)
-    results = {}
-    successrate_reboot = {}
-    successrate_directly = {}
-    print(reboot.keys())
-    print(directly.keys())
-    for iter in reboot.keys():
-        for i in range(len(reboot[iter]["instances"])):
-            instance = reboot[iter]["instances"][i]
-            print("instance: ", i, instance, iter)
-            if instance not in results:
-                results[instance] = {"alpha":[]}
-            results[instance]["alpha"].append(reboot[iter]["costs_times"][i])
-            successrate_reboot[instance] = reboot[iter]["successes_times"][i]
-    for iter in directly.keys():
-        for i in range(len(directly[iter]["instances"])):
-            instance = directly[iter]["instances"][i]
-            print("instance: ", i, instance, iter)
-            if instance not in results:
-                results[instance] = {"beta":[]}
-            if "beta" not in results[instance]:
-                results[instance]["beta"] = []
-            results[instance]["beta"].append(directly[iter]["costs_times"][i])
-            successrate_directly[instance] = directly[iter]["successes_times"][i]
-
-    x = np.arange(len(results)) / 100  # the label locations
-    width = 0.005  # the width of the bars
-    multiplier = 0
-    for i, instance in enumerate(results.keys()):
-        offset = width*multiplier
-        #mean, interval, time_points = get_confidence_time(results[instance]["alpha"], n_points=1000)
-        #time_points = [s/60 for s in time_points]
-        label = instance
-        axes2[i%6,int(i/6)].set_title(label)
-        try:
-            times = [time/60 for time,cost in results[instance]["alpha"][0]]
-            costs = [cost for time,cost in results[instance]["alpha"][0]]
-            line_psp_r = axes2[i%6,int(i/6)].plot(times,costs, label = "after some days")
-            
-            successrate = sum(successrate_reboot[instance][0])/len(successrate_reboot[instance][0]) *100
-            print(instance, "number of sets (rebooted): ",len(results[instance]["alpha"]), " successrate=",successrate)
-            rects = axes1.bar(x + offset, successrate, width, label="after some days")
-            axes1.bar_label(rects, padding=3)
-        except KeyError:
-            print("no reboot data for ",instance)
-            pass  
-        try:          
-            times = [time/60 for time,cost in results[instance]["beta"][0]]
-            costs = [cost for time,cost in results[instance]["beta"][0]]
-            line_psp_d = axes2[i%6,int(i/6)].plot(times,costs, label = "directly after learning")
-            successrate = sum(successrate_directly[instance][0])/len(successrate_directly[instance][0]) *100
-            #print(successrate_directly[instance])
-            print(instance, "number of sets (directly): ",len(results[instance]["alpha"]), " successrate=",successrate)
-            rects = axes1.bar(x + offset, successrate, width, label="directly after learning")
-            axes1.bar_label(rects, padding=3)
-        except KeyError:
-            print("no directly after learning data for ",instance)
-            pass
-        multiplier+=1
-
-        #lower_confidence = [x[0] for x in interval]
-        #upper_confidence = [x[1] for x in interval]
-        #axes2[i%6,int(i/6)].fill_between(time_points, lower_confidence, upper_confidence, alpha=0.2)
-
-        axes2[i%6,int(i/6)].set_ylim((0,2.5))
-        axes2[i%6,int(i/6)].set_xlabel("time [min]")
-        axes2[i%6,int(i/6)].set_ylabel("cost [1]")
-    
-    lines, texts = axes2[0,2].get_legend_handles_labels()
-    fig2.legend(lines, texts, loc = "lower right")
-    fig2.suptitle("Robustness Test - Repeat best trial 100 times")
-    print("130 trials for each run (alpha and noKnowledge)")
-
-    axes1.set_xlabel("skill solution", fontsize=14)
-    axes1.set_ylabel("success rate [%]", fontsize=14)
-    axes1.set_title("alpha task transfer VS no knowledge", fontsize=14)
-    axes1.set_xticks(x + width, list(results.keys()))
-    axes1.grid()
-    axes1.legend(loc="lower right", fontsize=14)
-    plt.show()
-
-
-
-def plot_convergence_test():
-    plot_single_figures = False
-    colors = ['#8dd3c7', '#feffb3', '#bfbbd9', '#fa8174', '#81b1d2', '#fdb462', '#b3de69', '#bc82bd', '#ccebc4', '#ffed6f']
-    plt.style.use('dark_background')
-    labels = ["IEC(C7)", "Triangle-1", "Hexagon-1", "USB-1", "Triangle-2", "Cylinder-1", "Key-1", "Plug(type F)-1", "Audio Jack(3.5mm)", "IEC(C13)", "Cylinder-2", "Hexagon-2", "HDMI-1", "Key-2", "Cylinder-3", "Square-1", "Hexagon-3", "Square-2", "Audio jack(6.35mm)", "USB-2", "Plug(type C)", "Key-3", "Plug(type F)-2", "HDMI-2", "Key-4"]
-    modules = list_block_1 + list_block_2 + list_U
-    fig2, axes2 = plt.subplots(6, 4, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=100)
-    results = None
-    # try:
-    #     print("searching on collective NAS")
-    #     client = MongoDBClient("10.157.175.119")
-    #     results = client.read("plotting","convergence_test",{})
-    #     if len(results) > 0:
-    #         results = results[-1]
-    #         results.pop("_id")
-    #         print("found results on collective NAS")
-    #     else:
-    #         results = None
-            
-    # except:
-    #     pass
-    if results is None:
-        # print("\ngetting default PSP data")
-        # # ["robustness_test","n2"]
-        # mean_reboot, confidence_reboot, reboot = get_big_collective_data(["convergence_test_1","5000"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90) 
-        # print("\ngetting success check data (retry 5x) with PSP")
-        # # ["robustness_test","n2"]
-        # mean_isolated_alpha, confidence_isolated_alpha, directly = get_big_collective_data(["convergence_test_2","success_check"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        
-        # print("\ngetting success check data (retry 5x) with CMA-ES")
-        # # ["robustness_test","n2"]
-        #mean_isolated_alpha, confidence_isolated_alpha, cmaes = get_big_collective_data(["convergence_test_3","success_check"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        # print("\ngetting success check data (retry 5x) with original PSP")
-        # # ["robustness_test","n2"]
-        # mean_isolated_alpha, confidence_isolated_alpha, origPSP = get_big_collective_data(["convergence_test_5","success_check"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        # mean_isolated_alpha, confidence_isolated_alpha, cartHold = get_big_collective_data(["convergence_test_6","success_check","holdpose"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        # mean_isolated_alpha, confidence_isolated_alpha, jointHold = get_big_collective_data(["convergence_test_6","success_check","jointpose"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        #mean_isolated_alpha, confidence_isolated_alpha, lifted_jointHold = get_big_collective_data(["convergence_test_7","success_check","lifted_jointpose"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        #mean_isolated_alpha, confidence_isolated_alpha, table_insertion = get_big_collective_data(["convergence_test_9","success_check","table_insertion"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        # #mean_isolated_alpha, confidence_isolated_alpha, mod_length_insertion = get_big_collective_data(["convergence_test_10","table_insertion"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        #mean_isolated_alpha, confidence_isolated_alpha, new_mount_table = get_big_collective_data(["convergence_test_10.2","modify_length"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        #mean_isolated_alpha, confidence_isolated_alpha, new_mount_table_decreasing = get_big_collective_data(["convergence_test_10.2","modify_length"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=True, only_full_sets=False,min_length=90)  
-        #mean_isolated_alpha, confidence_isolated_alpha, new_mount_table_gmm8 = get_big_collective_data(["convergence_test_10.3","modify_length"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        #changes on origPSP
-        #mean_isolated_alpha, confidence_isolated_alpha, new_mount_table_PSPenhanced = get_big_collective_data(["convergence_test_11","modify_length"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=90)  
-        #florians last changes on origPSP
-        mean_isolated_alpha, confidence_isolated_alpha, new_mount_table_florian = get_big_collective_data(["convergence_test_12","modify_length"], single_agent=True, skip_module=set(["028", "018","010","029","016","040"]),monocally_decreasing=False, only_full_sets=False,min_length=10)  
-        
-        results = {}
-        successrate_reboot = {}
-        successrate_directly = {}
-        successrate_cmaes = {}
-        successrate_origPSP = {}
-        #print(reboot.keys())
-        #print(directly.keys())
-        # for iter in reboot.keys():
-        #     for i in range(len(reboot[iter]["instances"])):
-        #         instance = reboot[iter]["instances"][i]
-        #         print("instance: ", i, instance, iter)
-        #         if instance not in results:
-        #             results[instance] = {"defaultPSP":[]}
-        #         results[instance]["defaultPSP"].append(reboot[iter]["costs_times"][i])
-        # for iter in directly.keys():
-        #     for i in range(len(directly[iter]["instances"])):
-        #         instance = directly[iter]["instances"][i]
-        #         print("instance: ", i, instance, iter)
-        #         if instance not in results:
-        #             results[instance] = {"defaultPSPsc":[]}
-        #         if "beta" not in results[instance]:
-        #             results[instance]["defaultPSPsc"] = []
-        #         results[instance]["defaultPSPsc"].append(directly[iter]["costs_times"][i])
-        # for iter in cmaes.keys():
-        #     for i in range(len(cmaes[iter]["instances"])):
-        #         instance = cmaes[iter]["instances"][i]
-        #         print("instance: ", i, instance, iter)
-        #         if instance not in results:
-        #             results[instance] = {"cmaes":[]}
-        #         if "cmaes" not in results[instance]:
-        #             results[instance]["cmaes"] = []
-        #         results[instance]["cmaes"].append(cmaes[iter]["costs_times"][i])
-        # for iter in origPSP.keys():
-        #     for i in range(len(origPSP[iter]["instances"])):
-        #         instance = origPSP[iter]["instances"][i]
-        #         print("instance: ", i, instance, iter)
-        #         if instance not in results:
-        #             results[instance] = {"origPSP":[]}
-        #         if "origPSP" not in results[instance]:
-        #             results[instance]["origPSP"] = []
-        #         results[instance]["origPSP"].append(origPSP[iter]["costs_times"][i])
-        # for iter in cartHold.keys():
-        #     for i in range(len(cartHold[iter]["instances"])):
-        #         instance = cartHold[iter]["instances"][i]
-        #         print("instance: ", i, instance, iter)
-        #         if instance not in results:
-        #             results[instance] = {"cartHold":[]}
-        #         if "cartHold" not in results[instance]:
-        #             results[instance]["cartHold"] = []
-        #         results[instance]["cartHold"].append(cartHold[iter]["costs_times"][i])
-        # for iter in jointHold.keys():
-        #     for i in range(len(jointHold[iter]["instances"])):
-        #         instance = jointHold[iter]["instances"][i]
-        #         print("instance: ", i, instance, iter)
-        #         if instance not in results:
-        #             results[instance] = {"jointHold":[]}
-        #         if "jointHold" not in results[instance]:
-        #             results[instance]["jointHold"] = []
-        #         results[instance]["jointHold"].append(jointHold[iter]["costs_times"][i])
-        # for iter in lifted_jointHold.keys():
-        #     for i in range(len(lifted_jointHold[iter]["instances"])):
-        #         instance = lifted_jointHold[iter]["instances"][i]
-        #         print("instance: ", i, instance, iter)
-        #         if instance not in results:
-        #             results[instance] = {"lifted_jointHold":[]}
-        #         if "lifted_jointHold" not in results[instance]:
-        #             results[instance]["lifted_jointHold"] = []
-        #         results[instance]["lifted_jointHold"].append(lifted_jointHold[iter]["costs_times"][i])
-        # for iter in table_insertion.keys():
-        #     for i in range(len(table_insertion[iter]["instances"])):
-        #         instance = table_insertion[iter]["instances"][i]
-        #         print("instance: ", i, instance, iter)
-        #         if instance not in results:
-        #             results[instance] = {"table_insertion":[]}
-        #         if "table_insertion" not in results[instance]:
-        #             results[instance]["table_insertion"] = []
-        #         results[instance]["table_insertion"].append(table_insertion[iter]["costs_times"][i])
-        # for iter in new_mount_table.keys():
-        #     for i in range(len(new_mount_table[iter]["instances"])):
-        #         instance = new_mount_table[iter]["instances"][i]
-        #         print("instance: ", i, instance, iter)
-        #         if instance not in results:
-        #             results[instance] = {"new_mount_table":[]}
-        #         if "new_mount_table" not in results[instance]:
-        #             results[instance]["new_mount_table"] = []
-        #         results[instance]["new_mount_table"].append(new_mount_table[iter]["costs_times"][i])
-        # for iter in new_mount_table_gmm8.keys():
-        #     for i in range(len(new_mount_table_gmm8[iter]["instances"])):
-        #         instance = new_mount_table_gmm8[iter]["instances"][i]
-        #         print("instance: ", i, instance, iter)
-        #         if instance not in results:
-        #             results[instance] = {"new_mount_table_gmm8":[]}
-        #         if "new_mount_table_gmm8" not in results[instance]:
-        #             results[instance]["new_mount_table_gmm8"] = []
-        #         results[instance]["new_mount_table_gmm8"].append(new_mount_table_gmm8[iter]["costs_times"][i])
-        for iter in new_mount_table_florian.keys():
-            for i in range(len(new_mount_table_florian[iter]["instances"])):
-                instance = new_mount_table_florian[iter]["instances"][i]
-                print("instance: ", i, instance, iter)
-                if instance not in results:
-                    results[instance] = {"new_mount_table_florian":[]}
-                if "new_mount_table_florian" not in results[instance]:
-                    results[instance]["new_mount_table_florian"] = []
-                results[instance]["new_mount_table_florian"].append(new_mount_table_florian[iter]["costs_times"][i])
-
-    figures = [None for x in range(len(results))]
-    axes = [None for x in range(len(results))]
-    for i, instance in enumerate(results.keys()):
-        label = instance
-        axes2[i%6,int(i/6)].set_title(label)
-        try:
-            print(instance, i)
-            times = [time/60 for time,cost in results[instance]["defaultPSP"][0]]
-            costs = [cost for time,cost in results[instance]["defaultPSP"][0]]
-            batch_mean = []
-            batch_std = []
-            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
-                batch_mean.append(np.mean(costs[index:index+10]))
-                batch_std.append(np.std(costs[index:index+10]))
-            #line_psp_r = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[0], label = "PSP")
-            if plot_single_figures:
-                if figures[i] is None:
-                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
-                #axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[0], label = "PSP")
-                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[0], alpha=0.2)
-        except KeyError:
-            print("no reboot data for ",instance)
-            pass  
-        try:          
-            times = [time/60 for time,cost in results[instance]["defaultPSPsc"][0]]
-            costs = [cost for time,cost in results[instance]["defaultPSPsc"][0]]
-            batch_mean = []
-            batch_std = []
-            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
-                batch_mean.append(np.mean(costs[index:index+10]))
-                batch_std.append(np.std(costs[index:index+10]))
-            #line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[1], label = "PSP with success-check")
-            if plot_single_figures:
-                if figures[i] is None:
-                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
-                #axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[1], label = "PSP with success-check")
-                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[1], alpha=0.2)
-        except KeyError:
-            print("no directly after learning data for ",instance)
-            pass
-        try:          
-            times = [time/60 for time,cost in results[instance]["cmaes"][0]]
-            costs = [cost for time,cost in results[instance]["cmaes"][0]]
-            batch_mean = []
-            batch_std = []
-            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
-                batch_mean.append(np.mean(costs[index:index+10]))
-                batch_std.append(np.std(costs[index:index+10]))
-            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color='white', label = "CMAES dualarm") # with success-check
-            if plot_single_figures:
-                if figures[i] is None:
-                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
-                axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[2], label = "CMAES with success-check")
-                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[2], alpha=0.2)
-        except KeyError:
-            print("no directly after learning data for ",instance)
-            pass
-        try:          
-            times = [time/60 for time,cost in results[instance]["origPSP"][0]]
-            costs = [cost for time,cost in results[instance]["origPSP"][0]]
-            batch_mean = []
-            batch_std = []
-            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
-                batch_mean.append(np.mean(costs[index:index+10]))
-                batch_std.append(np.std(costs[index:index+10]))
-            #line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[3], label = "original PSP with nonlinear hold process")
-            if plot_single_figures:
-                if figures[i] is None:
-                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
-                axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[3], label = "original PSP with nonlinear hold process") #  with success-check
-                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[3], alpha=0.2)
-        except KeyError:
-            print("no directly after learning data for ",instance)
-            pass
-        try:          
-            times = [time/60 for time,cost in results[instance]["cartHold"][0]]
-            costs = [cost for time,cost in results[instance]["cartHold"][0]]
-            batch_mean = []
-            batch_std = []
-            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
-                batch_mean.append(np.mean(costs[index:index+10]))
-                batch_std.append(np.std(costs[index:index+10]))
-            #line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[5], label = "original PSP with cartesian impedance Hold")
-            if plot_single_figures:
-                if figures[i] is None:
-                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
-                axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[5], label = "original PSP with cartesian Hold")
-                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[3], alpha=0.2)
-        except KeyError:
-            print("no directly after learning data for ",instance)
-            pass
-        try:          
-            times = [time/60 for time,cost in results[instance]["jointHold"][0]]
-            costs = [cost for time,cost in results[instance]["jointHold"][0]]
-            batch_mean = []
-            batch_std = []
-            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
-                batch_mean.append(np.mean(costs[index:index+10]))
-                batch_std.append(np.std(costs[index:index+10]))
-            #line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[6], label = "original PSP with joint impedance Hold")
-            if plot_single_figures:
-                if figures[i] is None:
-                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
-                axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[6], label = "original PSP with joint Hold")
-                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[3], alpha=0.2)
-        except KeyError:
-            print("no directly after learning data for ",instance)
-            pass
-        try:          
-            times = [time/60 for time,cost in results[instance]["lifted_jointHold"][0]]
-            costs = [cost for time,cost in results[instance]["lifted_jointHold"][0]]
-            batch_mean = []
-            batch_std = []
-            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
-                batch_mean.append(np.mean(costs[index:index+10]))
-                batch_std.append(np.std(costs[index:index+10]))
-            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[7], label = "original PSP with lifted joint impedance Hold")
-            if plot_single_figures:
-                if figures[i] is None:
-                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
-                axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[7], label = "original PSP with lifted joint Hold")
-                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[3], alpha=0.2)
-        except KeyError:
-            print("no directly after learning data for ",instance)
-            pass
-        try:          
-            times = [time/60 for time,cost in results[instance]["table_insertion"][0]]
-            costs = [cost for time,cost in results[instance]["table_insertion"][0]]
-            batch_mean = []
-            batch_std = []
-            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
-                batch_mean.append(np.mean(costs[index:index+10]))
-                batch_std.append(np.std(costs[index:index+10]))
-            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[8], label = "original PSP with table mount")
-            if plot_single_figures:
-                if figures[i] is None:
-                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
-                axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[8], label = "original PSP with table mount")
-                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[3], alpha=0.2)
-        except KeyError:
-            print("no directly after learning data for ",instance)
-            pass
-        try:          
-            times = [time/60 for time,cost in results[instance]["new_mount_table"][0]]
-            costs = [cost for time,cost in results[instance]["new_mount_table"][0]]
-            batch_mean = []
-            batch_std = []
-            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
-                batch_mean.append(np.mean(costs[index:index+10]))
-                batch_std.append(np.std(costs[index:index+10]))
-            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color='g', label = "table, new mount, freshly teached")
-            if plot_single_figures:
-                if figures[i] is None:
-                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
-                axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[9], label = "table, new mount, freshly teached")
-                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[3], alpha=0.2)
-        except KeyError:
-            print("no directly after learning data for ",instance)
-            pass
-        try:          
-            times = [time/60 for time,cost in results[instance]["new_mount_table_gmm8"][0]]
-            costs = [cost for time,cost in results[instance]["new_mount_table_gmm8"][0]]
-            batch_mean = []
-            batch_std = []
-            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
-                batch_mean.append(np.mean(costs[index:index+10]))
-                batch_std.append(np.std(costs[index:index+10]))
-            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color='r', label = "origPSP with 8 GMM components")
-            if plot_single_figures:
-                if figures[i] is None:
-                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
-                axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[9], label = "table, new mount, freshly teached")
-                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[3], alpha=0.2)
-        except KeyError:
-            print("no directly after learning data for ",instance)
-            pass 
-        try:          
-            times = [time/60 for time,cost in results[instance]["new_mount_table_florian"][0]]
-            costs = [cost for time,cost in results[instance]["new_mount_table_florian"][0]]
-            batch_mean = []
-            batch_std = []
-            for index in range(0,len(costs)-9,10):  # remove "-9" for full plot
-                batch_mean.append(np.mean(costs[index:index+10]))
-                batch_std.append(np.std(costs[index:index+10]))
-            line_psp_d = axes2[i%6,int(i/6)].plot(list(range(1,len(batch_mean)+1)),batch_mean, color='r', label = "origPSP with 8 GMM components")
-            if plot_single_figures:
-                if figures[i] is None:
-                    figures[i], axes[i] = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=i)
-                axes[i].plot(list(range(1,len(batch_mean)+1)),batch_mean, color=colors[9], label = "table, new mount, freshly teached")
-                #axes[i].fill_between(range(len(batch_mean)), np.array(batch_mean)+np.array(batch_std), np.array(batch_mean)-np.array(batch_std), color=colors[3], alpha=0.2)
-        except KeyError:
-            print("no directly after learning data for ",instance)
-            pass
-        axes2[i%6,int(i/6)].set_ylim((0,2.5))
-        axes2[i%6,int(i/6)].set_xlim((0,50))
-        axes2[5,int(i/6)].set_xlabel("mean cost of batch")
-        axes2[i%6,int(i/6)].set_ylabel("cost [1]")
-        if figures[i] is not None:
-            axes[i].set_ylim((0,2.5))
-            axes[i].set_xlabel("mean cost of batch")
-            axes[i].set_ylabel("cost [1]")
-            axes[i].legend(loc="upper right")
-            figures[i].suptitle("Convergence Test - 5000 Trials\n"+instance)
-    print(figures)
-    client = MongoDBClient("10.157.175.119")
-    client.write("plotting","convergence_test",results)
-    lines, texts = axes2[0,0].get_legend_handles_labels()
-    fig2.legend(lines, texts, loc = "lower right")
-    fig2.suptitle("Convergence Test - 5000 Trials")
-    print("130 trials for each run (alpha and noKnowledge)")
-    plt.show()
-
-def plot_originalVScurrentPSP():
-    cutoff = {  '001_left': 0.,   # best solution found *1.2
-                    '003_left': 0,
-                    '004_left': 0,
-                    '005_left': 0, #
-                    '006_left': 0,
-                    '007_left': 0,
-                    '008_left': 0,
-                    '010_left': 0,
-                    '011_left': 0,
-                    '012_left': 0,
-                    '009_left': 0,
-                    '013_left': 0,
-                    '014_left': 0,
-                    '015_left': 0,
-                    '016_left': 0,   #
-                    '017_left': 0,
-                    '018_left': 0,  # '018_left': 0.63144,
-                    '021_left': 0,
-                    '022_left': 0,
-                    '023_left': 0,
-                    '024_left': 0,
-                    '025_left': 0,
-                    '027_left': 0,
-                    '028_left': 0,
-                    '029_left': 0}
-    labels = ["IEC(C7)", "Triangle-1", "Hexagon-1", "USB-1", "Triangle-2", "Cylinder-1", "Key-1", "Plug(type F)-1", "Audio Jack(3.5mm)", "IEC(C13)", "Cylinder-2", "Hexagon-2", "HDMI-1", "Key-2", "Cylinder-3", "Square-1", "Hexagon-3", "Square-2", "Audio jack(6.35mm)", "USB-2", "Plug(type C)", "Key-3", "Plug(type F)-2", "HDMI-2", "Key-4"]
-    modules = list_block_1 + list_block_2 + list_U
-
-    colors = ["red", "green", "yellow", "orange", "cyan", "blueviolet", "black", "dimgrey", "lightgrey"]  # [:len(n_tasks)]
-    fig1, axes1 = plt.subplots(1, 1, sharex=True, gridspec_kw={'hspace': 0, 'wspace': 0.2}, num=1)
-    
-    print("\ngetting currnt psp data")
-    mean_isolated_single, confidence_isolated_single, results_dict_psp = get_big_collective_data(['noKnowledge', 'noSharing', 'isolated','PSP'], single_agent=False, skip_module=set(["028","003", "018","010","011","015", "036","023","024","025","026","027","041","029"]),only_full_sets=False, monocally_decreasing=True,cutoff=cutoff) 
-    mean_isolated_single = [x/60 for x in mean_isolated_single]
-    lower_bound_confindece_isolated_single = [x[0]/60 for x in confidence_isolated_single]
-    upper_bound_confindece_isolated_single = [x[1]/60 for x in confidence_isolated_single]
-    legend_isolated_single = axes1.plot(mean_isolated_single, range(len(mean_isolated_single)), label="current Version")
-    axes1.fill_betweenx(range(len(mean_isolated_single)), lower_bound_confindece_isolated_single, upper_bound_confindece_isolated_single, alpha=0.2)
-    print("\ngetting original psp  data")
-    mean_isolated_alpha, confidence_isolated_alpha, results_dict_orig = get_big_collective_data(['noKnowledge', 'noSharing', 'isolated','origPSP'], single_agent=False, skip_module=set(["028","003", "018","010","011","015","036","023","024","025","026","027","041","029"]),only_full_sets=False, monocally_decreasing=True,cutoff=cutoff) 
-    mean_isolated_alpha = [x/60 for x in mean_isolated_alpha]
-    lower_bound_confindece_isolated_alpha = [x[0]/60 for x in confidence_isolated_alpha]
-    upper_bound_confindece_isolated_alpha = [x[1]/60 for x in confidence_isolated_alpha]
-    legend_isolated_alpha = axes1.plot(mean_isolated_alpha, range(len(mean_isolated_alpha)), label="original PSP")
-    axes1.fill_betweenx(range(len(mean_isolated_alpha)), lower_bound_confindece_isolated_alpha, upper_bound_confindece_isolated_alpha, alpha=0.2)
-
-    fig2, axes2 = plt.subplots(6, 2, sharex=True, gridspec_kw={'hspace': 0.5, 'wspace': 0.4}, num=2)
-    results = {}
-    for iter in results_dict_psp.keys():
-        for i in range(len(results_dict_psp[iter]["instances"])):
-            instance = results_dict_psp[iter]["instances"][i]
-            if instance not in results:
-                results[instance] = {"orig":[], "current":[]}
-            results[instance]["current"].append(results_dict_psp[iter]["costs_times"][i])
-            if iter in results_dict_orig:
-                try:
-                    index_orig = results_dict_orig[iter]["instances"].index(instance)
-                    results[instance]["orig"].append(results_dict_orig[iter]["costs_times"][index_orig])
-                except ValueError:
-                    pass
-
-    for i, instance in enumerate(results.keys()):
-        mean, interval, time_points = get_confidence_time(results[instance]["current"], n_points=1000)
-        time_points = [s/60 for s in time_points]
-        label = labels[modules.index(instance[:3])]
-        axes2[i%6,int(i/6)].set_title(label)
-        line_psp_no = axes2[i%6,int(i/6)].plot(time_points, mean, label = "current PSP")
-        lower_confidence = [x[0] for x in interval]
-        upper_confidence = [x[1] for x in interval]
-        axes2[i%6,int(i/6)].fill_between(time_points, lower_confidence, upper_confidence, alpha=0.2)
-
-        if results[instance]["orig"]:
-            mean, interval, time_points = get_confidence_time(results[instance]["orig"], n_points=1000)
-            time_points = [s/60 for s in time_points]
-            label = labels[modules.index(instance[:3])]
-            axes2[i%6,int(i/6)].set_title(label)
-            line_psp_alpha = axes2[i%6,int(i/6)].plot(time_points, mean, label = "original PSP")
-            lower_confidence = [x[0] for x in interval]
-            upper_confidence = [x[1] for x in interval]
-            axes2[i%6,int(i/6)].fill_between(time_points, lower_confidence, upper_confidence, alpha=0.2)
-        #axes2[i%6,int(i/6)].legend(loc="upper right")
-        axes2[i%6,int(i/6)].set_ylim((0,2))
-        axes2[i%6,int(i/6)].set_xlabel("time [min]")
-        axes2[i%6,int(i/6)].set_ylabel("cost [1]")
-    
-    #lines = []
-    #legend_texts = []
-    #for ax in axes2: 
-    #    Line, Label = ax.get_legend_handles_labels() 
-    #    # print(Label) 
-    #    lines.extend(Line) 
-    #    legend_texts.extend(Label) 
-    #fig2.legend(lines, legend_texts, loc="bottom right")
-    lines, texts = axes2[0,0].get_legend_handles_labels()
-    fig2.legend(lines, texts, loc = "lower right")
-    print("130 trials for each run (alpha and noKnowledge)")
-
-    axes1.set_xlabel("time [min]", fontsize=14)
-    axes1.set_ylabel("learned skills [1]", fontsize=14)
-    axes1.set_title("original VS current PSP", fontsize=14)
-    axes1.set_xlim((0,55))
-    axes1.grid()
-    axes1.legend(loc="lower right", fontsize=14)
-    plt.show()
 
 def plot_CMAES():
     new_cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
@@ -4976,133 +3768,3 @@ def plot_pitstop_bravo():
     # axes2.grid()
     # axes2.legend(loc="upper right", fontsize=14)
     # plt.show(block=False)
-
-
-def cost_process(c:list):
-    s = 100
-    r = []
-    for i in c:
-        s = min(i, s)
-        r.append(s)
-    
-    return r
-
-def cost_list2curve(cost_list):
-    length = max([len(l) for l in cost_list])
-    # print(length)
-    r = []
-    for l in cost_list:
-        r.append(l + (length - len(l)) * [l[-1]])
-        # print(len(l))
-    
-    m = np.array(r)
-    mean = np.mean(m,0)
-    std = np.std(m,0)
-    
-    
-    # plt.plot(list(range(1, length+1)), mean)
-    # plt.plot(list(range(1, length+1)), mean-std)
-    # plt.plot(list(range(1, length+1)), mean+std)
-    # plt.savefig("xxx.png")
-    return [mean, std]
-        
-cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
-            '003_left': 0.68016,
-            '004_left': 0.74976,
-            '005_left': 0.65, #
-            '006_left': 0.6127199999999999,
-            '007_left': 0.62616,
-            '008_left': 0.6371999999999999,
-            '010_left': 0.6888000000000001,
-            '011_left': 0.63816,
-            '012_left': 0.75528,
-            '009_left': 0.6943199999999999,
-            '013_left': 0.6348,
-            '014_left': 0.6,
-            '015_left': 0.68184,
-            '016_left': 0.9,   #
-            '017_left': 0.63864,
-            '041_left': 0.63144,  # '018_left': 0.63144,
-            '021_left': 0.63528,
-            '022_left': 0.6828000000000001,
-            '023_left': 0.6648000000000001,
-            '024_left': 0.9187199999999999,
-            '025_left': 0.64752,
-            '027_left': 0.68448,
-            '028_left': 0.61824,
-            '029_left': 0.68088}
-
-new_cutoff = {  '001_left': 0.7080000000000001,   # best solution found *1.2
-                    '003_left': 0.68016,
-                    '004_left': 0.74976,
-                    '005_left': 0.65, #
-                    '006_left': 0.6127199999999999,
-                    '007_left': 0.62616,
-                    '008_left': 0.6371999999999999,
-                    '010_left': 0.6888000000000001,
-                    '011_left': 0.63816,
-                    '012_left': 0.75528,
-                    '009_left': 0.6943199999999999,
-                    '013_left': 0.6348,
-                    '014_left': 0.6,
-                    '015_left': 0.68184,
-                    '016_left': 0.9,   #
-                    '017_left': 0.63864,
-                    '041_left': 0.63144,  # '018_left': 0.63144,
-                    '021_left': 0.63528,
-                    '022_left': 0.6828000000000001,
-                    '023_left': 0.6648000000000001,
-                    '024_left': 0.9187199999999999,
-                    '025_left': 0.64752,
-                    '027_left': 0.68448,
-                    '028_left': 0.61824,
-                    '029_left': 0.68088}
-  
-    
-def fetch_data(cutoff= new_cutoff, mode = 0):
-    # 1: for psp, with 
-    robots = list_block_1 + list_block_2 + list_U
-    print(robots)
-    # tags = ["5agents_25tasks_local","isolated_local_noFastPipeline"]
-    tags = "CMAES"
-    dir = "data17/cmaes_data/"
-    if mode == 1:
-        tags = ["5agents_25tasks_local","isolated_local_noFastPipeline"]
-        dir = "data17/psp_data/"
-    ret = []
-    
-    
-    # for xxx in robots:
-    for xxx in robots:
-        # if xxx == "041" and mode == 1:
-        #     continue
-        
-        
-        results = get_multiple_experiment_data("collective-"+xxx+".rsi.ei.tum.de", "insertion", "ml_results", {"meta.tags": tags})
-        cost_list = []
-        for result in results:
-            # print("length", len(result.costs))                
-            if len(result.costs) < 10:
-                continue
-        
-            if min(result.costs) <= cutoff[xxx+"_left"]:
-                cost_list.append(cost_process(result.costs))
-        
-        
-        if len(cost_list)>0:
-            ret.append( cost_list2curve(cost_list) ) 
-            # print("-------------", xxx)
-
-            with open(dir + xxx + '.pickle', 'wb') as file:
-                pickle.dump(cost_list2curve(cost_list), file) 
-        
-        else:
-            print(xxx + "cutoff issue")
-            try:
-                print("min_cost", min([ min(i.costs) for i in results]))
-            except:
-                print("costs missing in results")
-                
-            print("cut_off", cutoff[xxx+"_left"])
-
-    return ret

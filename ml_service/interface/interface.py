@@ -10,8 +10,6 @@ from services.cmaes import CMAESService
 from services.cmaes import CMAESConfiguration
 from services.svm import SVMService
 from services.svm import SVMConfiguration
-from services.orig_psp import OrigPSPService
-from services.orig_psp import OrigPSPConfiguration
 from services.base_service import ServiceConfiguration
 from problem_definition.problem_definition import ProblemDefinition
 from utils.ws_client import call_method
@@ -88,9 +86,6 @@ class Interface:
         elif configuration["service_name"] == "svm":
             service_configuration = SVMConfiguration()
             service_configuration.from_dict(configuration)
-        elif configuration["service_name"] == "origPSP":
-            service_configuration = OrigPSPConfiguration()
-            service_configuration.from_dict(configuration)
 
         self.start_service(ProblemDefinition.from_dict(problem_definition), service_configuration, set(agents),
                            knowledge)
@@ -108,8 +103,6 @@ class Interface:
             self.service = CMAESService()
         elif configuration.service_name == "svm":
             self.service = SVMService()
-        elif configuration.service_name == "origPSP":
-            self.service = OrigPSPService()
         elif configuration.service_name == "generic":
             self.service = GenericOptimizerService()
         else:

@@ -2,7 +2,7 @@ FROM ubuntu:22.04
 
 RUN apt-get update && \
     apt-get install -y python3.10 libpython3.10
-RUN apt-get install -y --no-install-recommends python3-pip
+RUN apt-get install -y python3-pip
 RUN pip3 install -U setuptools
 RUN pip3 install -U numpy
 RUN pip3 install -U scipy
@@ -12,6 +12,13 @@ RUN pip3 install -U requests
 RUN pip3 install -U pyDOE scikit-optimize
 RUN pip3 install -U websockets
 RUN apt-get install -y fping
+RUN apt-get install -y lsb-release curl
+RUN mkdir -p /etc/apt/keyrings
+RUN curl -fsSL http://robotpkg.openrobots.org/packages/debian/robotpkg.asc | tee /etc/apt/keyrings/robotpkg.asc
+RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/robotpkg.asc] http://robotpkg.openrobots.org/packages/debian/pub $(lsb_release -cs) robotpkg" | tee /etc/apt/sources.list.d/robotpkg.list
+
+RUN apt-get update
+RUN apt-get install -y robotpkg-pinocchio
 COPY mios/ /mios/
 COPY dependencies/ /dependencies/
 

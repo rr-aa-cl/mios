@@ -44,12 +44,6 @@ class TaskResult:
         return task_result_dict
 
     def add_variation(self, q_metric: QMetric):
-        '''
-        combine q_metrics: 
-        - set success according to worst q_metric in all variations
-        - calculate success_rate, cost and heuristic as mean of all variations
-        - if success of all q_metric is equal: calculate final_cost as mean of all variations
-        '''
         self.n_variations += 1
         if q_metric.success is False and self.q_metric.success is True:
             self.q_metric.final_cost = q_metric.final_cost
@@ -69,10 +63,6 @@ class TaskResult:
             self.q_metric.cost[c] = (self.q_metric.cost[c] * (self.n_variations - 1) + q_metric.cost[c]) / self.n_variations
 
     def calculate(self, result: dict) -> bool:
-        '''
-        calculate q_metric from mios task result
-        input: result (dict) is the feedback json comming from mios
-        '''
         if "success" not in result:
             logger.error("No success indicator in result.")
             return False

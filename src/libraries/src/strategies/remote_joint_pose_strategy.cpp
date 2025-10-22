@@ -49,7 +49,6 @@ bool RemoteJointPoseStrategy::connect(Portal *portal, const std::string name, un
 }
 
 void RemoteJointPoseStrategy::read_stream(std::vector<double>& data){
-    spdlog::trace("RemoveJointPoseStrategy::read_stram() received data!");
     if(data.size()==7){
         for(unsigned i=0;i<7;i++){
             m_q_d_in[0][i]=data[i];

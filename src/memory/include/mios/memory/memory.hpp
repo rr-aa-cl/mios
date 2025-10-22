@@ -32,7 +32,6 @@ public:
     bool apply_reserved_skill_context(const std::string skill_id);
 
     void store_task_data(const std::string& uuid, const std::string& task_id, const nlohmann::json& context, const TaskResult& result);
-    void store_log_data(const nlohmann::json &content, const nlohmann::json meta_information);
     std::shared_ptr<Task> load_task(const std::string& task_id, const nlohmann::json& parameters,Core* core);
     std::shared_ptr<Task> load_subtask(const std::string& task_id, const nlohmann::json& parameters,Core* core);
     bool load_default_task_context(const std::string task_id, nlohmann::json &task_context);
@@ -40,7 +39,7 @@ public:
 
     void set_live_parameter(const std::string& key, const nlohmann::json& value);
 
-    bool update_object(const std::string& name, bool teach_width, double teach_force, const Percept& p);
+    bool update_object(const std::string& name, bool teach_width, const Percept& p);
     bool update_object(const std::string& name, const nlohmann::json& description);
     bool update_partial_object(const std::string& name, const nlohmann::json& description);
 

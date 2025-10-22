@@ -141,11 +141,11 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_trans
     if(get_active_mp()->get_name()=="approach"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
             spdlog::warn("------------------------------- start calibration ------------------------------------");
-            return create_contact_mp(p);
+            return create_calibration_mp(p);
         }
     }
 
-    if(get_active_mp()->get_name()=="calibration"){  //skipped for now
+    if(get_active_mp()->get_name()=="calibration"){
         Bias = calcBias(p.proprioception.K_F_ext_K, Bias, dataCount);
         dataCount++;
         if (dataCount > 1999){

@@ -7,41 +7,31 @@
 namespace mios {
 
 LimitParameters::LimitParameters(){
-    /*
-    Reference: 
-    Docs: https://frankarobotics.github.io/docs/control_parameters.html#limits-for-franka-research-3
-    Manual: https://download.franka.de/documents/Product%20Manual%20Franka%20Research%203_R02210_1.0_EN.pdf
-    Franka Hand Size: 103.4mm
-    */
-
-    // FR3 joint space limits
     joint_space.dddq_max << 5000, 5000, 5000, 5000, 5000, 5000, 5000;
     joint_space.ddq_max << 10, 10, 10, 10, 10, 10, 10;
-    joint_space.dq_max << 2.62, 2.62, 2.62, 2.62, 5.26, 4.18, 5.26;
-    joint_space.q_upper << 2.7437, 1.7837, 2.9007, -0.1518, 2.8065, 4.5169, 3.0159;
-    joint_space.q_lower << -2.7437, -1.7837, -2.9007, -3.0421, -2.8065, 0.5445, -3.0159;
+    joint_space.dq_max << 2.6, 2.6, 2.6, 2.6, 5.2, 4.1, 5.2;           // 2.62, 2.62, 2.62, 2.62, 5.26, 4.18, 5.26
+    joint_space.q_upper << 2.7, 1.7, 2.85, -0.1, 2.76, 4.45, 2.95;     // 2.7437, 1.7837, 2.9007, -0.1518, 2.8065, 4.5169, 3.0159
+    joint_space.q_lower << -2.7, -1.7, -2.85, -3, -2.76, 0.14, -2.95; // -2.7437, -1.7837, -2.9007, -3.0421, -2.8065, 0.5445, -3.0159
     joint_space.tau_J_max << 87, 87, 87, 87, 12, 12, 12;
-    joint_space.dtau_J_max << 1000, 1000, 1000, 1000, 1000, 1000, 1000;
-    joint_space.tau_ext_max << 87, 87, 87, 87, 12, 12, 12;
-    joint_space.K_theta_max << 10000, 10000, 10000, 10000, 10000, 10000, 10000;
-    joint_space.dK_theta_max << 10000, 10000, 10000, 10000, 10000, 10000, 10000;
-    joint_space.xi_theta_max << 2, 2, 2, 2, 2, 2, 2;
-    joint_space.dxi_theta_max << 10, 10, 10, 10, 10, 10, 10;
+    joint_space.dtau_J_max<<1000,1000,1000,1000,1000,1000,1000;
+    joint_space.tau_ext_max<<87,87,87,87,12,12,12;
+    joint_space.K_theta_max<<10000,10000,10000,10000,10000,10000,10000;
+    joint_space.dK_theta_max<<10000,10000,10000,10000,10000,10000,10000;
+    joint_space.xi_theta_max<<2,2,2,2,2,2,2;
+    joint_space.dxi_theta_max<<10,10,10,10,10,10,10;
 
-    // FR3 cartesian space limits
-    cartesian_space.x_upper << 0.96, 0.96, 1.3;
-    cartesian_space.x_lower << -0.96, -0.96, -1.3;
-    cartesian_space.dX_max << 3.0, 2.5;  
-    cartesian_space.ddX_max << 9.0, 17.0;
-    cartesian_space.dddX_max << 4500.0, 8500.0;
-    cartesian_space.F_J_max << 100, 50; // Not specified for FR3, kept as previous
-    cartesian_space.dF_J_max << 1000, 500; // Not specified for FR3, kept as previous
-    cartesian_space.K_x_max << 3000, 3000, 3000, 200, 200, 200; // Not specified for FR3, kept as previous
-    cartesian_space.dK_x_max << 5000, 5000, 5000, 500, 500, 500; // Not specified for FR3, kept as previous
-    cartesian_space.xi_x_max << 2, 2, 2, 2, 2, 2;
-    cartesian_space.dxi_x_max << 10, 10, 10, 10, 10, 10;
+    cartesian_space.x_upper<<0.96,0.96,1.3;
+    cartesian_space.x_lower<<-0.96,-0.96,-0.4;
+    cartesian_space.dX_max << 1.0, 1.5;     // 3.0, 2.5, elbow 2.62
+    cartesian_space.ddX_max << 4, 8;        // 9.0, 17.0, elbow 10.0
+    cartesian_space.dddX_max << 3000, 6000; // 4500, 8500, elbow 5000
+    cartesian_space.F_J_max << 100, 50;
+    cartesian_space.dF_J_max<<1000,500;
+    cartesian_space.K_x_max<<3000,3000,3000,200,200,200;
+    cartesian_space.dK_x_max<<5000,5000,5000,500,500,500;
+    cartesian_space.xi_x_max<<2,2,2,2,2,2;
+    cartesian_space.dxi_x_max<<10,10,10,10,10,10;
 }
-
 
 bool LimitParameters::from_json(const nlohmann::json &parameters){
     if(parameters.find("joint_space")==parameters.end()){
@@ -211,10 +201,6 @@ UserParameters::UserParameters(){
     env_dq=0.005;
 
     safe_mode=true;
-    
-    DH_a<<0,0,0,0,0,0,0,0;
-    DH_d<<0,0,0,0,0,0,0,0;
-    DH_alpha<<0,0,0,0,0,0,0,0;
 }
 
 bool UserParameters::from_json(const nlohmann::json &parameters){
@@ -286,18 +272,6 @@ bool UserParameters::from_json(const nlohmann::json &parameters){
         spdlog::error("Could not read safe_mode.");
         return false;
     }
-    if(!mirmi_utils::read_json_param(parameters,"DH_a",DH_a)){
-        spdlog::error("Could not read Denavit Hartenberg Parameter (DH_a).");
-        return false;
-    }
-    if(!mirmi_utils::read_json_param(parameters,"DH_d",DH_d)){
-        spdlog::error("Could not read Denavit Hartenberg Parameter (DH_d).");
-        return false;
-    }
-    if(!mirmi_utils::read_json_param(parameters,"DH_alpha",DH_alpha)){
-        spdlog::error("Could not read Denavit Hartenberg Parameter (DH_alpha).");
-        return false;
-    }
     return true;
 }
 
@@ -324,9 +298,6 @@ nlohmann::json UserParameters::to_json() const{
     json_object["env_dq"]=env_dq;
 
     json_object["safe_mode"]=safe_mode;
-    json_object["DH_a"]=mirmi_utils::from_eigen<double,8,1>(DH_a);
-    json_object["DH_d"]=mirmi_utils::from_eigen<double,8,1>(DH_d);
-    json_object["DH_alpha"]=mirmi_utils::from_eigen<double,8,1>(DH_alpha);
     return json_object;
 }
 
@@ -335,8 +306,6 @@ FramesParameters::FramesParameters(){
     F_T_EE=Eigen::Matrix<double,4,4>::Identity();
     EE_T_TCP=Eigen::Matrix<double,4,4>::Identity();
     EE_T_K=Eigen::Matrix<double,4,4>::Identity();
-    WF_T_O=Eigen::Matrix<double,4,4>::Identity();
-    WF_T_TF=Eigen::Matrix<double,4,4>::Identity();
 }
 
 bool FramesParameters::from_json(const nlohmann::json &parameters){
@@ -365,8 +334,6 @@ nlohmann::json FramesParameters::to_json() const{
     json_object["F_T_EE"]=mirmi_utils::from_eigen<double,4,4>(F_T_EE);
     json_object["EE_T_TCP"]=mirmi_utils::from_eigen<double,4,4>(EE_T_TCP);
     json_object["EE_T_K"]=mirmi_utils::from_eigen<double,4,4>(EE_T_K);
-    json_object["WF_T_O"]=mirmi_utils::from_eigen<double,4,4>(WF_T_O);
-    json_object["WF_T_TF"]=mirmi_utils::from_eigen<double,4,4>(WF_T_TF);
     return json_object;
 }
 
@@ -834,7 +801,6 @@ SkillParameters::SkillParameters(){
     log_data=false;
     data_length=0;
     log_name="";
-    log_meta=nlohmann::json();
 }
 
 bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
@@ -868,10 +834,6 @@ bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
     }
     if(!mirmi_utils::read_json_param(p,"log_name",log_name)){
         spdlog::error("Could not read log_name.");
-        return false;
-    }
-    if(!mirmi_utils::read_json_param(p,"meta",log_meta)){
-        spdlog::error("Could not read log_meta.");
         return false;
     }
     if(p.find("objects")!=p.end()){
@@ -963,14 +925,7 @@ void SkillParameters::read_skill_objects_modifier(const nlohmann::json &p){
 }
 
 nlohmann::json SkillParameters::get_default_values(){
-    nlohmann::json log_meta;  //just some information about the skill
-    log_meta["description"]="";
-    log_meta["tags"]=nlohmann::json::array({"",""});
-    log_meta["skill_class"]="";  // will be set from mios according to skill object if available 
-    log_meta["skill_instance"]="";  // will be set from mios according to skill object if available 
-    
     nlohmann::json default_values;
-    default_values["meta"]=log_meta;
     default_values["time_max"]=0;;
     default_values["parallels_frequency"]=1000;
     default_values["ignore_settling"]=true;
@@ -990,7 +945,6 @@ nlohmann::json SkillParameters::get_default_values(){
 
 nlohmann::json SkillParameters::to_json() const{
     nlohmann::json json_object;
-    json_object["meta"]=log_meta;
     json_object["time_max"]=time_max;
     json_object["parallels_frequency"]=parallels_frequency;
     json_object["ignore_settling"]=ignore_settling;

@@ -367,6 +367,13 @@ bool Actuator::is_valid() const{
             return false;
         }
     }
+    
+    if(!mirmi_utils::is_orthonormal(TF_T_EE_d.block<3,3>(0,0))){
+            spdlog::error("Rotation part of TF_T_EE_d is not orthonormal.");
+            std::cout<<"TF_T_EE_d: "<<TF_T_EE_d<<std::endl;
+            return false;
+    }
+
     if(m_command_pattern.find(CommandPatternCartesianPose)!=m_command_pattern.end()){
         for(unsigned i=0;i<4;i++){
             for(unsigned j=0;j<4;j++){

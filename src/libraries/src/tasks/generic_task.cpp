@@ -45,10 +45,8 @@
 #include "mios/skills/tax_cut.hpp"
 #include "mios/skills/tax_displace.hpp"
 #include "mios/skills/tax_screw.hpp"
-#include "mios/skills/tax_screw_nullspace.hpp"
 #include "mios/skills/tax_wrench.hpp"
 #include "mios/skills/tax_screw_out.hpp"
-#include "mios/skills/ll_interface.hpp"
 
 namespace mios {
 
@@ -194,7 +192,6 @@ void GenericTask::execute_any_skill(unsigned index){
     case mirmi_utils::str_to_int("Insertion"):
         execute_skill<Insertion,SkillParametersInsertion>(name);
         break;
-
     case mirmi_utils::str_to_int("Wipe"):
         execute_skill<Wipe,SkillParametersWipe>(name);
         break;
@@ -282,17 +279,11 @@ void GenericTask::execute_any_skill(unsigned index){
     case mirmi_utils::str_to_int("TaxScrew"):
         execute_skill<TaxScrew,SkillParametersTaxScrew>(name);
         break;
-    case mirmi_utils::str_to_int("TaxScrewNullspace"):
-        execute_skill<TaxScrewNullspace,SkillParametersTaxScrewNullspace>(name);
-        break;
     case mirmi_utils::str_to_int("TaxWrench"):
         execute_skill<TaxWrench,SkillParametersTaxWrench>(name);
         break;
     case mirmi_utils::str_to_int("TaxScrewOut"):
         execute_skill<TaxScrewOut,SkillParametersTaxScrewOut>(name);
-        break;
-    case mirmi_utils::str_to_int("LLInterface"):
-        execute_skill<LLInterface,SkillParametersLLInterface>(name);
         break;
     default:
         spdlog::error("Skill with type " + type + " not known to GenericTask");

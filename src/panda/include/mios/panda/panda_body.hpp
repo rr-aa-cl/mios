@@ -17,7 +17,6 @@
 #include <functional>
 #include <atomic>
 #include <mutex>
-#include <Eigen/Dense>
 
 namespace mios {
 
@@ -85,10 +84,6 @@ private:
     std::optional<std::string> ping_robot(const std::optional<std::string> &last_ip);
     void get_default_robot_state(franka::RobotState& state) const;
     void get_default_gripper_state(franka::GripperState& state) const;
-    std::array<double, 16> forward_kinematics(franka::RobotState& state) const;
-    Eigen::Matrix4d dhTransformationMatrix(double theta, double d, double a, double alpha) const;
-    //std::array<double, 16> get_WF_T_EE(franka::RobotState& state) const;
-    //std::array<double, 16> get_TF_T_EE(franka::RobotState& state) const;
 
 private:
     std::unique_ptr<franka::Robot> m_panda_arm;

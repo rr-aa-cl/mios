@@ -20,15 +20,10 @@ logger = logging.getLogger("ml_service")
 
 
 class KnowledgeManager:
-    def __init__(self, host='localhost', port=27017, fast_pipe_ip="10.157.175.119"):
+    def __init__(self, host='localhost', port=27017):
         self.DBclient = MongoDBClient(host, port)
         self.data_db = "ml_results"
         self.knowledge_db = "local_knowledge"
-        self.fast_pipe_ip = fast_pipe_ip
-        self.similarties = {}
-        self.fast_pipe_data = []
-        self.fast_pipe_last_update = 0
-        self.received_fast_pipe_trials = {}
         self.predictor = None
         self.validation_per = 0.2
         self.n_retrain = 10  # how many times the generalizer is retrained before prediction
@@ -470,68 +465,6 @@ class KnowledgeManager:
         for key in d.keys():
             l.append(d[key])
         return l
-    
-    def push_trial_fast_pipe(self, task:str, theta:dict, cost:float, tags:list, skill_class:str):
-        if self.fast_pipe_ip is None:
-            return False
-        fast_pipe_client = MongoDBClient(self.fast_pipe_ip)
-        document = {
-                    "task": task,
-                    "time": time.time(),
-                    "theta": theta,
-                    "cost":cost,
-                    "tags":tags
-                    }
-        while not fast_pipe_client.write("fast_knowledge_pipe", skill_class,document=document):
-            logger.error("could not reach database at "+self.fast_pipe_ip+"  ...retrying...")
-            time.sleep(1)
-
-    def receive_trial_fast_pipe(self, task, tags, skill_class):
-        fast_pipe_client = MongoDBClient(self.fast_pipe_ip)
-
-        #update fast_pipe_data with data since last update
-        #tags[2:] neglect skill_class and inserbale from tags
-        self.fast_pipe_data.extend(fast_pipe_client.read("fast_knowledge_pipe",skill_class, {"tags":tags[2:], "time":{"$lt":self.fast_pipe_last_update}}))  
-        self.fast_pipe_last_update = time.time()
-
-        remove_indexs = []
-        for i,trial in enumerate(self.fast_pipe_data):
-            if trial["task"] is task:  #remove all occurences of own task:
-                remove_indexs.append(i)
-            if trial["task"] in self.received_fast_pipe_trials:  #remove trials already tried out:
-                if trial["time"] in self.received_fast_pipe_trials[trial["task"]]:
-                    remove_indexs.append(i)
-        for i in remove_indexs:
-            self.fast_pipe_data.pop(i)
-
-        for fast_pipe_trial in self.fast_pipe_data:
-            if fast_pipe_trial["task"] not in self.similarties:
-                self.similarties[fast_pipe_trial["task"]] = 1  # create new similarity entry for unknown task
-        #similarity update:
-        for key in self.similarties.keys():
-            if self.similarties[key] <= 0:
-                self.similarties[key] = 0.01 
-            similarity_sum = sum(self.similarties.values())
-            for key in self.similarties.keys():
-                self.similarties[key] = self.similarties[key] / similarity_sum  # calculate probability for picking trial from this agent (=key)
-        #save similarities in mongo:
-        self.DBclient.write("similarities",task,{"tags":tags, "time":time.time(),"similarities":self.similarties})
-
-        source_task = str(np.random.choice(list(self.similarties.keys()), p=[self.similarties[key] for key in self.similarties.keys()]))  # random pick task according to probability
-        #pick best trial from this task:
-        best_cost = float('inf')
-        best_trial_index = None
-        for i,trial in enumerate(self.fast_pipe_data):
-            if trial["task"] is not source_task:
-                continue
-            if trial["cost"] < best_cost:
-                best_trial_index = i
-        if best_trial_index is not None:       
-            selected_trial = self.fast_pipe_data[best_trial_index]
-        else:
-            logger.error("No trial found to receive in fast Pipe")
-        
-        return selected_trial["theta"], selected_trial["cost"], selected_trial["task"]
 
     def push_trial(self, task: str, theta: list, cost: float, keep_size: int = 250):
         '''

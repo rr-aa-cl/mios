@@ -8,7 +8,6 @@ import socket
 import time
 import numpy as np
 import socket
-import copy
 
 from engine.engine import Engine
 from engine.engine import Trial
@@ -184,26 +183,18 @@ class BaseService(metaclass=ABCMeta):
             logger.error("base_service::initialize(): Unknown knowledge mode " + str(self.knowledge.mode))
 
         if self.knowledge.parameters:
-            if type(self.knowledge.parameters) == dict:
-                self.centroid = []
-                if len(self.knowledge.parameters) != len(self.problem_definition.domain.limits):
-                    logger.error("Domain sizes do not match!")
-                    return False
-                for key in self.knowledge.parameters:
-                    self.centroid.append(self.knowledge.parameters[key])
-                logger.debug("base_service.initialize(): Use global knowledge " + str(self.centroid))
-                self.centroid = self.problem_definition.domain.normalize(np.asarray(self.centroid))
-                self.confidence = self.knowledge.confidence
-            if type(self.knowledge.parameters) == list:
-                self.initial_knowledge_list = []
-                for parameters in self.knowledge.parameters:
-                    knowledge = copy.deepcopy(self.knowledge)
-                    knowledge.parameters = parameters
-                    self.initial_knowledge_list.append(knowledge)
+            self.centroid = []
+            if len(self.knowledge.parameters) != len(self.problem_definition.domain.limits):
+                logger.error("Domain sizes do not match!")
+                return False
+            for key in self.knowledge.parameters:
+                self.centroid.append(self.knowledge.parameters[key])
+            logger.debug("base_service.initialize(): Use global knowledge " + str(self.centroid))
+            self.centroid = self.problem_definition.domain.normalize(np.asarray(self.centroid))
+            self.confidence = self.knowledge.confidence
         else:
             logger.debug("base_service.initialize(): No Knowledge used as initial centroid!!!")
 
-        self.knowledge_manager.fast_pipe_ip = knowledge.kb_location
         self.engine = Engine(agents, mios_port=self.mios_port, mongo_port=self.mongo_port)
         self.database_results_id = self.engine.initialize(self.problem_definition, configuration.exploration_mode)
 

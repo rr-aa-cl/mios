@@ -4,7 +4,6 @@
 #include <deque>
 #include <array>
 #include <memory>
-#include "spdlog/spdlog.h"
 
 namespace mirmi_utils{
 class UDPStreamReceiver;

@@ -16,7 +16,7 @@ mkdir -p ${ROOT}/build/Release
 cd ${ROOT}/build/Release
 cmake -DCMAKE_INSTALL_PREFIX=${ROOT}/mios ../..
 
-make -j$(nproc --all) install
+make install
 #make  install
 cd ${ROOT}
 

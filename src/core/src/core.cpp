@@ -59,7 +59,7 @@ bool Core::initialize(){
 
     spdlog::info("Acquiring initial percept...");
     if(!refresh_percept({})){
-        spdlog::error("Could not acquire initial percept.");
+        spdlog::error("Could not acquire iniital percept.");
         return false;
     }
     spdlog::info("Initializing interfaces...");

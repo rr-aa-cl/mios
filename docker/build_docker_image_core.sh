@@ -36,7 +36,7 @@ ldd mios | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' ${ROOT}/dep
 
 cd ${ROOT}
 
-docker build -t mios -f docker/core/Dockerfile .
-docker tag mios ${registry}/mios
+docker build -t mios_fr3 -f docker/core/Dockerfile .
+docker tag mios_fr3 icly/mios_fr3:demo_15
 
 rm -r ${ROOT}/dependencies

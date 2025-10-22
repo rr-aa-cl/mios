@@ -29,7 +29,9 @@ bool PandaBody::initialize(){
     if(m_has_arm){
     //request control and activate FCI
         spdlog::debug("PandaBody::initialize()");
-        ip = PandaBody::ping_robot(m_memory->get_parameters()->system.robot_ip);     
+        // disable ping robot
+        // ip = PandaBody::ping_robot(m_memory->get_parameters()->system.robot_ip);
+        ip = m_memory->get_parameters()->system.robot_ip; 
     }
 
     m_memory->get_parameters()->system.robot_ip = ip.value_or("127.0.0.1");
@@ -93,13 +95,17 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
     std::optional<std::string> new_ip={};
     spdlog::debug("PandaBody: ping_robot("+last_ip.value_or("127.0.0.1")+")");
     //check given IP:
-    if(last_ip.has_value()){
-        if(mirmi_utils::ping(last_ip.value().c_str())==false){
-            spdlog::warn("IP was set to "+last_ip.value()+" but no device has been found. Searching for new connection...");
-        }else{
-            new_ip=last_ip;
-            if(is_robot(new_ip.value())){
-                return new_ip;
+    while(!new_ip.has_value()){
+        if(last_ip.has_value()){
+            if(mirmi_utils::ping(last_ip.value().c_str())==false){
+                spdlog::warn("IP was set to "+last_ip.value()+" but no device has been found. Searching for new connection...");
+            }else{
+                if(is_robot(last_ip.value_or("127.0.0.1"))){
+                    new_ip=last_ip;
+                    spdlog::debug("PandaBody: found robot at"+new_ip.value()+" unlocking...");
+                    unlock_brakes(new_ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd);
+                    return new_ip;
+                }
             }
         }
     }
@@ -108,7 +114,7 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
         std::map<std::string,std::string> ifaces = mirmi_utils::get_subnets();
         std::string address;
         for(const auto& i : ifaces){
-            if(i.first=="lo" || i.first=="docker0" || i.first=="tap0" || i.first=="flannel.1" || i.first.substr(0,3)=="enx" || i.first.substr(0,3)=="wlp" || i.first.substr(0,2)=="br"){
+            if(i.first=="lo" || i.first=="docker0" || i.first=="tap0" || i.first=="flannel.1" || i.first.substr(0,3)=="enx" || i.first.substr(0,3)=="wlp" || i.first.substr(0,2)=="br" || i.first.substr(0,4)=="enp4"){
                 continue;
             }
             for(unsigned j=2;j<255;j++){
@@ -817,8 +823,6 @@ void PandaBody::wait_for_desk_task(const std::optional<std::string> &ip, const s
 
 bool PandaBody::shutdown_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password){
     spdlog::trace("PandaBody::shutdown_robot");
-    disconnect_from_gripper();
-    disconnect_from_robot();
     deactivate_fci();
     bool result;
     try{

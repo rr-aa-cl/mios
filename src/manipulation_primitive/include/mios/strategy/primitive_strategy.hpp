@@ -38,8 +38,6 @@ public:
      */
     virtual bool finished() = 0;
 
-    friend void DynamicSystemInterpolation(double& y, double& dy, double goal);
-
 public:
     std::set<CommandPattern> get_command_pattern() const;
 
@@ -48,6 +46,3 @@ private:
 };
 
 }
-
-void DynamicSystemInterpolation(double& y, double& dy, double goal);
-

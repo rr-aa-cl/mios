@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+  mios:
+    image: "10.162.15.39/mios"
+    restart: always
+    environment:
+      - verbosity=info
+      - database_port=27017
+      - robot_config=0
+    network_mode: "host"
+    cap_add:
+      - SYS_NICE
+    depends_on:
+      - "ros"
+      - "mongo"
+  ros:
+    image: "ros:noetic-ros-core"
+    network_mode: "host"
+    command: roscore
+  mongo:
+    image: "mongo:4.4.6"
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./localFolder:/data/db

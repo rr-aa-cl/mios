@@ -92,10 +92,6 @@ public:
 
     bool safe_mode;
 
-    // calibration parameters (Denavit Hartenberg Parameters)
-    Eigen::Matrix<double,8,1> DH_a;
-    Eigen::Matrix<double,8,1> DH_d;
-    Eigen::Matrix<double,8,1> DH_alpha;
 };
 
 class FramesParameters : public IParameters{
@@ -109,8 +105,6 @@ public:
     Eigen::Matrix<double,4,4> F_T_EE;
     Eigen::Matrix<double,4,4> EE_T_TCP;
     Eigen::Matrix<double,4,4> EE_T_K;
-    Eigen::Matrix<double,4,4> WF_T_O;
-    Eigen::Matrix<double,4,4> WF_T_TF;
 };
 
 class SystemParameters : public IParameters{
@@ -262,7 +256,6 @@ public:
     bool log_data;
     double data_length;
     std::string log_name;
-    nlohmann::json log_meta; 
 
     SkillConditionLevel condition_level_pre;
     SkillConditionLevel condition_level_success;

@@ -62,6 +62,7 @@ option(ENABLE_UNITY_BUILD "Enable unity build" OFF)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 list(APPEND CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/src/plugins)
+list(APPEND CMAKE_PREFIX_PATH "/opt/openrobots/lib/cmake")
 
 
 add_library(${PROJECT_NAME}_project_warnings INTERFACE)
