@@ -7,11 +7,11 @@ permissions:
 on:
   push:
     branches:
-      - build
+      - builddev_lingyun_fr3
       - local_dev
   pull_request:
     branches:
-      - build
+      - builddev_lingyun_fr3
       - local_dev
 
 jobs:
@@ -86,7 +86,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository }}/mios:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/mios:local_dev
+            ghcr.io/${{ github.repository }}/mios:${{ github.ref_name }}
 
       - name: Build mios_mls Docker image
         uses: docker/build-push-action@v5
@@ -96,6 +96,6 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository }}/mios_mls:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/mios_mls:local_dev
+            ghcr.io/${{ github.repository }}/mios_mls:${{ github.ref_name }}
 
   
