@@ -110,7 +110,7 @@ class CMAESService(BaseService):
         trial_uuids = dict()
 
         for x in x_set:
-            uuid = self.push_trial(x)
+            uuid = self.push_trial(x)  # trials are pushed to the robot
             trial_uuids[uuid] = x
 
         costs = []
@@ -120,7 +120,7 @@ class CMAESService(BaseService):
         else:
             kb = ServerProxy("http://" + self.knowledge.kb_location + ":8001")
         for uuid in trial_uuids.keys():
-            result = self.wait_for_result(uuid)
+            result = self.wait_for_result(uuid)  # wait until robot executed the trials
             if result.q_metric.final_cost is None:
                 logger.error("None was returned as cost for trial " + uuid + ", invoking stop.")
                 self.stop()

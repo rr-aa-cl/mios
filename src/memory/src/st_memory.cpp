@@ -267,7 +267,7 @@ bool STMemory::update_object(const std::string &name, bool teach_width, double t
     if(m_environment.find(name)==m_environment.end()){
         m_environment.insert(std::make_pair(name,Object(name)));
     }
-    m_environment.at(name).O_T_OB=p.proprioception.O_T_EE*mirmi_utils::invert_transformation_matrix(m_environment.at(name).OB_T_gp);
+    m_environment.at(name).O_T_OB=p.proprioception.O_T_EE;//*mirmi_utils::invert_transformation_matrix(m_environment.at(name).OB_T_gp);
     m_environment.at(name).q=p.proprioception.q;
     if(teach_width){
         m_environment.at(name).grasp_width=p.proprioception.finger_width;

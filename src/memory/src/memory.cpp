@@ -103,8 +103,14 @@ void Memory::store_task_data(const std::string &uuid, const std::string& task_id
     m_lt_memory.store_task_data(uuid, task_id, context, result);
 }
 
-void Memory::store_log_data(const nlohmann::json &content, const nlohmann::json meta_information){
-    m_lt_memory.upload_log_element(content, meta_information);
+void Memory::store_log_data(const nlohmann::json &content){
+    if(!m_lt_memory.upload_log_element(content)){
+        spdlog::error("Error uploading datalog to storage.");
+    }
+    else{
+        
+        spdlog::info("Datalog successfully uploaded to data storage");
+    }
 }
 
 void  Memory::set_live_parameter(const std::string &key, const nlohmann::json &value){

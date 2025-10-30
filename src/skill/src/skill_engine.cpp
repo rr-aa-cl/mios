@@ -97,6 +97,7 @@ void SkillEngine::clear_skill_queue(){
 void SkillEngine::clear_results(){
     spdlog::trace("SkillEngine::clear_results");
     m_results.clear();
+    m_results.rehash(0);
 }
 
 ControlReturnType SkillEngine::execute_skill_queue(){
@@ -124,7 +125,7 @@ ControlReturnType SkillEngine::execute_skill_queue(){
         clear_skill_queue();
         return result;
     }
-    init_logs(m_memory->read_parameters()->skill->log_meta);
+    m_active_skill->init_logs(m_memory->read_parameters()->skill->log_meta);
     try{
         spdlog::info("Executing skill...");
         result = m_core->execute_skill();
@@ -143,8 +144,8 @@ ControlReturnType SkillEngine::execute_skill_queue(){
     spdlog::info("Unloading skill...");
     m_active_skill->terminate(*m_core->get_percept());
     m_results.insert(std::pair<std::string,SkillResult>(m_active_skill->get_id(),m_active_skill->get_result()));
+    m_active_skill->write_logs();
     unload_skill();
-    write_logs();
     if(!m_core->refresh_percept({})){
         clear_skill_queue();
         return {true,"PerceptError","Could not refresh the perception"};
@@ -171,12 +172,12 @@ void SkillEngine::unload_skill(){
 ControlReturnType SkillEngine::execute_skill(std::shared_ptr<Skill> skill){
     spdlog::trace("SkillEngine::execute_skill");
     m_queue=false;
-    if(!load_skill( skill)){
+    if(!load_skill( skill)){  //m_active_skill is equal to skill
         spdlog::error("Skill could not be loaded.");
         return {true,"SkillLoadError","Skill could not be loaded."};
     }
     ControlReturnType result(false,"None","");
-    init_logs(m_memory->read_parameters()->skill->log_meta);
+    m_active_skill->init_logs(m_memory->read_parameters()->skill->log_meta);
     try{
         spdlog::info("Executing skill...");
         result = m_core->execute_skill();
@@ -194,8 +195,8 @@ ControlReturnType SkillEngine::execute_skill(std::shared_ptr<Skill> skill){
     m_core->post_execution();
     spdlog::info("Unloading skill...");
     skill->terminate(*m_core->get_percept());
+    skill->write_logs();
     unload_skill();
-    write_logs();
     if(!m_core->refresh_percept({},true)){
         return {true,"PerceptError","Could not refresh the perception"};
     }
@@ -223,44 +224,9 @@ std::unordered_map<std::string,SkillResult> SkillEngine::get_results(){
 }
 
 void SkillEngine::log_data(const Percept &p){
-    if(m_log_cnt>=m_data_log.size()+1){
-        return;
-    }
-    m_data_log.push_back(
-        {
-            {"time",std::chrono::duration<double>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()},
-            {"q",mirmi_utils::from_eigen<double,7,1>(p.proprioception.q)},
-            {"dq",mirmi_utils::from_eigen<double,7,1>(p.proprioception.dq)},
-            {"O_T_EE",mirmi_utils::from_eigen<double,4,4>(p.proprioception.O_T_EE)},
-            {"dX",mirmi_utils::from_eigen<double,6,1>(p.proprioception.O_dX_EE)},
-            {"tau_ext",mirmi_utils::from_eigen<double,7,1>(p.proprioception.tau_ext)},
-            {"F_ext",mirmi_utils::from_eigen<double,6,1>(p.proprioception.O_F_ext_K)},
-            {"M",mirmi_utils::from_eigen<double,7,7>(p.internal_model.M)},
-            {"G",mirmi_utils::from_eigen<double,7,1>(p.internal_model.G)},
-            {"C",mirmi_utils::from_eigen<double,7,1>(p.internal_model.C)},
-            {"zero_jaccobian",mirmi_utils::from_eigen<double,6,7>(p.internal_model.B_J_O)},
-            {"body_jaccobian",mirmi_utils::from_eigen<double,6,7>(p.internal_model.B_J_EE)},
-            {"current_MP",m_active_skill->m_active_mp->get_name()},
-        }
-    );
-    /*
-    m_data_log[m_log_cnt]["time"]=std::chrono::duration<double>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-    m_data_log[m_log_cnt]["q"]=mirmi_utils::from_eigen<double,7,1>(p.proprioception.q);
-    m_data_log[m_log_cnt]["dq"]=mirmi_utils::from_eigen<double,7,1>(p.proprioception.dq);
-    m_data_log[m_log_cnt]["O_T_EE"]=mirmi_utils::from_eigen<double,4,4>(p.proprioception.O_T_EE);
-    m_data_log[m_log_cnt]["dX"]=mirmi_utils::from_eigen<double,6,1>(p.proprioception.O_dX_EE);
-    m_data_log[m_log_cnt]["tau_ext"]=mirmi_utils::from_eigen<double,7,1>(p.proprioception.tau_ext);
-    m_data_log[m_log_cnt]["F_ext"]=mirmi_utils::from_eigen<double,6,1>(p.proprioception.O_F_ext_K); 
-    m_data_log[m_log_cnt]["M"]=mirmi_utils::from_eigen<double,7,7>(p.internal_model.M); 
-    m_data_log[m_log_cnt]["G"]=mirmi_utils::from_eigen<double,7,1>(p.internal_model.G); 
-    m_data_log[m_log_cnt]["C"]=mirmi_utils::from_eigen<double,7,1>(p.internal_model.C); 
-    m_data_log[m_log_cnt]["zero_jaccobian"]=mirmi_utils::from_eigen<double,6,7>(p.internal_model.B_J_O); 
-    m_data_log[m_log_cnt]["body_jaccobian"]=mirmi_utils::from_eigen<double,6,7>(p.internal_model.B_J_EE); 
-    m_data_log[m_log_cnt]["current_MP"]=m_active_skill->m_active_mp->get_name();
-    */
-    m_log_cnt++;
+    m_active_skill->log_data(p);
 }
-
+/*
 void SkillEngine::init_logs(const nlohmann::json& log_meta){ // add meta information as input
     spdlog::trace("SkillEngine::init_logs");
     m_log_cnt=0;
@@ -284,35 +250,35 @@ void SkillEngine::write_logs(){
     //boost::filesystem::create_directories(boost::filesystem::path(boost::filesystem::current_path()).string()+"/../logs/");
     //std::remove(log_file.c_str());
     nlohmann::json logs = nlohmann::json::array();
-    try{/*
-        for(const auto& el : m_data_log[0].items()){
-            if(m_data_log[0][el.key()].is_array()){
-                for(unsigned i=0;i<m_data_log[0][el.key()].size();i++){
-                    mirmi_utils::write_data_to_file(el.key(),log_file);
-                }
-            }else{
-                mirmi_utils::write_data_to_file(el.key(),log_file);
-            }
-        }
-        mirmi_utils::write_endl_to_file(log_file);
-        */
+    try{
+        //for(const auto& el : m_data_log[0].items()){
+        //    if(m_data_log[0][el.key()].is_array()){
+        //        for(unsigned i=0;i<m_data_log[0][el.key()].size();i++){
+        //            mirmi_utils::write_data_to_file(el.key(),log_file);
+        //        }
+        //    }else{
+        //        mirmi_utils::write_data_to_file(el.key(),log_file);
+        //    }
+        //}
+        //mirmi_utils::write_endl_to_file(log_file);
+        
         if(m_log_cnt>=m_data_log.size()){
             m_log_cnt=m_data_log.size();
         }
         for(unsigned i=0;i<m_log_cnt;i++){
             //logs[std::to_string(i)] = m_data_log[i];
             logs.insert(logs.end(),m_data_log[i]);
-            /*
-            for(const auto& el : m_data_log[i].items()){
-                if(m_data_log[i][el.key()].is_array()){
-                    for(unsigned j=0;j<m_data_log[i][el.key()].size();j++){
-                        mirmi_utils::write_data_to_file(m_data_log[i][el.key()][j],log_file);
-                    }
-                }else{
-                    mirmi_utils::write_data_to_file(m_data_log[i][el.key()],log_file);
-                }
-            }
-            mirmi_utils::write_endl_to_file(log_file);*/
+            
+            //for(const auto& el : m_data_log[i].items()){
+            //    if(m_data_log[i][el.key()].is_array()){
+            //        for(unsigned j=0;j<m_data_log[i][el.key()].size();j++){
+            //            mirmi_utils::write_data_to_file(m_data_log[i][el.key()][j],log_file);
+            //        }
+            //    }else{
+            //        mirmi_utils::write_data_to_file(m_data_log[i][el.key()],log_file);
+            //    }
+            //}
+            //mirmi_utils::write_endl_to_file(log_file);
 
         }
         m_memory->store_log_data(logs, m_log_meta);
@@ -322,5 +288,6 @@ void SkillEngine::write_logs(){
     
     spdlog::info("Logs have been written to the database.");
 }
+*/
 
 }

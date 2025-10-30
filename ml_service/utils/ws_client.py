@@ -18,10 +18,10 @@ class Client:
         return json.loads(response)
 
 
-async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout=100000, silent=False):
+async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout=100, silent=False):
     uri = "ws://" + hostname + ":" + str(port) + "/" +endpoint
     try:
-        async with websockets.connect(uri, close_timeout=1000) as websocket:
+        async with websockets.connect(uri, close_timeout=100) as websocket:
             message = json.dumps(request)
             await websocket.send(message)
             response = await asyncio.wait_for(websocket.recv(), timeout=timeout)
@@ -109,19 +109,11 @@ def stop_task(hostname: str, raise_exception=False, recover=False, empty_queue=F
     return call_method(hostname, port, "stop_task", payload)
 
 
-<<<<<<< HEAD
-def wait_for_task(hostname: str, task_uuid: str, port = 12000):
-    payload = {
-        "task_uuid": task_uuid
-    }
-    return call_method(hostname, port, "wait_for_task", payload)
-=======
 def wait_for_task(hostname: str, task_uuid: str, port = 12000, timeout = 100):
     payload = {
         "task_uuid": task_uuid
     }
     return call_method(hostname, port, "wait_for_task", payload, timeout=timeout)
->>>>>>> deepinterface
 
 
 def start_task_and_wait(hostname, task, parameters, queue=False):

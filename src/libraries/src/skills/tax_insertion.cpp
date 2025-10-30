@@ -141,14 +141,14 @@ std::optional<std::shared_ptr<ManipulationPrimitive> > TaxInsertion::graph_trans
     if(get_active_mp()->get_name()=="approach"){
         if(get_active_mp()->get_strategy_interface("move")->finished()){
             spdlog::warn("------------------------------- start calibration ------------------------------------");
-            return create_contact_mp(p);
+            return create_calibration_mp(p);
         }
     }
 
     if(get_active_mp()->get_name()=="calibration"){  //skipped for now
         Bias = calcBias(p.proprioception.K_F_ext_K, Bias, dataCount);
         dataCount++;
-        if (dataCount > 1999){
+        if (dataCount > 249){
             std::ostringstream oss;
             oss << Bias;
             spdlog::warn("Bias of K_F_ext_K: [{}]", oss.str());
@@ -289,39 +289,6 @@ bool TaxInsertion::check_local_suc_conditions(const Percept &p){
 }
 
 bool TaxInsertion::check_local_err_conditions(const Percept &p){
-
-    if(get_active_mp()->get_name()=="approach"){
-        bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
-        if(lateral){
-            spdlog::error("searching out of ROI range in mp approach");
-        }
-        return lateral;
-    }    
-
-    if(get_active_mp()->get_name()=="contact"){
-        bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
-        bool depth = p.proprioception.T_T_EE(2,3) > get_object_pose_T("Container")(2,3) + 0.015;
-
-        if(lateral){
-            spdlog::error("searching out of ROI range in mp contact");
-        }
-        if(depth){
-            spdlog::error("Too deep");
-        }
-        return lateral && depth;
-    }
-    if(get_active_mp()->get_name()=="wiggle"){
-        bool lateral = (p.proprioception.T_T_EE.block<2,1>(0,3)-get_object_pose_T("Container").block<2,1>(0,3)).norm() > 0.04;
-        bool depth = p.proprioception.T_T_EE(2,3) > get_object_pose_T("Container")(2,3) + 0.015;
-
-        if(lateral){
-            spdlog::error("searching out of ROI range in wiggle contact");
-        }
-        if(depth){
-            spdlog::error("Too deep in wiggle mp");
-        }
-        return lateral && depth;
-    }
     return false;
 }
 

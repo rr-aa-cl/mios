@@ -31,7 +31,7 @@ class CostFunctionFactory(ABC):
 
 class ProblemDefinitionFactory(ABC):
 
-    def __init__(self, robots: list, skill_class: str, learn_skills: list, setup_skills: list, reset_skills: list,
+    def __init__(self, robots: list, skill_class: str, learn_skills: list, setup_skills: list, reset_skills: list, rescue_skils:list,
                  termination_skills: list, cost_function: CostFunctionFactory, objects: dict, mios_port=12000):
         self.path_to_default_context = os.getcwd() + "/../python/taxonomy/default_contexts/"
         self.skill_class = skill_class
@@ -44,11 +44,12 @@ class ProblemDefinitionFactory(ABC):
         self.learn_context = dict()
         self.setup_instructions = list()
         self.reset_instructions = list()
+        self.rescue_instructions = list()
         self.termination_instructions = list()
 
-        self.load_default_skill_contexts(learn_skills, setup_skills, reset_skills, termination_skills)
+        self.load_default_skill_contexts(learn_skills, setup_skills, reset_skills, rescue_skils, termination_skills)
         self.modify_contexts()
-        self.run_setup()
+        #self.run_setup()
 
         self.limits = self.get_limits()
         self.mapping = self.get_mapping()
@@ -60,7 +61,7 @@ class ProblemDefinitionFactory(ABC):
         if identity is None:
             identity = [1]
         pd = ProblemDefinition(self.skill_class, task_name, self.domain, self.learn_context,
-                               self.setup_instructions, self.termination_instructions, self.reset_instructions,
+                               self.setup_instructions, self.termination_instructions, self.reset_instructions, self.rescue_instructions,
                                self.cost_function.get_cost_function(), identity, tags=[self.skill_class, task_name])
         return pd
 
@@ -76,7 +77,7 @@ class ProblemDefinitionFactory(ABC):
     def get_initial_values(self) -> dict:
         raise NotImplementedError
 
-    def load_default_skill_contexts(self, learn_skills: list, setup_skills: list, reset_skills: list,
+    def load_default_skill_contexts(self, learn_skills: list, setup_skills: list, reset_skills: list, rescue_skills:list,
                                     termination_skills: list):
         self.learn_context = {
             "name": "GenericTask",
@@ -138,6 +139,47 @@ class ProblemDefinitionFactory(ABC):
                                                                     }
 
         self.reset_instructions.append({"method": "start_task", "parameters": reset_context})
+
+        termination_context = {
+            "name": "GenericTask",
+            "parameters": {
+                "skill_types": [],
+                "skill_names": []
+            },
+            "skills": dict()
+        }
+        for s in termination_skills:
+            f = open(self.path_to_default_context + s[2] + ".json")
+            self.termination_instructions.append(json.load(f))
+            termination_context["skills"][s[1]] = json.load(f)
+            termination_context["parameters"]["skill_types"].append(s[0])
+            termination_context["parameters"]["skill_names"].append(s[1])
+            termination_context["skills"][s[1]]["control"]["nullspace"] = {
+                                                                        "K_theta": [20, 20, 15, 10, 7, 5, 2],
+                                                                        "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
+                                                                        "active": True
+                                                                    }
+            
+        rescue_context = {
+            "name": "GenericTask",
+            "parameters": {
+                "skill_types": [],
+                "skill_names": []
+            },
+            "skills": dict()
+        }
+        for s in rescue_skills:
+            f = open(self.path_to_default_context + s[2] + ".json")
+            rescue_context["skills"][s[1]] = json.load(f)
+            rescue_context["parameters"]["skill_types"].append(s[0])
+            rescue_context["parameters"]["skill_names"].append(s[1])
+            rescue_context["skills"][s[1]]["control"]["nullspace"] = {
+                                                                        "K_theta": [20, 20, 15, 10, 7, 5, 2],
+                                                                        "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
+                                                                        "active": True
+                                                                    }
+
+        self.rescue_instructions.append({"method": "start_task", "parameters": rescue_context})
 
         termination_context = {
             "name": "GenericTask",

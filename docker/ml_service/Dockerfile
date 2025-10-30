@@ -2,6 +2,7 @@ FROM ubuntu:22.04
 
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends python3-pip
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg
 RUN pip3 install -Iv 'setuptools==57.5.0'
 RUN pip3 install -U numpy
 RUN pip3 install -U scipy

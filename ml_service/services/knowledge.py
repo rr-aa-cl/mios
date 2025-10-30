@@ -6,8 +6,8 @@ logger = logging.getLogger("ml_service")
 
 class Knowledge():
     def __init__(self, mode=None, type="similar", scope=[], kb_location=None, kb_db=None, kb_task_type=None, parameters=None,confidence=None, uuid=None,
-                prediction=False, prediction_error=None, identity=[1], skill_class=None, skill_instance=None, source=[], expected_cost=None, time=time.ctime(),
-                tags=[], equal_start=False, equal_tags=[], cost_function=[],identification_name=""):
+                prediction=False, prediction_error=None, identity=[1], skill_class=None, skill_instance=None, source=[], expected_cost=None, time=time.time(), datetime=time.ctime(),
+                tags=[], equal_start=False, equal_tags=[], cost_function=[],identification_name="",time_range=(0,float('inf')), similarity=None):
         self.mode = mode  # either None, "specific", "local", "global"     (if "None", but parameters is not empty, the parameters will be used as centroid)
         self.type = type  # also possible: "predicted" (use prediction), "all" (gives list of knowledges, no predicted ones),
         self.scope = scope  # scope (tags of results to make this knowledge)
@@ -16,7 +16,7 @@ class Knowledge():
         self.kb_task_type = kb_task_type  # needed if type is specific
         self.parameters = parameters #dict() with unnormalised Theta
         self.confidence = confidence
-        self.uuid = uuid
+        self.uuid = uuid   # single uuid or list of uuids
         self.prediction = prediction  # bool, wether this knowledge was predicted or not
         self.prediction_error = prediction_error
         self.identity = identity  # task identity
@@ -24,18 +24,22 @@ class Knowledge():
         self.skill_instance = skill_instance  #  skill_instance from problem_definition
         self.source = source  # uuid(s) of the source ml_results
         self.expected_cost = expected_cost
-        self.time = time
+        self.time = time  # time when knowledge point was created (time.time())
+        self.datetime = datetime  # time.ctime()
         self.tags = tags  #actual tags of the knowledge itself
         self.equal_start = equal_start  # if True the svm.py will use the same first batch (from equal_tags) every time
         self.equal_tags = equal_tags
         self.cost_function = cost_function
         self.identification_name = identification_name  # identification string, because uuid is random
+        self.time_range = time_range  # time window from which knowledge can be collected to create new knowledge points
+        self.similarity = similarity  # list of objects with request probabilities
 
     def update(self):
         self.identification_name = self.get_identification_name()
 
     def get_identification_name(self):
-        return str({"skill_class": self.skill_class, "tags": self.tags, "identity": self.identity,"skill_instance":self.skill_instance})   # exactly the same as for problem_definition
+        return str(self.skill_class)+str(self.skill_instance)+str(self.identity)+", ".join(self.tags)
+        #return str({"skill_class": self.skill_class, "tags": self.tags, "identity": self.identity,"skill_instance":self.skill_instance})   # exactly the same as for problem_definition
 
     def to_dict(self) -> dict:
         meta_information = {
@@ -52,6 +56,7 @@ class Knowledge():
             "source": self.source,
             "expected_cost": self.expected_cost,
             "time": self.time,
+            "datetime":self.datetime,
             "tags": self.tags,
             "equal_start": self.equal_start,
             "equal_tags": self.equal_tags,
@@ -59,7 +64,9 @@ class Knowledge():
             "kb_db": self.kb_db,
             "kb_task_type": self.kb_task_type,
             "skill_instance": self.skill_instance,
-            "identification_name": self.identification_name
+            "identification_name": self.identification_name,
+            "time_range":self.time_range,
+            "similarity":self.similarity
         }
         knowledge_dict = {
             "parameters": self.parameters,
@@ -85,6 +92,7 @@ class Knowledge():
         self.source = input.get("source", [])
         self.expected_cost = input.get("expected_cost", None)
         self.time = input.get("time", None)
+        self.datetime = input.get("datetime", None)
         self.tags = input.get("tags", [])
         self.tags.extend(input.get("kb_tags", []))  # dont use kb_tags anymore
         self.equal_tags = input.get("equal_tags", [])
@@ -93,6 +101,8 @@ class Knowledge():
         self.kb_db = input.get("kb_db", None)
         self.kb_task_type = input.get("kb_task_type", None)
         self.skill_instance = input.get("skill_instance", None)
+        self.time_range = input.get("time_range",(0,float('inf')))
+        self.similarity = input.get("similarity",None)
         self.update()
     
     def get_db_format(self):
@@ -112,6 +122,8 @@ class Knowledge():
         meta_info["cost_function"] = self.cost_function
         meta_info["skill_instance"] = self.skill_instance
         meta_info["identification_name"] = self.identification_name
+        meta_info["time_range"] = self.time_range
+        meta_info["similarity"] = self.similarity
         db_format["meta"] = meta_info
         return db_format
         

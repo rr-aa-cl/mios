@@ -44,6 +44,8 @@ target_link_libraries(${MODULE_NAME}
     mirmi_cpp_utils::network
     mirmi_cpp_utils::conversion
     CONAN_PKG::pybind11
+    CONAN_PKG::nlohmann_json
+    CONAN_PKG::pybind11_json
     conv_vel2pose::conv_vel2pose
     PUBLIC
     ${PROJECT_NAME}::utils

@@ -174,8 +174,8 @@ protected:
      */
     virtual void auxiliaries(const Percept& p);
 
-    //void log_data(const Percept& p);
-
+    void log_data(const Percept& p);
+    void init_logs(const nlohmann::json& log_meta);
     /**
      * Specify the initial manipulation primitive.
      * @param[in] id Id of the manipulation primitive.
@@ -314,8 +314,8 @@ private:
 
     unsigned long m_contact_cnt;
 
-    std::vector<nlohmann::json> m_data_log;
-    unsigned long m_log_cnt;
+    nlohmann::json m_log;
+    unsigned m_log_cnt;
 
     Eigen::Matrix<double,3,1> m_ROI_center;
 

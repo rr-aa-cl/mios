@@ -222,7 +222,7 @@ def subscribe_telemetry(robot_ip, receiving_ip, receiving_port, data:list):
     '''
     call_method(robot_ip,12000, "subscribe_telemetry",{"subscribe":data,"ip":receiving_ip,"port":receiving_port})
     robot_state=udp_receiver(receiving_ip,receiving_port)
-    # call_method(robot_ip,12000, "unsubscribe_telemetry",{"subscribe":data,"ip":receiving_ip,"port":receiving_port})
+    call_method(robot_ip,12000, "unsubscribe_telemetry",{"subscribe":data,"ip":receiving_ip,"port":receiving_port})
 
     return robot_state
 

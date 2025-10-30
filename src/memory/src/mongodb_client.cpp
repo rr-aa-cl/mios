@@ -156,7 +156,7 @@ bool MongodbClient::write_documents(const std::string &collection, const std::se
     return true;
 }
 
-bool MongodbClient::write_large_document(const std::string& collection, const nlohmann::json &descr, const nlohmann::json &meta_information){
+bool MongodbClient::write_large_document(const std::string& collection, const nlohmann::json &descr){
     spdlog::trace("MongodbClient::write_large_document");
     std::scoped_lock<std::mutex> lock(m_mutex_db_access);
     try{
@@ -169,12 +169,9 @@ bool MongodbClient::write_large_document(const std::string& collection, const nl
             +" mb) Breaking up the large file is not implemented yet.");
             return false;
         }*/
-        nlohmann::json db_entry;
-        db_entry["content"] = descr;
-        db_entry["meta"] = meta_information;
-        bsoncxx::document::view_or_value doc=bsoncxx::from_json(db_entry.dump());
-        m_mongodb[collection].insert_one(doc);
-
+        //bsoncxx::document::view_or_value doc=bsoncxx::from_json(db_entry.dump());
+        m_mongodb[collection].insert_one(bsoncxx::from_json(descr.dump()));
+        
     }catch(const mongocxx::query_exception& e){
         spdlog::error("Writing of document with name of type "+collection+ " has failed.");
         spdlog::debug(e.what());

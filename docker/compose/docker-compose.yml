@@ -1,7 +1,6 @@
-version: "3.8"
 services:
   mios:
-    image: "mirmi/mios:latest"
+    image: "mirmi/mios:FR3"
     restart: always
     environment:
       - verbosity=info
@@ -26,6 +25,9 @@ services:
     ports:
       - "8000:8000"
       - "8001:8001"
+    network_mode: "host"
+    cap_add:
+      - SYS_NICE
 
 
 

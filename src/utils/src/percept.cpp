@@ -35,11 +35,12 @@ void Percept::update(std::unique_ptr<franka::Model> const& model, const franka::
     proprioception.O_T_EE=Eigen::Matrix<double,4,4>(robot_state.O_T_EE.data());
 
     proprioception.O_F_ext_K=Eigen::Matrix<double,6,1>(robot_state.O_F_ext_hat_K.data());
-    // proprioception.K_F_ext_K=Eigen::Matrix<double,6,1>(robot_state.K_F_ext_hat_K.data());
+    proprioception.K_F_ext_K=Eigen::Matrix<double,6,1>(robot_state.K_F_ext_hat_K.data());
+    /*
     for (unsigned int i = 0; i < 6; i++) {
         proprioception.K_F_ext_K[i] = franka::lowpassFilter(1e-3, proprioception.K_F_ext_K[i], robot_state.K_F_ext_hat_K[i], 100);
     }
-
+    */
     Eigen::Matrix<double,3,3> O_R_T_id = Eigen::Matrix<double,3,3>::Identity();
     proprioception.T_T_EE=mirmi_utils::rotate_matrix(proprioception.O_T_EE,O_R_T.value_or(O_R_T_id).transpose());
     proprioception.TF_F_ext_K=mirmi_utils::rotate_vector(proprioception.O_F_ext_K,O_R_T.value_or(O_R_T_id).transpose());

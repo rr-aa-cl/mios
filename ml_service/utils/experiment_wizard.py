@@ -1,10 +1,6 @@
-from xmlrpc.client import ServerProxy
+from xmlrpc.client import ServerProxy,Fault
 import copy
 import time
-<<<<<<< HEAD
-
-=======
->>>>>>> deepinterface
 from utils.database import backup_result
 from problem_definition.problem_definition import ProblemDefinition
 from services.base_service import ServiceConfiguration
@@ -27,11 +23,7 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
         if "n" + str(i) in problem_def.tags:
             problem_def.tags.remove("n" + str(i))
         problem_def.tags.append("n" + str(i+1))
-<<<<<<< HEAD
-        print("starting with ", problem_def.tags)
-=======
         #print("starting with ", problem_def.tags)
->>>>>>> deepinterface
         if keep_record is True and len(client.read("ml_results", problem_def.skill_class, {"meta.tags": {"$all": problem_def.tags}})) != 0:
             print("Continue at n" + str(i+1))
             continue
@@ -51,11 +43,7 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
 
 
 def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, service: ServiceConfiguration, iter: int = 1,
-<<<<<<< HEAD
-                     tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True, service_port:int = 8000):
-=======
                      tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True, service_port:int = 8000, dualarm_cmd:dict=None):
->>>>>>> deepinterface
     if tags is None:
         tags = []
 
@@ -72,29 +60,14 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
     if keep_record is True and len(client.read("ml_results", problem_def.skill_class, {"meta.tags": {"$all": problem_def.tags}})) != 0:
         print("Continue at n" + str(iter+1))
         return
-<<<<<<< HEAD
-    s = ServerProxy("http://" + learner + ":"+str(service_port), allow_none=True)
-    if knowledge_tmp is not None:
-=======
 
     s = ServerProxy("http://" + learner + ":"+str(service_port), allow_none=True)
     #if knowledge_tmp is not None:
->>>>>>> deepinterface
         #if "scope" not in knowledge_tmp:
         #    knowledge_tmp["scope"] = []
         #if "n" + str(iter) in knowledge_tmp["scope"]:
         #    knowledge_tmp["scope"].remove("n" + str(iter))
         #knowledge_tmp["scope"].append("n" + str(iter+1))
-<<<<<<< HEAD
-        print(knowledge_tmp)
-    print("start task on ", agents, " with knowledge scope = ",knowledge_tmp["meta"]["scope"])
-    uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge_tmp)
-    if wait:
-        while s.is_busy():
-            time.sleep(15)
-    
-        # backup_result(agent, "collective-control-001.local", problem_def.skill_class, uuid)
-=======
         #print(knowledge_tmp)
     print("start task ", pd.skill_instance," on ", agents, " with knowledge mode = ",str(knowledge_tmp["meta"]["mode"]), ": ",tags)
     if dualarm_cmd:
@@ -111,7 +84,6 @@ def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, s
             except TimeoutError:
                 time.sleep(1)
     return True
->>>>>>> deepinterface
 
 def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion", db: str ="ml_results", min_size: int =0, mongo_port=27017):
     for robot in robots:
@@ -119,11 +91,8 @@ def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion
         documents = mongo_client.read(db, task_class, {"meta.tags":tags})
         if len(documents) == 0:
             print("Not found documents on ", robot)
-<<<<<<< HEAD
-=======
         else:
             print("found ",len(documents)," documents that will now be deleted.")
->>>>>>> deepinterface
         ids = []
         for d in documents:
             if len(d) > min_size:

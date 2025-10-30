@@ -127,8 +127,8 @@ public:
     bool has_robot;
     PandaHand gripper;
 
-    std::string spoc_token;
-    bool spoc_in_control;
+    //std::string spoc_token;
+    //bool spoc_in_control;
 };
 
 class SafetyParameters : public IParameters{
@@ -261,8 +261,10 @@ public:
     Eigen::Matrix<double,6,1> ROI_phi;
     bool log_data;
     double data_length;
+    unsigned int scaling_divisor;
     std::string log_name;
     nlohmann::json log_meta; 
+    bool log_to_file;
 
     SkillConditionLevel condition_level_pre;
     SkillConditionLevel condition_level_success;

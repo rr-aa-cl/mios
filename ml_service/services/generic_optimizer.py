@@ -22,8 +22,8 @@ class GenericOptimizerConfiguration(ServiceConfiguration):
 class GenericOptimizerService(BaseService):
     """Gradient descent optimisation"""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self,mios_port=12000,mongo_port=27017):
+        super().__init__(mios_port=mios_port,mongo_port=mongo_port)
 
     def _initialize(self):
         logger.info("gradient_service: initialize")

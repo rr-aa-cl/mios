@@ -28,6 +28,7 @@ Skill::Skill(const std::string &type, const std::unordered_set<std::string> &obj
 
 Skill::~Skill(){
     spdlog::trace("Skill::~Skill()");
+    m_log.clear();
     terminate_parallels();
 }
 
@@ -121,7 +122,7 @@ Actuator* Skill::cycle(const Percept &p){
         spdlog::trace("Skill::cycle.init");
         m_active_mp=get_initial_mp(p);
         if(!m_active_mp->has_strategies()){
-            spdlog::error("Manipulation primitive " + m_active_mp->get_name() + " has no strategies.");
+            spdlog::error("Manipulation primitive " + next_mp.value()->get_name() + " has no strategies.");
             throw SkillException();
         }
         m_result.p_0=p;
@@ -534,45 +535,136 @@ void Skill::write_custom_results([[maybe_unused]] nlohmann::json &custom_results
     m_result.results=nlohmann::json();
 }
 
-void Skill::write_logs(){
-    spdlog::trace("Skill::write_logs");
-    if(!m_memory->read_parameters()->skill->log_data || m_data_log.size()==0){
+void Skill::log_data(const Percept &p){
+    m_log_cnt++;
+    if(m_log_cnt%m_memory->read_parameters()->skill->scaling_divisor != 0){ //dont log every millisecond, only every <scaling_divisor>'th
         return;
     }
-    spdlog::info("Writing logs into file...");
-    std::string log_file = boost::filesystem::path(boost::filesystem::current_path()).string()+"/../logs/logs_"+m_memory->read_parameters()->skill->log_name+".txt";
-    boost::filesystem::create_directories(boost::filesystem::path(boost::filesystem::current_path()).string()+"/../logs/");
-    std::remove(log_file.c_str());
-    try{
-        for(const auto& el : m_data_log[0].items()){
-            if(m_data_log[0][el.key()].is_array()){
-                for(unsigned i=0;i<m_data_log[0][el.key()].size();i++){
-                    mirmi_utils::write_data_to_file(el.key(),log_file);
-                }
-            }else{
-                mirmi_utils::write_data_to_file(el.key(),log_file);
-            }
+     m_log["data_log"].push_back(
+        {
+            {"time",std::chrono::duration<double>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()},
+            {"current_MP",m_active_mp->get_name()},
+
+            {"q",mirmi_utils::from_eigen<double,7,1>(p.proprioception.q)},
+            {"dq",mirmi_utils::from_eigen<double,7,1>(p.proprioception.dq)},
+            {"O_T_EE",mirmi_utils::from_eigen<double,4,4>(p.proprioception.O_T_EE)},
+            {"tau_j",mirmi_utils::from_eigen<double,7,1>(p.proprioception.tau_j)},
+            {"O_dX_EE",mirmi_utils::from_eigen<double,6,1>(p.proprioception.O_dX_EE)},
+            {"tau_ext",mirmi_utils::from_eigen<double,7,1>(p.proprioception.tau_ext)},
+            {"F_ext",mirmi_utils::from_eigen<double,6,1>(p.proprioception.O_F_ext_K)},
+
+            {"e",mirmi_utils::from_eigen<double,6,1>(p.controller.e)},
+            {"rho",mirmi_utils::from_eigen<double,6,1>(p.controller.rho)},
+            {"K_x",mirmi_utils::from_eigen<double,6,1>(p.controller.K_x)},
+            {"xi_x",mirmi_utils::from_eigen<double,6,1>(p.controller.xi_x)},
+            {"K_theta",mirmi_utils::from_eigen<double,7,1>(p.controller.K_theta)},
+            {"xi_theta",mirmi_utils::from_eigen<double,7,1>(p.controller.xi_theta)},
+            {"TF_T_EE_d",mirmi_utils::from_eigen<double,4,4>(p.controller.TF_T_EE_d)},
+            {"TF_dX_d",mirmi_utils::from_eigen<double,6,1>(p.controller.TF_dX_d)},
+            {"TF_F_ff",mirmi_utils::from_eigen<double,6,1>(p.controller.TF_F_ff)},
+            {"O_R_T",mirmi_utils::from_eigen<double,3,3>(p.controller.O_R_T)},
+            {"q_d",mirmi_utils::from_eigen<double,7,1>(p.controller.q_d)},
+            {"dq_d",mirmi_utils::from_eigen<double,7,1>(p.controller.dq_d)},
+            {"tau_ff",mirmi_utils::from_eigen<double,7,1>(p.controller.tau_ff)},
+
+            {"finger_width",p.proprioception.finger_width},
+            {"finger_temperature",p.proprioception.finger_temperature},
+            {"is_grasping",p.proprioception.is_grasping},
+
+            {"M",mirmi_utils::from_eigen<double,7,7>(p.internal_model.M)},
+            {"G",mirmi_utils::from_eigen<double,7,1>(p.internal_model.G)},
+            {"C",mirmi_utils::from_eigen<double,7,1>(p.internal_model.C)},
+            {"zero_jaccobian",mirmi_utils::from_eigen<double,6,7>(p.internal_model.B_J_O)},
+            {"body_jaccobian",mirmi_utils::from_eigen<double,6,7>(p.internal_model.B_J_EE)}, 
         }
-        mirmi_utils::write_endl_to_file(log_file);
-        if(m_log_cnt>=m_data_log.size()){
-            m_log_cnt=static_cast<unsigned long>(m_data_log.size());
-        }
-        for(unsigned i=0;i<m_log_cnt;i++){
-            for(const auto& el : m_data_log[i].items()){
-                if(m_data_log[i][el.key()].is_array()){
-                    for(unsigned j=0;j<m_data_log[i][el.key()].size();j++){
-                        mirmi_utils::write_data_to_file(m_data_log[i][el.key()][j],log_file);
-                    }
-                }else{
-                    mirmi_utils::write_data_to_file(m_data_log[i][el.key()],log_file);
-                }
-            }
-            mirmi_utils::write_endl_to_file(log_file);
-        }
-    }catch(const nlohmann::json::exception& e){
-        spdlog::debug(e.what());
+    );
+    if( m_log["data_log"].size()>m_memory->read_parameters()->skill->data_length && !m_memory->read_parameters()->skill->log_to_file){  
+        //if datalog is too big, only last part will be stored (only if logged to mongoDB)
+         m_log["data_log"].erase( m_log["data_log"].begin());
     }
-    spdlog::info("Logs have been written to "+log_file+".");
+
+}
+
+void Skill::init_logs(const nlohmann::json& log_meta){ // add meta information as input
+    spdlog::trace("Skill::init_logs");
+    m_log_cnt=-1;
+    m_log["meta"] = log_meta;
+    m_log["meta"]["skill_class"] = get_type();
+    m_log["meta"]["skill_instance"] = get_id();
+    m_log["meta"]["name"] = m_memory->read_parameters()->skill->log_name;
+    m_log["data_log"] = nlohmann::json::array();
+    m_log["data_log"].get_ptr<nlohmann::json::array_t*>()->reserve(int(m_memory->read_parameters()->skill->data_length));
+
+
+}
+
+void Skill::write_logs(){
+    spdlog::trace("Skill::write_logs");
+    if(!m_memory->read_parameters()->skill->log_data ||  m_log["data_log"].size()==0){
+        return;
+    }
+    if(m_memory->read_parameters()->skill->log_to_file){
+        spdlog::info("Writing logs into file...");
+
+        boost::filesystem::path log_file_path = boost::filesystem::current_path();
+        log_file_path /= "logs"; // Appends "logs" subdirectory
+        log_file_path /= m_memory->read_parameters()->skill->log_name + ".json";
+        std::remove(log_file_path.string().c_str());  //remove log with the same name
+        
+        // Get the parent directory
+        boost::filesystem::path log_directory = log_file_path.parent_path();
+
+        //std::string log_file = boost::filesystem::path(boost::filesystem::current_path()).string()+"/logs/"+m_memory->read_parameters()->skill->log_name+".txt";
+        
+        //boost::filesystem::create_directories(log_file_path.parent_path());
+        spdlog::debug("try to create folder: "+log_directory.string());
+        if(!log_directory.empty()){    // make sure directory gets created
+            boost::system::error_code ec;
+            boost::filesystem::create_directories(log_directory, ec);
+
+            if(ec){
+                spdlog::error("Error creating log directory '{}': {} - {}",
+                            log_directory.string(), ec.value(), ec.message());
+            }
+            if(!boost::filesystem::is_directory(log_directory)) {
+                spdlog::error("Log path '{}' is not a directory or could not be confirmed after creation attempt.",
+                            log_directory.string());
+            }
+            spdlog::debug("Log directory '{}' is ready.", log_directory.string());
+        } 
+        else{
+            spdlog::error("Constructed log directory path is empty for log file '{}'. Cannot proceed.", log_file_path.string());
+        }
+
+        try{
+            std::ofstream file(log_file_path.string());
+            if(!file){
+                spdlog::error("Error opening log file: "+log_file_path.string()+" parent folder: "+log_directory.string());
+            }
+            file << m_log.dump(4);
+            file.close();
+
+        } 
+        catch (const nlohmann::json::exception& e){
+            spdlog::debug("JSON exception during logging: {}", e.what());
+        } 
+        catch (const std::exception& e){ // Catch other potential std exceptions
+            spdlog::error("Standard exception during logging: {}", e.what());
+        }
+    }
+    else{
+        spdlog::info("Writing logs into database...");
+        if( m_log["data_log"].size()>6800){
+            spdlog::warn("Datalog might be too large for mongoDB...");
+            //m_log["data_log"].erase( m_log["data_log"].begin(),  m_log["data_log"].begin()+ m_log["data_log"].size()-6800);
+        }
+        try{
+            m_memory->store_log_data(m_log);
+        }catch(const nlohmann::json::exception& e){
+            spdlog::debug(e.what());
+        }
+    }
+
 }
 
 nlohmann::json& Skill::get_custom_results(){
