@@ -244,7 +244,7 @@ bool PandaBody::is_robot(const std::string &ip){
         else{
             pybind11::module deskapi = pybind11::module::import("keep_alive");
             pybind11::object py_result = deskapi.attr("ensure_robot_ready")();
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         }
         
     }
