@@ -3,7 +3,7 @@ services:
     image: "mirmi/mios:FR3"
     restart: always
     environment:
-      - verbosity=info
+      - verbosity=debug
       - database_port=27017
       - robot_config=0
       - robot_arm=left

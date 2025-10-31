@@ -371,13 +371,13 @@ nlohmann::json FramesParameters::to_json() const{
 
 SystemParameters::SystemParameters(){
     robot_ip="127.0.0.1";
-    desk_user="";
-    desk_pwd="";
+    //desk_user="";
+    //desk_pwd="";
 
     has_robot=false;
     gripper=PandaHandNone;
 
-    //spoc_token = "";
+    spoc_token = "";
     //spoc_in_control = false;
 }
 
@@ -385,7 +385,7 @@ bool SystemParameters::from_json(const nlohmann::json &parameters){
     if(!mirmi_utils::read_json_param(parameters,"robot_ip",robot_ip)){
         spdlog::error("Could not read robot_ip.");
         return false;
-    }
+    }/*
     if(!mirmi_utils::read_json_param(parameters,"desk_name",desk_user)){
         spdlog::error("Could not read desk_name.");
         return false;
@@ -393,15 +393,15 @@ bool SystemParameters::from_json(const nlohmann::json &parameters){
     if(!mirmi_utils::read_json_param(parameters,"desk_pwd",desk_pwd)){
         spdlog::error("Could not read desk_pwd.");
         return false;
-    }
+    }*/
     if(!mirmi_utils::read_json_param(parameters,"has_robot",has_robot)){
         spdlog::error("Could not read has_robot.");
         return false;
-    }/*
+    }
     if(!mirmi_utils::read_json_param(parameters,"spoc_token",spoc_token)){
         spdlog::error("Could not read spoc_token.");
         return false;
-    }
+    }/*
     if(!mirmi_utils::read_json_param(parameters,"spoc_in_control",spoc_in_control)){
         spdlog::error("Could not read spoc_in_control.");
         return false;
@@ -424,10 +424,10 @@ bool SystemParameters::from_json(const nlohmann::json &parameters){
 nlohmann::json SystemParameters::to_json() const{
     nlohmann::json json_object;
     json_object["robot_ip"]=robot_ip;
-    json_object["desk_name"]=desk_user;
-    json_object["desk_pwd"]=desk_pwd;
+    //json_object["desk_name"]=desk_user;
+    //json_object["desk_pwd"]=desk_pwd;
     json_object["has_robot"]=has_robot;
-    //json_object["spoc_token"]=spoc_token;
+    json_object["spoc_token"]=spoc_token;
     //json_object["spoc_in_control"]=spoc_in_control;
     std::string gripper_tmp;
     if(gripper==PandaHandNone){

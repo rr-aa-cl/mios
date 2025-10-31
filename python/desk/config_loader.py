@@ -23,19 +23,22 @@ if ROBOT_USER is None:
 ROBOT_PASSWORD = os.getenv("ROBOT_PASSWORD")
 if ROBOT_PASSWORD is None:
   ROBOT_PASSWORD = "<user-password>"
+MONGONAME = os.getenv("MONGO_NAME")
+if MONGONAME is None:
+  MONGONAME = "mios"
 
 DEFAULT_CONFIG = {
   "api_settings": {
     "robot_ip": "https://"+ROBOT_IP,
     "username": ROBOT_USER,
     "password": ROBOT_PASSWORD,
-    "token_file": "control_token.txt",
+    "mongo_name": MONGONAME,
     "enable_proxy": False,
     "socks5_proxy": "socks5h://127.0.0.1:1080"
   },
   "keep_alive_settings": {
     "check_interval_secs": 60,
-    "retry_delay_secs": 30,
+    "retry_delay_secs": 0,
     "owner_name": "AutomatedResearch",
     "self_test_trigger_mins": 60,
     "action_on_threshold": "self-test"

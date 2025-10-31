@@ -48,6 +48,9 @@ public:
     bool execution();
     bool programming();
     bool ensure_robot_ready();
+    bool take_control();
+    bool release_control();
+    
  
 
     bool grasp(double width,double speed,double force,double epsilon_inner,double epsilon_outer) const;
