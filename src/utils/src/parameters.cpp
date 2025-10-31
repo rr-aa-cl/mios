@@ -424,8 +424,8 @@ bool SystemParameters::from_json(const nlohmann::json &parameters){
 nlohmann::json SystemParameters::to_json() const{
     nlohmann::json json_object;
     json_object["robot_ip"]=robot_ip;
-    json_object["desk_name"]=desk_user;
-    json_object["desk_pwd"]=desk_pwd;
+    //json_object["desk_name"]=desk_user;
+    //json_object["desk_pwd"]=desk_pwd;
     json_object["has_robot"]=has_robot;
     json_object["spoc_token"]=spoc_token;
     //json_object["spoc_in_control"]=spoc_in_control;
