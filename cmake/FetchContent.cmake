@@ -1,5 +1,5 @@
 find_package(Eigen3 REQUIRED)
-
+find_package(pinocchio REQUIRED)
 
 message("################################## ENTERING FETCHCONTENT FILE ##################################")
 if(NOT TARGET Eigen3::Eigen3)
