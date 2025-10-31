@@ -941,12 +941,15 @@ bool PandaBody::shutdown_robot(){
     }
     if(result){
         spdlog::info("Shutting down Robot... Wait until re-initialising.");
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
         disconnect_from_gripper();
         disconnect_from_robot();
+        std::this_thread::sleep_for(std::chrono::seconds(5));
         result=false;
-        if(this->initialize()){
-            result = true;
+        while(!this->initialize()){
+            spdlog::warning("Robot initialization failed. Wait and retry...");
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }
         }
     }
     return result;
@@ -975,13 +978,17 @@ bool PandaBody::reboot_robot(){
     }
     if(result){
         spdlog::info("Rebooting Robot... Wait until re-initialising.");
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
         disconnect_from_gripper();
         disconnect_from_robot();
+        std::this_thread::sleep_for(std::chrono::seconds(5));
         result=false;
-        if(this->initialize()){
-            result = true;
+        while(!this->initialize()){
+            spdlog::warning("Robot initialization failed. Wait and retry...");
+            std::this_thread::sleep_for(std::chrono::seconds(5));
         }
+        }
+
     }
     return result;
 }
