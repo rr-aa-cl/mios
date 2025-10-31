@@ -7,11 +7,10 @@ permissions:
 on:
   push:
     branches:
-      - build
+      - builder
       - local_dev
   pull_request:
     branches:
-      - build
       - local_dev
 
 jobs:
@@ -32,6 +31,35 @@ jobs:
 
       - name: Lint python directory
         run: ruff check python
+
+  build_builder:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+  
+
+      - name: Build mios Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/builder/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/mios_builder:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/mios_builder:${{ github.head_ref || github.ref_name }}
+
+
 
   build:
     runs-on: ubuntu-latest
@@ -86,7 +114,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository }}/mios:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/mios:local_dev
+            ghcr.io/${{ github.repository }}/${{ github.head_ref || github.ref_name }}
 
       - name: Build mios_mls Docker image
         uses: docker/build-push-action@v5
@@ -96,6 +124,6 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository }}/mios_mls:${{ github.sha }}
-            ghcr.io/${{ github.repository }}/mios_mls:local_dev
+            ghcr.io/${{ github.repository }}/mios_mls:${{ github.head_ref || github.ref_name }}
 
   
