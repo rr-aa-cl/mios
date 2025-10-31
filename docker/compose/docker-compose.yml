@@ -3,10 +3,10 @@ services:
     image: "mirmi/mios:FR3"
     restart: always
     environment:
-      - ROBOT_IP="192.168.3.100"
-      - ROBOT_USER="MBZUAI"
-      - ROBOT_PASSWORD="mbzuai123"
-      - MONGONAME="miosL"
+      - ROBOT_IP=192.168.3.100
+      - ROBOT_USER=MBZUAI
+      - ROBOT_PASSWORD=mbzuai123
+      - MONGONAME=miosL
       - verbosity=debug
       - database_port=27017
       - robot_config=0

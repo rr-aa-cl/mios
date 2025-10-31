@@ -23,7 +23,7 @@ if ROBOT_USER is None:
 ROBOT_PASSWORD = os.getenv("ROBOT_PASSWORD")
 if ROBOT_PASSWORD is None:
   ROBOT_PASSWORD = "<user-password>"
-MONGONAME = os.getenv("MONGO_NAME")
+MONGONAME = os.getenv("MONGONAME")
 if MONGONAME is None:
   MONGONAME = "mios"
 
@@ -50,21 +50,22 @@ def load_config():
     Loads the configuration from config.json. If the file does not exist,
     it creates a template and exits the program.
     """
-    if not os.path.exists(CONFIG_FILE):
-        print(f"Configuration file '{CONFIG_FILE}' not found.", flush=True)
-        try:
-            with open(CONFIG_FILE, 'w') as f:
-                json.dump(DEFAULT_CONFIG, f, indent=2)
-            print(f"A new template '{CONFIG_FILE}' has been created.", flush=True)
-            print("Please edit it with your robot's IP address and credentials before running the script again.", flush=True)
-        except IOError as e:
-            print(f"Error creating configuration file: {e}", flush=True)
-        #sys.exit(1) # Exit after creating the template
+    return DEFAULT_CONFIG
+    # if not os.path.exists(CONFIG_FILE):
+    #     print(f"Configuration file '{CONFIG_FILE}' not found.", flush=True)
+    #     try:
+    #         with open(CONFIG_FILE, 'w') as f:
+    #             json.dump(DEFAULT_CONFIG, f, indent=2)
+    #         print(f"A new  '{CONFIG_FILE}' has been created with environmane variable informations.", flush=True)
+    #         #print("Please edit it with your robot's IP address and credentials before running the script again.", flush=True)
+    #     except IOError as e:
+    #         print(f"Error creating configuration file: {e}", flush=True)
+    #     #sys.exit(1) # Exit after creating the template
 
-    try:
-        with open(CONFIG_FILE, 'r') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError) as e:
-        print(f"Error reading configuration file '{CONFIG_FILE}': {e}", flush=True)
-        print("Please ensure it is a valid JSON file.", flush=True)
-        sys.exit(1)
+    # try:
+    #     with open(CONFIG_FILE, 'r') as f:
+    #         return json.load(f)
+    # except (json.JSONDecodeError, IOError) as e:
+    #     print(f"Error reading configuration file '{CONFIG_FILE}': {e}", flush=True)
+    #     print("Please ensure it is a valid JSON file.", flush=True)
+    #     sys.exit(1)
