@@ -61,7 +61,7 @@ jobs:
 
 
   build:
-    needs: build
+    needs: build_builder
     runs-on: ubuntu-latest
     container: 
       image: ghcr.io/ciai-engineering/mios/mios_build:latest
