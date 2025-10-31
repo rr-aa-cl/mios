@@ -116,7 +116,7 @@ def ensure_robot_ready():
         if not s:
             log_status(f"  ERROR: Failed to take control: {r.get('error')}. Retrying after delay.")
             time.sleep(RETRY_DELAY)
-            return
+            return False, {'error': r.get('error')}
     else:
         log_status("  Control token is correctly held.")
 
@@ -127,11 +127,26 @@ def ensure_robot_ready():
         if not s:
             log_status(f"  ERROR: Failed to unlock joints: {r.get('error')}. Retrying after delay.")
             time.sleep(RETRY_DELAY)
-            return
+            return False, {'error': r.get('error')}
     elif not s_joints:
          log_status(f"  ERROR: Could not get joint status: {d_joints.get('error')}")
     else:
         log_status(f"  Joint status is '{d_joints.get('status')}'.")
+
+    # --- New End Effector Power Check ---
+    s_ee, d_ee = deskapi.get_end_effector_power_status()
+    if s_ee and d_ee.get('status') == 'Off':
+        log_status("  End Effector is Off. Attempting to power on...")
+        s_ee_on, r_ee_on = deskapi.power_on_end_effector()
+        if not s_ee_on:
+            log_status(f"  WARNING: Failed to power on End Effector: {r_ee_on.get('error')}. Gripper (FrankaHand) may not be connected.")
+        else:
+            log_status("  End Effector powered On.")
+    elif not s_ee:
+        log_status(f"  WARNING: Could not get End Effector power status: {d_ee.get('error')}. Gripper status unknown.")
+    else:
+        log_status(f"  End Effector is {d_ee.get('status', 'Unknown')}.")
+    # --- End of New Check ---
 
     s_fci, d_fci = deskapi.get_fci_status()
     if s_fci and d_fci.get('status') == 'Inactive':
@@ -140,13 +155,14 @@ def ensure_robot_ready():
         if not s:
             log_status(f"  ERROR: Failed to activate FCI: {r.get('error')}. Retrying after delay.")
             time.sleep(RETRY_DELAY)
-            return
+            return False, {'error': r.get('error')}
     elif not s_fci:
         log_status(f"  ERROR: Could not get FCI status: {d_fci.get('error')}")
     else:
         log_status("  FCI is Active.")
     
     log_status("Robot is ready.")
+    return True, d_ee
 
 def run_deactivate_routine(is_manual=True):
     """Safely deactivates the robot (Routine 2)."""
@@ -160,6 +176,9 @@ def run_deactivate_routine(is_manual=True):
     time.sleep(1)
     log_status("  Locking joints...")
     deskapi.lock_joints()
+    time.sleep(1)
+    log_status("  Powering off End Effector...")
+    deskapi.power_off_end_effector()
     time.sleep(1)
     log_status("  Releasing control token...")
     deskapi.release_control()
@@ -278,5 +297,5 @@ def handle_key_press(key: str):
         log_status("Robot deactivated. Exiting.")
         stop_event.set()
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()

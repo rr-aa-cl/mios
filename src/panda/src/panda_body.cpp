@@ -25,7 +25,7 @@ m_memory(memory){
 bool PandaBody::initialize(){
     spdlog::trace("PandaBody::initialize()");
     m_has_arm=m_memory->read_parameters()->system.has_robot;
-    m_hand=m_memory->read_parameters()->system.gripper;
+    //m_hand=m_memory->read_parameters()->system.gripper; // get hand automatically form desk
     
     std::optional<std::string> ip;
     if(m_has_arm){
@@ -230,56 +230,15 @@ bool PandaBody::pre_run_checks() const{
 
 bool PandaBody::is_robot(const std::string &ip){
     spdlog::debug("PandaBody::is_robot("+ip+")" );
-    bool result;
-    try{
-        pybind11::module deskapi = pybind11::module::import("deskapi");
-        pybind11::object py_result = deskapi.attr("get_operating_mode")();
-        py::tuple result_tuple = py_result.cast<py::tuple>();
-        result = result_tuple[0].cast<bool>();
-        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
-        if(!result){
-            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
-            return false;
-        }
-        else{
-            pybind11::module deskapi = pybind11::module::import("keep_alive");
-            pybind11::object py_result = deskapi.attr("ensure_robot_ready")();
-            std::this_thread::sleep_for(std::chrono::milliseconds(20000));
-        }
-        
-    }
-    catch (const pybind11::error_already_set &e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot take control of the robot, error when calling the python desk client.");
+    bool result = False;
+    while(!result){
+        result = ensure_robot_ready();
     }
     m_memory->set_default_parameters();
-    /*
-    if(!m_memory->read_parameters()->system.spoc_in_control){
-        spdlog::warn("Cannot take control over the robot (single point of control). Check deskapi.");
-        return false;
-    }
-    if(!activate_fci()){
-        spdlog::debug("PandaBody: Cannot activate FCI "+ip+" spoc_token:"+m_memory->read_parameters()->system.spoc_token);
-        return false;   
-    }
-    */
-/*
-    try{
-        std::unique_ptr<franka::Robot> robot =  std::make_unique<franka::Robot>(ip);
-        return true;
-    }catch(const franka::NetworkException& e){
-        spdlog::info("Skipping device with ip "+ip+".");
-        return false;
-    }catch(const franka::IncompatibleVersionException& e){
-        spdlog::error("At device with ip "+ip+": ");
-        spdlog::debug(e.what());
-        spdlog::error("Panda: Detected incompatible version on robot at IP "+ip);
-        return false;
-    }
-*/
     return true;
 }
 
+// currently not used:
 std::optional<std::string> PandaBody::find_robot(){
     spdlog::trace("PandaBody::find_robot()");
     std::optional<std::string> robot_address={};
@@ -760,211 +719,6 @@ const std::unique_ptr<franka::Model>& PandaBody::get_panda_model() const{
     return m_panda_model;
 }
 
-
-
-// deskapi functions:
-
-bool PandaBody::activate_fci(){
-    spdlog::trace("PandaBody::activate_fci()");
-    bool result;
-    try{
-        pybind11::module deskapi = pybind11::module::import("deskapi");
-        pybind11::object py_result = deskapi.attr("activate_fci")(m_memory->get_parameters()->system.robot_ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-        py::tuple result_tuple = py_result.cast<py::tuple>();
-        result = result_tuple[0].cast<bool>();
-        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
-        if(!result){
-            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
-        }
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot activate FCI, error when calling the python desk client.");
-        return false;
-    }
-    return true;
-}
-
-bool PandaBody::deactivate_fci(){
-    spdlog::trace("PandaBody::deactivate_fci()");
-    bool result;
-    try{
-        pybind11::module deskapi = pybind11::module::import("deskapi");
-        pybind11::object py_result = deskapi.attr("deactivate_fci")(m_memory->get_parameters()->system.robot_ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-        py::tuple result_tuple = py_result.cast<py::tuple>();
-        result = result_tuple[0].cast<bool>();
-        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
-        if(!result){
-            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
-        }
-
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot deactivate FCI, error when calling the python desk client.");
-        return false;
-    }
-    return true;
-}
-
-bool PandaBody::shutdown_robot(){
-    spdlog::trace("PandaBody::shutdown_robot");
-    deactivate_fci();
-    bool result;
-    try{
-        pybind11::module deskapi = pybind11::module::import("deskapi");
-        pybind11::object py_result = deskapi.attr("shutdown_system")();
-        py::tuple result_tuple = py_result.cast<py::tuple>();
-        result = result_tuple[0].cast<bool>();
-        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
-        if(!result){
-            spdlog::error("Cannot shutdown robot through Desk client: "+status_json.dump());
-        }
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot shutdown, error when calling the python desk client.");
-        result=false;
-    }
-    return result;
-}
-
-bool PandaBody::reboot_robot(){
-    spdlog::trace("PandaBody::reboot_robot");
-    bool reconnect_arm = m_has_arm;
-    bool reconnect_hand = m_arm_connected;
-    //disconnect_from_gripper();
-    //disconnect_from_robot();
-    //deactivate_fci();
-    bool result;
-    try{
-        pybind11::module deskapi = pybind11::module::import("deskapi");
-        pybind11::object py_result = deskapi.attr("reboot_system")();
-        py::tuple result_tuple = py_result.cast<py::tuple>();
-        result = result_tuple[0].cast<bool>();
-        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
-        if(!result){
-            spdlog::error("Cannot reboot robot through Desk client: "+status_json.dump());
-        }
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot reboot, error when calling the python desk client.");
-        result=false;
-    }
-    if(result){
-        spdlog::info("Rebooting Robot... Wait until re-initialising.");
-        std::this_thread::sleep_for(std::chrono::seconds(120));
-        result=false;
-        if(this->initialize()){
-            result = true;
-        }
-    }
-    return result;
-}
-
-bool PandaBody::unlock_brakes(){
-    spdlog::trace("PandaBody::unlock_brakes");
-    bool result;
-    try{
-        pybind11::module deskapi = pybind11::module::import("deskapi");
-        pybind11::object py_result = deskapi.attr("unlock_joints")();
-        py::tuple result_tuple = py_result.cast<py::tuple>();
-        result = result_tuple[0].cast<bool>();
-        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
-        if(!result){
-            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
-        }
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot unlock brakes, error when calling the python desk client.");
-        result=false;
-    }
-    return result;
-}
-
-bool PandaBody::lock_brakes(){
-    spdlog::trace("PandaBody::lock_brakes");
-    bool result;
-    try{
-        pybind11::module deskapi = pybind11::module::import("deskapi");
-        pybind11::object py_result = deskapi.attr("lock_joints");
-        py::tuple result_tuple = py_result.cast<py::tuple>();
-        result = result_tuple[0].cast<bool>();
-        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
-        if(!result){
-            spdlog::error("Cannot lock brakes through Desk client: "+status_json.dump());
-        }
-        else{
-            std::this_thread::sleep_for(std::chrono::seconds(3));
-        }
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot lock brakes, error when calling the python desk client.");
-        result=false;
-    }
-    return result;
-}
-
-bool PandaBody::ensure_robot_ready(){
-    spdlog::trace("PandaBody::ensure_robot_ready");
-    bool result;
-    try{
-        pybind11::module deskapi = pybind11::module::import("keep_alive");
-        pybind11::object py_result = deskapi.attr("ensure_robot_ready");
-        py::tuple result_tuple = py_result.cast<py::tuple>();
-        result = result_tuple[0].cast<bool>();
-        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
-        if(!result){
-            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
-        }
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot ensure robot is ready, error when calling the python desk client.");
-        result=false;
-    }
-    return result;
-}
-
-
-bool PandaBody::programming(){
-    spdlog::trace("PandaBody::lock_brakes");
-    bool result;
-    try{
-        pybind11::module deskapi = pybind11::module::import("deskapi");
-        pybind11::object py_result = deskapi.attr("switch_to_programming")();
-        py::tuple result_tuple = py_result.cast<py::tuple>();
-        result = result_tuple[0].cast<bool>();
-        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
-        if(!result){
-            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
-        }
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot lock brakes, error when calling the python desk client.");
-        result=false;
-    }
-    return result;
-}
-
-bool PandaBody::execution(){
-    spdlog::trace("PandaBody::lock_brakes");
-    bool result;
-    try{
-        pybind11::module deskapi = pybind11::module::import("deskapi");
-        pybind11::object py_result = deskapi.attr("switch_to_execution")();
-        py::tuple result_tuple = py_result.cast<py::tuple>();
-        result = result_tuple[0].cast<bool>();
-        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
-        if(!result){
-            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
-        }
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot lock brakes, error when calling the python desk client.");
-        result=false;
-    }
-    return result;
-}
-
-
-
 bool PandaBody::grasp(double width, double speed, double force, double epsilon_inner, double epsilon_outer) const{
     spdlog::trace("PandaBody::grasp");
     std::scoped_lock<std::mutex> lock(m_mtx_hand_active);
@@ -1116,6 +870,290 @@ void PandaBody::get_default_robot_state(franka::RobotState &state) const{
 void PandaBody::get_default_gripper_state(franka::GripperState &state) const{
     spdlog::trace("PandaBody::get_default_gripper_state");
     state=m_gripper_state;
+}
+
+
+// deskapi functions:
+
+bool PandaBody::activate_fci(){
+    spdlog::trace("PandaBody::activate_fci()");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("activate_fci")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot activate FCI through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot activate FCI, error when calling the python desk client.");
+        return false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return true;
+}
+
+bool PandaBody::deactivate_fci(){
+    spdlog::trace("PandaBody::deactivate_fci()");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("deactivate_fci")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
+        }
+
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot deactivate FCI, error when calling the python desk client.");
+        return false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return true;
+}
+
+bool PandaBody::shutdown_robot(){
+    spdlog::trace("PandaBody::shutdown_robot");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("shutdown_system")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot shutdown robot through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot shutdown, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        spdlog::info("Shutting down Robot... Wait until re-initialising.");
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        disconnect_from_gripper();
+        disconnect_from_robot();
+        result=false;
+        if(this->initialize()){
+            result = true;
+        }
+    }
+    return result;
+}
+
+bool PandaBody::reboot_robot(){
+    spdlog::trace("PandaBody::reboot_robot");
+    bool reconnect_arm = m_has_arm;
+    bool reconnect_hand = m_arm_connected;
+
+    //deactivate_fci();
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("reboot_system")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot reboot robot through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot reboot, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        spdlog::info("Rebooting Robot... Wait until re-initialising.");
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        disconnect_from_gripper();
+        disconnect_from_robot();
+        result=false;
+        if(this->initialize()){
+            result = true;
+        }
+    }
+    return result;
+}
+
+bool PandaBody::unlock_brakes(){  // make sure it is waiting until all brakes are unlocked
+    spdlog::trace("PandaBody::unlock_brakes");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("unlock_joints")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot unlock brakes, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::seconds(30));
+    }
+    return result;
+}
+
+bool PandaBody::lock_brakes(){  // make sure it is waiting until all brakes are locked
+    spdlog::trace("PandaBody::lock_brakes");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("lock_joints");
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot lock brakes through Desk client: "+status_json.dump());
+        }
+        else{
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot lock brakes, error when calling the python desk client.");
+        result=false;
+    }
+    return result;
+}
+
+bool PandaBody::ensure_robot_ready(){  // put this in interface
+    spdlog::trace("PandaBody::ensure_robot_ready");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("keep_alive");
+        pybind11::object py_result = deskapi.attr("ensure_robot_ready");
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Wait after error at deskapi: "+status_json.dump());
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }
+        else if(status_json.contains("status")){
+            if(status_json["status"] == "Off"){
+                m_hand=PandaHandNone;
+            }
+            else if(status_json["status"] == "On"){
+                m_hand=PandaHandDefault; 
+            }
+            else{
+                m_hand=PandaHandNone;
+            }
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot ensure robot is ready, error when calling the python desk client.");
+        result=false;
+    }
+    return result;
+}
+
+
+bool PandaBody::programming(){  // put this in interface
+    spdlog::trace("PandaBody::programming");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("switch_to_programming")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot lock brakes, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return result;
+}
+
+bool PandaBody::execution(){  // put this in interface
+    spdlog::trace("PandaBody::execution");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("switch_to_execution")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot lock brakes, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return result;
+}
+
+bool PandaBody::release_control(){
+    spdlog::trace("PandaBody::release_control");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("release_control")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot release control through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot release control, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return result;
+}
+bool PandaBody::take_control(){
+    spdlog::trace("PandaBody::take_control");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("take_control")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot take control through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot ake control, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return result;
 }
 
 }

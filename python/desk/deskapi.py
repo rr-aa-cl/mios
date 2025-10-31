@@ -12,6 +12,7 @@ from typing import Optional, Tuple
 import urllib3
 from urllib3.exceptions import InsecureRequestWarning
 import time
+from pymongo import MongoClient
 import config_loader
 
 # --- Suppress InsecureRequestWarning ---
@@ -24,7 +25,7 @@ api_config = config['api_settings']
 ROBOT_IP = api_config['robot_ip']
 USERNAME = api_config['username']
 PASSWORD = api_config['password']
-TOKEN_FILE = api_config['token_file']
+MONGONAME = api_config['mongo_name']
 ENABLE_PROXY = api_config['enable_proxy']
 SOCKS5_PROXY = api_config['socks5_proxy']
 
@@ -63,21 +64,28 @@ def _make_request(method, url, **kwargs) -> Tuple[bool, dict]:
 
 
 def save_token(token: str):
-    """Saves the control token to a local file."""
-    with open(TOKEN_FILE, "w") as f:
-        f.write(token)
+    """Saves the control token to MongoDB (mios->parameter->system)."""
+    try:
+        with MongoClient("localhost",27017) as mongo_client:
+            mongo_client[MONGONAME]["parameters"].update_one({"name":"system"},{"$set":{"spoc_token":token}}, upsert=False)
+    except:
+        pass
 
 def load_token() -> Optional[str]:
-    """Loads the control token from a local file."""
-    if os.path.exists(TOKEN_FILE):
-        with open(TOKEN_FILE, "r") as f:
-            return f.read().strip()
+    """Loads the control token from MongoDB (mios->parameter->system)."""
+    try:
+        with MongoClient("localhost",27017) as mongo_client:
+            mios_system_conf = mongo_client[MONGONAME]["parameters"].find({"name":"system"})
+            return mios_system_conf["spoc_token"]
+    except KeyError as e:
+        print(f"Cannot find token in MongoDB {MONGONAME}.")
     return None
 
 def clear_token():
     """Deletes the local control token file."""
-    if os.path.exists(TOKEN_FILE):
-        os.remove(TOKEN_FILE)
+    with MongoClient("localhost",27017) as mongo_client:
+        mongo_client[MONGONAME]["parameters"].update_one({"name":"system"},{"$set":{"spoc_token":""}}, upsert=False)
+
 
 # ---------------- Control Token ----------------
 
@@ -186,6 +194,31 @@ def get_fci_status() -> Tuple[bool, dict]:
     url = f"{ROBOT_IP}/api/fci"
     return _make_request("GET", url)
 
+# ---------------- End Effector ----------------
+
+def get_end_effector_power_status() -> Tuple[bool, dict]:
+    """Gets the power status of the end effector."""
+    url = f"{ROBOT_IP}/api/end-effector/power"
+    return _make_request("GET", url)
+
+def power_on_end_effector() -> Tuple[bool, dict]:
+    """Powers on the end effector."""
+    token = load_token()
+    if not token:
+        return False, {"error": "Cannot power on end effector without a control token."}
+    url = f"{ROBOT_IP}/api/end-effector/power:on"
+    headers = {"X-Control-Token": token}
+    return _make_request("POST", url, headers=headers)
+
+def power_off_end_effector() -> Tuple[bool, dict]:
+    """Powers off the end effector."""
+    token = load_token()
+    if not token:
+        return False, {"error": "Cannot power off end effector without a control token."}
+    url = f"{ROBOT_IP}/api/end-effector/power:off"
+    headers = {"X-Control-Token": token}
+    return _make_request("POST", url, headers=headers)
+
 # ---------------- System ----------------
 
 def reboot_system() -> Tuple[bool, dict]:
@@ -236,4 +269,3 @@ def execute_self_tests() -> Tuple[bool, dict]:
     url = f"{ROBOT_IP}/api/safety/self-tests:execute"
     headers = {"X-Control-Token": token}
     return _make_request("POST", url, headers=headers)
-

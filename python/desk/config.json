@@ -3,13 +3,13 @@
     "robot_ip": "https://192.168.3.100",
     "username": "MBZUAI",
     "password": "mbzuai123",
-    "token_file": "control_token.txt",
+    "mongo_name": "mios",
     "enable_proxy": false,
     "socks5_proxy": "socks5h://127.0.0.1:1080"
   },
   "keep_alive_settings": {
     "check_interval_secs": 60,
-    "retry_delay_secs": 30,
+    "retry_delay_secs": 0,
     "owner_name": "AutomatedResearch",
     "self_test_trigger_mins": 60,
     "action_on_threshold": "self-test"

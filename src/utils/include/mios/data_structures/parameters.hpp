@@ -121,13 +121,13 @@ public:
     nlohmann::json to_json() const;
 
     std::string robot_ip;
-    std::string desk_user;
-    std::string desk_pwd;
+    //std::string desk_user;
+    //std::string desk_pwd;
 
     bool has_robot;
     PandaHand gripper;
 
-    //std::string spoc_token;
+    std::string spoc_token;
     //bool spoc_in_control;
 };
 
