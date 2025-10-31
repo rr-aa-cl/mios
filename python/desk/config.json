@@ -1,8 +1,8 @@
 {
   "api_settings": {
-    "robot_ip": "https://192.168.3.100",
-    "username": "MBZUAI",
-    "password": "mbzuai123",
+    "robot_ip": "https://127.0.0.1",
+    "username": "<user-name>",
+    "password": "<user-password>",
     "mongo_name": "mios",
     "enable_proxy": false,
     "socks5_proxy": "socks5h://127.0.0.1:1080"
