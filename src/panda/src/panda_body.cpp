@@ -230,7 +230,7 @@ bool PandaBody::pre_run_checks() const{
 
 bool PandaBody::is_robot(const std::string &ip){
     spdlog::debug("PandaBody::is_robot("+ip+")" );
-    bool result = False;
+    bool result = false;
     while(!result){
         result = ensure_robot_ready();
     }
