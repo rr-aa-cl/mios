@@ -48,11 +48,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
   
 
-      - name: Build mios Docker image
+      - name: Build mios builder Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./docker/builder/Dockerfile
+          file: ./docker/mios_builder/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ github.repository }}/mios_builder:${{ github.sha }}
@@ -61,6 +61,7 @@ jobs:
 
 
   build:
+    needs: build
     runs-on: ubuntu-latest
     container: 
       image: ghcr.io/ciai-engineering/mios/mios_build:latest
