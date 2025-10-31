@@ -59,7 +59,7 @@ def load_config():
             print("Please edit it with your robot's IP address and credentials before running the script again.")
         except IOError as e:
             print(f"Error creating configuration file: {e}")
-        sys.exit(1) # Exit after creating the template
+        #sys.exit(1) # Exit after creating the template
 
     try:
         with open(CONFIG_FILE, 'r') as f:
