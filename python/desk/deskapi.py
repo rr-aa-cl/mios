@@ -12,7 +12,7 @@ from typing import Optional, Tuple
 import urllib3
 from urllib3.exceptions import InsecureRequestWarning
 import time
-from pymongo import MongoClient
+from mongodb_client import MongoDBClient
 import config_loader
 
 # --- Suppress InsecureRequestWarning ---
@@ -65,27 +65,25 @@ def _make_request(method, url, **kwargs) -> Tuple[bool, dict]:
 
 def save_token(token: str):
     """Saves the control token to MongoDB (mios->parameter->system)."""
-    try:
-        with MongoClient("localhost",27017) as mongo_client:
-            mongo_client[MONGONAME]["parameters"].update_one({"name":"system"},{"$set":{"spoc_token":token}}, upsert=False)
-    except:
-        pass
+
+    mongo_client = MongoDBClient("localhost",27017)
+    mongo_client.update(MONGONAME,"parameters",{"name":"system"},{"spoc_token":token})
+
 
 def load_token() -> Optional[str]:
     """Loads the control token from MongoDB (mios->parameter->system)."""
     try:
-        with MongoClient("localhost",27017) as mongo_client:
-            mios_system_conf = mongo_client[MONGONAME]["parameters"].find({"name":"system"})
-            return mios_system_conf["spoc_token"]
+        mongo_client = MongoDBClient("localhost",27017)
+        mios_system_conf = mongo_client.read(MONGONAME,"parameters",{"name":"system"})[0]
+        return mios_system_conf["spoc_token"]
     except KeyError as e:
         print(f"Cannot find token in MongoDB {MONGONAME}.")
     return None
 
 def clear_token():
     """Deletes the local control token file."""
-    with MongoClient("localhost",27017) as mongo_client:
-        mongo_client[MONGONAME]["parameters"].update_one({"name":"system"},{"$set":{"spoc_token":""}}, upsert=False)
-
+    mongo_client = MongoDBClient("localhost",27017)
+    mongo_client.update(MONGONAME,"parameters",{"name":"system"},{"spoc_token":""})
 
 # ---------------- Control Token ----------------
 
