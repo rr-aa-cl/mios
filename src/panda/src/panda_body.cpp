@@ -1014,7 +1014,7 @@ bool PandaBody::lock_brakes(){  // make sure it is waiting until all brakes are 
     bool result;
     try{
         pybind11::module deskapi = pybind11::module::import("deskapi");
-        pybind11::object py_result = deskapi.attr("lock_joints");
+        pybind11::object py_result = deskapi.attr("lock_joints")();
         py::tuple result_tuple = py_result.cast<py::tuple>();
         result = result_tuple[0].cast<bool>();
         nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
@@ -1037,7 +1037,7 @@ bool PandaBody::ensure_robot_ready(){  // put this in interface
     bool result;
     try{
         pybind11::module deskapi = pybind11::module::import("keep_alive");
-        pybind11::object py_result = deskapi.attr("ensure_robot_ready");
+        pybind11::object py_result = deskapi.attr("ensure_robot_ready")();
         py::tuple result_tuple = py_result.cast<py::tuple>();
         result = result_tuple[0].cast<bool>();
         nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
