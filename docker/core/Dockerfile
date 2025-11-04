@@ -33,6 +33,8 @@ RUN pip3 install -U urwid
 
 COPY mios/ /mios/
 COPY dependencies/ /dependencies/
+RUN chmod +x /mios/bin/mios.sh
+RUN chmod +x /mios/bin/mios
 
 EXPOSE 12000 12001 12002 8888 8889
 
@@ -47,4 +49,4 @@ ENV robot_arm=$default_robot_arm_value
 ENV LD_LIBRARY_PATH=/opt/openrobots/lib:/dependencies:/mios/lib:$LD_LIBRARY_PATH
 
 WORKDIR mios/bin
-CMD ["sh", "-c", "./mios.sh --verbosity=${verbosity} --database_port=${database_port} --robot_config=${robot_config} --robot_arm=${robot_arm}"]
+CMD ["sh", "-c", "bash ./mios.sh --verbosity=${verbosity} --database_port=${database_port} --robot_config=${robot_config} --robot_arm=${robot_arm}"]
