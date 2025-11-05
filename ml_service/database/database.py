@@ -2,9 +2,7 @@ from knowledge_processor.knowledge_manager import KnowledgeManager
 from mongodb_client.mongodb_client import MongoDBClient
 from socketserver import ThreadingMixIn
 
-import random
 import logging
-import numpy as np
 from xmlrpc.server import SimpleXMLRPCServer
 
 logger = logging.getLogger("ml_service")

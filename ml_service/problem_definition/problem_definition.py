@@ -1,4 +1,3 @@
-from typing import Optional
 from problem_definition.domain import Domain
 from engine.task_result import TaskResult
 from engine.task_result import QMetric

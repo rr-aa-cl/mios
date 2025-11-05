@@ -2,7 +2,7 @@ import pymongo
 from bson import objectid
 from pymongo import MongoClient
 import logging
-import time
+
 
 import pymongo.errors
 

@@ -14,7 +14,6 @@ from sklearn.neural_network import MLPRegressor
 from threading import Lock, Thread
 from sklearn.svm import SVR
 import sklearn.exceptions
-from enum import Enum
 
 logger = logging.getLogger("ml_service")
 

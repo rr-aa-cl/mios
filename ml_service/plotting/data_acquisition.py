@@ -1,7 +1,7 @@
 from mongodb_client.mongodb_client import MongoDBClient
 import logging
 from plotting.result import Result
-from plotting.result import KnowledgePoint
+
 
 logger = logging.getLogger("ml_service")
 

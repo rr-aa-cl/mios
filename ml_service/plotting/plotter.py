@@ -1,6 +1,5 @@
 from functools import wraps
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 import numpy as np
 import logging
 

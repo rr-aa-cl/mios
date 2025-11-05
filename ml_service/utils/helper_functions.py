@@ -1,8 +1,6 @@
 import json
 import os
 import paramiko
-import stat
-import sys
 import numpy as np
 import time
 import copy
