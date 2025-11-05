@@ -13,7 +13,6 @@ from xmlrpc.client import ServerProxy,Fault
 from xmlrpc.server import SimpleXMLRPCServer
 from socketserver import ThreadingMixIn
 import socket
-import os
 import logging
 import time
 from copy import deepcopy

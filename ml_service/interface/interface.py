@@ -16,8 +16,8 @@ from problem_definition.problem_definition import ProblemDefinition
 from utils.ws_client import call_method
 from database.database import Database
 from utils.cmd_loop import CMDLoop
-from rpc_visualization.switcher import TensorboardClient
-from collective_manager.video_recorder import FFMpegWebcamRecorder
+#from rpc_visualization.switcher import TensorboardClient
+#from collective_manager.video_recorder import FFMpegWebcamRecorder
 
 from xmlrpc.server import SimpleXMLRPCServer
 from socketserver import ThreadingMixIn

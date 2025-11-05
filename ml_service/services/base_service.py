@@ -18,7 +18,7 @@ from knowledge_processor.knowledge_manager import KnowledgeManager
 from mongodb_client.mongodb_client import MongoDBClient
 from utils.exception import *
 from services.knowledge import Knowledge
-from rpc_visualization.data_buffer import DataBuffer
+#from rpc_visualization.data_buffer import DataBuffer
 
 logger = logging.getLogger("ml_service")
 

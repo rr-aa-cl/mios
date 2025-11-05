@@ -11,7 +11,7 @@ import numpy as np
 from xmlrpc.client import ServerProxy
 from mongodb_client.mongodb_client import MongoDBClient
 from problem_definition.problem_definition import ProblemDefinition
-from collective_manager.video_recorder import FFMpegWebcamRecorder
+#from collective_manager.video_recorder import FFMpegWebcamRecorder
 from engine.task_result import TaskResult
 from utils.exception import *
 from utils.ws_client import *
@@ -104,9 +104,9 @@ class Engine:
         self.lock_data = Lock()
 
         self.exploration_mode = False
-        self.camera_path =  os.getenv("cameraPath")
-        if self.camera_path is None:
-            self.camera_path = "/dev/video4"
+        #self.camera_path =  os.getenv("cameraPath")
+        #if self.camera_path is None:
+        #    self.camera_path = "/dev/video4"
         #self.video_recorder = FFMpegWebcamRecorder(self.camera_path)
         self.skill_count=0
 
