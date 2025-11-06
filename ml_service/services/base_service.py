@@ -76,7 +76,7 @@ class BaseService(metaclass=ABCMeta):
         self.similarity_estimate = {}  # this maps a similarity to all collective agents 
         self.external_success = {}     # will be filled for each external Task with 1 for success or 0 if not
         self.internal_success = []     # counts just the internal trials: 1 for success 0 for failure
-        self.data_buffer_visualization = DataBuffer()
+        # self.data_buffer_visualization = DataBuffer()
         self.test_debug = 0
         self.delta_time = 0
         self.starting_time = time.time()
@@ -106,7 +106,7 @@ class BaseService(metaclass=ABCMeta):
         self.configuration = configuration
         self.info=info
         #self.knowledge_source = knowledge_source
-        self.data_buffer_visualization = DataBuffer()
+        #self.data_buffer_visualization = DataBuffer()
         if knowledge_source is not None:
             self.knowledge.from_dict(knowledge_source)
         self.starting_time = time.time()  # starting time of learning before first trial (used to retrief knowledge)
@@ -351,7 +351,7 @@ class BaseService(metaclass=ABCMeta):
         if result_dict["external"]:  # if external is not False
             if type(result_dict["external"]) is str:
                 result_dict["external"] = eval(result_dict["external"])  # make it a dict again from string
-        self.data_buffer_visualization.add_data(self.make_float_again(result_dict))
+        # self.data_buffer_visualization.add_data(self.make_float_again(result_dict))
         return result.task_result
 
     def get_theta(self, x) -> dict:

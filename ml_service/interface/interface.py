@@ -132,7 +132,7 @@ class Interface:
             if self.service.initialize(problem_definition, configuration, agents, knowledge,info) is False:
                 return False
             logger.debug("Service initialized ")
-            self.telemetry_buffer = self.service.data_buffer_visualization
+            self.telemetry_buffer = None
             result = self.service.learn_task()
             logger.debug("learning success " + str(result))
         finally:
@@ -245,8 +245,8 @@ class Interface:
     def stop_telemetry(self):
         self.keep_running_telemetry = False
         logger.debug("interface::stop_telemetry"+str(self.keep_running_telemetry))
-        if self.service is not None:
-            self.service.data_buffer_visualization.add_data("STOP")
+        # if self.service is not None:
+        #     self.service.data_buffer_visualization.add_data("STOP")
         if self.telemetry_thread is not None:
             self.telemetry_thread.join()
             self.telemetry_thread = None
