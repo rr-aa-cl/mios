@@ -6,6 +6,7 @@ from socket import timeout
 
 from sklearn.svm import SVC
 from sklearn import mixture
+from sklearn.model_selection import KFold, cross_val_score
 
 from pyDOE import lhs
 
