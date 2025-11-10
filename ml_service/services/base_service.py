@@ -18,7 +18,7 @@ from knowledge_processor.knowledge_manager import KnowledgeManager
 from mongodb_client.mongodb_client import MongoDBClient
 from utils.exception import *
 from services.knowledge import Knowledge
-#from rpc_visualization.data_buffer import DataBuffer
+from interface.data_buffer import DataBuffer
 
 logger = logging.getLogger("ml_service")
 
@@ -76,7 +76,7 @@ class BaseService(metaclass=ABCMeta):
         self.similarity_estimate = {}  # this maps a similarity to all collective agents 
         self.external_success = {}     # will be filled for each external Task with 1 for success or 0 if not
         self.internal_success = []     # counts just the internal trials: 1 for success 0 for failure
-        # self.data_buffer_visualization = DataBuffer()
+        self.data_buffer = None  # DataBuffer()
         self.test_debug = 0
         self.delta_time = 0
         self.starting_time = time.time()
@@ -106,7 +106,7 @@ class BaseService(metaclass=ABCMeta):
         self.configuration = configuration
         self.info=info
         #self.knowledge_source = knowledge_source
-        # self.data_buffer_visualization = DataBuffer()
+        self.data_buffer = None # DataBuffer()
         if knowledge_source is not None:
             self.knowledge.from_dict(knowledge_source)
         self.starting_time = time.time()  # starting time of learning before first trial (used to retrief knowledge)
@@ -240,7 +240,8 @@ class BaseService(metaclass=ABCMeta):
         self.database_results_id = self.engine.initialize(self.problem_definition, self.configuration.exploration_mode)
 
         self._initialize()
-
+        if self.data_buffer is not None:
+            self.engine.set_data_buffer(self.data_buffer)
         self.engine_thread = Thread(target=self.engine.main_loop)
         self.engine_thread.start()
 
@@ -301,6 +302,12 @@ class BaseService(metaclass=ABCMeta):
             self.globalDBclient.write("global_ml_results", self.problem_definition.skill_class, ml_data[0])
         return result
 
+    def start_data_buffer(self):
+        self.data_buffer = DataBuffer()
+        if self.engine is not None:
+            self.engine.set_data_buffer(self.data_buffer)
+        return self.data_buffer
+        
     def stop(self):
         self.keep_running = False
         if self.engine is not None:
@@ -351,9 +358,11 @@ class BaseService(metaclass=ABCMeta):
         if result_dict["external"]:  # if external is not False
             if type(result_dict["external"]) is str:
                 result_dict["external"] = eval(result_dict["external"])  # make it a dict again from string
-        # self.data_buffer_visualization.add_data(self.make_float_again(result_dict))
+        telemetry = (str(self.problem_definition.host)+"-trial", self.make_float_again(result_dict))
+        if self.data_buffer is not None:
+            self.data_buffer.add_data(telemetry)
         return result.task_result
-
+    
     def get_theta(self, x) -> dict:
         #logger.debug("BaseService.get_theta(" + str(x) + ")")
         theta = dict()
