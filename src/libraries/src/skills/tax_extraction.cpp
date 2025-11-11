@@ -70,6 +70,7 @@ Eigen::Matrix<double, 3, 3> TaxExtraction::get_O_R_T_0([[maybe_unused]] const Pe
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxExtraction::get_initial_mp(const Percept &p_0){
+    set_ROI_center(get_object_pose_T("Container").block<3,1>(0,3));
     return create_wiggle_mp(p_0);
 }
 
@@ -150,7 +151,7 @@ std::shared_ptr<ManipulationPrimitive> TaxExtraction::create_wiggle_mp(const Per
 
     mp->create_strategy<TwistStrategy>("pull",1);
     Eigen::Matrix<double,6,1> dX_d;
-    Eigen::Matrix<double,3,1> dir=get_object_pose_T("ExtractTo").block<3,1>(0,3)-p.proprioception.T_T_EE.block<3,1>(0,3);
+    Eigen::Matrix<double,3,1> dir=get_object_pose_T("ExtractTo").block<3,1>(0,3)-get_object_pose_T("ExtractTo").block<3,1>(0,3);
     dir/=dir.norm();
     dX_d<<dir*skill_params->p0.dX_d(0),0,0,0;
 //    dX_d<<0,0,-skill_params->p0.dX_d(0),0,0,0;
@@ -174,7 +175,8 @@ bool TaxExtraction::check_local_pre_conditions([[maybe_unused]] const Percept &p
 }
 
 bool TaxExtraction::check_local_suc_conditions(const Percept &p){
-    return p.proprioception.T_T_EE(2,3)<get_object_pose_T("ExtractTo")(2,3)-m_memory->read_parameters()->user.env_X(0);
+    // only check if z-coordinte is now lower than ExtractTo
+    return p.proprioception.T_T_EE(2,3)<get_object_pose_T("ExtractTo")(2,3)-m_memory->read_parameters()->user.env_X(2);
 }
 
 bool TaxExtraction::check_local_ex_conditions([[maybe_unused]] const Percept &p){
