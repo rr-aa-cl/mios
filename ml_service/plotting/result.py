@@ -9,7 +9,8 @@ class Result:
         self.id = copy.deepcopy(data_tmp["_id"])
         self.uuid = data_tmp["meta"]["uuid"]
         self.tags = data_tmp["meta"]["tags"]
-        print(self.tags)
+        self.instance = data_tmp["meta"]["skill_instance"]  # insertable
+        #print(self.tags)
         del data_tmp["_id"]
         n_trials = len(data_tmp) - 2
 
