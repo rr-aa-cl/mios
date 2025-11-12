@@ -1,0 +1,10 @@
+[project]
+name = "ml-service"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pymongo>=4.15.4",
+    "websockets>=15.0.1",
+]
