@@ -26,6 +26,7 @@
 *.log
 *.sql
 *.sqlite
+docker/compose/*/
 
 # OS generated files #
 ######################
@@ -81,7 +82,7 @@ doc/latex/*
 ########
 src/ros_workspace/devel
 include/commons/config.hpp
-!**/include/mios  
+!**/include/mios
 /python/set_objects.py
 /python/Krones_assembly.py
 /python/DRLplotter.py
