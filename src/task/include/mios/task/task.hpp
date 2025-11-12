@@ -214,7 +214,6 @@ protected:
         if(m_flag_stop){
             return;
         }
-
         m_skill_engine->reserve_skill_context<T_param>(m_context, name);
         std::shared_ptr<Skill> skill = std::make_shared<T_skill>(name,m_memory,m_portal);
         if(!m_skill_engine->add_skill(skill)){

@@ -3,7 +3,6 @@ from scipy import optimize
 import logging
 from services.base_service import BaseService
 from services.base_service import ServiceConfiguration
-from services.optimisation_dummies import Sphere
 
 
 logger = logging.getLogger("ml_service")
@@ -22,8 +21,8 @@ class GenericOptimizerConfiguration(ServiceConfiguration):
 class GenericOptimizerService(BaseService):
     """Gradient descent optimisation"""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self,mios_port=12000,mongo_port=27017):
+        super().__init__(mios_port=mios_port,mongo_port=mongo_port)
 
     def _initialize(self):
         logger.info("gradient_service: initialize")

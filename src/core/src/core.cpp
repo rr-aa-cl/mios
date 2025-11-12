@@ -276,7 +276,10 @@ franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
         m->step(m_percept,panda_cmd);
     }
 
-    m_skill_engine.log_data(m_percept);
+    if(m_memory.get_parameters()->skill->log_data){
+        m_skill_engine.log_data(m_percept);
+    }
+    
 
     if(cmd->is_stopped()){
         if(m_skill_engine.is_running_queue()){
@@ -531,37 +534,38 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
 
 bool Core::unlock_body(){
     spdlog::trace("Core::unlock_body()");
-    return m_panda_body.unlock_brakes(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
+    return m_panda_body.unlock_brakes();
+
 }
 
 bool Core::lock_body(){
     spdlog::trace("Core::lock_body()");
-    return m_panda_body.lock_brakes(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
+    return m_panda_body.lock_brakes();
 }
 
 bool Core::shutdown_body(){
     spdlog::trace("Core::shutdown_body()");
-    return m_panda_body.shutdown_robot(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
+    return m_panda_body.shutdown_robot();
 }
 
 bool Core::reboot_body(){
     spdlog::trace("Core::reboot_body()");
-    return m_panda_body.reboot_robot(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
+    return m_panda_body.reboot_robot();
 }
 
 bool Core::pack_body(){
-    spdlog::trace("Core::pack_body()");
-    return m_panda_body.move_to_pack_pose(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
+    spdlog::info("Core::pack_body(): This function is not implemented right now in panda_body.");
+    return false;
 }
 
 bool Core::start_desk_task(const std::string &task){
-    spdlog::trace("Core::start_desk_task()");
-    return m_panda_body.start_desk_task(task,m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
+    spdlog::info("Core::start_desk_task(): This function is not implemented right now in panda_body.");
+    return false;
 }
 
 bool Core::stop_desk_task(){
-    spdlog::trace("Core::stop_desk_task()");
-    return m_panda_body.stop_desk_task(m_memory.read_parameters()->system.robot_ip,m_memory.read_parameters()->system.desk_user,m_memory.read_parameters()->system.desk_pwd);
+    spdlog::info("Core::stop_desk_task(): This function is not implemented right now in panda_body.");
+    return false;
 }
 
 bool Core::recover_body(){

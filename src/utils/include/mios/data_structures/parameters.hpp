@@ -121,14 +121,14 @@ public:
     nlohmann::json to_json() const;
 
     std::string robot_ip;
-    std::string desk_user;
-    std::string desk_pwd;
+    //std::string desk_user;
+    //std::string desk_pwd;
 
     bool has_robot;
     PandaHand gripper;
 
     std::string spoc_token;
-    bool spoc_in_control;
+    //bool spoc_in_control;
 };
 
 class SafetyParameters : public IParameters{
@@ -261,8 +261,10 @@ public:
     Eigen::Matrix<double,6,1> ROI_phi;
     bool log_data;
     double data_length;
+    unsigned int scaling_divisor;
     std::string log_name;
     nlohmann::json log_meta; 
+    bool log_to_file;
 
     SkillConditionLevel condition_level_pre;
     SkillConditionLevel condition_level_success;

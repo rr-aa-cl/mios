@@ -1,17 +1,13 @@
 import logging
 import numpy as np
-import random
-import deap
+
 import time
 
 from sklearn.svm import SVC
 from sklearn import mixture
 
-from deap import creator
-
 from pyDOE import lhs
 
-from engine.engine import Trial
 from services.base_service import BaseService
 from services.base_service import ServiceConfiguration
 
@@ -64,8 +60,8 @@ class OrigPSPConfiguration(ServiceConfiguration):
 
 
 class OrigPSPService(BaseService):
-    def __init__(self):
-        super(OrigPSPService, self).__init__()
+    def __init__(self, mios_port=12000, mongo_port=27017):
+        super(OrigPSPService, self).__init__(mios_port=mios_port, mongo_port=mongo_port)
 
         self.constraints_multiplier = []
         self.failure_cost = None

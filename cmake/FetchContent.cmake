@@ -1,5 +1,3 @@
-list(APPEND CMAKE_PREFIX_PATH "/opt/openrobots/lib/cmake")
-
 find_package(Eigen3 REQUIRED)
 find_package(pinocchio REQUIRED)
 
@@ -16,19 +14,21 @@ endif()
 include(FetchContent)
 set(FETCHCONTENT_QUIET OFF)
 set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/_deps)
+set(BUILD_EXAMPLES OFF CACHE INTERNAL "No examples")  # needed for libfranka version > 0.15 
+set(BUILD_TESTS OFF CACHE INTERNAL "No examples")
 
 FetchContent_Declare(
     libfranka
-    #GIT_REPOSITORY https://github.com/frankaemika/libfranka-release.git
+    #GIT_REPOSITORY https://github.com/frankarobotics/libfranka-release.git
+    GIT_REPOSITORY https://github.com/frankarobotics/libfranka.git
     #GIT_TAG upstream/0.9.2)
+    GIT_TAG 0.17.0)
     #GIT_REPOSITORY https://github.com/frankaemika/libfranka-release.git
     #GIT_TAG upstream/0.5.0)
-    GIT_REPOSITORY https://github.com/frankarobotics/libfranka.git
-    GIT_TAG 0.15.3)
+    
     #GIT_REPOSITORY https://github.com/frankaemika/libfranka.git
     #GIT_TAG 0.13.6)
-set(BUILD_EXAMPLES OFF CACHE INTERNAL "No examples")
-set(BUILD_TESTS OFF CACHE INTERNAL "No examples")
+# list(APPEND CMAKE_PREFIX_PATH "/opt/openrobots/lib/cmake")  # libfranka >0.15
 
 FetchContent_Declare(
     mirmi_cpp_utils
@@ -38,4 +38,3 @@ FetchContent_Declare(
 set(FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE INTERNAL "")
 
 FetchContent_MakeAvailable(libfranka mirmi_cpp_utils)
-

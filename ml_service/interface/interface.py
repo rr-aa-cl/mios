@@ -1,4 +1,3 @@
-from lib2to3.pytree import Node
 import logging
 from threading import Thread
 from threading import Lock
@@ -17,7 +16,8 @@ from problem_definition.problem_definition import ProblemDefinition
 from utils.ws_client import call_method
 from database.database import Database
 from utils.cmd_loop import CMDLoop
-from rpc_visualization.switcher import TensorboardClient
+#from rpc_visualization.switcher import TensorboardClient
+#from collective_manager.video_recorder import FFMpegWebcamRecorder
 
 from xmlrpc.server import SimpleXMLRPCServer
 from socketserver import ThreadingMixIn
@@ -44,7 +44,7 @@ class Interface:
         self.service_lock = Lock()
         self.global_db = Database(self.interface_port+1, self.mongo_port)
         self.global_db_thread = None
-        self.rpc_server = InterfaceServer(("0.0.0.0", interface_port), allow_none=True)
+        self.rpc_server = InterfaceServer(("0.0.0.0", interface_port), allow_none=True, logRequests=False)
 
         # rpc_visulation related 
         self.telemetry_buffer = None
@@ -67,8 +67,9 @@ class Interface:
         self.rpc_server.register_function(self.status, "status")
         self.rpc_server.register_function(self.start_cmd_loop, "start_cmd_loop")
         self.rpc_server.register_function(self.stop_cmd_loop, "stop_cmd_loop")
-        self.rpc_server.register_function(self.start_telemetry, "start_telemetry")
-        self.rpc_server.register_function(self.stop_telemetry, "stop_telemetry")
+        # self.rpc_server.register_function(self.start_telemetry, "start_telemetry")
+        # self.rpc_server.register_function(self.stop_telemetry, "stop_telemetry")
+        # self.rpc_server.register_function(self.test_video_recording, "test_video_recording")
         self.rpc_server.serve_forever()
         logger.debug("Interface::start_rpc_server.server_stopped")
 
@@ -80,7 +81,7 @@ class Interface:
         self.rpc_server.shutdown()
         logger.debug("Interface::stop_rpc_server.end")
 
-    def start_service_wrapper(self, problem_definition: dict, configuration: dict, agents, knowledge: dict = None):
+    def start_service_wrapper(self, problem_definition: dict, configuration: dict, agents, knowledge: dict = None, info:dict={}):
         logger.debug("Interface::start_service_wrapper")
         if configuration["service_name"] == "cmaes":
             service_configuration = CMAESConfiguration()
@@ -91,12 +92,12 @@ class Interface:
         elif configuration["service_name"] == "origPSP":
             service_configuration = OrigPSPConfiguration()
             service_configuration.from_dict(configuration)
-
-        self.start_service(ProblemDefinition.from_dict(problem_definition), service_configuration, set(agents),
-                           knowledge)
+        logger.debug("starting service with problem definition ="+str(problem_definition["tags"]))
+        return self.start_service(ProblemDefinition.from_dict(problem_definition), service_configuration, set(agents),
+                           knowledge, info)
 
     def start_service(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
-                      agents: set, knowledge: dict = None) -> str:
+                      agents: set, knowledge: dict = None, info:dict={}) -> str:
         logger.debug("Interface::start_service")
         if self.service_lock.acquire(blocking=False) is False:
             return "INVALID"
@@ -105,39 +106,39 @@ class Interface:
             return "INVALID"
         problem_definition.uuid = str(uuid.uuid4())
         if configuration.service_name == "cmaes":
-            self.service = CMAESService()
+            self.service = CMAESService(self.mios_port,self.mongo_port)
         elif configuration.service_name == "svm":
-            self.service = SVMService()
+            self.service = SVMService(self.mios_port,self.mongo_port)
         elif configuration.service_name == "origPSP":
-            self.service = OrigPSPService()
+            self.service = OrigPSPService(self.mios_port,self.mongo_port)
         elif configuration.service_name == "generic":
-            self.service = GenericOptimizerService()
+            self.service = GenericOptimizerService(self.mios_port,self.mongo_port)
         else:
             logger.error("Service with name " + configuration.service_name + " does not exist.")
             return "INVALID"
 
-        self.learn_thread = Thread(target=self.learn_task, args=(problem_definition, configuration, agents, knowledge),
+        self.learn_thread = Thread(target=self.learn_task, args=(problem_definition, configuration, agents, knowledge, info),
                                    daemon=False)
         self.learn_thread.start()
         return problem_definition.uuid
 
     def learn_task(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
-                   agents: set, knowledge: dict) -> bool:
+                   agents: set, knowledge: dict, info:dict={}) -> bool:
         logger.debug("Interface::learn_task")
         """start to learn a task according to instructions"""
         result = False
         try:
             logger.debug("interface.learn_task: start learning task")
-            if self.service.initialize(problem_definition, configuration, agents, knowledge) is False:
+            if self.service.initialize(problem_definition, configuration, agents, knowledge,info) is False:
                 return False
             logger.debug("Service initialized ")
-            self.telemetry_buffer = self.service.data_buffer_visualization
+            # self.telemetry_buffer = self.service.data_buffer_visualization
             result = self.service.learn_task()
             logger.debug("learning success " + str(result))
         finally:
             logger.debug("Interface::learn_task.finally: Releasing service lock")
             self.stop_cmd_loop()
-            self.stop_telemetry()
+            # self.stop_telemetry()
             self.service_lock.release()
         return result
     
@@ -145,7 +146,7 @@ class Interface:
         logger.debug("Interface::stop_service")
         """Stop the learning process, if possible save all results and stop the robot"""
         self.stop_cmd_loop()
-        self.stop_telemetry()
+        # self.stop_telemetry()
         if self.service is not None:
             self.service.stop()
     
@@ -176,7 +177,7 @@ class Interface:
         return True
 
     def is_busy(self) -> bool:
-        logger.debug("Interface::is_busy.locked: " + str(self.service_lock.locked()))
+        #logger.debug("Interface::is_busy.locked: " + str(self.service_lock.locked()))
         return self.service_lock.locked()
     
     def status(self, agent: str = "localhost") -> dict:
@@ -231,39 +232,56 @@ class Interface:
         self.cmd_loop = None
         logger.debug("interface::stop_cmd_loop: stopped successfully")
 
-    def start_telemetry(self, ip, port):
-        logger.debug("interface::start_telemetry with ip "+str(ip)+" and port "+str(port))
-        self.keep_running_telemetry = True
-        self.telemetry_sender = TensorboardClient(ip, port)
-        if self.telemetry_buffer is None:
-            return False
-        self.telemetry_thread = Thread(target=self._send_telemetry)
-        self.telemetry_thread.start()
-        return True
+    # def start_telemetry(self, ip, port):
+    #     logger.debug("interface::start_telemetry with ip "+str(ip)+" and port "+str(port))
+    #     self.keep_running_telemetry = True
+    #     self.telemetry_sender = TensorboardClient(ip, port)
+    #     if self.telemetry_buffer is None:
+    #         return False
+    #     self.telemetry_thread = Thread(target=self._send_telemetry)
+    #     self.telemetry_thread.start()
+    #     return True
 
-    def stop_telemetry(self):
-        self.keep_running_telemetry = False
-        logger.debug("interface::stop_telemetry"+str(self.keep_running_telemetry))
-        if self.service is not None:
-            self.service.data_buffer_visualization.add_data("STOP")
-        if self.telemetry_thread is not None:
-            self.telemetry_thread.join()
-            self.telemetry_thread = None
+    # def stop_telemetry(self):
+    #     self.keep_running_telemetry = False
+    #     logger.debug("interface::stop_telemetry"+str(self.keep_running_telemetry))
+    #     if self.service is not None:
+    #         self.service.data_buffer_visualization.add_data("STOP")
+            
+    #     if self.telemetry_thread is not None:
+    #         self.telemetry_thread.join()
+    #         self.telemetry_thread = None
 
-    def _send_telemetry(self):
-        while self.keep_running_telemetry:
-            buffered_trial = self.telemetry_buffer.get_data(timeout=1)
-            if buffered_trial is None:
-                continue
-            if buffered_trial == "STOP":
-                break
-            logger.debug("_send_telemetry to " + str(self.telemetry_sender.ip)) 
-            if not self.telemetry_sender.send(buffered_trial):
-                self.telemetry_buffer.add_data(buffered_trial)
-                logger.error("cannot send trial to "+ str(self.telemetry_sender.ip)+":"+str(self.telemetry_sender.port))
-                time.sleep(2)
-        logger.debug("interface:: telemetry sending thread stopped.")
-        return True
+    # def _send_telemetry(self):
+    #     while self.keep_running_telemetry:
+    #         buffered_trial = self.telemetry_buffer.get_data(timeout=1)
+    #         if buffered_trial is None:
+    #             continue
+    #         if buffered_trial == "STOP":
+    #             break
+    #         logger.debug("_send_telemetry to " + str(self.telemetry_sender.ip)) 
+    #         if not self.telemetry_sender.send(buffered_trial):
+    #             self.telemetry_buffer.add_data(buffered_trial)
+    #             logger.error("cannot send trial to "+ str(self.telemetry_sender.ip)+":"+str(self.telemetry_sender.port))
+    #             time.sleep(2)
+    #     logger.debug("interface:: telemetry sending thread stopped.")
+    #     return True
+    
+    def test_video_recording(self,folder, filename, video_path="/dev/v4l/by-path/pci-0000:00:14.0-usb-0:7:1.3-video-index0"):
+        logger.debug("start video recording test")
+        self.video_recorder = FFMpegWebcamRecorder(video_path)
+        if not self.video_recorder.start_stream(
+                                                output_folder=folder,
+                                                base_filename=filename,
+                                                compressed=False,rotate=True,
+                                                framerate="30",
+                                                resolution="1920x1080",
+                                                pixel_format="yuyv422"
+                                                ):
+            logger.error("!!!!Cannot start video recording!!!!")
+        time.sleep(5)
+        logger.debug("stop video recording test")
+        return self.video_recorder.stop_stream()
                 
 
     def get_status(self) -> str:

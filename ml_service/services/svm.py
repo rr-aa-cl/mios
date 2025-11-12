@@ -1,20 +1,15 @@
 import logging
 import numpy as np
 import random
-import deap
 import time
-import json
 from socket import timeout
 
 from sklearn.svm import SVC
 from sklearn import mixture
 from sklearn.model_selection import KFold, cross_val_score
 
-from deap import creator
-
 from pyDOE import lhs
 
-from engine.engine import Trial
 from services.base_service import BaseService
 from services.base_service import ServiceConfiguration
 
@@ -48,6 +43,7 @@ class SVMConfiguration(ServiceConfiguration):
             "batch_synchronisation": self.batch_synchronisation,
             "request_probability": self.request_probability,
             "request_probability_decrease": self.request_probability_decrease,
+
         }
         return config
 
@@ -60,6 +56,7 @@ class SVMConfiguration(ServiceConfiguration):
         self.batch_synchronisation = config_dict["batch_synchronisation"]
         self.request_probability = config_dict["request_probability"]
         self.request_probability_decrease =config_dict["request_probability_decrease"]
+
 
 
 class SVMService(BaseService):
@@ -92,6 +89,7 @@ class SVMService(BaseService):
         self.target_cost = None
         self.neglect_samples = 0
         self.bad_gmm_prediciton = 0
+        self.optimum_count = 0
 
     def _initialize(self):
         self.numberOfParameters = 2
@@ -142,18 +140,20 @@ class SVMService(BaseService):
         for i in range(0, int(self.configuration.n_trials / self.configuration.batch_width)):
             if self.keep_running is False:
                 break
-            if self.minCost < self.problem_definition.optimum_thr:
+            if self.engine.is_learned():
                 break
+            
             self._setSamples(self.cnt_batch)#done
             self._run_trial_par(self.action_list_norm)#td
             self._trainSVM()#td
+            logger.debug("\nSVM  -  batch "+str(i+1)+"/"+str(int(self.configuration.n_trials / self.configuration.batch_width))+"finished. \n")
 
         self.problem_data = {
             "parameters": self.bestSample,
             "cost": self.minCost,
             "success": True#?
         }
-
+        logger.debug("SVM: All trials done. Stopping engine. ")
         self.stop()
 
         if self.target_cost is not None:
@@ -184,7 +184,7 @@ class SVMService(BaseService):
 
         x_set_external = []
         new_set = []
-        if self.kb is not None and self.configuration.request_probability == 0 and self.configuration.n_immigrant > 0:
+        if self.kb is not None and self.configuration.request_probability == 0 and self.configuration.n_immigrant > 0:  #  not used anymore 
             while True:
                 try:
                     new_set = self.kb.request_trials(str(self.task_identity_name), self.configuration.n_immigrant)  # new_set: list of tuples: [(Theta, Cost, Origin), ...]
@@ -204,32 +204,39 @@ class SVMService(BaseService):
                     #costs.append((i[1],))    # we evaluate the cost on this robot again
                 new_set.reverse()
         else:
-            print("no external trials")
+            print("no external n_immigrant trials")
 
         
-        x_set.reverse() # so the external trials come first
+        # x_set.reverse() # so the external trials come first
         
         costs = []
         self.success_ratio = 0
-        if self.cnt_batch==0 and len(self.initial_knowledge_list)>0:
+        if self.cnt_batch==0:
+            logger.debug("SWM_learner: len(initial_knowledge): "+str(len(self.initial_knowledge_list)))
+        logger.debug("SWM_learner: centroid used: "+str(True if self.centroid is not None else False))
+        if self.cnt_batch==0 and len(self.initial_knowledge_list)>0:   # first batch
             len_first_batch = len(self.initial_knowledge_list)
             if len_first_batch < self.configuration.batch_width:
                 len_first_batch = self.configuration.batch_width
             for i in range(len_first_batch):
                 theta = []
                 try:
-                    external = self.initial_knowledge_list[i].identification_name
+                    external = self.initial_knowledge_list[i].skill_instance
                     for key in self.initial_knowledge_list[i].parameters:
                         theta.append(self.initial_knowledge_list[i].parameters[key])
                     theta = self.problem_definition.domain.normalize(np.asarray(theta))
                 except IndexError:
+                    logger.error("SVM: no external knowledge in knowledge list (IndexError)")
                     external = False
                     theta = x_set[i]
                 try:
                     x_set[i] = theta
                 except IndexError:
                     x_set.append(theta)
-                uuid = self.push_trial(theta, external=external)
+                if external:
+                    uuid = self.push_trial(theta, external=self.initial_knowledge_list[i].to_dict())
+                else:
+                    uuid = self.push_trial(theta, external=False)
                 trial_uuids[uuid] = theta
                 ##same as below:
                 result = self.wait_for_result(uuid)
@@ -240,7 +247,7 @@ class SVMService(BaseService):
                 else:
                     self.success_ratio += result.q_metric.success
                     costs.append((result.q_metric.final_cost,))
-                print("result.q_metric.success: ",result.q_metric.success)
+                #print("result.q_metric.success: ",result.q_metric.success)
                 if external:
                     if external not in self.external_success:
                         self.external_success[external] = [] 
@@ -266,37 +273,49 @@ class SVMService(BaseService):
                 if self.request_probability<0.01 and self.request_probability>0:
                     self.request_probability = 0.05
                 if result.q_metric.success:
-                    if self.kb is not None:
-                        theta = []
-                        for i in range(len(trial_uuids[uuid])):
-                            theta.append(float(trial_uuids[uuid][i]))
-                        while True:
-                            try:
-                                self.kb.push_trial(self.task_identity_name, theta, float(result.q_metric.final_cost), self.configuration.batch_width*5)
-                                break
-                            except timeout:
-                                time.sleep(random.randint(5,10))
-        else:
+                    while True:
+                        try:
+                            #self.kb.push_trial(self.task_identity_name, theta, float(result.q_metric.final_cost), self.configuration.batch_width*5)
+                            suc_trial_theta = list(self.problem_definition.domain.denormalize(trial_uuids[uuid].tolist()))
+                            self.knowledge_manager.push_trial_fast_pipe(self.task_identity_name,suc_trial_theta, float(result.q_metric.final_cost),
+                                                                        self.problem_definition.tags,self.problem_definition.skill_class,self.problem_definition.skill_instance)
+                            break
+                        except timeout:
+                            time.sleep(random.randint(5,10))
+        else:     # normal batches
+            
             for i in range(len(x_set)):
                 external = False
                 if i<len(x_set_external):  # mark the first trials as external (if n_immigrants is used, wont happen for request_probability)
                     external=new_set[i][2]  # agent name of trial origin
-                print("\n\n request_probability",self.request_probability)
+                logger.debug("SVM: request_probability"+str(self.request_probability))
                 if self.request_probability > 0:
                     if random.random() < self.request_probability:
-                        print("requesting 1 trial with ", self.similarity_estimate, " \nfrom ",self.task_identity_name)
+                        #logger.debug("requesting 1 trial with ", self.similarity_estimate, " for  ",self.problem_definition.skill_instance)
                         try:
                             #new_trial = self.kb.request_trials(str(self.task_identity_name), 1, self.similarity_estimate)[0]  # take first Tuple of the list
-                            new_trial = self.knowledge_manager.receive_trial_fast_pipe(self.problem_definition.skill_instance,self.problem_definition.tags, self.problem_definition.skill_class)
-                            external = new_trial[2]
-                            uuid = self.push_trial(new_trial[0], external=external)
+                            self.delta_time = time.time()-self.starting_time
+                            time_range = (self.knowledge.time_range[0], self.knowledge.time_range[1]+self.delta_time)
+                            new_trial = self.knowledge_manager.receive_trial_fast_pipe(self.problem_definition.skill_instance,self.knowledge.scope, self.problem_definition.skill_class,time_range)
+                            if new_trial:
+                                external = new_trial["skill_instance"]
+                                new_trial["theta"] = list(self.problem_definition.domain.normalize(new_trial["theta"]))
+                                uuid = self.push_trial(new_trial["theta"], external=new_trial)
+                                logger.debug("SVM: received external trial (receive_trial_fast_pipe) from: "+str(external))
+                            else:
+                                external = False
+                                uuid = self.push_trial(x_set[i], external=False)
+                                logger.debug("SVM: didn\'t received external trial (receive_trial_fast_pipe) "+str(external))
                         except IndexError:
-                            print("request_trial was returning 0 trials")
+                            logger.error("SVM: receive_trial_fast_pipe was returning 0 trials")
                             uuid = self.push_trial(x_set[i], external=external)
                     else:
                         uuid = self.push_trial(x_set[i], external=external)
                 else:
-                    uuid = self.push_trial(x_set[i], external=external)  # evalutae the trials (->engine->mios)
+                    if i == 0 and self.cnt_batch==0 and self.centroid is not None:
+                        uuid = self.push_trial(x_set[i], external=self.knowledge.to_dict())   # only used on first batch, first trial if knowledge from centroid is used
+                    else:
+                        uuid = self.push_trial(x_set[i], external=external)  # evalutae the trials (->engine->mios)
                 trial_uuids[uuid] = x_set[i]
                 ##same as above:
                 result = self.wait_for_result(uuid)
@@ -307,7 +326,7 @@ class SVMService(BaseService):
                 else:
                     self.success_ratio += result.q_metric.success
                     costs.append((result.q_metric.final_cost,))
-                print("result.q_metric.success: ",result.q_metric.success)
+                #print("result.q_metric.success: ",result.q_metric.success)
                 if external:
                     if external not in self.external_success:
                         self.external_success[external] = []
@@ -329,18 +348,20 @@ class SVMService(BaseService):
                     self.internal_success.append(result.q_metric.success)
                 if result.q_metric.success:
                     if self.kb is not None:
-                        theta = []
-                        for i in range(len(trial_uuids[uuid])):
-                            theta.append(float(trial_uuids[uuid][i]))
+                        logger.debug("SVM: pushing successfull trial to knowledge base")
                         while True:
                             try:
-                                self.kb.push_trial(self.task_identity_name, theta, float(result.q_metric.final_cost), self.configuration.batch_width*5)
+                                #self.kb.push_trial(self.task_identity_name, theta, float(result.q_metric.final_cost), self.configuration.batch_width*5)
+                                suc_trial_theta = list(self.problem_definition.domain.denormalize(trial_uuids[uuid].tolist()))
+                                self.knowledge_manager.push_trial_fast_pipe(self.task_identity_name,suc_trial_theta, float(result.q_metric.final_cost),
+                                                                            self.problem_definition.tags,self.problem_definition.skill_class,self.problem_definition.skill_instance)
                                 break
                             except timeout:
                                 time.sleep(random.randint(5,10))
-        for key in self.similarity_estimate:
-            if self.similarity_estimate[key] <= 0:
-                self.similarity_estimate[key] = 0.05  # small chance to sill get trials from this Task
+        #for key in self.similarity_estimate:
+        #    if self.similarity_estimate[key] <= 0:
+        #        self.similarity_estimate[key] = 0.05  # small chance to sill get trials from this Task
+
         # for uuid in trial_uuids:
         #     result = self.wait_for_result(uuid)
         #     if result.q_metric.final_cost is None:
@@ -564,7 +585,7 @@ class SVMService(BaseService):
                     clf.fit(np.asarray(self.svm_samples)[train], np.asarray(self.success)[train])
                     score = clf.score(np.asarray(self.svm_samples)[test],np.asarray(self.success)[test])
                     print("score = ",score)
-                    print("descision_function: ", clf.decision_function(self.svm_samples))
+                    #print("descision_function: ", clf.decision_function(self.svm_samples))
                     if score > best_score:  # takes best score
                         best_score = score
                         temp = np.mean(np.abs(clf.decision_function(self.svm_samples)))
@@ -588,8 +609,6 @@ class SVMService(BaseService):
             print("SVM active = ",self.classifierActive)
             if self.svmCounter >= 15 and len(self.gmm_samples) > 2:    # gmm_samples > mean
 
-                for x in self.classifier.support_vectors_:
-                    pass
                     # self.gmm_samples.append(x)
 
                 lowest_bic = np.inf
@@ -602,8 +621,8 @@ class SVMService(BaseService):
                 self.sampling_gmm.fit(np.asarray(self.gmm_samples))
 
                 self.gmm_active = True
-                print(self.gmm_samples)
-                print(np.asarray(self.gmm_samples))
+                #print(self.gmm_samples)
+                #print(np.asarray(self.gmm_samples))
                 print("GMM is active")
 
             else:

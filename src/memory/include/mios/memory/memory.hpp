@@ -32,7 +32,7 @@ public:
     bool apply_reserved_skill_context(const std::string skill_id);
 
     void store_task_data(const std::string& uuid, const std::string& task_id, const nlohmann::json& context, const TaskResult& result);
-    void store_log_data(const nlohmann::json &content, const nlohmann::json meta_information);
+    void store_log_data(const nlohmann::json &content);
     std::shared_ptr<Task> load_task(const std::string& task_id, const nlohmann::json& parameters,Core* core);
     std::shared_ptr<Task> load_subtask(const std::string& task_id, const nlohmann::json& parameters,Core* core);
     bool load_default_task_context(const std::string task_id, nlohmann::json &task_context);

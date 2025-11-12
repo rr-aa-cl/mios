@@ -2,7 +2,9 @@ import pymongo
 from bson import objectid
 from pymongo import MongoClient
 import logging
-import time
+
+
+import pymongo.errors
 
 logger = logging.getLogger("ml_service")
 
@@ -16,31 +18,35 @@ class MongoDBClient():
         logger.info("MongoDB is initialized at " + host + ":" + str(port))
 
     def read(self, db: str, collection: str, search_param: dict) -> list:
-        db_connection = self.client[db]
-        col = db_connection[collection]
-        findings = []
-        #if search params are in list, search for all the contend (not the list itself...)
-        for key in search_param:
-            value = search_param[key]
-            if key == "tags" or key == "meta.tags":
-                if isinstance(value, list):
-                    search_param[key] = {"$all": value}
-            if not value:  # check if key exists if no value is given
-                search_param[key] = {"$exists": True} 
-            if key == "_id":  # if _id is given as string  ->  ObjectId
-                if isinstance(search_param[key],str):
-                    search_param[key] = objectid.ObjectId(search_param[key])
-        retry_count = 0
-        #while not findings:
-        for f in col.find(filter=search_param):
-            f["_id"] = str(f["_id"])
-            findings.append(f)
-        #if retry_count >= self.max_retry:
-        #    break
-        #else:
-        #    retry_count += 1
-        #    time.sleep(0.5)
-        return findings
+        try:
+            db_connection = self.client[db]
+            col = db_connection[collection]
+            findings = []
+            #if search params are in list, search for all the contend (not the list itself...)
+            for key in search_param:
+                value = search_param[key]
+                if key == "tags" or key == "meta.tags":
+                    if isinstance(value, list):
+                        search_param[key] = {"$all": value}
+                if not value:  # check if key exists if no value is given
+                    search_param[key] = {"$exists": True} 
+                if key == "_id":  # if _id is given as string  ->  ObjectId
+                    if isinstance(search_param[key],str):
+                        search_param[key] = objectid.ObjectId(search_param[key])
+            retry_count = 0
+            #while not findings:
+            for f in col.find(filter=search_param):
+                f["_id"] = str(f["_id"])
+                findings.append(f)
+            #if retry_count >= self.max_retry:
+            #    break
+            #else:
+            #    retry_count += 1
+            #    time.sleep(0.5)
+            return findings
+        except pymongo.errors.ServerSelectionTimeoutError as e:
+            print("host not reachable:\n",e)
+            return []
 
     def write(self, db: str, collection: str, document: dict or list) -> objectid.ObjectId or list:
         db_connection = self.client[db]

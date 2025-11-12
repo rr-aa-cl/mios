@@ -1,6 +1,5 @@
 import socket
 import json
-import time
 
 
 def call_method(hostname: str, port: int, method: str, payload=None, timeout: float = -1) -> dict:

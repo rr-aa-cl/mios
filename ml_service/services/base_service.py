@@ -1,9 +1,8 @@
 import logging
 from abc import ABCMeta
 from abc import abstractmethod
-from mimetypes import init
 from threading import Thread
-from xmlrpc.client import ServerProxy
+
 import socket
 import time
 import numpy as np
@@ -19,7 +18,7 @@ from knowledge_processor.knowledge_manager import KnowledgeManager
 from mongodb_client.mongodb_client import MongoDBClient
 from utils.exception import *
 from services.knowledge import Knowledge
-from rpc_visualization.data_buffer import DataBuffer
+#from rpc_visualization.data_buffer import DataBuffer
 
 logger = logging.getLogger("ml_service")
 
@@ -59,6 +58,7 @@ class BaseService(metaclass=ABCMeta):
                                                     [], None, None)
         self.knowledge_manager = KnowledgeManager(port=self.mongo_port)
         self.DBclient = MongoDBClient(port=self.mongo_port)  # for local ml_data
+        self.globalDBclient = None
         self.engine_thread = None
         self.configuration = None
         self.keep_running = False
@@ -76,8 +76,11 @@ class BaseService(metaclass=ABCMeta):
         self.similarity_estimate = {}  # this maps a similarity to all collective agents 
         self.external_success = {}     # will be filled for each external Task with 1 for success or 0 if not
         self.internal_success = []     # counts just the internal trials: 1 for success 0 for failure
-        self.data_buffer_visualization = DataBuffer()
+        # self.data_buffer_visualization = DataBuffer()
         self.test_debug = 0
+        self.delta_time = 0
+        self.starting_time = time.time()
+        self.info={}  # a dict with information about the learning process (like experimant name or info for storing...)
         # 10s timeout for xmlrpc clinet:
         socket.setdefaulttimeout(10)
 
@@ -98,13 +101,15 @@ class BaseService(metaclass=ABCMeta):
         raise NotImplementedError
 
     def initialize(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
-                   agents: set, knowledge_source: dict = None) -> (bool, str):
+                   agents: set, knowledge_source: dict = None, info:dict={}) -> (bool, str):
         self.problem_definition = problem_definition
         self.configuration = configuration
+        self.info=info
         #self.knowledge_source = knowledge_source
-        self.data_buffer_visualization = DataBuffer()
+        # self.data_buffer_visualization = DataBuffer()
         if knowledge_source is not None:
             self.knowledge.from_dict(knowledge_source)
+        self.starting_time = time.time()  # starting time of learning before first trial (used to retrief knowledge)
         # Skill identity used for searching similar tasks:
         self.skill_identity = {"tags": problem_definition.tags, "skill_class": problem_definition.skill_class,
                                "skill_instance": problem_definition.skill_instance,
@@ -113,22 +118,29 @@ class BaseService(metaclass=ABCMeta):
         if self.problem_definition.is_valid() is False:
             logger.error("Problem definition is not valid.")
             return False
-
+        logger.debug("base_service.initialize(): "+str(self.knowledge.similarity))
+        if self.knowledge.similarity is not None:
+            logger.debug("base_service.initialize(): initialize knowledge manager with similarity relationsships")
+            self.knowledge_manager.init_similarity(self.knowledge.similarity)
         if self.knowledge.parameters is not None:
             logger.debug("base_service.initialize(): Use given parameters as initial knowlege.")
             if self.knowledge.confidence is None:
                 self.knowledge.confidence = 0.04
         elif self.knowledge.mode == None:
             self.centroid = None
-            self.configuration.request_probability = 0
+            self.configuration.request_probability = 0  # posible AttributeError for non SVM learner
             self.knowledge.kb_location = None
         elif self.knowledge.mode == "specific":
-            logger.debug("BaseService::initialize: Use specific knowledge: "+str(self.knowledge))
+            logger.debug("BaseService::initialize: Use specific knowledge: "+str(self.knowledge.tags))
             client = MongoDBClient(self.knowledge.kb_location)
-            self.knowledge.from_dict(self.knowledge_manager.get_knowledge_by_filter(client, self.knowledge.kb_db,
+            self.knowledge = self.knowledge_manager.get_knowledge_by_filter(client, self.knowledge.kb_db,
                                                                                 self.knowledge.kb_task_type,
-                                                                                {"meta.tags": {"$all": self.knowledge.scope}})
+                                                                                {"meta.tags": {"$all": self.knowledge.scope}}
                 )
+        elif self.knowledge.mode == "only_fast_pipe":
+            logger.debug(f"BaseService::initialize: Use only knowledge over fast knowledge pipe (no initial knowledge): "+str(self.knowledge.tags))
+            logger.debug(f"initial request probability: {self.configuration.request_probability}")   # posible AttributeError for non SVM learner
+            
         elif self.knowledge.mode == "local":
             logger.debug("base_service.initialize(): get local knowlege")
             if self.knowledge.type == "similar":
@@ -141,50 +153,61 @@ class BaseService(metaclass=ABCMeta):
                 )
             elif self.knowledge.type == "all":
                 self.initial_knowledge_list = self.knowledge_manager.get_knowledge(self.problem_definition.get_task_identifier(), self.knowledge.scope)
+                self.knowledge.parameters = []
+                self.knowledge.uuid = []
                 for i in range(len(self.initial_knowledge_list)):
                     knowlege = Knowledge()
                     knowlege.from_dict(self.initial_knowledge_list[i])
                     self.initial_knowledge_list[i] = knowlege
                     self.initial_knowledge_list[i].update()
-                if len(self.initial_knowledge_list)>0:
-                    self.knowledge.parameters = self.initial_knowledge_list[0].parameters
+                    self.knowledge.parameters.append(self.initial_knowledge_list[i].parameters)
+                    self.knowledge.uuid.append(self.initial_knowledge_list[i].uuid)
             else:
                 logger.error("base_service: dont understand knowledge type"+str(self.knowledge.type))
         elif self.knowledge.mode == "global":
+            self.globalDBclient = MongoDBClient(self.knowledge.kb_location)
             logger.debug("base_service::initialize(): get global knowlege")
-            logger.debug("base_service::initialize(): contacting database at http://" + self.knowledge.kb_location + ":8001")
-            with ServerProxy("http://" + self.knowledge.kb_location + ":8001") as kb:
-                try:
-                    if self.knowledge.type == "similar":
-                        self.knowledge.from_dict(kb.get_similar_knowledge(self.problem_definition.get_task_identifier(),
-                                                                      self.knowledge.scope)
-                        )
-                    elif self.knowledge.type == "predicted":
-                        self.knowledge.from_dict(kb.get_predicted_knowledge(self.problem_definition.skill_class,
-                                                                        self.knowledge.scope,
-                                                                        self.problem_definition.identity)
-                        )
-                    elif self.knowledge.type == "all":
-                        self.initial_knowledge_list = kb.get_knowledge(self.problem_definition.get_task_identifier(), self.knowledge.scope)
-                        logger.debug("base_service::initialize(): get all knowledge. Found "+str(len(self.initial_knowledge_list)))
-                        for i in range(len(self.initial_knowledge_list)):
-                            knowlege = Knowledge()
-                            knowlege.from_dict(self.initial_knowledge_list[i])
-                            self.initial_knowledge_list[i] = knowlege
-                            self.initial_knowledge_list[i].update()
-                        if len(self.initial_knowledge_list)>0:
-                            self.knowledge.parameters = self.initial_knowledge_list[0].parameters
-                    else:
-                        logger.error("base_service: dont understand knowledge type"+str(self.knowledge.type))
-                except socket.timeout:
-                    logger.error("base_service: global Database is not reachable!")
-                except ConnectionRefusedError:
-                    pass
+                  # change this to direct acccess to MongoDB at global DB. 
+                # figure out a way to pre-enter a similarity dict to knowledge-manager (bidirectional to mongodb)
+            try:
+                if self.knowledge.type == "similar":
+                    self.knowledge.from_dict(self.knowledge_manager.get_similar_knowledge(self.problem_definition.get_task_identifier(), self.knowledge.scope,
+                                                                knowledge_db="global_knowledge",
+                                                                data_db="global_ml_results",
+                                                                location=self.knowledge.kb_location)
+                    )
+                elif self.knowledge.type == "predicted": 
+                    raise NotImplementedError
+                    
+                elif self.knowledge.type == "all":
+                    self.delta_time = time.time()-self.starting_time
+                    self.knowledge.time_range[1] = self.knowledge.time_range[1]+self.delta_time
+                    #self.initial_knowledge_list = kb.get_knowledge(self.problem_definition.get_task_identifier(), self.knowledge.scope, self.knowledge.time_range)
+                    self.initial_knowledge_list = self.knowledge_manager.get_knowledge(self.problem_definition.get_task_identifier(), self.knowledge.scope, 
+                                                                                        time_range=self.knowledge.time_range, knowledge_db="global_knowledge",location=self.knowledge.kb_location)
+                    logger.debug("base_service::initialize(): get all knowledge. Found "+str(len(self.initial_knowledge_list)))
+                    self.knowledge.parameters = []
+                    self.knowledge.uuid = []
+                    for i in range(len(self.initial_knowledge_list)):
+                        knowlege = Knowledge()
+                        knowlege.from_dict(self.initial_knowledge_list[i])
+                        self.initial_knowledge_list[i] = knowlege
+                        self.initial_knowledge_list[i].update()
+                        self.knowledge.parameters.append(self.initial_knowledge_list[i].parameters)
+                        self.knowledge.uuid.append(self.initial_knowledge_list[i].uuid)
+
+                else:
+                    logger.error("base_service: dont understand knowledge type"+str(self.knowledge.type))
+            except socket.timeout:
+                logger.error("base_service: global Database is not reachable!")
+            except ConnectionRefusedError:
+                logger.error("base_service: global Database is not reachable!")
+                pass
         else:
             logger.error("base_service::initialize(): Unknown knowledge mode " + str(self.knowledge.mode))
-
-        if self.knowledge.parameters:
-            if type(self.knowledge.parameters) == dict:
+        
+        if self.knowledge.parameters and not self.initial_knowledge_list:
+            if type(self.knowledge.parameters) == dict:  # only single knowledge parameter set given
                 self.centroid = []
                 if len(self.knowledge.parameters) != len(self.problem_definition.domain.limits):
                     logger.error("Domain sizes do not match!")
@@ -194,18 +217,27 @@ class BaseService(metaclass=ABCMeta):
                 logger.debug("base_service.initialize(): Use global knowledge " + str(self.centroid))
                 self.centroid = self.problem_definition.domain.normalize(np.asarray(self.centroid))
                 self.confidence = self.knowledge.confidence
-            if type(self.knowledge.parameters) == list:
-                self.initial_knowledge_list = []
+            if type(self.knowledge.parameters) == list:  # multiple knowledge sets are given
                 for parameters in self.knowledge.parameters:
                     knowledge = copy.deepcopy(self.knowledge)
                     knowledge.parameters = parameters
                     self.initial_knowledge_list.append(knowledge)
+                    logger.debug("append knowledge.parameters to initial_knowledge_list")
         else:
             logger.debug("base_service.initialize(): No Knowledge used as initial centroid!!!")
 
-        self.knowledge_manager.fast_pipe_ip = knowledge.kb_location
+        if self.knowledge.similarity is not None and self.initial_knowledge_list:
+            for i in range(len(self.initial_knowledge_list)-1,-1,-1):
+                obj = self.initial_knowledge_list[i].skill_instance
+                if obj in self.knowledge.similarity:
+                    if self.knowledge.similarity[obj] <= 0:  # if request probability is zero, dont use it as init knowledge
+                        self.initial_knowledge_list.pop(i)
+                        logger.warning("remove entry from init_knowledge_list because it does not go together with knolẃledge.similarity")
+
+        logger.info("Given knowledge sets: "+str(len(self.initial_knowledge_list)))
+        self.knowledge_manager.fast_pipe_ip = self.knowledge.kb_location
         self.engine = Engine(agents, mios_port=self.mios_port, mongo_port=self.mongo_port)
-        self.database_results_id = self.engine.initialize(self.problem_definition, configuration.exploration_mode)
+        self.database_results_id = self.engine.initialize(self.problem_definition, self.configuration.exploration_mode)
 
         self._initialize()
 
@@ -235,9 +267,11 @@ class BaseService(metaclass=ABCMeta):
         ml_data[0]["meta"]["init_knowledge"] = dict()
         ml_data[0]["meta"]["init_knowledge"] = self.knowledge.to_dict()
         ml_data[0]["final_results"]["confidence"] = self.confidence
+        self.DBclient.update("ml_results", self.problem_definition.skill_class, {"_id": self.database_results_id},
+                             ml_data[0])
 
         new_knowledge = self.knowledge_manager.get_knowledge_by_id(self.DBclient,
-                                                                    self.problem_definition.get_task_identifier(), ml_data[0]["_id"])
+                                                                    self.problem_definition.get_task_identifier(), self.database_results_id)  #ml_data[0]["_id"]
         if new_knowledge:
             new_knowledge["meta"]["tags"] = self.problem_definition.tags
             new_knowledge["meta"]["uuid"] = self.problem_definition.uuid
@@ -248,23 +282,23 @@ class BaseService(metaclass=ABCMeta):
                 logger.error("base_service.learn_task: New produced knowledge does have parameters!")
             print("Learning completed")
 
-            if self.knowledge.mode is not None:
-                self.knowledge_manager.store_knowledge(self.DBclient, new_knowledge, self.problem_definition.tags)   #store knowledge with problem_definition tags
-                if self.knowledge.mode == "global":
-                    logger.debug("base_service.learn_task: store ml_results to global database at " + str(
-                        "http://" + self.knowledge.kb_location + ":8001"))
-                    with ServerProxy("http://" + self.knowledge.kb_location + ":8001", allow_none=True) as kb:
-                        try:
-                            task_id = kb.store_result(ml_data[0])
-                            kb.process_knowledge(self.problem_definition.get_task_identifier(), task_id)
-                        except socket.timeout:
-                            logger.error("base_service: global Database is not reachable!")
-            else:
-                self.knowledge_manager.store_knowledge(self.DBclient, new_knowledge, self.problem_definition.tags)
+            self.knowledge_manager.store_knowledge(self.DBclient, new_knowledge, self.problem_definition.tags)   #store knowledge with problem_definition tags
+            if self.knowledge.mode == "global":
+                logger.debug("base_service.learn_task: store new knowledge to global database at " + str(self.knowledge.kb_location ))
+                if not self.globalDBclient:
+                    self.globalDBclient = MongoDBClient(self.knowledge.kb_location)
+                self.knowledge_manager.store_knowledge(self.globalDBclient,new_knowledge,self.problem_definition.tags,"global_knowledge")
+            
         else:
             logger.debug("Base_service.learn_task(): No knowledge could be created from ml_results.")
-        self.DBclient.update("ml_results", self.problem_definition.skill_class, {"_id": self.database_results_id},
-                             ml_data[0])
+        
+        
+        if not self.globalDBclient and self.knowledge.kb_location:
+            self.globalDBclient = MongoDBClient(self.knowledge.kb_location)
+        if self.globalDBclient:
+            if "exp_name" in self.info and "iteration" in self.info:
+                self.globalDBclient.write(self.info["exp_name"], "iteration_"+str(self.info["iteration"]), ml_data[0])
+            self.globalDBclient.write("global_ml_results", self.problem_definition.skill_class, ml_data[0])
         return result
 
     def stop(self):
@@ -283,7 +317,17 @@ class BaseService(metaclass=ABCMeta):
         if self.engine is not None:
             self.engine.resume()
 
-    def push_trial(self, x, external: str = False) -> str:
+    def push_trial(self, x, external: dict = False) -> str:
+        if external:
+            try:
+                logger.debug("BaseService: Push trial to engine, external (fast knowledge pipe)="+str(external["skill_instance"]))
+            except KeyError:
+                try:
+                    logger.debug("BaseService: Push trial to engine, external (initial knowledge)="+str(external["meta"]["skill_instance"]))
+                except KeyError:
+                    logger.debug("BaseService: Push trial to engine, external (some Knowledge)="+str(external))
+        else:
+            logger.debug("BaseService: Push trial to engine, external=False")
         while self.pause_execution and self.keep_running:
             logger.debug("base_service.push_trial: Paused...")
             time.sleep(1)
@@ -298,15 +342,16 @@ class BaseService(metaclass=ABCMeta):
 
         x_real = list(self.problem_definition.domain.denormalize(x))
         return self.engine.push_trial(
-            Trial(self.update_default_context(x_real), self.problem_definition.reset_instructions,
+            Trial(self.update_default_context(x_real), self.problem_definition.reset_instructions,self.problem_definition.rescue_instructions,
                   self.get_theta(x_real), external=external))
 
     def wait_for_result(self, uuid: str) -> TaskResult:
         result = self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations)
         result_dict = result.to_dict()
         if result_dict["external"]:  # if external is not False
-            result_dict["external"] = eval(result_dict["external"])  # make it a dict again
-        self.data_buffer_visualization.add_data(self.make_float_again(result_dict))
+            if type(result_dict["external"]) is str:
+                result_dict["external"] = eval(result_dict["external"])  # make it a dict again from string
+        # self.data_buffer_visualization.add_data(self.make_float_again(result_dict))
         return result.task_result
 
     def get_theta(self, x) -> dict:

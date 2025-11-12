@@ -7,6 +7,7 @@ cpp-httplib/0.10.1
 catch2/2.13.8
 spdlog/1.9.2
 pybind11/2.13.4
+pybind11_json/0.2.13
 cxxopts/3.0.0
 mongo-cxx-driver/3.8.1
 openssl/1.1.1w

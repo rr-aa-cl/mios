@@ -2,9 +2,7 @@ from knowledge_processor.knowledge_manager import KnowledgeManager
 from mongodb_client.mongodb_client import MongoDBClient
 from socketserver import ThreadingMixIn
 
-import random
 import logging
-import numpy as np
 from xmlrpc.server import SimpleXMLRPCServer
 
 logger = logging.getLogger("ml_service")
@@ -15,13 +13,13 @@ class DatabaseServer(ThreadingMixIn, SimpleXMLRPCServer):
 
 
 class Database():
-    def __init__(self, port, mongo_port = 27017):
+    def __init__(self, port, mongo_port = 27017, mongo_ip="localhost"):
         # Database names:
         self.task_knowledge_db_name = "global_knowledge"  # knowledge of single tasks
         self.results_db_name = "global_ml_results"  # raw result data
 
         self.rpc_server = None
-        self.db_client = MongoDBClient(port=mongo_port)
+        self.db_client = MongoDBClient(host=mongo_ip,port=mongo_port)
         self.knowledge_manager = KnowledgeManager(port=mongo_port)
         self.port = port
 
@@ -92,9 +90,9 @@ class Database():
                                                                  data_db=self.results_db_name)
         return knowledge
 
-    def get_knowledge(self, task_identity: dict, scope: list):
+    def get_knowledge(self, task_identity: dict, scope: list, time_range:tuple=(0,float('inf'))):
         """return knowledge list from multiple tasks found on database"""
-        knowledge = self.knowledge_manager.get_knowledge(task_identity, scope, knowledge_db=self.task_knowledge_db_name)
+        knowledge = self.knowledge_manager.get_knowledge(task_identity, scope, time_range=time_range, knowledge_db=self.task_knowledge_db_name)
         return knowledge
 
     def process_knowledge(self, task_identity: dict, id: str  = None):

@@ -52,6 +52,10 @@ class Domain:
     def normalize(self, x: np.ndarray) -> np.ndarray:
         x_norm = np.zeros((len(x),))
         for i in range(len(x)):
+            if x[i]>self.limits[self.vector_mapping[i]][1]:
+                x[i] = self.limits[self.vector_mapping[i]][1]  # reduce theta to max limits
+            if x[i]<self.limits[self.vector_mapping[i]][0]:
+                x[i] = self.limits[self.vector_mapping[i]][0]  # increase theta to min limits
             x_norm[i] = (x[i] - self.limits[self.vector_mapping[i]][0]) / (
                         self.limits[self.vector_mapping[i]][1] - self.limits[self.vector_mapping[i]][0])
 

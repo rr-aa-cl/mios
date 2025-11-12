@@ -22,90 +22,106 @@ from tqdm import tqdm
 import asyncio
 from desk.mongodb_client import MongoDBClient
 
-tasks={'collective-001.rsi.ei.tum.de': 'B_002_IEC-C7',
- 'collective-003.rsi.ei.tum.de': 'D_028',
- 'collective-004.rsi.ei.tum.de': 'D_020',
- 'collective-005.rsi.ei.tum.de': 'D_027',
- 'collective-006.rsi.ei.tum.de': 'D_021',
- 'collective-007.rsi.ei.tum.de': 'D_022',
- #'collective-008.rsi.ei.tum.de': '008_left',
- 'collective-033.rsi.ei.tum.de': 'D_023',
- 'collective-035.rsi.ei.tum.de': 'C_007',
- 'collective-043.rsi.ei.tum.de': 'B_013',
- 'collective-013.rsi.ei.tum.de': 'C_011',
- 'collective-014.rsi.ei.tum.de': 'B_016',
- #'collective-015.rsi.ei.tum.de': 'C_025',
- 'collective-016.rsi.ei.tum.de': 'A_026_cylinder_30',
- #'collective-042.rsi.ei.tum.de': 'mercedes_star',
- 'collective-041.rsi.ei.tum.de': 'A_009_hexagon-3',
- 'collective-021.rsi.ei.tum.de': 'B_RS-232',
- #'collective-022.rsi.ei.tum.de': 'C_009',
- 'collective-023.rsi.ei.tum.de': 'C_014',
- 'collective-024.rsi.ei.tum.de': 'B_014_CN',
- 'collective-025.rsi.ei.tum.de': 'A_025_heart',
- 'collective-026.rsi.ei.tum.de': 'A_016_cross-1',
- 'collective-047.rsi.ei.tum.de': 'B_010_plugF-2'}
+tasks_total={ 'collective-001.rsi.ei.tum.de': 'plug_type_f',
+        'collective-002.rsi.ei.tum.de': 'plug_type_c',
+        'collective-003.rsi.ei.tum.de': 'jack_trs_635',      
+          
+        'collective-004.rsi.ei.tum.de': 'plug_type_g',
+        'collective-005.rsi.ei.tum.de': 'usb_b',
+        'collective-006.rsi.ei.tum.de': 'allen_key_6mm',
+                
+        'collective-007.rsi.ei.tum.de': 'key_padlock',
+        'collective-008.rsi.ei.tum.de': 'allen_key_19mm',
+        'collective-013.rsi.ei.tum.de': 'a_012_ellipsoid_2',
 
-modelKnowledge0={'mode':0,
+        'collective-014.rsi.ei.tum.de': 'allen_key_8mm',
+        'collective-015.rsi.ei.tum.de': 'socket_41',
+        'collective-016.rsi.ei.tum.de': 'peg_30',   
+             
+        'collective-021.rsi.ei.tum.de': 'plug_type_f2',
+        'collective-022.rsi.ei.tum.de': 'plug_type_l',
+        'collective-023.rsi.ei.tum.de': 'key_abus_diamant',
+
+        'collective-024.rsi.ei.tum.de': 'socket_32',
+        'collective-026.rsi.ei.tum.de': 'iec_c7',
+        'collective-029.rsi.ei.tum.de': 'allen_key_17mm', 
+
+        'collective-033.rsi.ei.tum.de': 'hdmi',
+        'collective-035.rsi.ei.tum.de': 'iec_c13',
+        'collective-040.rsi.ei.tum.de': 'socket_24_double',
+
+        'collective-041.rsi.ei.tum.de': 'plug_type_j',
+        'collective-042.rsi.ei.tum.de': 'socket_36_double',
+        'collective-043.rsi.ei.tum.de': 'rj45',   
+             
+        'collective-044.rsi.ei.tum.de': 'usb_c',
+        'collective-047.rsi.ei.tum.de': 'socket_24',
+        }
+
+
+
+
+
+#Done
+modelKnowledgeJTS1={'spec':'JointTorqueStandard1',
+                'mode':0,
                 'scaling':[1,1,1,1,1,1,1],
                 'actionLimits':[[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1]],
                 'sigmaScaling':1,
                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 
-modelKnowledge01={'mode':0,
-                'scaling':[2,2,2,2,2,2,2],
-                'actionLimits':[[-2,2],[-2,2],[-2,2],[-2,2],[-2,2],[-2,2],[-2,2]],
-                'sigmaScaling':1,
-                'graspOrientation':[1,0,0,0,1,0,0,0,1]}
-
-
-
-modelKnowledge1={'mode':1,
-                'scaling':[1,1,1,1,1,1],
-                'actionLimits':[[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1]],
-                'sigmaScaling':1,
-                'graspOrientation':[1,0,0,0,1,0,0,0,1]}
-#todo
-modelKnowledge2={'mode':1,
-                'scaling':[1,1,1,1,1,1],
-                'actionLimits':[[-3,3],[-3,3],[-3,3],[-3,3],[-3,3],[-3,3]],
-                'sigmaScaling':1,
-                'graspOrientation':[1,0,0,0,1,0,0,0,1]}
-#todo
-modelKnowledge3={'mode':1,
-                'scaling':[1,1,1,1,1,1],
-                'actionLimits':[[-3,3],[-3,3],[-3,3],[-3,3],[-3,3],[-3,3]],
-                'sigmaScaling':0.1,
-                'graspOrientation':[1,0,0,0,1,0,0,0,1]}
-
-modelKnowledge4={'mode':2,
+#->
+modelKnowledgeJVS={'spec':'JointVelocityStandard',
+                'mode':2,
                 'scaling':[0.005,0.005,0.005,0.005,0.005,0.005,0.005],
                 'actionLimits':[[-0.005,0.005],[-0.005,0.005],[-0.005,0.005],[-0.005,0.005],[-0.005,0.005],[-0.005,0.005],[-0.005,0.005]],
                 'sigmaScaling':1,
                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 
-# modelKnowledge4={'mode':2,
-#                 'scaling':[0.01,0.01,0.01,0.01,0.01,0.01,0.01],
-#                 'actionLimits':[[-0.01,0.01],[-0.01,0.01],[-0.01,0.01],[-0.01,0.01],[-0.01,0.01],[-0.01,0.01],[-0.01,0.01]],
-#                 'sigmaScaling':1,
-#                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
+#->
+modelKnowledgeCVS={'spec':'CartVelocityStandard',
+                 'mode':3,
+                'scaling':[0.05,0.05,0.05,0.05,0.05,0.05],
+                'actionLimits':[[-0.05,0.05],[-0.05,0.05],[-0.05,0.05],[-0.05,0.05],[-0.05,0.05],[-0.05,0.05]],
+                'sigmaScaling':1,
+                'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 
+#->
+modelKnowledgeCWS={'spec':'CartWrenchStandard',
+                'mode':1,
+                'scaling':[1,1,1,1,1,1],
+                'actionLimits':[[-1,1],[-1,1],[-1,1],[-1,1],[-1,1],[-1,1]],
+                'sigmaScaling':1,
+                'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 
-modelKnowledge5={'mode':3,
-                'scaling':[0.0004,0.0004,0.0004,0.0004,0.0004,0.0004],
-                'actionLimits':[[-0.0004,0.0004],[-0.0004,0.0004],[-0.0004,0.0004],[-0.0004,0.0004],[-0.0004,0.0004],[-0.0004,0.0004]],
+#todo
+modelKnowledgeCWSM1={'spec':'modelKnowledgeCWS1',
+                'mode':1,
+                'scaling':[1,1,1,1,1,1],
+                'actionLimits':[[-2,2],[-2,2],[0,10],[-1,1],[-1,1],[-1,1]],
                 'sigmaScaling':1,
                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 #todo
-modelKnowledge6={'mode':3,
-                'scaling':[0.001,0.001,0.001,0.001,0.001,0.001],
-                'actionLimits':[[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001]],
+modelKnowledgeCWSM2={'spec':'modelKnowledgeCWSM2',
+                'mode':1,
+                'scaling':[1,1,1,1,1,1],
+                'actionLimits':[[-2,2],[-2,2],[0,10],[-1,1],[-1,1],[-1,1]],
+                'sigmaScaling':0.1,
+                'graspOrientation':[1,0,0,0,1,0,0,0,1]}
+
+
+#todo
+modelKnowledgeCVSM1={'spec':'modelKnowledgeCVSM1',
+                'mode':3,
+                'scaling':[0.05,0.05,0.05,0.05,0.05,0.05],
+                'actionLimits':[[-0.005,0.005],[-0.005,0.005],[-0.0,0.10],[-0.1,0.1],[-0.1,0.1],[-0.1,0.1]],
                 'sigmaScaling':1,
                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 #todo
-modelKnowledge7={'mode':3,
-                'scaling':[0.001,0.001,0.001,0.001,0.001,0.001],
-                'actionLimits':[[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001],[-0.001,0.001]],
+modelKnowledgeCVSM2={'spec':'modelKnowledgeCVSM2',
+                'mode':3,
+                'scaling':[0.05,0.05,0.05,0.05,0.05,0.05],
+                'actionLimits':[[-0.005,0.005],[-0.005,0.005],[-0.0,0.10],[-0.1,0.1],[-0.1,0.1],[-0.1,0.1]],
                 'sigmaScaling':0.1,
                 'graspOrientation':[1,0,0,0,1,0,0,0,1]}
 
@@ -113,17 +129,29 @@ learningParams= {'architecture':'sac',
                 'epochs':500,
                 'train':True,
                 'experiment_ID': 0,
-                'number_of_experiments': 5,
+                'number_of_experiments': 3,
                 'saveInterval':100,
                 'frequency': 25,
                 'taskID':0,
                 'logging':True,
                 'maxTime':5,
                 'load':'no'}
+
+# learningParams= {'architecture':'ddpg',
+#                 'epochs':500,
+#                 'train':True,
+#                 'experiment_ID': 0,
+#                 'number_of_experiments': 3,
+#                 'saveInterval':100,
+#                 'frequency': 25,
+#                 'taskID':0,
+#                 'logging':True,
+#                 'maxTime':5,
+#                 'load':'no'}
+
 # tags = []
 # for key in learningParams.keys():
 #     tags.append(key+"="+learningParams[key])
-tags=[learningParams['architecture']]
 #tags = ["sac"]
 
 
@@ -146,6 +174,8 @@ class CollectiveDeepReinforcementLearner():
         self.bars=[]
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print("Device: ",self.device)
+        tags=[learning_params['architecture'],model_knowledge['spec']]
+
         self.tags = tags
 
         if self.model_knowledge['mode']==0:
@@ -280,25 +310,40 @@ class CollectiveDeepReinforcementLearner():
             self.learningTasks-=done
     
     def learning_callback(self,learner_index):
+        #print("learning_callback",learner_index)
         host,IP=self.robotLearningInstances[learner_index]
         learnerProxy=xmlrpc.client.ServerProxy("http://"+IP+":9000")
         #1. get new trial data
         new_transitions=learnerProxy.getNewExperimentData()
+        print(len(new_transitions))
+
         trialResult=learnerProxy.getTrialResult()
+
         self.learningLog[learner_index].append(trialResult)
+
         mongo_data = self.mongo_client.read("deep_ml_results","insertion",{"meta.tags":self.tags+[host]})
         if mongo_data:
             mongo_data = mongo_data[0]
             mongo_data["n"+str(len(self.learningLog[learner_index])+1)] = {"success":trialResult[0], "time":trialResult[1]}
             self.mongo_client.update("deep_ml_results","insertion",{"meta.tags":self.tags+[host]},mongo_data)
+
         #2. append data to agent
         for transition in new_transitions:
             self.agents[learner_index].put_data(transition) 
+
         #3. train model -> improve!
         #print(self.agents[learner_index].data.data_idx)
-        if self.agents[learner_index].data.data_idx > 1024: #self.agent_args.learn_start_size: 
+
+        if self.agents[learner_index].data.data_idx > 256*8: #self.agent_args.learn_start_size: 
+            startTime=time.time()
+            for i in range(math.ceil(self.learning_params['maxTime']*self.learning_params['frequency']/8)):
+                self.agents[learner_index].train_net(self.agent_args.batch_size*8, self.epochs[learner_index])
+            print(self.epochs[learner_index], host, "Training time: ",time.time()-startTime)
+        elif self.agents[learner_index].data.data_idx > 256*4: #self.agent_args.learn_start_size: 
+            print("training")
             startTime=time.time()
             for i in range(math.ceil(self.learning_params['maxTime']*self.learning_params['frequency']/4)):
+                print(i)
                 self.agents[learner_index].train_net(self.agent_args.batch_size*4, self.epochs[learner_index])
             print(self.epochs[learner_index], host, "Training time: ",time.time()-startTime)
         else:
@@ -327,7 +372,7 @@ class CollectiveDeepReinforcementLearner():
 
         #create folder
         i=1
-        folder_name = datetime.now().strftime("%Y-%m-%d")
+        folder_name = str(self.learning_params['architecture']+"/"+str(self.model_knowledge['spec']))
         if not os.path.exists(path+"/"+folder_name):
             os.makedirs(path+"/"+folder_name)
 
@@ -398,6 +443,8 @@ class CollectiveDeepReinforcementLearner():
             self.conFails.append(0)
             self.storedNetworkWeights.append([])
             self.learningLog.append([])
+            object=tasks[str(host)+".rsi.ei.tum.de"]
+            self.learningLog[-1].append([host,object])
             #initialize and transfer weights
             learnerProxy=xmlrpc.client.ServerProxy("http://"+IP+":9000")
             if learnerProxy.initializeAgent()==False:
@@ -411,39 +458,133 @@ class CollectiveDeepReinforcementLearner():
                 else:
                     print("Transfer of weights to "+host+" failed!")
             
-        #test loop
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self.learning_loop(self.robotLearningInstances, self.learning_callback))
-
+        
         #saving experiment results^
         self.saveExperimentData("experimentData")
+        self.loop.close()
+
+#learningParams['architecture']='ddpg'
+
+# for i in range(1):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeJTS1)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+#     time.sleep(120)
 
 for i in range(1):
-    Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge4)
+    Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeJVS)
     Learner.initializeLocalLearners()
     Learner.learning()
-   
-# for i in range(2):
-#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge1)
+
+# for i in range(1):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeCVS)
 #     Learner.initializeLocalLearners()
 #     Learner.learning()
+#     time.sleep(120)
+
+# for i in range(1):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeCWS)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+#     time.sleep(120)
+
+
+
 
 # for i in range(learningParams['number_of_experiments']):
-#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge0)
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeCVS)
 #     Learner.initializeLocalLearners()
 #     Learner.learning()
-   
-# for i in range(learningParams['number_of_experiments']):
-#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge1)
-#     Learner.initializeLocalLearners()
-#     Learner.learning()
+#     time.sleep(120)
 
 # for i in range(learningParams['number_of_experiments']):
-#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge2)
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeCWS)
 #     Learner.initializeLocalLearners()
 #     Learner.learning()
+#     time.sleep(120)
 
 # for i in range(learningParams['number_of_experiments']):
-#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledge3)
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeJTS1)
 #     Learner.initializeLocalLearners()
 #     Learner.learning()
+#     time.sleep(120)
+
+# learningParams['architecture']='ddpg'
+# learningParams['experiment_ID']+=1
+# learningParams['taskID']+=1
+
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeJVS)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+#     time.sleep(120)
+
+# learningParams['experiment_ID']+=1
+# learningParams['taskID']+=1
+
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeCVS)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+#     time.sleep(120)
+
+# learningParams['experiment_ID']+=1
+# learningParams['taskID']+=1
+
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeCWS)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+#     time.sleep(120)
+
+# learningParams['experiment_ID']+=1
+# learningParams['taskID']+=1
+
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeJTS1)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+#     time.sleep(120)
+
+# learningParams['architecture']='ppo'
+# learningParams['experiment_ID']+=1
+# learningParams['taskID']+=1
+
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeJVS)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+#     time.sleep(120)
+
+# learningParams['experiment_ID']+=1
+# learningParams['taskID']+=1
+
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeCVS)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+#     time.sleep(120)
+
+# learningParams['experiment_ID']+=1
+# learningParams['taskID']+=1
+
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeCWS)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+#     time.sleep(120)
+
+# learningParams['experiment_ID']+=1
+# learningParams['taskID']+=1
+
+# for i in range(learningParams['number_of_experiments']):
+#     Learner=CollectiveDeepReinforcementLearner(learningParams,modelKnowledgeJTS1)
+#     Learner.initializeLocalLearners()
+#     Learner.learning()
+#     time.sleep(120)
+
+
+

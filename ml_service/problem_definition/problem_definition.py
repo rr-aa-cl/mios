@@ -1,4 +1,3 @@
-from typing import Optional
 from problem_definition.domain import Domain
 from engine.task_result import TaskResult
 from engine.task_result import QMetric
@@ -49,9 +48,9 @@ class CostFunction:
 
 class ProblemDefinition:
     def __init__(self, skill_class: str, skill_instance: str, domain: Domain, default_context: dict,
-                 setup_instructions: list, termination_instruction: list, reset_instruction: list,
-                 cost_function: CostFunction, identity: list, identity_weights: list = None, tags=None,
-                 object_modifier: dict = {}, n_variations = 1, optimum_threshold:float = 0, host:str=None, variate_only_success:bool=False):
+                 setup_instructions: list, termination_instruction: list, reset_instruction: list, rescue_instructions: list,
+                 cost_function: CostFunction, identity: list|None = None, identity_weights: list|None = None, tags=None,
+                 object_modifier: dict = {}, n_variations = 1, optimum_threshold:float = 0, host:str|None=None, variate_only_success:bool=False, add_skill_info={}):
         if tags is None:
             tags = []
         self.host = host
@@ -61,6 +60,7 @@ class ProblemDefinition:
         self.setup_instructions = setup_instructions
         self.termination_instructions = termination_instruction
         self.reset_instructions = reset_instruction
+        self.rescue_instructions = rescue_instructions
         self.uuid = "INVALID"
         self.skill_class = skill_class
         self.skill_instance = skill_instance
@@ -69,6 +69,7 @@ class ProblemDefinition:
         self.optimum_thr = optimum_threshold
         self.n_variations = n_variations
         self.variate_only_success = variate_only_success  # with an empty object_modifier this can be used to repeat successfull trials for n_variations
+        self.add_skill_info = add_skill_info
         if identity is None:
             self.identity = [0]
         else:
@@ -90,10 +91,12 @@ class ProblemDefinition:
         return healthy
 
     def get_task_identifier(self) -> dict:
+        #return str(self.skill_class)+str(self.skill_instance)+str(self.identity)+", ".join(self.tags)
+        # same as in kno
         return {"skill_class": self.skill_class, "tags": self.tags, "identity": self.identity,"skill_instance":self.skill_instance}
 
     def get_identification_name(self) -> str:
-        return str(self.get_task_identifier())
+        return str(self.skill_class)+str(self.skill_instance)+str(self.identity)+", ".join(self.tags)
 
     def to_dict(self) -> dict:
         problem_definition = {
@@ -102,6 +105,7 @@ class ProblemDefinition:
             "setup_instructions": self.setup_instructions,
             "termination_instructions": self.termination_instructions,
             "reset_instructions": self.reset_instructions,
+            "rescue_instructions": self.rescue_instructions,
             "uuid": self.uuid,
             "skill_class": self.skill_class,
             "tags": self.tags,
@@ -113,7 +117,9 @@ class ProblemDefinition:
             "object_modifier": self.object_modifier,
             "n_variations": self.n_variations,
             "optimum_threshold": self.optimum_thr,
-            "variate_only_success": self.variate_only_success
+            "variate_only_success": self.variate_only_success,
+            "host":self.host,
+            "add_skill_info": self.add_skill_info
         }
         return problem_definition
 
@@ -121,11 +127,11 @@ class ProblemDefinition:
     def from_dict(pd_dict):
         pd = ProblemDefinition(pd_dict["skill_class"], pd_dict["skill_instance"], Domain.from_dict(pd_dict["domain"]),
                                pd_dict["default_context"], pd_dict["setup_instructions"],
-                               pd_dict["termination_instructions"], pd_dict["reset_instructions"],
+                               pd_dict["termination_instructions"], pd_dict["reset_instructions"], pd_dict["rescue_instructions"],
                                CostFunction.from_dict(pd_dict["cost_function"]), pd_dict["identity"],
                                pd_dict["identity_weights"], pd_dict["tags"], object_modifier=pd_dict["object_modifier"],
                                n_variations=pd_dict["n_variations"],optimum_threshold=pd_dict["optimum_threshold"],
-                               variate_only_success=pd_dict["variate_only_success"])
+                               variate_only_success=pd_dict.get("variate_only_success",False),host=pd_dict.get("host",None), add_skill_info=pd_dict.get("add_skill_info",dict()))
         pd.domain = Domain.from_dict(pd_dict["domain"])
         pd.cost_function = CostFunction.from_dict(pd_dict["cost_function"])
         return pd
@@ -153,11 +159,18 @@ class ProblemDefinition:
             if "parameters" not in self.reset_instructions[i]:
                 logger.error("Reset instruction " + str(i) + " is missing parameters.")
                 valid = False
+        for i in range(len(self.rescue_instructions)):
+            if "method" not in self.rescue_instructions[i]:
+                logger.error("Rescue instruction " + str(i) + " is missing a method.")
+                valid = False
+            if "parameters" not in self.rescue_instructions[i]:
+                logger.error("Rescue instruction " + str(i) + " is missing parameters.")
+                valid = False
 
         return valid
 
     def apply_object_modifiers(self, context):
-        print("#################################MOD########################")
+        #print("#################################MOD########################")
         valid_modifiers = {"O_T_OB", "T_T_OB"}
         for skill in self.object_modifier:
             if skill not in context["skills"]:

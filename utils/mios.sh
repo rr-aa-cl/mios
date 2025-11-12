@@ -5,6 +5,6 @@ PYTHONPATH=$PYTHONPATH:${ROOT}/../python/desk:${ROOT}/../ml_service:/usr/local/l
 export PYTHONPATH
 #export ROS_MASTER_URI=http://localhost:11311
 unset LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=${ROOT}/../lib:${ROOT}/../lib/boost:${ROOT}/../lib/plugins:${ROOT}/../../dependencies  # ${ROOT}/../lib/boost:/opt/ros/noetic/lib:
+export LD_LIBRARY_PATH=${ROOT}/../lib:${ROOT}/../lib/boost:${ROOT}/../lib/plugins:${ROOT}/../../dependencies:/opt/openrobots/lib      #ROS ${ROOT}/../lib/boost:/opt/ros/noetic/lib:
 exec ${ROOT}/mios $@
 exit 0

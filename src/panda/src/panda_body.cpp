@@ -9,6 +9,8 @@
 #include "franka/exception.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/embed.h"
+#include "pybind11_json/pybind11_json.hpp"
+#include "pybind11/stl.h"
 
 #include <thread>
 
@@ -23,7 +25,7 @@ m_memory(memory){
 bool PandaBody::initialize(){
     spdlog::trace("PandaBody::initialize()");
     m_has_arm=m_memory->read_parameters()->system.has_robot;
-    m_hand=m_memory->read_parameters()->system.gripper;
+    //m_hand=m_memory->read_parameters()->system.gripper; // get hand automatically form desk
     
     std::optional<std::string> ip;
     if(m_has_arm){
@@ -55,51 +57,21 @@ bool PandaBody::initialize(){
     return true;
 }
 
-bool PandaBody::activate_fci(){
-    spdlog::trace("PandaBody::activate_fci()");
-    try{
-        pybind11::module desk_client = pybind11::module::import("desk_client");
-        pybind11::object py_result = desk_client.attr("activate_fci")(m_memory->get_parameters()->system.robot_ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-        if(!py_result.cast<bool>()){
-            spdlog::error("Cannot activate FCI through Desk client.");
-        }
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot activate FCI, error when calling the python desk client.");
-        return false;
-    }
-    return true;
-}
-
-bool PandaBody::deactivate_fci(){
-    spdlog::trace("PandaBody::deactivate_fci()");
-    try{
-        pybind11::module desk_client = pybind11::module::import("desk_client");
-        pybind11::object py_result = desk_client.attr("deactivate_fci")(m_memory->get_parameters()->system.robot_ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-        if(!py_result.cast<bool>()){
-            spdlog::error("Cannot deactivate FCI through Desk client.");
-        }
-
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot deactivate FCI, error when calling the python desk client.");
-        return false;
-    }
-    return true;
-}
 
 std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string> &last_ip){
     spdlog::trace("PandaBody::ping_robot("+last_ip.value()+")");
     std::optional<std::string> new_ip={};
     spdlog::debug("PandaBody: ping_robot("+last_ip.value_or("127.0.0.1")+")");
     //check given IP:
-    if(last_ip.has_value()){
-        if(mirmi_utils::ping(last_ip.value().c_str())==false){
-            spdlog::warn("IP was set to "+last_ip.value()+" but no device has been found. Searching for new connection...");
-        }else{
-            new_ip=last_ip;
-            if(is_robot(new_ip.value())){
-                return new_ip;
+    while(!new_ip.has_value()){
+        if(last_ip.has_value()){
+            if(mirmi_utils::ping(last_ip.value().c_str())==false){
+                spdlog::warn("IP was set to "+last_ip.value()+" but no device has been found. Searching for new connection...");
+            }else{
+                if(is_robot(last_ip.value_or("127.0.0.1"))){ // 
+                    new_ip=last_ip;
+                    return new_ip;
+                }
             }
         }
     }
@@ -108,7 +80,7 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
         std::map<std::string,std::string> ifaces = mirmi_utils::get_subnets();
         std::string address;
         for(const auto& i : ifaces){
-            if(i.first=="lo" || i.first=="docker0" || i.first=="tap0" || i.first=="flannel.1" || i.first.substr(0,3)=="enx" || i.first.substr(0,3)=="wlp" || i.first.substr(0,2)=="br"){
+            if(i.first=="lo" || i.first=="docker0" || i.first=="tap0" || i.first=="flannel.1" || i.first.substr(0,3)=="enx" || i.first.substr(0,3)=="wlp" || i.first.substr(0,2)=="br" || i.first.substr(0,4)=="enp4"){
                 continue;
             }
             for(unsigned j=2;j<255;j++){
@@ -118,7 +90,7 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
                     continue;
                 }else{
                     spdlog::info("Found device at ip "+address+" at interface "+i.first+".");
-                    if(is_robot(address)){
+                    if(is_robot(address)){  // 
                         new_ip = address;
                         return new_ip;
                     }
@@ -129,30 +101,6 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
     spdlog::warn("PandaBody::ping_robot: Cannot find Robot");
     return new_ip;
 
-}
-
-std::optional<std::string> PandaBody::get_robot_ip(const std::optional<std::string>& last_ip){
-    spdlog::trace("PandaBody::get_robot_ip()");
-    if(!m_has_arm && m_hand!=PandaHandDefault){
-        return {};
-    }
-    std::optional<std::string> new_ip={};
-    spdlog::debug("PandaBody: get_robot_ip("+last_ip.value_or("127.0.0.1")+")");
-    if(last_ip.has_value()){
-        if(mirmi_utils::ping(last_ip.value().c_str())==false){
-            spdlog::warn("IP was set to "+last_ip.value()+" but no device has been found. Searching for new connection...");
-        }else{
-            if(!is_robot(last_ip.value())){
-                spdlog::warn("IP was set to "+last_ip.value()+" but no compatible robot seems to be connected. Searching for new connection...");
-            }else{
-                new_ip=last_ip;
-            }
-        }
-    }
-    if(!new_ip.has_value()){
-        new_ip=this->find_robot();
-    }
-    return new_ip;
 }
 
 void PandaBody::load_gripper_configuration(){
@@ -281,73 +229,16 @@ bool PandaBody::pre_run_checks() const{
 }
 
 bool PandaBody::is_robot(const std::string &ip){
-    spdlog::trace("PandaBody::is_robot()"+ip+m_memory->get_parameters()->system.desk_user+ m_memory->get_parameters()->system.desk_pwd+((m_memory->m_robot_arm == "left")? "miosL" : "miosR"));
-    //int tokenForceTimeout = 0;
-    try{
-        pybind11::module desk_client = pybind11::module::import("desk_client");
-        pybind11::object in_control = desk_client.attr("in_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-        spdlog::debug("PandaBody::is_robot("+ip+")" );
-        if(!in_control.cast<bool>()){
-            spdlog::debug("PandaBody::is_robot("+ip+"): not in control of DESK, aquire control...");
-            pybind11::object take_control_result = desk_client.attr("take_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-            bool desk_in_control = take_control_result.cast<bool>();
-            if(!desk_in_control){
-                spdlog::debug("PandaBody::is_robot(): Not able to take control over DESK. Try to force control...");
-                pybind11::object py_result = desk_client.attr("force_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-                desk_in_control = py_result.cast<bool>();
-                if(!desk_in_control){
-                    spdlog::error("PandaBody::is_robot(): Cannot aquire control over DESK");
-                    return false;
-                }
-                else{
-                    spdlog::warn("Please verify that you are in control of the robot: Press the Button with the cyrcle on the Pilot! \n You have " + std::to_string(30) + "Seconds.");
-                    std::this_thread::sleep_for(std::chrono::seconds(30));
-                    pybind11::object in_control = desk_client.attr("in_control")(ip, m_memory->get_parameters()->system.desk_user, m_memory->get_parameters()->system.desk_pwd, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-                    if(in_control.cast<bool>()){
-                        spdlog::debug("PandaBody::is_robot(): MIOS is now in control of DESK.");
-                    }
-                }
-
-            }
-            else{
-                spdlog::debug("PandaBody::is_robot(): Now in control over DESK");
-            }
-        }
-        else{
-            spdlog::debug("PandaBody: MIOS is in control of DESK-Interface of robot at "+ip);
-        }
-        
-    }
-    catch (const pybind11::error_already_set &e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot take control of the robot, error when calling the python desk client.");
+    spdlog::debug("PandaBody::is_robot("+ip+")" );
+    bool result = false;
+    while(!result){
+        result = ensure_robot_ready();
     }
     m_memory->set_default_parameters();
-    if(!m_memory->read_parameters()->system.spoc_in_control){
-        spdlog::warn("Cannot take control over the robot (single point of control). Check desk_client.");
-        return false;
-    }
-    if(!activate_fci()){
-        spdlog::debug("PandaBody: Cannot activate FCI "+ip+" spoc_token:"+m_memory->read_parameters()->system.spoc_token);
-        return false;   
-    }
-/*
-    try{
-        std::unique_ptr<franka::Robot> robot =  std::make_unique<franka::Robot>(ip);
-        return true;
-    }catch(const franka::NetworkException& e){
-        spdlog::info("Skipping device with ip "+ip+".");
-        return false;
-    }catch(const franka::IncompatibleVersionException& e){
-        spdlog::error("At device with ip "+ip+": ");
-        spdlog::debug(e.what());
-        spdlog::error("Panda: Detected incompatible version on robot at IP "+ip);
-        return false;
-    }
-*/
     return true;
 }
 
+// currently not used:
 std::optional<std::string> PandaBody::find_robot(){
     spdlog::trace("PandaBody::find_robot()");
     std::optional<std::string> robot_address={};
@@ -363,7 +254,7 @@ std::optional<std::string> PandaBody::find_robot(){
             if(!mirmi_utils::ping(address.c_str())){
                 continue;
             }else{
-                if(is_robot(address)){
+                if(is_robot(address)){ 
                     robot_address=address;
                     break;
                 }
@@ -382,7 +273,6 @@ std::optional<std::string> PandaBody::find_robot(){
     }
     return robot_address;
 }
-
 
 ControlReturnType PandaBody::control(std::function<franka::Torques (const franka::RobotState&,franka::Duration)> controller_callback){
     spdlog::trace("PandaBody::control(Torques)");
@@ -701,11 +591,95 @@ bool PandaBody::set_ee(std::array<double, 16> F_T_EE){
     }
 }
 
+Eigen::Matrix4d PandaBody::dhTransformationMatrix(double theta, double d, double a, double alpha) const {
+    Eigen::Matrix4d T;
+
+    T << cos(theta),                 -sin(theta),                 0,               a,
+         sin(theta) * cos(alpha),    cos(theta) * cos(alpha),    -sin(alpha),     -d * sin(alpha),
+         sin(theta) * sin(alpha),    cos(theta) * sin(alpha),     cos(alpha),      d * cos(alpha),
+         0,                          0,                           0,               1;
+
+    return T;
+}
+
+std::array<double, 16> PandaBody::forward_kinematics(franka::RobotState& state) const{
+    spdlog::trace("PandaBody::forward_kinematics");
+    Eigen::Matrix<double, 8, 1>d = m_memory->get_parameters()->user.DH_d;
+    Eigen::Matrix<double, 8, 1> a = m_memory->get_parameters()->user.DH_a;
+    Eigen::Matrix<double, 8, 1> alpha = m_memory->get_parameters()->user.DH_alpha;
+    Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+
+    for (int i = 0; i < 7; ++i) {
+        Eigen::Matrix4d deltaT = dhTransformationMatrix(state.q[i], d[i], a[i], alpha[i]);
+        T = T * deltaT;
+    }
+
+    Eigen::Matrix4d deltaT = dhTransformationMatrix(-M_PI / 4, d[7], a[7], alpha[7]);
+    T = T * deltaT;
+    
+    std::array<double, 16> O_T_EE;
+
+    for (int row = 0; row < 4; ++row) {
+        for (int col = 0; col < 4; ++col) {
+            O_T_EE[row * 4 + col] = T(row, col);
+        }
+    }
+
+    return O_T_EE;
+
+}
+
+// std::array<double, 16> PandaBody::get_WF_T_EE(franka::RobotState& state) const{
+//     Eigen::Matrix4d WF_T_O;
+//     Eigen::Matrix4d O_T_EE;
+//     Eigen::Matrix4d WF_T_EE;
+//     WF_T_O = m_memory->get_parameters()->frames.WF_T_O;
+//     O_T_EE = Eigen::Map<Eigen::Matrix4d>(state.O_T_EE.data());
+
+//     WF_T_EE=WF_T_O*O_T_EE;
+
+//     std::array<double, 16> _WF_T_EE;
+
+//     for (int row = 0; row < 4; ++row) {
+//         for (int col = 0; col < 4; ++col) {
+//             _WF_T_EE[row * 4 + col] = WF_T_EE(row, col);
+//         }
+//     }
+
+//     return _WF_T_EE;
+// }
+
+// std::array<double, 16> PandaBody::get_TF_T_EE(franka::RobotState& state) const{
+//     Eigen::Matrix4d WF_T_TF;
+//     Eigen::Matrix4d WF_T_EE;
+//     Eigen::Matrix4d TF_T_EE;
+//     WF_T_TF<<m_memory->get_parameters()->frames.WF_T_TF;
+//     O_T_EE = Eigen::Map<Eigen::Matrix4d>(state.WF_T_EE.data());
+
+//     TF_T_EE=WF_T_TF.inverse()*WF_T_EE;
+
+//     std::array<double, 16> _TF_T_EE;
+
+//     for (int row = 0; row < 4; ++row) {
+//         for (int col = 0; col < 4; ++col) {
+//             _TF_T_EE[row * 4 + col] = TF_T_EE(row, col);
+//         }
+//     }
+//     return _TF_T_EE;
+// }
+
+
 bool PandaBody::get_robot_state(franka::RobotState &state) const{
-//    spdlog::trace("PandaBody::get_robot_state");
+    spdlog::trace("PandaBody::get_robot_state");
     if(m_arm_connected){
         try{
             state=m_panda_arm->readOnce();
+
+            //use clibrated kinematics
+            //order matters!
+            //state.O_T_EE=forward_kinematics(state);
+            //state.WF_T_EE=get_WF_T_EE(state);
+            //state.TF_T_EE=get_TF_T_EE(state);
             return true;
         }catch(const franka::InvalidOperationException& e){
             spdlog::debug(e.what());
@@ -716,6 +690,8 @@ bool PandaBody::get_robot_state(franka::RobotState &state) const{
         }
     }else{
         get_default_robot_state(state);
+        //use clibrated kinematics
+        //state.O_T_EE=PandaBody::forward_kinematics(state);
         return true;
     }
 }
@@ -741,183 +717,6 @@ bool PandaBody::get_gripper_state(franka::GripperState &state) const{
 
 const std::unique_ptr<franka::Model>& PandaBody::get_panda_model() const{
     return m_panda_model;
-}
-
-bool PandaBody::start_desk_task(const std::string &task,const std::optional<std::string> &ip, const std::string user, const std::string& password){
-    spdlog::trace("PandaBody::start_desk_task");
-    disconnect_from_gripper();
-    disconnect_from_robot();
-    deactivate_fci();
-
-    bool result;
-    try{
-        pybind11::module desk_client = pybind11::module::import("desk_client");
-        pybind11::object py_result = desk_client.attr("start_task")(ip.value(), user, password, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", task, m_memory->m_lt_memory.m_database_port);
-        result = py_result.cast<bool>();
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot start desk task, error when calling the python desk client.");
-        result=false;
-    }
-
-    if(result){
-        wait_for_desk_task(ip,user,password);
-    }
-    activate_fci();
-    if(!this->connect_to_robot(get_robot_ip(ip))){
-        return false;
-    }
-    if(!this->connect_to_gripper(get_robot_ip(ip))){
-        return false;
-    }
-    return true;
-}
-
-bool PandaBody::stop_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string& password){
-    spdlog::trace("PandaBody::stop_desk_task");
-    deactivate_fci();
-    nlohmann::json response;
-    bool result;
-    try{
-        pybind11::module desk_client = pybind11::module::import("desk_client");
-        pybind11::object py_result = desk_client.attr("stop_task")(ip.value(), user, password, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-        result = py_result.cast<bool>();
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot stop desk task, error when calling the python desk client.");
-        result=false;
-    }
-    activate_fci();
-    return result;
-}
-
-void PandaBody::wait_for_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string& password){
-    spdlog::trace("PandaBody::wait_for_desk_task");
-    bool result;
-    deactivate_fci();
-    try{
-        pybind11::module desk_client = pybind11::module::import("desk_client");
-        while(true){
-            pybind11::object py_result = desk_client.attr("is_busy")(ip.value(), user, password, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-            result = py_result.cast<bool>();
-            if(result){
-                return;
-            }else{
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            }
-        }
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot wait for desk task, error when calling the python desk client.");
-        result=false;
-        return;
-    }
-    activate_fci();
-}
-
-bool PandaBody::shutdown_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password){
-    spdlog::trace("PandaBody::shutdown_robot");
-    disconnect_from_gripper();
-    disconnect_from_robot();
-    deactivate_fci();
-    bool result;
-    try{
-        pybind11::module desk_client = pybind11::module::import("desk_client");
-        pybind11::object py_result = desk_client.attr("shutdown")(ip.value(), user, password, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-        result = py_result.cast<bool>();
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot shutdown, error when calling the python desk client.");
-        result=false;
-    }
-    return result;
-}
-
-bool PandaBody::reboot_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password){
-    spdlog::trace("PandaBody::reboot_robot");
-    bool reconnect_arm = m_has_arm;
-    bool reconnect_hand = m_arm_connected;
-    //disconnect_from_gripper();
-    //disconnect_from_robot();
-    //deactivate_fci();
-    bool result;
-    try{
-        pybind11::module desk_client = pybind11::module::import("desk_client");
-        pybind11::object py_result = desk_client.attr("reboot")(ip.value(), user, password, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-        result = py_result.cast<bool>();
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot reboot, error when calling the python desk client.");
-        result=false;
-    }
-    /*if(result){
-        spdlog::info("Rebooting Robot... Wait until re-initialising.");
-        std::this_thread::sleep_for(std::chrono::seconds(120));
-        result=false;
-        if(this->initialize()){
-            result = true;
-        }
-    }*/
-    return result;
-}
-
-bool PandaBody::unlock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password){
-    spdlog::trace("PandaBody::unlock_brakes");
-    bool result;
-    deactivate_fci();
-    try{
-        pybind11::module desk_client = pybind11::module::import("desk_client");
-        pybind11::object py_result = desk_client.attr("unlock_brakes")(ip.value(), user, password, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-        result = py_result.cast<bool>();
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot unlock brakes, error when calling the python desk client.");
-        result=false;
-    }
-    activate_fci();
-    return result;
-}
-
-bool PandaBody::lock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password){
-    spdlog::trace("PandaBody::lock_brakes");
-    deactivate_fci();
-    bool result;
-    try{
-        pybind11::module desk_client = pybind11::module::import("desk_client");
-        pybind11::object py_result = desk_client.attr("lock_brakes")(ip.value(), user, password, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-        result = py_result.cast<bool>();
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot lock brakes, error when calling the python desk client.");
-        result=false;
-    }
-    activate_fci();
-    return result;
-}
-
-bool PandaBody::move_to_pack_pose(const std::optional<std::string> &ip, const std::string user, const std::string& password){
-    spdlog::trace("PandaBody::move_to_pack_pose");
-    disconnect_from_gripper();
-    disconnect_from_robot();
-    deactivate_fci();
-    bool result;
-    try{
-        pybind11::module desk_client = pybind11::module::import("desk_client");
-        pybind11::object py_result = desk_client.attr("pack_pose")(ip.value(), user, password, (m_memory->m_robot_arm == "left")? "miosL" : "miosR", m_memory->m_lt_memory.m_database_port);
-        result = py_result.cast<bool>();
-    }catch(const pybind11::error_already_set& e){
-        spdlog::debug(e.what());
-        spdlog::warn("Cannot move to pack pose, error when calling the python desk client.");
-        result=false;
-    }
-    activate_fci();
-    if(!this->connect_to_robot(get_robot_ip(ip))){
-        return false;
-    }
-    if(!this->connect_to_gripper(get_robot_ip(ip))){
-        return false;
-    }
-    return result;
 }
 
 bool PandaBody::grasp(double width, double speed, double force, double epsilon_inner, double epsilon_outer) const{
@@ -1071,6 +870,295 @@ void PandaBody::get_default_robot_state(franka::RobotState &state) const{
 void PandaBody::get_default_gripper_state(franka::GripperState &state) const{
     spdlog::trace("PandaBody::get_default_gripper_state");
     state=m_gripper_state;
+}
+
+
+// deskapi functions:
+
+bool PandaBody::activate_fci(){
+    spdlog::trace("PandaBody::activate_fci()");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("activate_fci")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot activate FCI through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot activate FCI, error when calling the python desk client.");
+        return false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return true;
+}
+
+bool PandaBody::deactivate_fci(){
+    spdlog::trace("PandaBody::deactivate_fci()");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("deactivate_fci")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
+        }
+
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot deactivate FCI, error when calling the python desk client.");
+        return false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return true;
+}
+
+bool PandaBody::shutdown_robot(){
+    spdlog::trace("PandaBody::shutdown_robot");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("shutdown_system")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot shutdown robot through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot shutdown, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        spdlog::info("Shutting down Robot... Wait until re-initialising.");
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        disconnect_from_gripper();
+        disconnect_from_robot();
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        result=false;
+        while(!this->initialize()){
+            spdlog::warn("Robot initialization failed. Wait and retry...");
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }   
+    }
+    return result;
+}
+
+bool PandaBody::reboot_robot(){
+    spdlog::trace("PandaBody::reboot_robot");
+    bool reconnect_arm = m_has_arm;
+    bool reconnect_hand = m_arm_connected;
+
+    //deactivate_fci();
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("reboot_system")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot reboot robot through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot reboot, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        spdlog::info("Rebooting Robot... Wait until re-initialising.");
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        disconnect_from_gripper();
+        disconnect_from_robot();
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        result=false;
+        while(!this->initialize()){
+            spdlog::warn("Robot initialization failed. Wait and retry...");
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }
+
+    }
+    return result;
+}
+
+bool PandaBody::unlock_brakes(){  // make sure it is waiting until all brakes are unlocked
+    spdlog::trace("PandaBody::unlock_brakes");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("unlock_joints")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot unlock brakes, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::seconds(30));
+    }
+    return result;
+}
+
+bool PandaBody::lock_brakes(){  // make sure it is waiting until all brakes are locked
+    spdlog::trace("PandaBody::lock_brakes");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("lock_joints")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot lock brakes through Desk client: "+status_json.dump());
+        }
+        else{
+            std::this_thread::sleep_for(std::chrono::seconds(3));
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot lock brakes, error when calling the python desk client.");
+        result=false;
+    }
+    return result;
+}
+
+bool PandaBody::ensure_robot_ready(){  // put this in interface
+    spdlog::trace("PandaBody::ensure_robot_ready");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("keep_alive");
+        pybind11::object py_result = deskapi.attr("ensure_robot_ready")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Wait after error at deskapi: "+status_json.dump());
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }
+        else if(status_json.contains("status")){
+            if(status_json["status"] == "Off"){
+                m_hand=PandaHandNone;
+            }
+            else if(status_json["status"] == "On"){
+                m_hand=PandaHandDefault; 
+            }
+            else{
+                m_hand=PandaHandNone;
+            }
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot ensure robot is ready, error when calling the python desk client.");
+        result=false;
+    }
+    return result;
+}
+
+
+bool PandaBody::programming(){  // put this in interface
+    spdlog::trace("PandaBody::programming");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("switch_to_programming")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot lock brakes, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return result;
+}
+
+bool PandaBody::execution(){  // put this in interface
+    spdlog::trace("PandaBody::execution");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("switch_to_execution")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot deactivate FCI through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot lock brakes, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return result;
+}
+
+bool PandaBody::release_control(){
+    spdlog::trace("PandaBody::release_control");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("release_control")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot release control through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot release control, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return result;
+}
+bool PandaBody::take_control(){
+    spdlog::trace("PandaBody::take_control");
+    bool result;
+    try{
+        pybind11::module deskapi = pybind11::module::import("deskapi");
+        pybind11::object py_result = deskapi.attr("take_control")();
+        py::tuple result_tuple = py_result.cast<py::tuple>();
+        result = result_tuple[0].cast<bool>();
+        nlohmann::json status_json = result_tuple[1].cast<nlohmann::json>();
+        if(!result){
+            spdlog::error("Cannot take control through Desk client: "+status_json.dump());
+        }
+    }catch(const pybind11::error_already_set& e){
+        spdlog::debug(e.what());
+        spdlog::warn("Cannot ake control, error when calling the python desk client.");
+        result=false;
+    }
+    if(result){
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+    return result;
 }
 
 }

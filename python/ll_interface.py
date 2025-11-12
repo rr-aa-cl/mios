@@ -149,7 +149,7 @@ class Task:
 
 
 #  useful functions:
-def subscribe_telemetry(robot_ip, receiving_ip, receiving_port, data:list):
+def subscribe_telemetry(robot_ip, receiving_ip, receiving_port, data:list, loop=False):
     '''
     let mios send current state
     robot_ip - where mios is running
@@ -221,41 +221,44 @@ def subscribe_telemetry(robot_ip, receiving_ip, receiving_port, data:list):
 
     '''
     call_method(robot_ip,12000, "subscribe_telemetry",{"subscribe":data,"ip":receiving_ip,"port":receiving_port})
-    robot_state=udp_receiver(receiving_ip,receiving_port)
-    # call_method(robot_ip,12000, "unsubscribe_telemetry",{"subscribe":data,"ip":receiving_ip,"port":receiving_port})
+    if loop:
+        robot_state = write_incomming_udp(receiving_ip, receiving_port)
+    else:
+        robot_state = udp_receiver(receiving_ip,receiving_port)
+    call_method(robot_ip,12000, "unsubscribe_telemetry",{"subscribe":data,"ip":receiving_ip,"port":receiving_port})
 
     return robot_state
 
 def udp_receiver(ip, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  
     s.bind((ip, port)) 
+    data_dict = None
     try:
         data, adrr = s.recvfrom(8192) 
         data_dict = json.loads(data.decode("utf-8"))
         s.close()
     except KeyboardInterrupt:
         pass
-
     return data_dict
 
-    # def write_incomming_udp(ip, port):
-    #     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  
-    #     s.bind((ip, port)) 
-    #     try:
-    #         #print("listening at ", ip, ":", port,"\n")
-    #         #print("   --- Interrupt writing ctrl+c ---")
-    #         #while True: 
-    #         data, adrr = s.recvfrom(8192) 
-    #         data_dict = json.loads(data.decode("utf-8"))
-    #         for key, value in data_dict.items():
-    #             if type(value) == list:
-    #                 print(key, ": ", [float("{0:0.2f}".format(v)) for v in value])
-    #             else: 
-    #                 print(key, ": ", value)
-    #     except KeyboardInterrupt:
-    #         s.close()
-    #     return True
-    # return write_incomming_udp(ip,port)
+def write_incomming_udp(ip, port):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  
+    s.bind((ip, port)) 
+    try:
+        print("listening at ", ip, ":", port,"\n")
+        print("   --- Interrupt writing ctrl+c ---")
+        while True: 
+            data, adrr = s.recvfrom(8192) 
+            data_dict = json.loads(data.decode("utf-8"))
+            for key, value in data_dict.items():
+                if type(value) == list:
+                    print(key, ": ", [float("{0:0.2f}".format(v)) for v in value])
+                else: 
+                    print(key, ": ", value)
+    except KeyboardInterrupt:
+        s.close()
+    return True
+
 
 
 

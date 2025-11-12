@@ -14,7 +14,6 @@ from sklearn.neural_network import MLPRegressor
 from threading import Lock, Thread
 from sklearn.svm import SVR
 import sklearn.exceptions
-from enum import Enum
 
 logger = logging.getLogger("ml_service")
 
@@ -49,6 +48,10 @@ class KnowledgeManager:
 
         self.trial_data_x = []
         self.trial_data_y = []
+    
+    def init_similarity(self, similarities):
+        logger.debug("KnowledgeManager: init_similarity")
+        self.similarties = copy.deepcopy(similarities)
 
     def collect_data(self, db_client, skill_identifier, data_db: str = "ml_results") -> list:
         if "identity" in skill_identifier:
@@ -160,7 +163,7 @@ class KnowledgeManager:
 
         return knowledge
 
-    def get_knowledge_by_filter(self, db_client: MongoDBClient, data_db: str, col: str, filter: dict):
+    def process_knowledge_by_filter(self, db_client: MongoDBClient, data_db: str, col: str, filter: dict):
         doc = db_client.read(data_db, col, filter)
         if not doc:
             logger.error("Cannot find data for filter " + str(filter) + " at " + str(data_db) + "." + str(col))
@@ -177,6 +180,16 @@ class KnowledgeManager:
         successful_trials, vector_mapping, mean_optimum_weights, confidence = self.get_successful_trials(doc)
         self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, filter,  mean_optimum_weights, confidence)
         return self.knowledge_processor.process_knowledge(successful_trials)
+    
+    def get_knowledge_by_filter(self, db_client: MongoDBClient, data_db: str, col: str, filter: dict):
+        doc = db_client.read(data_db, col, filter)
+        if not doc:
+            logger.error("Cannot find data for filter " + str(filter) + " at " + str(data_db) + "." + str(col))
+            return Knowledge()
+        logger.debug("KnowledgeManager: found "+str(len(doc))+" knowledge entries for "+str(filter)+"on "+str(db_client.client._host))
+        knowledge = Knowledge()
+        knowledge.from_dict(doc[0])
+        return knowledge
 
     def process_knowledge_local(self, db_client, task_identity: dict, data_db: str = "ml_results") -> str("_id"):
         """process raw data from trials to knowledge; working from and on the database"""
@@ -351,14 +364,15 @@ class KnowledgeManager:
         knowledge.identity = identity
         knowledge.skill_class = skill_class
         knowledge.scope = scope
-        knowledge.time= time.ctime()
+        knowledge.time= time.time()
+        knowledge.datetime= time.ctime()
         knowledge.prediction = True
         knowledge.parameters = parameter_dict
 
         return knowledge.to_dict()
 
     def get_similar_knowledge(self, task_identifier: dict, scope: list, knowledge_db: str = "local_knowledge",
-                              data_db: str = "ml_results"):
+                              data_db: str = "ml_results",location:str|None="localhost"):
         '''searches for most similar knowledge / creates knowledge from similar results'''
         collection = task_identifier["skill_class"]
         identity = task_identifier["identity"]
@@ -368,7 +382,11 @@ class KnowledgeManager:
                             "meta.skill_class": task_identifier["skill_class"]
                             }
         knowledge = Knowledge()
-        docs = self.DBclient.read(knowledge_db, collection, knowledge_filter)
+        if type(location) == str:
+            global_client = MongoDBClient(location)
+            docs = global_client.read(knowledge_db, task_identifier["skill_class"], knowledge_filter)
+        else: 
+            docs = self.DBclient.read(knowledge_db, collection, knowledge_filter)
         if len(docs) >= 1:
             logger.debug("knowledge_processor.get_similar_knowledge(): found knowledge on task identity" + str(
                 task_identifier) + " at " + str(knowledge_db) + "." + str(collection))
@@ -381,15 +399,20 @@ class KnowledgeManager:
 
         return knowledge.to_dict()
 
-    def get_knowledge(self, task_identifier: dict, scope: list, knowledge_db: str = "local_knowledge"):
+    def get_knowledge(self, task_identifier: dict, scope: list, time_range=(0,float('inf')), knowledge_db: str = "local_knowledge",location:str|None="localhost"):
         '''searches for all knowledge entries and returns them in a list'''
         
         knowledge_filter = {"meta.skill_class": task_identifier["skill_class"],
-                            "meta.tags": scope
+                            "meta.tags": scope,
+                            "meta.time": {"$gte": time_range[0],"$lte":time_range[1]}
         }
-        docs = self.DBclient.read(knowledge_db, task_identifier["skill_class"], knowledge_filter)
+        if type(location) == str:
+            global_client = MongoDBClient(location)
+            docs = global_client.read(knowledge_db, task_identifier["skill_class"], knowledge_filter)
+        else:
+            docs = self.DBclient.read(knowledge_db, task_identifier["skill_class"], knowledge_filter)
         docs.sort(key=lambda t: abs(np.sum(np.array(t["meta"]["identity"]) - np.array(task_identifier["identity"]))))
-        logger.debug("knoweldge_manger.get_knowledge: search for "+str(scope)+" on "+str(knowledge_db)+". Found "+str(len(docs)))
+        logger.debug("knoweldge_manger.get_knowledge: search for "+str(scope)+" on "+str(knowledge_db)+" at "+str(location)+". Found "+str(len(docs)))
         return docs
 
     def get_successful_trials(self, doc):
@@ -471,7 +494,7 @@ class KnowledgeManager:
             l.append(d[key])
         return l
     
-    def push_trial_fast_pipe(self, task:str, theta:dict, cost:float, tags:list, skill_class:str):
+    def push_trial_fast_pipe(self, task:str, theta:list, cost:float, tags:list, skill_class:str, skill_instance:str):
         if self.fast_pipe_ip is None:
             return False
         fast_pipe_client = MongoDBClient(self.fast_pipe_ip)
@@ -480,60 +503,88 @@ class KnowledgeManager:
                     "time": time.time(),
                     "theta": theta,
                     "cost":cost,
-                    "tags":tags
+                    "tags":tags,
+                    "skill_class":skill_class,
+                    "skill_instance":skill_instance
                     }
-        while not fast_pipe_client.write("fast_knowledge_pipe", skill_class,document=document):
+        while not fast_pipe_client.write("fast_knowledge_pipe", skill_class, document=document):
             logger.error("could not reach database at "+self.fast_pipe_ip+"  ...retrying...")
             time.sleep(1)
 
-    def receive_trial_fast_pipe(self, task, tags, skill_class):
+    def receive_trial_fast_pipe(self, skill_instance, scope, skill_class, time_range):
+        ### scope are the tags used for finding knowledge. knowledge.scope
         fast_pipe_client = MongoDBClient(self.fast_pipe_ip)
 
         #update fast_pipe_data with data since last update
-        #tags[2:] neglect skill_class and inserbale from tags
-        self.fast_pipe_data.extend(fast_pipe_client.read("fast_knowledge_pipe",skill_class, {"tags":tags[2:], "time":{"$lt":self.fast_pipe_last_update}}))  
+        self.fast_pipe_data.extend(fast_pipe_client.read("fast_knowledge_pipe",skill_class, {"tags":scope, "time":{"$gt":self.fast_pipe_last_update}}))  
         self.fast_pipe_last_update = time.time()
-
+        if len(self.fast_pipe_data)<1:
+            logger.error("KnowledgeManagr.receive_trial-fast_pipe(): No data in fast pipe so far.")
+            return False
         remove_indexs = []
         for i,trial in enumerate(self.fast_pipe_data):
-            if trial["task"] is task:  #remove all occurences of own task:
+            if trial["skill_instance"] is skill_instance:  #remove all occurences of own task:
                 remove_indexs.append(i)
+                continue
             if trial["task"] in self.received_fast_pipe_trials:  #remove trials already tried out:
                 if trial["time"] in self.received_fast_pipe_trials[trial["task"]]:
                     remove_indexs.append(i)
+                    continue
+            if trial["time"] > time_range[1]:  #remove trials that contain too new knowledge
+                remove_indexs.append(i)
+                continue
+            if trial["time"] < time_range[0]:  #remove trials that contain too old knowledge
+                remove_indexs.append(i)
+                continue
+
         for i in remove_indexs:
             self.fast_pipe_data.pop(i)
 
         for fast_pipe_trial in self.fast_pipe_data:
-            if fast_pipe_trial["task"] not in self.similarties:
-                self.similarties[fast_pipe_trial["task"]] = 1  # create new similarity entry for unknown task
-        #similarity update:
-        for key in self.similarties.keys():
-            if self.similarties[key] <= 0:
-                self.similarties[key] = 0.01 
-            similarity_sum = sum(self.similarties.values())
-            for key in self.similarties.keys():
-                self.similarties[key] = self.similarties[key] / similarity_sum  # calculate probability for picking trial from this agent (=key)
-        #save similarities in mongo:
-        self.DBclient.write("similarities",task,{"tags":tags, "time":time.time(),"similarities":self.similarties})
+            if fast_pipe_trial["skill_instance"] not in self.similarties:
+                try:
+                    self.similarties[fast_pipe_trial["skill_instance"]] = sum(self.similarties.values())/len(self.similarties)  # create new similarity entry for unknown task
+                except ZeroDivisionError:
+                    self.similarties[fast_pipe_trial["skill_instance"]] = 1
 
-        source_task = str(np.random.choice(list(self.similarties.keys()), p=[self.similarties[key] for key in self.similarties.keys()]))  # random pick task according to probability
+        #similarity update:
+        similarity_sum = sum(self.similarties.values())
+        if similarity_sum == 0:
+            return False
+        #for key in self.similarties.keys():
+            #if self.similarties[key] <= 0:   # to always have the chance to request from this task
+            #    self.similarties[key] = 0.01 
+        for key in self.similarties.keys():
+            self.similarties[key] = self.similarties[key] / similarity_sum  # calculate probability for picking trial from this agent (=key)
+        #save similarities in mongo:
+        self.DBclient.write("similarities",skill_instance,{"tags":scope, "time":time.time(),"similarities":self.similarties})
+
+        if len(self.similarties.keys()) < 1:
+            logger.error("KnowledgeManagr.receive_trial-fast_pipe(): No similarities calculated")
+            return False
+        source_task = str(np.random.choice(a=list(self.similarties.keys()), p=[self.similarties[key] for key in self.similarties.keys()]))  # random pick task according to probability
+        
+        print("KnowledgeManagr.receive_trial-fast_pipe(): random picked source task: "+str(source_task))
         #pick best trial from this task:
         best_cost = float('inf')
         best_trial_index = None
         for i,trial in enumerate(self.fast_pipe_data):
-            if trial["task"] is not source_task:
+            if trial["skill_instance"] != source_task:
                 continue
             if trial["cost"] < best_cost:
                 best_trial_index = i
+                best_cost = trial["cost"]
+        print("KnowledgeManagr.receive_trial-fast_pipe(): cost:" +str(best_cost)+" index="+str(best_trial_index))
         if best_trial_index is not None:       
-            selected_trial = self.fast_pipe_data[best_trial_index]
+            selected_trial = self.fast_pipe_data.pop(best_trial_index)  # remove this trial from local fast_pipe copy. Update later only with newer trials.
         else:
-            logger.error("No trial found to receive in fast Pipe")
+            logger.error("KnowledgeManagr.receive_trial-fast_pipe():No trial found to receive in fast Pipe")
+            return False
+        selected_trial["index"] = best_trial_index
         
-        return selected_trial["theta"], selected_trial["cost"], selected_trial["task"]
+        return selected_trial
 
-    def push_trial(self, task: str, theta: list, cost: float, keep_size: int = 250):
+    def push_trial(self, task: str, theta: list, cost: float, keep_size: int = 250):  # unused -> push_trial_fast_pipe
         '''
         the trial (theta) will be stored in self.data_storage under key "<task>" {"<name of origin>": Tuple(Theta, Cost, list(already requested by agents))}
         the stored trials will not exceed keep_size
@@ -555,7 +606,7 @@ class KnowledgeManager:
         self.data_storage[task].sort(key=lambda t: t[1] )  # sort according to cost
         
 
-    def request_trials(self, task:str, n_trials: int, similarity: dict = {}) -> list:
+    def request_trials(self, task:str, n_trials: int, similarity: dict = {}) -> list:  ##unused  -> receive_trial_fast_pipe
         '''
         self.data_storage: {"<name of origin>": Tuple(Theta, Cost, list(already requested by agents))}
         
@@ -670,7 +721,7 @@ class KnowledgeManager:
 
     #     return trials
 
-    def push_trial_2(self, theta: list, cost: float, task_parameter: float):
+    def push_trial_2(self, theta: list, cost: float, task_parameter: float):  ## sunused -> push_trial_fast_pipe
         theta.append(task_parameter)
         self.trial_data_x.append(theta)
         self.trial_data_y.append(cost)

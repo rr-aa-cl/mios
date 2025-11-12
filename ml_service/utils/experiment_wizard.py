@@ -1,4 +1,4 @@
-from xmlrpc.client import ServerProxy
+from xmlrpc.client import ServerProxy,Fault
 import copy
 import time
 from utils.database import backup_result

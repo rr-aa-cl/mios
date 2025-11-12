@@ -6,9 +6,13 @@ from threading import Thread
 import copy
 from utils.ws_client import *
 import numpy as np
+from numpy.linalg import inv
 import json
 import socket
 import struct
+from scipy.spatial.transform import Rotation
+import math
+import pprint
 
 import time
 import copy
@@ -17,13 +21,13 @@ import copy
 ###################################################################################
 list_block_1 = ["001", #"002", 
                 "003", "004", "005", 
-                "006", "007", "043", #"008"
-                "033", "035"]
-list_block_2 = ["013","014","015","016","042", #"044"
-                 "018",#"020",
-                "041",
+                "006", "007", "033", "032", "008"]  #"044"->032
+list_block_2 = ["035",
+                "034","013","014", # -> 043 -> 034
+                "015","042",
+                "017", "016",  #041->017
                 "021","022"]
-list_U = ["023", "024", "025","026", "047"]# , "029"] #, "026", "028",
+list_U = ["023", "024", "025","026", "018","040","029"] # "028",  047 ->018
 list_external = ["050"]
 def get_ips(module_list):
     with open("ip.json", "r") as jsonfile:
@@ -107,12 +111,32 @@ def set_grasped_objects():
     for ip,m in zip(ips,modules):
         call_method(ip,12000,"set_grasped_object",{"object":m+"_left"})
 
-def command_some(robots:list, cmd: str, args: dict = {}):
+def command_some(robots:list, cmd: str, args: dict = {},robot_arm="all"):
+    threads = []
+    for r in robots:
+        print(r)
+        if robot_arm=="all" or robot_arm=="left":
+            threads.append(Thread(target=call_method, args=(r, 12000, cmd, args,)))
+            threads[-1].start()
+        if robot_arm=="all" or robot_arm=="right":
+            threads.append(Thread(target=call_method, args=(r, 13000, cmd, args,)))
+            threads[-1].start()
+    for t in threads:
+        t.join()
+
+def command_left(robots:list, cmd: str, args: dict = {}):
     threads = []
     for r in robots:
         print(r)
         threads.append(Thread(target=call_method, args=(r, 12000, cmd, args,)))
         threads[-1].start()
+    for t in threads:
+        t.join()
+
+def command_right(robots:list, cmd: str, args: dict = {}):
+    threads = []
+    for r in robots:
+        print(r)
         threads.append(Thread(target=call_method, args=(r, 13000, cmd, args,)))
         threads[-1].start()
     for t in threads:
@@ -401,41 +425,751 @@ def object_test(robot, object):
     except KeyboardInterrupt:
         call_method(robot, 12000, "stop_task")
 
-def modify_object_transformations(module, object, z_mm, y_mm=0.0, x_mm=0.0, mass=0.0,y_ang=0):
-    ip = get_ips([module])[0]
-    client = MongoDBClient(ip)
-    o = client.read("miosL", "environment", {"name":object})[0]
-    o = call_method(ip,12000,"download_object_context",{"object":object})["result"]["context"]
+def log_test(ip = "collective-dev-001.rsi.ei.tum.de"):
+    wiggle_contextx = {
+        "skill": {
+            "dX_fourier_a_a": [-0, -0, -0, 0, 0.15, 0],
+            "dX_fourier_a_phi": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_a_f": [0, -0, -0, 0, 0.5, 0],
+            "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
+            "use_EE": True,
+            "time_max": 7.2,
+            "log_data":False,
+            #"data_length":7200,
+            "log_name":"log_test",
+            "meta":{"description":"This is a log-test","tags":["this", "is", "a","test", "wiggle a bit"]},
 
-    o["OB_T_TCP"] = [   np.cos(y_ang),   0,   -np.sin(y_ang),  0,
+        },
+        "control": {
+            "control_mode": 0,
+            "cart_imp": {
+                "K_x": [2000, 2000, 2000, 250, 25, 25]
+            }
+        }
+    }
+    tr = Task(ip,12000)
+    tr.add_skill("wigglex", "GenericWiggleMotion", wiggle_contextx)
+    tr.start(queue=False)
+    call_method(ip,12000,"home_gripper")
+    try: 
+        print("Press <crl+c> for stopping.")
+        tr.wait()
+    except KeyboardInterrupt:
+        call_method(ip, 12000, "stop_task")
+    print(tr.wait()["result"]["task_result"]["skill_results"]["wigglex"]["cost"]["time"])
+
+def log_test_without(ip = "collective-dev-001.rsi.ei.tum.de"):
+    wiggle_contextx = {
+        "skill": {
+            "dX_fourier_a_a": [-0, -0, -0, 0.15, 0, 0],
+            "dX_fourier_a_phi": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_a_f": [0, -0, -0, 0.5, 0, 0],
+            "dX_fourier_b_a": [0, 0, 0, 0, 0, 0],
+            "dX_fourier_b_f": [0, 0, 0, 0, 0, 0],
+            "use_EE": True,
+            "time_max": 5000,
+            "log_data":True,
+            "data_length":50000,
+            "log_name":"wiggle_log_test",
+            "log_to_file":True,
+            "meta":{"description":"This is a log-test","tags":["this", "is", "a","test", "wiggle a bit"]},
+
+        },
+        "control": {
+            "control_mode": 0
+        }
+    }
+    tr = Task(ip,12000)
+    tr.add_skill("wigglex", "GenericWiggleMotion", wiggle_contextx)
+    tr.start(queue=False)
+    try: 
+        print("Press <crl+c> for stopping.")
+        tr.wait()
+    except KeyboardInterrupt:
+        call_method(ip, 12000, "stop_task")
+
+def move_to_object(module,obj,add_nullspace=True,f_ext=[40,20],port=12000,wait=True):
+    ip = get_ips([module])[0]
+    o = call_method(ip,12000,"download_object_context",{"object":obj})["result"]["context"]
+    context = {
+        "skill": {
+            "p0":{
+                "dX_d": [0.3, 0.8],
+                "ddX_d": [0.5, 1],
+                "K_x": [2000, 2000, 2000, 250, 250, 250],
+                "T_T_EE_g":o["O_T_OB"]
+                #"T_T_EE_g_offset": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, offset[0], offset[1], offset[2], 1]
+            },
+            "time_max":10,
+            "objects": {
+                    "GoalPose": "NoneObject"
+                }
+        },
+        "control": {
+            "control_mode": 0
+        },
+        "user":{
+            "F_ext_max": f_ext,
+            #"env_X": [0.002, 0.002, 0.002, 0.0175, 0.0175, 0.0175]  #[0.001, 0.001, 0.001, 0.001, 0.001, 0.001]
+        }
+    }
+    if add_nullspace:
+        context["control"]["nullspace"] = {
+                                                    "K_theta": [20, 20, 15, 10, 7, 5, 2],
+                                                    "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
+                                                    "active": True
+                                                    }
+    t = Task(ip, port=port)
+    t.add_skill("move", "TaxMove", context)
+    t.start()
+    if wait:
+        return t.wait()
+
+def delete_object(module, object):
+    ip = get_ips([module])[0]
+
+    o = call_method(ip,12000,"download_object_context",{"object":object})["result"]["context"]
+    o["OB_T_TCP"] = [   1, 0,  0,  0,  # drehung um x-achse
+                        0, 1,  0,  0,
+                        0, 0,  1,  0,
+                        0, 0,  0,  1]
+    
+    #o["OB_T_gp"] = copy.deepcopy(o["OB_T_TCP"])
+    o["OB_T_gp"] = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]
+    o["mass"] = 0
+    o["OB_I"] = [1,0,0, 0,1,0, 0,0,1]
+    o["object"] = o["name"]
+    call_method(ip,12000, "set_object", o)
+    
+def modify_object_transformations(module, object, z_mm, y_mm=0.0, x_mm=0.0, mass=0.0,y_ang=0, inertia = [1,0,0, 0,1,0, 0,0,1]):
+    # old inertia (works)  [0.00684,-0.00279,0, -0.00279,0.00709,0, 0,0,0.00731]
+    # new inertia: 
+    ip = get_ips([module])[0]
+    try:
+        o = call_method(ip,12000,"download_object_context",{"object":object})["result"]["context"]
+    except KeyError:
+        call_method(ip,12000,"teach_object",{"object":object})
+        o = call_method(ip,12000,"download_object_context",{"object":object})["result"]["context"]
+
+    o["OB_T_TCP"] = [   np.cos(y_ang),   0,   -np.sin(y_ang),  0,  #drehung um y-achse
                         0,               1,   0,               0,
                         np.sin(y_ang),   0,   np.cos(y_ang),   0,
                         0,               0,   0,               1]
-    #o["OB_T_gp"] = o["OB_T_TCP"]
-    #o["OB_T_TCP"] = [   np.cos(y_ang),    np.sin(y_ang),    0,  0,
-    #                    -np.sin(y_ang),   np.cos(y_ang),    0,  0,
-    #                    0,                0,                1,  0,
-    #                    0,                0,                0,  1]
-    o["OB_T_TCP"] = [   1,   0,             0,              0,
-                        0,   np.cos(y_ang), -np.sin(y_ang), 0,
-                        0,   np.sin(y_ang), np.cos(y_ang),  0,
-                        0,   0,             0,              1]
- 
-    o["OB_T_TCP"][14] = z_mm/1000
-    o["OB_T_gp"][14] = 0#-z_mm/1000
+    o["OB_T_TCP"] = [   1, 0,                               0,  0,  # drehung um x-achse
+                        0,  np.cos(y_ang),   -np.sin(y_ang),   0,
+                        0,   np.sin(y_ang),   np.cos(y_ang),   0,
+                        0,               0,   0,               1]
+    
+    #o["OB_T_gp"] = copy.deepcopy(o["OB_T_TCP"])
+    o["OB_T_gp"] = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]
+    o["OB_T_TCP"][14] = z_mm/2000
+    o["OB_T_gp"][14] = -z_mm/2000
 
-    o["OB_T_TCP"][13] = y_mm/1000
-    o["OB_T_gp"][13] = 0#-y_mm/1000
+    o["OB_T_TCP"][13] = y_mm/2000
+    o["OB_T_gp"][13] = -y_mm/2000
 
-    o["OB_T_TCP"][12] = x_mm/1000
-    o["OB_T_gp"][12] = 0#-x_mm/1000
+    o["OB_T_TCP"][12] = x_mm/2000
+    o["OB_T_gp"][12] = -x_mm/2000
 
     o["mass"] = mass
+
+    o["OB_I"] = inertia
+    
+    o["object"] = o["name"]
+    call_method(ip,12000, "set_object", o)
+
+def test_object_transformations(module, object, z_m):
+    # old inertia (works)  [0.00684,-0.00279,0, -0.00279,0.00709,0, 0,0,0.00731]
+    # new inertia: 
+    ip = get_ips([module])[0]
+    o = call_method(ip,12000,"download_object_context",{"object":object})["result"]["context"]
+
+    o["OB_T_TCP"][14] = z_m
+    #o["OB_T_gp"][14] = -z_m
     
     o["object"] = o["name"]
     call_method(ip,12000, "set_object", o)
     
+def modify_object_kinematics(module, object,wrench_size=19,l_short=None,l_long=None, grasping_offset_mm=[0,0,0],angle_y=0.,angle_x=0.,mass=None):
+        # Define the parameters for the calculation
+    # Provide the measured total mass of the wrench in kilograms
 
+    '''
+        calculate_hex_wrench_inertia(
+    total_mass: float,
+    l_long: float,
+    l_short: float,
+    hex_size: float,
+    grasp_offset_translation: tuple[float, float, float] = (0, 0, 0),
+    grasp_offset_rotation_xyz_rad: tuple[float, float, float] = (0, 0, 0)
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Calculates the inertia matrix and transformation matrices for a hex wrench.
+
+    The function models the hex wrench as an L-shape of two hexagonal prisms.
+    The object frame is centered at the Center of Mass (CoM). Its z-axis points
+    along the long handle, and its x-axis points along the negative short handle.
+
+    Args:
+        total_mass: The total mass of the hex wrench in kg.
+        l_long: The length of the longer handle in meters.
+        l_short: The length of the shorter handle in meters.
+        hex_size: The size of the hex wrench (width across flats) in millimeters.
+        grasp_offset_translation: (dx, dy, dz) translation of the grasping frame
+            from the handle intersection, in meters.
+        grasp_offset_rotation_xyz_rad: (rx, ry, rz) Euler angles in radians for the
+            grasping frame's orientation relative to the object frame.
+
+    Returns:
+        A tuple containing:
+        - inertia_matrix_obj (np.ndarray): The 3x3 inertia tensor in the object frame.
+        - T_obj_to_grasp (np.ndarray): The 4x4 transformation from the object
+          frame to the grasping frame.
+        - T_obj_to_tip (np.ndarray): The 4x4 transformation from the object
+          frame to the tip of the long handle.
+    """
+    '''
+    kinematics = calculate_hex_wrench_inertia(mass,l_long,l_short,wrench_size, (grasping_offset_mm[0]/1000,grasping_offset_mm[1]/1000,grasping_offset_mm[2]/1000), (math.radians(angle_x),math.radians(angle_y),0))
+
+    # Calculate the kinematics using the provided mass
+    # kinematics = calculate_wrench_kinematics(
+    #         hex_size_mm=wrench_size,
+    #         grasp_offset_xy_mm=grasping_offset,
+    #         grasp_angle_y_deg=angle_y,
+    #         grasp_angle_x_deg=angle_x,
+    #         total_mass_kg=mass,
+    #         L_long_mm=l_short,
+    #         L_short_mm=l_long
+    #     )
+  
+    # --- Print the results in a readable format ---
+
+    print("inertia_matrix_obj (np.ndarray): 3x3 inertia tensor in the object frame {O} (kg*m^2)")
+    print(kinematics[0])
+    print("\n" + "="*40 + "\n")
+
+    print("T_grasp_in_obj (np.ndarray): 4x4 homogeneous transformation matrix from the object frame {O} to the grasping frame {F_grasp}.:")
+    print(inv(kinematics[1]))
+    print("\n" + "="*40 + "\n")
+
+    print("T_tip_in_obj (np.ndarray): 4x4 homogeneous transformation matrix from the object frame {O} to the tip frame {F_tip} (tip at end of short handle, aligned with {O})")
+    print(kinematics[2])
+    print("\n" + "="*40 + "\n")
+
+    # --- Export matrices to column-major lists as requested ---
+    
+    # Flattening with 'F' (Fortran) order gives column-major
+    inertia_list = kinematics[0].flatten('F').tolist()
+    T_grasp_com_list = kinematics[1].flatten('F').tolist()
+    T_com_tip_list = kinematics[2].flatten('F').tolist()
+
+    ip = get_ips([module])[0]
+    try:
+        o = call_method(ip,12000,"download_object_context",{"object":object})["result"]["context"]
+    except KeyError:
+        call_method(ip,12000,"teach_object",{"object":object})
+        o = call_method(ip,12000,"download_object_context",{"object":object})["result"]["context"]
+    o["OB_I"] = inertia_list
+    o["OB_T_gp"] = T_grasp_com_list
+    o["OB_T_TCP"] = T_com_tip_list
+    o["mass"] = mass
+    o["object"] = o["name"]
+    call_method(ip,12000, "set_object", o)
+    return kinematics
+
+def skew_symmetric_matrix(v):
+    """
+    Creates a skew-symmetric matrix from a 3-element vector.
+    This is used for cross-product operations in matrix form (e.g., in Parallel Axis Theorem).
+    [v]x = [[0, -vz, vy], [vz, 0, -vx], [-vy, vx, 0]]
+    """
+    return np.array([
+        [0, -v[2], v[1]],
+        [v[2], 0, -v[0]],
+        [-v[1], v[0], 0]
+    ])
+
+def calculate_wrench_kinematics_unused(
+    hex_size_mm: float,
+    grasp_offset_xy_mm: list,
+    grasp_angle_y_deg: float,
+    grasp_angle_x_deg: float,
+    total_mass_kg: float = None,
+    steel_density_kg_m3: float = 7850.0,
+    L_long_mm: float = None,
+    L_short_mm: float = None
+):
+    """
+    Calculates the inertia matrix and transformation matrices for an L-shaped hex wrench.
+
+    The function establishes a 'body frame' {B} for the wrench with:
+    - Origin at the internal corner of the L-shape.
+    - Z-axis aligned with the long handle.
+    - X-axis aligned with the short handle.
+    - Y-axis completing the right-handed system.
+    
+    A 'Center of Mass frame' {C} is defined at the CoM, with axes parallel to {B}.
+
+    Args:
+        hex_size_mm (float): The size of the wrench across the flats, in millimeters.
+        grasp_offset_xy_mm (list): A list or tuple [x, y] for the grasping point offset
+                                   from the wrench corner, in millimeters.
+        grasp_angle_y_deg (float): The grasping orientation tilt around the Y-axis, in degrees.
+        grasp_angle_x_deg (float): The grasping orientation tilt around the X-axis, in degrees.
+        total_mass_kg (float, optional): The total measured mass of the wrench in kg.
+                                         If provided, this is used instead of calculating
+                                         mass from density. Defaults to None.
+        steel_density_kg_m3 (float, optional): Density of the material. Only used if
+                                               total_mass_kg is not provided. Defaults to steel.
+        L_long_mm (float, optional): The length of the long handle in mm. If not provided,
+                                     it's estimated from hex_size_mm.
+        L_short_mm (float, optional): The length of the short handle in mm. If not provided,
+                                      it's estimated from hex_size_mm.
+
+    Returns:
+        dict: A dictionary containing the calculated matrices and key properties:
+              - 'inertia_matrix_com_in_body_frame': 3x3 inertia tensor about the center of mass,
+                                                    oriented in the CoM/Body frame.
+              - 'T_com_from_grasp': 4x4 transform from the grasp frame {G} to the CoM frame {C}.
+              - 'T_com_from_tip': 4x4 transform from the tip frame {T} to the CoM frame {C}.
+              - 'wrench_properties': A dict of calculated physical properties.
+    """
+    # 1. --- CONVERT INPUTS AND ESTIMATE GEOMETRY ---
+    s = hex_size_mm / 1000.0
+    grasp_offset = np.array([grasp_offset_xy_mm[0] / 1000.0, grasp_offset_xy_mm[1] / 1000.0, 0.0])
+    angle_y_rad = np.deg2rad(grasp_angle_y_deg)
+    angle_x_rad = np.deg2rad(grasp_angle_x_deg)
+    
+    if L_long_mm is not None and L_long_mm > 0:
+        L_long = L_long_mm / 1000.0
+    else:
+        L_long = (10 * hex_size_mm + 30) / 1000.0
+    
+    if L_short_mm is not None and L_short_mm > 0:
+        L_short = L_short_mm / 1000.0
+    else:
+        L_short = (4 * hex_size_mm + 12) / 1000.0
+
+    # 2. --- CALCULATE MASS AND GEOMETRIC PROPERTIES ---
+    A = (np.sqrt(3) / 2) * s**2
+    J_area = (5 * np.sqrt(3) / 72) * s**4 
+
+    if total_mass_kg is not None and total_mass_kg > 0:
+        M_total = total_mass_kg
+        total_length = L_long + L_short
+        M_long = M_total * (L_long / total_length) if total_length > 0 else 0
+        M_short = M_total * (L_short / total_length) if total_length > 0 else 0
+        
+        total_volume = A * total_length
+        effective_density = M_total / total_volume if total_volume > 0 else 0
+        J_mass_per_length = effective_density * J_area
+    else:
+        M_long = steel_density_kg_m3 * A * L_long
+        M_short = steel_density_kg_m3 * A * L_short
+        M_total = M_long + M_short
+        J_mass_per_length = steel_density_kg_m3 * J_area
+
+    # 3. --- CALCULATE INERTIA TENSOR IN BODY FRAME {B} ---
+    I_cm_long = np.diag([(1/12)*M_long*L_long**2, (1/12)*M_long*L_long**2, J_mass_per_length*L_long])
+    r_long = np.array([0, 0, L_long / 2])
+    I_origin_long = I_cm_long - M_long * skew_symmetric_matrix(r_long) @ skew_symmetric_matrix(r_long)
+
+    I_cm_short = np.diag([J_mass_per_length*L_short, (1/12)*M_short*L_short**2, (1/12)*M_short*L_short**2])
+    r_short = np.array([L_short / 2, 0, 0])
+    I_origin_short = I_cm_short - M_short * skew_symmetric_matrix(r_short) @ skew_symmetric_matrix(r_short)
+
+    I_body = I_origin_long + I_origin_short
+
+    # 4. --- CALCULATE CENTER OF MASS (CoM) ---
+    P_com = (r_long * M_long + r_short * M_short) / M_total if M_total > 0 else np.zeros(3)
+    
+    # 5. --- CALCULATE INERTIA TENSOR AT CENTER OF MASS (CoM) ---
+    I_com_in_body_frame = I_body + M_total * (skew_symmetric_matrix(P_com) @ skew_symmetric_matrix(P_com))
+
+    # 6. --- CALCULATE TRANSFORMATION MATRICES ---
+    cy, sy = np.cos(angle_y_rad), np.sin(angle_y_rad)
+    cx, sx = np.cos(angle_x_rad), np.sin(angle_x_rad)
+    Rot_y = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
+    Rot_x = np.array([[1, 0, 0], [0, cx, -sx], [0, sx, cx]])
+    R_B_G = Rot_y @ Rot_x # Rotation from Grasp frame {G} to Body frame {B}
+    
+    # Transformation from Grasp frame {G} to CoM frame {C}. P_C = T_C_G * P_G
+    T_com_from_grasp = np.identity(4)
+    T_com_from_grasp[:3, :3] = R_B_G # CORRECTED: Rotation from {G} to {C} is R_C_G = R_B_G
+    translation_vector = grasp_offset - P_com # Vector from CoM origin to Grasp origin, in {C} coords
+    T_com_from_grasp[:3, 3] = translation_vector
+
+    # Transformation from Tip Frame {T} to CoM Frame {C}. P_C = T_C_T * P_T
+    P_tip = np.array([0, 0, L_long])
+    r_com_to_tip = P_tip - P_com
+    T_com_from_tip = np.identity(4)
+    T_com_from_tip[:3, 3] = r_com_to_tip
+
+    # 7. --- COMPILE RESULTS ---
+    results = {
+        "inertia_matrix_com_in_body_frame": I_com_in_body_frame,
+        "T_com_from_grasp": T_com_from_grasp,
+        "T_com_from_tip": T_com_from_tip,
+        "wrench_properties": {
+            "hex_size_mm": hex_size_mm,
+            "L_long_m": L_long,
+            "L_short_m": L_short,
+            "total_mass_kg": M_total,
+            "com_in_body_frame_m": P_com,
+            "grasp_point_in_body_frame_m": grasp_offset,
+            "grasp_rotation_matrix_R_B_G": R_B_G,
+        }
+    }
+    return results
+
+
+def calculate_hex_wrench_inertia(
+    total_mass: float,
+    l_long: float,
+    l_short: float,
+    hex_size: float,
+    grasp_offset_translation: tuple[float, float, float] = (0, 0, 0),
+    grasp_offset_rotation_xyz_rad: tuple[float, float, float] = (0, 0, 0)
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Calculates the inertia matrix and transformation matrices for a hex wrench.
+
+    The function models the hex wrench as an L-shape of two hexagonal prisms.
+    The object frame is centered at the Center of Mass (CoM). Its z-axis points
+    along the long handle, and its x-axis points along the negative short handle.
+
+    Args:
+        total_mass: The total mass of the hex wrench in kg.
+        l_long: The length of the longer handle in meters.
+        l_short: The length of the shorter handle in meters.
+        hex_size: The size of the hex wrench (width across flats) in millimeters.
+        grasp_offset_translation: (dx, dy, dz) translation of the grasping frame
+            from the handle intersection, in meters.
+        grasp_offset_rotation_xyz_rad: (rx, ry, rz) Euler angles in radians for the
+            grasping frame's orientation relative to the object frame.
+
+    Returns:
+        A tuple containing:
+        - inertia_matrix_obj (np.ndarray): The 3x3 inertia tensor in the object frame.
+        - T_obj_to_grasp (np.ndarray): The 4x4 transformation from the object
+          frame to the grasping frame.
+        - T_obj_to_tip (np.ndarray): The 4x4 transformation from the object
+          frame to the tip of the long handle.
+    """
+    # 1. Geometric and Mass Properties
+    # Convert hex size from mm to meters
+    width_across_flats = hex_size / 1000.0
+    # Side length 's' of the hexagon
+    s = width_across_flats / np.sqrt(3)
+    # Area of the hexagonal cross-section
+    area = (3 * np.sqrt(3) / 2) * s**2
+
+    # Mass distribution based on length
+    total_length = l_long + l_short
+    mass_long = total_mass * (l_long / total_length)
+    mass_short = total_mass * (l_short / total_length)
+    density = total_mass / (area * total_length)
+
+    # 2. Center of Mass (CoM) Calculation
+    # We define a "build" frame with the origin at the intersection of the handles.
+    # The long handle is along the z-axis, the short handle is along the x-axis.
+    # CoM of long handle in build frame
+    com_long_build = np.array([0, 0, l_long / 2])
+    # CoM of short handle in build frame
+    com_short_build = np.array([l_short / 2, 0, 0])
+
+    # Total CoM in the build frame
+    p_com_build = (com_long_build * mass_long + com_short_build * mass_short) / total_mass
+    x_com, y_com, z_com = p_com_build
+
+    # 3. Inertia Tensors of Individual Handles
+    # Inertia tensor for a hexagonal prism about its own CoM.
+    # Ixx = Iyy for a regular hexagonal prism.
+    Ixx_yy_component = (1/12) * (5 * s**2) + (1/3) * (0.5**2) # Simplified term for length
+    Izz_component = (5/6) * s**2
+
+    I_prism_long = mass_long * np.diag([
+        Ixx_yy_component * l_long**2,
+        Ixx_yy_component * l_long**2,
+        Izz_component
+    ])
+    I_prism_short = mass_short * np.diag([
+        Izz_component, # Main axis is now along x
+        Ixx_yy_component * l_short**2,
+        Ixx_yy_component * l_short**2
+    ])
+
+
+    # 4. Parallel Axis Theorem
+    # Shift inertia of each handle to the total CoM of the wrench.
+    # Vector from total CoM to long handle's CoM
+    r_long = com_long_build - p_com_build
+    R_long = np.array([[0, -r_long[2], r_long[1]], [r_long[2], 0, -r_long[0]], [-r_long[1], r_long[0], 0]])
+    I_total_long = I_prism_long + mass_long * (R_long @ R_long.T)
+
+    # Vector from total CoM to short handle's CoM
+    r_short = com_short_build - p_com_build
+    R_short = np.array([[0, -r_short[2], r_short[1]], [r_short[2], 0, -r_short[0]], [-r_short[1], r_short[0], 0]])
+    I_total_short = I_prism_short + mass_short * (R_short @ R_short.T)
+
+    # Total inertia tensor in the "build" frame orientation
+    I_build = I_total_long + I_total_short
+
+    # 5. Rotate to the Final Object Frame
+    # The object frame has z_obj along long handle (+z_build) and x_obj along
+    # negative short handle (-x_build). y_obj completes the right-hand system.
+    # x_obj = [-1, 0, 0], z_obj = [0, 0, 1] -> y_obj = z_obj x x_obj = [0, -1, 0]
+    R_obj_in_build = np.array([
+        [-1, 0, 0],
+        [0, -1, 0],
+        [0, 0, 1]
+    ])
+    # To transform the tensor from build to obj frame: I_obj = R.T * I_build * R
+    I_obj = R_obj_in_build.T @ I_build @ R_obj_in_build
+
+
+    # 6. Calculate Transformation Matrices
+    # --- Transformation to the Tip of the LONG Handle ---
+    # Position of the tip in the "build" frame (end of the long handle)
+    p_tip_build = np.array([0, 0, l_long])
+
+    # Position of the tip relative to the object frame's origin (CoM)
+    # Transform the vector (p_tip - p_com) from build frame to object frame
+    p_tip_in_obj_translation = R_obj_in_build.T @ (p_tip_build - p_com_build)
+
+    # Create the 4x4 transformation matrix from object frame to tip frame
+    T_obj_to_tip = np.eye(4)
+    T_obj_to_tip[:3, 3] = p_tip_in_obj_translation
+
+    # --- Transformation to the Grasping Frame ---
+    # Grasping point is at the intersection (origin of build frame) plus offset
+    p_grasp_build = np.array(grasp_offset_translation)
+
+    # Position of the grasp point relative to the object frame's origin (CoM)
+    p_grasp_in_obj_translation = R_obj_in_build.T @ (p_grasp_build - p_com_build)
+
+    # Create the rotation part of the transformation
+    R_grasp_in_obj = Rotation.from_euler('xyz', grasp_offset_rotation_xyz_rad).as_matrix()
+
+    # Create the 4x4 transformation matrix
+    T_obj_to_grasp = np.eye(4)
+    T_obj_to_grasp[:3, :3] = R_grasp_in_obj
+    T_obj_to_grasp[:3, 3] = p_grasp_in_obj_translation
+
+    return I_obj, T_obj_to_grasp, T_obj_to_tip
+
+
+def calculate_hex_wrench_properties(
+    total_mass_kg,
+    length_long_handle_m,
+    length_short_handle_m,
+    hex_wrench_waf_m,  # Width Across Flats of the hexagonal cross-section, in meters
+    grasp_offset_x_m,
+    grasp_offset_y_m,
+    grasp_offset_z_m,
+    grasp_angle_x_rad, # Euler angle for rotation around X-axis of object frame
+    grasp_angle_y_rad, # Euler angle for rotation around Y-axis of object frame
+    grasp_angle_z_rad  # Euler angle for rotation around Z-axis of object frame
+):
+    """
+    Calculates the inertia matrix and transformation matrices for an L-shaped hex wrench.
+
+    The hex wrench is approximated as two rigidly connected hexagonal prisms.
+    The object frame {O} is defined with its origin at the center of mass (COM) of the wrench.
+    The zO-axis is along the long handle (positive ZG direction of initial setup).
+    The xO-axis is along the negative of the short handle (negative XG direction of initial setup).
+    The yO-axis completes a right-handed system (yO = zO x xO, which is negative YG).
+
+    Args:
+        total_mass_kg (float): Total mass of the hex wrench in kilograms.
+        length_long_handle_m (float): Length of the long handle in meters.
+        length_short_handle_m (float): Length of the short handle in meters.
+        hex_wrench_waf_m (float): Width Across Flats of the hexagonal cross-section in meters.
+        grasp_offset_x_m (float): Translational offset of the grasping point from the
+                                   intersection of handles, along the XG-axis (meters).
+        grasp_offset_y_m (float): Translational offset of the grasping point from the
+                                   intersection of handles, along the YG-axis (meters).
+        grasp_offset_z_m (float): Translational offset of the grasping point from the
+                                   intersection of handles, along the ZG-axis (meters).
+        grasp_angle_x_rad (float): Euler angle for the grasping frame's rotation about the
+                                   object frame's X-axis (radians). Applied first.
+        grasp_angle_y_rad (float): Euler angle for the grasping frame's rotation about the
+                                   object frame's Y-axis (radians). Applied second.
+        grasp_angle_z_rad (float): Euler angle for the grasping frame's rotation about the
+                                   object frame's Z-axis (radians). Applied third.
+                                   The rotation sequence is extrinsic XYZ.
+
+    Returns:
+        tuple: Contains:
+            - inertia_matrix_obj (np.ndarray): 3x3 inertia tensor in the object frame {O} (kg*m^2).
+            - T_grasp_in_obj (np.ndarray): 4x4 homogeneous transformation matrix from the
+                                           object frame {O} to the grasping frame {F_grasp}.
+            - T_tip_in_obj (np.ndarray): 4x4 homogeneous transformation matrix from the
+                                         object frame {O} to the tip frame {F_tip}
+                                         (tip at end of short handle, aligned with {O}).
+    """
+
+    # --- Input Validation ---
+    if total_mass_kg <= 0:
+        raise ValueError("Total mass must be positive.")
+    if length_long_handle_m < 0 or length_short_handle_m < 0:
+        raise ValueError("Handle lengths cannot be negative.")
+    if hex_wrench_waf_m <= 0:
+        raise ValueError("Hex wrench WAF must be positive.")
+    if length_long_handle_m == 0 and length_short_handle_m == 0:
+        raise ValueError("At least one handle must have a non-zero length.")
+
+    # --- A. Preliminaries and COM Calculation ---
+
+    # 1. Hexagon side length 'a' from WAF [2, 3]
+    # WAF = a * sqrt(3)
+    a_m = hex_wrench_waf_m / np.sqrt(3)
+
+    # 2. Cross-sectional area A_hex (not directly needed for mass distribution if total_mass is given)
+    # A_hex_m2 = (3 * np.sqrt(3) / 2) * a_m**2
+
+    # 3. Masses of individual handles (M_l, M_s)
+    # Assuming uniform density, mass is proportional to length if cross-section is constant.
+    total_length = length_long_handle_m + length_short_handle_m
+    if total_length == 0: # Should be caught by earlier check, but for safety
+        mass_long_handle_kg = 0
+        mass_short_handle_kg = 0
+    else:
+        mass_long_handle_kg = total_mass_kg * (length_long_handle_m / total_length)
+        mass_short_handle_kg = total_mass_kg * (length_short_handle_m / total_length)
+
+    # 4. COM of individual handles in a global frame {G}
+    # {G} origin: inner corner of L-bend. Long handle along ZG, short handle along XG.
+    com1_G = np.array([0, 0, length_long_handle_m / 2])  # Long handle (Prism 1)
+    com2_G = np.array([length_short_handle_m / 2, 0, 0])  # Short handle (Prism 2)
+
+    # 5. COM of the composite wrench (COM_total) in {G} [4, 5]
+    if total_mass_kg == 0: # Avoid division by zero if mass is zero (though validated earlier)
+        com_total_G = np.array([0.0, 0.0, 0.0])
+    else:
+        com_total_G = (mass_long_handle_kg * com1_G + mass_short_handle_kg * com2_G) / total_mass_kg
+    
+    x_com_total_G = com_total_G
+    y_com_total_G = com_total_G[1] # Should be 0
+    z_com_total_G = com_total_G[2]
+
+    # --- B. Inertia Tensor Calculation ---
+
+    # Inertia tensor for a hexagonal prism of mass m_p, length L_p, side a_m
+    # Longitudinal (along L_p): I_long = (5/12) * m_p * a_m^2
+    # Transverse: I_trans = m_p * (L_p^2/12 + (5/24)*a_m^2)
+    # [6, 7, 8]
+
+    # 6. Inertia tensor of Prism 1 (long handle) about its own COM (com1_G), axes parallel to {G}
+    # Length L_p = length_long_handle_m, mass m_p = mass_long_handle_kg
+    # Long handle is along ZG axis.
+    I1_xx_local = mass_long_handle_kg * (length_long_handle_m**2 / 12 + (5/24) * a_m**2)
+    I1_yy_local = mass_long_handle_kg * (length_long_handle_m**2 / 12 + (5/24) * a_m**2)
+    I1_zz_local = (5/12) * mass_long_handle_kg * a_m**2
+    I1_local_com_G = np.diag([I1_xx_local, I1_yy_local, I1_zz_local])
+
+    # 7. Inertia tensor of Prism 2 (short handle) about its own COM (com2_G), axes parallel to {G}
+    # Length L_p = length_short_handle_m, mass m_p = mass_short_handle_kg
+    # Short handle is along XG axis.
+    I2_xx_local = (5/12) * mass_short_handle_kg * a_m**2 # Longitudinal for Prism 2
+    I2_yy_local = mass_short_handle_kg * (length_short_handle_m**2 / 12 + (5/24) * a_m**2)
+    I2_zz_local = mass_short_handle_kg * (length_short_handle_m**2 / 12 + (5/24) * a_m**2)
+    I2_local_com_G = np.diag([I2_xx_local, I2_yy_local, I2_zz_local])
+
+    # 8. Displacement vectors for Parallel Axis Theorem (from COM_total to component COMs)
+    d1_G = com1_G - com_total_G
+    d2_G = com2_G - com_total_G
+
+    # 9. Parallel Axis Theorem application [9, 10, 11]
+    def parallel_axis_term(mass, d_vec):
+        dx, dy, dz = d_vec
+        term = np.array([[dy**2 + dz**2, -dx*dy,        -dx*dz],
+            [-dx*dy,        dx**2 + dz**2, -dy*dz],
+            [-dx*dz,        -dy*dz,        dx**2 + dy**2]])
+        return mass * term
+
+    I1_shifted_G_prime = I1_local_com_G + parallel_axis_term(mass_long_handle_kg, d1_G)
+    I2_shifted_G_prime = I2_local_com_G + parallel_axis_term(mass_short_handle_kg, d2_G)
+
+    # 10. Total inertia tensor in {G'} (origin at COM_total, axes parallel to {G}) [1]
+    I_total_G_prime = I1_shifted_G_prime + I2_shifted_G_prime
+
+    # 11. Rotation matrix from {G'} to Object Frame {O} (R_G_prime_to_O)
+    # zO || ZG'  => k_O = _G'
+    # xO || -XG' => i_O = [-1,0,0]_G'
+    # yO = k_O x i_O = [0,-1,0]_G' (yO || -YG')
+    R_G_prime_to_O = np.array([[-1, 0,  0],
+        [ 0, -1, 0],
+        [ 0, 0,  1]])
+
+    # 12. Inertia tensor in Object Frame {O} (I_obj) [12, 13]
+    inertia_matrix_obj = R_G_prime_to_O @ I_total_G_prime @ R_G_prime_to_O.T
+
+    # --- C. Transformation Matrices --- [14, 15]
+
+    # 13. Transformation from Object Frame {O} to Grasping Frame {F_grasp} (T_Fgrasp_in_O)
+    # Grasping point base location in {G} (intersection of handles)
+    P_grasp_base_G = np.array([0.0, 0.0, 0.0])
+    # Apply user offset (assuming offset is in {G} coordinates from the intersection)
+    P_grasp_offset_G = np.array([grasp_offset_x_m, grasp_offset_y_m, grasp_offset_z_m])
+    P_grasp_final_G = P_grasp_base_G + P_grasp_offset_G
+
+    # Position vector of P_grasp_final relative to COM_total (origin of {O}), expressed in {G'}
+    P_grasp_final_G_prime = P_grasp_final_G - com_total_G
+    
+    # Position vector of P_grasp_final relative to origin of {O}, expressed in {O} components
+    P_grasp_origin_in_O = R_G_prime_to_O @ P_grasp_final_G_prime
+
+    # Rotation for grasping frame: R_Fgrasp_in_O
+    # Euler angles (grasp_angle_x, y, z_rad) define orientation of F_grasp w.r.t. O
+    # Applied as extrinsic XYZ: Rot(X,ax) then Rot(Y,ay) then Rot(Z,az)
+    # This means R_Fgrasp_in_O = Rz(az) * Ry(ay) * Rx(ax)
+    # Scipy's from_euler('XYZ', [ax,ay,az]) is Rx(ax)Ry(ay)Rz(az)
+    # To get Rz Ry Rx, we can compose:
+    rot_x = Rotation.from_euler('x', grasp_angle_x_rad, degrees=False)
+    rot_y = Rotation.from_euler('y', grasp_angle_y_rad, degrees=False)
+    rot_z = Rotation.from_euler('z', grasp_angle_z_rad, degrees=False)
+    R_Fgrasp_in_O_obj = (rot_z * rot_y * rot_x).as_matrix()
+    # Alternative using 'zyx' intrinsic which is equivalent to 'XYZ' extrinsic if order is reversed
+    # R_Fgrasp_in_O_obj = Rotation.from_euler('zyx', 
+    #                                     [grasp_angle_z_rad, grasp_angle_y_rad, grasp_angle_x_rad], 
+    #                                     degrees=False).as_matrix()
+    # Simpler: use 'XYZ' extrinsic, which is R = Rz Ry Rx if applied as Rz(angles[2])Ry(angles[1])Rx(angles)
+    # No, scipy from_euler('XYZ', [ax,ay,az]) is R = Rx(ax)Ry(ay)Rz(az)
+    # The most explicit way for Rz Ry Rx:
+    # R_grasp_orientation_in_O = Rotation.from_euler('z', grasp_angle_z_rad).as_matrix() @ \
+    #                            Rotation.from_euler('y', grasp_angle_y_rad).as_matrix() @ \
+    #                            Rotation.from_euler('x', grasp_angle_x_rad).as_matrix()
+    # Let's use the composition method for clarity on Rz*Ry*Rx
+    R_Fgrasp_in_O_obj = (Rotation.from_euler('z', grasp_angle_z_rad) * \
+                         Rotation.from_euler('y', grasp_angle_y_rad) * \
+                         Rotation.from_euler('x', grasp_angle_x_rad)).as_matrix()
+
+
+    T_grasp_in_obj = np.eye(4)
+    T_grasp_in_obj[0:3, 0:3] = R_Fgrasp_in_O_obj
+    T_grasp_in_obj[0:3, 3] = P_grasp_origin_in_O
+
+    # 14. Transformation from Object Frame {O} to Tip Frame {F_tip} (T_Ftip_in_O)
+    # Tip location in {G} (end of short handle)
+    P_tip_G = np.array([length_short_handle_m, 0.0, 0.0])
+    p_tip_build = np.array([0, 0, l_long])
+
+    # Position vector of P_tip relative to COM_total (origin of {O}), expressed in {G'}
+    P_tip_G_prime = P_tip_G - com_total_G
+
+    # Position vector of P_tip relative to origin of {O}, expressed in {O} components
+    P_tip_origin_in_O = R_G_prime_to_O @ P_tip_G_prime
+
+    # Orientation of Tip Frame {F_tip} is assumed to be aligned with Object Frame {O}
+    R_Ftip_in_O_obj = np.eye(3)
+
+    T_tip_in_obj = np.eye(4)
+    T_tip_in_obj[0:3, 0:3] = R_Ftip_in_O_obj
+    T_tip_in_obj[0:3, 3] = P_tip_origin_in_O
+    
+    return inertia_matrix_obj, T_grasp_in_obj, T_tip_in_obj
 
 def raise_banner():
     threads = []
@@ -480,43 +1214,33 @@ def populate_all():
         t.join()
 
 
-def copy_object(source:str, destinations:list, object_name:str, robot_arm="left"):
-    def _send_object(destination, db, collection, document):
-        if "_id" in document:
-            document.pop("_id")
-        client = MongoDBClient(destination)
-        if len(client.read(db, collection, {"name": document["name"]})):
-            client.remove(db, collection, {"name":document["name"]})
-        client.write(db, collection, document)
+def copy_object(source:str, destinations:list, object_name:str, from_arm="left",to_arm="same"):
+    def _send_object(destination, port, obj):
+        print(destination, ": ", call_method(destination,port,"set_object",obj))
     if destinations == "all":
         destinations = get_ips(modules)
         if source in destinations:
             destinations.remove(source)
-    client = MongoDBClient(source)
     obj = None
-    if robot_arm == "left":
-        obj = client.read("miosL","environment",{"name":object_name})
+    if from_arm == "left":
+        obj = call_method(source,12000,"download_object_context",{"object":object_name})["result"]["context"]
     else:
-        obj = client.read("miosR","environment",{"name":object_name})
-    if len(obj) != 1:
-        print("Failure: Found ", len(obj), " objects on ", source, " with name ", object_name)
-        return "error"
-    else:
-        obj = obj[0]
+        obj = call_method(source,13000,"download_object_context",{"object":object_name})["result"]["context"]
+    
+    obj["name"] = object_name
+    obj["object"] = object_name
+    pprint.pprint(obj)
     threads = []
     for destination in destinations:
-        if robot_arm == "left":
-            threads.append(Thread(target=_send_object, args=(destination, "miosL", "environment", obj)))
+        if to_arm == "same":
+            to_arm = from_arm
+        if to_arm == "left":
+            threads.append(Thread(target=_send_object, args=(destination, 12000, obj)))
         else:
-            threads.append(Thread(target=_send_object, args=(destination, "miosR", "environment", obj)))
+            threads.append(Thread(target=_send_object, args=(destination, 13000, obj)))
         threads[-1].start()
     for t in threads:
         t.join()
-    for m in destinations:
-        if robot_arm == "left":
-            call_method(m,12000,"reload_database")
-        else:
-            call_method(m,13000,"reload_database")
 
 def move_to_contact(robot, location, port = 12000, wait=True):
     context = {
@@ -666,13 +1390,15 @@ def move_all(pose = "default_pose"):
         t.join()
     print("finished")
 
-def move_some(robots:list, pose):
+def move_some(robots:list, pose, robot_arm="all"):
     threads = []
     for host in robots:
-        threads.append(Thread(target=move_joint, args=(host, pose, 12000, True)))
-        threads[-1].start()
-        threads.append(Thread(target=move_joint, args=(host, pose, 13000, True)))
-        threads[-1].start()
+        if robot_arm == "all" or robot_arm == "left":
+            threads.append(Thread(target=move_joint, args=(host, pose, 12000, True)))
+            threads[-1].start()
+        if robot_arm == "all" or robot_arm == "right":    
+            threads.append(Thread(target=move_joint, args=(host, pose, 13000, True)))
+            threads[-1].start()
     for t in threads:
         t.join()
     print("finished moving to ",pose)
@@ -1152,30 +1878,36 @@ def get_status():
         result = call_method(host,12000,"get_state")
         if result is not None:
             if result["result"]["current_task"] == "IdleTask":
-                if result["result"]["status"] == "Idle":
-                    print(host," -left- everything is good.")
-                elif result["result"]["status"] == "Reflex":
-                    print(host," -left- Non-upright-mounting Reflex.")
+                if "status" in result["result"]:
+                    if result["result"]["status"] == "Idle":
+                        print(host," -left- everything is good.")
+                    elif result["result"]["status"] == "Reflex":
+                        print(host," -left- Non-upright-mounting Reflex.")
+                    else:
+                        print(host, " -left- unknown status")
                 else:
-                    print(host, " -left- unknown status")
+                    print("No key \"status\" in get_state result")
             else:
                 print(host, " -left- Not in IdleTask")
         else:
             print(host, " -left- Not reachable!")
 
-        result = call_method(host,13000,"get_state")
-        if result is not None:
-            if result["result"]["current_task"] == "IdleTask":
-                if result["result"]["status"] == "Idle":
-                    print(host," -right- everything is good.")
-                elif result["result"]["status"] == "Reflex":
-                    print(host," -right- Non-upright-mounting Reflex.")
-                else:
-                    print(host, " -right- unknown status")
-            else:
-                print(host, " -right- Not in IdleTask")
-        else:
-            print(host, " -right- Not reachable!")
+        # result = call_method(host,13000,"get_state")
+        # if result is not None:
+        #     if result["result"]["current_task"] == "IdleTask":
+        #         if "status" in result["result"]:
+        #             if result["result"]["status"] == "Idle":
+        #                 print(host," -right- everything is good.")
+        #             elif result["result"]["status"] == "Reflex":
+        #                 print(host," -right- Non-upright-mounting Reflex.")
+        #             else:
+        #                 print(host, " -right- unknown status")
+        #         else:
+        #             print("No key \"status\" in get_state result")
+        #     else:
+        #         print(host, " -right- Not in IdleTask")
+        # else:
+        #     print(host, " -right- Not reachable!")
 
 
 def hold_pose(robot, duration, port, control="joint"):

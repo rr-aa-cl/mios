@@ -6,7 +6,6 @@ import matplotlib.image as mpimg
 from xmlrpc.client import ServerProxy
 from socket import gaierror
 
-from matplotlib import style
 
 from plotting.data_acquisition import *
 from plotting.data_processor import DataProcessor

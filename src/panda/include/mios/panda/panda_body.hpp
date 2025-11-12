@@ -19,6 +19,8 @@
 #include <mutex>
 #include <Eigen/Dense>
 
+#include "nlohmann/json.hpp"
+
 namespace mios {
 
 class Memory;
@@ -35,15 +37,21 @@ public:
 
     bool pre_run_checks() const;
 
-    bool start_desk_task(const std::string& task, const std::optional<std::string> &ip, const std::string user, const std::string &password);
-    bool stop_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string &password);
-    void wait_for_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string& password);
-    bool shutdown_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password);
-    bool reboot_robot(const std::optional<std::string> &ip, const std::string user, const std::string& password);
-    bool move_to_pack_pose(const std::optional<std::string> &ip, const std::string user, const std::string& password);
-    bool unlock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password);
-    bool lock_brakes(const std::optional<std::string> &ip, const std::string user, const std::string& password);
-
+    //bool start_desk_task(const std::string& task, const std::optional<std::string> &ip, const std::string user, const std::string &password);
+    //bool stop_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string &password);
+    //void wait_for_desk_task(const std::optional<std::string> &ip, const std::string user, const std::string& password);
+    bool shutdown_robot();
+    bool reboot_robot();
+    //bool move_to_pack_pose(const std::optional<std::string> &ip, const std::string user, const std::string& password);
+    bool unlock_brakes();
+    bool lock_brakes();
+    bool execution();
+    bool programming();
+    bool ensure_robot_ready();
+    bool take_control();
+    bool release_control();
+    
+ 
 
     bool grasp(double width,double speed,double force,double epsilon_inner,double epsilon_outer) const;
     bool move_to_finger_position(double width, double speed) const;

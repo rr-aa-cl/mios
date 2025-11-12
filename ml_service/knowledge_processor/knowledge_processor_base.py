@@ -42,7 +42,8 @@ class KnowledgeProcessorBase(metaclass=ABCMeta):
         knowledge.skill_instance = self.task_identfier["skill_instance"]
         knowledge.tags = self.task_identfier["tags"]
         knowledge.scope = self.scope
-        knowledge.time = time.ctime()
+        knowledge.time = time.time()
+        knowledge.datetime = time.ctime()
         knowledge.confidence = self.confidence
         print("knowledge_procsessing: wrap_informtaion: ", knowledge.to_dict())
         return knowledge.to_dict()

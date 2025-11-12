@@ -18,10 +18,10 @@ class Client:
         return json.loads(response)
 
 
-async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout=100000, silent=False):
+async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout=100, silent=False):
     uri = "ws://" + hostname + ":" + str(port) + "/" +endpoint
     try:
-        async with websockets.connect(uri, close_timeout=1000) as websocket:
+        async with websockets.connect(uri, close_timeout=100) as websocket:
             message = json.dumps(request)
             await websocket.send(message)
             response = await asyncio.wait_for(websocket.recv(), timeout=timeout)

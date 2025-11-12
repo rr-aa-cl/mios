@@ -34,6 +34,11 @@ class Result:
             self.total_trials = 0
             self.total_time = 0
 
+
+        #if "init_knowledge" in data_tmp["meta"]:
+        #    self.knowledge = data_tmp["meta"]["init_knowledge"]["parameters"]
+        #else:
+        #    self.knowledge = None
         self.knowledge = None
         if "init_knowledge" in data_tmp["meta"]:
             if "parameters" in data_tmp["meta"]["init_knowledge"]:

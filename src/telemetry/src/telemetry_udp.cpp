@@ -115,7 +115,7 @@ void TelemetryUDP::sending_loop(){
         const Percept* p = m_core->get_percept();
         m_time_duration = m_time_1 - p->time;
         if(m_time_duration>= m_frequency){
-            m_core->refresh_percept({});
+            //m_core->refresh_percept({});
             p = m_core->get_percept();
         }
         m_time_2 = std::chrono::high_resolution_clock::now();
@@ -133,7 +133,7 @@ void TelemetryUDP::sending_loop(){
                 case 6: mirmi_utils::write_json_array<double,7,1>(msg_data["dtheta"],p->proprioception.dtheta); break;
                 case 7: mirmi_utils::write_json_array<double,6,1>(msg_data["O_dX_EE"],p->proprioception.O_dX_EE); break;
                 case 8: mirmi_utils::write_json_array<double,6,1>(msg_data["EE_dX_EE"],p->proprioception.EE_dX_EE); break;
-                case 9: mirmi_utils::write_json_array<double,6,1>(msg_data["F_dX_EE"],p->proprioception.TF_dX_EE); break;
+                case 9: mirmi_utils::write_json_array<double,6,1>(msg_data["TF_dX_EE"],p->proprioception.TF_dX_EE); break;
                 case 10: mirmi_utils::write_json_array<double,7,1>(msg_data["tau_ext"],p->proprioception.tau_ext); break;
                 case 11: mirmi_utils::write_json_array<double,7,1>(msg_data["tau_j"],p->proprioception.tau_j); break;
                 case 12: mirmi_utils::write_json_array<double,6,1>(msg_data["K_F_ext_K"],p->proprioception.K_F_ext_K); break;

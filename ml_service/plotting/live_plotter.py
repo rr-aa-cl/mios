@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from matplotlib import style
 
 from plotting.data_acquisition import *
 from plotting.data_processor import DataProcessor

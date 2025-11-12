@@ -54,7 +54,14 @@ def get_ip(hostname: str):
     print("hostname: ",hostname)
     return socket.gethostbyname(hostname)
 
-def populate_database(host, db, ip, user_name="franka", user_pw="frankaRSI"):
+def populate_database(host:str, db:str, ip:str, user_name="franka", user_pw="frankaRSI"):
+    '''
+    host: mios IP
+    db: mios Database (typically miosL)
+    ip: IP of Robot ControlBox connected to the mios PC
+    user_name: DESK username
+    user_pw: DESK user password
+    '''
     try:
         client = MongoDBClient(host)
         new_params = {"desk_name":user_name, "desk_pwd":user_pw,"robot_ip":ip, "spoc_token":"","spoc_in_control":False}
@@ -62,6 +69,30 @@ def populate_database(host, db, ip, user_name="franka", user_pw="frankaRSI"):
         print("updated ", host,": ",db)
     except:
             print(host, " not updated")
+
+def teach_position(robot, position_name, teach_gripper_width=False):
+    # Teaches the pose in Cartesian and joint space for the specified object. If the object does not existin a
+    # new object is created. The object can also be a reference frame for other objects.
+    # To teach panda have to be in guiding mode (white light at panda arm)
+    return call_method(robot, 12000, "teach_object", {"object": position_name, "teach_width": teach_gripper_width})
+
+def grasp(robot):
+    # grasp sth smaller than 10cm (epsilon_outer=0.1)
+    return call_method(robot, 12000, "grasp",
+                       {"width": 0.0, "speed": 1, "force": 200, "epsilon_inner": 1, "epsilon_outer": 0.1})
+
+def open_gripper(robot):
+    # opens the gripper completely
+    return call_method(robot, 12000, "release_object", {"speed": 1})
+
+def move_gripper(robot,gripper_width):
+    # open the gripper with gripper_width in [m] for e.g. 0.06 = 6cm
+    return call_method(robot, 12000, "move_gripper", {"width": gripper_width, "speed": 0.15})
+
+def set_grasped_object(robot, object_name):
+    # set the grasped object so the robot know that it grabs something
+    return call_method(robot, 12000, "set_grasped_object", {"object": object_name})
+
 
 def move_to_contact(robot, location, port = 12000, wait=True):
     context = {
@@ -85,8 +116,12 @@ def move_to_contact(robot, location, port = 12000, wait=True):
     if wait:
         return t.wait()
 
-def move(robot, location, offset = [0,0,0], port=12000, wait = True,f_ext = [10,5], add_nullspace=False,
+def move(robot:str, location:str, offset = [0,0,0], port=12000, wait = True,f_ext = [10,5], add_nullspace=False,
          p_g=[]):
+    '''
+    robot: ip of mios instance
+    location: position name that was teached
+    '''
     context = {
         "skill": {
             "p0":{
@@ -136,6 +171,10 @@ def init_position(robot):
 
 
 def move_joint(robot, location, port=12000, offset=[0,0,0,0,0,0,0], wait=True, speed = [], q_g=[]):
+    '''
+    robot: ip of mios instance
+    location: position name that was teached
+    '''
     path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
     f = open(path_to_default_context + "move_joint.json")
     move_context = json.load(f)
@@ -182,13 +221,8 @@ def hold_pose(robot, duration, port, control="joint"):
     t.add_skill("hold","HoldPose",hold_context)
     t.start(queue=False)
 
-def insert(robot:str, object_name:str):
-    return insertion(robot, object_name,object_name+"_container_approach",object_name+"_container")
 
-def extract(robot:str, object_name:str):
-    return extraction(robot, object_name,object_name+"_container_approach",object_name+"_container")
-
-def extraction(robot, extractable, extractTo, container, port=12000):
+def extract(robot, extractable, extractTo, container, port=12000):
     path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
     f = open(path_to_default_context + "extraction.json")
     move_context = json.load(f)
@@ -202,7 +236,7 @@ def extraction(robot, extractable, extractTo, container, port=12000):
     t.start(queue=False)
     return t.wait()
 
-def insertion(robot, insertable, approach, container, deltaX =[0,0,0,0,0,0], port=12000):
+def insert(robot, insertable, approach, container, deltaX =[0,0,0,0,0,0], port=12000):
     path_to_default_context = os.getcwd() + "/taxonomy/default_contexts/"
     f = open(path_to_default_context + "insertion.json")
     move_context = json.load(f)
@@ -250,29 +284,10 @@ def press_button(robot,tippable, approach):
     t = Task(robot)
     t.add_skill("press_button","TaxPressButton",move_context)
     t.start(queue=False)
-    return t.wait()
+    return t.wait()  
 
 
-def teach_insertion(robot:str, object_name:str):
-    insertable = object_name
-    
-    print("\nteaching ",insertable, "for ", robot,"\n")
-
-    handguiding(robot, "Insert the object into the robot\'s fingers. [Press any key to continue]")
-    call_method(robot, 12000, "grasp", {"width":0,"speed":1,"force":100})
-    call_method(robot, 12000, "teach_object", {"object": insertable, "width":True})
-    current_finger_width = call_method(robot,12000,"get_state")["result"]["gripper_width"]
-    call_method(robot,12000,"move_gripper",{"speed":1,"force":100,"width":current_finger_width+0.005})
-    time.sleep(0.2)
-    print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
-    handguiding(robot, "Teach approach pose slightly above the object\'s container. [Press any key to continue]")
-    call_method(robot, 12000, "teach_object", {"object": insertable+"_container_approach"})
-    handguiding(robot, "Teach container pose with the object fully inserted into the container. [Press any key to continue]")
-    call_method(robot, 12000, "teach_object", {"object": insertable+"_container"})
-    # print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
-    handguiding(robot, "Extract robot and object again. [Press any key to continue]")
-
-def handguiding(robot:str, message:str="Press any key to stop"):
+def handguiding(robot):
     context = {
         "skill": {
             "record_trajectory": False,
@@ -287,7 +302,7 @@ def handguiding(robot:str, message:str="Press any key to stop"):
     t = Task(robot)
     t.add_skill("record_trajectory", "HandGuiding", context)
     t.start()
-    input(message)
+    input("stop now?")
     result = t.stop()
     print("Result: " + str(result))
 
@@ -299,46 +314,6 @@ def update_object(robot, name, content={}):
             obj[key] = content[key]
     obj["object"] = obj["name"]
     call_method(robot,12000,"set_object",obj)
-
-def taskboard(robot):
-    input("teach pose above box")
-    call_method(robot,12000,"teach_object",{"object":"taskboard_default"})
-    input("teach pose button red")
-    call_method(robot,12000,"teach_object",{"object":"button_red"})
-    input("teach pose button blue")
-    call_method(robot,12000,"teach_object",{"object":"button_blue"})
-    input("teach pose door handle closed")
-    call_method(robot,12000,"teach_object",{"object":"handle_closed"})
-    input("teach pose door handle open")
-    call_method(robot,12000,"teach_object",{"object":"handle_open"})
-    input("teach pose probe pin default")
-    call_method(robot,12000,"teach_object",{"object":"probe_pin_default"})
-    input("teach pose probing")
-    call_method(robot,12000,"teach_object",{"object":"probe_pin_test"})
-    input("teach pose probe plug 1")
-    call_method(robot,12000,"teach_object",{"object":"probe_plug_1"})
-    input("teach pose probe plug 2")
-    call_method(robot,12000,"teach_object",{"object":"probe_plug_2"})
-    input("teach pose slider start")
-    call_method(robot,12000,"teach_object",{"object":"slider_start"})
-    input("teach pose slider end")
-    call_method(robot,12000,"teach_object",{"object":"slider_end"})
-    input("teach pose slider triangle")
-    call_method(robot,12000,"teach_object",{"object":"slider_triangle"})
-
-    move_joint(robot,"taskboard_default")
-
-    call_method(robot,12000,"grasp",{"width":0,"force":1,"speed":1,"epsilon_inner":1,"epsilon_outer":1})
-    move_joint(robot, "button_red")
-    press_button(robot, "button_red","taskboard_default")
-    call_method(robot,12000,"release_object")
-
-
-    move_joint(robot, "slider_start")
-    call_method(robot,12000, "grasp",{"width":0,"force":1,"speed":1,"epsilon_inner":1,"epsilon_outer":1})
-    move(robot,"slider_end")
-    move(robot,"slider_triangle")
-    call_method(robot,12000,"release_object")
 
 
    

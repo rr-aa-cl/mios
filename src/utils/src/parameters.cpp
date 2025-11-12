@@ -42,7 +42,6 @@ LimitParameters::LimitParameters(){
     cartesian_space.dxi_x_max << 10, 10, 10, 10, 10, 10;
 }
 
-
 bool LimitParameters::from_json(const nlohmann::json &parameters){
     if(parameters.find("joint_space")==parameters.end()){
         spdlog::error("Control parameters do not have joint_space subsection.");
@@ -372,21 +371,21 @@ nlohmann::json FramesParameters::to_json() const{
 
 SystemParameters::SystemParameters(){
     robot_ip="127.0.0.1";
-    desk_user="";
-    desk_pwd="";
+    //desk_user="";
+    //desk_pwd="";
 
     has_robot=false;
     gripper=PandaHandNone;
 
     spoc_token = "";
-    spoc_in_control = false;
+    //spoc_in_control = false;
 }
 
 bool SystemParameters::from_json(const nlohmann::json &parameters){
     if(!mirmi_utils::read_json_param(parameters,"robot_ip",robot_ip)){
         spdlog::error("Could not read robot_ip.");
         return false;
-    }
+    }/*
     if(!mirmi_utils::read_json_param(parameters,"desk_name",desk_user)){
         spdlog::error("Could not read desk_name.");
         return false;
@@ -394,7 +393,7 @@ bool SystemParameters::from_json(const nlohmann::json &parameters){
     if(!mirmi_utils::read_json_param(parameters,"desk_pwd",desk_pwd)){
         spdlog::error("Could not read desk_pwd.");
         return false;
-    }
+    }*/
     if(!mirmi_utils::read_json_param(parameters,"has_robot",has_robot)){
         spdlog::error("Could not read has_robot.");
         return false;
@@ -402,11 +401,11 @@ bool SystemParameters::from_json(const nlohmann::json &parameters){
     if(!mirmi_utils::read_json_param(parameters,"spoc_token",spoc_token)){
         spdlog::error("Could not read spoc_token.");
         return false;
-    }
+    }/*
     if(!mirmi_utils::read_json_param(parameters,"spoc_in_control",spoc_in_control)){
         spdlog::error("Could not read spoc_in_control.");
         return false;
-    }
+    }*/
     std::string gripper_tmp;
     if(!mirmi_utils::read_json_param(parameters,"gripper",gripper_tmp)){
         spdlog::error("Could not read gripper.");
@@ -425,11 +424,11 @@ bool SystemParameters::from_json(const nlohmann::json &parameters){
 nlohmann::json SystemParameters::to_json() const{
     nlohmann::json json_object;
     json_object["robot_ip"]=robot_ip;
-    json_object["desk_name"]=desk_user;
-    json_object["desk_pwd"]=desk_pwd;
+    //json_object["desk_name"]=desk_user;
+    //json_object["desk_pwd"]=desk_pwd;
     json_object["has_robot"]=has_robot;
     json_object["spoc_token"]=spoc_token;
-    json_object["spoc_in_control"]=spoc_in_control;
+    //json_object["spoc_in_control"]=spoc_in_control;
     std::string gripper_tmp;
     if(gripper==PandaHandNone){
         gripper_tmp="None";
@@ -832,8 +831,10 @@ SkillParameters::SkillParameters(){
     condition_level_error=SkillConditionLevel::sclSpecification;
     condition_level_exit=SkillConditionLevel::sclSpecification;
     log_data=false;
-    data_length=0;
+    data_length=6800;
+    scaling_divisor=1;
     log_name="";
+    log_to_file=false;
     log_meta=nlohmann::json();
 }
 
@@ -866,8 +867,16 @@ bool SkillParameters::read_global_skill_parameters(const nlohmann::json &p){
         spdlog::error("Could not read data_length.");
         return false;
     }
+    if(!mirmi_utils::read_json_param(p,"scaling_divisor",scaling_divisor)){
+        spdlog::error("Could not read scaling_divisor.");
+        return false;
+    }
     if(!mirmi_utils::read_json_param(p,"log_name",log_name)){
         spdlog::error("Could not read log_name.");
+        return false;
+    }
+    if(!mirmi_utils::read_json_param(p,"log_to_file",log_to_file)){
+        spdlog::error("Could not read log_to_file.");
         return false;
     }
     if(!mirmi_utils::read_json_param(p,"meta",log_meta)){
@@ -977,8 +986,10 @@ nlohmann::json SkillParameters::get_default_values(){
     default_values["ROI_x"]={-10,10,-10,10,-10,10};
     default_values["ROI_phi"]={-10,10,-10,10,-10,10};
     default_values["log_data"]=false;
-    default_values["data_length"]=0;
+    default_values["data_length"]=6800;  // restrict datalog size due to mongodb limitations
+    default_values["scaling_divisor"]=1;
     default_values["log_name"]="";
+    default_values["log_to_file"]=false;
     default_values["objects"]={};
     default_values["objects_modifier"]={};
     default_values["condition_level_pre"]="Model";
@@ -996,7 +1007,9 @@ nlohmann::json SkillParameters::to_json() const{
     json_object["ignore_settling"]=ignore_settling;
     json_object["log_data"]=log_data;
     json_object["data_length"]=data_length;
+    json_object["scaling_divisor"]=scaling_divisor;
     json_object["log_name"]=log_name;
+    json_object["log_to_file"]=log_to_file;
     json_object["objects"]={};
     json_object["objects_modifier"]={};
 

@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import random
-import deap
+#import deap
 import time
 from deap import base
 from deap import cma
@@ -46,9 +46,9 @@ class CMAESService(BaseService):
         self.success_ratio = 0
 
     def _initialize(self):
-        deap.creator.create("FitnessMin", deap.base.Fitness, weights=(-1.0,))
-        deap.creator.create("Individual", list, fitness=deap.creator.FitnessMin)
-        self.toolbox = deap.base.Toolbox()
+        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+        creator.create("Individual", list, fitness=creator.FitnessMin)
+        self.toolbox = base.Toolbox()
         self.engine.register_stop_condition(self._is_learned)
 
     def _learn_task(self) -> bool:
@@ -66,23 +66,23 @@ class CMAESService(BaseService):
 
         print("CMAES: " + str(self.centroid))
         print(self.problem_definition.domain.vector_mapping)
-        self.strategy = deap.cma.Strategy(centroid=self.centroid, sigma=sigma_init, lambda_=self.configuration.n_ind)
+        self.strategy = cma.Strategy(centroid=self.centroid, sigma=sigma_init, lambda_=self.configuration.n_ind)
         # else:
         #     self.centroid = self.problem_definition.domain.normalize(self.centroid)
         #     sigma_init = self.configuration.sigma_init / 4
         #     logger.debug("CMAESService._initialize(): use initial centroid "+str(self.centroid))
-        #     parent = deap.creator.Individual(self.centroid)
+        #     parent = creator.Individual(self.centroid)
         #     parent.fitness.values = (self.knowledge["meta"]["expected_cost"],)
         #     ptarg = 1.0 / (5 + np.sqrt(self.configuration.n_ind) / 2.0)
         #     cp = ptarg * self.configuration.n_ind / (2.0 + ptarg * self.configuration.n_ind) * 0.5
-        #     self.strategy = deap.cma.StrategyOnePlusLambda(parent=parent, sigma=sigma_init, lambda_=self.configuration.n_ind, cp=cp)
+        #     self.strategy = cma.StrategyOnePlusLambda(parent=parent, sigma=sigma_init, lambda_=self.configuration.n_ind, cp=cp)
 
-        self.toolbox.register("generate", self.strategy.generate, deap.creator.Individual)
+        self.toolbox.register("generate", self.strategy.generate, creator.Individual)
         self.toolbox.register("update", self.strategy.update)
 
-        hof = deap.tools.HallOfFame(10)
+        hof = tools.HallOfFame(10)
 
-        stats = deap.tools.Statistics(lambda ind: ind.fitness.values)
+        stats = tools.Statistics(lambda ind: ind.fitness.values)
         stats.register("avg", np.mean)
         stats.register("std", np.std)
         stats.register("min", np.min)
@@ -110,7 +110,7 @@ class CMAESService(BaseService):
         trial_uuids = dict()
 
         for x in x_set:
-            uuid = self.push_trial(x)
+            uuid = self.push_trial(x)  # trials are pushed to the robot
             trial_uuids[uuid] = x
 
         costs = []
@@ -120,7 +120,7 @@ class CMAESService(BaseService):
         else:
             kb = ServerProxy("http://" + self.knowledge.kb_location + ":8001")
         for uuid in trial_uuids.keys():
-            result = self.wait_for_result(uuid)
+            result = self.wait_for_result(uuid)  # wait until robot executed the trials
             if result.q_metric.final_cost is None:
                 logger.error("None was returned as cost for trial " + uuid + ", invoking stop.")
                 self.stop()
@@ -184,7 +184,7 @@ class CMAESService(BaseService):
                 #     else:
                 #         break
                 # for i in new_population:
-                #     self.population.append(deap.creator.Individual(i[0]))
+                #     self.population.append(creator.Individual(i[0]))
                 #     fitnesses.append((i[1],))
             for ind, fit in zip(self.population, fitnesses):
                 ind.fitness.values = fit
