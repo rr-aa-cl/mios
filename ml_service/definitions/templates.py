@@ -49,11 +49,7 @@ class InsertionFactory(ProblemDefinitionFactory):
             "p2_K_psi": (0, 200),
             "p2_f_push_x": (-10, 10),
             "p2_f_push_y": (-10, 10),
-<<<<<<< HEAD
-            "p2_f_push_z": (0, 16)
-=======
             "p2_f_push_z": (0, 20)
->>>>>>> deepinterface
         }
         return limits
 
@@ -570,8 +566,6 @@ class BendFactory(ProblemDefinitionFactory):
     def run_setup(self) -> bool:
         result = call_method(self.robot, self.mios_port, "set_grasped_object", {"object": self.objects["Bendable"]})
         return True
-<<<<<<< HEAD
-=======
 
 
 class InsertionFactory2(ProblemDefinitionFactory):
@@ -752,4 +746,3 @@ class InsertionFactory2(ProblemDefinitionFactory):
         self.learn_context["skills"]["insertion2"]["user"]["env_X"] = [0.003, 0.003, 0.002, 0.1, 0.1, 0.1]
         self.learn_context["skills"]["insertion2"]["skill"]["ROI_x"] = [-0.03, 0.03, -0.03, 0.03, -1, 1]
         self.learn_context["skills"]["insertion2"]["user"]["F_ext_contact"] = [12, 5]
->>>>>>> deepinterface

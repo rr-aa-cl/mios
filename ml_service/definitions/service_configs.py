@@ -15,8 +15,6 @@ class SVMLearner(LearnerFactory):
         self.configuration.batch_synchronisation = batch_synchronisation
         self.configuration.request_probability = request_probability
         self.configuration.request_probability_decrease = request_probability_decrease
-<<<<<<< HEAD
-=======
 
 
 class OrigPSPLearner(LearnerFactory):
@@ -30,7 +28,6 @@ class OrigPSPLearner(LearnerFactory):
         self.configuration.batch_synchronisation = batch_synchronisation
         self.configuration.request_probability = request_probability
         self.configuration.request_probability_decrease = request_probability_decrease
->>>>>>> deepinterface
 
 
 class CMAESLearner(LearnerFactory):

@@ -52,13 +52,8 @@ class Task:
         response = start_task(self.robot, "GenericTask", parameters=self.context, port=self.port)
         self.task_uuid = response["result"]["task_uuid"]
 
-<<<<<<< HEAD
-    def wait(self):
-        result = wait_for_task(self.robot, self.task_uuid, port=self.port)
-=======
     def wait(self, timeout = 100):
         result = wait_for_task(self.robot, self.task_uuid, port=self.port, timeout=timeout)
->>>>>>> deepinterface
         #print("Task execution took " + str(time.time() - self.t_0) + " s.")
         return result
 
@@ -241,8 +236,6 @@ def download_best_result_2(host: str, db: str, skill_class: str, skill_instance:
                 context["skill"][mapping_arr[3]][param_arr[0]][int(param_arr[1]) - 1] = best_trial["theta"][p]
             else:
                 context["skill"][mapping_arr[3]][param_arr[0]] = best_trial["theta"][p]
-<<<<<<< HEAD
-=======
 
     return context
 
@@ -268,7 +261,6 @@ def download_best_result_tags(host: str, skill_class: str, tags: str):
                 context["skill"][mapping_arr[3]][param_arr[0]][int(param_arr[1]) - 1] = best_trial["theta"][p]
             else:
                 context["skill"][mapping_arr[3]][param_arr[0]] = best_trial["theta"][p]
->>>>>>> deepinterface
 
     return context
 
