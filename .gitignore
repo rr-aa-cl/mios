@@ -87,3 +87,7 @@ include/commons/config.hpp
 /python/Krones_assembly.py
 /python/DRLplotter.py
 /python/experimentData/
+
+
+
+cyclictest-rt.txt

@@ -106,5 +106,37 @@ policy: other/other: loadavg: 3.71 4.06 3.51 1/1819 858177
 
 T: 0 (858133) P: 0 I:1000 C:   8876 Min:     12 Act:   56 Avg:   59 Max:    2199
 T: 1 (858134) P: 0 I:1500 C:   5918 Min:      8 Act:   57 Avg:   60 Max:    1361
-^C-a2,3: command not found
-^C-m: command not found
+
+
+What this really means
+
+policy: other/other → both threads are running with SCHED_OTHER, the normal Linux time-sharing policy, not real-time.
+
+P: 0 → both threads have priority 0 (non-RT).
+
+So this test is measuring “normal desktop Linux”, not your RT scheduler.
+
+That’s why:
+
+Max latencies are 362 µs and 130 µs.
+
+The numbers are actually not terrible, but they’re not showing your RT kernel ability — we want to see SCHED_FIFO here.
+
+You probably:
+
+Ran cyclictest without sudo, or
+
+Used -p80 but cyclictest failed to set RT priority and silently fell back to other (often prints a warning you might have missed).
+
+-----
+
+Expected
+
+policy: fifo/fifo: ...
+T: 0 (...) P:80 I:1000 ... Max: XX
+T: 1 (...) P:80 I:1500 ... Max: YY
+
+-------
+
+echo "Max jitter:" $(grep -E ":\s*[0-9]+:" cyclictest-rt.txt | awk '{print $2}' | sort -n | tail -1)
+echo ">1ms count:" $(grep -E ":\s*[1-9][0-9]{3}:" cyclictest-rt.txt | awk '{sum+=$3} END{print sum+0}')
