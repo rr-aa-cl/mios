@@ -114,14 +114,14 @@ class Engine:
         self.x = np.empty((0, len(problem_definition.domain.limits)))
         self.exploration_mode = exploration_mode
         return self.initialize_results(problem_definition)
-    
+
     def set_data_buffer(self, data_buffer_reference):
         self.data_buffer = data_buffer_reference
-    
+
     def send_state(self, state):
         if self.data_buffer is not None and self.problem_definition is not None:
             self.data_buffer(str(self.problem_definition.host)+"-state", state)
-        
+
     def register_stop_condition(self, stop_condition):  # unused?
         self.stop_condition = stop_condition
 
@@ -137,7 +137,7 @@ class Engine:
     def stop(self):
         logger.info("Engine.stop() - received stop signal.")
         self.keep_running = False
-    
+
     def pause(self):
         self.pause_execution = True
 
@@ -209,6 +209,7 @@ class Engine:
         logger.info("Setup procedure done.")
 
         while self.keep_running is True:
+            print("HAHAHAHHA  - REza was here")
             try:
                 #logger.debug("Engine::main_loop.get_trial")
                 trial = self.queued_trials.get(False)
@@ -320,7 +321,7 @@ class Engine:
                 self.y = np.append(self.y, trial.task_result.q_metric.final_cost)
             self.lock_data.release()
             self._reset_task(agent, trial)
-            
+
             if self.problem_definition.variate_only_success is True and trial.task_result.q_metric.success is False:
                 #logger.debug("ENGINE: do not variate")
                 break
@@ -405,7 +406,7 @@ class Engine:
                 if "preconditions" in i:
                     status = call_method(agent,self.mios_port,"get_state")
                     for precondition in i["preconditions"]:
-                        if status is not None:  
+                        if status is not None:
                             if status["result"][precondition] != i["preconditions"][precondition]:
                                 logger.debug("precondition for reset not fullfilled. Skipping reset...")
                                 instruction_done = True
@@ -452,7 +453,7 @@ class Engine:
             if "preconditions" in i:
                 status = call_method(agent,self.mios_port,"get_state")
                 for precondition in i["preconditions"]:
-                    if status is not None:  
+                    if status is not None:
                         if status["result"][precondition] != i["preconditions"][precondition]:
                             logger.debug("precondition for reset not fullfilled. Skipping reset...")
                             instruction_done = True

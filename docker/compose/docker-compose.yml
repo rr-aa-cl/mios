@@ -22,7 +22,7 @@ services:
       - "27017:27017"
     volumes:
       - ./localFolder:/data/db
-    command: mongod --quiet --logpath /dev/null 
+    command: mongod --quiet --logpath /dev/null
 
   mios_mls:
     image: "mirmi/mios_mls:dualarm"

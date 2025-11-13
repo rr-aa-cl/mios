@@ -14,17 +14,17 @@ def learn_task(robot:str, problem_definition: ProblemDefinition, service_config:
                n_iterations: int = 10, keep_record: bool = False, knowledge = None, wait: bool = False, service_port:int = 8000):
     start_experiment(robot, [robot], problem_definition, service_config, n_iterations, knowledge=knowledge, tags=tags,
                      keep_record=keep_record, wait=wait,service_port=service_port)
-    
-    
+
+
 def example_learning(robot:str = "localhost"):
     # tasks = {hosts: insertables}
     tasks =  {
-        "localhost": "prism1"
+        "localhost": "tri1"
     }
     for host, insertable in tasks.items():
         container = insertable + "_container"
         approach = container + "_approach"
-        
+
         # configuring the learning problem (problem definition):
         # for every skill there is a definition class (eg InsertionFactory) that creates the problem_definition
         # input: list of agents (usually one robot -> IP of mios)
@@ -36,7 +36,7 @@ def example_learning(robot:str = "localhost"):
         pd.variate_only_success = True  # repeat trial only when successful
         pd.n_variations = 3  # how often a trial should be repeated
         pd.host = host  # host (only for ducumentation)
-        pd.optimum_thr = 0.3  # trial is taged as optimal when cost is under this threshold 
+        pd.optimum_thr = 0.3  # trial is taged as optimal when cost is under this threshold
         pd.cost_function.finish_thr = 2  # learning is finished when this threshold is reached with optimal trials; if exploration mode of the learning service is True, learning will still contiue
 
         # Leaning Service configuration:
@@ -50,7 +50,7 @@ def example_learning(robot:str = "localhost"):
         #                              0.4 is a good probability in multi robot systems
         #         request_probability_decrease: whether the request probability should be automaticcly adapt to success rate (True) or be keept steady (False)
         sc = SVMLearner(3000,10,0,True,False, -1, True).get_configuration()
-        
+
         # Knowledge source definition:
         # all information regarding where to find knowledge and kind of knowledge should be used
         # mode = mode  # either None, "specific", "local", "global"     (if "None", but parameters is not empty, the parameters will be used as centroid)
@@ -81,10 +81,10 @@ def example_learning(robot:str = "localhost"):
         knowledge = Knowledge()  # nothing defined right now -> start from scratch
         knowledge = knowledge.to_dict()
 
-        # this is a list of tags to find the entries on the mongoDB; 
+        # this is a list of tags to find the entries on the mongoDB;
         # the experiment wizard will append also some information here
-        tags = ["example_learning", "tutorial"]  
-        
+        tags = ["example_learning", "tutorial"]
+
         # helper function (experiment wizard):
         # mios IP
         # problem definition
@@ -93,9 +93,9 @@ def example_learning(robot:str = "localhost"):
         # knowledge source dict
         # number of iterations: how often should this experiment be repeated
         # service port: 8000
-        # whether the function should return immediately or wait until learning is finished 
+        # whether the function should return immediately or wait until learning is finished
         learn_task(robot, pd, sc, tags, knowledge=knowledge, n_iterations=1,service_port=8000,wait=True)
-        
+
 def stop_services(robots:list = ["localhost"]):
     for r in robots:
         s = ServerProxy("http://" + r + ":8000", allow_none=True)
@@ -104,3 +104,10 @@ def stop_services(robots:list = ["localhost"]):
         except Exception as e:
             print("Error with robot ",r)
             print(e)
+
+
+if __name__ == "__main__":
+    ROBOT = "localhost"
+    # stop_services()
+    example_learning(ROBOT)
+    print("Breakpoint ------- 11")

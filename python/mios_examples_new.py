@@ -6,9 +6,10 @@ import socket
 
 import time
 
+HARDCODED_PORT = 12000
 
 class Task:
-    def __init__(self, robot, port=13000):
+    def __init__(self, robot, port=HARDCODED_PORT):
         self.skill_names = []
         self.skill_types = []
         self.skill_context = dict()
@@ -108,7 +109,7 @@ def init_position(robot):
         robot,
         "MoveToJointPose",
         parameters={"parameters": {"q_g": initial_joint_pose, "pose": "NoneObject"}},
-        port=13000,
+        port=HARDCODED_PORT,
     )
 
 
@@ -128,7 +129,7 @@ def handguiding_old(robot: str, message: str = "Press any key to stop"):
     result = t.stop()
     print("Result: " + str(result))
 
-   
+
 def teach_insertion(robot:str, object_name:str,port=12000):
     insertable = object_name
     print("\nteaching ",insertable, "for ", robot,"\n")
@@ -138,7 +139,7 @@ def teach_insertion(robot:str, object_name:str,port=12000):
     time.sleep(1)
     call_method(robot, port, "teach_object", {"object": insertable, "width":True})
     time.sleep(1)
-    current_finger_width = call_method(robot,13000,"get_state")["result"]["gripper_width"]
+    current_finger_width = call_method(robot,HARDCODED_PORT,"get_state")["result"]["gripper_width"]
     call_method(robot,port,"move_gripper",{"speed":1,"force":100,"width":current_finger_width+0.005})
     time.sleep(1)
     print(call_method(robot, port, "grasp_object", {"object": insertable}))
@@ -149,7 +150,7 @@ def teach_insertion(robot:str, object_name:str,port=12000):
     time.sleep(1)
     call_method(robot, port, "teach_object", {"object": insertable+"_container"})
     # print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
-    handguiding(robot, "Extract robot and object again. [Press any key to continue]")   
+    handguiding(robot, "Extract robot and object again. [Press any key to continue]")
 
 
 def teach_insertion(robot:str, object_name:str,port=12000):
@@ -161,7 +162,7 @@ def teach_insertion(robot:str, object_name:str,port=12000):
     time.sleep(1)
     call_method(robot, port, "teach_object", {"object": insertable, "width":True})
     time.sleep(1)
-    current_finger_width = call_method(robot,13000,"get_state")["result"]["gripper_width"]
+    current_finger_width = call_method(robot,HARDCODED_PORT,"get_state")["result"]["gripper_width"]
     call_method(robot,port,"move_gripper",{"speed":1,"force":100,"width":current_finger_width+0.005})
     time.sleep(1)
     print(call_method(robot, port, "grasp_object", {"object": insertable}))
@@ -195,11 +196,11 @@ def handguiding(robot: str, message: str = "Press any key to stop"):
 if __name__ == "__main__":
     ROBOT = "localhost"
 
-    print('Breakpoint ------- 11');
-    # current_finger_width = call_method(ROBOT,13000,"get_state")["result"]
+    print('Breakpoint ------- 11')
+    # current_finger_width = call_method(ROBOT,HARDCODED_PORT,"get_state")["result"]
     # print(str(current_finger_width))
     # init_position(ROBOT)
     # handguiding(ROBOT)
-    call_method(ROBOT, 13000, "home_gripper")
-    # teach_insertion(ROBOT, "tri1",13000)
+    # call_method(ROBOT, 12000, "home_gripper") # Trial of open and close
+    teach_insertion(ROBOT, "tri1", HARDCODED_PORT)
     # init_position(ROBOT)
