@@ -114,13 +114,13 @@ class Engine:
         self.x = np.empty((0, len(problem_definition.domain.limits)))
         self.exploration_mode = exploration_mode
         return self.initialize_results(problem_definition)
-``
-    def set_data_buffer(self, data_buffer_reference):
-        self.data_buffer = data_buffer_reference
 
-    def send_state(self, state):
-        if self.data_buffer is not None and self.problem_definition is not None:
-            self.data_buffer(str(self.problem_definition.host)+"-state", state)
+    # def set_data_buffer(self, data_buffer_reference):
+    #     self.data_buffer = data_buffer_reference
+
+    # def send_state(self, state):
+    #     if self.data_buffer is not None and self.problem_definition is not None:
+    #         self.data_buffer(str(self.problem_definition.host)+"-state", state)
 
     def register_stop_condition(self, stop_condition):  # unused?
         self.stop_condition = stop_condition
@@ -350,7 +350,7 @@ class Engine:
         cnt_repeat = -1
         variation_result = None
         while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
-            self.send_state("learn task")
+            # self.send_state("learn task")
             logger.debug("Engine::_execute_task.loop")
             cnt_repeat += 1
             for skill_name in trial.task_context["skills"].keys():
@@ -395,7 +395,7 @@ class Engine:
             while instruction_done is False:
                 #logger.debug("Engine::_reset_task.loop")
                 # append meta information to skill context
-                self.send_state("reset task")
+                # self.send_state("reset task")
                 for skill_name in i["parameters"]["skills"].keys():
                     i["parameters"]["skills"][skill_name]["skill"] = udpate_dict(i["parameters"]["skills"][skill_name]["skill"], self.problem_definition.add_skill_info)
                     if "log_name" in self.problem_definition.add_skill_info:
@@ -442,7 +442,7 @@ class Engine:
     def _rescue_task(self,agent:str, trial:Trial):
         logger.debug("Engine::_rescue_task() - try this move once")
         for i in trial.rescue_instructions:
-            self.send_state("rescue task")
+            # self.send_state("rescue task")
             for skill_name in i["parameters"]["skills"].keys():
                 i["parameters"]["skills"][skill_name]["skill"] = udpate_dict(i["parameters"]["skills"][skill_name]["skill"], self.problem_definition.add_skill_info)
                 if "log_name" in self.problem_definition.add_skill_info:
@@ -553,7 +553,7 @@ class Engine:
     def setup_experiment(self, agent):
         logger.debug("Engine::_reset_task()")
         for i in self.problem_definition.setup_instructions:
-            self.send_state("setup task")
+            # self.send_state("setup task")
             logger.debug("Engine::setup_experiment.instructions: " + str(i["parameters"]))
             for skill_name in i["parameters"]["skills"]:
                 i["parameters"]["skills"][skill_name]["skill"] = udpate_dict(i["parameters"]["skills"][skill_name]["skill"], self.problem_definition.add_skill_info)

@@ -19,7 +19,7 @@ def learn_task(robot:str, problem_definition: ProblemDefinition, service_config:
 def example_learning(robot:str = "localhost"):
     # tasks = {hosts: insertables}
     tasks =  {
-        "localhost": "tri1"
+        "localhost": "reza-1"
     }
     for host, insertable in tasks.items():
         container = insertable + "_container"
@@ -108,6 +108,6 @@ def stop_services(robots:list = ["localhost"]):
 
 if __name__ == "__main__":
     ROBOT = "localhost"
-    # stop_services()
-    example_learning(ROBOT)
-    print("Breakpoint ------- 11")
+    stop_services()
+    # example_learning(ROBOT)
+    # print("Breakpoint ------- 11")

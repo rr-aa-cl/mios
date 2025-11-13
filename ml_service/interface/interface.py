@@ -16,7 +16,7 @@ from problem_definition.problem_definition import ProblemDefinition
 from utils.ws_client import call_method
 from database.database import Database
 from utils.cmd_loop import CMDLoop
-from interface.redis_connection import RedisConnection, send_result_to_dashboard, close_redis_connection
+# from interface.redis_connection import RedisConnection, send_result_to_dashboard, close_redis_connection
 #from rpc_visualization.switcher import TensorboardClient
 #from collective_manager.video_recorder import FFMpegWebcamRecorder
 
@@ -69,7 +69,7 @@ class Interface:
         self.rpc_server.register_function(self.start_cmd_loop, "start_cmd_loop")
         self.rpc_server.register_function(self.stop_cmd_loop, "stop_cmd_loop")
         self.rpc_server.register_function(self.start_telemetry, "start_telemetry")
-        self.rpc_server.register_function(self.stop_telemetry, "stop_telemetry")
+        # self.rpc_server.register_function(self.stop_telemetry, "stop_telemetry")
         # self.rpc_server.register_function(self.test_video_recording, "test_video_recording")
         self.rpc_server.serve_forever()
         logger.debug("Interface::start_rpc_server.server_stopped")
@@ -138,7 +138,7 @@ class Interface:
         finally:
             logger.debug("Interface::learn_task.finally: Releasing service lock")
             self.stop_cmd_loop()
-            self.stop_telemetry()
+            # self.stop_telemetry()
             self.service_lock.release()
         return result
     
@@ -232,45 +232,45 @@ class Interface:
         self.cmd_loop = None
         logger.debug("interface::stop_cmd_loop: stopped successfully")
 
-    def start_telemetry(self, ip, port):
-        logger.debug("interface::start_telemetry with ip "+str(ip)+" and port "+str(port))
-        self.telemetry_buffer = self.service.start_data_buffer()
-        self.keep_running_telemetry = True
-        self.telemetry_sender = RedisConnection().get_client(ip, port)
-        if self.telemetry_buffer is None:
-            return False
-        self.telemetry_thread = Thread(target=self._send_telemetry)
-        self.telemetry_thread.start()
-        return True
+    # def start_telemetry(self, ip, port):
+    #     logger.debug("interface::start_telemetry with ip "+str(ip)+" and port "+str(port))
+    #     self.telemetry_buffer = self.service.start_data_buffer()
+    #     self.keep_running_telemetry = True
+    #     self.telemetry_sender = RedisConnection().get_client(ip, port)
+    #     if self.telemetry_buffer is None:
+    #         return False
+    #     self.telemetry_thread = Thread(target=self._send_telemetry)
+    #     self.telemetry_thread.start()
+    #     return True
 
-    def stop_telemetry(self):
-        self.keep_running_telemetry = False
-        logger.debug("interface::stop_telemetry"+str(self.keep_running_telemetry))
-        if self.service is not None:
-            if self.service.data_buffer is not None:
-                self.service.data_buffer.add_data("STOP")
+    # def stop_telemetry(self):
+    #     self.keep_running_telemetry = False
+    #     logger.debug("interface::stop_telemetry"+str(self.keep_running_telemetry))
+    #     if self.service is not None:
+    #         if self.service.data_buffer is not None:
+    #             self.service.data_buffer.add_data("STOP")
             
-        if self.telemetry_thread is not None:
-            self.telemetry_thread.join()
-            self.telemetry_thread = None
-        if self.telemetry_sender is not None:
-            self.telemetry_sender.close()
+    #     if self.telemetry_thread is not None:
+    #         self.telemetry_thread.join()
+    #         self.telemetry_thread = None
+    #     if self.telemetry_sender is not None:
+    #         self.telemetry_sender.close()
 
-    def _send_telemetry(self):
-        while self.keep_running_telemetry:
-            telemetry = self.telemetry_buffer.get_data(timeout=1)
-            if telemetry is None:
-                continue
-            if telemetry == "STOP":
-                break
-            logger.debug("_send_telemetry to " + str(self.telemetry_sender.connection_pool.connection_kwargs.get('host','unknown'))) 
-            if not self.telemetry_sender.set(telemetry[0], telemetry[1]):
-                self.telemetry_buffer.readd_data(telemetry)
-                logger.error("cannot send trial to "+ str(self.telemetry_sender.connection_pool.connection_kwargs.get('host','unknown'))
-                             +":"+str(self.telemetry_sender.connection_pool.connection_kwargs.get('port','unknown')))
-                time.sleep(2)
-        logger.debug("interface:: telemetry sending thread stopped.")
-        return True
+    # def _send_telemetry(self):
+    #     while self.keep_running_telemetry:
+    #         telemetry = self.telemetry_buffer.get_data(timeout=1)
+    #         if telemetry is None:
+    #             continue
+    #         if telemetry == "STOP":
+    #             break
+    #         logger.debug("_send_telemetry to " + str(self.telemetry_sender.connection_pool.connection_kwargs.get('host','unknown'))) 
+    #         if not self.telemetry_sender.set(telemetry[0], telemetry[1]):
+    #             self.telemetry_buffer.readd_data(telemetry)
+    #             logger.error("cannot send trial to "+ str(self.telemetry_sender.connection_pool.connection_kwargs.get('host','unknown'))
+    #                          +":"+str(self.telemetry_sender.connection_pool.connection_kwargs.get('port','unknown')))
+    #             time.sleep(2)
+    #     logger.debug("interface:: telemetry sending thread stopped.")
+    #     return True
     
     # def test_video_recording(self,folder, filename, video_path="/dev/v4l/by-path/pci-0000:00:14.0-usb-0:7:1.3-video-index0"):
     #     logger.debug("start video recording test")

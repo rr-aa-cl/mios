@@ -1,7 +1,6 @@
 services:
-  mios_orig:
-    # image: "mirmi/mios:FR3"
-    image: "mirmi/mios:FR3_originalExtraction"
+  mios:
+    image: "mirmi/mios:FR3"
     restart: always
     environment:
       - ROBOT_IP=192.168.3.100

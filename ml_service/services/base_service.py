@@ -18,7 +18,7 @@ from knowledge_processor.knowledge_manager import KnowledgeManager
 from mongodb_client.mongodb_client import MongoDBClient
 from utils.exception import *
 from services.knowledge import Knowledge
-from interface.data_buffer import DataBuffer
+# from interface.data_buffer import DataBuffer
 
 logger = logging.getLogger("ml_service")
 
@@ -240,8 +240,8 @@ class BaseService(metaclass=ABCMeta):
         self.database_results_id = self.engine.initialize(self.problem_definition, self.configuration.exploration_mode)
 
         self._initialize()
-        if self.data_buffer is not None:
-            self.engine.set_data_buffer(self.data_buffer)
+        # if self.data_buffer is not None:
+        #     self.engine.set_data_buffer(self.data_buffer)
         self.engine_thread = Thread(target=self.engine.main_loop)
         self.engine_thread.start()
 
@@ -303,9 +303,9 @@ class BaseService(metaclass=ABCMeta):
         return result
 
     def start_data_buffer(self):
-        self.data_buffer = DataBuffer()
-        if self.engine is not None:
-            self.engine.set_data_buffer(self.data_buffer)
+        # self.data_buffer = DataBuffer()
+        # if self.engine is not None:
+        #     self.engine.set_data_buffer(self.data_buffer)
         return self.data_buffer
         
     def stop(self):
@@ -359,8 +359,8 @@ class BaseService(metaclass=ABCMeta):
             if type(result_dict["external"]) is str:
                 result_dict["external"] = eval(result_dict["external"])  # make it a dict again from string
         telemetry = (str(self.problem_definition.host)+"-trial", self.make_float_again(result_dict))
-        if self.data_buffer is not None:
-            self.data_buffer.add_data(telemetry)
+        # if self.data_buffer is not None:
+        #     self.data_buffer.add_data(telemetry)
         return result.task_result
     
     def get_theta(self, x) -> dict:

@@ -55,7 +55,7 @@ def grasp(robot):
     # grasp sth smaller than 10cm (epsilon_outer=0.1)
     return call_method(
         robot,
-        12000,
+        HARDCODED_PORT,
         "grasp",
         {
             "width": 0.0,
@@ -69,13 +69,13 @@ def grasp(robot):
 
 def open_gripper(robot):
     # opens the gripper completely
-    return call_method(robot, 12000, "release_object", {"speed": 1})
+    return call_method(robot, HARDCODED_PORT, "release_object", {"speed": 1})
 
 
 def move_gripper(robot, gripper_width):
     # open the gripper with gripper_width in [m] for e.g. 0.06 = 6cm
     return call_method(
-        robot, 12000, "move_gripper", {"width": gripper_width, "speed": 0.15}
+        robot, HARDCODED_PORT, "move_gripper", {"width": gripper_width, "speed": 0.15}
     )
 
 
@@ -130,7 +130,7 @@ def handguiding_old(robot: str, message: str = "Press any key to stop"):
     print("Result: " + str(result))
 
 
-def teach_insertion(robot:str, object_name:str,port=12000):
+def teach_insertion(robot:str, object_name:str,port=HARDCODED_PORT):
     insertable = object_name
     print("\nteaching ",insertable, "for ", robot,"\n")
 
@@ -149,11 +149,11 @@ def teach_insertion(robot:str, object_name:str,port=12000):
     handguiding(robot, "Teach container pose with the object fully inserted into the container. [Press any key to continue]")
     time.sleep(1)
     call_method(robot, port, "teach_object", {"object": insertable+"_container"})
-    # print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
+    # print(call_method(robot, HARDCODED_PORT, "grasp_object", {"object": insertable}))
     handguiding(robot, "Extract robot and object again. [Press any key to continue]")
 
 
-def teach_insertion(robot:str, object_name:str,port=12000):
+def teach_insertion(robot:str, object_name:str,port=HARDCODED_PORT):
     insertable = object_name
     print("\nteaching ",insertable, "for ", robot,"\n")
 
@@ -172,7 +172,7 @@ def teach_insertion(robot:str, object_name:str,port=12000):
     handguiding(robot, "Teach container pose with the object fully inserted into the container. [Press any key to continue]")
     time.sleep(1)
     call_method(robot, port, "teach_object", {"object": insertable+"_container"})
-    # print(call_method(robot, 12000, "grasp_object", {"object": insertable}))
+    # print(call_method(robot, HARDCODED_PORT, "grasp_object", {"object": insertable}))
     handguiding(robot, "Extract robot and object again. [Press any key to continue]")
 
 
@@ -201,6 +201,6 @@ if __name__ == "__main__":
     # print(str(current_finger_width))
     # init_position(ROBOT)
     # handguiding(ROBOT)
-    # call_method(ROBOT, 12000, "home_gripper") # Trial of open and close
-    teach_insertion(ROBOT, "tri1", HARDCODED_PORT)
+    # call_method(ROBOT, HARDCODED_PORT, "home_gripper") # Trial of open and close
+    teach_insertion(ROBOT, "reza-1", HARDCODED_PORT)
     # init_position(ROBOT)
