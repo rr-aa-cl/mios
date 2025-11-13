@@ -114,7 +114,7 @@ class Engine:
         self.x = np.empty((0, len(problem_definition.domain.limits)))
         self.exploration_mode = exploration_mode
         return self.initialize_results(problem_definition)
-
+``
     def set_data_buffer(self, data_buffer_reference):
         self.data_buffer = data_buffer_reference
 
