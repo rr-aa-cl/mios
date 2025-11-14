@@ -374,6 +374,7 @@ SystemParameters::SystemParameters(){
     //desk_user="";
     //desk_pwd="";
 
+    dummy_robot=false;
     has_robot=false;
     gripper=PandaHandNone;
 
@@ -394,6 +395,10 @@ bool SystemParameters::from_json(const nlohmann::json &parameters){
         spdlog::error("Could not read desk_pwd.");
         return false;
     }*/
+    if(!mirmi_utils::read_json_param(parameters,"dummy_robot",dummy_robot)){
+        spdlog::error("Could not read dummy_robot.");
+        return false;
+    }
     if(!mirmi_utils::read_json_param(parameters,"has_robot",has_robot)){
         spdlog::error("Could not read has_robot.");
         return false;
@@ -426,6 +431,7 @@ nlohmann::json SystemParameters::to_json() const{
     json_object["robot_ip"]=robot_ip;
     //json_object["desk_name"]=desk_user;
     //json_object["desk_pwd"]=desk_pwd;
+    json_object["dummy_robot"]=dummy_robot;
     json_object["has_robot"]=has_robot;
     json_object["spoc_token"]=spoc_token;
     //json_object["spoc_in_control"]=spoc_in_control;

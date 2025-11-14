@@ -124,6 +124,7 @@ public:
     //std::string desk_user;
     //std::string desk_pwd;
 
+    bool dummy_robot;
     bool has_robot;
     PandaHand gripper;
 

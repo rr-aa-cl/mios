@@ -61,6 +61,12 @@ bool LTMemory::initialize(unsigned robot_configuration){
         system_parameters["gripper"]="None";
         m_mongodb_client.write_document("system","parameters",system_parameters,true);
         break;
+    case 4:
+        system_parameters["dummy_robot"]=true;
+        system_parameters["has_robot"]=true;
+        system_parameters["gripper"]="Default";
+        m_mongodb_client.write_document("system","parameters",system_parameters,true);
+        break;
     default:
         spdlog::error("Robot configuration " + std::to_string(robot_configuration) + " does not exist.");
         return false;

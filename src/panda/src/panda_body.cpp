@@ -16,7 +16,7 @@
 
 namespace mios {
 
-PandaBody::PandaBody(Memory *memory):m_panda_arm(nullptr),m_panda_model(nullptr),m_panda_hand(nullptr),m_has_arm(false),m_hand(PandaHandNone),m_arm_connected(false),m_hand_connected(false),
+PandaBody::PandaBody(Memory *memory):m_panda_arm(nullptr),m_panda_model(nullptr),m_panda_hand(nullptr),m_dummy_robot(false),m_has_arm(false),m_hand(PandaHandNone),m_arm_connected(false),m_hand_connected(false),
 m_memory(memory){
     spdlog::trace("PandaBody::PandaBody");
     m_robot_state.O_T_EE={1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
@@ -25,16 +25,20 @@ m_memory(memory){
 bool PandaBody::initialize(){
     spdlog::trace("PandaBody::initialize()");
     m_has_arm=m_memory->read_parameters()->system.has_robot;
+    m_dummy_robot=m_memory->read_parameters()->system.dummy_robot;
     //m_hand=m_memory->read_parameters()->system.gripper; // get hand automatically form desk
     
     std::optional<std::string> ip;
-    if(m_has_arm){
+    if(!m_dummy_robot && m_has_arm){
     //request control and activate FCI
         spdlog::debug("PandaBody::initialize()");
         ip = PandaBody::ping_robot(m_memory->get_parameters()->system.robot_ip);     
+    	m_memory->get_parameters()->system.robot_ip = ip.value_or("127.0.0.1");
+    } else {
+        ip = m_memory->get_parameters()->system.robot_ip;     
+    	m_hand=m_memory->read_parameters()->system.gripper;
     }
 
-    m_memory->get_parameters()->system.robot_ip = ip.value_or("127.0.0.1");
     if(!connect_to_robot(m_memory->read_parameters()->system.robot_ip)){
         return false;
     }
@@ -116,7 +120,7 @@ void PandaBody::load_gripper_configuration(){
 
 bool PandaBody::connect_to_robot(const std::optional<std::string> &ip){
     spdlog::trace("PandaBody::connect_to_robot()");
-    if(!m_has_arm){
+    if(!m_dummy_robot && !m_has_arm){
         m_arm_connected=false;
         return true;
     }

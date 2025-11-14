@@ -106,6 +106,7 @@ private:
     franka::RobotState m_robot_state;
     franka::GripperState m_gripper_state;
 
+    bool m_dummy_robot=false;
     bool m_has_arm;
     PandaHand m_hand;
 
