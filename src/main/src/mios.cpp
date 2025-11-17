@@ -8,16 +8,36 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/fmt/ostr.h"
 
 #include "pybind11/pybind11.h"
 #include "mios/core/core.hpp"
+#include "mios/utils/context.hpp"
 #include "mios/utils/configuration.hpp"
 #include "mirmi_cpp_utils/network/network.hpp"
 #include "cxxopts.hpp"
 #include "commons/config.hpp"
 
-void exit_handler(int s);
+// Global control flags
+std::atomic<bool> shutdown_signal{false};
+std::atomic<int> signal_count{0};
 
+void exit_handler(int signum) {
+    int count = ++signal_count;
+    if (count == 1) {
+        // --- FIRST SIGNAL: GRACEFUL ---
+        shutdown_signal = true;
+        const char* msg = "\n[SIG] Shutdown signal received. Cleaning up...\n"
+                          "[SIG] Press Ctrl+C again to FORCE kill immediately.\n";
+        write(STDERR_FILENO, msg, 84); 
+    } 
+    else {
+        // --- SECOND SIGNAL: FORCE KILL ---
+        const char* msg = "\n[SIG] Force quitting!\n";
+        write(STDERR_FILENO, msg, 21);
+        std::_Exit(EXIT_FAILURE); 
+    }
+}
 
 int main(int argc, char** argv){
 
@@ -30,7 +50,8 @@ int main(int argc, char** argv){
             ("w,websocket_port","WebSocket Interface Port used by mios.",cxxopts::value<unsigned>()->default_value("12000"))
             ("r,rpc_port","RPC Interface Port used by mios.",cxxopts::value<unsigned>()->default_value("12001"))
             ("u,udp_port","UDP Interface Port used by mios.",cxxopts::value<unsigned>()->default_value("12002"))
-            ("c,robot_config","Initial configuration of robot: 0 - arm and Franka Hand, 1 - only arm, 2 - arm and Softhand2, 3 - no arm and gripper,  4 - libfranka-sim config (arm+FrankaHand) ,   - libfranka-sim config (only arm)",cxxopts::value<unsigned>()->default_value("0"));
+            ("c,robot_config","Initial configuration of robot: 0 - arm and Franka Hand, 1 - only arm, 2 - arm and Softhand2, 3 - no arm and gripper",cxxopts::value<unsigned>()->default_value("0"))
+            ("d,desk","Disable DESK interface usage",cxxopts::value<std::string>()->default_value("true"));
 
 
     auto result = options.parse(argc, argv);
@@ -43,6 +64,8 @@ int main(int argc, char** argv){
     configuration.rpc_port=result["r"].as<unsigned>();
     configuration.udp_port=result["u"].as<unsigned>();
     configuration.websocket_port=result["w"].as<unsigned>();
+    std::string use_desk = result["d"].as<std::string>();
+    configuration.use_desk=(use_desk == "true" || use_desk == "True" || use_desk == "1");
 
     spdlog::level::level_enum info_level;
     if(configuration.verbosity=="trace"){
@@ -73,11 +96,13 @@ int main(int argc, char** argv){
     sigIntHandler.sa_handler = exit_handler;
     sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = 0;
-    sigaction(SIGINT, &sigIntHandler, NULL);
+    sigaction(SIGINT, &sigIntHandler, NULL);    // catch stop signal form crtl+c
+    sigaction(SIGTERM, &sigIntHandler, NULL);   // catch stop signal from docker stop
 
     spdlog::info("############################################################");
     spdlog::info("MIOS");
     spdlog::info("Version: " + std::to_string(PROJECT_VERSION_MAJOR) + "." + std::to_string(PROJECT_VERSION_MINOR) + "." + std::to_string(PROJECT_VERSION_PATCH));
+    spdlog::info("Initial configuration:\n{}", configuration);
 
     if(!mirmi_utils::is_port_available("localhost",configuration.websocket_port)){
         spdlog::error("Port "+std::to_string(configuration.websocket_port)+" is blocked by another process. You can check which process is blocking the port"
@@ -89,7 +114,9 @@ int main(int argc, char** argv){
     //ros::init(argc, argv, RosName, ros::init_options::NoSigintHandler);
 
     pybind11::scoped_interpreter guard{};
-    mios::Core core(configuration);
+
+    MiosContext context { configuration, shutdown_signal };
+    mios::Core core(context);
     spdlog::info("Initializing MIOS core...");
     if(!core.initialize()){
         spdlog::error("MIOS core could not be initialized, shutting down...");
@@ -102,7 +129,3 @@ int main(int argc, char** argv){
     return 0;
 }
 
-void exit_handler(int s){
-    printf("Caught exit signal %i, terminating server.",s);
-    exit(0);
-}

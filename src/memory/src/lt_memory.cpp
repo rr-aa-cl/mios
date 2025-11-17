@@ -8,9 +8,9 @@
 
 namespace mios {
 
-LTMemory::LTMemory(const MiosConfiguration &configuration):
-    m_mongodb_client(configuration.database_name, configuration.database_port),
-    m_configuration(configuration){
+LTMemory::LTMemory(const MiosContext &context):
+    m_mongodb_client(context.config.database_name, context.config.database_port),
+    m_context(context){
         spdlog::trace("LTMemory::LTMemory");
 
 }
@@ -42,7 +42,7 @@ bool LTMemory::initialize(){
 
     // nlohmann::json system_parameters;
     // m_mongodb_client.read_document("system","parameters",system_parameters);
-    // switch(m_configuration.robot_configuration){
+    // switch(m_context.config.robot_configuration){
     // case 0:
     //     system_parameters["has_robot"]=true;
     //     system_parameters["gripper"]="Default";
@@ -64,7 +64,7 @@ bool LTMemory::initialize(){
     //     m_mongodb_client.write_document("system","parameters",system_parameters,true);
     //     break;
     // default:
-    //     spdlog::error("Robot configuration " + std::to_string(m_configuration.robot_configuration) + " does not exist.");
+    //     spdlog::error("Robot configuration " + std::to_string(m_context.config.robot_configuration) + " does not exist.");
     //     return false;
     // }
 

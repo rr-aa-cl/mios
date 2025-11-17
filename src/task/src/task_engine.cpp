@@ -36,6 +36,9 @@ void TaskEngine::life_cycle(){
     bool reflex=false;
     bool recovery=false;
     while(m_keep_running){
+        if(m_core->m_context.shutdown_signal){
+            m_core->terminate();
+        }
         if(m_task_life_cycle==TaskLifeCycle::PreChecks){
             if(!m_core->is_ready()){
                 spdlog::warn("Core is not ready, I will attempt to reinitialize...");

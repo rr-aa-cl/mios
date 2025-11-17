@@ -391,6 +391,9 @@ TaskResult Task::get_subtask_result(const std::string &subtask_name) const{
 
 void Task::sleep_1ms() const{
     while(!m_flag_stop){
+        if(m_core->m_context.shutdown_signal){
+            break;
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 }

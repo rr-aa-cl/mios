@@ -6,7 +6,7 @@
 #include "mios/data_structures/parameters.hpp"
 #include "mios/data_structures/task_data.hpp"
 #include "mios/data_structures/percept.hpp"
-#include "mios/utils/configuration.hpp"
+#include "mios/utils/context.hpp"
 
 #include "nlohmann/json.hpp"
 
@@ -21,7 +21,7 @@ class Core;
 
 class Memory{
 public:
-    Memory(const MiosConfiguration &configuration);
+    Memory(const MiosContext &context);
     Memory(const Memory&) = delete;
     void operator=(Memory const&) = delete;
     bool is_ok() const;
@@ -65,7 +65,7 @@ public:
     bool get_task_data(const std::string uuid,TaskData& data) const;
     Object *get_object(const std::string& name);
     const Event* get_event(const std::string& name);
-    MiosConfiguration m_configuration;
+    MiosContext m_context;
 
     LTMemory m_lt_memory;
 private:

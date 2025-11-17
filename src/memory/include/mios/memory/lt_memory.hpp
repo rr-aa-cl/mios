@@ -3,7 +3,7 @@
 #include "mios/mongodb_client/mongodb_client.hpp"
 #include "mios/data_structures/object.hpp"
 #include "mios/data_structures/task_data.hpp"
-#include "mios/utils/configuration.hpp"
+#include "mios/utils/context.hpp"
 
 #include "nlohmann/json.hpp"
 
@@ -21,7 +21,7 @@ class SkillLibrary;
 
 class LTMemory{
 public:
-    LTMemory(const MiosConfiguration &configuration);
+    LTMemory(const MiosContext &context);
     bool is_ok() const;
     void link_to_st_memory(STMemory* st_memory);
     void link_to_skill_library(SkillLibrary* skill_library);
@@ -42,7 +42,7 @@ public:
     bool upload_log_element(const nlohmann::json& log_entry);
     bool update_database();
 
-    MiosConfiguration m_configuration;
+    MiosContext m_context;
 
 private:
     bool make_database_consistent();

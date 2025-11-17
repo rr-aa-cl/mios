@@ -3,7 +3,7 @@
 
 namespace mios {
 
-Memory::Memory(const MiosConfiguration &configuration):m_lt_memory(configuration),m_configuration(configuration){
+Memory::Memory(const MiosContext &context):m_lt_memory(context),m_context(context){
     spdlog::trace("Memory::Memory");
     m_st_memory.link_to_lt_memory(&m_lt_memory);
     m_lt_memory.link_to_st_memory(&m_st_memory);

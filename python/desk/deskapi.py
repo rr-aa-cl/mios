@@ -25,7 +25,7 @@ api_config = config['api_settings']
 ROBOT_IP = api_config['robot_ip']
 USERNAME = api_config['username']
 PASSWORD = api_config['password']
-MONGONAME = api_config['mongo_name']
+MONGONAME = api_config['database_name']
 ENABLE_PROXY = api_config['enable_proxy']
 SOCKS5_PROXY = api_config['socks5_proxy']
 

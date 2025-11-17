@@ -26,19 +26,19 @@
 
 namespace mios {
 
-Core::Core(const MiosConfiguration &configuration):
-    m_memory(configuration),
+Core::Core(const MiosContext &context):
+    m_memory(context),
     m_skill_engine(SkillEngine(this)),
-    m_panda_body(PandaBody(&m_memory)),
-    m_portal(Portal("0.0.0.0",configuration.websocket_port,"mios/core", //websocket
-                    "0.0.0.0",configuration.rpc_port,                   //rpc
-                    configuration.udp_port)),                           //udp
+    m_panda_body(PandaBody(&m_memory, context)),
+    m_portal(Portal("0.0.0.0",context.config.websocket_port,"mios/core", //websocket
+                    "0.0.0.0",m_context.config.rpc_port,                 //rpc
+                    context.config.udp_port)),                           //udp
     m_task_engine(TaskEngine(this)),
     m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),//m_ros_node(this,&m_task_engine,&m_portal,&m_memory),
     m_telemetry(TelemetryUDP(this,&m_portal)),
     m_controller_pipeline(std::make_unique<NullControllerPipeline>()),
     m_is_ready(false),
-    m_configuration(configuration),
+    m_context(context),
     m_blend_skill(false),
     m_hand_grace_period(0){
         spdlog::trace("Core::Core()");
@@ -57,7 +57,7 @@ bool Core::initialize(){
         return false;
     }
     spdlog::info("Initializing robot...");
-    if(!m_panda_body.initialize(m_configuration)){
+    if(!m_panda_body.initialize()){
         spdlog::error("Could not initialize robot.");
         return false;
     }
@@ -237,6 +237,9 @@ void Core::handle_gripper(Actuator* cmd){
 }
 
 franka::Finishable* Core::control_base_cycle(const franka::RobotState& state){
+    if(m_context.shutdown_signal){
+        terminate();
+    }
     bool exception=false;
     if(m_skill_engine.is_running_queue() && m_blend_skill){
         if(!m_skill_engine.blend_skill_stage_1()){
@@ -512,8 +515,8 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
             if(count>6){
                 count = 0;
                 spdlog::debug("reconnecting to Robot and Gripper");
-                m_panda_body.connect_to_robot(m_configuration.robot_ip);
-                m_panda_body.connect_to_gripper(m_configuration.robot_ip);
+                m_panda_body.connect_to_robot(m_context.config.robot_ip);
+                m_panda_body.connect_to_gripper(m_context.config.robot_ip);
             }
             count++;
         }
@@ -521,7 +524,7 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
         if(!m_panda_body.get_robot_state(robot_state)){
             spdlog::debug("Core::refresh_percept.failed_to_acquire_robot_state");
             spdlog::debug("reconnecting to Robot");
-            m_panda_body.connect_to_robot(m_configuration.robot_ip);
+            m_panda_body.connect_to_robot(m_context.config.robot_ip);
             if(!m_panda_body.get_robot_state(robot_state)){
                 return false;
             }
@@ -529,7 +532,7 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
         if(!m_panda_body.get_gripper_state(gripper_state)){
             spdlog::debug("Core::refresh_percept.failed_to_acquire_gripper_state");
             spdlog::debug("reconnecting to Gripper");
-            m_panda_body.connect_to_gripper(m_configuration.robot_ip);
+            m_panda_body.connect_to_gripper(m_context.config.robot_ip);
             if(!m_panda_body.get_gripper_state(gripper_state)){
                 return false;
             }

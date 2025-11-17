@@ -40,13 +40,25 @@ EXPOSE 12000 12001 12002 8888 8889
 
 ARG default_verbosity_value=info
 ARG default_database_port_value=27017
-ARG default_robot_config_value=3
-ARG default_robot_arm_value=left
+ARG default_database_name=mios
+ARG default_robot_ip=127.0.0.1
+ARG default_websocket_port=12000
+ARG default_rpc_port=12001
+ARG default_udp_port=12002
+ARG default_robot_config_value=0
+ARG default_desk=true
+
 ENV verbosity=$default_verbosity_value
 ENV database_port=$default_database_port_value
-ENV robot_config=$default_robot_config_value
-ENV robot_arm=$default_robot_arm_value
+ENV database_name=$default_database_name
+ENV robot_ip=$default_robot_ip
+ENV websocket_port=$default_websocket_port
+ENV rpc_port=$default_rpc_port
+ENV udp_port=$default_udp_port
+ENV robot_config_value=$default_robot_config_value
+ENV desk=$default_desk
+
 ENV LD_LIBRARY_PATH=/opt/openrobots/lib:/dependencies:/mios/lib:$LD_LIBRARY_PATH
 
 WORKDIR mios/bin
-CMD ["sh", "-c", "bash ./mios.sh --verbosity=${verbosity} --database_port=${database_port} --robot_config=${robot_config} --robot_arm=${robot_arm}"]
+CMD ["bash", "./mios.sh"]

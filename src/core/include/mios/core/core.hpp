@@ -20,7 +20,7 @@
 
 #include "mios/data_structures/actuator.hpp"
 #include "mios/data_structures/percept.hpp"
-#include "mios/utils/configuration.hpp"
+#include "mios/utils/context.hpp"
 
 
 
@@ -30,7 +30,7 @@ class Skill;
 
 class Core{
 public:
-    Core(const MiosConfiguration &configuration);
+    Core(const MiosContext &context);
     ~Core();
 
     bool initialize();
@@ -75,7 +75,8 @@ public:
     TelemetryUDP* get_telemetry();
     const Percept *get_percept() const;
     bool is_ready() const;
-    bool is_busy();
+    bool is_busy();  
+    MiosContext m_context;
 
 private:
     franka::Finishable *control_base_cycle(const franka::RobotState& state);
@@ -105,7 +106,6 @@ private:
 
 private:
     bool m_is_ready;
-    MiosConfiguration m_configuration;
     bool m_blend_skill;
     std::mutex m_mtx_is_busy;
     std::mutex m_mtx_FCI;
