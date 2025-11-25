@@ -70,6 +70,7 @@ Eigen::Matrix<double, 3, 3> TaxExtraction::get_O_R_T_0([[maybe_unused]] const Pe
 }
 
 std::shared_ptr<ManipulationPrimitive> TaxExtraction::get_initial_mp(const Percept &p_0){
+    set_ROI_center(get_object_pose_T("Container").block<3,1>(0,3));
     return create_wiggle_mp(p_0);
 }
 
