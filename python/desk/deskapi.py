@@ -67,7 +67,9 @@ def save_token(token: str):
     """Saves the control token to MongoDB (mios->parameter->system)."""
 
     mongo_client = MongoDBClient("localhost",27017)
-    mongo_client.update(MONGONAME,"parameters",{"name":"system"},{"spoc_token":token})
+    result = mongo_client.update(MONGONAME,"parameters",{"name":"system"},{"spoc_token":token}, upsert=True)
+    if not result:
+        print(f"Cannot update the token onto MongoDB.", flush=True)
 
 
 def load_token() -> Optional[str]:
