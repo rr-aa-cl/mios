@@ -86,3 +86,8 @@ include/commons/config.hpp
 /python/Krones_assembly.py
 /python/DRLplotter.py
 /python/experimentData/
+
+# Exclude DB Data
+################
+
+/docker/compose/*/

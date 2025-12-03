@@ -1,9 +1,9 @@
 services:
   mios:
-    image: "mirmi/mios:FR3"
+    image: "mirmi/mios:FR3_debug2"
     restart: always
     environment:
-      - ROBOT_IP=192.168.3.100
+      - ROBOT_IP=192.168.4.100
       - ROBOT_USER=MBZUAI
       - ROBOT_PASSWORD=mbzuai123
       - MONGONAME=miosL
@@ -21,7 +21,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - ./localFolder:/data/db
+      - ./dataright:/data/db
     command: mongod --quiet --logpath /dev/null 
 
   mios_mls:
@@ -32,6 +32,3 @@ services:
     network_mode: "host"
     cap_add:
       - SYS_NICE
-
-
-

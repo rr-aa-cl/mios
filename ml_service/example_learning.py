@@ -19,7 +19,7 @@ def learn_task(robot:str, problem_definition: ProblemDefinition, service_config:
 def example_learning(robot:str = "localhost"):
     # tasks = {hosts: insertables}
     tasks =  {
-        "localhost": "prism1"
+        "localhost": "samuelnew2222"
     }
     for host, insertable in tasks.items():
         container = insertable + "_container"
@@ -104,3 +104,8 @@ def stop_services(robots:list = ["localhost"]):
         except Exception as e:
             print("Error with robot ",r)
             print(e)
+
+
+if __name__ == "__main__":
+   example_learning()
+#   stop_services()

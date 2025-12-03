@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-read -p "Enter registry: " registry
+#read -p "Enter registry: " registry
 
 # collect dependencies
 

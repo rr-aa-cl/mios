@@ -11,7 +11,7 @@ import numpy as np
 from xmlrpc.client import ServerProxy
 from mongodb_client.mongodb_client import MongoDBClient
 from problem_definition.problem_definition import ProblemDefinition
-from collective_manager.video_recorder import FFMpegWebcamRecorder
+#from collective_manager.video_recorder import FFMpegWebcamRecorder
 from engine.task_result import TaskResult
 from utils.exception import *
 from utils.ws_client import *

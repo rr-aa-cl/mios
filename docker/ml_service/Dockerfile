@@ -13,7 +13,7 @@ RUN pip3 install -U pyDOE scikit-optimize
 RUN pip3 install -U websockets
 RUN pip3 install -U deap
 RUN pip3 install -U ifaddr
-
+RUN pip3 install -U paramiko
 
 
 COPY ml_service/ /mios_mls/

@@ -50,6 +50,7 @@ def load_config():
     Loads the configuration from config.json. If the file does not exist,
     it creates a template and exits the program.
     """
+    print(DEFAULT_CONFIG)
     return DEFAULT_CONFIG
     # if not os.path.exists(CONFIG_FILE):
     #     print(f"Configuration file '{CONFIG_FILE}' not found.", flush=True)

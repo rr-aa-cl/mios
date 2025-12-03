@@ -17,7 +17,7 @@ from utils.ws_client import call_method
 from database.database import Database
 from utils.cmd_loop import CMDLoop
 from rpc_visualization.switcher import TensorboardClient
-from collective_manager.video_recorder import FFMpegWebcamRecorder
+#from collective_manager.video_recorder import FFMpegWebcamRecorder
 
 from xmlrpc.server import SimpleXMLRPCServer
 from socketserver import ThreadingMixIn
@@ -268,7 +268,7 @@ class Interface:
     
     def test_video_recording(self,folder, filename, video_path="/dev/v4l/by-path/pci-0000:00:14.0-usb-0:7:1.3-video-index0"):
         logger.debug("start video recording test")
-        self.video_recorder = FFMpegWebcamRecorder(video_path)
+#        self.video_recorder = FFMpegWebcamRecorder(video_path)
         if not self.video_recorder.start_stream(
                                                 output_folder=folder,
                                                 base_filename=filename,
