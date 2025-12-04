@@ -1,3 +1,4 @@
+import pprint
 import time
 import datetime
 import logging
@@ -138,6 +139,10 @@ class Engine:
         self.pause_execution = False
 
     def push_trial(self, trial: Trial) -> str:
+        from pprint import pprint; pprint("Hello")
+        # print('Breakpoint -------WHAT IS TRIAL', trial)
+        # print('Breakpoint -------WHAT IS TRIAL', pprint(trial))
+        # print('Breakpoint -------PUSHING TRIAL : ', self.cnt_pushed)
         #logger.debug("Engine.push_trial()")
         if trial.is_valid() is False:
             return "INVALID"
@@ -149,7 +154,12 @@ class Engine:
     def wait_for_trial(self, trial_uuid: str, max_wait_time: float) -> Trial:
         #logger.debug("Engine.wait_for_trial(" + trial_uuid + ", " + str(max_wait_time) + ")")
         t_0 = time.time()
+        loop_count = 0
+        # from ipdb import set_trace; set_trace()
         while trial_uuid not in self.completed_trials:
+            loop_count += 1
+            print(f"Current Completd Trials {self.completed_trials.keys()}")
+            print(f"For trial_uuid {trial_uuid} - Loop_count : {loop_count}")
             # logger.debug("Engine::wait_for_trial.loop")
             if time.time() - t_0 > max_wait_time:
                 logger.error("Wait time for trial has been exceeded.")
@@ -157,7 +167,7 @@ class Engine:
             if self.keep_running is False:
                 logger.error("Service has been stopped.")
                 return Trial(dict(), [],[], dict(), False)
-            # time.sleep(0.1)
+            time.sleep(1)
 
         self.cnt_completed += 1
 
@@ -171,8 +181,12 @@ class Engine:
         now.strftime("%Y-%m-%d_%H:%M:%S")
         self.meta_data["date"] = now.strftime("%Y-%m-%d_%H:%M:%S")
         self.database_results_collection = self.database_client.client.ml_results[problem_definition.skill_class]
+        # from ipdb import set_trace; set_trace()
         self.database_results_id = self.database_results_collection.insert_one(
             {"meta": self.meta_data}).inserted_id
+        
+
+        print('Breakpoint -------', )
         return self.database_results_id
 
     def is_learned(self) -> bool:
@@ -184,6 +198,8 @@ class Engine:
             return self.cnt_optimal > self.problem_definition.cost_function.finish_thr  # finsih threshold states how often a optimal_thr was undercut to finish
 
     def main_loop(self):
+        logger.debug("Engine.main_loop()")
+        logger.debug("Engine.main_loop()")
         logger.debug("Engine.main_loop()")
         self.cnt_trial = 1
         self.keep_running = True
@@ -199,6 +215,9 @@ class Engine:
         for a in self.free_agents:
             worker_threads[a].join()
 
+        logger.info("Setup procedure done.")
+        logger.info("Setup procedure done.")
+        logger.info("Setup procedure done.")
         logger.info("Setup procedure done.")
 
         while self.keep_running is True:
@@ -255,6 +274,10 @@ class Engine:
         logger.debug("Engine::main_loop.last_line")
 
     def _worker_loop(self, agent: str, trial: Trial):
+        print('Breakpoint ------- WORKER LOOP', )
+        print('Breakpoint ------- WORKER LOOP', )
+        print('Breakpoint ------- WORKER LOOP', )
+        print('Breakpoint ------- WORKER LOOP', )
         logger.debug("Engine._worker_loop(" + agent + ", " + trial.trial_uuid + ")")
         self._run_trial(agent, trial)
         self.free_agents.add(agent)
@@ -262,6 +285,12 @@ class Engine:
         #self.video_recorder.stop_stream()
 
     def _run_trial(self, agent: str, trial: Trial):
+        print('Breakpoint ------- RUN TRIAL', )
+        print('Breakpoint ------- RUN TRIAL', )
+        print('Breakpoint ------- RUN TRIAL', )
+        print('Breakpoint ------- RUN TRIAL', )
+        print('Breakpoint ------- RUN TRIAL', )
+        print('Breakpoint ------- RUN TRIAL', )
         if trial.is_valid() is False:
             raise ProblemDefinitionError
         trial.trial_number = self.cnt_trial
@@ -473,6 +502,8 @@ class Engine:
 
     def _start_task(self, agent: str, task_context: dict) -> (bool, str):
         task_uuid = "INVALID"
+        # from ipdb import set_trace; set_trace()
+        # from pprint import pprint; pprint(task_context)
         task_name = task_context["name"]
         for skill_name in task_context["skills"].keys():
                 if "log_name" in task_context["skills"][skill_name]["skill"]:
@@ -480,11 +511,15 @@ class Engine:
                     task_context["skills"][skill_name]["skill"]["meta"]["context"] = copy.deepcopy(task_context["skills"][skill_name])
                     task_context["skills"][skill_name]["skill"]["meta"]["time"] = time.time()
                     task_context["skills"][skill_name]["skill"]["meta"]["tags"] = self.problem_definition.tags
+        # from ipdb import set_trace; set_trace()
         while(self.pause_execution and self.keep_running):
             time.sleep(1)
         logger.info("_start_task::Executing task " + str(task_name) + " on agent " + str(agent) + ".")
         # logger.debug("Task context: " + str(task_context))
+        
         response = start_task(agent, task_name, task_context, True, port=self.mios_port)
+        # pprint(response)
+        print("STARTING TASK: Read Payload here")
         if response is None:
             logger.warning("Agent " + agent + " is not responding.")
             time.sleep(1)
@@ -509,9 +544,11 @@ class Engine:
 
         task_uuid = response["result"]["task_uuid"]
         self.skill_count+=1
+        print("Task is done")
         return True, task_uuid
 
     def _wait_for_task(self, agent: str, task_uuid: str) -> (bool, TaskResult):
+        # from ipdb import set_trace; set_trace()
         task_result = TaskResult()
         response = wait_for_task(agent, task_uuid, port=self.mios_port)
         # logger.debug("Engine._wait_for_task.response: " + str(response))
@@ -521,6 +558,7 @@ class Engine:
             return False, task_result
 
         if "result" not in response or "result" not in response["result"] or "task_result" not in response["result"]:
+            from ipdb import set_trace; set_trace()
             logger.warning("I received no proper response from agent " + agent + ".")
             logger.debug("Response was: " + str(response))
             time.sleep(1)

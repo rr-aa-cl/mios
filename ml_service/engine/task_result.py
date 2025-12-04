@@ -73,6 +73,7 @@ class TaskResult:
         calculate q_metric from mios task result
         input: result (dict) is the feedback json comming from mios
         '''
+        from ipdb import set_trace; set_trace()
         if "success" not in result:
             logger.error("No success indicator in result.")
             return False

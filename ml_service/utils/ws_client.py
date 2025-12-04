@@ -19,7 +19,11 @@ class Client:
 
 
 async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout=100, silent=False):
+    print('---------- WS CLIENT SEND', )
+    message = json.dumps(request)
+    print("---------- WS CLIENT SEND PAYLOAD ", message)
     uri = "ws://" + hostname + ":" + str(port) + "/" +endpoint
+    # from ipdb import set_trace; set_trace()
     try:
         async with websockets.connect(uri, close_timeout=100) as websocket:
             message = json.dumps(request)
@@ -113,10 +117,12 @@ def wait_for_task(hostname: str, task_uuid: str, port = 12000, timeout = 100):
     payload = {
         "task_uuid": task_uuid
     }
+    print("[wait_for_task] I am waiting for TASK UUID", task_uuid)
     return call_method(hostname, port, "wait_for_task", payload, timeout=timeout)
 
 
 def start_task_and_wait(hostname, task, parameters, queue=False):
+    print("[start_task_and_wait] I am waiting for TASK UUID", task)
     response = start_task(hostname, task, parameters, queue)
     response = wait_for_task(hostname, response["result"]["task_uuid"])
     return response

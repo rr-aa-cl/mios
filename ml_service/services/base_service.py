@@ -249,6 +249,7 @@ class BaseService(metaclass=ABCMeta):
             time.sleep(0.1)
 
     def learn_task(self) -> bool:
+        print('Breakpoint -------KEEP RUNNING', )
         self.keep_running = True
         try:
             result = self._learn_task()
@@ -346,8 +347,16 @@ class BaseService(metaclass=ABCMeta):
                   self.get_theta(x_real), external=external))
 
     def wait_for_result(self, uuid: str) -> TaskResult:
-        result = self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations)
+        # from ipdb import set_trace; set_trace()
+        print('BaseService Wait_for_result', )
+        ## DOCS
+        ## self.problem_definition.n_variations ----> Values are 3
+        wait_time = 10 # 10 Seconds
+        result = self.engine.wait_for_trial(uuid, wait_time)
+        # result = self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations)
         result_dict = result.to_dict()
+
+        print("Breakpoint -------result_dict ", result_dict)
         if result_dict["external"]:  # if external is not False
             if type(result_dict["external"]) is str:
                 result_dict["external"] = eval(result_dict["external"])  # make it a dict again from string

@@ -14,6 +14,11 @@ handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 
+from dotenv import load_dotenv
+load_dotenv()
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Opens and interface (XMLRPC) for Machine Learning Service")
     parser.add_argument("-i","--interface_port", help="changes the default interface port (8000) to INTERFACE_PORT, \
@@ -47,6 +52,8 @@ if __name__ == "__main__":
             mongodb = 27017
     else:
         mongodb = args.interface_port
+    
+    print("MONGODB PORT", mongodb)
 
     
 

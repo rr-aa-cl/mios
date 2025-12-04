@@ -120,6 +120,7 @@ class CMAESService(BaseService):
         else:
             kb = ServerProxy("http://" + self.knowledge.kb_location + ":8001")
         for uuid in trial_uuids.keys():
+            print('Breakpoint -------HAHAHA CMAES Service', )
             result = self.wait_for_result(uuid)  # wait until robot executed the trials
             if result.q_metric.final_cost is None:
                 logger.error("None was returned as cost for trial " + uuid + ", invoking stop.")

@@ -120,6 +120,7 @@ class SVMService(BaseService):
         self.engine.register_stop_condition(self._is_learned)
 
     def _learn_task(self):
+        print('Breakpoint -------WHAT IS KNOWLEDGE', self.knowledge )
         if self.knowledge:
             if self.knowledge.kb_location is not None:
                 print("kb_location = ",self.knowledge.kb_location)
@@ -145,6 +146,7 @@ class SVMService(BaseService):
                 break
             
             self._setSamples(self.cnt_batch)#done
+            print('Breakpoint -------I AM HERE', )
             self._run_trial_par(self.action_list_norm)#td
             self._trainSVM()#td
             logger.debug("\nSVM  -  batch "+str(i+1)+"/"+str(int(self.configuration.n_trials / self.configuration.batch_width))+"finished. \n")
@@ -213,6 +215,7 @@ class SVMService(BaseService):
         costs = []
         self.success_ratio = 0
         if self.cnt_batch==0:
+            print('Breakpoint ------- I AM NEW', )
             logger.debug("SWM_learner: len(initial_knowledge): "+str(len(self.initial_knowledge_list)))
         logger.debug("SWM_learner: centroid used: "+str(True if self.centroid is not None else False))
         if self.cnt_batch==0 and len(self.initial_knowledge_list)>0:   # first batch
@@ -319,6 +322,8 @@ class SVMService(BaseService):
                         uuid = self.push_trial(x_set[i], external=external)  # evalutae the trials (->engine->mios)
                 trial_uuids[uuid] = x_set[i]
                 ##same as above:
+                print("Breakpoint -------HAHAHA SVM SERVICE", uuid)
+                print("Breakpoint -------HAHAHA SVM SERVICE", trial_uuids)
                 result = self.wait_for_result(uuid)
                 if result.q_metric.final_cost is None:
                     logger.error("None was returned as cost, invoking stop.")

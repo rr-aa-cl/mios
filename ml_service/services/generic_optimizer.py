@@ -43,6 +43,8 @@ class GenericOptimizerService(BaseService):
         logger.debug("GradientService.trial(" + str(x) + ")")
 
         trial_uuid = self.push_trial(x)
+
+        print('Breakpoint -------HAHAHA GENERIC Service', )
         results = self.wait_for_result(trial_uuid)
         if results.cost_suc is None:
             results.cost_suc = 0
