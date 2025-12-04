@@ -150,6 +150,7 @@ class Engine:
         return trial.trial_uuid
 
     def wait_for_trial(self, trial_uuid: str, max_wait_time: float) -> Trial:
+        print('Breakpoint -------WAIT FOR TRIAL ENGINE', )
         #logger.debug("Engine.wait_for_trial(" + trial_uuid + ", " + str(max_wait_time) + ")")
         start_time = time.time()
         loop_count = 0
@@ -168,6 +169,7 @@ class Engine:
                 return Trial(dict(), [],[], dict(), False)
             time.sleep(1)
 
+        print('Breakpoint ------- INCREMENT COUNT COMPLETED', )
         self.cnt_completed += 1
 
         return self.completed_trials[trial_uuid]
