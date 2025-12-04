@@ -1,0 +1,32 @@
+[project]
+name = "ml-service"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "deap>=1.4.3",
+  "ifaddr>=0.2.0",
+  "ipdb>=0.13.13",
+  "numpy>=2.2.6",
+  "paramiko>=4.0.0",
+  "pydoe>=0.3.8",
+  "pymongo>=4.15.4",
+  "python-dotenv>=1.2.1",
+  "redis>=7.1.0",
+  "requests>=2.32.5",
+  "rich>=14.2.0",
+  "scikit-learn>=1.7.2",
+  "scikit-optimize>=0.10.2",
+  "scipy>=1.15.3",
+  "websockets>=15.0.1",
+]
+
+[tool.pyright]
+reportAttributeAccessIssue = false
+reportCallIssue = false
+reportArgumentType = false
+reportInvalidTypeForm = false
+
+[tool.ruff.lint]
+ignore = ["F403", "F405", "E702"]
