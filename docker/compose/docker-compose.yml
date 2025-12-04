@@ -24,11 +24,11 @@ services:
       - ./dataright:/data/db
     command: mongod --quiet --logpath /dev/null 
 
-  mios_mls:
-    image: "mirmi/mios_mls:dualarm"
-    ports:
-      - "8000:8000"
-      - "8001:8001"
-    network_mode: "host"
-    cap_add:
-      - SYS_NICE
+  # mios_mls:
+  #   image: "mirmi/mios_mls:dualarm"
+  #   ports:
+  #     - "8000:8000"
+  #     - "8001:8001"
+  #   network_mode: "host"
+  #   cap_add:
+  #     - SYS_NICE

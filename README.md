@@ -1,0 +1,1 @@
+source /home/ubuntu/janine/mios/python/janine/bin/activate

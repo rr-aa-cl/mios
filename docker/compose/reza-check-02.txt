@@ -1,0 +1,314 @@
+  {"method": "is_busy", "request": null}
+is_busy on agent localhost: is busy
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "is_busy", "request": null}
+is_busy on agent localhost: is busy
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "is_busy", "request": null}
+is_busy on agent localhost: is busy
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "is_busy", "request": null}
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Engine._worker_loop(localhost, 037d2ed4-e3cf-4334-af7d-6fc5507a8d9c)
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Engine._execute_task(localhost) with trial 037d2ed4-e3cf-4334-af7d-6fc5507a8d9c
+Engine::_execute_task.loop
+_start_task::Executing task GenericTask on agent localhost.
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "start_task", "request": {"task": "GenericTask", "parameters": {"name": "GenericTask", "parameters": {"skill_types": ["TaxInsertion"], "skill_names": ["insertion"]}, "skills": {"insertion": {"skill": {"objects": {"Container": "samuelnew2222_container", "Approach": "samuelnew2222_container_approach", "Insertable": "samuelnew2222"}, "time_max": 5, "p0": {"dX_d": [0.1, 1], "ddX_d": [0.5, 4], "DeltaX": [-0.0031188429152957694, -0.0007524714586243809, 0, -6.9758154649684005, 7.178079396962961, 0], "K_x": [1500, 1500, 1500, 100, 100, 100]}, "p1": {"dX_d": [0.03220954016368597, 0.33543042338626317], "ddX_d": [0.3668277036977625, 0.13966960905495124], "K_x": [1896.4144707138282, 1896.4144707138282, 1896.4144707138282, 188.29059846276394, 188.29059846276394, 188.29059846276394]}, "p2": {"search_a": [3.373445776633352, 0.6801073888160309, 0, 0.19949841413524416, 1.4626271049163888, 0], "search_f": [2.6053643278665275, 0.6347489271857327, 0, 0.4811070241789417, 0.22164135743676144, 0], "search_phi": [0.32455531455976727, 2.427738285197021, 0, 4.227690801460535, 4.186724843064799, 0], "K_x": [943.3175468593997, 114.20580188028502, 263.6210086412277, 18.14243940435399, 190.01150190621047, 32.979467638122074], "f_push": [-3.2803583654008435, 2.22167538865577, 12.542260048405918, 0, 0, 0], "dX_d": [0.05140425870224868, 0.31702630878627713], "ddX_d": [0.423916268100334, 0.27259113574341154]}, "p3": {"dX_d": [0.1, 0.5], "ddX_d": [0.5, 1], "f_push": 0, "K_x": [1000, 1000, 0, 100, 100, 100]}, "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1], "meta": {"description": "Execution of a trial as part of the learning process."}}, "control": {"control_mode": 0, "nullspace": {"K_theta": [20, 20, 15, 10, 7, 5, 2], "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], "active": true}}, "user": {"env_X": [0.003, 0.003, 0.002, 0.1, 0.1, 0.1], "env_dX": [0.001, 0.001, 0.001, 0.005, 0.005, 0.005], "F_ext_contact": [12, 5]}, "limits": {"cartesian_space": {"dX_max": [0.5, 1]}}}}}, "queue": true}}
+Current Completd Trials dict_keys([])
+For trial_uuid 037d2ed4-e3cf-4334-af7d-6fc5507a8d9c - Loop_count : 2
+STARTING TASK: Read Payload here
+Task is done
+[wait_for_task] I am waiting for TASK UUID 93e0caae-cba0-4190-a2e0-3b1ea7e95f7b
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "wait_for_task", "request": {"task_uuid": "93e0caae-cba0-4190-a2e0-3b1ea7e95f7b"}}
+Current Completd Trials dict_keys([])
+For trial_uuid 037d2ed4-e3cf-4334-af7d-6fc5507a8d9c - Loop_count : 3
+Current Completd Trials dict_keys([])
+For trial_uuid 037d2ed4-e3cf-4334-af7d-6fc5507a8d9c - Loop_count : 4
+Current Completd Trials dict_keys([])
+For trial_uuid 037d2ed4-e3cf-4334-af7d-6fc5507a8d9c - Loop_count : 5
+Current Completd Trials dict_keys([])
+For trial_uuid 037d2ed4-e3cf-4334-af7d-6fc5507a8d9c - Loop_count : 6
+Current Completd Trials dict_keys([])
+For trial_uuid 037d2ed4-e3cf-4334-af7d-6fc5507a8d9c - Loop_count : 7
+Current Completd Trials dict_keys([])
+For trial_uuid 037d2ed4-e3cf-4334-af7d-6fc5507a8d9c - Loop_count : 8
+Engine::_reset_task()
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "get_state", "request": null}
+_start_task::Executing task GenericTask on agent localhost.
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "start_task", "request": {"task": "GenericTask", "parameters": {"name": "GenericTask", "parameters": {"skill_types": ["TaxExtraction", "MoveToPoseJoint"], "skill_names": ["extraction", "move_approach"]}, "skills": {"extraction": {"skill": {"objects": {"Container": "samuelnew2222_container", "ExtractTo": "samuelnew2222_container_approach", "Extractable": "samuelnew2222"}, "time_max": 10, "p0": {"search_a": [0, 0, 0, 0, 0, 0], "search_f": [0, 0, 0, 0, 0, 0], "K_x": [1500, 1500, 1500, 150, 150, 150], "dX_d": [0.1, 0.5], "ddX_d": [0.5, 1]}, "p1": {"dX_d": [0.1, 0.5], "ddX_d": [0.5, 1], "K_x": [1000, 1000, 1500, 100, 100, 100]}}, "control": {"control_mode": 0, "nullspace": {"K_theta": [20, 20, 15, 10, 7, 5, 2], "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], "active": true}}, "user": {"env_X": [0.005, 0.01, 0.01, 0.05, 0.05, 0.05], "env_dX": [0.001, 0.001, 0.001, 0.005, 0.005, 0.005]}}, "move_approach": {"skill": {"speed": 0.5, "acc": 1, "q_g": [0, 0, 0, 0, 0, 0, 0], "objects": {"goal_pose": "samuelnew2222_container_approach"}}, "control": {"control_mode": 3, "nullspace": {"K_theta": [20, 20, 15, 10, 7, 5, 2], "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], "active": true}}, "user": {"env_X": [0.005, 0.005, 0.005, 0.0175, 0.0175, 0.0175]}}}}, "queue": true}}
+STARTING TASK: Read Payload here
+Task is done
+[wait_for_task] I am waiting for TASK UUID 29eafe0c-3b27-43d5-97db-ebf5596e4b5c
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "wait_for_task", "request": {"task_uuid": "29eafe0c-3b27-43d5-97db-ebf5596e4b5c"}}
+Current Completd Trials dict_keys([])
+For trial_uuid 037d2ed4-e3cf-4334-af7d-6fc5507a8d9c - Loop_count : 9
+Current Completd Trials dict_keys([])
+For trial_uuid 037d2ed4-e3cf-4334-af7d-6fc5507a8d9c - Loop_count : 10
+
+#################################
+ ENGINE: success False on trial 1
+ENGINE: Cost: 2.1840045542725175 
+#################################
+
+Free agent localhost
+Breakpoint -------result_dict  {'task_context': {'name': 'GenericTask', 'parameters': {'skill_types': ['TaxInsertion'], 'skill_names': ['insertion']}, 'skills': {'insertion': {'skill': {'objects': {'Container': 'samuelnew2222_container', 'Approach': 'samuelnew2222_container_approach', 'Insertable': 'samuelnew2222'}, 'time_max': 5, 'p0': {'dX_d': [0.1, 1], 'ddX_d': [0.5, 4], 'DeltaX': [np.float64(-0.0031188429152957694), np.float64(-0.0007524714586243809), 0, np.float64(-6.9758154649684005), np.float64(7.178079396962961), 0], 'K_x': [1500, 1500, 1500, 100, 100, 100]}, 'p1': {'dX_d': [np.float64(0.03220954016368597), np.float64(0.33543042338626317)], 'ddX_d': [np.float64(0.3668277036977625), np.float64(0.13966960905495124)], 'K_x': [np.float64(1896.4144707138282), np.float64(1896.4144707138282), np.float64(1896.4144707138282), np.float64(188.29059846276394), np.float64(188.29059846276394), np.float64(188.29059846276394)]}, 'p2': {'search_a': [np.float64(3.373445776633352), np.float64(0.6801073888160309), 0, np.float64(0.19949841413524416), np.float64(1.4626271049163888), 0], 'search_f': [np.float64(2.6053643278665275), np.float64(0.6347489271857327), 0, np.float64(0.4811070241789417), np.float64(0.22164135743676144), 0], 'search_phi': [np.float64(0.32455531455976727), np.float64(2.427738285197021), 0, np.float64(4.227690801460535), np.float64(4.186724843064799), 0], 'K_x': [np.float64(943.3175468593997), np.float64(114.20580188028502), np.float64(263.6210086412277), np.float64(18.14243940435399), np.float64(190.01150190621047), np.float64(32.979467638122074)], 'f_push': [np.float64(-3.2803583654008435), np.float64(2.22167538865577), np.float64(12.542260048405918), 0, 0, 0], 'dX_d': [np.float64(0.05140425870224868), np.float64(0.31702630878627713)], 'ddX_d': [np.float64(0.423916268100334), np.float64(0.27259113574341154)]}, 'p3': {'dX_d': [0.1, 0.5], 'ddX_d': [0.5, 1], 'f_push': 0, 'K_x': [1000, 1000, 0, 100, 100, 100]}, 'ROI_x': [-0.03, 0.03, -0.03, 0.03, -1, 1], 'meta': {'description': 'Execution of a trial as part of the learning process.'}}, 'control': {'control_mode': 0, 'nullspace': {'K_theta': [20, 20, 15, 10, 7, 5, 2], 'xi_theta': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], 'active': True}}, 'user': {'env_X': [0.003, 0.003, 0.002, 0.1, 0.1, 0.1], 'env_dX': [0.001, 0.001, 0.001, 0.005, 0.005, 0.005], 'F_ext_contact': [12, 5]}, 'limits': {'cartesian_space': {'dX_max': [0.5, 1]}}}}}, 'reset_instructions': [{'method': 'start_task', 'parameters': {'name': 'GenericTask', 'parameters': {'skill_types': ['TaxExtraction', 'MoveToPoseJoint'], 'skill_names': ['extraction', 'move_approach']}, 'skills': {'extraction': {'skill': {'objects': {'Container': 'samuelnew2222_container', 'ExtractTo': 'samuelnew2222_container_approach', 'Extractable': 'samuelnew2222'}, 'time_max': 10, 'p0': {'search_a': [0, 0, 0, 0, 0, 0], 'search_f': [0, 0, 0, 0, 0, 0], 'K_x': [1500, 1500, 1500, 150, 150, 150], 'dX_d': [0.1, 0.5], 'ddX_d': [0.5, 1]}, 'p1': {'dX_d': [0.1, 0.5], 'ddX_d': [0.5, 1], 'K_x': [1000, 1000, 1500, 100, 100, 100]}}, 'control': {'control_mode': 0, 'nullspace': {'K_theta': [20, 20, 15, 10, 7, 5, 2], 'xi_theta': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], 'active': True}}, 'user': {'env_X': [0.005, 0.01, 0.01, 0.05, 0.05, 0.05], 'env_dX': [0.001, 0.001, 0.001, 0.005, 0.005, 0.005]}}, 'move_approach': {'skill': {'speed': 0.5, 'acc': 1, 'q_g': [0, 0, 0, 0, 0, 0, 0], 'objects': {'goal_pose': 'samuelnew2222_container_approach'}}, 'control': {'control_mode': 3, 'nullspace': {'K_theta': [20, 20, 15, 10, 7, 5, 2], 'xi_theta': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], 'active': True}}, 'user': {'env_X': [0.005, 0.005, 0.005, 0.0175, 0.0175, 0.0175]}}}}, 'preconditions': {'grasped_object': 'samuelnew2222'}}], 'theta': {'p0_offset_x': -0.0031188429152957694, 'p0_offset_y': -0.0007524714586243809, 'p0_offset_phi': -6.9758154649684005, 'p0_offset_chi': 7.178079396962961, 'p1_dx_d': 0.03220954016368597, 'p1_dphi_d': 0.33543042338626317, 'p1_ddx_d': 0.3668277036977625, 'p1_ddphi_d': 0.13966960905495124, 'p1_K_x': 1896.4144707138282, 'p1_K_phi': 188.29059846276394, 'p2_dx_d': 0.05140425870224868, 'p2_dphi_d': 0.31702630878627713, 'p2_ddx_d': 0.423916268100334, 'p2_ddphi_d': 0.27259113574341154, 'p2_wiggle_a_x': 3.373445776633352, 'p2_wiggle_a_y': 0.6801073888160309, 'p2_wiggle_a_phi': 0.19949841413524416, 'p2_wiggle_a_chi': 1.4626271049163888, 'p2_wiggle_f_x': 2.6053643278665275, 'p2_wiggle_f_y': 0.6347489271857327, 'p2_wiggle_f_phi': 0.4811070241789417, 'p2_wiggle_f_chi': 0.22164135743676144, 'p2_wiggle_phi_x': 0.32455531455976727, 'p2_wiggle_phi_y': 2.427738285197021, 'p2_wiggle_phi_phi': 4.227690801460535, 'p2_wiggle_phi_chi': 4.186724843064799, 'p2_K_x': 943.3175468593997, 'p2_K_y': 114.20580188028502, 'p2_K_z': 263.6210086412277, 'p2_K_phi': 18.14243940435399, 'p2_K_chi': 190.01150190621047, 'p2_K_psi': 32.979467638122074, 'p2_f_push_x': -3.2803583654008435, 'p2_f_push_y': 2.22167538865577, 'p2_f_push_z': 12.542260048405918}, 'task_result': {'q_metric': {'final_cost': np.float64(2.1840045542725175), 'success': False, 'cost': {'time': 5.0, 'contact_forces': 2.618408309714775, 'effort_avg': 17.95707143190457, 'effort_total': 17.274638475340648, 'distance': 1.0636625695349591e-05, 'desired_force': 8.60628401334672, 'desired_pose': 0.027258067236361958, 'custom': 0.0}, 'heuristic': 0.1689023829683669, 'optimal': False, 'success_rate': 0}, 'n_varialtions': 1, 'errors': []}, 't_0': 1764846510.7518861, 't_1': 1764846516.9605095, 't_delta': 6.20862340927124, 'task_uuid': 'INVALID', 'trial_uuid': '037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', 'agent': 'localhost', 'trial_number': 1, 'log': True, 'external': False}
+DataBuffer::add_data, current size: 1
+SVM: request_probability0
+BaseService: Push trial to engine, external=False
+'Hello'
+Breakpoint -------HAHAHA SVM SERVICE 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d
+Breakpoint -------HAHAHA SVM SERVICE {'037d2ed4-e3cf-4334-af7d-6fc5507a8d9c': array([0.18811571, 0.42475285, 0.15120923, 0.85890397, 0.3220954 ,
+       0.67086085, 0.73365541, 0.13966961, 0.94820724, 0.94145299,
+       0.51404259, 0.63405262, 0.84783254, 0.27259114, 0.33734458,
+       0.06801074, 0.09974921, 0.73131355, 0.86845478, 0.21158298,
+       0.48110702, 0.22164136, 0.05168078, 0.38658253, 0.67319917,
+       0.66667593, 0.47165877, 0.0571029 , 0.1318105 , 0.0907122 ,
+       0.95005751, 0.16489734, 0.33598208, 0.61108377, 0.627113  ]), '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d': array([0.45602735, 0.23223451, 0.54364268, 0.54574047, 0.25297596,
+       0.04239597, 0.33232008, 0.03891513, 0.38639523, 0.2077006 ,
+       0.04068907, 0.26507367, 0.26950458, 0.7896084 , 0.08388846,
+       0.96951633, 0.67233774, 0.40705945, 0.39542989, 0.1095184 ,
+       0.73753672, 0.92441405, 0.70702995, 0.08911477, 0.0396659 ,
+       0.23902512, 0.79620214, 0.46990626, 0.97495966, 0.25398889,
+       0.11333816, 0.33983332, 0.97282315, 0.05128718, 0.42594687])}
+BaseService Wait_for_result
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c'])
+For trial_uuid 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d - Loop_count : 1
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "is_busy", "request": null}
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Engine._worker_loop(localhost, 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d)
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Engine._execute_task(localhost) with trial 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d
+Engine::_execute_task.loop
+_start_task::Executing task GenericTask on agent localhost.
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "start_task", "request": {"task": "GenericTask", "parameters": {"name": "GenericTask", "parameters": {"skill_types": ["TaxInsertion"], "skill_names": ["insertion"]}, "skills": {"insertion": {"skill": {"objects": {"Container": "samuelnew2222_container", "Approach": "samuelnew2222_container_approach", "Insertable": "samuelnew2222"}, "time_max": 5, "p0": {"dX_d": [0.1, 1], "ddX_d": [0.5, 4], "DeltaX": [-0.000439726483219308, -0.0026776548827576246, 0, 0.8728535230029877, 0.9148093382783777, 0], "K_x": [1500, 1500, 1500, 100, 100, 100]}, "p1": {"dX_d": [0.02529759592542514, 0.021197984395318326], "ddX_d": [0.16616003860945058, 0.03891513026654806], "K_x": [772.7904586791772, 772.7904586791772, 772.7904586791772, 41.540120764882325, 41.540120764882325, 41.540120764882325]}, "p2": {"search_a": [0.8388846396049401, 9.695163272830689, 0, 1.3446754781163435, 0.8141189007857449, 0], "search_f": [1.1862896561011773, 0.3285551888586342, 0, 0.737536722896205, 0.924414051839934, 0], "search_phi": [4.44014810095338, 0.5596407358138404, 0, 0.24910184269479585, 1.501077742554653, 0], "K_x": [1592.4042818092485, 939.8125150527425, 1949.9193147949454, 50.7977782675684, 22.667632407296928, 67.96666346411439], "f_push": [9.456462920312134, -8.974256337693795, 8.5189373946265, 0, 0, 0], "dX_d": [0.004068907072307697, 0.13253683691007578], "ddX_d": [0.13475228801224476, 0.7896083989814187]}, "p3": {"dX_d": [0.1, 0.5], "ddX_d": [0.5, 1], "f_push": 0, "K_x": [1000, 1000, 0, 100, 100, 100]}, "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1], "meta": {"description": "Execution of a trial as part of the learning process."}}, "control": {"control_mode": 0, "nullspace": {"K_theta": [20, 20, 15, 10, 7, 5, 2], "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], "active": true}}, "user": {"env_X": [0.003, 0.003, 0.002, 0.1, 0.1, 0.1], "env_dX": [0.001, 0.001, 0.001, 0.005, 0.005, 0.005], "F_ext_contact": [12, 5]}, "limits": {"cartesian_space": {"dX_max": [0.5, 1]}}}}}, "queue": true}}
+STARTING TASK: Read Payload here
+Task is done
+[wait_for_task] I am waiting for TASK UUID a73acb3c-4638-4ef4-ae41-ba8e5774c99e
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "wait_for_task", "request": {"task_uuid": "a73acb3c-4638-4ef4-ae41-ba8e5774c99e"}}
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c'])
+For trial_uuid 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d - Loop_count : 2
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c'])
+For trial_uuid 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d - Loop_count : 3
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c'])
+For trial_uuid 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d - Loop_count : 4
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c'])
+For trial_uuid 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d - Loop_count : 5
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c'])
+For trial_uuid 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d - Loop_count : 6
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c'])
+For trial_uuid 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d - Loop_count : 7
+Engine::_reset_task()
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "get_state", "request": null}
+_start_task::Executing task GenericTask on agent localhost.
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "start_task", "request": {"task": "GenericTask", "parameters": {"name": "GenericTask", "parameters": {"skill_types": ["TaxExtraction", "MoveToPoseJoint"], "skill_names": ["extraction", "move_approach"]}, "skills": {"extraction": {"skill": {"objects": {"Container": "samuelnew2222_container", "ExtractTo": "samuelnew2222_container_approach", "Extractable": "samuelnew2222"}, "time_max": 10, "p0": {"search_a": [0, 0, 0, 0, 0, 0], "search_f": [0, 0, 0, 0, 0, 0], "K_x": [1500, 1500, 1500, 150, 150, 150], "dX_d": [0.1, 0.5], "ddX_d": [0.5, 1]}, "p1": {"dX_d": [0.1, 0.5], "ddX_d": [0.5, 1], "K_x": [1000, 1000, 1500, 100, 100, 100]}}, "control": {"control_mode": 0, "nullspace": {"K_theta": [20, 20, 15, 10, 7, 5, 2], "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], "active": true}}, "user": {"env_X": [0.005, 0.01, 0.01, 0.05, 0.05, 0.05], "env_dX": [0.001, 0.001, 0.001, 0.005, 0.005, 0.005]}}, "move_approach": {"skill": {"speed": 0.5, "acc": 1, "q_g": [0, 0, 0, 0, 0, 0, 0], "objects": {"goal_pose": "samuelnew2222_container_approach"}}, "control": {"control_mode": 3, "nullspace": {"K_theta": [20, 20, 15, 10, 7, 5, 2], "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], "active": true}}, "user": {"env_X": [0.005, 0.005, 0.005, 0.0175, 0.0175, 0.0175]}}}}, "queue": true}}
+STARTING TASK: Read Payload here
+Task is done
+[wait_for_task] I am waiting for TASK UUID b504897a-58b9-4577-9e66-ebc991329334
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "wait_for_task", "request": {"task_uuid": "b504897a-58b9-4577-9e66-ebc991329334"}}
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c'])
+For trial_uuid 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d - Loop_count : 8
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c'])
+For trial_uuid 3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d - Loop_count : 9
+
+#################################
+ ENGINE: success False on trial 2
+ENGINE: Cost: 2.230846669015312 
+#################################
+
+Free agent localhost
+Breakpoint -------result_dict  {'task_context': {'name': 'GenericTask', 'parameters': {'skill_types': ['TaxInsertion'], 'skill_names': ['insertion']}, 'skills': {'insertion': {'skill': {'objects': {'Container': 'samuelnew2222_container', 'Approach': 'samuelnew2222_container_approach', 'Insertable': 'samuelnew2222'}, 'time_max': 5, 'p0': {'dX_d': [0.1, 1], 'ddX_d': [0.5, 4], 'DeltaX': [np.float64(-0.000439726483219308), np.float64(-0.0026776548827576246), 0, np.float64(0.8728535230029877), np.float64(0.9148093382783777), 0], 'K_x': [1500, 1500, 1500, 100, 100, 100]}, 'p1': {'dX_d': [np.float64(0.02529759592542514), np.float64(0.021197984395318326)], 'ddX_d': [np.float64(0.16616003860945058), np.float64(0.03891513026654806)], 'K_x': [np.float64(772.7904586791772), np.float64(772.7904586791772), np.float64(772.7904586791772), np.float64(41.540120764882325), np.float64(41.540120764882325), np.float64(41.540120764882325)]}, 'p2': {'search_a': [np.float64(0.8388846396049401), np.float64(9.695163272830689), 0, np.float64(1.3446754781163435), np.float64(0.8141189007857449), 0], 'search_f': [np.float64(1.1862896561011773), np.float64(0.3285551888586342), 0, np.float64(0.737536722896205), np.float64(0.924414051839934), 0], 'search_phi': [np.float64(4.44014810095338), np.float64(0.5596407358138404), 0, np.float64(0.24910184269479585), np.float64(1.501077742554653), 0], 'K_x': [np.float64(1592.4042818092485), np.float64(939.8125150527425), np.float64(1949.9193147949454), np.float64(50.7977782675684), np.float64(22.667632407296928), np.float64(67.96666346411439)], 'f_push': [np.float64(9.456462920312134), np.float64(-8.974256337693795), np.float64(8.5189373946265), 0, 0, 0], 'dX_d': [np.float64(0.004068907072307697), np.float64(0.13253683691007578)], 'ddX_d': [np.float64(0.13475228801224476), np.float64(0.7896083989814187)]}, 'p3': {'dX_d': [0.1, 0.5], 'ddX_d': [0.5, 1], 'f_push': 0, 'K_x': [1000, 1000, 0, 100, 100, 100]}, 'ROI_x': [-0.03, 0.03, -0.03, 0.03, -1, 1], 'meta': {'description': 'Execution of a trial as part of the learning process.'}}, 'control': {'control_mode': 0, 'nullspace': {'K_theta': [20, 20, 15, 10, 7, 5, 2], 'xi_theta': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], 'active': True}}, 'user': {'env_X': [0.003, 0.003, 0.002, 0.1, 0.1, 0.1], 'env_dX': [0.001, 0.001, 0.001, 0.005, 0.005, 0.005], 'F_ext_contact': [12, 5]}, 'limits': {'cartesian_space': {'dX_max': [0.5, 1]}}}}}, 'reset_instructions': [{'method': 'start_task', 'parameters': {'name': 'GenericTask', 'parameters': {'skill_types': ['TaxExtraction', 'MoveToPoseJoint'], 'skill_names': ['extraction', 'move_approach']}, 'skills': {'extraction': {'skill': {'objects': {'Container': 'samuelnew2222_container', 'ExtractTo': 'samuelnew2222_container_approach', 'Extractable': 'samuelnew2222'}, 'time_max': 10, 'p0': {'search_a': [0, 0, 0, 0, 0, 0], 'search_f': [0, 0, 0, 0, 0, 0], 'K_x': [1500, 1500, 1500, 150, 150, 150], 'dX_d': [0.1, 0.5], 'ddX_d': [0.5, 1]}, 'p1': {'dX_d': [0.1, 0.5], 'ddX_d': [0.5, 1], 'K_x': [1000, 1000, 1500, 100, 100, 100]}}, 'control': {'control_mode': 0, 'nullspace': {'K_theta': [20, 20, 15, 10, 7, 5, 2], 'xi_theta': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], 'active': True}}, 'user': {'env_X': [0.005, 0.01, 0.01, 0.05, 0.05, 0.05], 'env_dX': [0.001, 0.001, 0.001, 0.005, 0.005, 0.005]}}, 'move_approach': {'skill': {'speed': 0.5, 'acc': 1, 'q_g': [0, 0, 0, 0, 0, 0, 0], 'objects': {'goal_pose': 'samuelnew2222_container_approach'}}, 'control': {'control_mode': 3, 'nullspace': {'K_theta': [20, 20, 15, 10, 7, 5, 2], 'xi_theta': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], 'active': True}}, 'user': {'env_X': [0.005, 0.005, 0.005, 0.0175, 0.0175, 0.0175]}}}}, 'preconditions': {'grasped_object': 'samuelnew2222'}}], 'theta': {'p0_offset_x': -0.000439726483219308, 'p0_offset_y': -0.0026776548827576246, 'p0_offset_phi': 0.8728535230029877, 'p0_offset_chi': 0.9148093382783777, 'p1_dx_d': 0.02529759592542514, 'p1_dphi_d': 0.021197984395318326, 'p1_ddx_d': 0.16616003860945058, 'p1_ddphi_d': 0.03891513026654806, 'p1_K_x': 772.7904586791772, 'p1_K_phi': 41.540120764882325, 'p2_dx_d': 0.004068907072307697, 'p2_dphi_d': 0.13253683691007578, 'p2_ddx_d': 0.13475228801224476, 'p2_ddphi_d': 0.7896083989814187, 'p2_wiggle_a_x': 0.8388846396049401, 'p2_wiggle_a_y': 9.695163272830689, 'p2_wiggle_a_phi': 1.3446754781163435, 'p2_wiggle_a_chi': 0.8141189007857449, 'p2_wiggle_f_x': 1.1862896561011773, 'p2_wiggle_f_y': 0.3285551888586342, 'p2_wiggle_f_phi': 0.737536722896205, 'p2_wiggle_f_chi': 0.924414051839934, 'p2_wiggle_phi_x': 4.44014810095338, 'p2_wiggle_phi_y': 0.5596407358138404, 'p2_wiggle_phi_phi': 0.24910184269479585, 'p2_wiggle_phi_chi': 1.501077742554653, 'p2_K_x': 1592.4042818092485, 'p2_K_y': 939.8125150527425, 'p2_K_z': 1949.9193147949454, 'p2_K_phi': 50.7977782675684, 'p2_K_chi': 22.667632407296928, 'p2_K_psi': 67.96666346411439, 'p2_f_push_x': 9.456462920312134, 'p2_f_push_y': -8.974256337693795, 'p2_f_push_z': 8.5189373946265}, 'task_result': {'q_metric': {'final_cost': np.float64(2.230846669015312), 'success': False, 'cost': {'time': 5.0, 'contact_forces': 2.7988614348060707, 'effort_avg': 18.722276941990543, 'effort_total': 17.944966295933508, 'distance': 1.2929897454497117e-05, 'desired_force': 7.309258274178358, 'desired_pose': 0.027838495546043913, 'custom': 0.0}, 'heuristic': 0.20770228137389485, 'optimal': False, 'success_rate': 0}, 'n_varialtions': 1, 'errors': []}, 't_0': 1764846519.8866038, 't_1': 1764846525.9513657, 't_delta': 6.0647618770599365, 'task_uuid': 'INVALID', 'trial_uuid': '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d', 'agent': 'localhost', 'trial_number': 2, 'log': True, 'external': False}
+DataBuffer::add_data, current size: 2
+SVM: request_probability0
+BaseService: Push trial to engine, external=False
+'Hello'
+Breakpoint -------HAHAHA SVM SERVICE ba911de5-e04c-4210-bb3b-f6b77955c722
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "is_busy", "request": null}
+Breakpoint -------HAHAHA SVM SERVICE {'037d2ed4-e3cf-4334-af7d-6fc5507a8d9c': array([0.18811571, 0.42475285, 0.15120923, 0.85890397, 0.3220954 ,
+       0.67086085, 0.73365541, 0.13966961, 0.94820724, 0.94145299,
+       0.51404259, 0.63405262, 0.84783254, 0.27259114, 0.33734458,
+       0.06801074, 0.09974921, 0.73131355, 0.86845478, 0.21158298,
+       0.48110702, 0.22164136, 0.05168078, 0.38658253, 0.67319917,
+       0.66667593, 0.47165877, 0.0571029 , 0.1318105 , 0.0907122 ,
+       0.95005751, 0.16489734, 0.33598208, 0.61108377, 0.627113  ]), '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d': array([0.45602735, 0.23223451, 0.54364268, 0.54574047, 0.25297596,
+       0.04239597, 0.33232008, 0.03891513, 0.38639523, 0.2077006 ,
+       0.04068907, 0.26507367, 0.26950458, 0.7896084 , 0.08388846,
+       0.96951633, 0.67233774, 0.40705945, 0.39542989, 0.1095184 ,
+       0.73753672, 0.92441405, 0.70702995, 0.08911477, 0.0396659 ,
+       0.23902512, 0.79620214, 0.46990626, 0.97495966, 0.25398889,
+       0.11333816, 0.33983332, 0.97282315, 0.05128718, 0.42594687]), 'ba911de5-e04c-4210-bb3b-f6b77955c722': array([0.7490232 , 0.93220003, 0.69045819, 0.98271014, 0.17459922,
+       0.53909306, 0.97491114, 0.32141734, 0.46652088, 0.70468   ,
+       0.35009472, 0.13130558, 0.04800848, 0.34905002, 0.16279831,
+       0.32321559, 0.92749596, 0.5615871 , 0.55564885, 0.74411684,
+       0.03483331, 0.57418979, 0.50951793, 0.40194749, 0.35516974,
+       0.58131626, 0.68161732, 0.89273744, 0.22130183, 0.33111234,
+       0.02256978, 0.51146377, 0.6061082 , 0.52226339, 0.70882512])}
+BaseService Wait_for_result
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d'])
+For trial_uuid ba911de5-e04c-4210-bb3b-f6b77955c722 - Loop_count : 1
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Engine._worker_loop(localhost, ba911de5-e04c-4210-bb3b-f6b77955c722)
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Engine._execute_task(localhost) with trial ba911de5-e04c-4210-bb3b-f6b77955c722
+Engine::_execute_task.loop
+_start_task::Executing task GenericTask on agent localhost.
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "start_task", "request": {"task": "GenericTask", "parameters": {"name": "GenericTask", "parameters": {"skill_types": ["TaxInsertion"], "skill_names": ["insertion"]}, "skills": {"insertion": {"skill": {"objects": {"Container": "samuelnew2222_container", "Approach": "samuelnew2222_container_approach", "Insertable": "samuelnew2222"}, "time_max": 5, "p0": {"dX_d": [0.1, 1], "ddX_d": [0.5, 4], "DeltaX": [0.002490232028738472, 0.004322000279646679, 0, 3.8091638410491697, 9.654202807804491, 0], "K_x": [1500, 1500, 1500, 100, 100, 100]}, "p1": {"dX_d": [0.017459922463430484, 0.26954652913916094], "ddX_d": [0.48745556930824563, 0.32141733539374945], "K_x": [933.0417677611728, 933.0417677611728, 933.0417677611728, 140.93600043914222, 140.93600043914222, 140.93600043914222]}, "p2": {"search_a": [1.6279830642474429, 3.232155936522734, 0, 1.8549919288903989, 1.1231742061291343, 0], "search_f": [1.666946560931625, 2.232350527606299, 0, 0.0348333113565907, 0.5741897901628072, 0], "search_phi": [3.199772569753618, 2.5242302278003383, 0, 2.230465995201341, 3.650666093645344, 0], "K_x": [1363.2346314363958, 1785.474887223508, 442.6036528919184, 66.22246878149265, 4.513956906013094, 102.29275413851194], "f_push": [2.1221639167918216, 0.4452677066084849, 14.176502366612326, 0, 0, 0], "dX_d": [0.035009471758906, 0.06565279089426206], "ddX_d": [0.024004241204081834, 0.3490500239966124]}, "p3": {"dX_d": [0.1, 0.5], "ddX_d": [0.5, 1], "f_push": 0, "K_x": [1000, 1000, 0, 100, 100, 100]}, "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1], "meta": {"description": "Execution of a trial as part of the learning process."}}, "control": {"control_mode": 0, "nullspace": {"K_theta": [20, 20, 15, 10, 7, 5, 2], "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], "active": true}}, "user": {"env_X": [0.003, 0.003, 0.002, 0.1, 0.1, 0.1], "env_dX": [0.001, 0.001, 0.001, 0.005, 0.005, 0.005], "F_ext_contact": [12, 5]}, "limits": {"cartesian_space": {"dX_max": [0.5, 1]}}}}}, "queue": true}}
+STARTING TASK: Read Payload here
+Task is done
+[wait_for_task] I am waiting for TASK UUID e23ac8e8-a0f1-4dc3-8ebb-b8398abf97ef
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "wait_for_task", "request": {"task_uuid": "e23ac8e8-a0f1-4dc3-8ebb-b8398abf97ef"}}
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d'])
+For trial_uuid ba911de5-e04c-4210-bb3b-f6b77955c722 - Loop_count : 2
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d'])
+For trial_uuid ba911de5-e04c-4210-bb3b-f6b77955c722 - Loop_count : 3
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d'])
+For trial_uuid ba911de5-e04c-4210-bb3b-f6b77955c722 - Loop_count : 4
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d'])
+For trial_uuid ba911de5-e04c-4210-bb3b-f6b77955c722 - Loop_count : 5
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d'])
+For trial_uuid ba911de5-e04c-4210-bb3b-f6b77955c722 - Loop_count : 6
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d'])
+For trial_uuid ba911de5-e04c-4210-bb3b-f6b77955c722 - Loop_count : 7
+Engine::_reset_task()
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "get_state", "request": null}
+_start_task::Executing task GenericTask on agent localhost.
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "start_task", "request": {"task": "GenericTask", "parameters": {"name": "GenericTask", "parameters": {"skill_types": ["TaxExtraction", "MoveToPoseJoint"], "skill_names": ["extraction", "move_approach"]}, "skills": {"extraction": {"skill": {"objects": {"Container": "samuelnew2222_container", "ExtractTo": "samuelnew2222_container_approach", "Extractable": "samuelnew2222"}, "time_max": 10, "p0": {"search_a": [0, 0, 0, 0, 0, 0], "search_f": [0, 0, 0, 0, 0, 0], "K_x": [1500, 1500, 1500, 150, 150, 150], "dX_d": [0.1, 0.5], "ddX_d": [0.5, 1]}, "p1": {"dX_d": [0.1, 0.5], "ddX_d": [0.5, 1], "K_x": [1000, 1000, 1500, 100, 100, 100]}}, "control": {"control_mode": 0, "nullspace": {"K_theta": [20, 20, 15, 10, 7, 5, 2], "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], "active": true}}, "user": {"env_X": [0.005, 0.01, 0.01, 0.05, 0.05, 0.05], "env_dX": [0.001, 0.001, 0.001, 0.005, 0.005, 0.005]}}, "move_approach": {"skill": {"speed": 0.5, "acc": 1, "q_g": [0, 0, 0, 0, 0, 0, 0], "objects": {"goal_pose": "samuelnew2222_container_approach"}}, "control": {"control_mode": 3, "nullspace": {"K_theta": [20, 20, 15, 10, 7, 5, 2], "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], "active": true}}, "user": {"env_X": [0.005, 0.005, 0.005, 0.0175, 0.0175, 0.0175]}}}}, "queue": true}}
+STARTING TASK: Read Payload here
+Task is done
+[wait_for_task] I am waiting for TASK UUID fbefaced-c255-4eef-9498-26b3fe2d423c
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "wait_for_task", "request": {"task_uuid": "fbefaced-c255-4eef-9498-26b3fe2d423c"}}
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d'])
+For trial_uuid ba911de5-e04c-4210-bb3b-f6b77955c722 - Loop_count : 8
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d'])
+For trial_uuid ba911de5-e04c-4210-bb3b-f6b77955c722 - Loop_count : 9
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d'])
+For trial_uuid ba911de5-e04c-4210-bb3b-f6b77955c722 - Loop_count : 10
+
+#################################
+ ENGINE: success False on trial 3
+ENGINE: Cost: 2.2027567409866498 
+#################################
+
+Free agent localhost
+Breakpoint -------result_dict  {'task_context': {'name': 'GenericTask', 'parameters': {'skill_types': ['TaxInsertion'], 'skill_names': ['insertion']}, 'skills': {'insertion': {'skill': {'objects': {'Container': 'samuelnew2222_container', 'Approach': 'samuelnew2222_container_approach', 'Insertable': 'samuelnew2222'}, 'time_max': 5, 'p0': {'dX_d': [0.1, 1], 'ddX_d': [0.5, 4], 'DeltaX': [np.float64(0.002490232028738472), np.float64(0.004322000279646679), 0, np.float64(3.8091638410491697), np.float64(9.654202807804491), 0], 'K_x': [1500, 1500, 1500, 100, 100, 100]}, 'p1': {'dX_d': [np.float64(0.017459922463430484), np.float64(0.26954652913916094)], 'ddX_d': [np.float64(0.48745556930824563), np.float64(0.32141733539374945)], 'K_x': [np.float64(933.0417677611728), np.float64(933.0417677611728), np.float64(933.0417677611728), np.float64(140.93600043914222), np.float64(140.93600043914222), np.float64(140.93600043914222)]}, 'p2': {'search_a': [np.float64(1.6279830642474429), np.float64(3.232155936522734), 0, np.float64(1.8549919288903989), np.float64(1.1231742061291343), 0], 'search_f': [np.float64(1.666946560931625), np.float64(2.232350527606299), 0, np.float64(0.0348333113565907), np.float64(0.5741897901628072), 0], 'search_phi': [np.float64(3.199772569753618), np.float64(2.5242302278003383), 0, np.float64(2.230465995201341), np.float64(3.650666093645344), 0], 'K_x': [np.float64(1363.2346314363958), np.float64(1785.474887223508), np.float64(442.6036528919184), np.float64(66.22246878149265), np.float64(4.513956906013094), np.float64(102.29275413851194)], 'f_push': [np.float64(2.1221639167918216), np.float64(0.4452677066084849), np.float64(14.176502366612326), 0, 0, 0], 'dX_d': [np.float64(0.035009471758906), np.float64(0.06565279089426206)], 'ddX_d': [np.float64(0.024004241204081834), np.float64(0.3490500239966124)]}, 'p3': {'dX_d': [0.1, 0.5], 'ddX_d': [0.5, 1], 'f_push': 0, 'K_x': [1000, 1000, 0, 100, 100, 100]}, 'ROI_x': [-0.03, 0.03, -0.03, 0.03, -1, 1], 'meta': {'description': 'Execution of a trial as part of the learning process.'}}, 'control': {'control_mode': 0, 'nullspace': {'K_theta': [20, 20, 15, 10, 7, 5, 2], 'xi_theta': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], 'active': True}}, 'user': {'env_X': [0.003, 0.003, 0.002, 0.1, 0.1, 0.1], 'env_dX': [0.001, 0.001, 0.001, 0.005, 0.005, 0.005], 'F_ext_contact': [12, 5]}, 'limits': {'cartesian_space': {'dX_max': [0.5, 1]}}}}}, 'reset_instructions': [{'method': 'start_task', 'parameters': {'name': 'GenericTask', 'parameters': {'skill_types': ['TaxExtraction', 'MoveToPoseJoint'], 'skill_names': ['extraction', 'move_approach']}, 'skills': {'extraction': {'skill': {'objects': {'Container': 'samuelnew2222_container', 'ExtractTo': 'samuelnew2222_container_approach', 'Extractable': 'samuelnew2222'}, 'time_max': 10, 'p0': {'search_a': [0, 0, 0, 0, 0, 0], 'search_f': [0, 0, 0, 0, 0, 0], 'K_x': [1500, 1500, 1500, 150, 150, 150], 'dX_d': [0.1, 0.5], 'ddX_d': [0.5, 1]}, 'p1': {'dX_d': [0.1, 0.5], 'ddX_d': [0.5, 1], 'K_x': [1000, 1000, 1500, 100, 100, 100]}}, 'control': {'control_mode': 0, 'nullspace': {'K_theta': [20, 20, 15, 10, 7, 5, 2], 'xi_theta': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], 'active': True}}, 'user': {'env_X': [0.005, 0.01, 0.01, 0.05, 0.05, 0.05], 'env_dX': [0.001, 0.001, 0.001, 0.005, 0.005, 0.005]}}, 'move_approach': {'skill': {'speed': 0.5, 'acc': 1, 'q_g': [0, 0, 0, 0, 0, 0, 0], 'objects': {'goal_pose': 'samuelnew2222_container_approach'}}, 'control': {'control_mode': 3, 'nullspace': {'K_theta': [20, 20, 15, 10, 7, 5, 2], 'xi_theta': [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], 'active': True}}, 'user': {'env_X': [0.005, 0.005, 0.005, 0.0175, 0.0175, 0.0175]}}}}, 'preconditions': {'grasped_object': 'samuelnew2222'}}], 'theta': {'p0_offset_x': 0.002490232028738472, 'p0_offset_y': 0.004322000279646679, 'p0_offset_phi': 3.8091638410491697, 'p0_offset_chi': 9.654202807804491, 'p1_dx_d': 0.017459922463430484, 'p1_dphi_d': 0.26954652913916094, 'p1_ddx_d': 0.48745556930824563, 'p1_ddphi_d': 0.32141733539374945, 'p1_K_x': 933.0417677611728, 'p1_K_phi': 140.93600043914222, 'p2_dx_d': 0.035009471758906, 'p2_dphi_d': 0.06565279089426206, 'p2_ddx_d': 0.024004241204081834, 'p2_ddphi_d': 0.3490500239966124, 'p2_wiggle_a_x': 1.6279830642474429, 'p2_wiggle_a_y': 3.232155936522734, 'p2_wiggle_a_phi': 1.8549919288903989, 'p2_wiggle_a_chi': 1.1231742061291343, 'p2_wiggle_f_x': 1.666946560931625, 'p2_wiggle_f_y': 2.232350527606299, 'p2_wiggle_f_phi': 0.0348333113565907, 'p2_wiggle_f_chi': 0.5741897901628072, 'p2_wiggle_phi_x': 3.199772569753618, 'p2_wiggle_phi_y': 2.5242302278003383, 'p2_wiggle_phi_phi': 2.230465995201341, 'p2_wiggle_phi_chi': 3.650666093645344, 'p2_K_x': 1363.2346314363958, 'p2_K_y': 1785.474887223508, 'p2_K_z': 442.6036528919184, 'p2_K_phi': 66.22246878149265, 'p2_K_chi': 4.513956906013094, 'p2_K_psi': 102.29275413851194, 'p2_f_push_x': 2.1221639167918216, 'p2_f_push_y': 0.4452677066084849, 'p2_f_push_z': 14.176502366612326}, 'task_result': {'q_metric': {'final_cost': np.float64(2.2027567409866498), 'success': False, 'cost': {'time': 5.0, 'contact_forces': 3.739934972959249, 'effort_avg': 17.89604784902636, 'effort_total': 17.414412512441224, 'distance': 1.910166915516264e-06, 'desired_force': 10.469085608961864, 'desired_pose': 0.08547126641656648, 'custom': 0.0}, 'heuristic': 0.18461620622661717, 'optimal': False, 'success_rate': 0}, 'n_varialtions': 1, 'errors': []}, 't_0': 1764846529.028038, 't_1': 1764846535.1315281, 't_delta': 6.103490114212036, 'task_uuid': 'INVALID', 'trial_uuid': 'ba911de5-e04c-4210-bb3b-f6b77955c722', 'agent': 'localhost', 'trial_number': 3, 'log': True, 'external': False}
+DataBuffer::add_data, current size: 3
+SVM: request_probability0
+BaseService: Push trial to engine, external=False
+'Hello'
+Breakpoint -------HAHAHA SVM SERVICE bc51fa0f-c3fe-408e-a65c-6666ad086b74
+Breakpoint -------HAHAHA SVM SERVICE {'037d2ed4-e3cf-4334-af7d-6fc5507a8d9c': array([0.18811571, 0.42475285, 0.15120923, 0.85890397, 0.3220954 ,
+       0.67086085, 0.73365541, 0.13966961, 0.94820724, 0.94145299,
+       0.51404259, 0.63405262, 0.84783254, 0.27259114, 0.33734458,
+       0.06801074, 0.09974921, 0.73131355, 0.86845478, 0.21158298,
+       0.48110702, 0.22164136, 0.05168078, 0.38658253, 0.67319917,
+       0.66667593, 0.47165877, 0.0571029 , 0.1318105 , 0.0907122 ,
+       0.95005751, 0.16489734, 0.33598208, 0.61108377, 0.627113  ]), '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d': array([0.45602735, 0.23223451, 0.54364268, 0.54574047, 0.25297596,
+       0.04239597, 0.33232008, 0.03891513, 0.38639523, 0.2077006 ,
+       0.04068907, 0.26507367, 0.26950458, 0.7896084 , 0.08388846,
+       0.96951633, 0.67233774, 0.40705945, 0.39542989, 0.1095184 ,
+       0.73753672, 0.92441405, 0.70702995, 0.08911477, 0.0396659 ,
+       0.23902512, 0.79620214, 0.46990626, 0.97495966, 0.25398889,
+       0.11333816, 0.33983332, 0.97282315, 0.05128718, 0.42594687]), 'ba911de5-e04c-4210-bb3b-f6b77955c722': array([0.7490232 , 0.93220003, 0.69045819, 0.98271014, 0.17459922,
+       0.53909306, 0.97491114, 0.32141734, 0.46652088, 0.70468   ,
+       0.35009472, 0.13130558, 0.04800848, 0.34905002, 0.16279831,
+       0.32321559, 0.92749596, 0.5615871 , 0.55564885, 0.74411684,
+       0.03483331, 0.57418979, 0.50951793, 0.40194749, 0.35516974,
+       0.58131626, 0.68161732, 0.89273744, 0.22130183, 0.33111234,
+       0.02256978, 0.51146377, 0.6061082 , 0.52226339, 0.70882512]), 'bc51fa0f-c3fe-408e-a65c-6666ad086b74': array([6.28649086e-01, 5.73586958e-01, 7.19840774e-04, 1.34592555e-01,
+       5.83612805e-01, 7.49816765e-01, 8.22111689e-01, 5.23963793e-01,
+       8.04478863e-01, 5.31139977e-01, 7.14070979e-01, 9.95481935e-01,
+       4.87332600e-01, 6.69023884e-01, 8.78982002e-01, 1.93659868e-01,
+       7.76491876e-01, 3.75172409e-01, 9.56458089e-01, 8.52187122e-01,
+       6.49456867e-01, 7.60353572e-02, 3.37014145e-01, 8.45344417e-01,
+       5.30178938e-01, 9.39115151e-01, 1.21731224e-01, 5.09409657e-01,
+       7.84230880e-02, 1.38460523e-01, 8.69126733e-01, 6.09568134e-01,
+       3.18226670e-02, 9.25256937e-01, 6.02733393e-02])}
+BaseService Wait_for_result
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d', 'ba911de5-e04c-4210-bb3b-f6b77955c722'])
+For trial_uuid bc51fa0f-c3fe-408e-a65c-6666ad086b74 - Loop_count : 1
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "is_busy", "request": null}
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Breakpoint ------- WORKER LOOP
+Engine._worker_loop(localhost, bc51fa0f-c3fe-408e-a65c-6666ad086b74)
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Breakpoint ------- RUN TRIAL
+Engine._execute_task(localhost) with trial bc51fa0f-c3fe-408e-a65c-6666ad086b74
+Engine::_execute_task.loop
+_start_task::Executing task GenericTask on agent localhost.
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "start_task", "request": {"task": "GenericTask", "parameters": {"name": "GenericTask", "parameters": {"skill_types": ["TaxInsertion"], "skill_names": ["insertion"]}, "skills": {"insertion": {"skill": {"objects": {"Container": "samuelnew2222_container", "Approach": "samuelnew2222_container_approach", "Insertable": "samuelnew2222"}, "time_max": 5, "p0": {"dX_d": [0.1, 1], "ddX_d": [0.5, 4], "DeltaX": [0.0012864908609992566, 0.0007358695783991967, 0, -9.985603184516163, -7.3081488988720045, 0], "K_x": [1500, 1500, 1500, 100, 100, 100]}, "p1": {"dX_d": [0.05836128051083918, 0.3749083827456266], "ddX_d": [0.4110558442887969, 0.5239637929142646], "K_x": [1608.9577259218647, 1608.9577259218647, 1608.9577259218647, 106.22799532401828, 106.22799532401828, 106.22799532401828]}, "p2": {"search_a": [8.78982001986884, 1.9365986839830027, 0, 1.5529837519303336, 0.7503448182935679, 0], "search_f": [2.8693742659340242, 2.5565613660788022, 0, 0.6494568674806509, 0.07603535718711275, 0], "search_phi": [2.1164488285999714, 5.308762941800406, 0, 3.3295237328737812, 5.897643147834113, 0], "K_x": [243.46244759363256, 1018.8193148047977, 156.84617597657146, 27.692104612804997, 173.8253465052509, 121.91362680267997], "f_push": [-9.363546660768936, 8.505138740463845, 1.205466786656038, 0, 0, 0], "dX_d": [0.07140709791231152, 0.4977409674229924], "ddX_d": [0.24366630013942162, 0.6690238842088196]}, "p3": {"dX_d": [0.1, 0.5], "ddX_d": [0.5, 1], "f_push": 0, "K_x": [1000, 1000, 0, 100, 100, 100]}, "ROI_x": [-0.03, 0.03, -0.03, 0.03, -1, 1], "meta": {"description": "Execution of a trial as part of the learning process."}}, "control": {"control_mode": 0, "nullspace": {"K_theta": [20, 20, 15, 10, 7, 5, 2], "xi_theta": [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7], "active": true}}, "user": {"env_X": [0.003, 0.003, 0.002, 0.1, 0.1, 0.1], "env_dX": [0.001, 0.001, 0.001, 0.005, 0.005, 0.005], "F_ext_contact": [12, 5]}, "limits": {"cartesian_space": {"dX_max": [0.5, 1]}}}}}, "queue": true}}
+STARTING TASK: Read Payload here
+Task is done
+[wait_for_task] I am waiting for TASK UUID ed81ddd4-e05b-4ce5-8ce9-7bfbc809d532
+---------- WS CLIENT SEND
+---------- WS CLIENT SEND PAYLOAD  {"method": "wait_for_task", "request": {"task_uuid": "ed81ddd4-e05b-4ce5-8ce9-7bfbc809d532"}}
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d', 'ba911de5-e04c-4210-bb3b-f6b77955c722'])
+For trial_uuid bc51fa0f-c3fe-408e-a65c-6666ad086b74 - Loop_count : 2
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d', 'ba911de5-e04c-4210-bb3b-f6b77955c722'])
+For trial_uuid bc51fa0f-c3fe-408e-a65c-6666ad086b74 - Loop_count : 3
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d', 'ba911de5-e04c-4210-bb3b-f6b77955c722'])
+For trial_uuid bc51fa0f-c3fe-408e-a65c-6666ad086b74 - Loop_count : 4
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d', 'ba911de5-e04c-4210-bb3b-f6b77955c722'])
+For trial_uuid bc51fa0f-c3fe-408e-a65c-6666ad086b74 - Loop_count : 5
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d', 'ba911de5-e04c-4210-bb3b-f6b77955c722'])
+For trial_uuid bc51fa0f-c3fe-408e-a65c-6666ad086b74 - Loop_count : 6
+^CInterface::stop_rpc_server()
+
+Keyboard interrupt received, exiting.
+Interface::stop_rpc_server.end
+^CException ignored in: <module 'threading' from '/usr/lib/python3.12/threading.py'>
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/threading.py", line 1622, in _shutdown
+    lock.acquire()
+KeyboardInterrupt: 
+Current Completd Trials dict_keys(['037d2ed4-e3cf-4334-af7d-6fc5507a8d9c', '3b4ef1f9-8a90-49a7-849d-26ffe66cfd0d', 'ba911de5-e04c-4210-bb3b-f6b77955c722'])
+For trial_uuid bc51fa0f-c3fe-408e-a65c-6666ad086b74 - Loop_count : 7
+^C
