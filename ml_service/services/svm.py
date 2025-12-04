@@ -146,7 +146,8 @@ class SVMService(BaseService):
                 break
             
             self._setSamples(self.cnt_batch)#done
-            print('Breakpoint -------I AM HERE', )
+            print('Breakpoint -------I AM HERE PENTING BANGET MANGGIL RUN TRIAL PAR', )
+            # from ipdb import set_trace; set_trace()
             self._run_trial_par(self.action_list_norm)#td
             self._trainSVM()#td
             logger.debug("\nSVM  -  batch "+str(i+1)+"/"+str(int(self.configuration.n_trials / self.configuration.batch_width))+"finished. \n")
@@ -171,7 +172,7 @@ class SVMService(BaseService):
 
     def _run_trial_par(self, x_set: list):
         """ create array of rpc params for input """
-        print("Evaluating batch " + str(self.cnt_batch))
+        print("[SVM Service _run_trial_par ] Evaluating batch " + str(self.cnt_batch))
 
         if self.configuration.batch_synchronisation:
             if self.kb is not None:
@@ -243,6 +244,7 @@ class SVMService(BaseService):
                     uuid = self.push_trial(theta, external=False)
                 trial_uuids[uuid] = theta
                 ##same as below:
+                print('Breakpoint -------SAMPAI SINI', )
                 result = self.wait_for_result(uuid)
                 if result.q_metric.final_cost is None:
                     logger.error("None was returned as cost, invoking stop.")
@@ -322,8 +324,12 @@ class SVMService(BaseService):
                         uuid = self.push_trial(x_set[i], external=external)  # evalutae the trials (->engine->mios)
                 trial_uuids[uuid] = x_set[i]
                 ##same as above:
-                print("Breakpoint -------HAHAHA SVM SERVICE", uuid)
-                print("Breakpoint -------HAHAHA SVM SERVICE", trial_uuids)
+                # print("Breakpoint -------HAHAHA SVM SERVICE", uuid)
+                # print("Breakpoint -------HAHAHA SVM SERVICE", trial_uuids)
+
+                print(
+                    "Breakpoint -------SAMPAI SINI222",
+                )
                 result = self.wait_for_result(uuid)
                 if result.q_metric.final_cost is None:
                     logger.error("None was returned as cost, invoking stop.")
@@ -424,7 +430,8 @@ class SVMService(BaseService):
         return costs
 
     def _run_trial(self, x):
-        print('RUN_TRIAL')
+        print("SVM SERVICE RUN_TRIAL _run_trial")
+        from ipdb import set_trace; set_trace()
         pass
 
     def _param2norm(self, x, i):

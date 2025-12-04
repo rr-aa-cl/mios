@@ -99,6 +99,7 @@ class Interface:
     def start_service(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
                       agents: set, knowledge: dict = None, info:dict={}) -> str:
         logger.debug("Interface::start_service")
+        # from ipdb import set_trace; set_trace()        
         if self.service_lock.acquire(blocking=False) is False:
             return "INVALID"
 
@@ -128,6 +129,7 @@ class Interface:
         """start to learn a task according to instructions"""
         result = False
         try:
+            print('Breakpoint -------HEY Interface.learn_task is started' )
             logger.debug("interface.learn_task: start learning task")
             if self.service.initialize(problem_definition, configuration, agents, knowledge,info) is False:
                 return False

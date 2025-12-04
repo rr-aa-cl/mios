@@ -19,6 +19,9 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
     problem_def.tags.extend(tags)
     client = MongoDBClient(learner)
 
+
+    print('Breakpoint ------- EXPERIMENT WIZARD', )
+    # from ipdb import set_trace; set_trace()
     for i in range(n_eval):
         if "n" + str(i) in problem_def.tags:
             problem_def.tags.remove("n" + str(i))

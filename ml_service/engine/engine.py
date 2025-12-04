@@ -1,3 +1,4 @@
+from asyncore import loop
 import pprint
 import time
 import datetime
@@ -139,10 +140,7 @@ class Engine:
         self.pause_execution = False
 
     def push_trial(self, trial: Trial) -> str:
-        from pprint import pprint; pprint("Hello")
-        # print('Breakpoint -------WHAT IS TRIAL', trial)
-        # print('Breakpoint -------WHAT IS TRIAL', pprint(trial))
-        # print('Breakpoint -------PUSHING TRIAL : ', self.cnt_pushed)
+        print('Breakpoint -------PUSHING TRIAL : ', self.cnt_pushed)
         #logger.debug("Engine.push_trial()")
         if trial.is_valid() is False:
             return "INVALID"
@@ -153,15 +151,16 @@ class Engine:
 
     def wait_for_trial(self, trial_uuid: str, max_wait_time: float) -> Trial:
         #logger.debug("Engine.wait_for_trial(" + trial_uuid + ", " + str(max_wait_time) + ")")
-        t_0 = time.time()
+        start_time = time.time()
         loop_count = 0
         # from ipdb import set_trace; set_trace()
         while trial_uuid not in self.completed_trials:
             loop_count += 1
-            print(f"Current Completd Trials {self.completed_trials.keys()}")
+            print(f"Current Completed Trials {self.completed_trials.keys()}")
             print(f"For trial_uuid {trial_uuid} - Loop_count : {loop_count}")
             # logger.debug("Engine::wait_for_trial.loop")
-            if time.time() - t_0 > max_wait_time:
+            end_time = time.time()
+            if end_time - start_time > max_wait_time:
                 logger.error("Wait time for trial has been exceeded.")
                 return Trial(dict(), [],[], dict(), False)
             if self.keep_running is False:
@@ -198,16 +197,16 @@ class Engine:
             return self.cnt_optimal > self.problem_definition.cost_function.finish_thr  # finsih threshold states how often a optimal_thr was undercut to finish
 
     def main_loop(self):
-        logger.debug("Engine.main_loop()")
-        logger.debug("Engine.main_loop()")
-        logger.debug("Engine.main_loop()")
+        logger.debug("Engine.main_loop() 🏁 1")
+        logger.debug("Engine.main_loop() 🏁 2")
+        logger.debug("Engine.main_loop() 🏁 3")
         self.cnt_trial = 1
         self.keep_running = True
         worker_threads = dict()
         for a in self.agents:
             worker_threads[a] = None
 
-        logger.info("Setting up experiment.")
+        logger.info("Setting up experiment. in the MAIN LOOP 🏁")
         for a in self.free_agents:
             worker_threads[a] = Thread(target=self.setup_experiment, args=(a,))
             worker_threads[a].start()
@@ -308,8 +307,10 @@ class Engine:
         #     pixel_format="yuyv422"):
         #     logger.error("!!!!Cannot start video recording!!!!")
         #     pass
-
+        loop_count = 0
         for i in range(self.problem_definition.n_variations):
+            loop_count += 1
+            print("_run_trial loop count: ", loop_count)
             #print("Running variation " + str(i))
             self.problem_definition.apply_object_modifiers(trial.task_context)
             result, variation_result = self._execute_task(agent, trial)
@@ -361,11 +362,15 @@ class Engine:
         #logger.debug("Engine::_worker_loop.trial_done")
         self.queued_trials.task_done()
         cost = str(variation_result.q_metric.final_cost) if variation_result is not None else "None"
+        print('AKHIRNYA KE ASSIGN Completed Trials', trial.task_uuid)
+        print('Assigning Completed Trials', trial.task_uuid)
         logger.debug(f"\n#################################\n ENGINE: success {str(trial.task_result.q_metric.success)} on trial {str(trial.trial_number)}\n"
             f"ENGINE: Cost: {cost} \n#################################\n")
         self.completed_trials[trial.trial_uuid] = deepcopy(trial)
 
     def _execute_task(self, agent: str, trial: Trial) -> (bool, TaskResult):
+        print("_execute_task Completed Trials", trial.task_uuid)
+
         logger.debug("Engine._execute_task(" + agent + ") with trial " + trial.trial_uuid)
         # logger.debug("Engine::_execute_task.task_context: " + str(trial.task_context))
         cnt_repeat = -1
@@ -548,6 +553,7 @@ class Engine:
         return True, task_uuid
 
     def _wait_for_task(self, agent: str, task_uuid: str) -> (bool, TaskResult):
+        print(f"[_wait_for_task] I am waiting for TASK UUID {task_uuid}")
         # from ipdb import set_trace; set_trace()
         task_result = TaskResult()
         response = wait_for_task(agent, task_uuid, port=self.mios_port)
@@ -558,7 +564,7 @@ class Engine:
             return False, task_result
 
         if "result" not in response or "result" not in response["result"] or "task_result" not in response["result"]:
-            from ipdb import set_trace; set_trace()
+            # from ipdb import set_trace; set_trace()
             logger.warning("I received no proper response from agent " + agent + ".")
             logger.debug("Response was: " + str(response))
             time.sleep(1)
@@ -578,6 +584,7 @@ class Engine:
         return True, task_result
 
     def setup_experiment(self, agent):
+        print('Breakpoint ------ Engine.setup_experiment', )
         logger.debug("Engine::_reset_task()")
         for i in self.problem_definition.setup_instructions:
             logger.debug("Engine::setup_experiment.instructions: " + str(i["parameters"]))
@@ -598,7 +605,9 @@ class Engine:
                         logger.debug(result)
                         time.sleep(1)
                         continue
-
+                    
+                    print("Engine Setup Experiment Masuk sini ----")
+                    # from ipdb import set_trace; set_trace()
                     result, task_result = self._wait_for_task(agent, task_uuid)
                     if result is False or task_result.q_metric.success is False:
                         logger.debug("Could not wait for setup_experiment")

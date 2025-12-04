@@ -356,7 +356,7 @@ class BaseService(metaclass=ABCMeta):
         # result = self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations)
         result_dict = result.to_dict()
 
-        print("Breakpoint -------result_dict ", result_dict)
+        print("wait_for_result -------result_dict ", result_dict)
         if result_dict["external"]:  # if external is not False
             if type(result_dict["external"]) is str:
                 result_dict["external"] = eval(result_dict["external"])  # make it a dict again from string
