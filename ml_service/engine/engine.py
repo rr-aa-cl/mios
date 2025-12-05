@@ -169,7 +169,7 @@ class Engine:
                 return Trial(dict(), [],[], dict(), False)
             time.sleep(1)
 
-        print('Breakpoint ------- INCREMENT COUNT COMPLETED', )
+        print('Breakpoint ------- INCREMENT COUNT COMPLETED', self.cnt_completed)
         self.cnt_completed += 1
 
         return self.completed_trials[trial_uuid]
@@ -353,7 +353,7 @@ class Engine:
 
         #self.video_recorder.stop_stream()
         #logger.debug("Cost: " + str(trial.task_result.q_metric.final_cost))
-        #logger.debug("FINISHED trial " + str(self.cnt_trial) + " with uuid " + trial.trial_uuid)
+        logger.debug("FINISHED trial " + str(self.cnt_trial) + " with uuid " + trial.trial_uuid)
         if trial.task_result.q_metric.optimal is True:
             logger.debug("Engine::_worker_loop.is_optimal")
             self.cnt_optimal += 1
@@ -525,6 +525,9 @@ class Engine:
         # logger.debug("Task context: " + str(task_context))
         
         response = start_task(agent, task_name, task_context, True, port=self.mios_port)
+
+        print("INI ISINYA APA 1111111")"]:
+        print(response)
         # pprint(response)
         print("STARTING TASK: Read Payload here")
         if response is None:
@@ -559,6 +562,8 @@ class Engine:
         # from ipdb import set_trace; set_trace()
         task_result = TaskResult()
         response = wait_for_task(agent, task_uuid, port=self.mios_port)
+        print("INI ISINYA APA 2222")
+        print(response)
         # logger.debug("Engine._wait_for_task.response: " + str(response))
         if response is None:
             logger.warning("Agent " + agent + " is not responding.")
