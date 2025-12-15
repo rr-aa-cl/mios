@@ -316,9 +316,11 @@ bool Skill::check_global_err_conditions(const Percept& p) const{
     }
     for(unsigned i=0;i<3;i++){
         if(p.proprioception.T_T_EE(i,3)<m_ROI_center(i)+m_memory->read_parameters()->skill->ROI_x(2*i)){
+            spdlog::error("Skill "+m_id+" has left ROI at coordinate "+std::to_string(i)+".");
             return true;
         }
         if(p.proprioception.T_T_EE(i,3)>m_ROI_center(i)+m_memory->read_parameters()->skill->ROI_x(2*i+1)){
+            spdlog::error("Skill "+m_id+" has left ROI at coordinate "+std::to_string(i)+".");
             return true;
         }
     }
