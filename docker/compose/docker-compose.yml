@@ -1,19 +1,21 @@
+version: '3'
+
 services:
   mios:
     image: "mirmi/mios:FR3"
     restart: always
     environment:
-      - verbosity=debug
-      - robot_ip=192.168.3.100
-      - ROBOT_USER=MBZUAI
-      - ROBOT_PASSWORD=mbzuai123
-      - database_name=miosL
-      - database_port=27017
-      - robot_config=0
-      - desk=true
-      - websocket_port=12000
-      - rpc_port=12001
-      - udp_port=12002
+      - verbosity=${MIOS_VERBOSITY:-debug}
+      - robot_ip=${ROBOT_IP:-true}
+      - ROBOT_USER=${DESK_USER:-true}
+      - ROBOT_PASSWORD=${DESK_PW:-mbzuai123}
+      - database_name=${MOGNO_DB_NAME:-MBZUAI}
+      - database_port=${MONGO_PORT:-27017}
+      - robot_config=${ROBOT_CONFIG:-0}
+      - desk=${MIOS_DESK:-true}
+      - websocket_port=${MIOS_WS_PORT:-12000}
+      - rpc_port=${MIOS_RPC_PORT:-12001}
+      - udp_port=${MIOS_UPD_PORT:-12002}
     network_mode: "host"
     cap_add:
       - SYS_NICE
@@ -22,16 +24,17 @@ services:
   mongo:
     image: "mongo:7.0.14"
     ports:
-      - "27017:27017"
+      - "${MONGO_PORT:-27017}:${MONGO_PORT:-27017}"
     volumes:
       - ./localFolder:/data/db
     command: mongod --quiet --logpath /dev/null 
 
   mios_mls:
     image: "mirmi/mios_mls:latest"
-    ports:
-      - "8000:8000"
-      - "8001:8001"
+    environment:
+      - mios_port=${MIOS_WS_PORT:-12000}
+      - mongo_port=${MONGO_PORT:-27017}
+      - interface_port=${MLS_INTERFACE_PORT:-8000} 
     network_mode: "host"
     cap_add:
       - SYS_NICE
