@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("-i","--interface_port", help="changes the default interface port (8000) to INTERFACE_PORT, \
         global Database port is INTERFACE_PORT+1,\n for global Database keep default port!", type=int, default=False)
     parser.add_argument("-m","--mios_port", help="changes the default mios port (12000) to MIOS_PORT, eg. 13000 for dualarm right", type=int, default=False)
-    parser.add_argument("-d","--mongodb",help="port for Mongo-Database on localhost, default 27017", type=int, default=False)
+    parser.add_argument("-d","--mongo_port",help="port for Mongo-Database on localhost, default 27017", type=int, default=False)
     args = parser.parse_args()
     if not args.interface_port:
         logger.debug("No interface port specified, searching env...")
@@ -40,10 +40,10 @@ if __name__ == "__main__":
         mios_port = args.interface_port
 
     if not args.mongodb:
-        logger.debug("No mongodb port specified, searching env...")
-        mongodb = os.getenv("mongodb")
+        logger.debug("No mongo_port port specified, searching env...")
+        mongodb = os.getenv("mongo_port")
         if mongodb is None:
-            logger.debug("No interface_port found in env. Fall back to default: 27017")
+            logger.debug("No mongo_port found in env. Fall back to default: 27017")
             mongodb = 27017
     else:
         mongodb = args.interface_port
