@@ -40,7 +40,7 @@ if __name__ == "__main__":
         mios_port = args.interface_port
 
     if not args.mongodb:
-        logger.debug("No mongodb port specified, searching env...")
+        logger.debug("No mongo_port port specified, searching env...")
         mongodb = os.getenv("mongo_port")
         if mongodb is None:
             logger.debug("No mongo_port found in env. Fall back to default: 27017")
