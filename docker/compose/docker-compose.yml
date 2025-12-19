@@ -1,3 +1,5 @@
+version: '3'
+
 services:
   mios:
     image: "mirmi/mios:FR3"

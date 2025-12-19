@@ -107,11 +107,26 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
   
       - name: Extract metadata for Docker images
-        id: meta
+        id: meta-mios
         uses: docker/metadata-action@v5
         with:
           images: |
             ghcr.io/${{ github.repository }}/mios
+          tags: |
+            type=ref,event=branch
+            type=ref,event=branch,suffix=-{{sha}}-{{date 'YYMMDDHHmmss' tz='Asia/Dubai'}}
+            type=ref,event=tag
+            type=ref,event=pr,suffix=-{{sha}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/local_dev' }}
+      
+      - name: Extract metadata for Docker images
+        id: meta-mios-mls
+        uses: docker/metadata-action@v5
+        with:
+          images: |
             ghcr.io/${{ github.repository }}/mios_mls
           tags: |
             type=ref,event=branch
@@ -129,7 +144,7 @@ jobs:
           context: .
           file: ./docker/core/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta-mios.outputs.tags }}
 
 
       - name: Build mios_mls Docker image
@@ -138,6 +153,6 @@ jobs:
           context: .
           file: ./docker/ml_service/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta-mios-mls.outputs.tags }}
 
   
