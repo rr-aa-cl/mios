@@ -7,7 +7,7 @@ permissions:
 on:
   push:
     branches:
-      - dev_dependencies
+      - janine-redis
       - local_dev
   pull_request:
     branches:
