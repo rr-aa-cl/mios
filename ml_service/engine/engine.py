@@ -337,7 +337,7 @@ class Engine:
             f"ENGINE: Cost: {cost} \n#################################\n")
         self.completed_trials[trial.trial_uuid] = deepcopy(trial)
 
-        self.redisClient.push("ml_result", json.dumps({"arm_label": trial.agent, "trial_count": trial.trial_number, "is_succeed": trial.task_result.q_metric.success}))
+        self.redisClient.lpush("ml_result", json.dumps({"arm_label": trial.agent, "trial_count": trial.trial_number, "is_succeed": trial.task_result.q_metric.success}))
 
     def _execute_task(self, agent: str, trial: Trial) -> (bool, TaskResult):
         logger.debug("Engine._execute_task(" + agent + ") with trial " + trial.trial_uuid)
