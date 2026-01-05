@@ -5,9 +5,9 @@ permissions:
   packages: write
 
 on:
+  workflow_dispatch: {}   # enables "Run workflow" in the UI
   push:
     branches:
-      - dev_dependencies
       - local_dev
   pull_request:
     branches:
