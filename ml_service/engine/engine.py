@@ -81,7 +81,12 @@ class Engine:
         self.free_agents = agents
         self.queued_trials = Queue()
         self.completed_trials = dict()
-        self.redisClient = redis.Redis("redis-master.global", 6379, db=0, decode_responses=True)
+        try:
+            self.redisClient = redis.Redis("redis-master.global", 6379, db=0, decode_responses=True)
+            self.redisClient.ping()
+        except redis.RedisError as e:
+            logger.error("Redis connection failed: " + str(e))
+            self.redisClient = None
         self.database_client = MongoDBClient(port=self.mongo_port)
         self.database_results_collection = None
         self.database_results_id = None
@@ -337,7 +342,8 @@ class Engine:
             f"ENGINE: Cost: {cost} \n#################################\n")
         self.completed_trials[trial.trial_uuid] = deepcopy(trial)
 
-        self.redisClient.lpush("ml_result", json.dumps({"arm_label": trial.agent, "trial_count": trial.trial_number, "is_succeed": trial.task_result.q_metric.success}))
+        if self.redisClient is not None:
+            self.redisClient.lpush("ml_result", json.dumps({"arm_label": trial.agent, "trial_count": trial.trial_number, "is_succeed": trial.task_result.q_metric.success}))
 
     def _execute_task(self, agent: str, trial: Trial) -> (bool, TaskResult):
         logger.debug("Engine._execute_task(" + agent + ") with trial " + trial.trial_uuid)
