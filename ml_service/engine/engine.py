@@ -350,7 +350,10 @@ class Engine:
         self.completed_trials[trial.trial_uuid] = deepcopy(trial)
 
         if self.redisClient is not None:
-            self.redisClient.lpush("ml_result", json.dumps({"arm_label": trial.agent, "trial_count": trial.trial_number, "is_succeed": trial.task_result.q_metric.success}))
+            try: 
+                self.redisClient.lpush("ml_result", json.dumps({"arm_label": trial.agent, "trial_count": trial.trial_number, "is_succeed": trial.task_result.q_metric.success}))
+            except redis.RedisError as e:
+                logger.error("Redis push data failed: " + str(e)) 
 
     def _execute_task(self, agent: str, trial: Trial) -> (bool, TaskResult):
         logger.debug("Engine._execute_task(" + agent + ") with trial " + trial.trial_uuid)
