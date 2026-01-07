@@ -82,7 +82,14 @@ class Engine:
         self.queued_trials = Queue()
         self.completed_trials = dict()
         try:
-            self.redisClient = redis.Redis("redis-master.global", 6379, db=0, decode_responses=True)
+            self.redisClient = redis.Redis(
+                    host="redis-master.global", 
+                    port=6379, 
+                    db=0, 
+                    decode_responses=True,
+                    socket_connect_timeout=2,    # Fail if can't connect in 2 second
+                    socket_timeout=2             # Fail if operations take > 2 second
+                 )
             self.redisClient.ping()
         except redis.RedisError as e:
             logger.error("Redis connection failed: " + str(e))
