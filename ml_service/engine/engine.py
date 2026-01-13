@@ -15,6 +15,8 @@ from engine.task_result import TaskResult
 from utils.exception import *
 from utils.ws_client import *
 from utils.helper_functions import *
+import redis
+import json
 
 
 logger = logging.getLogger("ml_service")
@@ -79,7 +81,19 @@ class Engine:
         self.free_agents = agents
         self.queued_trials = Queue()
         self.completed_trials = dict()
-
+        try:
+            self.redisClient = redis.Redis(
+                    host="redis-master.global", 
+                    port=6379, 
+                    db=0, 
+                    decode_responses=True,
+                    socket_connect_timeout=2,    # Fail if can't connect in 2 second
+                    socket_timeout=2             # Fail if operations take > 2 second
+                 )
+            self.redisClient.ping()
+        except redis.RedisError as e:
+            logger.error("Redis connection failed: " + str(e))
+            self.redisClient = None
         self.database_client = MongoDBClient(port=self.mongo_port)
         self.database_results_collection = None
         self.database_results_id = None
@@ -335,6 +349,12 @@ class Engine:
             f"ENGINE: Cost: {cost} \n#################################\n")
         self.completed_trials[trial.trial_uuid] = deepcopy(trial)
 
+        if self.redisClient is not None:
+            try: 
+                self.redisClient.lpush("ml_result", json.dumps({"arm_label": trial.agent, "trial_count": trial.trial_number, "is_succeed": trial.task_result.q_metric.success}))
+            except redis.RedisError as e:
+                logger.error("Redis push data failed: " + str(e)) 
+
     def _execute_task(self, agent: str, trial: Trial) -> (bool, TaskResult):
         logger.debug("Engine._execute_task(" + agent + ") with trial " + trial.trial_uuid)
         # logger.debug("Engine::_execute_task.task_context: " + str(trial.task_context))
@@ -351,6 +371,7 @@ class Engine:
                 trial.task_context["skills"][skill_name]["skill"]["meta"] = {
                         "description":"Execution of a trial as part of the learning process.",
                     }
+            #print(str(trial.task_context))
             result, task_uuid = self._start_task(agent, trial.task_context)
             if result is False:
                 logger.error("Result was False after start_task")
