@@ -87,6 +87,7 @@ class Engine:
                     port=6379, 
                     db=0, 
                     decode_responses=True,
+                    password="QqJ3JDqNjN",
                     socket_connect_timeout=2,    # Fail if can't connect in 2 second
                     socket_timeout=2             # Fail if operations take > 2 second
                  )
