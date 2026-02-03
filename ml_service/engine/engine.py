@@ -15,8 +15,6 @@ from engine.task_result import TaskResult
 from utils.exception import *
 from utils.ws_client import *
 from utils.helper_functions import *
-import redis
-import json
 
 
 logger = logging.getLogger("ml_service")
@@ -81,20 +79,6 @@ class Engine:
         self.free_agents = agents
         self.queued_trials = Queue()
         self.completed_trials = dict()
-        try:
-            self.redisClient = redis.Redis(
-                    host="redis-master.global", 
-                    port=6379, 
-                    db=0, 
-                    decode_responses=True,
-                    password="QqJ3JDqNjN",
-                    socket_connect_timeout=2,    # Fail if can't connect in 2 second
-                    socket_timeout=2             # Fail if operations take > 2 second
-                 )
-            self.redisClient.ping()
-        except redis.RedisError as e:
-            logger.error("Redis connection failed: " + str(e))
-            self.redisClient = None
         self.database_client = MongoDBClient(port=self.mongo_port)
         self.database_results_collection = None
         self.database_results_id = None
@@ -350,11 +334,6 @@ class Engine:
             f"ENGINE: Cost: {cost} \n#################################\n")
         self.completed_trials[trial.trial_uuid] = deepcopy(trial)
 
-        if self.redisClient is not None:
-            try: 
-                self.redisClient.lpush("ml_result", json.dumps({"arm_label": trial.agent, "trial_count": trial.trial_number, "is_succeed": trial.task_result.q_metric.success}))
-            except redis.RedisError as e:
-                logger.error("Redis push data failed: " + str(e)) 
 
     def _execute_task(self, agent: str, trial: Trial) -> (bool, TaskResult):
         logger.debug("Engine._execute_task(" + agent + ") with trial " + trial.trial_uuid)
@@ -559,6 +538,7 @@ class Engine:
 
         #logger.debug("Engine::_wait_for_task.end")
         return True, task_result
+
 
     def setup_experiment(self, agent):
         logger.debug("Engine::_reset_task()")
