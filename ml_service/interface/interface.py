@@ -418,7 +418,7 @@ class Interface:
                 for key, value in data_dict.items():
                     if type(value) == list:
                         if key == "O_F_ext_K":
-                            gentleness=math.sqrt(value[0] ** 2 + value[1] ** 2 + value[2] ** 2)
+                            gentleness=math.sqrt(value[0] ** 2 + value[1] ** 2 + value[2] ** 2)/math.sqrt(3)
                             percentage = (gentleness/20)*100
                             self.redisClient.lpush(
                                 "gentleness",
