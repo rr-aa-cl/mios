@@ -141,7 +141,7 @@ class Interface:
         finally:
             logger.debug("Interface::learn_task.finally: Releasing service lock")
             self.stop_cmd_loop()
-            self.stop_telemetry()
+            self.stop_telemetry(agents)
             self.service_lock.release()
         return result
     
@@ -149,8 +149,9 @@ class Interface:
         logger.debug("Interface::stop_service")
         """Stop the learning process, if possible save all results and stop the robot"""
         self.stop_cmd_loop()
-        self.stop_telemetry()
         if self.service is not None:
+            if self.service.engine is not None:
+                self.stop_telemetry(self.service.engine.agents)
             self.service.stop()
     
     def pause_service(self):
