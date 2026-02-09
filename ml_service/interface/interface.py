@@ -274,10 +274,11 @@ class Interface:
             receiving_port+=1
         return True
 
-    def stop_telemetry(self, robot_ip):
+    def stop_telemetry(self, agents):
         self._stop_telemetry.set()
         logger.debug("interface::stop_telemetry")
-        call_method(robot_ip, self.mios_port, "unsubscribe_telemetry",{"ip":robot_ip})
+        for robot_ip in agents:
+            call_method(robot_ip, self.mios_port, "unsubscribe_telemetry",{"ip":robot_ip})
         if self.service is not None:
             self.service.data_buffer_visualization.add_data("STOP")           
         if self.telemetry_threads is not None and len(self.telemetry_threads) > 0:
