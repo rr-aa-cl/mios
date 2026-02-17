@@ -96,7 +96,7 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
             if(m_context.shutdown_signal){
                 break;
             }
-            if(mirmi_utils::ping(last_ip.value().c_str())==false ){
+            if(is_service_reachable(last_ip.value().c_str(), 1337, 5)==false ){
                 if(count%10000==0){
                     spdlog::warn("IP was set to "+last_ip.value()+" but no device has been found. Searching for new connection...");
                 }  
@@ -135,6 +135,69 @@ std::optional<std::string> PandaBody::ping_robot(const std::optional<std::string
     spdlog::warn("PandaBody::ping_robot: Cannot find Robot");
     return new_ip;
 
+}
+
+bool PandaBody::is_service_reachable(const std::string& address, int port, int timeout_sec) {
+    struct addrinfo hints{}, *res, *ptr;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;     // Allow IPv4 or IPv6
+    hints.ai_socktype = SOCK_STREAM; // TCP
+
+    // 1. Resolve Hostname
+    if (getaddrinfo(address.c_str(), std::to_string(port).c_str(), &hints, &res) != 0) {
+        return false;
+    }
+
+    bool is_connected = false;
+
+    // 2. Iterate through ALL resolved addresses (Crucial for K8s)
+    for (ptr = res; ptr != nullptr; ptr = ptr->ai_next) {
+        int sockfd = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+        if (sockfd < 0) continue;
+
+        // 3. Set Non-Blocking (FIXED SYNTAX)
+        int flags = fcntl(sockfd, F_GETFL, 0);
+        if (flags == -1 || fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) == -1) {
+            close(sockfd);
+            continue;
+        }
+
+        // 4. Attempt Connection
+        int connect_result = connect(sockfd, ptr->ai_addr, ptr->ai_addrlen);
+
+        if (connect_result == 0) {
+            is_connected = true; // Connected immediately
+        } 
+        else if (errno == EINPROGRESS) {
+            // Connection in progress, wait using poll
+            struct pollfd pfd{};
+            pfd.fd = sockfd;
+            pfd.events = POLLOUT;
+
+            // poll expects milliseconds
+            int poll_res = poll(&pfd, 1, timeout_sec * 1000); 
+
+            if (poll_res > 0) {
+                // Poll succeeded, check socket error state
+                int so_error = 0;
+                socklen_t len = sizeof(so_error);
+                if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &so_error, &len) == 0) {
+                    if (so_error == 0) {
+                        is_connected = true;
+                    }
+                }
+            }
+        }
+
+        close(sockfd); // Always close the probe socket
+        
+        if (is_connected) {
+            break; // Stop trying other IPs if we found a working one
+        }
+    }
+
+    freeaddrinfo(res);
+    return is_connected;
 }
 
 void PandaBody::load_gripper_configuration(){
