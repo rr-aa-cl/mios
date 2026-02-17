@@ -19,8 +19,6 @@ from mongodb_client.mongodb_client import MongoDBClient
 from utils.exception import *
 from services.knowledge import Knowledge
 from utils.databuffer import DataBuffer
-import redis
-import json
 
 logger = logging.getLogger("ml_service")
 
