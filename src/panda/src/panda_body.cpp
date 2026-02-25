@@ -189,7 +189,7 @@ bool PandaBody::is_service_reachable(const std::string& address, int port, int t
             }
         }
 
-        close(sockfd); // Always close the probe socket
+        close(sockfd); 
         
         if (is_connected) {
             break; // Stop trying other IPs if we found a working one
