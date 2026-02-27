@@ -31,6 +31,7 @@ struct Subscriber{
     unsigned port;
     std::string ip;
     std::string address;
+    std::string identity;
     std::vector<std::string> subscriptions;
     bool sendWithTerminatingNullCharacter;
     std::shared_ptr<mirmi_utils::UDPStreamSender> stream;
@@ -41,7 +42,7 @@ public:
     TelemetryUDP(Core* core, Portal* portal);
     ~TelemetryUDP();
 
-    bool add_subscriber(const std::string &addr, unsigned port, const std::vector<std::string> &subs,
+    bool add_subscriber(const std::string &addr, unsigned port, const std::string &identity, const std::vector<std::string> &subs,
                         bool sendWithTerminatingNullCharacter);
     bool remove_subscriber(const std::string &addr);
     bool start_sending();

@@ -17,7 +17,7 @@ TelemetryUDP::~TelemetryUDP(){
     stop_sending();
 }
 
-bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, const std::vector<std::string> &subs,
+bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, const std::string &identity, const std::vector<std::string> &subs,
                                   bool sendWithTerminatingNullCharacter){
     // check ip address:
     std::string ip = addr;
@@ -35,7 +35,7 @@ bool TelemetryUDP::add_subscriber(const std::string &addr, const unsigned port, 
     { return ip_temp == sub.address; });
     if(it == m_subscribers.end()){
         std::string name = "telemetry_" + ip + ":" + std::to_string(port);
-        Subscriber sub_temp = {port, ip, addr, subs, sendWithTerminatingNullCharacter,
+        Subscriber sub_temp = {port, ip, addr, identity, subs, sendWithTerminatingNullCharacter,
                                m_portal->open_udp_outstream(name, ip, port,{})};
         m_subscribers.push_back(sub_temp);  // add new subscriber
         if(!sub_temp.stream->connect()){
@@ -123,6 +123,9 @@ void TelemetryUDP::sending_loop(){
         for(auto sub : m_subscribers){
             // build message for every subscriber
             nlohmann::json msg_data;
+            if (!sub.identity.empty()) {
+                msg_data["identity"] = sub.identity;
+            }
             for(std::string subscription : sub.subscriptions){
                 switch(m_data_map.find(subscription)->second){
                 case 1: mirmi_utils::write_json_array<double,4,4>(msg_data["O_T_EE"],p->proprioception.O_T_EE); break;
