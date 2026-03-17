@@ -88,6 +88,7 @@ public:
 private:
     void load_gripper_configuration();
     std::optional<std::string> get_robot_ip(const std::optional<std::string>& last_ip);
+    bool is_service_reachable(const std::string& address, int port, int timeout_sec);
     bool is_robot(const std::string& ip);
     std::optional<std::string> find_robot();
     std::optional<std::string> find_device(const std::string &network_interface);

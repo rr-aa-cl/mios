@@ -2,7 +2,7 @@ version: '3'
 
 services:
   mios:
-    image: "mirmi/mios:FR3"
+    image: "mirmi/mios:pingless"
     restart: always
     environment:
       - verbosity=${MIOS_VERBOSITY:-debug}
@@ -12,7 +12,7 @@ services:
       - database_name=${MOGNO_DB_NAME:-MBZUAI}
       - database_port=${MONGO_PORT:-27017}
       - robot_config=${ROBOT_CONFIG:-0}
-      - desk=${MIOS_DESK:-true}
+      - desk=${DESK:-true}
       - websocket_port=${MIOS_WS_PORT:-12000}
       - rpc_port=${MIOS_RPC_PORT:-12001}
       - udp_port=${MIOS_UPD_PORT:-12002}
