@@ -4,7 +4,7 @@ import copy
 import time
 import random
 from services.knowledge import Knowledge
-from mongodb_client.mongodb_client import MongoDBClient
+from knowledge_processor.knowledge_store import KnowledgeStore
 from knowledge_processor.knowledge_processor_v2 import KnowledgeProcessor
 from knowledge_processor.kg_random_forest import KGRandomForest
 from knowledge_processor.kg_k_neighbors import KGKNeighbors
@@ -18,9 +18,12 @@ import sklearn.exceptions
 logger = logging.getLogger("ml_service")
 
 
+from knowledge_processor.mongo_knowledge_store import MongoKnowledgeStore
+
 class KnowledgeManager:
     def __init__(self, host='localhost', port=27017, fast_pipe_ip="10.157.175.119"):
         self.DBclient = MongoDBClient(host, port)
+        self._store = MongoKnowledgeStore(self.DBclient)
         self.data_db = "ml_results"
         self.knowledge_db = "local_knowledge"
         self.fast_pipe_ip = fast_pipe_ip
@@ -53,7 +56,7 @@ class KnowledgeManager:
         logger.debug("KnowledgeManager: init_similarity")
         self.similarties = copy.deepcopy(similarities)
 
-    def collect_data(self, db_client, skill_identifier, data_db: str = "ml_results") -> list:
+    def collect_data(self, store: KnowledgeStore, skill_identifier, data_db: str = "ml_results") -> list:
         if "identity" in skill_identifier:
             result_filter = {"meta.tags": skill_identifier["tags"],
                              "meta.identity": skill_identifier["identity"],
@@ -62,56 +65,48 @@ class KnowledgeManager:
             result_filter = {"meta.tags": skill_identifier["tags"],
                              "meta.skill_class": skill_identifier["skill_class"]}
 
-        doc = db_client.read(data_db, skill_identifier["skill_class"], result_filter)
+        doc = store.read(data_db, skill_identifier["skill_class"], result_filter)
         if doc is None or len(doc) == 0:
-            logger.error("Could not find any results for filter " + str(
-                result_filter) + " on database " + data_db + " in collection " + skill_identifier["skill_class"] + ".")
+            logger.error(f"Could not find any results for filter {result_filter} on database {data_db} in collection {skill_identifier['skill_class']}.")
             return []
         return doc
 
-    def collect_knowledge(self, client: MongoDBClient, db: str, skill_class: str, knowledge_identifier: dict) -> list:
-        doc = client.read(db, skill_class, knowledge_identifier)
+    def collect_knowledge(self, store: KnowledgeStore, db: str, skill_class: str, knowledge_identifier: dict) -> list:
+        doc = store.read(db, skill_class, knowledge_identifier)
         if doc is None or len(doc) == 0:
-            logger.error("Could not find any results for filter " + str(
-                knowledge_identifier) + " on database " + db + " in collection " + skill_class + ".")
+            logger.error(f"Could not find any results for filter {knowledge_identifier} on database {db} in collection {skill_class}.")
             return []
         return doc
 
-    def store_knowledge(self, db_client: MongoDBClient, knowledge: dict, scope: list, knowledge_db="local_knowledge") -> str or None:
+    def store_knowledge(self, store: KnowledgeStore, knowledge: dict, scope: list, knowledge_db="local_knowledge") -> str or None:
         if knowledge is None:
             return None
-
-        #if "tags" in knowledge["meta"]:  # why should I delete tags??????
-        #    del knowledge["meta"]["tags"]
 
         knowledge["meta"]["scope"] = scope
 
         knowledge_filter = {"meta.scope": scope,
                             "meta.skill_class": knowledge["meta"]["skill_class"],
                             "meta.identity": knowledge["meta"]["identity"]}
-        available_knowledge = db_client.read(knowledge_db, knowledge["meta"]["skill_class"], knowledge_filter)
+        available_knowledge = store.read(knowledge_db, knowledge["meta"]["skill_class"], knowledge_filter)
         if len(available_knowledge) == 0:
             logger.debug("KnowledgeManager::store_knowledge: create new knowledge entry")
-            return db_client.write(knowledge_db, knowledge["meta"]["skill_class"], knowledge)
+            return store.write(knowledge_db, knowledge["meta"]["skill_class"], knowledge)
         elif len(available_knowledge) == 1:
-            logger.debug(
-                "KnowledgeManager::store_knowledge: update knowledge entry for task identity on database " + str(
-                    knowledge_db))
+            logger.debug(f"KnowledgeManager::store_knowledge: update knowledge entry for task identity on database {knowledge_db}")
             id = available_knowledge[0]["_id"]
             knowledge["_id"] = id
-            db_client.remove(knowledge_db, knowledge["meta"]["skill_class"], {"_id": id})
-            db_client.write(knowledge_db, knowledge["meta"]["skill_class"], knowledge)
+            store.remove(knowledge_db, knowledge["meta"]["skill_class"], {"_id": id})
+            store.write(knowledge_db, knowledge["meta"]["skill_class"], knowledge)
             return available_knowledge[0]["_id"]
         else:
-            logger.error(
-                "KnowledgeManager::store_knowledge: Multiple knowledge entries found! Cannot decide which one to update")
+            logger.error("KnowledgeManager::store_knowledge: Multiple knowledge entries found! Cannot decide which one to update")
             return None
 
-    def get_knowledge_by_identity(self, db_client, task_identifier: dict, data_db: str = "ml_results",
+    def get_knowledge_by_identity(self, store: KnowledgeStore, task_identifier: dict, data_db: str = "ml_results",
                                   knowledge_db: str = "local_knowledge") -> str or None:
         '''process raw data from trials to knowledge; working from and on the database'''
         # allocate all ml_data with same task identity:
-        doc = self.collect_data(db_client, task_identifier["identity"], data_db)
+        doc = self.collect_data(store, task_identifier["identity"], data_db)
         if not doc:
             return None
         # save knowledge source
@@ -134,12 +129,11 @@ class KnowledgeManager:
 
         return knowledge
 
-    def get_knowledge_by_id(self, db_client, task_identifier: dict, id: str, data_db: str = "ml_results",
+    def get_knowledge_by_id(self, store: KnowledgeStore, task_identifier: dict, id: str, data_db: str = "ml_results",
                                   knowledge_db: str = "local_knowledge") -> str or None:
         '''process raw data from trials to knowledge; working from and on the database'''
         # allocate all ml_data with same task identity:
-        print("get_knowledge: ",str(task_identifier),"  ",id)
-        doc = db_client.read(data_db, task_identifier["skill_class"], {"_id":id})
+        doc = store.read(data_db, task_identifier["skill_class"], {"_id":id})
 
         if not doc:
             return None
@@ -163,10 +157,10 @@ class KnowledgeManager:
 
         return knowledge
 
-    def process_knowledge_by_filter(self, db_client: MongoDBClient, data_db: str, col: str, filter: dict):
-        doc = db_client.read(data_db, col, filter)
+    def process_knowledge_by_filter(self, store: KnowledgeStore, data_db: str, col: str, search_filter: dict):
+        doc = store.read(data_db, col, search_filter)
         if not doc:
-            logger.error("Cannot find data for filter " + str(filter) + " at " + str(data_db) + "." + str(col))
+            logger.error(f"Cannot find data for filter {search_filter} at {data_db}.{col}")
             return None
 
         task_identity = {
@@ -181,32 +175,31 @@ class KnowledgeManager:
         self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, filter,  mean_optimum_weights, confidence)
         return self.knowledge_processor.process_knowledge(successful_trials)
     
-    def get_knowledge_by_filter(self, db_client: MongoDBClient, data_db: str, col: str, filter: dict):
-        doc = db_client.read(data_db, col, filter)
+    def get_knowledge_by_filter(self, store: KnowledgeStore, data_db: str, col: str, search_filter: dict):
+        doc = store.read(data_db, col, search_filter)
         if not doc:
-            logger.error("Cannot find data for filter " + str(filter) + " at " + str(data_db) + "." + str(col))
+            logger.error(f"Cannot find data for filter {search_filter} at {data_db}.{col}")
             return Knowledge()
-        logger.debug("KnowledgeManager: found "+str(len(doc))+" knowledge entries for "+str(filter)+"on "+str(db_client.client._host))
+        logger.debug(f"KnowledgeManager: found {len(doc)} knowledge entries for {search_filter}")
         knowledge = Knowledge()
         knowledge.from_dict(doc[0])
         return knowledge
 
-    def process_knowledge_local(self, db_client, task_identity: dict, data_db: str = "ml_results") -> str("_id"):
-        """process raw data from trials to knowledge; working from and on the database"""
+    def process_knowledge_local(self, store: KnowledgeStore, task_identity: dict, data_db: str = "ml_results") -> str:
+        """process raw data from trials to knowledge; working from and on the database (Phase 4b)."""
         # allocate all ml_data with same task identity:
-        doc = self.collect_data(db_client, task_identity, data_db)
+        doc = self.collect_data(store, task_identity, data_db)
         if not doc:
             return False
         # save knowledge source
         uuids = []
-        tags = set()
         for d in doc:
             uuids.append(d["meta"]["uuid"])
 
-        successful_trials, vector_mapping = self.get_successful_trials(doc)
+        successful_trials, vector_mapping, mean_optimum_weights, confidence = self.get_successful_trials(doc)
         # process knowledge:
-        self.knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, task_identity["tags"])
-        knowledge = self.knowledge_processor.process_knowledge(successful_trials)
+        knowledge_processor = KnowledgeProcessor(vector_mapping, task_identity, task_identity["tags"], mean_optimum_weights, confidence)
+        knowledge = knowledge_processor.process_knowledge(successful_trials)
 
         knowledge["meta"]["knowledge_source"] = uuids
         knowledge["meta"]["prediction"] = False
@@ -247,9 +240,9 @@ class KnowledgeManager:
         else:
             return KGKNeighbors()
 
-    def get_predicted_knowledge(self, skill_class: str, scope: list, identity: list, knowledge_db: str = "local_knowledge",
+    def get_predicted_knowledge(self, store: KnowledgeStore, skill_class: str, scope: list, identity: list, knowledge_db: str = "local_knowledge",
                                 predictor: KnowledgeGeneralizerBase = None):
-        '''trains and uses model to predict knolwedge'''
+        """trains and uses model to predict knowledge (Phase 4b)."""
         # search for all tasks of same tasktype
 
         knowledge_filter = {
@@ -257,7 +250,7 @@ class KnowledgeManager:
             "meta.skill_class": skill_class
         }
         knowledge = Knowledge()
-        doc = self.collect_knowledge(self.DBclient, knowledge_db, skill_class, knowledge_filter)
+        doc = self.collect_knowledge(store, knowledge_db, skill_class, knowledge_filter)
 
         if not doc:
             logger.error("KnowledgeManager: Cannot predict for identity " + str(identity) + ". No knowledge on " + str(
@@ -371,9 +364,9 @@ class KnowledgeManager:
 
         return knowledge.to_dict()
 
-    def get_similar_knowledge(self, task_identifier: dict, scope: list, knowledge_db: str = "local_knowledge",
-                              data_db: str = "ml_results",location:str|None="localhost"):
-        '''searches for most similar knowledge / creates knowledge from similar results'''
+    def get_similar_knowledge(self, store: KnowledgeStore, task_identifier: dict, scope: list, knowledge_db: str = "local_knowledge",
+                               data_db: str = "ml_results"):
+        """searches for most similar knowledge / creates knowledge from similar results (Phase 4b)."""
         collection = task_identifier["skill_class"]
         identity = task_identifier["identity"]
 
@@ -382,37 +375,27 @@ class KnowledgeManager:
                             "meta.skill_class": task_identifier["skill_class"]
                             }
         knowledge = Knowledge()
-        if type(location) == str:
-            global_client = MongoDBClient(location)
-            docs = global_client.read(knowledge_db, task_identifier["skill_class"], knowledge_filter)
-        else: 
-            docs = self.DBclient.read(knowledge_db, collection, knowledge_filter)
+        docs = store.read(knowledge_db, collection, knowledge_filter)
+        
         if len(docs) >= 1:
-            logger.debug("knowledge_processor.get_similar_knowledge(): found knowledge on task identity" + str(
-                task_identifier) + " at " + str(knowledge_db) + "." + str(collection))
+            logger.debug(f"knowledge_processor.get_similar_knowledge(): found knowledge on task identity {task_identifier} at {knowledge_db}.{collection}")
             # take most similar knowledge according to cost function ("optimum_weights"):
-
             knowledge.from_dict(self.get_most_similar_task(docs, identity))
             return knowledge.to_dict()
-        logger.debug("knowledge_manager.get_similar_knowledge(): can\'t find knowledge for " +
-                     str(task_identifier) + " under scope " + str(scope) + " at " + str(collection))
-
+            
+        logger.debug(f"knowledge_manager.get_similar_knowledge(): can't find knowledge for {task_identifier} under scope {scope}")
         return knowledge.to_dict()
 
-    def get_knowledge(self, task_identifier: dict, scope: list, time_range=(0,float('inf')), knowledge_db: str = "local_knowledge",location:str|None="localhost"):
-        '''searches for all knowledge entries and returns them in a list'''
-        
-        knowledge_filter = {"meta.skill_class": task_identifier["skill_class"],
-                            "meta.tags": scope,
-                            "meta.time": {"$gte": time_range[0],"$lte":time_range[1]}
+    def get_knowledge(self, store: KnowledgeStore, task_identifier: dict, scope: list, time_range=(0, float('inf')), knowledge_db: str = "local_knowledge"):
+        """searches for all knowledge entries and returns them in a list (Phase 4b)."""
+        knowledge_filter = {
+            "meta.skill_class": task_identifier["skill_class"],
+            "meta.tags": scope,
+            "meta.time": {"$gte": time_range[0], "$lte": time_range[1]}
         }
-        if type(location) == str:
-            global_client = MongoDBClient(location)
-            docs = global_client.read(knowledge_db, task_identifier["skill_class"], knowledge_filter)
-        else:
-            docs = self.DBclient.read(knowledge_db, task_identifier["skill_class"], knowledge_filter)
+        docs = store.read(knowledge_db, task_identifier["skill_class"], knowledge_filter)
         docs.sort(key=lambda t: abs(np.sum(np.array(t["meta"]["identity"]) - np.array(task_identifier["identity"]))))
-        logger.debug("knoweldge_manger.get_knowledge: search for "+str(scope)+" on "+str(knowledge_db)+" at "+str(location)+". Found "+str(len(docs)))
+        logger.debug(f"knoweldge_manger.get_knowledge: search for {scope} on {knowledge_db}. Found {len(docs)}")
         return docs
 
     def get_successful_trials(self, doc):
@@ -497,7 +480,7 @@ class KnowledgeManager:
     def push_trial_fast_pipe(self, task:str, theta:list, cost:float, tags:list, skill_class:str, skill_instance:str):
         if self.fast_pipe_ip is None:
             return False
-        fast_pipe_client = MongoDBClient(self.fast_pipe_ip)
+        store = MongoKnowledgeStore(MongoDBClient(self.fast_pipe_ip))
         document = {
                     "task": task,
                     "time": time.time(),
@@ -507,16 +490,16 @@ class KnowledgeManager:
                     "skill_class":skill_class,
                     "skill_instance":skill_instance
                     }
-        while not fast_pipe_client.write("fast_knowledge_pipe", skill_class, document=document):
-            logger.error("could not reach database at "+self.fast_pipe_ip+"  ...retrying...")
+        while not store.write("fast_knowledge_pipe", skill_class, document=document):
+            logger.error(f"could not reach database at {self.fast_pipe_ip} ...retrying...")
             time.sleep(1)
 
     def receive_trial_fast_pipe(self, skill_instance, scope, skill_class, time_range):
         ### scope are the tags used for finding knowledge. knowledge.scope
-        fast_pipe_client = MongoDBClient(self.fast_pipe_ip)
+        store = MongoKnowledgeStore(MongoDBClient(self.fast_pipe_ip))
 
         #update fast_pipe_data with data since last update
-        self.fast_pipe_data.extend(fast_pipe_client.read("fast_knowledge_pipe",skill_class, {"tags":scope, "time":{"$gt":self.fast_pipe_last_update}}))  
+        self.fast_pipe_data.extend(store.read("fast_knowledge_pipe",skill_class, {"tags":scope, "time":{"$gt":self.fast_pipe_last_update}}))  
         self.fast_pipe_last_update = time.time()
         if len(self.fast_pipe_data)<1:
             logger.error("KnowledgeManagr.receive_trial-fast_pipe(): No data in fast pipe so far.")

@@ -13,6 +13,9 @@ from engine.engine import Engine
 from engine.engine import Trial
 from engine.engine import TaskResult
 from problem_definition.problem_definition import ProblemDefinition
+from knowledge_processor.knowledge_store import KnowledgeStore
+from knowledge_processor.mongo_knowledge_store import MongoKnowledgeStore
+from knowledge_processor.knowledge_processor_v2 import KnowledgeProcessor
 from problem_definition.problem_definition import Domain
 from knowledge_processor.knowledge_manager import KnowledgeManager
 from mongodb_client.mongodb_client import MongoDBClient
@@ -101,128 +104,170 @@ class BaseService(metaclass=ABCMeta):
         raise NotImplementedError
 
     def initialize(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
-                   agents: set, knowledge_source: dict = None, info:dict={}) -> (bool, str):
+                   agents: set, knowledge_source: dict = None, info: dict = {}) -> (bool, str):
         self.problem_definition = problem_definition
         self.configuration = configuration
-        self.info=info
-        #self.knowledge_source = knowledge_source
-        # self.data_buffer_visualization = DataBuffer()
+        self.info = info
+
         if knowledge_source is not None:
             self.knowledge.from_dict(knowledge_source)
-        self.starting_time = time.time()  # starting time of learning before first trial (used to retrief knowledge)
-        # Skill identity used for searching similar tasks:
-        self.skill_identity = {"tags": problem_definition.tags, "skill_class": problem_definition.skill_class,
-                               "skill_instance": problem_definition.skill_instance,
-                               "optimum_weights": problem_definition.cost_function.optimum_weights}
+        
+        self.starting_time = time.time()
+        
+        # Skill identity used for searching similar tasks
+        self.skill_identity = {
+            "tags": problem_definition.tags, 
+            "skill_class": problem_definition.skill_class,
+            "skill_instance": problem_definition.skill_instance,
+            "optimum_weights": problem_definition.cost_function.optimum_weights
+        }
 
-        if self.problem_definition.is_valid() is False:
+        if not self.problem_definition.is_valid():
             logger.error("Problem definition is not valid.")
             return False
-        logger.debug("base_service.initialize(): "+str(self.knowledge.similarity))
+
+        # Load knowledge (Extracted in Phase 4)
+        self._load_knowledge(agents)
+
+        logger.info(f"Given knowledge sets: {len(self.initial_knowledge_list)}")
+        self.knowledge_manager.fast_pipe_ip = self.knowledge.kb_location
+        self.engine = Engine(agents, mios_port=self.mios_port, mongo_port=self.mongo_port)
+        self.database_results_id = self.engine.initialize(self.problem_definition, self.configuration.exploration_mode)
+
+        self._initialize()
+
+        self.engine_thread = Thread(target=self.engine.main_loop)
+        self.engine_thread.start()
+
+        # Replaced busy-wait with a small loop checking keep_running
+        t_start = time.time()
+        while not self.engine.keep_running and time.time() - t_start < 5.0:
+            time.sleep(0.1)
+
+        return True
+
+    def _load_knowledge(self, agents: set):
+        """Initialisation of knowledge based on mode (Extracted in Phase 4)."""
         if self.knowledge.similarity is not None:
-            logger.debug("base_service.initialize(): initialize knowledge manager with similarity relationsships")
+            logger.debug("base_service.initialize(): initialize knowledge manager with similarity relationships")
             self.knowledge_manager.init_similarity(self.knowledge.similarity)
+
         if self.knowledge.parameters is not None:
-            logger.debug("base_service.initialize(): Use given parameters as initial knowlege.")
+            logger.debug("base_service.initialize(): Use given parameters as initial knowledge.")
             if self.knowledge.confidence is None:
                 self.knowledge.confidence = 0.04
-        elif self.knowledge.mode == None:
-            self.centroid = None
-            self.configuration.request_probability = 0  # posible AttributeError for non SVM learner
-            self.knowledge.kb_location = None
-        elif self.knowledge.mode == "specific":
-            logger.debug("BaseService::initialize: Use specific knowledge: "+str(self.knowledge.tags))
-            client = MongoDBClient(self.knowledge.kb_location)
-            self.knowledge = self.knowledge_manager.get_knowledge_by_filter(client, self.knowledge.kb_db,
-                                                                                self.knowledge.kb_task_type,
-                                                                                {"meta.tags": {"$all": self.knowledge.scope}}
-                )
-        elif self.knowledge.mode == "only_fast_pipe":
-            logger.debug(f"BaseService::initialize: Use only knowledge over fast knowledge pipe (no initial knowledge): "+str(self.knowledge.tags))
-            logger.debug(f"initial request probability: {self.configuration.request_probability}")   # posible AttributeError for non SVM learner
-            
-        elif self.knowledge.mode == "local":
-            logger.debug("base_service.initialize(): get local knowlege")
-            if self.knowledge.type == "similar":
+        
+        match self.knowledge.mode:
+            case None:
+                self.centroid = None
+                # Note: request_probability depends on configuration type, handled cautiously
+                if hasattr(self.configuration, "request_probability"):
+                    self.configuration.request_probability = 0
+                self.knowledge.kb_location = None
+            case "specific":
+                self._load_specific_knowledge()
+            case "local":
+                self._load_local_knowledge()
+            case "global":
+                self._load_global_knowledge()
+            case "only_fast_pipe":
+                logger.debug("Use only knowledge over fast knowledge pipe (no initial knowledge)")
+            case _:
+                logger.error(f"Unknown knowledge mode: {self.knowledge.mode}")
+
+        self._apply_knowledge_centroid()
+        self._filter_knowledge_by_similarity()
+
+    def _load_specific_knowledge(self):
+        logger.debug(f"Use specific knowledge: {self.knowledge.tags}")
+        store = MongoKnowledgeStore(MongoDBClient(self.knowledge.kb_location))
+        self.knowledge = self.knowledge_manager.get_knowledge_by_filter(
+            store, self.knowledge.kb_db, self.knowledge.kb_task_type,
+            {"meta.tags": {"$all": self.knowledge.scope}}
+        )
+
+    def _load_local_knowledge(self):
+        logger.debug("base_service.initialize(): get local knowledge")
+        store = MongoKnowledgeStore(self.database_client)
+        match self.knowledge.type:
+            case "similar":
                 self.knowledge.from_dict(self.knowledge_manager.get_similar_knowledge(
-                        self.problem_definition.get_task_identifier(), self.knowledge.scope))
-            elif self.knowledge.type == "predicted":
-                self.knowledge.from_dict(self.knowledge_manager.get_predicted_knowledge(self.problem_definition.skill_class,
-                                                                                    self.knowledge.scope,
-                                                                                    self.problem_definition.identity)
-                )
-            elif self.knowledge.type == "all":
-                self.initial_knowledge_list = self.knowledge_manager.get_knowledge(self.problem_definition.get_task_identifier(), self.knowledge.scope)
+                    store, self.problem_definition.get_task_identifier(), self.knowledge.scope))
+            case "predicted":
+                self.knowledge.from_dict(self.knowledge_manager.get_predicted_knowledge(
+                    store, self.problem_definition.skill_class, self.knowledge.scope, self.problem_definition.identity))
+            case "all":
+                self.initial_knowledge_list = self.knowledge_manager.get_knowledge(
+                    store, self.problem_definition.get_task_identifier(), self.knowledge.scope)
                 self.knowledge.parameters = []
                 self.knowledge.uuid = []
-                for i in range(len(self.initial_knowledge_list)):
-                    knowlege = Knowledge()
-                    knowlege.from_dict(self.initial_knowledge_list[i])
-                    self.initial_knowledge_list[i] = knowlege
-                    self.initial_knowledge_list[i].update()
-                    self.knowledge.parameters.append(self.initial_knowledge_list[i].parameters)
-                    self.knowledge.uuid.append(self.initial_knowledge_list[i].uuid)
-            else:
-                logger.error("base_service: dont understand knowledge type"+str(self.knowledge.type))
-        elif self.knowledge.mode == "global":
-            self.globalDBclient = MongoDBClient(self.knowledge.kb_location)
-            logger.debug("base_service::initialize(): get global knowlege")
-                  # change this to direct acccess to MongoDB at global DB. 
-                # figure out a way to pre-enter a similarity dict to knowledge-manager (bidirectional to mongodb)
-            try:
-                if self.knowledge.type == "similar":
-                    self.knowledge.from_dict(self.knowledge_manager.get_similar_knowledge(self.problem_definition.get_task_identifier(), self.knowledge.scope,
-                                                                knowledge_db="global_knowledge",
-                                                                data_db="global_ml_results",
-                                                                location=self.knowledge.kb_location)
-                    )
-                elif self.knowledge.type == "predicted": 
-                    raise NotImplementedError
+                for item in self.initial_knowledge_list:
+                    k = Knowledge()
+                    k.from_dict(item)
+                    k.update()
+                    self.knowledge.parameters.append(k.parameters)
+                    self.knowledge.uuid.append(k.uuid)
+            case _:
+                logger.error(f"Unknown local knowledge type: {self.knowledge.type}")
+
+    def _load_global_knowledge(self):
+        logger.debug("base_service.initialize(): get global knowledge")
+        try:
+            store = MongoKnowledgeStore(MongoDBClient(self.knowledge.kb_location))
+            match self.knowledge.type:
+                case "similar":
+                    self.knowledge.from_dict(self.knowledge_manager.get_similar_knowledge(
+                        store, self.problem_definition.get_task_identifier(), self.knowledge.scope,
+                        knowledge_db="global_knowledge", data_db="global_ml_results"))
+                case "predicted":
+                    raise NotImplementedError("Global predicted knowledge not implemented.")
+                case "all":
+                    self.delta_time = time.time() - self.starting_time
+                    self.knowledge.time_range[1] += self.delta_time
+                    self.initial_knowledge_list = self.knowledge_manager.get_knowledge(
+                        store, self.problem_definition.get_task_identifier(), self.knowledge.scope,
+                        time_range=self.knowledge.time_range, knowledge_db="global_knowledge")
                     
-                elif self.knowledge.type == "all":
-                    self.delta_time = time.time()-self.starting_time
-                    self.knowledge.time_range[1] = self.knowledge.time_range[1]+self.delta_time
-                    #self.initial_knowledge_list = kb.get_knowledge(self.problem_definition.get_task_identifier(), self.knowledge.scope, self.knowledge.time_range)
-                    self.initial_knowledge_list = self.knowledge_manager.get_knowledge(self.problem_definition.get_task_identifier(), self.knowledge.scope, 
-                                                                                        time_range=self.knowledge.time_range, knowledge_db="global_knowledge",location=self.knowledge.kb_location)
-                    logger.debug("base_service::initialize(): get all knowledge. Found "+str(len(self.initial_knowledge_list)))
                     self.knowledge.parameters = []
                     self.knowledge.uuid = []
-                    for i in range(len(self.initial_knowledge_list)):
-                        knowlege = Knowledge()
-                        knowlege.from_dict(self.initial_knowledge_list[i])
-                        self.initial_knowledge_list[i] = knowlege
-                        self.initial_knowledge_list[i].update()
-                        self.knowledge.parameters.append(self.initial_knowledge_list[i].parameters)
-                        self.knowledge.uuid.append(self.initial_knowledge_list[i].uuid)
+                    for item in self.initial_knowledge_list:
+                        k = Knowledge()
+                        k.from_dict(item)
+                        k.update()
+                        self.knowledge.parameters.append(k.parameters)
+                        self.knowledge.uuid.append(k.uuid)
+                case _:
+                    logger.error(f"Unknown global knowledge type: {self.knowledge.type}")
+        except (socket.timeout, ConnectionRefusedError):
+            logger.error("base_service: global Database is not reachable!")
 
-                else:
-                    logger.error("base_service: dont understand knowledge type"+str(self.knowledge.type))
-            except socket.timeout:
-                logger.error("base_service: global Database is not reachable!")
-            except ConnectionRefusedError:
-                logger.error("base_service: global Database is not reachable!")
-                pass
-        else:
-            logger.error("base_service::initialize(): Unknown knowledge mode " + str(self.knowledge.mode))
-        
+    def _apply_knowledge_centroid(self):
         if self.knowledge.parameters and not self.initial_knowledge_list:
-            if type(self.knowledge.parameters) == dict:  # only single knowledge parameter set given
+            if isinstance(self.knowledge.parameters, dict):
                 self.centroid = []
                 if len(self.knowledge.parameters) != len(self.problem_definition.domain.limits):
                     logger.error("Domain sizes do not match!")
-                    return False
+                    return
                 for key in self.knowledge.parameters:
                     self.centroid.append(self.knowledge.parameters[key])
-                logger.debug("base_service.initialize(): Use global knowledge " + str(self.centroid))
                 self.centroid = self.problem_definition.domain.normalize(np.asarray(self.centroid))
                 self.confidence = self.knowledge.confidence
-            if type(self.knowledge.parameters) == list:  # multiple knowledge sets are given
-                for parameters in self.knowledge.parameters:
-                    knowledge = copy.deepcopy(self.knowledge)
-                    knowledge.parameters = parameters
-                    self.initial_knowledge_list.append(knowledge)
-                    logger.debug("append knowledge.parameters to initial_knowledge_list")
+            elif isinstance(self.knowledge.parameters, list):
+                for params in self.knowledge.parameters:
+                    k = copy.deepcopy(self.knowledge)
+                    k.parameters = params
+                    self.initial_knowledge_list.append(k)
+        elif not self.initial_knowledge_list:
+            logger.debug("base_service.initialize(): No Knowledge used as initial centroid!!!")
+
+    def _filter_knowledge_by_similarity(self):
+        if self.knowledge.similarity is not None and self.initial_knowledge_list:
+            for i in range(len(self.initial_knowledge_list) - 1, -1, -1):
+                obj = self.initial_knowledge_list[i].skill_instance
+                if obj in self.knowledge.similarity:
+                    if self.knowledge.similarity[obj] <= 0:
+                        self.initial_knowledge_list.pop(i)
+                        logger.warning("remove entry from init_knowledge_list due to similarity <= 0")
         else:
             logger.debug("base_service.initialize(): No Knowledge used as initial centroid!!!")
 

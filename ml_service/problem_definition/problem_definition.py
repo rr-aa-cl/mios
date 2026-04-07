@@ -46,20 +46,27 @@ class CostFunction:
         return c
 
 
+
 class ProblemDefinition:
     def __init__(self, skill_class: str, skill_instance: str, domain: Domain, default_context: dict,
-                 setup_instructions: list, termination_instruction: list, reset_instruction: list, rescue_instructions: list,
-                 cost_function: CostFunction, identity: list|None = None, identity_weights: list|None = None, tags=None,
-                 object_modifier: dict = {}, n_variations = 1, optimum_threshold:float = 0, host:str|None=None, variate_only_success:bool=False, add_skill_info={}):
+                 setup_instructions: list, termination_instructions: list, reset_instructions: list, rescue_instructions: list,
+                 cost_function: CostFunction, identity: list = None, identity_weights: list = None, tags: list = None,
+                 object_modifier: dict = None, n_variations: int = 1, optimum_threshold: float = 0, host: str = None, 
+                 variate_only_success: bool = False, add_skill_info: dict = None):
         if tags is None:
             tags = []
+        if object_modifier is None:
+            object_modifier = {}
+        if add_skill_info is None:
+            add_skill_info = {}
+            
         self.host = host
         self.domain = domain
         self.object_modifier = object_modifier
         self.default_context = default_context
         self.setup_instructions = setup_instructions
-        self.termination_instructions = termination_instruction
-        self.reset_instructions = reset_instruction
+        self.termination_instructions = termination_instructions
+        self.reset_instructions = reset_instructions
         self.rescue_instructions = rescue_instructions
         self.uuid = "INVALID"
         self.skill_class = skill_class
@@ -68,7 +75,7 @@ class ProblemDefinition:
         self.tags = tags
         self.optimum_thr = optimum_threshold
         self.n_variations = n_variations
-        self.variate_only_success = variate_only_success  # with an empty object_modifier this can be used to repeat successfull trials for n_variations
+        self.variate_only_success = variate_only_success
         self.add_skill_info = add_skill_info
         if identity is None:
             self.identity = [0]
@@ -124,16 +131,30 @@ class ProblemDefinition:
         return problem_definition
 
     @staticmethod
-    def from_dict(pd_dict):
-        pd = ProblemDefinition(pd_dict["skill_class"], pd_dict["skill_instance"], Domain.from_dict(pd_dict["domain"]),
-                               pd_dict["default_context"], pd_dict["setup_instructions"],
-                               pd_dict["termination_instructions"], pd_dict["reset_instructions"], pd_dict["rescue_instructions"],
-                               CostFunction.from_dict(pd_dict["cost_function"]), pd_dict["identity"],
-                               pd_dict["identity_weights"], pd_dict["tags"], object_modifier=pd_dict["object_modifier"],
-                               n_variations=pd_dict["n_variations"],optimum_threshold=pd_dict["optimum_threshold"],
-                               variate_only_success=pd_dict.get("variate_only_success",False),host=pd_dict.get("host",None), add_skill_info=pd_dict.get("add_skill_info",dict()))
-        pd.domain = Domain.from_dict(pd_dict["domain"])
-        pd.cost_function = CostFunction.from_dict(pd_dict["cost_function"])
+    def from_dict(pd_dict: dict) -> 'ProblemDefinition':
+        """Robust reconstruction of ProblemDefinition from dictionary (Phase 5)."""
+        pd = ProblemDefinition(
+            skill_class=pd_dict["skill_class"],
+            skill_instance=pd_dict["skill_instance"],
+            domain=Domain.from_dict(pd_dict["domain"]),
+            default_context=pd_dict["default_context"],
+            setup_instructions=pd_dict["setup_instructions"],
+            termination_instructions=pd_dict["termination_instructions"],
+            reset_instructions=pd_dict["reset_instructions"],
+            rescue_instructions=pd_dict["rescue_instructions"],
+            cost_function=CostFunction.from_dict(pd_dict["cost_function"]),
+            identity=pd_dict.get("identity"),
+            identity_weights=pd_dict.get("identity_weights"),
+            tags=pd_dict.get("tags"),
+            object_modifier=pd_dict.get("object_modifier"),
+            n_variations=pd_dict.get("n_variations", 1),
+            optimum_threshold=pd_dict.get("optimum_threshold", 0),
+            variate_only_success=pd_dict.get("variate_only_success", False),
+            host=pd_dict.get("host"),
+            add_skill_info=pd_dict.get("add_skill_info", {})
+        )
+        if "uuid" in pd_dict:
+            pd.uuid = pd_dict["uuid"]
         return pd
 
     def is_valid(self) -> bool:

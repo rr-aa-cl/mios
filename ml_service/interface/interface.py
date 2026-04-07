@@ -23,6 +23,13 @@ from xmlrpc.server import SimpleXMLRPCServer
 from socketserver import ThreadingMixIn
 from xmlrpc.client import ServerProxy
 
+_SERVICE_REGISTRY: dict[str, tuple[type, type]] = {
+    "cmaes": (CMAESService, CMAESConfiguration),
+    "svm": (SVMService, SVMConfiguration),
+    "origPSP": (OrigPSPService, OrigPSPConfiguration),
+    "generic": (GenericOptimizerService, ServiceConfiguration),
+}
+
 logger = logging.getLogger("ml_service")
 
 
@@ -81,20 +88,26 @@ class Interface:
         self.rpc_server.shutdown()
         logger.debug("Interface::stop_rpc_server.end")
 
-    def start_service_wrapper(self, problem_definition: dict, configuration: dict, agents, knowledge: dict = None, info:dict={}):
+    def start_service_wrapper(self, problem_definition: dict, configuration: dict, agents, knowledge: dict = None, info: dict = {}):
         logger.debug("Interface::start_service_wrapper")
-        if configuration["service_name"] == "cmaes":
-            service_configuration = CMAESConfiguration()
-            service_configuration.from_dict(configuration)
-        elif configuration["service_name"] == "svm":
-            service_configuration = SVMConfiguration()
-            service_configuration.from_dict(configuration)
-        elif configuration["service_name"] == "origPSP":
-            service_configuration = OrigPSPConfiguration()
-            service_configuration.from_dict(configuration)
-        logger.debug("starting service with problem definition ="+str(problem_definition["tags"]))
-        return self.start_service(ProblemDefinition.from_dict(problem_definition), service_configuration, set(agents),
-                           knowledge, info)
+        service_name = configuration.get("service_name")
+        if service_name not in _SERVICE_REGISTRY:
+            error_msg = f"Unknown service: {service_name}"
+            logger.error(error_msg)
+            return error_msg
+
+        ServiceClass, ConfigClass = _SERVICE_REGISTRY[service_name]
+        service_configuration = ConfigClass()
+        service_configuration.from_dict(configuration)
+
+        logger.debug(f"Starting service {service_name} with tags: {problem_definition.get('tags')}")
+        return self.start_service(
+            ProblemDefinition.from_dict(problem_definition),
+            service_configuration,
+            set(agents),
+            knowledge,
+            info
+        )
 
     def start_service(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
                       agents: set, knowledge: dict = None, info:dict={}) -> str:

@@ -1,6 +1,7 @@
 import pymongo
 from bson import objectid
 from pymongo import MongoClient
+from typing import Optional, Union
 import logging
 
 
@@ -17,53 +18,50 @@ class MongoDBClient():
         self.max_retry = max_retry
         logger.info("MongoDB is initialized at " + host + ":" + str(port))
 
-    def read(self, db: str, collection: str, search_param: dict) -> list:
+    def read(self, db: str, collection: str, search_param: dict,
+             timeout: Optional[float] = None) -> list:
+        # Work on a copy so the caller's dict is never mutated (Phase 1 fix)
+        query = dict(search_param)
         try:
             db_connection = self.client[db]
             col = db_connection[collection]
-            findings = []
-            #if search params are in list, search for all the contend (not the list itself...)
-            for key in search_param:
-                value = search_param[key]
-                if key == "tags" or key == "meta.tags":
+            findings: list = []
+            for key in list(query.keys()):
+                value = query[key]
+                # Apply $all for tag-based list queries
+                if key in ("tags", "meta.tags"):
                     if isinstance(value, list):
-                        search_param[key] = {"$all": value}
-                if not value:  # check if key exists if no value is given
-                    search_param[key] = {"$exists": True} 
-                if key == "_id":  # if _id is given as string  ->  ObjectId
-                    if isinstance(search_param[key],str):
-                        search_param[key] = objectid.ObjectId(search_param[key])
-            retry_count = 0
-            #while not findings:
-            for f in col.find(filter=search_param):
+                        query[key] = {"$all": value}
+                # Check key existence when no value supplied
+                if not value and value != 0:
+                    query[key] = {"$exists": True}
+                # Convert string _id to ObjectId
+                if key == "_id" and isinstance(query[key], str):
+                    query[key] = objectid.ObjectId(query[key])
+            for f in col.find(filter=query):
                 f["_id"] = str(f["_id"])
                 findings.append(f)
-            #if retry_count >= self.max_retry:
-            #    break
-            #else:
-            #    retry_count += 1
-            #    time.sleep(0.5)
             return findings
         except pymongo.errors.ServerSelectionTimeoutError as e:
-            print("host not reachable:\n",e)
+            logger.error("host not reachable: %s", e)
             return []
 
-    def write(self, db: str, collection: str, document: dict or list) -> objectid.ObjectId or list:
+    def write(self, db: str, collection: str,
+              document: Union[dict, list]) -> Union[str, list, bool]:
         db_connection = self.client[db]
         col = db_connection[collection]
         if isinstance(document, list):
-            # document_id = col.insert_many(document).inserted_ids
-            document_ids = []
+            document_ids: list = []
             for doc in document:
                 single_id = self._write_single(db, collection, doc)
                 document_ids.append(single_id)
+            return document_ids
         elif isinstance(document, dict):
-            document_ids = self._write_single(db, collection, document)
+            return self._write_single(db, collection, document)
         else:
-            logger.error("Document type is not dict or list, but " + str(type(document)))
+            logger.error("Document type is not dict or list, but %s", type(document))
             logger.info("Cannot insert document into Database.")
             return False
-        return document_ids
 
     def _write_single(self, db: str, collection: str, document: dict) -> objectid.ObjectId:
         db_connection = self.client[db]
@@ -79,21 +77,21 @@ class MongoDBClient():
             return False
 
     def remove(self, db: str, collection: str, search_param: dict) -> bool:
+        # Work on a copy so the caller's dict is never mutated (Phase 1 fix)
+        query = dict(search_param)
         db_connection = self.client[db]
         col = db_connection[collection]
-        if "_id" in search_param.keys():  # if _id is given as string  ->  ObjectId
-                if isinstance(search_param["_id"], str):
-                    search_param["_id"] = objectid.ObjectId(search_param["_id"])
-        for key in search_param:
-            value = search_param[key]
-            if key == "tags" or "meta.tags":
+        if "_id" in query and isinstance(query["_id"], str):
+            query["_id"] = objectid.ObjectId(query["_id"])
+        for key in list(query.keys()):
+            value = query[key]
+            # Phase 1 fix: was `if key == "tags" or "meta.tags"` which is ALWAYS
+            # True (truthy string). Now correctly checks key membership.
+            if key in ("tags", "meta.tags"):
                 if isinstance(value, list):
-                    search_param[key] = {"$all": value}
-        result = col.delete_many(search_param, collation=None, session=None)
-        if result.deleted_count > 0:
-            return True
-        else:
-            return False
+                    query[key] = {"$all": value}
+        result = col.delete_many(query, collation=None, session=None)
+        return result.deleted_count > 0
 
     def update(self, db: str, collection: str, search_param: dict, new_param: dict) -> bool:
         db_connection = self.client[db]

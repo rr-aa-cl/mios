@@ -1,3 +1,4 @@
+import os
 import time
 import datetime
 import logging
@@ -17,6 +18,14 @@ from utils.ws_client import *
 from utils.helper_functions import *
 import redis
 import json
+
+# ---------------------------------------------------------------------------
+# Redis connection settings – override via environment variables.
+# Keeping defaults lets existing deployments work without any config change.
+# ---------------------------------------------------------------------------
+_REDIS_HOST = os.environ.get("REDIS_HOST", "redis-master.global")
+_REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
+_REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", "") or None
 
 
 logger = logging.getLogger("ml_service")
@@ -83,14 +92,14 @@ class Engine:
         self.completed_trials = dict()
         try:
             self.redisClient = redis.Redis(
-                    host="redis-master.global", 
-                    port=6379, 
-                    db=0, 
-                    decode_responses=True,
-                    password="QqJ3JDqNjN",
-                    socket_connect_timeout=2,    # Fail if can't connect in 2 second
-                    socket_timeout=2             # Fail if operations take > 2 second
-                 )
+                host=_REDIS_HOST,
+                port=_REDIS_PORT,
+                db=0,
+                decode_responses=True,
+                password=_REDIS_PASSWORD,
+                socket_connect_timeout=2,  # Fail if can't connect within 2 s
+                socket_timeout=2           # Fail if operations take > 2 s
+            )
             self.redisClient.ping()
         except redis.RedisError as e:
             logger.error("Redis connection failed: " + str(e))
@@ -116,13 +125,11 @@ class Engine:
         self.y = np.empty((0,))
 
         self.lock_data = Lock()
+        self._agent_lock = Lock()
+        self._trial_events: dict[str, threading.Event] = {}
 
         self.exploration_mode = False
-        #self.camera_path =  os.getenv("cameraPath")
-        #if self.camera_path is None:
-        #    self.camera_path = "/dev/video4"
-        #self.video_recorder = FFMpegWebcamRecorder(self.camera_path)
-        self.skill_count=0
+        self.skill_count = 0
 
     def initialize(self, problem_definition: ProblemDefinition, exploration_mode: bool = False):
         self.x = np.empty((0, len(problem_definition.domain.limits)))
@@ -152,30 +159,33 @@ class Engine:
         self.pause_execution = False
 
     def push_trial(self, trial: Trial) -> str:
-        #logger.debug("Engine.push_trial()")
-        if trial.is_valid() is False:
+        if not trial.is_valid():
             return "INVALID"
-        trial.trial_uuid = str(uuid.uuid4())
+        
+        trial_uuid = str(uuid.uuid4())
+        trial.trial_uuid = trial_uuid
+        self._trial_events[trial_uuid] = threading.Event()
+        
         self.cnt_pushed += 1
         self.queued_trials.put(deepcopy(trial))
-        return trial.trial_uuid
+        return trial_uuid
 
     def wait_for_trial(self, trial_uuid: str, max_wait_time: float) -> Trial:
-        #logger.debug("Engine.wait_for_trial(" + trial_uuid + ", " + str(max_wait_time) + ")")
-        t_0 = time.time()
-        while trial_uuid not in self.completed_trials:
-            # logger.debug("Engine::wait_for_trial.loop")
-            if time.time() - t_0 > max_wait_time:
-                logger.error("Wait time for trial has been exceeded.")
-                return Trial(dict(), [],[], dict(), False)
-            if self.keep_running is False:
-                logger.error("Service has been stopped.")
-                return Trial(dict(), [],[], dict(), False)
-            # time.sleep(0.1)
+        event = self._trial_events.get(trial_uuid)
+        if not event:
+            logger.error(f"No event found for trial {trial_uuid}")
+            return Trial(dict(), [], [], dict(), False)
+
+        if not event.wait(max_wait_time):
+            logger.error(f"Wait time for trial {trial_uuid} has been exceeded.")
+            return Trial(dict(), [], [], dict(), False)
+
+        if not self.keep_running:
+            logger.error("Service has been stopped.")
+            return Trial(dict(), [], [], dict(), False)
 
         self.cnt_completed += 1
-
-        return self.completed_trials[trial_uuid]
+        return self.completed_trials.get(trial_uuid, Trial(dict(), [], [], dict(), False))
 
     def initialize_results(self, problem_definition: ProblemDefinition):
         self.problem_definition = problem_definition
@@ -201,9 +211,7 @@ class Engine:
         logger.debug("Engine.main_loop()")
         self.cnt_trial = 1
         self.keep_running = True
-        worker_threads = dict()
-        for a in self.agents:
-            worker_threads[a] = None
+        worker_threads = {a: None for a in self.agents}
 
         logger.info("Setting up experiment.")
         for a in self.free_agents:
@@ -211,55 +219,54 @@ class Engine:
             worker_threads[a].start()
 
         for a in self.free_agents:
-            worker_threads[a].join()
+            if worker_threads[a]:
+                worker_threads[a].join()
 
         logger.info("Setup procedure done.")
 
-        while self.keep_running is True:
+        while self.keep_running:
             try:
-                #logger.debug("Engine::main_loop.get_trial")
-                trial = self.queued_trials.get(False)
-                # logger.debug("Engine::main_loop.new_trial: " + trial.trial_uuid)
+                # Blocking get with timeout replaces busy-wait (Phase 3)
+                trial = self.queued_trials.get(timeout=1.0)
             except Empty:
-                # time.sleep(0.1)
-                continue
-            # logger.debug("Engine.main_loop.while1: For trial_uuid: " + trial.trial_uuid)
-            thread_started = False
-            while self.keep_running is True and thread_started is False:
-                # logger.debug("Engine::main_loop.while2")
-                if self.is_learned() is True:
-                    logger.debug("Engine::main_loop.is_learned")
+                if self.is_learned():
                     self.keep_running = False
-                    continue
-                for a in self.agents.copy():
-                    if a not in self.free_agents:
-                        logger.debug("Agent " + a + " not in self.free_agents")
-                        # time.sleep(1)
-                        continue
-                    if worker_threads[a] is not None and worker_threads[a].is_alive() is True:
-                        # logger.debug("Thread of agent " + a + " is alive")
-                        time.sleep(0.1)
+                continue
+
+            thread_started = False
+            while self.keep_running and not thread_started:
+                if self.is_learned():
+                    self.keep_running = False
+                    break
+
+                with self._agent_lock:
+                    available_agents = [a for a in self.agents if a in self.free_agents]
+
+                for a in available_agents:
+                    # check if the previous thread finished
+                    if worker_threads[a] and worker_threads[a].is_alive():
                         continue
 
-                    # logger.debug("Engine.main_loop().is_busy(" + a + ")")
+                    # verify availability with remote agent
                     response = call_method(a, self.mios_port, "is_busy")
-                    if response is None:
-                        logger.debug("is_busy on agent " + a + ": response is None")
-                        # time.sleep(1)
-                        continue
-                    if response["result"]["busy"] is True:
-                        logger.debug("is_busy on agent " + a + ": is busy")
-                        # time.sleep(1)
+                    if response is None or response.get("result", {}).get("busy", True):
                         continue
 
-                    self.free_agents.remove(a)
+                    # Assign trial to agent
+                    with self._agent_lock:
+                        if a in self.free_agents:  # double check
+                            self.free_agents.remove(a)
+                        else:
+                            continue
+
                     trial.agent = a
                     worker_threads[a] = Thread(target=self._worker_loop, args=(a, trial,))
                     worker_threads[a].start()
                     thread_started = True
                     break
 
-            # time.sleep(0.1)
+                if not thread_started:
+                    time.sleep(0.1)  # brief wait for an agent to become free
 
         logger.debug("Engine::main_loop.after_loop")
         self.write_final_results()
@@ -269,11 +276,18 @@ class Engine:
         logger.debug("Engine::main_loop.last_line")
 
     def _worker_loop(self, agent: str, trial: Trial):
-        logger.debug("Engine._worker_loop(" + agent + ", " + trial.trial_uuid + ")")
-        self._run_trial(agent, trial)
-        self.free_agents.add(agent)
-        logger.debug("Free agent " + agent)
-        #self.video_recorder.stop_stream()
+        logger.debug(f"Engine._worker_loop({agent}, {trial.trial_uuid})")
+        try:
+            self._run_trial(agent, trial)
+        finally:
+            with self._agent_lock:
+                self.free_agents.add(agent)
+            
+            # Signal completion to any waiting threads (Phase 3)
+            event = self._trial_events.get(trial.trial_uuid)
+            if event:
+                event.set()
+            logger.debug(f"Free agent {agent}")
 
     def _run_trial(self, agent: str, trial: Trial):
         if trial.is_valid() is False:

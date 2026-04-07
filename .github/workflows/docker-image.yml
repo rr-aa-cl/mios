@@ -14,7 +14,7 @@ on:
       - local_dev
 
 jobs:
-  lint_python:
+  lint_test_python:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,11 +26,22 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install lint dependencies
-        run: pip install ruff
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
 
-      - name: Lint python directory
-        run: ruff check python
+      - name: Install dependencies
+        run: |
+          pip install ruff
+          cd ml_service && uv sync --extra test
+
+      - name: Lint python and ml_service
+        run: ruff check python ml_service
+
+      - name: Run ml_service unit tests
+        run: |
+          cd ml_service && uv run pytest tests/unit
 
   build_builder:
     runs-on: ubuntu-latest

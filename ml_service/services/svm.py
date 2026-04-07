@@ -8,7 +8,7 @@ from sklearn.svm import SVC
 from sklearn import mixture
 from sklearn.model_selection import KFold, cross_val_score
 
-from pyDOE import lhs
+from pyDOE3 import lhs
 
 from services.base_service import BaseService
 from services.base_service import ServiceConfiguration
@@ -92,30 +92,16 @@ class SVMService(BaseService):
         self.optimum_count = 0
 
     def _initialize(self):
-        self.numberOfParameters = 2
-        self.sampleCounter=0
-        self.cnt_trial=0
-        self.cnt_batch=0
-        self.globalcost=[]
-        self.gmm_samples=[]
-        self.bestSample=[]
-        self.svmCounter=0
-        self.neglect_samples = 0  # neglect first part of self.success, self.rewards to calculate self.mean
-        self.bad_gmm_prediciton = 0  # counts how often gmm is not able to select samples which satisfy svm-predictions
-        self.minCost=np.inf
-        self.success=[]
-        self.rewards=[]
-        self.svm_samples=[]
-        self.classifierActive=False
-        self.gmm_active=False
-        self.mean=0
+        """Dynamic setup using problem_definition and configuration (Extracted in Phase 4)."""
         self.task_identity_name = self.problem_definition.get_identification_name()
         self.request_probability = self.configuration.request_probability
-
-        self.episodes=int(self.configuration.n_trials/self.configuration.batch_width)
-
+        self.episodes = int(self.configuration.n_trials / self.configuration.batch_width)
         self.limits = self.problem_definition.domain.limits
-        self.kb = None
+        
+        self.numberOfParameters = len(self.limits)
+        self.cnt_batch = 0
+        
+        # Register stop condition
         self.engine.register_stop_condition(self._is_learned)
 
     def _learn_task(self):
