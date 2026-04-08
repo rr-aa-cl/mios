@@ -46,12 +46,12 @@ jobs:
           python-version: '3.11'
 
       - name: Install uv
-        run: pip install uv
+        uses: astral-sh/setup-uv@v5
 
       - name: Run unit tests
         run: |
           cd ml_service
-          uv run pytest -m "not integration"
+          uv run --extra test pytest -m "not integration"
 
   build:
     needs: unit_tests
