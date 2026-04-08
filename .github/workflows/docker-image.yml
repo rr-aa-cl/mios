@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - local_dev
+      - unit_tests
   pull_request:
     branches:
       - local_dev
@@ -31,6 +32,26 @@ jobs:
 
       - name: Lint python directory
         run: ruff check python
+
+  unit_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Run unit tests
+        run: |
+          cd ml_service
+          uv run pytest -m "not integration"
 
   build_builder:
     runs-on: ubuntu-latest
