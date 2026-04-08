@@ -95,15 +95,18 @@ class TestRemove:
 
     def test_remove_non_tag_key_not_affected_by_tag_logic(self, mios_mongo_client):
         """
-        Phase 1 regression: the old bug applied $all to ANY key.
-        A non-tag key like 'data' must be matched literally, not via $all.
+        Phase 1 regression: the old bug applied $all to ANY list-valued key.
+        A non-tag key like 'categories' must be matched literally, not via $all.
+        Uses list values to actually exercise the buggy code path.
         """
-        mios_mongo_client.write("test_db", "test_col", {"data": "keep_me", "meta": {"tags": []}})
-        mios_mongo_client.write("test_db", "test_col", {"data": "remove_me", "meta": {"tags": []}})
-        # remove only the exact string match
-        removed = mios_mongo_client.remove("test_db", "test_col", {"data": "remove_me"})
+        mios_mongo_client.write("test_db", "test_col", {"categories": ["a", "b"], "meta": {"tags": []}})
+        mios_mongo_client.write("test_db", "test_col", {"categories": ["c", "d"], "meta": {"tags": []}})
+        # remove with a list-valued non-tag key — should match literally, not via $all
+        search = {"categories": ["c", "d"]}
+        removed = mios_mongo_client.remove("test_db", "test_col", search)
         assert removed is True
-        remaining = mios_mongo_client.read("test_db", "test_col", {"data": "keep_me"})
+        # The "a","b" document must still exist
+        remaining = mios_mongo_client.read("test_db", "test_col", {"categories": ["a", "b"]})
         assert len(remaining) == 1
 
 

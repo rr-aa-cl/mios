@@ -46,6 +46,7 @@ def minimal_engine(mock_mongo):
         engine.worker_threads = {}
         engine._learned = False
         engine.result = None
+        engine.cnt_pushed = 0
         return engine
 
 
@@ -143,3 +144,124 @@ class TestTrialEvents:
         evt = threading.Event()
         result = evt.wait(timeout=0.05)
         assert result is False
+
+
+# ---------------------------------------------------------------------------
+# Trial.to_dict()
+# ---------------------------------------------------------------------------
+class TestTrialToDict:
+    def test_to_dict_contains_required_keys(self):
+        from engine.engine import Trial
+        theta = {"p1": 0.5, "p2": 0.3}
+        t = Trial(
+            task_context={"name": "TestTask", "skills": {}},
+            reset_instructions=[],
+            rescue_instructions=[],
+            theta=theta,
+            log=True,
+            external=False,
+        )
+        d = t.to_dict()
+        for key in ("task_context", "reset_instructions", "theta",
+                     "task_result", "trial_uuid", "agent", "log", "external"):
+            assert key in d, f"Missing key: {key}"
+
+    def test_to_dict_preserves_theta_as_floats(self):
+        from engine.engine import Trial
+        import numpy as np
+        theta = {"p1": np.float64(0.123)}
+        t = Trial({"name": "T", "skills": {}}, [], [], theta, True, False)
+        d = t.to_dict()
+        assert isinstance(d["theta"]["p1"], float)
+
+    def test_to_dict_includes_task_result(self):
+        from engine.engine import Trial
+        t = Trial({"name": "T", "skills": {}}, [], [], {"p1": 1.0}, True, False)
+        d = t.to_dict()
+        assert "q_metric" in d["task_result"]
+
+
+# ---------------------------------------------------------------------------
+# Trial.is_valid()
+# ---------------------------------------------------------------------------
+class TestTrialIsValid:
+    def test_valid_trial_returns_true(self):
+        from engine.engine import Trial
+        t = Trial(
+            task_context={"name": "TestTask", "skills": {}},
+            reset_instructions=[],
+            rescue_instructions=[],
+            theta={"p1": 0.5},
+            log=True,
+            external=False,
+        )
+        assert t.is_valid() is True
+
+    def test_missing_name_returns_false(self):
+        from engine.engine import Trial
+        t = Trial(
+            task_context={"skills": {}},  # missing "name"
+            reset_instructions=[],
+            rescue_instructions=[],
+            theta={"p1": 0.5},
+            log=True,
+            external=False,
+        )
+        assert t.is_valid() is False
+
+    def test_empty_context_returns_false(self):
+        from engine.engine import Trial
+        t = Trial(
+            task_context={},
+            reset_instructions=[],
+            rescue_instructions=[],
+            theta={},
+            log=True,
+            external=False,
+        )
+        assert t.is_valid() is False
+
+
+# ---------------------------------------------------------------------------
+# Engine.push_trial() – uuid assignment and invalid trial handling
+# ---------------------------------------------------------------------------
+class TestEnginePushTrial:
+    def test_push_valid_trial_returns_uuid(self, minimal_engine):
+        from engine.engine import Trial
+        t = Trial(
+            task_context={"name": "TestTask", "skills": {}},
+            reset_instructions=[],
+            rescue_instructions=[],
+            theta={"p1": 0.5},
+            log=True,
+            external=False,
+        )
+        uuid_str = minimal_engine.push_trial(t)
+        assert uuid_str != "INVALID"
+        assert len(uuid_str) == 36  # UUID4 format: 8-4-4-4-12
+
+    def test_push_invalid_trial_returns_invalid(self, minimal_engine):
+        from engine.engine import Trial
+        t = Trial(
+            task_context={},  # no "name" → invalid
+            reset_instructions=[],
+            rescue_instructions=[],
+            theta={},
+            log=True,
+            external=False,
+        )
+        assert minimal_engine.push_trial(t) == "INVALID"
+
+    def test_push_increments_cnt_pushed(self, minimal_engine):
+        from engine.engine import Trial
+        t = Trial({"name": "T", "skills": {}}, [], [], {"p1": 0.5}, True, False)
+        initial = minimal_engine.cnt_pushed
+        minimal_engine.push_trial(t)
+        assert minimal_engine.cnt_pushed == initial + 1
+
+    def test_push_adds_to_queue(self, minimal_engine):
+        from engine.engine import Trial
+        t = Trial({"name": "T", "skills": {}}, [], [], {"p1": 0.5}, True, False)
+        minimal_engine.push_trial(t)
+        assert minimal_engine.queued_trials.qsize() == 1
+
