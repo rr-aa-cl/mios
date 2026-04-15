@@ -2,7 +2,8 @@ version: '3'
 
 services:
   mios:
-    image: "mirmi/mios:pingless"
+    image: "mirmi/mios:libfranka20"
+
     restart: always
     environment:
       - verbosity=${MIOS_VERBOSITY:-debug}
@@ -22,7 +23,7 @@ services:
     depends_on:
       - "mongo"
   mongo:
-    image: "mongo:7.0.14"
+    image: "mongo:7.0"
     ports:
       - "${MONGO_PORT:-27017}:${MONGO_PORT:-27017}"
     volumes:
