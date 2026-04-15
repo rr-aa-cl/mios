@@ -79,12 +79,9 @@ endif()
 list(APPEND CMAKE_PREFIX_PATH "${FRANKA_LOCAL_DIR}/usr")
 find_package(Franka REQUIRED)
 
-# ==========================================
-# 2. Source-Downloaded Packages (FetchContent)
-# ==========================================
-# Libraries we need to compile from scratch
 
 
+# 3. Tell FetchContent to skip the download step and just use our manually cloned folder
 FetchContent_Declare(
     mirmi_cpp_utils
     GIT_REPOSITORY https://github.com/SchneiderROS/mirmi_utils
