@@ -123,6 +123,10 @@ void TelemetryUDP::sending_loop(){
         for(auto sub : m_subscribers){
             // build message for every subscriber
             nlohmann::json msg_data;
+
+            msg_data["nuc_timestamp"] = std::chrono::duration_cast<std::chrono::nanoseconds>(p->time.time_since_epoch()).count();
+            msg_data["control_box_time_since_start"] = p->proprioception.control_box_time_since_start;
+
             for(std::string subscription : sub.subscriptions){
                 switch(m_data_map.find(subscription)->second){
                 case 1: mirmi_utils::write_json_array<double,4,4>(msg_data["O_T_EE"],p->proprioception.O_T_EE); break;

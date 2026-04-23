@@ -50,6 +50,8 @@ void Percept::update(std::unique_ptr<franka::Model> const& model, const franka::
     proprioception.finger_temperature=gripper_state.temperature;
     proprioception.is_grasping=gripper_state.is_grasped;
 
+    // Update control box time since start
+    proprioception.control_box_time_since_start=robot_state.time.toMSec();
     // Others
     robot_mode=robot_state.robot_mode;
     time = std::chrono::high_resolution_clock::now();
