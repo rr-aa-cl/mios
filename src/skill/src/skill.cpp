@@ -544,7 +544,13 @@ void Skill::log_data(const Percept &p){
     }
      m_log["data_log"].push_back(
         {
+            // Kept the original format for compatibity with existing analysis scripts, but added the same data as the telemetry function
             {"time",std::chrono::duration<double>(std::chrono::high_resolution_clock::now().time_since_epoch()).count()},
+            
+            // Add the nuc timestamp in nanoseconds for easier analysis and the control box time since start for easier correlation with the control box data
+            {"nuc_timestamp", std::chrono::duration_cast<std::chrono::nanoseconds>(p->time.time_since_epoch()).count()},
+            {"control_box_time_since_start",  p->proprioception.control_box_time_since_start},
+            
             {"current_MP",m_active_mp->get_name()},
 
             {"q",mirmi_utils::from_eigen<double,7,1>(p.proprioception.q)},
