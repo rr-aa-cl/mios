@@ -1,16 +1,20 @@
 FROM ubuntu:22.04
 
 RUN apt-get update && apt-get install -y \
-    build-essential cmake git libpoco-dev libeigen3-dev libfmt-dev \
+    build-essential cmake git libpoco-dev libeigen3-dev libfmt-dev wget\
     lsb-release curl
 
-RUN mkdir -p /etc/apt/keyrings && \
-    curl -fsSL http://robotpkg.openrobots.org/packages/debian/robotpkg.asc | tee /etc/apt/keyrings/robotpkg.asc && \
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/robotpkg.asc] http://robotpkg.openrobots.org/packages/debian/pub $(lsb_release -cs) robotpkg" | tee /etc/apt/sources.list.d/robotpkg.list
+RUN wget https://github.com/frankarobotics/libfranka/releases/download/0.21.1/libfranka_0.21.1_jammy_amd64.deb
+RUN dpkg -i libfranka_0.21.1_jammy_amd64.deb
 
 
-RUN apt-get update && apt-get install -y \
-    robotpkg-pinocchio
+# RUN mkdir -p /etc/apt/keyrings && \
+#     curl -fsSL http://robotpkg.openrobots.org/packages/debian/robotpkg.asc | tee /etc/apt/keyrings/robotpkg.asc && \
+#     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/robotpkg.asc] http://robotpkg.openrobots.org/packages/debian/pub $(lsb_release -cs) robotpkg" | tee /etc/apt/sources.list.d/robotpkg.list
+
+
+# RUN apt-get update && apt-get install -y \
+#     robotpkg-pinocchio
     
 # Install Python and pip
 RUN apt-get update && apt-get install -y \

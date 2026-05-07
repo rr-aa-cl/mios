@@ -8,16 +8,24 @@ RUN apt-get update && \
     fping \
     curl \
     gnupg \
-    lsb-release
-RUN mkdir -p /etc/apt/keyrings && \
-    curl http://robotpkg.openrobots.org/packages/debian/robotpkg.asc | tee /etc/apt/keyrings/robotpkg.asc && \
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/robotpkg.asc] http://robotpkg.openrobots.org/packages/debian/pub $(lsb_release -cs) robotpkg" | tee /etc/apt/sources.list.d/robotpkg.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-    robotpkg-pinocchio && \
-    # Clean up apt caches to keep the image small
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    wget \
+    lsb-release \
+    libpoco-dev \
+    libeigen3-dev \
+    libfmt-dev
+# No longer require pinnochio as a dependency
+# RUN mkdir -p /etc/apt/keyrings && \
+#     curl http://robotpkg.openrobots.org/packages/debian/robotpkg.asc | tee /etc/apt/keyrings/robotpkg.asc && \
+#     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/robotpkg.asc] http://robotpkg.openrobots.org/packages/debian/pub $(lsb_release -cs) robotpkg" | tee /etc/apt/sources.list.d/robotpkg.list && \
+#     apt-get update && \
+#     apt-get install -y --no-install-recommends \
+#     robotpkg-pinocchio && \
+#     # Clean up apt caches to keep the image small
+#     apt-get clean && \
+#     rm -rf /var/lib/apt/lists/*
+RUN wget https://github.com/frankarobotics/libfranka/releases/download/0.21.1/libfranka_0.21.1_jammy_amd64.deb
+RUN dpkg -i libfranka_0.21.1_jammy_amd64.deb
+
 RUN pip3 install -U setuptools
 RUN pip3 install -U numpy
 RUN pip3 install -U scipy
