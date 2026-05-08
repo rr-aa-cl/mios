@@ -6,7 +6,10 @@ import time
 from sklearn.svm import SVC
 from sklearn import mixture
 
-from pyDOE import lhs
+try:
+    from pyDOE import lhs
+except ImportError:
+    from pyDOE3 import lhs
 
 from services.base_service import BaseService
 from services.base_service import ServiceConfiguration
