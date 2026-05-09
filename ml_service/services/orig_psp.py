@@ -5,13 +5,7 @@ import time
 
 from sklearn.svm import SVC
 from sklearn import mixture
-
-# try:
-#     from pyDOE import lhs
-# except ModuleNotFoundError as exc:
-#     if exc.name != "pyDOE":
-#         raise
-#     from pyDOE3 import lhs
+from pyDOE3 import lhs
 
 from services.base_service import BaseService
 from services.base_service import ServiceConfiguration
@@ -278,10 +272,9 @@ class OrigPSPService(BaseService):
             if self.centroid is not None:
                 self.action_list_norm.append([float(param) for param in self.centroid])
             else:
-                # temp_param_norm_samples = lhs(
-                #     self.numberOfParameters, samples=self.configuration.batch_width
-                # )
-                temp_param_norm_samples = []
+                temp_param_norm_samples = lhs(
+                    self.numberOfParameters, samples=self.configuration.batch_width
+                )
                 for t in temp_param_norm_samples:
                     self.action_list_norm.append(t)
         else:
