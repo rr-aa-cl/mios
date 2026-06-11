@@ -96,6 +96,7 @@ class Engine:
             logger.error("Redis connection failed: " + str(e))
             self.redisClient = None
         self.database_client = MongoDBClient(port=self.mongo_port)
+        self.log_client = MongoDBClient("mongodb.global")
         self.database_results_collection = None
         self.database_results_id = None
 
@@ -123,6 +124,19 @@ class Engine:
         #    self.camera_path = "/dev/video4"
         #self.video_recorder = FFMpegWebcamRecorder(self.camera_path)
         self.skill_count=0
+
+    def _get_log_timestamp(self) -> str:
+        return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")
+    
+
+    def _get_trial_job_name(self, trial: Trial) -> str:
+        job_name = trial.task_context["name"]
+        for skill_name in trial.task_context.get("parameters", {}).get("skill_names", []):
+            skill = trial.task_context.get("skills", {}).get(skill_name, {})
+            objects = skill.get("skill", {}).get("objects", {})
+            if "Insertable" in objects:
+                return objects["Insertable"]
+        return job_name
 
     def initialize(self, problem_definition: ProblemDefinition, exploration_mode: bool = False):
         self.x = np.empty((0, len(problem_definition.domain.limits)))
@@ -281,6 +295,16 @@ class Engine:
         trial.trial_number = self.cnt_trial
         self.cnt_trial += 1
         trial.t_0 = time.time()
+        start_timestamp = self._get_log_timestamp()
+        end_timestamp = start_timestamp
+        job_name = self._get_trial_job_name(trial)
+        doc = {
+            "jobName" : job_name,
+            "timestamp": start_timestamp,
+            "step": "running/" + str(trial.trial_number),
+            "message": "start trial"
+        }
+        self.log_client.write("collective_learning_system", "jobs_log", doc)
         # start video recording
         folder = str(self.problem_definition.tags[0]) + "/" +str(self.problem_definition.tags[1]) + "/"+str(self.problem_definition.skill_instance)
         filename = "n_"+str(trial.trial_number)
@@ -318,6 +342,7 @@ class Engine:
                 trial.task_result.add_variation(variation_result.q_metric)
 
             trial.t_1 = time.time()
+            end_timestamp = self._get_log_timestamp()
             trial.t_delta = trial.t_1 - trial.t_0
             #print(trial.trial_number)
 
@@ -349,6 +374,23 @@ class Engine:
         logger.debug(f"\n#################################\n ENGINE: success {str(trial.task_result.q_metric.success)} on trial {str(trial.trial_number)}\n"
             f"ENGINE: Cost: {cost} \n#################################\n")
         self.completed_trials[trial.trial_uuid] = deepcopy(trial)
+        
+        doc = {
+            "jobName" : job_name,
+            "timestamp": end_timestamp,
+            "step": "running/" + str(trial.trial_number),
+            "message": "finish trial with result: " + str(trial.task_result.q_metric.success)
+        }
+        self.log_client.write("collective_learning_system", "jobs_log", doc)
+        doc = {
+            "jobName" : job_name,
+            "trial_no": trial.trial_number,
+            "result": trial.task_result.q_metric.success,
+            "start_timestamp": start_timestamp,
+            "end_timestamp": end_timestamp,
+            "theta": trial.theta if trial.task_result.q_metric.success is True else ""
+        }
+        self.log_client.write("collective_learning_system", "jobs_results", doc)
 
         if self.redisClient is not None:
             try: 
