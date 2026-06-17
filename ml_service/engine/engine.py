@@ -126,7 +126,7 @@ class Engine:
         self.skill_count=0
 
     def _get_log_timestamp(self) -> str:
-        return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")
+        return datetime.datetime.now(datetime.timezone.utc).isoformat()
     
 
     def _get_trial_job_name(self, trial: Trial) -> str:
