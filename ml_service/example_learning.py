@@ -1,7 +1,7 @@
 from problem_definition.problem_definition import ProblemDefinition
 from services.base_service import ServiceConfiguration
 from services.knowledge import Knowledge
-from utils.experiment_wizard import start_experiment
+from utils.experiment_wizard import start_experiment, start_telemetry
 from definitions.templates import InsertionFactory
 from definitions.cost_functions import TimeMetric
 from definitions.service_configs import SVMLearner, CMAESLearner
@@ -14,12 +14,14 @@ def learn_task(robot:str, problem_definition: ProblemDefinition, service_config:
                n_iterations: int = 10, keep_record: bool = False, knowledge = None, wait: bool = False, service_port:int = 8000):
     start_experiment(robot, [robot], problem_definition, service_config, n_iterations, knowledge=knowledge, tags=tags,
                      keep_record=keep_record, wait=wait,service_port=service_port)
+    start_telemetry(robot, service_port, ["localhost"], "localhost", "", "", port=6379)
+    
     
     
 def example_learning(robot:str = "localhost"):
     # tasks = {hosts: insertables}
     tasks =  {
-        "localhost": "prism1"
+        "localhost": "janine2"
     }
     for host, insertable in tasks.items():
         container = insertable + "_container"
@@ -104,3 +106,18 @@ def stop_services(robots:list = ["localhost"]):
         except Exception as e:
             print("Error with robot ",r)
             print(e)
+
+def stop_telemetry(robots:list = ["localhost"]):
+    for r in robots:
+        s = ServerProxy("http://" + r + ":8000", allow_none=True)
+        try:
+            s.stop_telemetry(r)
+        except Exception as e:
+            print("Error with robot ",r)
+            print(e)
+
+
+if __name__ == "__main__":
+    # example_learning()
+    stop_telemetry(["localhost"])
+    # stop_services()

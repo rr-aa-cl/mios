@@ -35,8 +35,8 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
         #         knowledge["scope"].remove("n" + str(i))
         #     knowledge["scope"].append("n" + str(i+1))
         uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge)
-        while s.is_busy():
-            time.sleep(2)
+        # while s.is_busy():
+        #     time.sleep(2)
         #if wait is True:
         #    s.wait_for_service()
         print(problem_def.tags, " finished.")
@@ -100,3 +100,8 @@ def delete_experiment_data(robots: list, tags: list, task_class: str ="insertion
         
         for id in ids:
             mongo_client.remove(db, task_class, {"_id":id})
+
+
+def start_telemetry(learner, service_port, agents, redisip, username, password, port=6379):    
+    s = ServerProxy("http://" + learner + ":"+str(service_port), allow_none=True)     
+    uuid = s.start_telemetry(agents, redisip, username, password, 6379)
