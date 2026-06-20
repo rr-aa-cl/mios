@@ -108,7 +108,8 @@ public:
         double finger_width;
         double finger_temperature;
         bool is_grasping;
-
+      // Additionally, we add a timestamp to the proprioception data based on control box duration data.
+        uint64_t control_box_time_since_start;
     }proprioception;
 
     struct InternalModel{
