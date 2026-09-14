@@ -80,6 +80,12 @@ bool Ros2GripperClient::grasp(const double width, const double speed, const doub
     }
     return false;
   }
+  if (!fresh_state()) {
+    if (completion) {
+      completion({false, false, "Gripper feedback is missing, invalid, or stale (maximum age 500 ms)."});
+    }
+    return false;
+  }
   Grasp::Goal goal;
   goal.width = width;
   goal.speed = speed;
@@ -103,6 +109,12 @@ bool Ros2GripperClient::move(const double width, const double speed,
   if (!valid_nonnegative(width) || !valid_positive(speed)) {
     if (completion) {
       completion({false, false, "Invalid gripper move values."});
+    }
+    return false;
+  }
+  if (!fresh_state()) {
+    if (completion) {
+      completion({false, false, "Gripper feedback is missing, invalid, or stale (maximum age 500 ms)."});
     }
     return false;
   }
@@ -154,26 +166,35 @@ std::optional<GripperStateSnapshot> Ros2GripperClient::latest_state() const {
   return state_->latest;
 }
 
-bool Ros2GripperClient::has_fresh_state(const std::chrono::nanoseconds maximum_age) const {
+std::optional<GripperStateSnapshot> Ros2GripperClient::fresh_state(
+    const std::chrono::nanoseconds maximum_age) const {
   std::lock_guard<std::mutex> lock(state_->mutex);
-  return state_->latest.has_value() && state_->received != std::chrono::steady_clock::time_point{} &&
-         std::chrono::steady_clock::now() - state_->received <= maximum_age;
+  if (!state_->latest || maximum_age <= std::chrono::nanoseconds::zero() ||
+      state_->received == std::chrono::steady_clock::time_point{} ||
+      std::chrono::steady_clock::now() - state_->received > maximum_age) {
+    return std::nullopt;
+  }
+  return state_->latest;
+}
+
+bool Ros2GripperClient::has_fresh_state(const std::chrono::nanoseconds maximum_age) const {
+  return fresh_state(maximum_age).has_value();
 }
 
 void Ros2GripperClient::receive_joint_state(
     const sensor_msgs::msg::JointState::SharedPtr message) {
-  bool is_grasped = false;
-  {
-    std::lock_guard<std::mutex> lock(state_->mutex);
-    if (state_->latest) {
-      is_grasped = state_->latest->state.is_grasped;
-    }
-  }
-  const auto snapshot = to_mios_gripper_state(*message, configured_max_width_, is_grasped);
+  std::lock_guard<std::mutex> lock(state_->mutex);
+  const bool is_grasped = state_->latest && state_->latest->state.is_grasped;
+  const auto snapshot = message
+                            ? to_mios_gripper_state(*message, configured_max_width_, is_grasped)
+                            : std::nullopt;
   if (!snapshot) {
+    // Do not retain a previously valid opening when the latest feedback is
+    // malformed. Only another valid JointState may restore readiness.
+    state_->latest.reset();
+    state_->received = {};
     return;
   }
-  std::lock_guard<std::mutex> lock(state_->mutex);
   state_->latest = *snapshot;
   state_->received = std::chrono::steady_clock::now();
 }
@@ -184,7 +205,8 @@ void Ros2GripperClient::set_grasped_from_action(const bool is_grasped) const {
     return;
   }
   state_->latest->state.is_grasped = is_grasped;
-  state_->received = std::chrono::steady_clock::now();
+  // An action result does not measure the opening and must not make old
+  // encoder feedback appear fresh.
 }
 
 }  // namespace mios_ros2_runtime

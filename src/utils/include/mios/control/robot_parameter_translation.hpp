@@ -17,7 +17,7 @@ std::array<double, Size> parameter_matrix_to_array(const EigenMatrix& matrix) {
 
 }  // namespace detail
 
-// Maps the exact values consumed by legacy PandaBody::set_robot_parameters().
+// Maps the exact values consumed by the robot-parameter transport adapter.
 // This template deliberately has no Memory, ROS, or libfranka dependency and
 // works with mios::Parameters when Core supplies its immutable configuration.
 template <typename MiosParameters>

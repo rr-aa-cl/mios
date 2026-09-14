@@ -5,7 +5,7 @@
 namespace mios_ros2_runtime {
 
 // ROS-independent robot configuration equivalent to the values applied by
-// legacy PandaBody::set_robot_parameters(). Matrices use the Franka/libfranka
+// robot parameter API. Matrices use the Franka
 // column-major layout required by the upstream parameter services.
 struct RobotParameterSnapshot {
   double load_mass{0.0};

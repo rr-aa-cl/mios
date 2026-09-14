@@ -6,6 +6,7 @@ set(${MODULE_NAME}_SRC
 
 set(${MODULE_NAME}_HEADER_FILES
     include/${PROJECT_NAME}/${MODULE_NAME}/core.hpp
+    include/${PROJECT_NAME}/${MODULE_NAME}/robot_backend.hpp
     )
 
 add_library(${MODULE_NAME}
@@ -19,7 +20,6 @@ add_library(${PROJECT_NAME}::${MODULE_NAME} ALIAS ${MODULE_NAME})
 target_include_directories(${MODULE_NAME}
     PRIVATE
     src
-    ${CMAKE_SOURCE_DIR}/src/panda/include
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     )
@@ -45,12 +45,5 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::telemetry
     ${PROJECT_NAME}::utils
     )
-
-if(MIOS_BUILD_LEGACY_PANDA)
-    # This is deliberately mutually exclusive with the ROS FCI process.  The
-    # direct Core owns PandaBody and is linked to libfranka through it.
-    target_link_libraries(${MODULE_NAME} PUBLIC ${PROJECT_NAME}::panda)
-    target_compile_definitions(${MODULE_NAME} PUBLIC MIOS_HAS_DIRECT_PANDA_BACKEND=1)
-endif()
 
 apply_module_options(${MODULE_NAME})

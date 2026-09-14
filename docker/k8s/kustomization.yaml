@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: mios
+
+resources:
+  - namespace.yml
+  - runtime.yml
+
+# Set newName/newTag (or digest) to the images available to the node's CRI.
+# A local Docker build is not automatically available to containerd.
+images:
+  - name: mios-ros2-control
+    newName: mios-ros2-control
+    newTag: local
+  - name: mios-ros2-core
+    newName: mios-ros2-core
+    newTag: local
+  - name: mios-ml-service
+    newName: mios-ml-service
+    newTag: local
+
+# Hash changes trigger replacement when configuration or helpers change.
+configMapGenerator:
+  - name: mios-runtime-config
+    literals:
+      - ROBOT_IP=192.168.4.100
+      - ROS_DOMAIN_ID=0
+      - MIOS_LOAD_GRIPPER=true
+      - MIOS_CONTROL_WORKER_CPUS=0-5,8-19
+      # Must match cpu_affinity in the Control image's mios_controllers.yaml.
+      - MIOS_CONTROL_RT_CPU=6
+      - MIOS_NONRT_CPUS=0-5,8-19
+      - MONGO_DB_NAME=mios
+      - MONGO_PORT=27017
+      - ROBOT_CONFIG=0
+      # When changing ports, also update runtime.yml's container/Service ports.
+      - MIOS_WS_PORT=12000
+      - MIOS_RPC_PORT=12001
+      - MIOS_UDP_PORT=12002
+      - MIOS_ML_PORT=8000
+      - MIOS_ENABLE_CORE_SCHEDULER=true
+      - MIOS_ENABLE_CORE_TASK_EXECUTION=true
+      - MIOS_ALLOW_CONTROLLER_OWNED_MOVE_MODE=true
+  - name: mios-runtime-scripts
+    files:
+      - runtime.py

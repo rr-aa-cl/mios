@@ -1,17 +1,21 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <csignal>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <thread>
 
 #include "mios/core/core.hpp"
+#include "mios/task/task_engine.hpp"
 #include "mios/utils/configuration.hpp"
 #include "mios/utils/context.hpp"
 #include "mios_ros2_runtime/ros2_arm_command_dispatcher.hpp"
 #include "mios_ros2_runtime/ros2_core_robot_backend.hpp"
+#include "mios_ros2_runtime/ros2_controller_session.hpp"
 #include "mios_ros2_runtime/ros2_gripper_client.hpp"
 #include "mios_ros2_runtime/ros2_robot_parameter_client.hpp"
 #include "mios_ros2_runtime/ros2_robot_backend.hpp"
@@ -19,6 +23,9 @@
 #include "rclcpp/rclcpp.hpp"
 
 namespace {
+
+volatile std::sig_atomic_t stop_signal = 0;
+void request_stop(int) { stop_signal = 1; }
 
 std::chrono::milliseconds seconds_parameter(rclcpp::Node& node, const std::string& name,
                                             const double default_value) {
@@ -41,7 +48,7 @@ unsigned unsigned_parameter(rclcpp::Node& node, const std::string& name,
 namespace mios_ros2_runtime {
 
 // This executable owns the MIOS Core and gives it exactly one backend: the
-// ROS-only adapter. It never creates PandaBody or an FCI/libfranka client.
+// ROS-only adapter. It never creates a vendor SDK or FCI client.
 class MiosRos2CoreNode final : public rclcpp::Node {
  public:
   MiosRos2CoreNode() : Node("mios_ros2_core") {
@@ -108,6 +115,14 @@ class MiosRos2CoreNode final : public rclcpp::Node {
     const auto core_gripper_timeout = seconds_parameter(*this, "core_gripper_timeout_seconds", 20.0);
     const auto core_parameter_timeout =
         seconds_parameter(*this, "core_parameter_timeout_seconds", 5.0);
+    const auto controller_timeout =
+        seconds_parameter(*this, "core_controller_timeout_seconds", 3.0);
+    const auto controller_manager_namespace =
+        declare_parameter<std::string>("controller_manager_namespace", "/controller_manager");
+    const auto effort_controller_name =
+        declare_parameter<std::string>("effort_controller_name", "mios_effort_controller");
+    const auto joint_position_controller_name =
+        declare_parameter<std::string>("joint_position_controller_name", "mios_joint_position_controller");
 
     backend_ = std::make_unique<Ros2RobotBackend>(
         *this, robot_state_topic, robot_model_topic, effort_command_topic, actuator_command_topic,
@@ -119,10 +134,14 @@ class MiosRos2CoreNode final : public rclcpp::Node {
         gripper_stop_service, gripper_state_topic, gripper_max_width);
     parameter_client_ = std::make_unique<Ros2RobotParameterClient>(
         *this, parameter_service_namespace, allow_robot_parameter_application);
+    controller_session_ = std::make_unique<Ros2ControllerSession>(
+        *this, controller_manager_namespace, effort_controller_name,
+        joint_position_controller_name, controller_timeout);
 
     // Core task scheduling is an explicit second gate. A future operator must
     // enable both switches before any Core task can dispatch robot commands.
     const bool allow_task_execution = enable_core_scheduler && enable_core_task_execution;
+    require_gripper_feedback_ = allow_task_execution;
     // ros2_control puts Franka in MOVE while a controller owns an interface,
     // including its zero-command hold. This third gate retains the legacy
     // IDLE-only behavior until that ownership model is commissioned. A
@@ -139,14 +158,14 @@ class MiosRos2CoreNode final : public rclcpp::Node {
         *backend_, *command_dispatcher_, *gripper_client_, parameter_client_.get(),
         Ros2CoreRobotBackend::ParameterSnapshotProvider{}, core_state_timeout_,
         core_gripper_timeout, core_parameter_timeout, allow_task_execution,
-        controller_owned_move_mode_enabled);
+        controller_owned_move_mode_enabled, controller_session_.get());
 
     context_ = std::make_unique<MiosContext>(MiosContext{configuration_, shutdown_signal_});
     core_ = std::make_unique<mios::Core>(*context_, std::move(core_backend));
 
     RCLCPP_INFO(
         get_logger(),
-        "MIOS Core is owned by the ROS 2 runtime with no PandaBody, libfranka, or FCI ownership. "
+        "MIOS Core is owned by the ROS 2 runtime with no vendor SDK or FCI ownership. "
         "Core scheduler: %s; Core task commands: %s; controller-owned MOVE mode: %s; "
         "no-task MOVE diagnostic: %s; parameter application: %s",
         enable_core_scheduler ? "enabled" : "disabled",
@@ -165,31 +184,42 @@ class MiosRos2CoreNode final : public rclcpp::Node {
     // Core needs fresh ROS state/model snapshots. Run initialization only
     // after this node has entered its executor and subscriptions can receive
     // their first messages.
+    startup_callback_group_ = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     core_start_timer_ = create_wall_timer(
-        std::chrono::milliseconds(100), [this] { start_core_scheduler(); });
+        std::chrono::milliseconds(100), [this] { start_core_scheduler(); }, startup_callback_group_);
   }
 
-  ~MiosRos2CoreNode() override {
+  ~MiosRos2CoreNode() override { stop_core(); }
+
+  // The main executor must keep servicing ROS responses until this returns.
+  void stop_core() {
+    if (stopping_.exchange(true)) return;
     shutdown_signal_.store(true);
-    if (core_) {
-      core_->terminate();
+    {
+      std::lock_guard<std::mutex> lock(startup_mutex_);
+      if (core_start_timer_) core_start_timer_->cancel();
+      if (core_) core_->get_task_engine()->stop();
     }
     if (core_thread_.joinable()) {
       core_thread_.join();
     }
+    if (core_) core_->terminate();
   }
 
  private:
   void start_core_scheduler() {
+    std::lock_guard<std::mutex> lock(startup_mutex_);
+    if (stopping_) return;
     // Do not call Core::initialize() until both subscriptions have received
     // current data. DDS discovery can take longer than the initial timer
     // period, particularly when this node starts after the broadcasters.
     // Retrying here is read-only and keeps all command gates unchanged.
     if (!backend_->has_fresh_robot_state(core_state_timeout_) ||
-        !backend_->has_fresh_robot_model(core_state_timeout_)) {
+        !backend_->has_fresh_robot_model(core_state_timeout_) ||
+        (require_gripper_feedback_ && !gripper_client_->fresh_state())) {
       if (!waiting_for_initial_snapshots_logged_) {
         RCLCPP_WARN(get_logger(),
-                    "Waiting for fresh robot-state and robot-model messages before starting "
+                    "Waiting for fresh robot-state, robot-model and required gripper feedback before starting "
                     "the MIOS Core scheduler.");
         waiting_for_initial_snapshots_logged_ = true;
       }
@@ -208,29 +238,50 @@ class MiosRos2CoreNode final : public rclcpp::Node {
   }
 
   std::atomic<bool> shutdown_signal_{false};
+  std::atomic<bool> stopping_{false};
+  std::mutex startup_mutex_;
   mios::MiosConfiguration configuration_{};
   std::unique_ptr<MiosContext> context_;
   std::unique_ptr<Ros2RobotBackend> backend_;
   std::unique_ptr<Ros2ArmCommandDispatcher> command_dispatcher_;
   std::unique_ptr<Ros2GripperClient> gripper_client_;
   std::unique_ptr<Ros2RobotParameterClient> parameter_client_;
+  std::unique_ptr<Ros2ControllerSession> controller_session_;
   std::unique_ptr<mios::Core> core_;
   std::thread core_thread_;
   rclcpp::TimerBase::SharedPtr core_start_timer_;
+  rclcpp::CallbackGroup::SharedPtr startup_callback_group_;
   std::chrono::milliseconds core_state_timeout_{100};
   bool waiting_for_initial_snapshots_logged_{false};
+  bool require_gripper_feedback_{false};
 };
 
 }  // namespace mios_ros2_runtime
 
 int main(int argc, char* argv[]) {
-  rclcpp::init(argc, argv);
+  // rclcpp's default signal handler tears down the context before Core can
+  // release its controller. Keep ROS alive throughout orderly task shutdown.
+  std::signal(SIGINT, request_stop);
+  std::signal(SIGTERM, request_stop);
+  rclcpp::init(argc, argv, rclcpp::InitOptions(), rclcpp::SignalHandlerOptions::None);
   auto node = std::make_shared<mios_ros2_runtime::MiosRos2CoreNode>();
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node);
-  executor.spin();
+  std::atomic<bool> executor_finished{false};
+  std::exception_ptr executor_error;
+  std::thread spin([&] {
+    try { executor.spin(); } catch (...) { executor_error = std::current_exception(); }
+    executor_finished.store(true);
+  });
+  while (!stop_signal && !executor_finished && rclcpp::ok()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+  }
+  node->stop_core();
+  executor.cancel();
+  spin.join();
   executor.remove_node(node);
   node.reset();
   rclcpp::shutdown();
+  if (executor_error) std::rethrow_exception(executor_error);
   return 0;
 }

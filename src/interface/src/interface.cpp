@@ -264,9 +264,11 @@ nlohmann::json CommandInterface::teach_object(const nlohmann::json &request){
     }
     bool result=true;
     std::string error_message="";
-    if(!m_core->refresh_percept({})){
+    if(m_core->is_busy() || !m_core->refresh_percept({})){
         error_message="Could not teach the object because no current percept is available.";
-        result=false;
+        response["result"]=false;
+        response["error"]=error_message;
+        return response;
     }
     if(!m_memory->update_object(object_name,teach_width,teach_force,*m_core->get_percept())){
         error_message="Could not teach object because memory returned an error.";
@@ -401,6 +403,9 @@ nlohmann::json CommandInterface::get_state([[maybe_unused]] const nlohmann::json
     if(p->robot_mode==control::RobotMode::kIdle){
         response["status"]="Idle";
     }
+    if(p->robot_mode==control::RobotMode::kMove){
+        response["status"]="Move";
+    }
     if(p->robot_mode==control::RobotMode::kReflex){
         response["status"]="Reflex";
     }
@@ -410,6 +415,7 @@ nlohmann::json CommandInterface::get_state([[maybe_unused]] const nlohmann::json
     response["result"]=result;
     response["error_message"]=error_message;
     response["current_task"] = m_core->get_task_engine()->get_active_task_id();
+    response["control_active"] = m_core->is_control_active();
     response["gripper_width"] = p->proprioception.finger_width;
 
     return response;

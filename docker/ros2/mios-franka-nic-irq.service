@@ -7,6 +7,7 @@ After=network-online.target
 Type=oneshot
 Environment=ROBOT_IP=192.168.4.100
 Environment=MIOS_CONTROL_CPU=6
+Environment=MIOS_FRANKA_IRQ_PRIORITY=90
 ExecStart=/usr/local/sbin/mios-pin-franka-nic-irq
 RemainAfterExit=yes
 

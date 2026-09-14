@@ -6,7 +6,7 @@
 namespace mios::control {
 
 // Transport-neutral data exchanged between MIOS algorithms and a robot backend.
-// ROS 2 adapters and legacy libfranka adapters convert at this boundary.
+// ROS 2 adapters convert to and from this boundary.
 inline constexpr std::size_t kJointCount = 7;
 
 enum class CommandMode : std::uint8_t {

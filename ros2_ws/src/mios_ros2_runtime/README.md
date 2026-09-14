@@ -49,9 +49,9 @@ runtime, missing provider, invalid snapshot, unavailable service, timeout, or
 unsuccessful response. The shipped runtime node deliberately supplies no
 provider because it does not yet create the legacy Core/Memory scheduler.
 
-Core maps its Memory-owned legacy `mios::Parameters` through
-`mios::control::make_robot_parameters()`, preserving the exact fields used by
-`PandaBody::set_robot_parameters()`: load, `EE_T_TCP`, `EE_T_K`, joint and
+Core maps its Memory-owned `mios::Parameters` through
+`mios::control::make_robot_parameters()`, preserving the robot parameter
+fields: load, `EE_T_TCP`, `EE_T_K`, joint and
 Cartesian stiffness, and collision thresholds. Core installs that
 transport-neutral provider on its `RobotBackend` after Memory initialization.
 The ROS-side
@@ -88,7 +88,7 @@ Core-compatible backend but intentionally does not create Core or access the
 database. The separate `mios_ros2_core_runtime` executable is built from the
 repository root with `MIOS_BUILD_ROS2_CORE_RUNTIME=ON`. It constructs
 `mios::Core` with `Ros2CoreRobotBackend` as its only backend; it never creates
-`PandaBody`, `franka::Robot`, or an FCI connection.
+a vendor SDK client or an FCI connection.
 
 `enable_core_scheduler` and `enable_core_task_execution` both default to
 `false`. With the defaults, the Core construction test does not initialize the

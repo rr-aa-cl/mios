@@ -1,10 +1,13 @@
 controller_manager:
   ros__parameters:
     update_rate: 1000
+    # ros2_control >= 4.47.0: Franka's blocking read supplies the 1 kHz clock.
+    # A second, independent host timer drifts relative to incoming FCI states
+    # and delays otherwise regularly spaced torque replies.
+    hardware_synchronization.expect_blocking_read_write: true
     # Keep this known commissioning placement while real-time behavior is
-    # isolated one variable at a time. The FR3 Ethernet IRQ currently executes
-    # on performance CPU 6 at FIFO priority 50; the controller loop runs at
-    # the higher priority configured below.
+    # isolated one variable at a time. The FR3 Ethernet IRQ executes on CPU 6
+    # at FIFO priority 90, above the controller loop's priority below.
     cpu_affinity: 6
     # The ActiveControl API used by franka_hardware relies on this controller
     # manager thread for every 1 kHz read/write cycle. Keep the established

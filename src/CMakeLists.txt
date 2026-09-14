@@ -14,17 +14,6 @@ add_subdirectory(task)
 add_subdirectory(telemetry)
 add_subdirectory(utils)
 
-if(MIOS_BUILD_LEGACY_PANDA)
-    add_subdirectory(panda)
-endif()
-
-if(MIOS_BUILD_LEGACY_MAIN)
-    if(NOT MIOS_BUILD_LEGACY_PANDA)
-        message(FATAL_ERROR "MIOS_BUILD_LEGACY_MAIN requires MIOS_BUILD_LEGACY_PANDA.")
-    endif()
-    add_subdirectory(main)
-endif()
-
 if(MIOS_BUILD_ROS2_CORE_RUNTIME)
     add_subdirectory(ros2_core_runtime)
 endif()

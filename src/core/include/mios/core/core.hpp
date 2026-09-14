@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <atomic>
 #include <optional>
 #include <string>
 #include <mutex>
@@ -29,13 +30,8 @@ class RobotBackend;
 
 class Core{
 public:
-#ifdef MIOS_HAS_DIRECT_PANDA_BACKEND
-    // The standalone direct build owns FCI through PandaBody. This overload
-    // is not compiled into the ROS-owned Core, preventing two FCI owners.
-    explicit Core(const MiosContext &context);
-#endif
-    // The caller supplies the only robot backend. In the ROS-only path this
-    // backend communicates through ROS 2 and never owns an FCI connection.
+    // The caller supplies the robot backend. The current production backend
+    // communicates through ROS 2 and never owns an FCI connection.
     Core(const MiosContext &context, std::unique_ptr<RobotBackend> robot_backend);
     ~Core();
 
@@ -44,6 +40,7 @@ public:
     void terminate();
 
     ControlReturnType execute_skill();
+    bool is_control_active() const;
     void post_execution();
     void terminate_control_cycle();
 
@@ -113,6 +110,7 @@ private:
 private:
     bool m_is_ready;
     bool m_blend_skill;
+    std::atomic<bool> m_terminated{false};
     std::mutex m_mtx_is_busy;
     std::mutex m_mtx_FCI;
 

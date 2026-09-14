@@ -1,9 +1,6 @@
 #include "mios/core/core.hpp"
 
-#include "mios/panda/robot_backend.hpp"
-#ifdef MIOS_HAS_DIRECT_PANDA_BACKEND
-#include "mios/panda/panda_body.hpp"
-#endif
+#include "mios/core/robot_backend.hpp"
 
 #include "mirmi_cpp_utils/math/math.hpp"
 #include "mirmi_cpp_utils/conversion/conversion.hpp"
@@ -30,25 +27,6 @@
 #include <thread>
 
 namespace mios {
-
-#ifdef MIOS_HAS_DIRECT_PANDA_BACKEND
-Core::Core(const MiosContext &context):
-    m_memory(context),
-    m_skill_engine(SkillEngine(this)),
-    m_robot_backend(std::make_unique<PandaBody>(&m_memory, context)),
-    m_portal(Portal("0.0.0.0",context.config.websocket_port,"mios/core",
-                    "0.0.0.0",context.config.rpc_port,
-                    context.config.udp_port)),
-    m_task_engine(TaskEngine(this)),
-    m_command_interface(CommandInterface(this,&m_task_engine,&m_portal,&m_memory)),
-    m_telemetry(TelemetryUDP(this,&m_portal)),
-    m_is_ready(false),
-    m_context(context),
-    m_blend_skill(false),
-    m_hand_grace_period(0){
-        spdlog::trace("Core::Core(direct PandaBody)");
-}
-#endif
 
 Core::Core(const MiosContext &context, std::unique_ptr<RobotBackend> robot_backend):
     m_memory(context),
@@ -121,6 +99,7 @@ void Core::start(){
 }
 
 void Core::terminate(){
+    if(m_terminated.exchange(true)) return;
     spdlog::trace("Core::terminate()");
     m_task_engine.stop();
     if(m_control_executor){
@@ -162,6 +141,10 @@ LearningModule* Core::get_learning_module(){
 
 TelemetryUDP* Core::get_telemetry(){
     return &m_telemetry;
+}
+
+bool Core::is_control_active() const {
+    return m_robot_backend && m_robot_backend->is_control_active();
 }
 
 ControlReturnType Core::execute_skill(){
@@ -308,7 +291,13 @@ control::ArmCommand Core::control_base_cycle(const control::RobotState& robot_st
                                              const control::GripperState& gripper_state,
                                              control::CommandMode command_mode){
     if(m_context.shutdown_signal){
-        terminate();
+        // This runs in a ROS state callback. Returning completion lets the
+        // Core worker release its controller while the ROS executor remains
+        // available for service replies during container shutdown.
+        control::ArmCommand stop;
+        stop.mode=command_mode;
+        stop.motion_finished=true;
+        return stop;
     }
     bool exception=false;
     if(m_skill_engine.is_running_queue() && m_blend_skill){
@@ -545,6 +534,9 @@ bool Core::release_object(std::optional<double> width, double speed){
 }
 
 bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, bool wait){
+    if(m_context.shutdown_signal){
+        return false;
+    }
     control::RobotState robot_state;
     control::RobotModel robot_model;
     control::GripperState gripper_state;
@@ -554,7 +546,13 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
     bool read_successful=false;
     int count=0;
     if(wait){
+        // Portal requests and skill setup must fail on unavailable feedback,
+        // rather than keeping a task or a remote client waiting indefinitely.
+        const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(1);
         while(!read_successful){
+            if(m_context.shutdown_signal || std::chrono::steady_clock::now()>=deadline){
+                return false;
+            }
             if(is_busy()){
                 return true;
             }

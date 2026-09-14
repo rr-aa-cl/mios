@@ -22,10 +22,16 @@ void TaskEngine::reset(){
 
 void TaskEngine::stop(){
     m_keep_running=false;
-    m_active_task->stop_task(false,false,true);
+    std::shared_ptr<Task> active_task;
+    {
+        std::scoped_lock<std::mutex> queue_lock(m_mtx_task_queue);
+        active_task=m_active_task;
+    }
+    active_task->stop_task(false,false,true);
 }
 
 std::string TaskEngine::get_active_task_id() const{
+    std::scoped_lock<std::mutex> queue_lock(m_mtx_task_queue);
     return m_active_task->get_id();
 }
 
@@ -285,11 +291,26 @@ std::tuple<bool,std::string,std::string> TaskEngine::start_task(const std::strin
 }
 
 std::pair<bool,std::string> TaskEngine::stop_task(bool raise_exception, bool recover,bool empty_queue){
-    if(m_active_task->get_id()=="IdleTask"){
+    std::shared_ptr<Task> active_task;
+    {
+        // Serialize cancellation with start_task and the lifecycle's selection
+        // of its next task. A start reply can be lost while its task is still
+        // queued behind Idle; stopping must cancel that pending work too.
+        std::scoped_lock<std::mutex> queue_lock(m_mtx_task_queue);
+        active_task = m_active_task;
+        if(empty_queue){
+            m_task_queue.remove_if([&active_task](const auto& queued){
+                return std::get<1>(queued) != active_task;
+            });
+        }
+    }
+    if(active_task->get_id()=="IdleTask"){
         return std::make_pair(true,"");
     }
     spdlog::info("Stopping active task.");
-    m_active_task->stop_task(raise_exception,recover,empty_queue);
+    // Task::stop_task waits for execution to finish. Do not hold the queue
+    // mutex while waiting for the worker thread.
+    active_task->stop_task(raise_exception,recover,empty_queue);
     return std::make_pair(true,"");
 }
 

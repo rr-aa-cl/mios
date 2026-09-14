@@ -8,6 +8,8 @@ find_package(franka_msgs REQUIRED)
 find_package(mios_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
+find_package(controller_manager_msgs REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -22,13 +24,13 @@ if(NOT EXISTS "${MIOS_CONTROL_TYPES_INCLUDE_DIR}/mios/control/control_types.hpp"
   message(FATAL_ERROR "Cannot find mios/control/control_types.hpp")
 endif()
 
-set(MIOS_ROBOT_BACKEND_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../src/panda/include")
+set(MIOS_ROBOT_BACKEND_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../src/core/include")
 set(MIOS_UTILS_TYPES_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../src/utils/include")
-if(NOT EXISTS "${MIOS_ROBOT_BACKEND_INCLUDE_DIR}/mios/panda/robot_backend.hpp")
+if(NOT EXISTS "${MIOS_ROBOT_BACKEND_INCLUDE_DIR}/mios/core/robot_backend.hpp")
   set(MIOS_ROBOT_BACKEND_INCLUDE_DIR "/ws/src/mios_core_contract/include")
   set(MIOS_UTILS_TYPES_INCLUDE_DIR "/ws/src/mios_core_contract/include")
 endif()
-if(NOT EXISTS "${MIOS_ROBOT_BACKEND_INCLUDE_DIR}/mios/panda/robot_backend.hpp" OR
+if(NOT EXISTS "${MIOS_ROBOT_BACKEND_INCLUDE_DIR}/mios/core/robot_backend.hpp" OR
    NOT EXISTS "${MIOS_UTILS_TYPES_INCLUDE_DIR}/mios/utils/types.hpp")
   message(FATAL_ERROR "Cannot find the MIOS Core RobotBackend contract headers")
 endif()
@@ -50,6 +52,7 @@ target_link_libraries(mios_ros2_runtime_translation Eigen3::Eigen)
 add_library(mios_ros2_runtime_backend SHARED
   src/ros2_arm_command_dispatcher.cpp
   src/ros2_core_robot_backend.cpp
+  src/ros2_controller_session.cpp
   src/ros2_gripper_client.cpp
   src/ros2_robot_parameter_client.cpp
   src/ros2_robot_backend.cpp)
@@ -61,7 +64,7 @@ target_include_directories(mios_ros2_runtime_backend PUBLIC
   $<BUILD_INTERFACE:${MIOS_UTILS_TYPES_INCLUDE_DIR}>
   $<INSTALL_INTERFACE:include>)
 target_link_libraries(mios_ros2_runtime_backend mios_ros2_runtime_translation Eigen3::Eigen)
-ament_target_dependencies(mios_ros2_runtime_backend franka_msgs mios_msgs rclcpp rclcpp_action sensor_msgs std_srvs)
+ament_target_dependencies(mios_ros2_runtime_backend franka_msgs mios_msgs rclcpp rclcpp_action sensor_msgs std_srvs controller_manager_msgs rcl_interfaces)
 
 add_executable(mios_runtime_node src/mios_runtime_node.cpp)
 target_compile_features(mios_runtime_node PUBLIC cxx_std_17)
@@ -74,8 +77,8 @@ install(FILES
   "${MIOS_CONTROL_TYPES_INCLUDE_DIR}/mios/control/robot_parameter_translation.hpp"
   DESTINATION include/mios/control)
 install(FILES
-  "${MIOS_ROBOT_BACKEND_INCLUDE_DIR}/mios/panda/robot_backend.hpp"
-  DESTINATION include/mios/panda)
+  "${MIOS_ROBOT_BACKEND_INCLUDE_DIR}/mios/core/robot_backend.hpp"
+  DESTINATION include/mios/core)
 install(FILES
   "${MIOS_UTILS_TYPES_INCLUDE_DIR}/mios/utils/types.hpp"
   DESTINATION include/mios/utils)
@@ -88,6 +91,16 @@ install(TARGETS mios_runtime_node
   RUNTIME DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
+  add_executable(test_ros2_core_controller_lifecycle test/test_ros2_core_controller_lifecycle.cpp)
+  target_compile_features(test_ros2_core_controller_lifecycle PRIVATE cxx_std_17)
+  target_link_libraries(test_ros2_core_controller_lifecycle mios_ros2_runtime_backend)
+  ament_target_dependencies(test_ros2_core_controller_lifecycle rclcpp)
+  add_test(NAME test_ros2_core_controller_lifecycle COMMAND test_ros2_core_controller_lifecycle)
+  add_executable(test_ros2_controller_session test/test_ros2_controller_session.cpp)
+  target_compile_features(test_ros2_controller_session PRIVATE cxx_std_17)
+  target_link_libraries(test_ros2_controller_session mios_ros2_runtime_backend)
+  ament_target_dependencies(test_ros2_controller_session rclcpp controller_manager_msgs rcl_interfaces)
+  add_test(NAME test_ros2_controller_session COMMAND test_ros2_controller_session)
   add_executable(test_arm_command_translation test/test_arm_command_translation.cpp)
   target_compile_features(test_arm_command_translation PRIVATE cxx_std_17)
   target_link_libraries(test_arm_command_translation mios_ros2_runtime_translation)
@@ -142,7 +155,7 @@ if(BUILD_TESTING)
 endif()
 
 ament_export_targets(export_mios_ros2_runtime HAS_LIBRARY_TARGET)
-ament_export_dependencies(franka_msgs mios_msgs rclcpp rclcpp_action sensor_msgs std_srvs Eigen3)
+ament_export_dependencies(franka_msgs mios_msgs rclcpp rclcpp_action sensor_msgs std_srvs controller_manager_msgs rcl_interfaces Eigen3)
 ament_export_include_directories(include)
 
 ament_package()

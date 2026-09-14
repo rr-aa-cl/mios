@@ -8,8 +8,9 @@
 #include <mutex>
 #include <optional>
 
-#include "mios/panda/robot_backend.hpp"
+#include "mios/core/robot_backend.hpp"
 #include "mios_ros2_runtime/ros2_arm_command_dispatcher.hpp"
+#include "mios_ros2_runtime/ros2_controller_session.hpp"
 #include "mios_ros2_runtime/ros2_gripper_client.hpp"
 #include "mios_ros2_runtime/ros2_robot_parameter_client.hpp"
 #include "mios_ros2_runtime/ros2_robot_backend.hpp"
@@ -42,7 +43,8 @@ class Ros2CoreRobotBackend final : public mios::RobotBackend {
                        std::chrono::milliseconds gripper_timeout,
                        std::chrono::milliseconds parameter_timeout,
                        bool allow_task_execution,
-                       bool allow_controller_owned_move_mode = false);
+                       bool allow_controller_owned_move_mode = false,
+                       ControllerSession* controller_session = nullptr);
   ~Ros2CoreRobotBackend() override;
 
   bool initialize() override;
@@ -54,6 +56,7 @@ class Ros2CoreRobotBackend final : public mios::RobotBackend {
   bool pre_run_checks() const override;
   mios::ControlReturnType control(mios::control::CommandMode mode,
                                   ControlCallback callback) override;
+  bool is_control_active() const override;
   void set_robot_parameter_provider(ParameterSnapshotProvider provider) override;
   bool set_robot_parameters() override;
   bool get_robot_snapshot(mios::control::RobotState& robot_state,
@@ -84,6 +87,7 @@ class Ros2CoreRobotBackend final : public mios::RobotBackend {
     ControlCallback callback;
     std::int64_t previous_stamp_nanoseconds{0};
     bool complete{false};
+    bool command_dispatched{false};
     mios::ControlReturnType result{false, "None", ""};
   };
 
@@ -105,13 +109,17 @@ class Ros2CoreRobotBackend final : public mios::RobotBackend {
   const std::chrono::milliseconds parameter_timeout_;
   const bool allow_task_execution_;
   const bool allow_controller_owned_move_mode_;
+  ControllerSession* controller_session_;
   const std::size_t state_observer_id_;
 
   mutable std::mutex control_mutex_;
+  std::mutex session_mutex_;
+  std::mutex callback_mutex_;
   mutable std::mutex dispatch_mutex_;
   std::condition_variable control_complete_;
   std::optional<ActiveControl> active_control_;
   std::uint64_t next_control_generation_{1};
+  bool stop_requested_{false};
 };
 
 }  // namespace mios_ros2_runtime

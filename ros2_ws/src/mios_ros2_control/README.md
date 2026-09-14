@@ -259,7 +259,7 @@ docker run --rm -it --network host \
   mios-ros2-jazzy:local bash
 ```
 
-`mios/docker/ros2/docker-compose.yml` supplies the equivalent settings. On the
+`mios/docker/ros2/docker-compose.runtime.yml` supplies the equivalent settings. On the
 NUC host, verify that the robot is reachable before launching: `ping` and
 `nc -vz -w 3 <robot-ip> 1337` must both succeed. Do not run a legacy MIOS
 process that creates a direct `franka::Robot` at the same time.

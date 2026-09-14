@@ -18,10 +18,11 @@ class Client:
         return json.loads(response)
 
 
-async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout=100, silent=False):
+async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout=100, silent=False,
+               *, open_timeout=10, close_timeout=100):
     uri = "ws://" + hostname + ":" + str(port) + "/" +endpoint
     try:
-        async with websockets.connect(uri, close_timeout=100) as websocket:
+        async with websockets.connect(uri, open_timeout=open_timeout, close_timeout=close_timeout) as websocket:
             message = json.dumps(request)
             await websocket.send(message)
             response = await asyncio.wait_for(websocket.recv(), timeout=timeout)
@@ -76,7 +77,8 @@ def call_server(hostname, port, endpoint, request, timeout):
                                                             endpoint=endpoint, timeout=timeout))
 
 
-def call_method(hostname: str, port: int, method, payload=None, endpoint="mios/core", timeout=100, silent=False):
+def call_method(hostname: str, port: int, method, payload=None, endpoint="mios/core", timeout=100, silent=False,
+                *, open_timeout=10, close_timeout=100):
     try:
         request = {
             "method": method,
@@ -84,7 +86,8 @@ def call_method(hostname: str, port: int, method, payload=None, endpoint="mios/c
         }
         asyncio.set_event_loop(asyncio.new_event_loop())
         return asyncio.get_event_loop().run_until_complete(send(hostname, request=request, port=port,
-                                                                endpoint=endpoint, timeout=timeout, silent=silent))
+                                                                endpoint=endpoint, timeout=timeout, silent=silent,
+                                                                open_timeout=open_timeout, close_timeout=close_timeout))
     except socket.gaierror as e:
         print(e)
         print("Hostname: " + hostname + ", port:" + str(port) + ", endpoint: " + endpoint)

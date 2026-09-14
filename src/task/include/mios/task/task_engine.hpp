@@ -48,7 +48,7 @@ private:
     Core* m_core;
     Memory* m_memory;
 
-    std::mutex m_mtx_task_queue;
+    mutable std::mutex m_mtx_task_queue;
     std::list<std::tuple<std::string,std::shared_ptr<Task>,nlohmann::json> > m_task_queue;
     TaskLifeCycle m_task_life_cycle;
     std::shared_ptr<Task> m_active_task;

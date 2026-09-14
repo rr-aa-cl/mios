@@ -30,6 +30,7 @@ struct GripperOperationResult {
 class Ros2GripperClient {
  public:
   using CompletionCallback = std::function<void(const GripperOperationResult&)>;
+  static constexpr std::chrono::milliseconds kMaximumStateAge{500};
 
   Ros2GripperClient(rclcpp::Node& node, std::string grasp_action, std::string move_action,
                     std::string homing_action, std::string stop_service,
@@ -40,7 +41,11 @@ class Ros2GripperClient {
   bool move(double width, double speed, CompletionCallback completion) const;
   bool home(CompletionCallback completion) const;
   bool stop(CompletionCallback completion) const;
+  // latest_state is diagnostic history; command/teaching callers need the
+  // atomic freshness-checked snapshot instead.
   std::optional<GripperStateSnapshot> latest_state() const;
+  std::optional<GripperStateSnapshot> fresh_state(
+      std::chrono::nanoseconds maximum_age = kMaximumStateAge) const;
   bool has_fresh_state(std::chrono::nanoseconds maximum_age) const;
 
  private:

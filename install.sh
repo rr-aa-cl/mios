@@ -5,10 +5,6 @@ user="collective_dualarm"  #"panda"
 ROOT=$(dirname "$(realpath $0)")
 cd ${ROOT}
 
-### make ros components ###
-#cd ${ROOT}/src/ros_workspace
-#catkin_make
-
 ### make ###
 cd ${ROOT}
 mkdir -p ${ROOT}/build/Release

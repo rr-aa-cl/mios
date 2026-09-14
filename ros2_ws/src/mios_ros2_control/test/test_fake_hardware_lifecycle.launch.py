@@ -57,7 +57,11 @@ def generate_test_description():
         executable="ros2_control_node",
         name="controller_manager",
         output="screen",
-        parameters=[str(controller_parameters)],
+        # GenericSystem returns immediately; only the real Franka hardware
+        # blocks on its incoming state stream to pace the production loop.
+        parameters=[str(controller_parameters), {
+            "hardware_synchronization.expect_blocking_read_write": False,
+        }],
     )
     return (
         launch.LaunchDescription(
