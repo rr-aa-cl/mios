@@ -185,6 +185,130 @@ class HandGuidingReadinessTests(unittest.TestCase):
             examples._wait_for_handguiding_stop("core.example")
 
 
+class HandGuidingModeTests(unittest.TestCase):
+    """Exercise the real guiding lifecycle with every Portal entry point mocked."""
+
+    ROBOT = "core.example"
+    MESSAGE = "Finish this guiding session with Enter"
+    SUCCESS = {"result": {"result": True}}
+
+    @staticmethod
+    def state(*, active=False, status="Idle", task="IdleTask"):
+        return {"result": {"result": True, "control_active": active,
+                           "current_task": task, "status": status}}
+
+    @contextlib.contextmanager
+    def lifecycle(self, *, states=None, interruption=None):
+        if states is None:
+            states = [self.state(),
+                      self.state(active=True, status="Move", task="GenericTask"),
+                      self.state()]
+        calls = mock.Mock()
+        with contextlib.ExitStack() as stack:
+            replacements = {
+                "call_method": {"side_effect": states},
+                "start_task": {"return_value": {"result": {
+                    "result": True, "task_uuid": "guiding-mode-task"}}},
+                "stop_task": {"return_value": self.SUCCESS},
+                "wait_for_task": {"side_effect": AssertionError("Unexpected task wait")},
+            }
+            for name, options in replacements.items():
+                replacement = stack.enter_context(mock.patch.object(examples, name, **options))
+                calls.attach_mock(replacement, name)
+            confirm = stack.enter_context(mock.patch(
+                "builtins.input", return_value="", side_effect=interruption))
+            calls.attach_mock(confirm, "confirm")
+            stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
+            yield calls
+
+    def assert_payload(self, calls, fix_dim=None):
+        skill = {"record_trajectory": False}
+        if fix_dim is not None:
+            skill["fix_dim"] = fix_dim
+        calls.start_task.assert_called_once_with(
+            self.ROBOT, "GenericTask", parameters={
+                "parameters": {"skill_names": ["record_trajectory"],
+                               "skill_types": ["HandGuiding"], "as_queue": False},
+                "skills": {"record_trajectory": {
+                    "skill": skill, "control": {"control_mode": 0}}},
+            }, port=12000)
+
+    def assert_finished_lifecycle(self, calls, *, prompted=True):
+        expected = ["call_method", "start_task", "call_method"]
+        if prompted:
+            expected.append("confirm")
+        expected.extend(["stop_task", "call_method"])
+        self.assertEqual(expected, [call[0] for call in calls.mock_calls])
+        # Exact reads exclude pose teaching, gripper commands, and extra dispatches.
+        self.assertEqual([mock.call(self.ROBOT, 12000, "get_state", {}, timeout=5)] * 3,
+                         calls.call_method.call_args_list)
+        calls.stop_task.assert_called_once_with(self.ROBOT, empty_queue=True, port=12000)
+        calls.wait_for_task.assert_not_called()
+        if prompted:
+            calls.confirm.assert_called_once_with(self.MESSAGE)
+        else:
+            calls.confirm.assert_not_called()
+
+    def test_default_mode_keeps_original_free_guiding_payload(self):
+        with self.lifecycle() as calls:
+            self.assertEqual(self.SUCCESS, examples.handguiding(self.ROBOT, self.MESSAGE))
+        self.assert_payload(calls)
+        self.assert_finished_lifecycle(calls)
+
+    def test_explicit_free_mode_keeps_original_payload(self):
+        with self.lifecycle() as calls:
+            self.assertEqual(self.SUCCESS, examples.handguiding(
+                self.ROBOT, self.MESSAGE, mode="free"))
+        self.assert_payload(calls)
+        self.assert_finished_lifecycle(calls)
+
+    def test_rotate_mode_holds_position_and_leaves_rotation_free(self):
+        with self.lifecycle() as calls:
+            self.assertEqual(self.SUCCESS, examples.handguiding(
+                self.ROBOT, self.MESSAGE, mode="rotate"))
+        self.assert_payload(calls, [1, 1, 1, 0, 0, 0])
+        self.assert_finished_lifecycle(calls)
+
+    def test_translate_mode_holds_orientation_and_leaves_position_free(self):
+        with self.lifecycle() as calls:
+            self.assertEqual(self.SUCCESS, examples.handguiding(
+                self.ROBOT, self.MESSAGE, mode="translate"))
+        self.assert_payload(calls, [0, 0, 0, 1, 1, 1])
+        self.assert_finished_lifecycle(calls)
+
+    def test_invalid_mode_fails_before_readiness_or_any_robot_call(self):
+        for mode in ("", "rotation", "ROTATE", "invalid"):
+            with self.subTest(mode=mode), self.lifecycle() as calls:
+                with self.assertRaises(ValueError):
+                    examples.handguiding(self.ROBOT, self.MESSAGE, mode=mode)
+                self.assertEqual([], calls.mock_calls)
+
+    def test_constrained_interruption_stops_and_waits_for_release(self):
+        for mode, fix_dim in (("rotate", [1, 1, 1, 0, 0, 0]),
+                              ("translate", [0, 0, 0, 1, 1, 1])):
+            for interruption in (KeyboardInterrupt(), EOFError()):
+                with self.subTest(mode=mode, interruption=type(interruption).__name__), \
+                        self.lifecycle(interruption=interruption) as calls:
+                    with self.assertRaisesRegex(RuntimeError, "interrupted before confirmation") as raised:
+                        examples.handguiding(self.ROBOT, self.MESSAGE, mode=mode)
+                    self.assertIs(interruption, raised.exception.__cause__)
+                self.assert_payload(calls, fix_dim)
+                self.assert_finished_lifecycle(calls)
+
+    def test_constrained_activation_timeout_stops_without_prompt_or_retry(self):
+        for mode, fix_dim in (("rotate", [1, 1, 1, 0, 0, 0]),
+                              ("translate", [0, 0, 0, 1, 1, 1])):
+            with self.subTest(mode=mode), \
+                    self.lifecycle(states=[self.state()] * 3) as calls, \
+                    mock.patch.object(examples.time, "monotonic", side_effect=[0, 0, 21, 21, 21]), \
+                    mock.patch.object(examples.time, "sleep") as sleep:
+                with self.assertRaisesRegex(RuntimeError, "did not acquire HandGuiding control"):
+                    examples.handguiding(self.ROBOT, self.MESSAGE, mode=mode)
+                sleep.assert_called_once_with(0.1)
+            self.assert_payload(calls, fix_dim)
+            self.assert_finished_lifecycle(calls, prompted=False)
+
+
 class GraspVerificationTests(unittest.TestCase):
     SUCCESS = {"result": {"result": True}}
     METHODS = (["grasp"] + ["get_state"] * 3 + ["teach_object", "get_state", "get_state",

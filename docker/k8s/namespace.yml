@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: mios
+  name: nuc3
   labels:
     # Host networking/IPC, hostPath, and RT capabilities require this policy.
     # The containers themselves do not run with privileged: true.

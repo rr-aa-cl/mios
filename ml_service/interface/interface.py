@@ -1,6 +1,7 @@
 import logging
 from threading import Thread
 from threading import Lock
+from threading import Event, RLock
 import uuid
 import time
 
@@ -42,6 +43,9 @@ class Interface:
         self.interface_port = interface_port
         self.mongo_port = mongo_port
         self.service_lock = Lock()
+        self.lifecycle_lock = RLock()
+        self.stop_requested = Event()
+        self.stop_failed = False
         self.global_db = Database(self.interface_port+1, self.mongo_port)
         self.global_db_thread = None
         self.rpc_server = InterfaceServer(("0.0.0.0", interface_port), allow_none=True, logRequests=False)
@@ -99,69 +103,116 @@ class Interface:
     def start_service(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
                       agents: set, knowledge: dict = None, info:dict={}) -> str:
         logger.debug("Interface::start_service")
-        if self.service_lock.acquire(blocking=False) is False:
-            return "INVALID"
-
-        if problem_definition.self_check() is False:
-            return "INVALID"
-        problem_definition.uuid = str(uuid.uuid4())
-        if configuration.service_name == "cmaes":
-            self.service = CMAESService(self.mios_port,self.mongo_port)
-        elif configuration.service_name == "svm":
-            self.service = SVMService(self.mios_port,self.mongo_port)
-        elif configuration.service_name == "origPSP":
-            self.service = OrigPSPService(self.mios_port,self.mongo_port)
-        elif configuration.service_name == "generic":
-            self.service = GenericOptimizerService(self.mios_port,self.mongo_port)
-        else:
-            logger.error("Service with name " + configuration.service_name + " does not exist.")
-            return "INVALID"
-
-        self.learn_thread = Thread(target=self.learn_task, args=(problem_definition, configuration, agents, knowledge, info),
-                                   daemon=False)
-        self.learn_thread.start()
-        return problem_definition.uuid
+        with self.lifecycle_lock:
+            if self.is_busy() or not self.service_lock.acquire(blocking=False):
+                return "INVALID"
+            # Publish the cancellation latch before a constructor can block on I/O.
+            self.stop_requested = Event()
+            self.service = None
+            self.learn_thread = None
+        worker_started = False
+        try:
+            if problem_definition.self_check() is False:
+                return "INVALID"
+            factories = {"cmaes": CMAESService, "svm": SVMService,
+                         "origPSP": OrigPSPService, "generic": GenericOptimizerService}
+            factory = factories.get(configuration.service_name)
+            if factory is None:
+                logger.error("Service with name %s does not exist.", configuration.service_name)
+                return "INVALID"
+            problem_definition.uuid = str(uuid.uuid4())
+            service = factory(self.mios_port, self.mongo_port)
+            with self.lifecycle_lock:
+                self.service = service
+                self.learn_thread = Thread(
+                    target=self.learn_task,
+                    args=(problem_definition, configuration, agents, knowledge, info), daemon=False)
+                self.learn_thread.start()
+                worker_started = True
+            return problem_definition.uuid
+        finally:
+            if not worker_started:
+                with self.lifecycle_lock:
+                    self.service_lock.release()
 
     def learn_task(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
                    agents: set, knowledge: dict, info:dict={}) -> bool:
         logger.debug("Interface::learn_task")
         """start to learn a task according to instructions"""
         result = False
+        service = self.service
         try:
+            if self.stop_requested.is_set():
+                return False
             logger.debug("interface.learn_task: start learning task")
-            if self.service.initialize(problem_definition, configuration, agents, knowledge,info) is False:
+            if service.initialize(problem_definition, configuration, agents, knowledge,info) is False:
+                return False
+            if self.stop_requested.is_set():
                 return False
             logger.debug("Service initialized ")
             # self.telemetry_buffer = self.service.data_buffer_visualization
-            result = self.service.learn_task()
+            result = service.learn_task()
             logger.debug("learning success " + str(result))
         finally:
-            logger.debug("Interface::learn_task.finally: Releasing service lock")
-            self.stop_cmd_loop()
-            # self.stop_telemetry()
-            self.service_lock.release()
+            # Keep this run busy until all engine workers have exited, including
+            # when initialization or the optimizer raises an exception.
+            with self.lifecycle_lock:
+                if self.cmd_loop is not None:
+                    self.cmd_loop.request_stop()
+                self.stop_failed = not self._stop_learning_service(service)
+            if service.engine_thread is not None and service.engine_thread.ident is not None:
+                service.engine_thread.join()
+            with self.lifecycle_lock:
+                cmd_stopped = self.stop_cmd_loop()
+                self.stop_failed = self.stop_failed or not cmd_stopped
+                logger.debug("Interface::learn_task.finally: Releasing service lock")
+                self.service_lock.release()
         return result
     
     def stop_service(self):
+        """Request learning cancellation; keep the XML-RPC server running.
+
+        True acknowledges the stop request, not physical standstill. Callers
+        must also wait for is_busy() == False and confirm Core is idle.
+        """
         logger.debug("Interface::stop_service")
-        """Stop the learning process, if possible save all results and stop the robot"""
-        self.stop_cmd_loop()
-        # self.stop_telemetry()
-        if self.service is not None:
-            self.service.stop()
+        with self.lifecycle_lock:
+            self.stop_requested.set()
+            if self.cmd_loop is not None:
+                self.cmd_loop.request_stop()
+            stopped = True
+            if self.service is not None and (self.service_lock.locked() or self.stop_failed):
+                stopped = self._stop_learning_service(self.service)
+            # Request the learning stop before optional command-loop cleanup.
+            cmd_stopped = self.stop_cmd_loop()
+            self.stop_failed = not (stopped and cmd_stopped)
+            return not self.stop_failed
+
+    @staticmethod
+    def _stop_learning_service(service):
+        try:
+            return service.stop() is True
+        except Exception:
+            logger.exception("Learning stop request failed; retry stop_service.")
+            return False
     
     def pause_service(self):
         logger.debug("Interface::Pause()")
-        if self.service is not None:
-            self.service.pause()
+        with self.lifecycle_lock:
+            if self.service is not None:
+                self.service.pause()
     
     def resume_service(self):
         logger.debug("Interface::resume()")
-        if self.service is not None:
-            self.service.start()
+        with self.lifecycle_lock:
+            if self.stop_requested.is_set() or self.stop_failed:
+                return False
+            if self.service is not None:
+                return self.service.start()
+            return False
 
     def is_ready(self, agents) -> bool:
-        if self.service_lock.locked() is True:
+        if self.is_busy():
             logger.debug("Interface::is_ready.locked")
             return False
         for a in agents:
@@ -178,12 +229,12 @@ class Interface:
 
     def is_busy(self) -> bool:
         #logger.debug("Interface::is_busy.locked: " + str(self.service_lock.locked()))
-        return self.service_lock.locked()
+        return self.service_lock.locked() or self.stop_failed
     
     def status(self, agent: str = "localhost") -> dict:
         """"return status of service: [learning, thinking, ready, ]"""
         response = {}
-        response["is_busy"] = self.service_lock.locked()
+        response["is_busy"] = self.is_busy()
         mios_state = call_method(agent, self.mios_port, "get_state")
         if mios_state is not None:
             if "current_task" in mios_state["result"]:
@@ -194,14 +245,15 @@ class Interface:
 
     def wait_for_service(self):
         logger.debug("Interface::wait_for_service")
-        while self.is_busy():
+        while True:
+            with self.lifecycle_lock:
+                if not self.is_busy():
+                    if self.service is None:
+                        return None
+                    result = self.service.result
+                    self.service = None
+                    return result
             time.sleep(1)
-        if self.service == None:
-            return None
-        result = self.service.result
-        del self.service
-        self.service = None
-        return result
 
     def start_global_database(self):
         logger.debug("interface.start_global_database")
@@ -221,16 +273,28 @@ class Interface:
 
     def start_cmd_loop(self, cmd):
         logger.debug("interface::start_cmd_loop() with cmd:\n"+str(cmd))
-        if not self.cmd_loop:
-            self.cmd_loop = CMDLoop(cmd)
-            self.cmd_loop.start()
+        with self.lifecycle_lock:
+            if self.stop_failed:
+                return False
+            if not self.cmd_loop:
+                self.cmd_loop = CMDLoop(cmd)
+                self.cmd_loop.start()
+                return True
+            return False
     
     def stop_cmd_loop(self):
         logger.debug("interface::stop_cmd_loop()")
-        if self.cmd_loop:
-            self.cmd_loop.stop()
-        self.cmd_loop = None
+        with self.lifecycle_lock:
+            if self.cmd_loop:
+                try:
+                    if self.cmd_loop.stop() is not True:
+                        return False
+                except Exception:
+                    logger.exception("Command-loop stop failed; retry stop_service.")
+                    return False
+                self.cmd_loop = None
         logger.debug("interface::stop_cmd_loop: stopped successfully")
+        return True
 
     # def start_telemetry(self, ip, port):
     #     logger.debug("interface::start_telemetry with ip "+str(ip)+" and port "+str(port))

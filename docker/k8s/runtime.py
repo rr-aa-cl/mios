@@ -199,7 +199,8 @@ def main():
         check_owned_ports(mls_pid(), [ml_port])
         socket.setdefaulttimeout(5)
         with ServerProxy(f"http://127.0.0.1:{ml_port}/", allow_none=True) as service:
-            service.stop_service()
+            if service.stop_service() is False:
+                raise RuntimeError("MLS did not acknowledge learning cancellation")
     else:
         raise ValueError("Expected control, core, mls, probe-core, probe-mls, or stop-mls")
 

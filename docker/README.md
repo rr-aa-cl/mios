@@ -465,6 +465,59 @@ python3 -c "from xmlrpc.client import ServerProxy; print(ServerProxy('http://127
 or robot readiness. Starting MLS does not launch a learning trial; Control
 and Core must also be running before using the learning example below.
 
+### Stop learning through the MLS API
+
+For persistent `not in self.free_agents` or assigned-worker messages, see
+[Diagnose an assigned learning agent](../docs/learning-agent-waits.md).
+
+`stop_service()` on XML-RPC port `8000` cancels the current learning run;
+the MLS server and container remain running so another run can be started.
+It latches cancellation during initialization, stops the current Core task
+with recovery disabled and its queue cleared, and prevents further setup,
+trial, reset, or rescue commands. Paused learning cannot resume after a stop.
+
+The updated method returns `True` when the stop request is acknowledged, or
+`False` when a Core stop or optional command-loop shutdown could not be
+confirmed. An RPC timeout also leaves the outcome unconfirmed; retry the
+same method. Wait
+for `is_busy()` to become `False` and for Core `get_state` to report
+`status: Idle`, `current_task: IdleTask`, and `control_active: false` before
+starting another run. Result storage can keep MLS busy after the arm task
+has stopped. A confirmed stop does not open the gripper or run error recovery.
+
+For example, from a laptop that can reach `nuc3`:
+
+```python
+from xmlrpc.client import ServerProxy, Transport
+
+class StopTransport(Transport):
+    def make_connection(self, host):
+        connection = super().make_connection(host)
+        connection.timeout = 20
+        return connection
+
+with ServerProxy("http://10.180.68.124:8000", allow_none=True,
+                 transport=StopTransport()) as mls:
+    print("Stop acknowledged:", mls.stop_service())
+    print("Learning still busy:", mls.is_busy())
+```
+
+Use the node's current reachable IP; `127.0.0.1` refers to the machine or
+container running the client. From another Pod in the cluster, the runtime
+Service is `http://mios-runtime.nuc3.svc.cluster.local:8000`.
+`ml_service/example_learning.py` also supplies `stop_learning(host)`, which
+requests both MLS/Core stops and checks that both return to idle.
+
+Older images return `None` from `stop_service()` and only clear local loop
+flags; an active Core task or reset movement can continue. To deploy the
+fix, rebuild `mios_ml_service`, publish it with a new tag/digest, and update
+the MLS image in `docker/k8s/kustomization.yaml`. Apply it using the
+[supervised replacement procedure](#examples-and-supervised-replacement)
+after the robot is stopped. Reusing a cached `latest` image with
+`IfNotPresent` will not load the changed code. The API is application-level
+cancellation; use the robot's stop controls when an immediate physical stop
+is needed.
+
 ### Run learning from the host or a laptop
 
 Keep Control, Core, ML, and MongoDB running, with the object grasped and the
@@ -487,7 +540,10 @@ From the repository root, run supervised learning:
 .venv/bin/python ml_service/example_learning.py
 ```
 
-The current configuration uses five trials, one candidate at a time. Core
+The current configuration keeps the requested 1,500-trial budget, one
+candidate at a time. Check the nominal profile with the
+[insertion diagnostic](../docs/insertion-diagnostic.md) before resuming
+exploration. Core
 activates and releases effort control for each control call. The controller
 checks stationary joints at each activation, so skills must finish before
 the next skill acquires control. Manual controller activation is not required. Keep an operator supervising the physical trials. Local
@@ -500,17 +556,27 @@ initial travel, contact search, and the return after each trial:
 | Stage | Speed | Acceleration |
 | --- | --- | --- |
 | Initial joint travel to approach | 0.10 rad/s | 0.20 rad/s² |
+| Insertion's initial Cartesian approach (every candidate) | 0.02 m/s / 0.10 rad/s | 0.10 m/s² / 0.20 rad/s² |
 | First candidate's contact search | 0.02 m/s | Factory seed (0.05 m/s²) |
 | Extraction translation / rotation | 0.02 m/s / 0.10 rad/s | 0.10 m/s² / 0.20 rad/s² |
 | Joint return, rescue, termination | 0.05 rad/s | 0.10 rad/s² |
 
 `FIRST_CONTACT_SPEED` changes only the first candidate's contact speed.
-Later candidates can vary within the original learning ranges. The return
+The insertion's initial Cartesian approach speed and acceleration remain
+fixed for every candidate. Later candidates can vary contact speed and
+other learned parameters within the original learning ranges. The return
 settings apply to every trial, including both extraction phases; joint
 speed alone does not control extraction. These are trajectory settings;
 actual speed also depends on tracking and Control effort limits. Active
 learning controls the arm's pose and resists manual displacement. Diagnose
 reported twist-limit failures before another physical trial.
+
+The engine also saves each pending candidate before dispatch and retains
+its context and received replies if completion or reset fails. This engine
+change requires rebuilding and deploying the MLS image; copying the client
+script alone does not enable it. See the diagnostic guide's
+[candidate evidence workflow](../docs/insertion-diagnostic.md#7-review-the-revised-approach-and-preserve-an-interrupted-learning-candidate)
+for the read-only export procedure.
 
 The learning host argument must identify the deployment where both the Core
 Portal (port 12000) and ML service (fixed port 8000 in this example) are
@@ -549,7 +615,7 @@ uses ordered termination and a shared 90-second Pod grace period.
 ## Kubernetes deployment
 
 [`docker/k8s`](k8s/) supplies one `mios-runtime` Deployment in namespace
-`mios`: one Pod, `replicas: 1`, and `strategy: Recreate`. Use Kubernetes
+`nuc3`: one Pod, `replicas: 1`, and `strategy: Recreate`. Use Kubernetes
 **1.33 or newer** on the commissioned Linux amd64 robot node. Control and
 Core are native sidecars (`initContainers` with `restartPolicy: Always`);
 startup probes gate Control → Core → MLS. Kubernetes stops the main MLS
@@ -562,11 +628,11 @@ These manifests have not been applied to or commissioned on a cluster here.
 ### Configure the node and images
 
 Use the existing [image build instructions](#build-and-start-the-stack).
-Before applying, edit the following in `docker/k8s`:
+Before applying, review the following in `docker/k8s`:
 
-- In `runtime.yml`, replace `REPLACE_WITH_ROBOT_NODE` in the
-  `kubernetes.io/hostname` selector with the actual robot node's label value.
-  Keep the Linux/amd64 selectors and the single-replica deployment.
+- `runtime.yml` pins the Pod containing Control, Core, and MLS to `nuc3`
+  using `kubernetes.io/hostname: nuc3`. The node must have that hostname label
+  and satisfy the Linux/amd64 selectors. Keep the single-replica deployment.
 - Edit the `mios-runtime-config` literals in `kustomization.yaml` for
   `ROBOT_IP`, `ROS_DOMAIN_ID`, service ports, CPU masks, Mongo settings, and
   task/gripper gates. Match port changes in `runtime.yml` and the clients;
@@ -599,17 +665,54 @@ MongoDB remains a separately managed service on the robot node, normally
 `127.0.0.1:27017`; an existing host-accessible Docker Mongo container can
 remain running. Core's Mongo host is hardcoded to localhost. Pointing MLS
 at external Mongo alone is insufficient; external Mongo requires application
-changes. No Mongo workload or persistent database volume is included here.
+changes. To provide Mongo on `nuc3`, use the optional
+[MongoDB manifests](#mongodb-on-nuc3) below. They are applied separately from
+the main Kustomization so runtime updates do not modify an existing database.
 
 Retain the [commissioned real-time host settings](#real-time-cpu-placement).
-The Control image fixes its controller thread to CPU 6, reserves sibling
-CPU 7, and defaults workers to `0-5,8-19`. Core/MLS use the same non-RT mask
-through `sched_setaffinity`, not a Kubernetes cgroup cpuset reservation. For
-another CPU topology, change the image's installed controller YAML and the
-helper/config masks together. `MIOS_CONTROL_RT_CPU=6` validates availability;
-it does not change the image's controller YAML. Keep kubelet, ordinary OS
-work, and other workloads off CPUs 6–7; avoid CPU Manager static allocations
-that exclude CPU 6 or the workers from this Pod's effective cgroup CPU set.
+The Control image fixes its controller thread to CPU 6. The Kubernetes
+configuration uses robot IP `192.168.3.100` and sets
+`MIOS_CONTROL_WORKER_CPUS=0-5,7-13,15` and
+`MIOS_NONRT_CPUS=0-5,7-13,15` for `nuc3`'s reported CPUs 0–15 and SMT
+sibling pair 6,14. CPUs 16–19 from the Docker defaults are unavailable to
+this Pod. Core/MLS use
+the same non-RT mask through `sched_setaffinity`, which does not reserve
+CPUs exclusively in Kubernetes.
+
+These masks exclude CPUs 6 and 14. Before teaching, verify CPU 6's actual SMT
+sibling with `cat /sys/devices/system/cpu/cpu6/topology/thread_siblings_list`;
+CPU 7 was the sibling on the original Docker host. Keep kubelet,
+ordinary OS work, and other workloads off the controller CPU and its sibling.
+Changing the controller CPU requires updating the image's installed
+controller YAML and the helper/config masks together.
+`MIOS_CONTROL_RT_CPU=6` only validates availability; it does not change the
+image's controller YAML. Avoid CPU Manager allocations that exclude the
+controller or worker CPUs from this Pod's effective cgroup CPU set.
+
+The host IRQ service is separate from the Pod configuration. The
+`docker/k8s/nuc3-nic-irq.conf` systemd drop-in sets its
+`ROBOT_IP=192.168.3.100`, `MIOS_CONTROL_CPU=6`, and
+`MIOS_FRANKA_IRQ_PRIORITY=90`; the shipped base unit's IP belongs to the
+original Docker host. Install this drop-in on `nuc3` as
+`/etc/systemd/system/mios-franka-nic-irq.service.d/20-nuc3.conf` before
+starting the service. It is a host file, not a Kubernetes resource, and
+`kubectl apply -k` does not install it. Install the current
+`tools/pin_franka_nic_irq.sh`, which discovers every MSI/MSI-X queue IRQ and
+matches IRQ threads by number, including truncated names. The `igc` interface
+on `nuc3` uses queue names such as `enp3s0-TxRx-2`; checking only the bare
+`enp3s0` interrupt misses its data queues. The `e1000e` module settings above
+do not apply to this driver. Stop the whole MIOS runtime and confirm its
+Pod has terminated before applying NIC settings, which can interrupt the
+robot link. Verify effective IRQ affinity and FIFO priority afterwards.
+
+If Control logs `Requested CPUs [...], allowed [...]`, startup stopped
+before launching ROS because the configured mask was reduced by the host
+or its cgroup restrictions. The returned mask is not a complete inventory
+of the node's CPUs. Correct both worker masks in `kustomization.yaml` to
+use available CPUs and retain the strict check in `runtime.py`. Changing
+only these masks needs no image rebuild: copy the updated configuration to
+the deployment folder and run `kubectl apply -k .`. The generated ConfigMap
+hash replaces the Pod. Core and MLS wait until Control's startup succeeds.
 
 Control runs as non-privileged root with `SYS_NICE`, `SYS_RESOURCE`, and
 `IPC_LOCK`; its helper raises `rtprio` to 99 and removes the memlock limit.
@@ -620,6 +723,66 @@ not set `privileged: true` on the containers. Check cluster admission and
 node runtime policies before deployment. The existing
 [readiness checker](#check-readiness-before-deployment) covers the Docker/
 Compose host and images, not Kubernetes CRI or admission certification.
+
+### MongoDB on nuc3
+
+[`k8s/mongo.yml`](k8s/mongo.yml) runs `DaemonSet/mongo` in namespace `nuc3`,
+pinned to node hostname `nuc3`. It matches the supplied `nuc2` deployment's
+`mongo:7.0.14`, `/data/db` mount, CPU/memory requests (`1`, `1Gi`), limits
+(`2`, `5Gi`), and liveness/readiness timing. A startup probe additionally
+allows database recovery before liveness checks begin. The `machine-type`
+label from `nuc2` is not required on the target node.
+
+Mongo uses host networking and binds explicitly to `127.0.0.1:27017` for
+Core/MLS on the same node. No Mongo Service is needed. This supplies local
+database access without exposing an unauthenticated listener on the node's
+LAN interfaces; the official image otherwise adds `--bind_ip_all` when no
+binding is supplied. See the [Mongo image entrypoint](https://github.com/docker-library/mongo/blob/master/docker-entrypoint.sh).
+
+An earlier cluster inventory already showed `nuc3/mongo-7dkst` running.
+Check the existing workload and its claim before applying these files:
+
+```bash
+kubectl -n nuc3 get daemonset/mongo persistentvolumeclaim/mongo-data-dir -o yaml
+kubectl -n nuc3 get pods -l name=mongo -o wide
+kubectl -n nuc2 get pvc mongo-data-dir -o yaml
+kubectl get storageclass
+```
+
+If the existing `nuc3` Mongo already serves MIOS, reuse it and skip deployment.
+Keep its PVC and its current configuration, including any authentication or
+remote clients. If replacing an existing DaemonSet, first stop active
+teaching/learning, compare its configuration with this file, and update its
+GitOps source if it is managed there. Do not start a second database on the
+same host port or mount one database directory into two Mongo processes.
+
+For a new database, [`k8s/mongo-pvc.yml`](k8s/mongo-pvc.yml) supplies a
+**10Gi example**, using the cluster's default StorageClass. The provided Pod
+description did not include the original claim's capacity or StorageClass;
+match those from the `nuc2` PVC output before creating the new claim. If
+there is no default class, set `storageClassName` to an available class.
+Reuse an existing `nuc3/mongo-data-dir` claim without applying this template.
+Claims are namespace-scoped; a new `nuc3` claim starts a separate database
+and does not copy `nuc2`'s records. See [Kubernetes persistent volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/).
+
+From the repository root, after reviewing the storage settings:
+
+```bash
+kubectl apply -f docker/k8s/namespace.yml
+# Only when nuc3/mongo-data-dir does not already exist:
+kubectl apply -f docker/k8s/mongo-pvc.yml
+kubectl apply -f docker/k8s/mongo.yml
+kubectl -n nuc3 rollout status daemonset/mongo --timeout=10m
+kubectl -n nuc3 exec daemonset/mongo -- mongosh --quiet --host 127.0.0.1 \
+  --eval 'quit(db.adminCommand({ping: 1}).ok === 1 ? 0 : 1)'
+kubectl -n nuc3 logs daemonset/mongo --tail=100
+```
+
+When the files are copied into your online deployment folder, use
+`kubectl apply -f mongo-pvc.yml` (new claim only) and
+`kubectl apply -f mongo.yml`. Applying the main `kustomization.yaml` does
+not install Mongo. Keep the PVC when stopping or updating Mongo; deleting
+it can also delete the stored data, depending on the StorageClass policy.
 
 ### Deploy and inspect
 
@@ -645,12 +808,20 @@ the old three-container stack, leaving MongoDB running. Then deploy:
 ```bash
 docker compose -f docker/ros2/docker-compose.runtime.yml down
 kubectl apply -k docker/k8s
-kubectl -n mios rollout status deployment/mios-runtime --timeout=10m
-kubectl -n mios get pods -o wide
-kubectl -n mios logs deployment/mios-runtime -c control
-kubectl -n mios logs deployment/mios-runtime -c core
-kubectl -n mios logs deployment/mios-runtime -c mls
+kubectl -n nuc3 rollout status deployment/mios-runtime --timeout=10m
+kubectl -n nuc3 get pods -o wide
+kubectl -n nuc3 logs deployment/mios-runtime -c control
+kubectl -n nuc3 logs deployment/mios-runtime -c core
+kubectl -n nuc3 logs deployment/mios-runtime -c mls
 ```
+
+When already in `docker/k8s`, use `kubectl apply -k .`. Using `-f ./`
+submits `Kustomization` as an API resource and skips the generated ConfigMaps;
+use `-k` to render them. No Kustomization CRD is needed.
+Changing namespaces creates separate resources: before deployment, stop and
+remove the previous `mios-runtime` workload in its actual namespace (an earlier
+`-f ./` may have used your context's namespace), preserving that namespace
+and its other resources and data.
 
 Control holds `/var/lock/mios-fr3/fci.lock` through a hostPath volume to
 exclude another cooperating Kubernetes FCI owner on the same node. The
@@ -666,8 +837,8 @@ service's readiness check. Busy services can remain ready; readiness is not
 authorization for motion. To inspect Control and its configured controllers:
 
 ```bash
-kubectl -n mios exec deployment/mios-runtime -c control -- /usr/local/bin/check_control_ready.sh
-kubectl -n mios exec deployment/mios-runtime -c control -- bash --noprofile --norc -c '
+kubectl -n nuc3 exec deployment/mios-runtime -c control -- /usr/local/bin/check_control_ready.sh
+kubectl -n nuc3 exec deployment/mios-runtime -c control -- bash --noprofile --norc -c '
   source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash &&
   ros2 control list_controllers -c /controller_manager
 '
@@ -676,6 +847,49 @@ kubectl -n mios exec deployment/mios-runtime -c control -- bash --noprofile --no
 Check effective CPU affinity, cgroup CPU availability, RT limits, and NIC IRQ
 placement on the running node as well as the manifest. Before teaching,
 expect effort and joint-position controllers inactive and Core idle.
+
+### Pending Pod: host ports already reserved
+
+If `FailedScheduling` reports one node without free requested ports and six
+nodes that do not match the selector, the selector is working: `nuc3` is the
+eligible node, but another scheduled Pod reserves at least one of TCP
+12000/12001/8000/8001 or UDP 12002. This scheduler check uses Pod port
+reservations, so the conflicting application need not be listening yet.
+See the [Kubernetes host-port scheduler check](https://github.com/kubernetes/kubernetes/blob/v1.33.0/pkg/scheduler/framework/plugins/nodeports/node_ports.go).
+
+Find the owner across all namespaces, including old deployments left by
+the namespace change or an earlier `kubectl apply -f ./`:
+
+```bash
+kubectl get pods -A --field-selector spec.nodeName=nuc3 \
+  -o 'custom-columns=NAMESPACE:.metadata.namespace,POD:.metadata.name,STATUS:.status.phase,HOSTPORTS:.spec.containers[*].ports[*].hostPort,OWNER:.metadata.ownerReferences[0].name'
+kubectl get deployments -A -l app.kubernetes.io/name=mios-runtime
+```
+
+Inspect the conflicting Pod with `kubectl -n NAMESPACE describe pod POD` to
+confirm the port/protocol and owner. A ReplicaSet owner can be traced to
+its Deployment with `kubectl -n NAMESPACE describe replicaset REPLICASET`.
+An old MIOS Pod may be in `mios`, `default`, or your earlier context's namespace.
+
+If the owner is a confirmed obsolete `mios-runtime` Deployment in another
+namespace, stop its active teaching/learning and confirm Core is idle, then
+scale down that Deployment. Replace the namespace below with the verified
+old namespace; keep the new `nuc3` Deployment running:
+
+```bash
+OLD_NAMESPACE=replace-with-confirmed-old-namespace
+kubectl -n "$OLD_NAMESPACE" scale deployment/mios-runtime --replicas=0
+kubectl -n "$OLD_NAMESPACE" wait --for=delete pod \
+  -l app.kubernetes.io/name=mios-runtime --timeout=180s
+kubectl -n nuc3 rollout status deployment/mios-runtime --timeout=10m
+```
+
+The pending Pod retries automatically after the old Pod terminates. Deleting
+only an old Pod lets its controller recreate it. Keep the `hostPort`
+declarations and node selector; resolve the reservation with its owner if
+it belongs to another application. Docker containers and ordinary host
+processes can also cause bind failures after scheduling, but are not the
+Pod reservations reported by this scheduler error.
 
 ### Examples and supervised replacement
 
@@ -700,10 +914,10 @@ available, and Control's wrapper forwards SIGINT to its launch process.
 The shared Pod grace period remains 90 seconds.
 
 ```bash
-kubectl -n mios scale deployment/mios-runtime --replicas=0
-kubectl -n mios wait --for=delete pod -l app.kubernetes.io/name=mios-runtime --timeout=180s
-kubectl -n mios scale deployment/mios-runtime --replicas=1
-kubectl -n mios rollout status deployment/mios-runtime --timeout=10m
+kubectl -n nuc3 scale deployment/mios-runtime --replicas=0
+kubectl -n nuc3 wait --for=delete pod -l app.kubernetes.io/name=mios-runtime --timeout=180s
+kubectl -n nuc3 scale deployment/mios-runtime --replicas=1
+kubectl -n nuc3 rollout status deployment/mios-runtime --timeout=10m
 ```
 
 For changed images/config, render and review the changes, then replace the

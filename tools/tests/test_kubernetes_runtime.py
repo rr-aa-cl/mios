@@ -236,6 +236,27 @@ class KubernetesRuntimeTests(unittest.TestCase):
         self.proxy.assert_not_called()
         self.socket_timeout.assert_not_called()
 
+    def test_stop_hook_reports_rejected_cancellation(self):
+        self.patch(runtime, "mls_pid").return_value = 91
+        self.patch(runtime, "check_owned_ports")
+        self.proxy.side_effect = None
+        service = self.proxy.return_value.__enter__.return_value
+        service.stop_service.return_value = False
+        with self.assertRaisesRegex(RuntimeError, "did not acknowledge"):
+            self.run_mode("stop-mls")
+        service.stop_service.assert_called_once_with()
+        self.assert_no_exec()
+
+    def test_stop_hook_accepts_legacy_no_return_value(self):
+        self.patch(runtime, "mls_pid").return_value = 91
+        self.patch(runtime, "check_owned_ports")
+        self.proxy.side_effect = None
+        service = self.proxy.return_value.__enter__.return_value
+        service.stop_service.return_value = None
+        self.run_mode("stop-mls")
+        service.stop_service.assert_called_once_with()
+        self.assert_no_exec()
+
     def test_mls_marker_rejects_reused_pid_foreign_parent_and_missing_file(self):
         self.marker.read_text.return_value = "91 456\n"
         identity = self.patch(runtime, "process_identity")

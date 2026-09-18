@@ -2,6 +2,7 @@ import json
 import websockets
 import asyncio
 import socket
+from contextlib import suppress
 from concurrent.futures import TimeoutError as ConnectionTimeoutError
 import websockets.exceptions
 
@@ -19,14 +20,35 @@ class Client:
 
 
 async def send(hostname, port=12000, endpoint="mios/core", request=None, timeout=100, silent=False,
-               *, open_timeout=10, close_timeout=100):
+               *, open_timeout=10, close_timeout=100, cancel_event=None):
     uri = "ws://" + hostname + ":" + str(port) + "/" +endpoint
-    try:
+
+    async def exchange():
         async with websockets.connect(uri, open_timeout=open_timeout, close_timeout=close_timeout) as websocket:
             message = json.dumps(request)
             await websocket.send(message)
             response = await asyncio.wait_for(websocket.recv(), timeout=timeout)
             return json.loads(response)
+
+    try:
+        if cancel_event is None:
+            return await exchange()
+        if cancel_event.is_set():
+            return None
+        # Watch the existing connection, including discovery/opening. Reissuing
+        # wait_for_task would leave another blocking observer on Core each time.
+        operation = asyncio.create_task(exchange())
+        try:
+            while not operation.done():
+                if cancel_event.is_set():
+                    return None
+                await asyncio.wait({operation}, timeout=0.05)
+            return None if cancel_event.is_set() else await operation
+        finally:
+            if not operation.done():
+                operation.cancel()
+            with suppress(asyncio.CancelledError):
+                await operation
     except ConnectionRefusedError as e:
         if silent is False:
             print("ConnectionRefusedError: ")
@@ -78,45 +100,57 @@ def call_server(hostname, port, endpoint, request, timeout):
 
 
 def call_method(hostname: str, port: int, method, payload=None, endpoint="mios/core", timeout=100, silent=False,
-                *, open_timeout=10, close_timeout=100):
+                *, open_timeout=10, close_timeout=100, cancel_event=None):
+    loop = asyncio.new_event_loop()
     try:
         request = {
             "method": method,
             "request": payload
         }
-        asyncio.set_event_loop(asyncio.new_event_loop())
-        return asyncio.get_event_loop().run_until_complete(send(hostname, request=request, port=port,
+        asyncio.set_event_loop(loop)
+        return loop.run_until_complete(send(hostname, request=request, port=port,
                                                                 endpoint=endpoint, timeout=timeout, silent=silent,
-                                                                open_timeout=open_timeout, close_timeout=close_timeout))
+                                                                open_timeout=open_timeout, close_timeout=close_timeout,
+                                                                cancel_event=cancel_event))
     except socket.gaierror as e:
         print(e)
         print("Hostname: " + hostname + ", port:" + str(port) + ", endpoint: " + endpoint)
         return None
+    finally:
+        loop.close()
+        asyncio.set_event_loop(None)
 
 
-def start_task(hostname: str, task: str, parameters={}, queue=False, port = 12000):
+def start_task(hostname: str, task: str, parameters={}, queue=False, port = 12000,
+               *, timeout=100, open_timeout=10, close_timeout=100):
     payload = {
         "task": task,
         "parameters": parameters,
         "queue": queue
     }
-    return call_method(hostname, port, "start_task", payload)
+    return call_method(hostname, port, "start_task", payload, timeout=timeout,
+                       open_timeout=open_timeout, close_timeout=close_timeout)
 
 
-def stop_task(hostname: str, raise_exception=False, recover=False, empty_queue=False, port = 12000):
+def stop_task(hostname: str, raise_exception=False, recover=False, empty_queue=False, port = 12000,
+              *, timeout=100, open_timeout=10, close_timeout=100):
     payload = {
         "raise_exception": raise_exception,
         "recover": recover,
         "empty_queue": empty_queue
     }
-    return call_method(hostname, port, "stop_task", payload)
+    return call_method(hostname, port, "stop_task", payload, timeout=timeout,
+                       open_timeout=open_timeout, close_timeout=close_timeout)
 
 
-def wait_for_task(hostname: str, task_uuid: str, port = 12000, timeout = 100):
+def wait_for_task(hostname: str, task_uuid: str, port = 12000, timeout = 100,
+                  *, open_timeout=10, close_timeout=100, cancel_event=None):
     payload = {
         "task_uuid": task_uuid
     }
-    return call_method(hostname, port, "wait_for_task", payload, timeout=timeout)
+    return call_method(hostname, port, "wait_for_task", payload, timeout=timeout,
+                       open_timeout=open_timeout, close_timeout=close_timeout,
+                       cancel_event=cancel_event)
 
 
 def start_task_and_wait(hostname, task, parameters, queue=False):

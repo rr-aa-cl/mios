@@ -23,7 +23,7 @@ spec:
     spec:
       # Select exactly the commissioned, directly robot-connected node.
       nodeSelector:
-        kubernetes.io/hostname: REPLACE_WITH_ROBOT_NODE
+        kubernetes.io/hostname: nuc3
         kubernetes.io/os: linux
         kubernetes.io/arch: amd64
       hostNetwork: true
@@ -47,7 +47,7 @@ spec:
             type: DirectoryOrCreate
       initContainers:
         - name: control
-          image: mios-ros2-control:local
+          image: janine86/ros2-control
           imagePullPolicy: IfNotPresent
           restartPolicy: Always
           command: [python3, /opt/mios-k8s/runtime.py, control]
@@ -92,7 +92,7 @@ spec:
             timeoutSeconds: 2
             failureThreshold: 3
         - name: core
-          image: mios-ros2-core:local
+          image: ros2-core:latest
           imagePullPolicy: IfNotPresent
           restartPolicy: Always
           command: [python3, /opt/mios-k8s/runtime.py, core]
@@ -128,7 +128,7 @@ spec:
             failureThreshold: 3
       containers:
         - name: mls
-          image: mios-ml-service:local
+          image: mls:latest
           imagePullPolicy: IfNotPresent
           command: [python3, /opt/mios-k8s/runtime.py, mls]
           workingDir: /mios_mls

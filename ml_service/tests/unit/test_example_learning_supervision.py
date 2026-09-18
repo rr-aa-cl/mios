@@ -139,6 +139,20 @@ def _assert_motion_profiles(problem_definition, original):
     return observed_moves, observed_extractions
 
 
+def _assert_insertion_approach_profile(problem_definition, original):
+    context = copy.deepcopy(problem_definition.default_context)
+    approach = context["skills"]["insertion"]["skill"]["p0"]
+    assert approach["dX_d"] == [0.02, 0.10]
+    assert approach["ddX_d"] == [0.10, 0.20]
+    guard = context["skills"]["insertion"]["limits"]["cartesian_space"]["dX_max"]
+    assert approach["dX_d"][1] < guard[1]
+    original_approach = original.default_context["skills"]["insertion"]["skill"]["p0"]
+    for key in ("dX_d", "ddX_d"):
+        approach[key] = original_approach[key]
+    # Keep the learned ranges, forces, stiffness, and all skill guards intact.
+    assert context == original.default_context
+
+
 def test_motion_profiles_cover_return_and_termination_skills():
     problem_definition = _insertion_problem_definition()
     # The insertion factory currently has no termination instructions. Reuse
@@ -152,10 +166,10 @@ def test_motion_profiles_cover_return_and_termination_skills():
     assert ("termination_instructions", "move_approach") in moves
     assert ("termination_instructions", "extraction") in extractions
     assert problem_definition.domain.to_dict() == original.domain.to_dict()
-    assert problem_definition.default_context == original.default_context
+    _assert_insertion_approach_profile(problem_definition, original)
 
 
-def test_learning_dispatch_preserves_factory_ranges_and_p0_with_effort_joint_moves():
+def test_learning_dispatch_preserves_factory_ranges_with_slower_insertion_approach():
     original = _insertion_problem_definition()
     with contextlib.ExitStack() as stack:
         for name in ("check_learning_services", "check_taught_insertion_objects",
@@ -175,10 +189,7 @@ def test_learning_dispatch_preserves_factory_ranges_and_p0_with_effort_joint_mov
     assert problem_definition.domain.limits["p0_offset_x"] == (-0.005, 0.005)
     assert problem_definition.domain.limits["p1_dx_d"] == (0, 0.1)
     assert problem_definition.domain.limits["p2_f_push_z"] == (0, 20)
-    assert problem_definition.default_context == original.default_context
-    p0 = problem_definition.default_context["skills"]["insertion"]["skill"]["p0"]
-    assert p0["dX_d"] == [0.1, 1]
-    assert p0["ddX_d"] == [0.5, 4]
+    _assert_insertion_approach_profile(problem_definition, original)
 
     moves, extractions = _assert_motion_profiles(problem_definition, original)
     assert moves == [("setup_instructions", "move"),
@@ -186,8 +197,25 @@ def test_learning_dispatch_preserves_factory_ranges_and_p0_with_effort_joint_mov
                      ("rescue_instructions", "move_back")]
     assert extractions == [("reset_instructions", "extraction")]
     assert learn.call_args.kwargs["knowledge"]["parameters"]["p1_dx_d"] == 0.02
-    assert configuration.n_trials == 5
+    assert configuration.n_trials == 1500
     assert configuration.batch_width == 1
     assert problem_definition.n_variations == 1
     assert learn.call_args.kwargs["n_iterations"] == 1
     assert learn.call_args.kwargs["wait"] is True
+
+
+def test_candidate_mapping_preserves_approach_profile_at_both_domain_extremes():
+    problem_definition = _insertion_problem_definition()
+    examples.configure_supervised_motion(problem_definition)
+    service = mock.Mock(problem_definition=problem_definition)
+    service.set_nested_parameter.side_effect = lambda *args: BaseService.set_nested_parameter(service, *args)
+
+    for normalized in (0.0, 1.0):
+        values = problem_definition.domain.denormalize(
+            np.full(len(problem_definition.domain.limits), normalized))
+        context = BaseService.update_default_context(service, values)
+        approach = context["skills"]["insertion"]["skill"]["p0"]
+        assert approach["dX_d"] == [0.02, 0.10]
+        assert approach["ddX_d"] == [0.10, 0.20]
+        assert approach["DeltaX"][0] == (-0.005 if normalized == 0.0 else 0.005)
+        assert approach["DeltaX"][3] == (-10.0 if normalized == 0.0 else 10.0)

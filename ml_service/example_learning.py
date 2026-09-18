@@ -10,9 +10,11 @@ from definitions.cost_functions import TimeMetric
 from definitions.service_configs import SVMLearner, CMAESLearner
 from utils.ws_client import call_method
 
-# Fixed motion settings: contact search, initial joint travel, and return.
+# Fixed motion settings: insertion approach, initial joint travel, and return.
 # The contact speed seeds the first candidate; subsequent trials learn it.
 FIRST_CONTACT_SPEED = 0.02  # m/s
+INSERTION_APPROACH_SPEED = (0.02, 0.10)  # m/s, rad/s
+INSERTION_APPROACH_ACCELERATION = (0.10, 0.20)  # m/s^2, rad/s^2
 SUPERVISED_SETUP_JOINT_SPEED = 0.10  # rad/s
 SUPERVISED_SETUP_JOINT_ACCELERATION = 0.20  # rad/s^2
 SUPERVISED_RETURN_JOINT_SPEED = 0.05  # rad/s
@@ -44,8 +46,12 @@ def supervised_nominal_knowledge(problem_definition):
 
 
 def configure_supervised_motion(problem_definition):
-    """Configure initial travel and slower extraction/return independently.
+    """Configure insertion approach, joint travel, and extraction/return.
 
+    The factory's insertion p0 angular target equals the measured twist guard.
+    Give the trajectory a lower speed and acceleration without changing the
+    guard, stiffness, or learned offsets. This p0 profile applies to every
+    candidate; p1/p2 parameters still come from the learning domain.
     ``MoveToPoseJoint`` defaults to MIOS control mode 3, which emits a joint
     velocity command.  The commissioned effort controller deliberately does
     not accept that command mode; it accepts the joint-torque pipeline's
@@ -53,6 +59,18 @@ def configure_supervised_motion(problem_definition):
     ``TaxExtraction`` uses separate Cartesian limits for withdrawal and
     orientation; changing joint travel speed alone cannot slow that return.
     """
+    context = problem_definition.default_context
+    parameters = context.get("parameters", {})
+    for name, skill_type in zip(parameters.get("skill_names", []),
+                                parameters.get("skill_types", [])):
+        if skill_type != "TaxInsertion":
+            continue
+        approach = context.get("skills", {}).get(name, {}).get("skill", {}).get("p0")
+        if not isinstance(approach, dict):
+            raise RuntimeError(f"Missing p0 in insertion skill {name!r}.")
+        approach["dX_d"] = list(INSERTION_APPROACH_SPEED)
+        approach["ddX_d"] = list(INSERTION_APPROACH_ACCELERATION)
+
     instruction_groups = (
         (problem_definition.setup_instructions,
          SUPERVISED_SETUP_JOINT_SPEED, SUPERVISED_SETUP_JOINT_ACCELERATION),
@@ -240,10 +258,9 @@ def example_learning(robot: str = "127.0.0.1", insertable="janinetest1"):
         #         request probability: new way of sharing knowledge - defines the probability for the ml_service to request knowledge from other agents instead of creating a new trial itself.
         #                              0.4 is a good probability in multi robot systems
         #         request_probability_decrease: whether the request probability should be automaticcly adapt to success rate (True) or be keept steady (False)
-        # Run a small supervised learning sequence one physical candidate at
-        # a time. The batch width remains one, so the service cannot launch a
-        # group of arm motions concurrently.
-        sc = SVMLearner(5, 1, 0, True, False, -1, True).get_configuration()
+        # Keep the requested experiment budget and dispatch one candidate at
+        # a time. Validate the nominal diagnostic before resuming exploration.
+        sc = SVMLearner(1500, 1, 0, True, False, -1, True).get_configuration()
         
         # Knowledge source definition:
         # all information regarding where to find knowledge and kind of knowledge should be used

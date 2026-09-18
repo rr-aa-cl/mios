@@ -57,16 +57,16 @@ class LearningWorkflowTests(unittest.TestCase):
         self.assertIs(True, self.learn.call_args.kwargs["wait"])
         self.assertEqual(1, self.learn.call_args.kwargs["n_iterations"])
         self.assertEqual(8000, self.learn.call_args.kwargs["service_port"])
-        self.assertEqual(5, self.learner.call_args.args[0])
+        self.assertEqual(1500, self.learner.call_args.args[0])
         self.assertEqual(1, self.learner.call_args.args[1])
         self.assertEqual(1, self.problem.n_variations)
         self.stop.assert_not_called()
 
-    def test_defaults_match_the_taught_name_and_preserve_five_candidates(self):
+    def test_defaults_match_the_taught_name_and_preserve_requested_trial_budget(self):
         examples.example_learning()
         self.objects.assert_called_once_with("127.0.0.1", "janinetest1")
         self.setter.assert_called_once_with("127.0.0.1", "janinetest1")
-        self.assertEqual(5, self.learner.call_args.args[0])
+        self.assertEqual(1500, self.learner.call_args.args[0])
 
     def test_service_failure_prevents_object_lookup_and_all_task_changes(self):
         self.services.side_effect = RuntimeError("ML service unavailable")

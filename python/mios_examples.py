@@ -442,20 +442,37 @@ def _teach_insertion(robot: str, insertable: str, already_grasped: bool = False)
     )
     handguiding(robot, "Extract robot and object again. [Press any key to continue]")
 
-def handguiding(robot: str, message: str = "Press any key to stop"):
-    """Run a Portal task; Core owns the ROS controller lifecycle."""
+def handguiding(robot: str, message: str = "Press any key to stop", *, mode: str = "free"):
+    """Guide manually, optionally resisting translation or rotation.
+
+    ``rotate`` resists translation; ``translate`` resists rotation. Core uses
+    the measured pose when control starts as the spring reference, not a saved
+    object pose. These constraints can yield under the controller's limits.
+    Core owns the ROS controller lifecycle in all three modes.
+    """
+    if mode not in ("free", "rotate", "translate"):
+        raise ValueError("HandGuiding mode must be 'free', 'rotate', or 'translate'.")
     context = {
         "skill": {
             "record_trajectory": False,
-            #"recording_length": 1,
-            #"recording_name": None,
-
         },
         "control": {
             "control_mode": 0
         }
     }
+    # HandGuiding interprets these as Cartesian X/Y/Z/Rx/Ry/Rz springs.
+    # Constrain entire translation/rotation groups so no frame override is
+    # needed. Core supplies its existing gains; do not override robot limits.
+    if mode == "rotate":
+        context["skill"]["fix_dim"] = [1, 1, 1, 0, 0, 0]
+    elif mode == "translate":
+        context["skill"]["fix_dim"] = [0, 0, 0, 1, 1, 1]
     _require_idle_core(robot)
+    if mode != "free":
+        held = "position" if mode == "rotate" else "orientation"
+        print(f"HandGuiding {mode}: resist changes from the current {held} with springs. "
+              "Start fully clear of the fixture; holding can yield under the torque limits. "
+              "Press Enter in this terminal to stop.", flush=True)
     t = Task(robot)
     t.add_skill("record_trajectory", "HandGuiding", context)
     try:

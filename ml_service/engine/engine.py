@@ -4,11 +4,14 @@ import logging
 import os
 from threading import Thread
 from threading import Lock
+from threading import Event
 from queue import Queue
 from queue import Empty
 from copy import deepcopy
 import uuid
 import numpy as np
+from pymongo import timeout as mongo_timeout
+from pymongo.write_concern import WriteConcern
 from mongodb_client.mongodb_client import MongoDBClient
 from problem_definition.problem_definition import ProblemDefinition
 #from collective_manager.video_recorder import FFMpegWebcamRecorder
@@ -78,8 +81,8 @@ class Engine:
             agents = set()
         self.mios_port = mios_port
         self.mongo_port = mongo_port
-        self.agents = agents
-        self.free_agents = agents
+        self.agents = set(agents)
+        self.free_agents = set(agents)
         self.queued_trials = Queue()
         self.completed_trials = dict()
         # Redis is only an optional notification sink.  Keep it disabled by
@@ -113,6 +116,14 @@ class Engine:
         self.meta_data = dict()
 
         self.keep_running = False
+        self.stop_requested = Event()
+        self.started = Event()
+        self._dispatch_lock = Lock()
+        self._stop_lock = Lock()
+        self._owned_agents = set()
+        self._cleanup_complete = Event()
+        self._cleanup_complete.set()
+        self.worker_threads = {}
         self.pause_execution = False
         self.max_trial_repeats = 3
 
@@ -166,7 +177,70 @@ class Engine:
 
     def stop(self):
         logger.info("Engine.stop() - received stop signal.")
+        self.stop_requested.set()
         self.keep_running = False
+        # Mutating requests already in flight must precede the Core stop. New
+        # requests recheck the sticky latch while holding this same lock.
+        if not self._stop_lock.acquire(timeout=2.5):
+            logger.error("Another Core stop attempt is still pending.")
+            return False
+        try:
+            if not self._dispatch_lock.acquire(timeout=2.5):
+                logger.error("A Core dispatch is still pending; stop will follow its reply.")
+                return False
+            try:
+                return self._stop_owned_agents()
+            finally:
+                self._dispatch_lock.release()
+        finally:
+            self._stop_lock.release()
+
+    def _stop_owned_agents(self):
+        success = True
+        try:
+            for agent in tuple(self._owned_agents):
+                try:
+                    response = stop_task(agent, raise_exception=False, recover=False,
+                                         empty_queue=True, port=self.mios_port,
+                                         timeout=5, open_timeout=2, close_timeout=0.2)
+                    result = response.get("result") if isinstance(response, dict) else None
+                    accepted = isinstance(result, dict) and result.get("result") is True
+                except Exception:
+                    logger.exception("Core stop request failed for agent %s", agent)
+                    accepted = False
+                if accepted:
+                    self._owned_agents.discard(agent)
+                else:
+                    logger.error("Core did not acknowledge stopping agent %s; retry stop_service.", agent)
+                    success = False
+        finally:
+            if not self._owned_agents:
+                self._cleanup_complete.set()
+        return success
+
+    def _running(self):
+        return self.keep_running and not self.stop_requested.is_set()
+
+    def _dispatch_instruction(self, agent, method, parameters):
+        with self._dispatch_lock:
+            if not self._running():
+                return None
+            already_owned = agent in self._owned_agents
+            self._owned_agents.add(agent)
+            self._cleanup_complete.clear()
+            response = call_method(agent, self.mios_port, method, parameters,
+                                   timeout=100, open_timeout=2, close_timeout=0.2)
+            result = response.get("result") if isinstance(response, dict) else None
+            # This reply cannot resolve an earlier task whose acknowledgement
+            # was lost; keep that ownership until task completion or Core stop.
+            if not already_owned and isinstance(result, dict) and result.get("result") is True:
+                self._owned_agents.discard(agent)
+                if not self._owned_agents:
+                    self._cleanup_complete.set()
+        if self.stop_requested.is_set():
+            self.stop()
+            return None
+        return response
     
     def pause(self):
         self.pause_execution = True
@@ -176,7 +250,7 @@ class Engine:
 
     def push_trial(self, trial: Trial) -> str:
         #logger.debug("Engine.push_trial()")
-        if trial.is_valid() is False:
+        if self.stop_requested.is_set() or trial.is_valid() is False:
             return "INVALID"
         trial.trial_uuid = str(uuid.uuid4())
         self.cnt_pushed += 1
@@ -184,17 +258,22 @@ class Engine:
         return trial.trial_uuid
 
     def wait_for_trial(self, trial_uuid: str, max_wait_time: float) -> Trial:
-        #logger.debug("Engine.wait_for_trial(" + trial_uuid + ", " + str(max_wait_time) + ")")
-        t_0 = time.time()
+        deadline = time.monotonic() + max_wait_time
         while trial_uuid not in self.completed_trials:
-            # logger.debug("Engine::wait_for_trial.loop")
-            if time.time() - t_0 > max_wait_time:
-                logger.error("Wait time for trial has been exceeded.")
-                return Trial(dict(), [],[], dict(), False)
-            if self.keep_running is False:
-                logger.error("Service has been stopped.")
-                return Trial(dict(), [],[], dict(), False)
-            # time.sleep(0.1)
+            if not self._running():
+                raise StopService(f"Learning stopped while waiting for trial {trial_uuid}.")
+            if time.monotonic() >= deadline:
+                message = (
+                    f"Trial {trial_uuid} did not complete within {max_wait_time} seconds; "
+                    "cancelling learning."
+                )
+                logger.error(message)
+                # A timeout is not a completed trial. Cancel outstanding work
+                # before the optimizer can consume a fabricated cost or queue
+                # another candidate while this worker still owns the robot.
+                self.stop()
+                raise StopService(message)
+            self.stop_requested.wait(0.05)
 
         self.cnt_completed += 1
 
@@ -222,83 +301,150 @@ class Engine:
 
     def main_loop(self):
         logger.debug("Engine.main_loop()")
+        self.keep_running = not self.stop_requested.is_set()
+        self.started.set()
+        try:
+            self._main_loop()
+        except BaseException:
+            self.stop()
+            raise
+        finally:
+            # Do not let BaseService/Interface advertise idle while a worker
+            # can still dispatch or an owned Core task has an unresolved stop.
+            for worker in self.worker_threads.values():
+                if worker is not None and worker.ident is not None:
+                    worker.join()
+            if self.stop_requested.is_set():
+                self._cleanup_complete.wait()
+            self.keep_running = False
+            self.write_final_results()
+
+    def _main_loop(self):
         self.cnt_trial = 1
-        self.keep_running = True
-        worker_threads = dict()
+        worker_threads = self.worker_threads
         for a in self.agents:
             worker_threads[a] = None
 
         logger.info("Setting up experiment.")
-        for a in self.free_agents:
-            worker_threads[a] = Thread(target=self.setup_experiment, args=(a,))
+        for a in self.free_agents.copy():
+            if not self._running():
+                break
+            worker_threads[a] = Thread(target=self._setup_worker, args=(a,))
             worker_threads[a].start()
 
-        for a in self.free_agents:
-            worker_threads[a].join()
+        for worker in worker_threads.values():
+            if worker is not None and worker.ident is not None:
+                worker.join()
 
         logger.info("Setup procedure done.")
 
-        while self.keep_running is True:
+        # Keep each agent's log deadline across queued trials.
+        next_assigned_agent_log = {}
+        while self._running():
             try:
                 #logger.debug("Engine::main_loop.get_trial")
-                trial = self.queued_trials.get(False)
+                trial = self.queued_trials.get(timeout=0.1)
                 # logger.debug("Engine::main_loop.new_trial: " + trial.trial_uuid)
             except Empty:
-                # time.sleep(0.1)
+                # self.stop_requested.wait(0.1)
                 continue
             # logger.debug("Engine.main_loop.while1: For trial_uuid: " + trial.trial_uuid)
             thread_started = False
-            while self.keep_running is True and thread_started is False:
+            next_wait_log = 0.0
+            while self._running() and thread_started is False:
                 # logger.debug("Engine::main_loop.while2")
                 if self.is_learned() is True:
                     logger.debug("Engine::main_loop.is_learned")
                     self.keep_running = False
                     continue
+                now = time.monotonic()
+                log_wait_state = now >= next_wait_log
+                if log_wait_state:
+                    next_wait_log = now + 5.0
                 for a in self.agents.copy():
                     if a not in self.free_agents:
-                        logger.debug("Agent " + a + " not in self.free_agents")
-                        # time.sleep(1)
+                        wait_log_time = time.monotonic()
+                        if wait_log_time >= next_assigned_agent_log.get(a, wait_log_time):
+                            logger.debug("Agent %s is still assigned to a trial worker; waiting.", a)
+                            next_assigned_agent_log[a] = wait_log_time + 30.0
                         continue
                     if worker_threads[a] is not None and worker_threads[a].is_alive() is True:
-                        # logger.debug("Thread of agent " + a + " is alive")
-                        time.sleep(0.1)
+                        if log_wait_state:
+                            logger.debug("Agent %s is finishing worker cleanup; waiting.", a)
                         continue
 
                     # logger.debug("Engine.main_loop().is_busy(" + a + ")")
-                    response = call_method(a, self.mios_port, "is_busy")
+                    response = call_method(a, self.mios_port, "is_busy", timeout=5,
+                                           open_timeout=2, close_timeout=0.2,
+                                           cancel_event=self.stop_requested)
                     if response is None:
-                        logger.debug("is_busy on agent " + a + ": response is None")
-                        # time.sleep(1)
+                        if log_wait_state:
+                            logger.debug("is_busy on agent %s: response is None", a)
                         continue
                     if response["result"]["busy"] is True:
-                        logger.debug("is_busy on agent " + a + ": is busy")
-                        # time.sleep(1)
+                        if log_wait_state:
+                            logger.debug("is_busy on agent %s: is busy", a)
                         continue
+
+                    if not self._running():
+                        break
 
                     self.free_agents.remove(a)
                     trial.agent = a
-                    worker_threads[a] = Thread(target=self._worker_loop, args=(a, trial,))
-                    worker_threads[a].start()
+                    worker = None
+                    try:
+                        worker = Thread(target=self._worker_loop, args=(a, trial,))
+                        worker_threads[a] = worker
+                        worker.start()
+                    except BaseException:
+                        # A worker that never started cannot run its finally
+                        # block. Restore only that reservation; a started
+                        # worker still owns its own release/queue accounting.
+                        if worker is None or worker.ident is None:
+                            worker_threads[a] = None
+                            self.free_agents.add(a)
+                            self.queued_trials.task_done()
+                        raise
                     thread_started = True
                     break
 
-            # time.sleep(0.1)
+                if not thread_started:
+                    # Scan every agent before waiting, so an occupied worker
+                    # cannot delay another free robot. Yield CPU while all
+                    # agents are unavailable, and wake immediately on stop.
+                    self.stop_requested.wait(0.1)
+
+            if not thread_started:
+                self.queued_trials.task_done()
+
+            # self.stop_requested.wait(0.1)
 
         logger.debug("Engine::main_loop.after_loop")
-        self.write_final_results()
-        for a in self.agents:
-            if worker_threads[a] is not None:
-                worker_threads[a].join(5)
         logger.debug("Engine::main_loop.last_line")
+
+    def _setup_worker(self, agent):
+        try:
+            self.setup_experiment(agent)
+        except Exception:
+            logger.exception("Experiment setup failed for agent %s", agent)
+            self.stop()
 
     def _worker_loop(self, agent: str, trial: Trial):
         logger.debug("Engine._worker_loop(" + agent + ", " + trial.trial_uuid + ")")
-        self._run_trial(agent, trial)
-        self.free_agents.add(agent)
+        try:
+            self._run_trial(agent, trial)
+        except Exception:
+            logger.exception("Trial worker failed for agent %s", agent)
+            self.stop()
+        finally:
+            self.free_agents.add(agent)
+            self.queued_trials.task_done()
         logger.debug("Free agent " + agent)
         #self.video_recorder.stop_stream()
 
     def _run_trial(self, agent: str, trial: Trial):
+        if not self._running():
+            return
         if trial.is_valid() is False:
             raise ProblemDefinitionError
         trial.trial_number = self.cnt_trial
@@ -328,18 +474,19 @@ class Engine:
         #     pass
 
         for i in range(self.problem_definition.n_variations):
+            if not self._running():
+                return
             #print("Running variation " + str(i))
             self.problem_definition.apply_object_modifiers(trial.task_context)
             result, variation_result = self._execute_task(agent, trial)
-            if self.keep_running is True:
+            if self._running():
                 if result is False:
                     logger.warning("Could not execute task for agent " + agent + ". Trial will be re-inserted into queue.")
                     self.queued_trials.put(trial)
                     self._reset_task(agent, trial)
                     return
             else:
-                self._reset_task(agent, trial)
-                break
+                return
 
             theta = np.zeros((1, (len(self.problem_definition.domain.limits))))
             for j in range(len(self.problem_definition.domain.limits)):
@@ -361,6 +508,8 @@ class Engine:
                 self.y = np.append(self.y, trial.task_result.q_metric.final_cost)
             self.lock_data.release()
             self._reset_task(agent, trial)
+            if not self._running():
+                return
             
             if self.problem_definition.variate_only_success is True and trial.task_result.q_metric.success is False:
                 #logger.debug("ENGINE: do not variate")
@@ -377,8 +526,11 @@ class Engine:
         trial.task_result.q_metric.heuristic = trial.task_result.q_metric.heuristic * (1 - trial.task_result.q_metric.success_rate)
         if trial.log is True:
             self.write_task_result(trial)
+        else:
+            # Even opt-out trials have transient dispatch evidence. Discard it
+            # only after insertion and reset finish; retain it on interruption.
+            self._write_results_update({"$unset": {self._pending_trial_path(trial): ""}})
         #logger.debug("Engine::_worker_loop.trial_done")
-        self.queued_trials.task_done()
         cost = str(variation_result.q_metric.final_cost) if variation_result is not None else "None"
         logger.debug(f"\n#################################\n ENGINE: success {str(trial.task_result.q_metric.success)} on trial {str(trial.trial_number)}\n"
             f"ENGINE: Cost: {cost} \n#################################\n")
@@ -412,7 +564,7 @@ class Engine:
         # logger.debug("Engine::_execute_task.task_context: " + str(trial.task_context))
         cnt_repeat = -1
         variation_result = None
-        while cnt_repeat < self.max_trial_repeats and self.keep_running is True:
+        while cnt_repeat < self.max_trial_repeats and self._running():
             logger.debug("Engine::_execute_task.loop")
             cnt_repeat += 1
             for skill_name in trial.task_context["skills"].keys():
@@ -424,38 +576,64 @@ class Engine:
                         "description":"Execution of a trial as part of the learning process.",
                     }
             #print(str(trial.task_context))
-            result, task_uuid = self._start_task(agent, trial.task_context)
+            result, task_uuid = self._start_task(agent, trial.task_context, trial=trial)
             if result is False:
                 logger.error("Result was False after start_task")
                 return False, None
-            result, variation_result = self._wait_for_task(agent, task_uuid)
+            trial.task_uuid = task_uuid
+            result, variation_result = self._wait_for_task(agent, task_uuid, trial=trial)
             if result is False:
                 logger.error("Result was False after wait_for_task")
                 return False, None
-            if "TaskError" in trial.task_result.errors:
-                logger.error("Received an task error, service will terminate.")
+            if any(error in variation_result.errors
+                   for error in ("TaskError", "RealTimeError", "UserStopped")):
+                logger.error("Core task %s on agent %s reported %s; cancelling learning.",
+                             task_uuid, agent, variation_result.errors)
                 self.stop()
-                return False, None
-            if "RealTimeError" in trial.task_result.errors:
-                logger.warning("Received a realtime error, trial will be repeated.")
-                time.sleep(1)
-                return False, None
-            if "UserStopped" in trial.task_result.errors:
-                logger.warning("Received a user stop error, trial will be repeated.")
-                time.sleep(1)
                 return False, None
             variation_result.q_metric = self.problem_definition.calculate_cost(variation_result)
             #print(variation_result.q_metric.final_cost)
             break
         #logger.debug("Engine::_execute_task.end")
-        return cnt_repeat < self.max_trial_repeats and self.keep_running is True, variation_result
+        return cnt_repeat < self.max_trial_repeats and self._running(), variation_result
+
+    def _instruction_preconditions_met(self, agent, instruction, phase):
+        preconditions = instruction.get("preconditions", {})
+        if preconditions == {}:
+            return True
+        if not isinstance(preconditions, dict):
+            logger.error("Invalid %s preconditions for agent %s; cancelling learning.", phase, agent)
+            self.stop()
+            return False
+        response = call_method(agent, self.mios_port, "get_state", timeout=5,
+                               open_timeout=2, close_timeout=0.2,
+                               cancel_event=self.stop_requested)
+        if not self._running():
+            return False
+        state = response.get("result") if isinstance(response, dict) else None
+        if (not isinstance(state, dict)
+                or state.get("result") is not True
+                or state.get("error") not in (None, "")
+                or state.get("error_message") not in (None, "")
+                or state.get("status") not in ("Idle", "Move")
+                or any(key not in state for key in preconditions)):
+            logger.error("Cannot confirm %s preconditions for agent %s; cancelling learning. State: %r",
+                         phase, agent, response)
+            self.stop()
+            return False
+        if any(state[key] != expected for key, expected in preconditions.items()):
+            logger.warning("%s preconditions do not match on agent %s; skipping instruction.", phase, agent)
+            return False
+        return True
 
     def _reset_task(self, agent: str, trial: Trial):
         logger.debug("Engine::_reset_task()")
         for i in trial.reset_instructions:
+            if not self._running():
+                return
             #logger.debug("Engine::_reset_task.instructions: " + str(i["parameters"]))
             instruction_done = False
-            while instruction_done is False:
+            while not instruction_done and self._running():
                 #logger.debug("Engine::_reset_task.loop")
                 # append meta information to skill context
                 for skill_name in i["parameters"]["skills"].keys():
@@ -465,37 +643,30 @@ class Engine:
                         i["parameters"]["skills"][skill_name]["skill"]["meta"] = {
                             "description":"Resetting the trial to initial state"
                         }
-                if "preconditions" in i:
-                    status = call_method(agent,self.mios_port,"get_state")
-                    for precondition in i["preconditions"]:
-                        if status is not None:  
-                            if status["result"][precondition] != i["preconditions"][precondition]:
-                                logger.debug("precondition for reset not fullfilled. Skipping reset...")
-                                instruction_done = True
-                                continue
-                        else:
-                            time.sleep(1)
-                            continue
+                if not self._instruction_preconditions_met(agent, i, "Reset"):
+                    break
                 if i["method"] == "start_task":
                     result, task_uuid = self._start_task(agent, i["parameters"])
                     if result is False:
                         logger.debug("Reset task could not be started.")
                         logger.debug(result)
-                        time.sleep(1)
+                        self.stop_requested.wait(1)
                         continue
 
                     result, task_result = self._wait_for_task(agent, task_uuid)
+                    if not self._running():
+                        return
                     if result is False or task_result.q_metric.success is False:
                         logger.debug("Could not wait for reset_task. do rescue...")
                         logger.debug(result)
-                        time.sleep(1)
+                        self.stop_requested.wait(1)
                         self._rescue_task(agent, trial)
                         continue
                 else:
-                    response = call_method(agent, self.mios_port, i["method"], i["parameters"])
+                    response = self._dispatch_instruction(agent, i["method"], i["parameters"])
                     if response is None:
                         logger.debug(response)
-                        time.sleep(1)
+                        self.stop_requested.wait(1)
                         continue
 
                 instruction_done = True
@@ -504,6 +675,8 @@ class Engine:
     def _rescue_task(self,agent:str, trial:Trial):
         logger.debug("Engine::_rescue_task() - try this move once")
         for i in trial.rescue_instructions:
+            if not self._running():
+                return
             for skill_name in i["parameters"]["skills"].keys():
                 i["parameters"]["skills"][skill_name]["skill"] = udpate_dict(i["parameters"]["skills"][skill_name]["skill"], self.problem_definition.add_skill_info)
                 if "log_name" in self.problem_definition.add_skill_info:
@@ -511,40 +684,33 @@ class Engine:
                     i["parameters"]["skills"][skill_name]["skill"]["meta"] = {
                         "description":"Resetting the trial to initial state didn\'t work. Try to move away from stuck position"
                     }
-            if "preconditions" in i:
-                status = call_method(agent,self.mios_port,"get_state")
-                for precondition in i["preconditions"]:
-                    if status is not None:  
-                        if status["result"][precondition] != i["preconditions"][precondition]:
-                            logger.debug("precondition for reset not fullfilled. Skipping reset...")
-                            instruction_done = True
-                            continue
-                    else:
-                        time.sleep(1)
-                        continue
+            if not self._instruction_preconditions_met(agent, i, "Rescue"):
+                continue
             if i["method"] == "start_task":
                 result, task_uuid = self._start_task(agent, i["parameters"])
                 if result is False:
                     logger.debug("Rescue task could not be started.")
                     logger.debug(result)
-                    time.sleep(1)
+                    self.stop_requested.wait(1)
                     continue
 
                 result, task_result = self._wait_for_task(agent, task_uuid)
                 if result is False or task_result.q_metric.success is False:
                     logger.debug("Could not wait for rescue_task.")
                     logger.debug(result)
-                    time.sleep(1)
+                    self.stop_requested.wait(1)
                     continue
             else:
-                response = call_method(agent, self.mios_port, i["method"], i["parameters"])
+                response = self._dispatch_instruction(agent, i["method"], i["parameters"])
                 if response is None:
                     logger.debug(response)
-                    time.sleep(1)
+                    self.stop_requested.wait(1)
                     continue
 
-    def _start_task(self, agent: str, task_context: dict) -> (bool, str):
+    def _start_task(self, agent: str, task_context: dict, *, trial=None) -> (bool, str):
         task_uuid = "INVALID"
+        if not self._running():
+            return False, task_uuid
         task_name = task_context["name"]
         for skill_name in task_context["skills"].keys():
                 if "log_name" in task_context["skills"][skill_name]["skill"]:
@@ -552,61 +718,113 @@ class Engine:
                     task_context["skills"][skill_name]["skill"]["meta"]["context"] = copy.deepcopy(task_context["skills"][skill_name])
                     task_context["skills"][skill_name]["skill"]["meta"]["time"] = time.time()
                     task_context["skills"][skill_name]["skill"]["meta"]["tags"] = self.problem_definition.tags
-        while(self.pause_execution and self.keep_running):
-            time.sleep(1)
+        while self.pause_execution and self._running():
+            self.stop_requested.wait(0.05)
         logger.info("_start_task::Executing task " + str(task_name) + " on agent " + str(agent) + ".")
         # logger.debug("Task context: " + str(task_context))
-        response = start_task(agent, task_name, task_context, True, port=self.mios_port)
-        if response is None:
-            logger.warning("Agent " + agent + " is not responding.")
-            time.sleep(1)
+        dispatched = False
+        with self._dispatch_lock:
+            if not self._running():
+                return False, task_uuid
+            if trial is not None:
+                self._record_pending_trial(agent, trial, task_context)
+            # A stop can set the latch during the database write without
+            # acquiring this lock. Skip dispatch, then retry stop outside the
+            # lock if its earlier lock acquisition timed out during the save.
+            if self._running():
+                self._owned_agents.add(agent)
+                self._cleanup_complete.clear()
+                dispatched = True
+                response = start_task(agent, task_name, task_context, True, port=self.mios_port,
+                                      timeout=5, open_timeout=2, close_timeout=0.2)
+        if not self._running():
+            self.stop()
+        if not dispatched:
+            return False, task_uuid
+        if trial is not None:
+            result = response.get("result") if isinstance(response, dict) else None
+            self._update_pending_trial(trial,
+                dispatch_state="start_reply_missing" if response is None else "start_reply_received",
+                start_reply_at_utc=self._get_log_timestamp(), start_response=response,
+                task_uuid=result.get("task_uuid") if isinstance(result, dict) else None)
+        if not self._running():
+            return False, task_uuid
+        result = response.get("result") if isinstance(response, dict) else None
+        accepted = (isinstance(result, dict) and result.get("result") is True
+                    and result.get("error") in (None, "")
+                    and result.get("error_message") in (None, ""))
+        reply_uuid = result.get("task_uuid") if isinstance(result, dict) else None
+        if (not accepted or not isinstance(reply_uuid, str)
+                or not reply_uuid.strip() or reply_uuid == "INVALID"):
+            # A missing acknowledgement may still mean Core queued the task.
+            # Never turn this into reset/rescue motion or another start request.
+            logger.error("Core did not confirm starting task %s on agent %s; "
+                         "cancelling learning. Response: %r", task_name, agent, response)
+            self.stop()
             return False, task_uuid
 
-        if "result" not in response or "result" not in response["result"]:
-            logger.warning("I received no proper response from agent " + agent + ".")
-            logger.debug("Response was: " + str(response))
-            time.sleep(1)
-            return False, task_uuid
-
-        if response["result"]["result"] is False:
-            logger.warning("The task " + task_name + " could not be started on agent " + agent + ".")
-            logger.warning("Received message: " + response["result"]["error"])
-            time.sleep(1)
-            return False, task_uuid
-
-        if "task_uuid" not in response["result"] or response["result"]["task_uuid"] == "INVALID":
-            logger.error("Response from agent " + agent + " did not contain a valid task uuid.")
-            time.sleep(1)
-            return False, task_uuid
-
-        task_uuid = response["result"]["task_uuid"]
+        task_uuid = reply_uuid
+        logger.debug("Core accepted task %s on agent %s with UUID %s.", task_name, agent, task_uuid)
         self.skill_count+=1
         return True, task_uuid
 
-    def _wait_for_task(self, agent: str, task_uuid: str) -> (bool, TaskResult):
+    def _wait_for_task(self, agent: str, task_uuid: str, *, trial=None) -> (bool, TaskResult):
         task_result = TaskResult()
-        response = wait_for_task(agent, task_uuid, port=self.mios_port)
+        logger.debug("Waiting for Core task %s on agent %s.", task_uuid, agent)
+        response = wait_for_task(agent, task_uuid, port=self.mios_port,
+                                 open_timeout=2, close_timeout=0.2,
+                                 cancel_event=self.stop_requested)
         # logger.debug("Engine._wait_for_task.response: " + str(response))
-        if response is None:
-            logger.warning("Agent " + agent + " is not responding.")
-            time.sleep(1)
+        if response is None and self._running():
+            logger.error(
+                "Lost Core response while waiting for task %s on agent %s; "
+                "completion is unknown, cancelling learning.", task_uuid, agent)
+            # The task may still be running. Request cancellation instead of
+            # dispatching reset/rescue motions after an unconfirmed result.
+            self.stop()
+        if trial is not None:
+            self._update_pending_trial(trial,
+                dispatch_state="completion_reply_missing" if response is None else "completion_reply_received",
+                completion_reply_at_utc=self._get_log_timestamp(), completion_response=response)
+        if not self._running():
             return False, task_result
 
-        if "result" not in response or "result" not in response["result"] or "task_result" not in response["result"]:
-            logger.warning("I received no proper response from agent " + agent + ".")
-            logger.debug("Response was: " + str(response))
-            time.sleep(1)
+        result = response.get("result") if isinstance(response, dict) else None
+        completion = result.get("task_result") if isinstance(result, dict) else None
+        valid = (isinstance(result, dict) and result.get("result") is True
+                 and result.get("error") in (None, "")
+                 and result.get("error_message") in (None, "")
+                 and isinstance(completion, dict)
+                 and type(completion.get("success")) is bool
+                 and isinstance(completion.get("error"), list)
+                 and all(isinstance(error, str) for error in completion["error"])
+                 and isinstance(completion.get("skill_results"), dict)
+                 and completion.get("exception", False) is False
+                 and completion.get("external_stop", False) is False)
+        if valid:
+            try:
+                valid = task_result.calculate(completion) is True
+            except (AttributeError, KeyError, TypeError, ValueError):
+                valid = False
+        if not valid:
+            logger.error("Core did not confirm a usable completion for task %s on agent %s; "
+                         "cancelling learning. Response: %r", task_uuid, agent, response)
+            self.stop()
             return False, task_result
 
-        if response["result"]["result"] is False:
-            logger.warning("The task " + task_uuid + " was not properly executed on " + agent + ".")
-            logger.warning("Received message: " + response["result"]["error"])
-            time.sleep(1)
+        # Setup/reset/rescue also use this method directly. A physical task
+        # fault must cancel those phases before their retry loops can run.
+        if any(error in task_result.errors
+               for error in ("TaskError", "RealTimeError", "UserStopped")):
+            logger.error("Core task %s on agent %s reported %s; cancelling learning.",
+                         task_uuid, agent, task_result.errors)
+            self.stop()
             return False, task_result
 
-        if task_result.calculate(response["result"]["task_result"]) is False:
-            time.sleep(1)
-            return False, task_result
+        with self._dispatch_lock:
+            self._owned_agents.discard(agent)
+            if not self._owned_agents:
+                self._cleanup_complete.set()
 
         #logger.debug("Engine::_wait_for_task.end")
         return True, task_result
@@ -614,6 +832,8 @@ class Engine:
     def setup_experiment(self, agent):
         logger.debug("Engine::_reset_task()")
         for i in self.problem_definition.setup_instructions:
+            if not self._running():
+                return
             logger.debug("Engine::setup_experiment.instructions: " + str(i["parameters"]))
             for skill_name in i["parameters"]["skills"]:
                 i["parameters"]["skills"][skill_name]["skill"] = udpate_dict(i["parameters"]["skills"][skill_name]["skill"], self.problem_definition.add_skill_info)
@@ -623,27 +843,27 @@ class Engine:
                         "description": "Setting up the experiment to initial state."
                     }
             instruction_done = False
-            while instruction_done is False:
+            while not instruction_done and self._running():
                 logger.debug("Engine::_reset_task.loop")
                 if i["method"] == "start_task":
                     result, task_uuid = self._start_task(agent, i["parameters"])
                     if result is False:
                         logger.debug("Setup experiment could not be started.")
                         logger.debug(result)
-                        time.sleep(1)
+                        self.stop_requested.wait(1)
                         continue
 
                     result, task_result = self._wait_for_task(agent, task_uuid)
                     if result is False or task_result.q_metric.success is False:
                         logger.debug("Could not wait for setup_experiment")
                         logger.debug(result)
-                        time.sleep(1)
+                        self.stop_requested.wait(1)
                         continue
                 else:
-                    response = call_method(agent, self.mios_port, i["method"], i["parameters"])
+                    response = self._dispatch_instruction(agent, i["method"], i["parameters"])
                     if response is None:
                         logger.debug(response)
-                        time.sleep(1)
+                        self.stop_requested.wait(1)
                         continue
 
                 instruction_done = True
@@ -658,6 +878,41 @@ class Engine:
         self.database_results_collection.update_one({"_id": self.database_results_id},
                                                     {"$set": {"final_results": data}}, upsert=False)
 
+    @staticmethod
+    def _pending_trial_path(trial):
+        key = trial.trial_uuid
+        if not isinstance(key, str) or not key or key == "INVALID" or "." in key or "$" in key:
+            raise RuntimeError("Cannot audit a trial without a valid trial UUID.")
+        return "pending_trials." + key
+
+    def _write_results_update(self, update):
+        """Require an acknowledged, journaled write to the existing run record."""
+        if self.database_results_collection is None or self.database_results_id is None:
+            raise RuntimeError("Cannot persist trial evidence before the results database is initialized.")
+        # Audit I/O must not hold dispatch/cleanup indefinitely if Mongo is down.
+        with mongo_timeout(5):
+            collection = self.database_results_collection.with_options(
+                write_concern=WriteConcern(w=1, j=True, wtimeout=5000))
+            result = collection.update_one({"_id": self.database_results_id}, deepcopy(update), upsert=False)
+        if result.acknowledged is not True or result.matched_count != 1:
+            raise RuntimeError("Trial evidence write was not acknowledged or its run record is missing.")
+
+    def _record_pending_trial(self, agent, trial, task_context):
+        timestamp = self._get_log_timestamp()
+        data = {"trial_uuid": trial.trial_uuid, "trial_number": trial.trial_number,
+                "agent": agent, "theta": {key: float(value) for key, value in trial.theta.items()},
+                "task_context": task_context, "t_0": trial.t_0,
+                "prepared_at_utc": timestamp, "updated_at_utc": timestamp,
+                "dispatch_state": "prepared"}
+        # Keep only this trial's latest in-flight attempt; completed trials use
+        # the existing compact nN records, rather than accumulating contexts.
+        self._write_results_update({"$set": {self._pending_trial_path(trial): data}})
+
+    def _update_pending_trial(self, trial, **fields):
+        fields["updated_at_utc"] = self._get_log_timestamp()
+        prefix = self._pending_trial_path(trial) + "."
+        self._write_results_update({"$set": {prefix + key: value for key, value in fields.items()}})
+
     def write_task_result(self, trial: Trial):
         data = {
             "theta": trial.theta,
@@ -668,6 +923,10 @@ class Engine:
             "agent": trial.agent,
             "external": trial.external
         }
+        data.update({"trial_uuid": trial.trial_uuid, "task_uuid": trial.task_uuid})
         #logger.debug("Engine::write_task_result.data: " + str(data))
-        self.database_results_collection.update_one({'_id': self.database_results_id},
-                                                    {'$set': {'n' + str(trial.trial_number): data}}, upsert=False)
+        # One atomic update prevents losing the pending evidence before the
+        # ordinary completed result is durable. An ambiguous acknowledgement
+        # leaves either the pending evidence or the committed compact result.
+        self._write_results_update({"$set": {"n" + str(trial.trial_number): data},
+                                    "$unset": {self._pending_trial_path(trial): ""}})
