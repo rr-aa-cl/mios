@@ -48,9 +48,9 @@ RUN --mount=type=cache,target=/root/.conan \
          -DENABLE_TESTING=ON \
          -DENABLE_PCH=OFF \
     && cmake --build /opt/mios/build \
-         --target mios_ros2_core_runtime test_joint_position_pipeline --parallel 2 \
+         --target mios_ros2_core_runtime test_joint_position_pipeline test_ff_strategy --parallel 2 \
     && ctest --test-dir /opt/mios/build --output-on-failure \
-         --tests-regex '^test_joint_position_pipeline$' \
+         --tests-regex '^(test_joint_position_pipeline|test_ff_strategy)$' \
     && cmake --install /opt/mios/build \
     && install -d /opt/mios/install/lib \
     && cp -a /opt/mios/build/lib/boost/libboost_*.so* /opt/mios/install/lib/

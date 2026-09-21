@@ -1,6 +1,5 @@
 add_subdirectory(core)
 add_subdirectory(controller_pipeline)
-#add_subdirectory(event_publisher)
 add_subdirectory(interface)
 add_subdirectory(learning_module)
 add_subdirectory(libraries)

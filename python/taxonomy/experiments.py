@@ -1,5 +1,9 @@
-from skill_tests import *
-from test_base import start_experiment
+if __package__:
+    from .skill_tests import *
+    from .test_base import start_experiment
+else:
+    from skill_tests import *
+    from test_base import start_experiment
 
 
 def insertion_test(robot: str, insertable: str, container: str, approach: str, cf: str):

@@ -21,14 +21,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       ros-jazzy-controller-manager ros-jazzy-ros2-control \
       ros-jazzy-joint-state-broadcaster ros-jazzy-xacro
 
-# Keep apt indices for rosdep below. They are cleaned after dependency
-# resolution rather than before rosdep invokes apt-get.
+# Refresh apt indices again in the rosdep layer below: this installation
+# layer may be cached after packages have been replaced in the ROS repository.
 
 # Pin only the upstream packages required for the hardware path. The complete
 # dependency.repos also brings Gazebo, ZED, and vision packages, which are
 # deliberately excluded from this no-MoveIt/no-simulation image.
-# The upstream Noble libfranka package matches the Franka Jazzy dependency pin
-# and avoids building libfranka's test targets inside this runtime image.
+# Use the Noble libfranka build for this Ubuntu 24.04/Jazzy base. The Jammy
+# package requires a different libfmt ABI. Rebuild all consumers below when
+# changing libfranka, because its shared-library SONAME includes the minor version.
 RUN mkdir -p src \
     && git clone https://github.com/frankarobotics/franka_ros2.git src/franka_ros2 \
     && git -C src/franka_ros2 checkout ee1b79b77e473751852b4f884d1f7ce86041dfff \
@@ -39,10 +40,12 @@ RUN mkdir -p src \
     # FR3 hardware path can be built without Gazebo or MoveIt 2.
     && sed -i -E '/franka_(gazebo|mobile|example|vision_and_manipulation_kit)/d' src/franka_ros2/franka_bringup/package.xml \
     && curl --fail --location --output /tmp/libfranka.deb \
-         https://github.com/frankarobotics/libfranka/releases/download/0.20.5/libfranka_0.20.5_noble_amd64.deb \
+         https://github.com/frankarobotics/libfranka/releases/download/0.21.1/libfranka_0.21.1_noble_amd64.deb \
+    && echo 'bdab2485e91b23094140f5d13a262570f34371e5d4c22bfe537ff0503466b7c2  /tmp/libfranka.deb' | sha256sum --check --strict \
     && dpkg --install /tmp/libfranka.deb \
     && rm /tmp/libfranka.deb \
     && rosdep update \
+    && apt-get update \
     && rosdep install --ignore-src --rosdistro jazzy -y \
          --skip-keys="ament_cmake_clang_format xacro libfranka" \
          --from-paths src/franka_ros2/franka_hardware \
@@ -63,9 +66,15 @@ RUN git -C /ws/src/franka_ros2 apply --check /tmp/franka_combined_control.patch 
 # against the new controller_interface/hardware_interface ABI.
 # Exclude Franka's vendored realtime_tools 3.10.1: retain the installed 3.11.0
 # implementation rather than silently downgrading it through dependency discovery.
+COPY mios/docker/ros2/controller_manager_deactivate_switch.patch /tmp/controller_manager_deactivate_switch.patch
+COPY mios/docker/ros2/test_controller_manager_deactivate_switch.cpp /tmp/test_controller_manager_deactivate_switch.cpp
 RUN touch src/franka_ros2/realtime_tools/COLCON_IGNORE \
     && git clone --branch 4.47.0 --depth 1 https://github.com/ros-controls/ros2_control.git src/ros2_control \
     && test "$(git -C src/ros2_control rev-parse HEAD)" = df23a4b7a21cb8ea257c80ecf98e85571b50ba01 \
+    && git -C src/ros2_control apply --check /tmp/controller_manager_deactivate_switch.patch \
+    && git -C src/ros2_control apply /tmp/controller_manager_deactivate_switch.patch \
+    && cp /tmp/test_controller_manager_deactivate_switch.cpp src/ros2_control/controller_manager/test/ \
+    && rm /tmp/controller_manager_deactivate_switch.patch /tmp/test_controller_manager_deactivate_switch.cpp \
     && git clone --branch 0.4.0 --depth 1 https://github.com/ros-controls/ros2_control_cmake.git src/ros2_control_cmake \
     && test "$(git -C src/ros2_control_cmake rev-parse HEAD)" = 929a94a169b4a6255edf27dd19c694ca20092686 \
     && git clone --branch 4.40.1 --depth 1 https://github.com/ros-controls/ros2_controllers.git src/ros2_controllers \
@@ -81,16 +90,20 @@ RUN touch src/franka_ros2/realtime_tools/COLCON_IGNORE \
          --packages-up-to ros2_control joint_state_broadcaster hardware_interface_testing \
          --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DBUILD_TESTS=OFF
 
-# Compile only the upstream synchronization-policy regression test. Do not
-# install its test controllers or build the rest of the upstream test suite.
+# Compile the synchronization-policy, deactivation, and activity lifecycle
+# regressions. Do not install their test controllers or build the full suite.
 # Run with: ctest --test-dir /ws/build/controller_manager \
-#              -R '^test_sleeping_policies$' --output-on-failure
+#   -R '^(test_sleeping_policies|test_controller_manager_deactivate_switch|test_controller_manager_hardware_error_handling)$' --output-on-failure
+# Activity lifecycle: /ws/build/controller_manager/test_controller_manager \
+#   --gtest_filter='*controller_lifecycle*'
 RUN if [ "${MIOS_BUILD_TESTING}" = "ON" ]; then \
       source /opt/ros/jazzy/setup.bash \
       && source /ws/install/setup.bash \
       && cmake -S /ws/src/ros2_control/controller_manager \
            -B /ws/build/controller_manager -DBUILD_TESTING=ON \
-      && cmake --build /ws/build/controller_manager --target test_sleeping_policies; \
+      && cmake --build /ws/build/controller_manager --target \
+           test_sleeping_policies test_controller_manager_deactivate_switch \
+           test_controller_manager_hardware_error_handling test_controller_manager; \
     fi
 
 COPY mios/ros2_ws/src/mios_msgs /ws/src/mios_msgs

@@ -490,26 +490,6 @@ nlohmann::json CommandInterface::unsubscribe_telemetry(const nlohmann::json &req
     response["result"] = m_core->get_telemetry()->remove_subscriber(request["ip"]);
     return response;
 }
-//nlohmann::json CommandInterface::subscribe_to_event_stream(const nlohmann::json &request){
-//    nlohmann::json response;
-//    EventSubscriber subscriber;
-//    request["address"].get_to(subscriber.address);
-//    request["port"].get_to(subscriber.port);
-//    request["endpoint"].get_to(subscriber.endpoint);
-//    request["method_name"].get_to(subscriber.method_name);
-
-//    response["subscriber_uuid"] = EventPublisher::subscribe(subscriber);
-//    return response;
-//}
-
-//nlohmann::json CommandInterface::unsubscribe_from_event_stream(const nlohmann::json &request){
-//    nlohmann::json response;
-//    std::string subscriber_uuid;
-//    request["subscriber_uuid"].get_to(subscriber_uuid);
-//    EventPublisher::unsubscribe(subscriber_uuid);
-//    return response;
-//}
-
 nlohmann::json CommandInterface::start_desk_task(const nlohmann::json &request){
     spdlog::trace("CommandInterface:start_desk_task()");
     nlohmann::json response;

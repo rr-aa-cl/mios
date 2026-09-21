@@ -1,0 +1,163 @@
+diff --git a/controller_manager/CMakeLists.txt b/controller_manager/CMakeLists.txt
+index cf917b4..3bfd300 100644
+--- a/controller_manager/CMakeLists.txt
++++ b/controller_manager/CMakeLists.txt
+@@ -123,6 +123,16 @@ if(BUILD_TESTING)
+     ros2_control_test_assets::ros2_control_test_assets
+   )
+ 
++  ament_add_gmock(test_controller_manager_deactivate_switch
++    test/test_controller_manager_deactivate_switch.cpp
++    TIMEOUT 20
++  )
++  target_link_libraries(test_controller_manager_deactivate_switch
++    controller_manager
++    test_controller
++    ros2_control_test_assets::ros2_control_test_assets
++  )
++
+   ament_add_gmock(test_controller_manager_hardware_error_handling
+     test/test_controller_manager_hardware_error_handling.cpp
+   )
+diff --git a/controller_manager/include/controller_manager/controller_manager.hpp b/controller_manager/include/controller_manager/controller_manager.hpp
+index f386e55..11eaa2e 100644
+--- a/controller_manager/include/controller_manager/controller_manager.hpp
++++ b/controller_manager/include/controller_manager/controller_manager.hpp
+@@ -15,6 +15,7 @@
+ #ifndef CONTROLLER_MANAGER__CONTROLLER_MANAGER_HPP_
+ #define CONTROLLER_MANAGER__CONTROLLER_MANAGER_HPP_
+ 
++#include <atomic>
+ #include <map>
+ #include <memory>
+ #include <string>
+@@ -533,6 +534,8 @@ private:
+    */
+   void publish_activity();
+ 
++  void request_activity_publish();
++
+   void controller_activity_diagnostic_callback(diagnostic_updater::DiagnosticStatusWrapper & stat);
+ 
+   void hardware_components_diagnostic_callback(diagnostic_updater::DiagnosticStatusWrapper & stat);
+@@ -666,6 +669,8 @@ private:
+   std::mutex services_lock_;
+   rclcpp::Publisher<controller_manager_msgs::msg::ControllerManagerActivity>::SharedPtr
+     controller_manager_activity_publisher_;
++  std::atomic<bool> activity_publish_pending_{false};
++  rclcpp::TimerBase::SharedPtr activity_publish_timer_;
+   rclcpp::Service<controller_manager_msgs::srv::ListControllers>::SharedPtr
+     list_controllers_service_;
+   rclcpp::Service<controller_manager_msgs::srv::ListControllerTypes>::SharedPtr
+diff --git a/controller_manager/src/controller_manager.cpp b/controller_manager/src/controller_manager.cpp
+index 7956243..9702952 100644
+--- a/controller_manager/src/controller_manager.cpp
++++ b/controller_manager/src/controller_manager.cpp
+@@ -657,12 +657,23 @@ void ControllerManager::init_controller_manager()
+   controller_manager_activity_publisher_ =
+     create_publisher<controller_manager_msgs::msg::ControllerManagerActivity>(
+       "~/activity", rclcpp::QoS(1).reliable().transient_local());
++  // Hardware lifecycle changes can originate in read()/write(). Never make
++  // that real-time path wait for the list mutex held by a switching service,
++  // which itself waits for the next real-time list handoff. Coalesce requests
++  // on the executor; an event arriving during publication remains pending.
++  activity_publish_timer_ = create_wall_timer(std::chrono::milliseconds(10), [this]()
++    {
++      if (activity_publish_pending_.exchange(false, std::memory_order_acq_rel))
++      {
++        publish_activity();
++      }
++    });
+   rt_controllers_wrapper_.set_on_switch_callback(
+-    std::bind(&ControllerManager::publish_activity, this));
++    std::bind(&ControllerManager::request_activity_publish, this));
+   if (resource_manager_)
+   {
+     resource_manager_->set_on_component_state_switch_callback(
+-      std::bind(&ControllerManager::publish_activity, this));
++      std::bind(&ControllerManager::request_activity_publish, this));
+   }
+ 
+   // Setup diagnostics
+@@ -827,7 +838,7 @@ void ControllerManager::init_resource_manager(const std::string & robot_descript
+   }
+ 
+   resource_manager_->set_on_component_state_switch_callback(
+-    std::bind(&ControllerManager::publish_activity, this));
++    std::bind(&ControllerManager::request_activity_publish, this));
+ 
+   if (robot_description.empty())
+   {
+@@ -3569,7 +3580,7 @@ controller_interface::return_type ControllerManager::update(
+         controller_manager_msgs::srv::SwitchController::Request::STRICT);
+     }
+     // To publish the activity of the failing controllers and the fallback controllers
+-    publish_activity();
++    request_activity_publish();
+   }
+   resource_manager_->enforce_command_limits(period);
+ 
+@@ -3631,7 +3642,10 @@ void ControllerManager::write(const rclcpp::Time & time, const rclcpp::Duration
+   else if (result == hardware_interface::return_type::DEACTIVATE)
+   {
+     rt_buffer_.deactivate_controllers_list.clear();
+-    auto loaded_controllers = get_loaded_controllers();
++    // Keep one real-time list reference for the entire operation. Taking the
++    // service-side list mutex here can deadlock a switch awaiting RT handoff.
++    std::vector<ControllerSpec> & rt_controller_list =
++      rt_controllers_wrapper_.update_and_get_used_by_rt_list();
+     // Only stop controllers with active command interfaces to the failed_hardware_names
+     for (const auto & hardware_name : failed_hardware_names)
+     {
+@@ -3639,10 +3653,10 @@ void ControllerManager::write(const rclcpp::Time & time, const rclcpp::Duration
+       for (const auto & controller : controllers)
+       {
+         auto controller_spec = std::find_if(
+-          loaded_controllers.begin(), loaded_controllers.end(),
++          rt_controller_list.begin(), rt_controller_list.end(),
+           [&](const controller_manager::ControllerSpec & spec)
+           { return spec.c->get_name() == controller; });
+-        if (controller_spec == loaded_controllers.end())
++        if (controller_spec == rt_controller_list.end())
+         {
+           RCLCPP_WARN(
+             get_logger(),
+@@ -3666,12 +3680,11 @@ void ControllerManager::write(const rclcpp::Time & time, const rclcpp::Duration
+       "Deactivating controllers [%s] as their command interfaces are tied to DEACTIVATEing "
+       "hardware components",
+       rt_buffer_.get_concatenated_string(rt_buffer_.deactivate_controllers_list).c_str());
+-    std::vector<ControllerSpec> & rt_controller_list =
+-      rt_controllers_wrapper_.update_and_get_used_by_rt_list();
+ 
+     perform_hardware_command_mode_change(
+       rt_controller_list, {}, rt_buffer_.deactivate_controllers_list, "write");
+     deactivate_controllers(rt_controller_list, rt_buffer_.deactivate_controllers_list);
++    request_activity_publish();
+   }
+   execution_time_.write_time =
+     std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - start_time)
+@@ -4277,6 +4290,11 @@ ControllerManager::check_fallback_controllers_state_pre_activation(
+   return controller_interface::return_type::OK;
+ }
+ 
++void ControllerManager::request_activity_publish()
++{
++  activity_publish_pending_.store(true, std::memory_order_release);
++}
++
+ void ControllerManager::publish_activity()
+ {
+   controller_manager_msgs::msg::ControllerManagerActivity status_msg;
+diff --git a/controller_manager/test/test_controller_manager.cpp b/controller_manager/test/test_controller_manager.cpp
+index e264e5c..0681dba 100644
+--- a/controller_manager/test/test_controller_manager.cpp
++++ b/controller_manager/test/test_controller_manager.cpp
+@@ -46,6 +46,8 @@ public:
+ 
+     rclcpp::executors::SingleThreadedExecutor executor;
+     executor.add_node(test_node.get_node_base_interface());
++    // Activity publication is deferred to the manager executor.
++    executor.add_node(cm_);
+     std::this_thread::sleep_for(std::chrono::milliseconds(200));
+ 
+     // call update to publish the test value

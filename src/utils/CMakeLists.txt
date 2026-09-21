@@ -7,7 +7,6 @@ set(${MODULE_NAME}_SRC
     src/object.cpp
     src/parameters.cpp
     src/percept.cpp
-    src/results.cpp
     )
 
 set(${MODULE_NAME}_HEADER_FILES
