@@ -1,72 +1,68 @@
-FROM ubuntu:22.04
+# syntax=docker/dockerfile:1
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    python3.10 \
-    libpython3.10 \
-    python3-pip \
-    fping \
-    curl \
-    gnupg \
-    wget \
-    lsb-release \
-    libpoco-dev \
-    libeigen3-dev \
-    libfmt-dev
-# No longer require pinnochio as a dependency
-# RUN mkdir -p /etc/apt/keyrings && \
-#     curl http://robotpkg.openrobots.org/packages/debian/robotpkg.asc | tee /etc/apt/keyrings/robotpkg.asc && \
-#     echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/robotpkg.asc] http://robotpkg.openrobots.org/packages/debian/pub $(lsb_release -cs) robotpkg" | tee /etc/apt/sources.list.d/robotpkg.list && \
-#     apt-get update && \
-#     apt-get install -y --no-install-recommends \
-#     robotpkg-pinocchio && \
-#     # Clean up apt caches to keep the image small
-#     apt-get clean && \
-#     rm -rf /var/lib/apt/lists/*
-RUN wget https://github.com/frankarobotics/libfranka/releases/download/0.21.1/libfranka_0.21.1_jammy_amd64.deb
-RUN dpkg -i libfranka_0.21.1_jammy_amd64.deb
+# Core imports only the Control image's published ROS transport artifacts. It
+# does not inherit the hardware image filesystem or its FCI/libfranka runtime.
+ARG MIOS_CONTROL_IMAGE=mios-ros2-control:local
+FROM ${MIOS_CONTROL_IMAGE} AS control_artifacts
 
-RUN pip3 install -U setuptools
-RUN pip3 install -U numpy
-RUN pip3 install -U scipy
-RUN pip3 install -U pymongo
-RUN pip3 install -U scikit-learn
-RUN pip3 install -U requests
-RUN pip3 install -U pyDOE scikit-optimize
-RUN pip3 install -U websockets
-RUN pip3 install -U requests
-RUN pip3 install -U urwid
+# Match Control's pinned ROS base for the imported transport artifacts.
+FROM osrf/ros:jazzy-desktop@sha256:e1c05248ece3bc328386d0509a041a97a5de872a5606418118748875c539c66f
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ARG MIOS_CORE_CONTRACT_VERSION=0.1.0
+LABEL org.opencontainers.image.title="mios-ros2-core" \
+      io.mios.core-contract.version="${MIOS_CORE_CONTRACT_VERSION}"
+ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /ws
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libpoco-dev nlohmann-json3-dev fping python3-pip python3-websockets \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY mios/ /mios/
-COPY dependencies/ /dependencies/
-RUN chmod +x /mios/bin/mios.sh
-RUN chmod +x /mios/bin/mios
+# The Control workspace uses colcon's symlink-install layout. Retain the
+# installed transport and its build artifacts, without the control image's
+# Franka hardware sources or libfranka runtime.
+COPY --from=control_artifacts /ws/install /ws/install
+COPY --from=control_artifacts /ws/build /ws/build
+# colcon's --symlink-install package exports public runtime headers through
+# this source path. Copy only that transport header tree, never the Franka
+# hardware sources or libfranka runtime.
+COPY --from=control_artifacts /ws/src/mios_ros2_runtime/include /ws/src/mios_ros2_runtime/include
 
-EXPOSE 12000 12001 12002 8888 8889
+# Core owns this build and all of its Portal/task artifacts. It links only
+# against the ROS transport packages copied above.
+COPY mios/CMakeLists.txt mios/conanfile.txt /opt/mios/
+COPY mios/cmake /opt/mios/cmake
+COPY mios/include /opt/mios/include
+COPY mios/src /opt/mios/src
+RUN python3 -m pip install --target /opt/mios-conan conan==1.66.0
+RUN --mount=type=cache,target=/root/.conan \
+    source /opt/ros/jazzy/setup.bash \
+    && source /ws/install/setup.bash \
+    && export PATH=/opt/mios-conan/bin:${PATH} PYTHONPATH=/opt/mios-conan:${PYTHONPATH} \
+    && cmake -S /opt/mios -B /opt/mios/build \
+         -DCMAKE_BUILD_TYPE=Release \
+         -DCMAKE_INSTALL_PREFIX=/opt/mios/install \
+         '-DCMAKE_INSTALL_RPATH=$ORIGIN/../lib' \
+         -DMIOS_BUILD_ROS2_CORE_RUNTIME=ON \
+         -DENABLE_TESTING=ON \
+         -DENABLE_PCH=OFF \
+    && cmake --build /opt/mios/build \
+         --target mios_ros2_core_runtime test_joint_position_pipeline test_ff_strategy --parallel 2 \
+    && ctest --test-dir /opt/mios/build --output-on-failure \
+         --tests-regex '^(test_joint_position_pipeline|test_ff_strategy)$' \
+    && cmake --install /opt/mios/build \
+    && install -d /opt/mios/install/lib \
+    && cp -a /opt/mios/build/lib/boost/libboost_*.so* /opt/mios/install/lib/
 
-ARG default_verbosity_value=info
-ARG default_database_port_value=27017
-ARG default_database_name=mios
-ARG default_robot_ip=127.0.0.1
-ARG default_websocket_port=12000
-ARG default_rpc_port=12001
-ARG default_udp_port=12002
-ARG default_robot_config_value=0
-ARG default_desk=true
+# Core loads its retained MIOS controller and safety plugins dynamically.
+RUN find /opt/mios/src/plugins -type f -name 'lib*.so' \
+    -exec cp -a {} /opt/mios/install/lib/ \;
 
-ENV verbosity=$default_verbosity_value
-ENV database_port=$default_database_port_value
-ENV database_name=$default_database_name
-ENV robot_ip=$default_robot_ip
-ENV websocket_port=$default_websocket_port
-ENV rpc_port=$default_rpc_port
-ENV udp_port=$default_udp_port
-ENV robot_config_value=$default_robot_config_value
-ENV desk=$default_desk
+COPY mios/python/utils/ws_client.py /opt/mios/python/utils/ws_client.py
+COPY mios/docker/ros2/entrypoint.sh /entrypoint.sh
+COPY mios/docker/ros2/start_core.sh /usr/local/bin/start_core.sh
+RUN chmod +x /entrypoint.sh /usr/local/bin/start_core.sh
 
-ENV LD_LIBRARY_PATH=/opt/openrobots/lib:/dependencies:/mios/lib:$LD_LIBRARY_PATH
-
-WORKDIR mios/bin
-CMD ["bash", "./mios.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/usr/local/bin/start_core.sh"]

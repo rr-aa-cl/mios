@@ -264,9 +264,11 @@ nlohmann::json CommandInterface::teach_object(const nlohmann::json &request){
     }
     bool result=true;
     std::string error_message="";
-    if(!m_core->refresh_percept({})){
+    if(m_core->is_busy() || !m_core->refresh_percept({})){
         error_message="Could not teach the object because no current percept is available.";
-        result=false;
+        response["result"]=false;
+        response["error"]=error_message;
+        return response;
     }
     if(!m_memory->update_object(object_name,teach_width,teach_force,*m_core->get_percept())){
         error_message="Could not teach object because memory returned an error.";
@@ -398,18 +400,22 @@ nlohmann::json CommandInterface::get_state([[maybe_unused]] const nlohmann::json
     mirmi_utils::write_json_array<double,7,1>(response["q"],p->proprioception.q);
     mirmi_utils::write_json_array<double,4,4>(response["O_T_EE"],p->proprioception.O_T_EE);
     response["grasped_object"]=m_memory->get_live_context()->grasped_object->name;
-    if(p->robot_mode==franka::RobotMode::kIdle){
+    if(p->robot_mode==control::RobotMode::kIdle){
         response["status"]="Idle";
     }
-    if(p->robot_mode==franka::RobotMode::kReflex){
+    if(p->robot_mode==control::RobotMode::kMove){
+        response["status"]="Move";
+    }
+    if(p->robot_mode==control::RobotMode::kReflex){
         response["status"]="Reflex";
     }
-    if(p->robot_mode==franka::RobotMode::kUserStopped){
+    if(p->robot_mode==control::RobotMode::kUserStopped){
         response["status"]="UserStopped";
     }
     response["result"]=result;
     response["error_message"]=error_message;
     response["current_task"] = m_core->get_task_engine()->get_active_task_id();
+    response["control_active"] = m_core->is_control_active();
     response["gripper_width"] = p->proprioception.finger_width;
 
     return response;
@@ -484,26 +490,6 @@ nlohmann::json CommandInterface::unsubscribe_telemetry(const nlohmann::json &req
     response["result"] = m_core->get_telemetry()->remove_subscriber(request["ip"]);
     return response;
 }
-//nlohmann::json CommandInterface::subscribe_to_event_stream(const nlohmann::json &request){
-//    nlohmann::json response;
-//    EventSubscriber subscriber;
-//    request["address"].get_to(subscriber.address);
-//    request["port"].get_to(subscriber.port);
-//    request["endpoint"].get_to(subscriber.endpoint);
-//    request["method_name"].get_to(subscriber.method_name);
-
-//    response["subscriber_uuid"] = EventPublisher::subscribe(subscriber);
-//    return response;
-//}
-
-//nlohmann::json CommandInterface::unsubscribe_from_event_stream(const nlohmann::json &request){
-//    nlohmann::json response;
-//    std::string subscriber_uuid;
-//    request["subscriber_uuid"].get_to(subscriber_uuid);
-//    EventPublisher::unsubscribe(subscriber_uuid);
-//    return response;
-//}
-
 nlohmann::json CommandInterface::start_desk_task(const nlohmann::json &request){
     spdlog::trace("CommandInterface:start_desk_task()");
     nlohmann::json response;

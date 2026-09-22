@@ -11,6 +11,13 @@ from utils.helper_functions import *
 
 def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service: ServiceConfiguration, n_eval: int = 1,
                      tags: list = None, knowledge: dict = None, keep_record: bool = True, wait: bool = True, service_port:int = 8000):
+    """Dispatch learning and, when requested, confirm its completion.
+
+    Asynchronous dispatch supports one run. Repeated experiments must wait
+    for each run's cleanup before the next run can use the same robot.
+    """
+    if not wait and n_eval != 1:
+        raise ValueError("wait=False supports only one experiment; use wait=True for repeated runs.")
     if tags is None:
         tags = []
 
@@ -27,19 +34,26 @@ def start_experiment(learner: str, agents: list, pd: ProblemDefinition, service:
         if keep_record is True and len(client.read("ml_results", problem_def.skill_class, {"meta.tags": {"$all": problem_def.tags}})) != 0:
             print("Continue at n" + str(i+1))
             continue
-        s = ServerProxy("http://" + learner + ":"+str(service_port), allow_none=True)
-        # if knowledge is not None:
-        #     if "scope" not in knowledge:
-        #         knowledge["scope"] = []
-        #     if "n" + str(i) in knowledge["scope"]:
-        #         knowledge["scope"].remove("n" + str(i))
-        #     knowledge["scope"].append("n" + str(i+1))
-        uuid = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge)
-        while s.is_busy():
-            time.sleep(2)
-        #if wait is True:
-        #    s.wait_for_service()
-        print(problem_def.tags, " finished.")
+        with ServerProxy(f"http://{learner}:{service_port}", allow_none=True) as s:
+            run_id = s.start_service(problem_def.to_dict(), service.to_dict(), agents, knowledge)
+            if not isinstance(run_id, str) or not run_id.strip() or run_id == "INVALID":
+                raise RuntimeError(
+                    f"ML service at {learner}:{service_port} rejected the learning request: {run_id!r}"
+                )
+            if not wait:
+                print(problem_def.tags, " started.", run_id)
+                continue
+
+            # The server keeps this call pending through initialization,
+            # learning, and engine cleanup. An idle/false-like busy reply
+            # alone is not evidence that this request completed successfully.
+            result = s.wait_for_service()
+            if result is not True:
+                raise RuntimeError(
+                    f"Learning run {run_id} at {learner}:{service_port} did not complete "
+                    f"successfully (result={result!r}); inspect the ML service logs."
+                )
+            print(problem_def.tags, " finished.")
 
 
 def start_single_experiment(learner: str, agents: list, pd: ProblemDefinition, service: ServiceConfiguration, iter: int = 1,

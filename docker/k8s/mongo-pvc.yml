@@ -1,0 +1,16 @@
+# For a NEW database only. Reuse nuc3's existing claim without applying this file.
+# The nuc2 Pod description does not include its PVC size or storage class.
+# Adjust this example using: kubectl -n nuc2 get pvc mongo-data-dir -o yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-data-dir
+  namespace: nuc3
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # Omitted storageClassName uses the cluster's default StorageClass.
+  # Set it explicitly if needed, for example: storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
