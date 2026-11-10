@@ -6,6 +6,7 @@ set(${MODULE_NAME}_SRC
 
 set(${MODULE_NAME}_HEADER_FILES
     include/${PROJECT_NAME}/${MODULE_NAME}/core.hpp
+    include/${PROJECT_NAME}/${MODULE_NAME}/robot_backend.hpp
     )
 
 add_library(${MODULE_NAME}
@@ -37,7 +38,6 @@ target_link_libraries(${MODULE_NAME}
     ${PROJECT_NAME}::interface
     ${PROJECT_NAME}::learning_module
     ${PROJECT_NAME}::memory
-    ${PROJECT_NAME}::panda
     ${PROJECT_NAME}::portal
     ${PROJECT_NAME}::safety
     ${PROJECT_NAME}::skill
@@ -47,4 +47,3 @@ target_link_libraries(${MODULE_NAME}
     )
 
 apply_module_options(${MODULE_NAME})
-

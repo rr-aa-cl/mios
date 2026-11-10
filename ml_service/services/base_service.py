@@ -1,7 +1,7 @@
 import logging
 from abc import ABCMeta
 from abc import abstractmethod
-from threading import Thread
+from threading import Event, Lock, Thread
 
 import socket
 import time
@@ -51,6 +51,10 @@ class ServiceConfiguration(metaclass=ABCMeta):
 class BaseService(metaclass=ABCMeta):
     def __init__(self, mios_port=12000, mongo_port=27017):
 
+        # A service instance represents one run. A stop must survive delayed
+        # initialization and must never be cleared by start/resume.
+        self.stop_requested = Event()
+        self._lifecycle_lock = Lock()
         self.engine = None
         self.mios_port = mios_port
         self.mongo_port = mongo_port
@@ -102,6 +106,8 @@ class BaseService(metaclass=ABCMeta):
 
     def initialize(self, problem_definition: ProblemDefinition, configuration: ServiceConfiguration,
                    agents: set, knowledge_source: dict = None, info:dict={}) -> (bool, str):
+        if self.stop_requested.is_set():
+            return False
         self.problem_definition = problem_definition
         self.configuration = configuration
         self.info=info
@@ -122,6 +128,8 @@ class BaseService(metaclass=ABCMeta):
         if self.knowledge.similarity is not None:
             logger.debug("base_service.initialize(): initialize knowledge manager with similarity relationsships")
             self.knowledge_manager.init_similarity(self.knowledge.similarity)
+        if self.stop_requested.is_set():
+            return False
         if self.knowledge.parameters is not None:
             logger.debug("base_service.initialize(): Use given parameters as initial knowlege.")
             if self.knowledge.confidence is None:
@@ -205,7 +213,10 @@ class BaseService(metaclass=ABCMeta):
                 pass
         else:
             logger.error("base_service::initialize(): Unknown knowledge mode " + str(self.knowledge.mode))
-        
+
+        if self.stop_requested.is_set():
+            return False
+
         if self.knowledge.parameters and not self.initial_knowledge_list:
             if type(self.knowledge.parameters) == dict:  # only single knowledge parameter set given
                 self.centroid = []
@@ -236,28 +247,58 @@ class BaseService(metaclass=ABCMeta):
 
         logger.info("Given knowledge sets: "+str(len(self.initial_knowledge_list)))
         self.knowledge_manager.fast_pipe_ip = self.knowledge.kb_location
-        self.engine = Engine(agents, mios_port=self.mios_port, mongo_port=self.mongo_port)
-        self.database_results_id = self.engine.initialize(self.problem_definition, self.configuration.exploration_mode)
+        try:
+            engine = Engine(agents, mios_port=self.mios_port, mongo_port=self.mongo_port)
+            # Sharing the latch also closes the stop-versus-thread.start race:
+            # the engine observes cancellation before it can dispatch work.
+            engine.stop_requested = self.stop_requested
+            with self._lifecycle_lock:
+                self.engine = engine
+            self._require_running()
+            self.database_results_id = engine.initialize(self.problem_definition, self.configuration.exploration_mode)
+            self._require_running()
+            self._initialize()
+            self._require_running()
 
-        self._initialize()
+            with self._lifecycle_lock:
+                self._require_running()
+                self.engine_thread = Thread(target=engine.main_loop)
+                self.engine_thread.start()
 
-        self.engine_thread = Thread(target=self.engine.main_loop)
-        self.engine_thread.start()
-
-        while self.engine.keep_running is False:
-            logger.debug("Service_base.initialize(): Wait unitl engine thread is running.")
-            time.sleep(0.1)
+            while not engine.started.wait(0.1):
+                self._require_running()
+                if not self.engine_thread.is_alive():
+                    logger.error("Learning engine exited before startup completed.")
+                    raise StopService
+            self._require_running()
+            if not self.engine_thread.is_alive():
+                logger.error("Learning engine exited during startup.")
+                raise StopService
+            return True
+        except StopService:
+            self._stop_and_join_engine()
+            return False
+        except BaseException:
+            self._stop_and_join_engine()
+            raise
 
     def learn_task(self) -> bool:
-        self.keep_running = True
+        result = False
         try:
+            with self._lifecycle_lock:
+                self._require_running()
+                self.keep_running = True
             result = self._learn_task()
         except StopService:
             result = False
-        self.keep_running = False
-        self.result = result
+        finally:
+            self.result = result
+            # Keep the Interface busy until the engine and its workers have
+            # finished, including when the optimizer raises or is interrupted.
+            self._stop_and_join_engine()
 
-        self.engine_thread.join()  # wait for engine to write final results
+        if self.database_results_id is None:
+            return result
 
         ml_data = self.DBclient.read("ml_results", self.problem_definition.skill_class, {"_id": self.database_results_id})
         if len(ml_data) != 1:
@@ -301,10 +342,25 @@ class BaseService(metaclass=ABCMeta):
             self.globalDBclient.write("global_ml_results", self.problem_definition.skill_class, ml_data[0])
         return result
 
-    def stop(self):
-        self.keep_running = False
-        if self.engine is not None:
-            self.engine.stop()
+    def _require_running(self):
+        if self.stop_requested.is_set():
+            raise StopService
+
+    def _stop_and_join_engine(self):
+        try:
+            self.stop()
+        finally:
+            if self.engine_thread is not None and self.engine_thread.ident is not None:
+                self.engine_thread.join()
+
+    def stop(self) -> bool:
+        self.stop_requested.set()
+        with self._lifecycle_lock:
+            self.keep_running = False
+            engine = self.engine
+        if engine is not None:
+            return engine.stop()
+        return True
 
     def pause(self):
         self.pause_execution = True
@@ -313,11 +369,15 @@ class BaseService(metaclass=ABCMeta):
 
     
     def start(self):
+        if self.stop_requested.is_set():
+            return False
         self.pause_execution = False
         if self.engine is not None:
             self.engine.resume()
+        return True
 
     def push_trial(self, x, external: dict = False) -> str:
+        self._require_running()
         if external:
             try:
                 logger.debug("BaseService: Push trial to engine, external (fast knowledge pipe)="+str(external["skill_instance"]))
@@ -330,7 +390,10 @@ class BaseService(metaclass=ABCMeta):
             logger.debug("BaseService: Push trial to engine, external=False")
         while self.pause_execution and self.keep_running:
             logger.debug("base_service.push_trial: Paused...")
-            time.sleep(1)
+            if self.stop_requested.wait(1):
+                raise StopService
+
+        self._require_running()
 
         for i in range(len(x)):
             if x[i] > 1:
@@ -341,12 +404,15 @@ class BaseService(metaclass=ABCMeta):
                 logger.debug("OUT OF BOUNDS")
 
         x_real = list(self.problem_definition.domain.denormalize(x))
+        self._require_running()
         return self.engine.push_trial(
             Trial(self.update_default_context(x_real), self.problem_definition.reset_instructions,self.problem_definition.rescue_instructions,
                   self.get_theta(x_real), external=external))
 
     def wait_for_result(self, uuid: str) -> TaskResult:
+        self._require_running()
         result = self.engine.wait_for_trial(uuid, 50 * self.problem_definition.n_variations)
+        self._require_running()
         result_dict = result.to_dict()
         if result_dict["external"]:  # if external is not False
             if type(result_dict["external"]) is str:

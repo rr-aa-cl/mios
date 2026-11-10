@@ -1,0 +1,58 @@
+{
+  "name": "mios-core-contract",
+  "version": "0.1.0",
+  "compatibility": "semantic-versioning",
+  "owners": {
+    "publisher": "mios-core",
+    "ros-consumer": "mios-control",
+    "portal-consumer": "mios-mls"
+  },
+  "ros": {
+    "packages": [
+      "mios_msgs",
+      "mios_ros2_runtime"
+    ],
+    "messages": [
+      "mios_msgs/msg/MiosActuatorCommand",
+      "mios_msgs/msg/MiosEffortCommand",
+      "mios_msgs/msg/MiosRobotModel"
+    ],
+    "default_topics": {
+      "robot_state": "/franka_robot_state_broadcaster/robot_state",
+      "robot_model": "/mios_robot_model_broadcaster/robot_model",
+      "effort_command": "/mios_effort_controller/mios_effort_command",
+      "actuator_command": "/mios_effort_controller/mios_actuator_command",
+      "joint_velocity_command": "/mios_joint_velocity_controller/mios_actuator_command",
+      "cartesian_velocity_command": "/mios_cartesian_velocity_controller/mios_actuator_command",
+      "joint_position_command": "/mios_joint_position_controller/mios_actuator_command",
+      "cartesian_pose_command": "/mios_cartesian_pose_controller/mios_actuator_command"
+    },
+    "public_headers": [
+      "mios/control/control_types.hpp",
+      "mios/control/robot_parameter_translation.hpp",
+      "mios/core/robot_backend.hpp",
+      "mios/utils/types.hpp"
+    ]
+  },
+  "portal": {
+    "endpoint": "mios/core",
+    "default_port": 12000,
+    "mls_methods": [
+      "start_task",
+      "stop_task",
+      "wait_for_task",
+      "is_busy",
+      "get_state",
+      "get_model",
+      "set_grasped_object",
+      "download_task_context",
+      "download_skill_context",
+      "download_object_context"
+    ]
+  },
+  "safety": {
+    "fci_owner": "mios-control",
+    "mls_must_not_use_ros_control_or_libfranka": true,
+    "core_must_not_own_fci": true
+  }
+}

@@ -41,6 +41,42 @@ target_link_libraries(${MODULE_NAME}
 
 apply_module_options(${MODULE_NAME})
 
+if(ENABLE_TESTING)
+    # Compile the production strategy and its value-type dependencies directly.
+    # The full utils/skills libraries also pull in the unrelated Core runtime.
+    add_executable(test_ff_strategy
+        test/test_ff_strategy.cpp
+        src/strategies/ff_strategy.cpp
+        ../manipulation_primitive/src/primitive_strategy.cpp
+        ../utils/src/actuator.cpp
+        ../utils/src/percept.cpp
+        ../utils/src/parameters.cpp)
+    target_compile_features(test_ff_strategy PRIVATE cxx_std_17)
+    target_include_directories(test_ff_strategy PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src/manipulation_primitive/include
+        ${CMAKE_SOURCE_DIR}/src/utils/include
+        ${CMAKE_SOURCE_DIR}/src/skill/include
+        ${CMAKE_SOURCE_DIR}/src/memory/include
+        ${CMAKE_SOURCE_DIR}/src/portal/include)
+    # parameters.cpp contains both the tested ControlParameters and unused
+    # skill constructors. Discard unused functions instead of linking Core.
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(test_ff_strategy PRIVATE -ffunction-sections -fdata-sections)
+        target_link_options(test_ff_strategy PRIVATE -Wl,--gc-sections)
+    endif()
+    target_link_libraries(test_ff_strategy PRIVATE
+        ${PROJECT_NAME}::${PROJECT_NAME}_project_deps
+        mirmi_cpp_utils::math
+        mirmi_cpp_utils::json
+        mirmi_cpp_utils::network
+        CONAN_PKG::mongo-cxx-driver
+        CONAN_PKG::nlohmann_json
+        Eigen3::Eigen)
+    add_test(NAME test_ff_strategy COMMAND test_ff_strategy)
+endif()
+
 
 # Skills
 set(MODULE_NAME skills)

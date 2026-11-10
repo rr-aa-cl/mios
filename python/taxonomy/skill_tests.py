@@ -1,5 +1,9 @@
-from test_base import BaseTest
-from taxonomy_utils import *
+if __package__:
+    from .test_base import BaseTest
+    from .taxonomy_utils import *
+else:
+    from test_base import BaseTest
+    from taxonomy_utils import *
 import json
 from xmlrpc.client import ServerProxy
 

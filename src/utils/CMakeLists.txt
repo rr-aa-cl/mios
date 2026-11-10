@@ -7,7 +7,6 @@ set(${MODULE_NAME}_SRC
     src/object.cpp
     src/parameters.cpp
     src/percept.cpp
-    src/results.cpp
     )
 
 set(${MODULE_NAME}_HEADER_FILES
@@ -21,6 +20,9 @@ set(${MODULE_NAME}_HEADER_FILES
     include/${PROJECT_NAME}/utils/exceptions.hpp
     include/${PROJECT_NAME}/utils/types.hpp
     include/${PROJECT_NAME}/utils/configuration.hpp
+    include/${PROJECT_NAME}/control/control_types.hpp
+    include/${PROJECT_NAME}/control/control_runtime_config.hpp
+    include/${PROJECT_NAME}/control/robot_parameter_translation.hpp
     )
 
 add_library(${MODULE_NAME}
@@ -52,8 +54,6 @@ target_link_libraries(${MODULE_NAME}
     PUBLIC
     Eigen3::Eigen
     CONAN_PKG::nlohmann_json
-    Franka::Franka
     )
 
 apply_module_options(${MODULE_NAME})
-
