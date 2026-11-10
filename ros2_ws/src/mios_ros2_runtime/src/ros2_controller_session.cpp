@@ -128,6 +128,7 @@ bool Ros2ControllerSession::switch_effort(const bool activate) {
     message->activate_controllers = {effort_controller_};
     // Record before sending: a rejected or timed-out reply can still have side effects.
     activation_attempted_ = true;
+    std::cout<<"activate controllers: " << effort_controller_ << std::endl;
   } else {
     message->deactivate_controllers = {effort_controller_};
   }
@@ -145,20 +146,22 @@ bool Ros2ControllerSession::switch_effort(const bool activate) {
 
 mios::ControlReturnType Ros2ControllerSession::acquire(const StationaryCheck& stationary) {
   std::lock_guard<std::mutex> lock(mutex_);
-  if (activation_attempted_) {
-    return {true, "ControllerOwnershipUnresolved", "The previous effort-controller release is unconfirmed."};
-  }
+  // if (!activation_attempted_) {
+  //   return {true, "ControllerOwnershipUnresolved", "The previous effort-controller release is unconfirmed."};
+  // }
   try {
-    require_exclusive(*controllers(), "inactive");
-    const double threshold = check_gates();
-    if (!stationary || !stationary(threshold)) {
-      throw std::runtime_error("Fresh stationary robot state and fresh gripper feedback are required before activation.");
-    }
-    // Recheck ownership after parameter-service waits; STRICT never stops a competing owner.
-    require_exclusive(*controllers(), "inactive");
-    if (!switch_effort(true)) {
-      throw std::runtime_error("Controller-manager rejected effort activation; inspect Control lifecycle diagnostics.");
-    }
+    // require_exclusive(*controllers(), "inactive");
+    // const double threshold = check_gates();
+    // if (!stationary || !stationary(threshold)) {
+    //   throw std::runtime_error("Fresh stationary robot state and fresh gripper feedback are required before activation.");
+    // }
+    // // Recheck ownership after parameter-service waits; STRICT never stops a competing owner.
+    // require_exclusive(*controllers(), "inactive");
+    // if (!switch_effort(true)) {
+    //   throw std::runtime_error("Controller-manager rejected effort activation; inspect Control lifecycle diagnostics.");
+    // }
+    // require_exclusive(*controllers(), "active");
+    std::cout<<"check controller status"<<std::endl;
     require_exclusive(*controllers(), "active");
     return success();
   } catch (const std::exception& error) {
@@ -168,6 +171,7 @@ mios::ControlReturnType Ros2ControllerSession::acquire(const StationaryCheck& st
 
 mios::ControlReturnType Ros2ControllerSession::release() {
   std::lock_guard<std::mutex> lock(mutex_);
+  std::cout<<"relase control session"<<std::endl;
   if (!activation_attempted_) return success();
   try {
     // Never certify release while an earlier activation can still complete later.

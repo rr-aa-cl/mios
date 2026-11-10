@@ -21,6 +21,7 @@ class ControllerSession {
   virtual ~ControllerSession() = default;
   virtual mios::ControlReturnType acquire(const StationaryCheck& stationary) = 0;
   virtual mios::ControlReturnType release() = 0;
+  virtual bool switch_effort(bool activate) = 0;
 };
 
 class Ros2ControllerSession final : public ControllerSession {
@@ -30,6 +31,7 @@ class Ros2ControllerSession final : public ControllerSession {
                         std::chrono::milliseconds timeout);
   mios::ControlReturnType acquire(const StationaryCheck& stationary) override;
   mios::ControlReturnType release() override;
+  bool switch_effort(bool activate);
 
  private:
   using List = controller_manager_msgs::srv::ListControllers;
@@ -38,7 +40,6 @@ class Ros2ControllerSession final : public ControllerSession {
 
   List::Response::SharedPtr controllers();
   double check_gates();
-  bool switch_effort(bool activate);
   void require_exclusive(const List::Response& controllers, const std::string& state) const;
 
   rclcpp::Client<List>::SharedPtr list_client_;

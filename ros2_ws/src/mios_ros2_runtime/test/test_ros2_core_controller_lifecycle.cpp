@@ -42,6 +42,9 @@ class FakeSession final : public mios_ros2_runtime::ControllerSession {
   }
   std::atomic<bool> owned{false}, block_acquire{false}, fail_acquire{false}, fail_release{false};
   std::atomic<int> acquire_calls{0}, release_calls{0};
+  bool switch_effort(bool activate) override {
+    return true;
+  }
 };
 
 }  // namespace

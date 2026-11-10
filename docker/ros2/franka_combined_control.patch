@@ -46,12 +46,10 @@ index 6f6e5d6..7dcd19c 100644
    /**
     * Cartesian velocity command with optional elbow command
 diff --git a/franka_hardware/src/franka_hardware_interface.cpp b/franka_hardware/src/franka_hardware_interface.cpp
-index 5bc239c..d01615a 100644
+index 5bc239c..6f40da4 100644
 --- a/franka_hardware/src/franka_hardware_interface.cpp
 +++ b/franka_hardware/src/franka_hardware_interface.cpp
-@@ -247,6 +247,12 @@ void FrankaHardwareInterface::initializePositionCommands(const franka::RobotStat
- 
-   switch (active_mode_) {
+@@ -249,6 +249,12 @@ void FrankaHardwareInterface::initializePositionCommands(const franka::RobotStat
      case ControlInterface::JointPosition:
        std::copy(robot_state.q.begin(), robot_state.q.end(), hw_position_commands_.begin());
        break;
@@ -62,7 +60,9 @@ index 5bc239c..d01615a 100644
 +      std::copy(robot_state.q_d.begin(), robot_state.q_d.end(), hw_position_commands_.begin());
 +      break;
      case ControlInterface::CartesianPose:
-@@ -341,6 +342,9 @@ hardware_interface::return_type FrankaHardwareInterface::write(const rclcpp::Tim
+       std::copy(robot_state.O_T_EE.begin(), robot_state.O_T_EE.end(),
+                 hw_cartesian_pose_commands_.begin());
+@@ -341,6 +347,9 @@ hardware_interface::return_type FrankaHardwareInterface::write(const rclcpp::Tim
        case ControlInterface::Effort:
          robot_->writeOnce(hw_effort_commands_);
          break;
@@ -72,7 +72,7 @@ index 5bc239c..d01615a 100644
        case ControlInterface::JointVelocity:
          robot_->writeOnce(hw_velocity_commands_);
          break;
-@@ -489,7 +493,9 @@ hardware_interface::return_type FrankaHardwareInterface::perform_command_mode_sw
+@@ -489,7 +498,9 @@ hardware_interface::return_type FrankaHardwareInterface::perform_command_mode_sw
  
    ControlInterface desired = ControlInterface::None;
  
@@ -83,7 +83,7 @@ index 5bc239c..d01615a 100644
      desired = ControlInterface::Effort;
    } else if (velocity_joint_interface_claimed_) {
      desired = ControlInterface::JointVelocity;
-@@ -521,6 +527,10 @@ hardware_interface::return_type FrankaHardwareInterface::perform_command_mode_sw
+@@ -521,6 +532,10 @@ hardware_interface::return_type FrankaHardwareInterface::perform_command_mode_sw
        robot_->initializeTorqueInterface();
        needs_initial_command_ = false;
        break;
@@ -94,7 +94,7 @@ index 5bc239c..d01615a 100644
      case ControlInterface::JointVelocity:
        std::fill(hw_velocity_commands_.begin(), hw_velocity_commands_.end(), 0);
        robot_->initializeJointVelocityInterface();
-@@ -560,6 +570,18 @@ hardware_interface::return_type FrankaHardwareInterface::perform_command_mode_sw
+@@ -560,6 +575,18 @@ hardware_interface::return_type FrankaHardwareInterface::perform_command_mode_sw
  hardware_interface::return_type FrankaHardwareInterface::prepare_command_mode_switch(
      const std::vector<std::string>& start_interfaces,
      const std::vector<std::string>& stop_interfaces) {
@@ -113,7 +113,7 @@ index 5bc239c..d01615a 100644
    auto contains_interface_type = [this](const std::string& interface,
                                          const std::string& interface_type) {
      // Check if we export this exact interface AND it matches the requested type
-@@ -596,12 +618,12 @@ hardware_interface::return_type FrankaHardwareInterface::prepare_command_mode_sw
+@@ -596,12 +623,12 @@ hardware_interface::return_type FrankaHardwareInterface::prepare_command_mode_sw
  
    for (const auto& interface : command_interfaces_info_) {
      size_t num_stop_interface =
@@ -129,7 +129,7 @@ index 5bc239c..d01615a 100644
                          return contains_interface_type(interface_given, interface.interface_type);
                        });
 diff --git a/franka_hardware/src/robot.cpp b/franka_hardware/src/robot.cpp
-index b743df0..0a04d3c 100644
+index b743df0..20fa370 100644
 --- a/franka_hardware/src/robot.cpp
 +++ b/franka_hardware/src/robot.cpp
 @@ -162,6 +162,23 @@ void Robot::writeOnce(const std::vector<double>& cartesian_command,
@@ -192,7 +192,7 @@ index b743df0..0a04d3c 100644
  franka::CartesianVelocities Robot::preProcessCartesianVelocities(
      const franka::CartesianVelocities& velocity_command) {
    franka::CartesianVelocities filtered_velocity_command = velocity_command;
-@@ -337,6 +380,19 @@ void Robot::initializeJointPositionInterface() {
+@@ -337,6 +383,19 @@ void Robot::initializeJointPositionInterface() {
    joint_position_interface_active_ = true;
  }
  

@@ -6,6 +6,8 @@
 #include <functional>
 #include <thread>
 #include <utility>
+#include <iomanip>
+#include <iostream>
 
 #include "mios_ros2_runtime/mios_parameter_snapshot_translation.hpp"
 #include "mios_ros2_runtime/robot_state_translation.hpp"
@@ -158,10 +160,41 @@ mios::ControlReturnType Ros2CoreRobotBackend::control(const mios::control::Comma
         control_complete_.wait_for(lock, std::chrono::milliseconds(20));
         if (active_control_->complete) break;
         lock.unlock();
-        const bool fresh = pre_run_checks() && gripper_client_.fresh_state().has_value();
+        // const bool fresh = pre_run_checks() && gripper_client_.fresh_state().has_value();
+        // lock.lock();
+        // if (!fresh && !active_control_->complete) {
+        //   active_control_->result = {true, "RobotFeedbackLost", "Fresh permitted arm/model/gripper feedback was lost during control."};
+        //   active_control_->complete = true;
+        // }
+        const bool pre_run_ok = pre_run_checks();
+        const auto gripper_state = gripper_client_.fresh_state(std::chrono::milliseconds(500));
+        const bool gripper_fresh = gripper_state.has_value();
+
+        const bool fresh = pre_run_ok && gripper_fresh;
+
         lock.lock();
+
         if (!fresh && !active_control_->complete) {
-          active_control_->result = {true, "RobotFeedbackLost", "Fresh permitted arm/model/gripper feedback was lost during control."};
+          RCLCPP_ERROR(
+            rclcpp::get_logger("mios_ros2_core"),
+            "RobotFeedbackLost DEBUG:\n"
+            "  pre_run_checks() = %d\n"
+            "  gripper_fresh = %d\n"
+            "  fresh = %d\n"
+            "  active_control_->complete = %d\n"
+            "  gripper_state.has_value() = %d",
+            static_cast<int>(pre_run_ok),
+            static_cast<int>(gripper_fresh),
+            static_cast<int>(fresh),
+            static_cast<int>(active_control_->complete),
+            static_cast<int>(gripper_state.has_value()));
+
+          active_control_->result = {
+              true,
+              "RobotFeedbackLost",
+              "Fresh permitted arm/model/gripper feedback was lost during control."
+          };
+
           active_control_->complete = true;
         }
       }
@@ -170,33 +203,33 @@ mios::ControlReturnType Ros2CoreRobotBackend::control(const mios::control::Comma
   }
   // Wait for a copied callback to finish before Core tears down its executor.
   // No service call runs while a state/dispatch/control mutex is held.
-  {
-    std::lock_guard<std::mutex> callback_lock(callback_mutex_);
-    std::lock_guard<std::mutex> dispatch_lock(dispatch_mutex_);
-    std::lock_guard<std::mutex> lock(control_mutex_);
-    active_control_.reset();
-  }
-  const auto state_before_release = robot_backend_.latest_snapshot();
-  const auto released = controller_session_->release();
-  if (released.exception) {
-    if (!result.exception) return released;
-    result.error_msg += " Release also failed: " + released.error_msg;
-  } else if (!result.exception) {
-    // controller_manager acknowledgement and state publication are asynchronous.
-    // A following skill must not attempt acquisition against the previous MOVE sample.
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
-    bool settled = false;
-    do {
-      const auto state = robot_backend_.latest_snapshot();
-      settled = state && robot_backend_.has_fresh_robot_state(state_timeout_) &&
-                state->robot_mode == RobotRuntimeMode::kIdle && !state->user_stopped &&
-                (!state_before_release || state->stamp_nanoseconds > state_before_release->stamp_nanoseconds);
-      if (!settled) std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    } while (!settled && std::chrono::steady_clock::now() < deadline);
-    if (!settled) {
-      return {true, "ControllerReleasedRobotNotIdle", "Effort controller is inactive but a new IDLE robot state was not observed."};
-    }
-  }
+  // {
+  //   std::lock_guard<std::mutex> callback_lock(callback_mutex_);
+  //   std::lock_guard<std::mutex> dispatch_lock(dispatch_mutex_);
+  //   std::lock_guard<std::mutex> lock(control_mutex_);
+  //   active_control_.reset();
+  // }
+  // const auto state_before_release = robot_backend_.latest_snapshot();
+  // const auto released = controller_session_->release();
+  // if (released.exception) {
+  //   if (!result.exception) return released;
+  //   result.error_msg += " Release also failed: " + released.error_msg;
+  // } else if (!result.exception) {
+  //   // controller_manager acknowledgement and state publication are asynchronous.
+  //   // A following skill must not attempt acquisition against the previous MOVE sample.
+  //   const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+  //   bool settled = false;
+  //   do {
+  //     const auto state = robot_backend_.latest_snapshot();
+  //     settled = state && robot_backend_.has_fresh_robot_state(state_timeout_) &&
+  //               state->robot_mode == RobotRuntimeMode::kIdle && !state->user_stopped &&
+  //               (!state_before_release || state->stamp_nanoseconds > state_before_release->stamp_nanoseconds);
+  //     if (!settled) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  //   } while (!settled && std::chrono::steady_clock::now() < deadline);
+  //   if (!settled) {
+  //     return {true, "ControllerReleasedRobotNotIdle", "Effort controller is inactive but a new IDLE robot state was not observed."};
+  //   }
+  // }
   return result;
 }
 

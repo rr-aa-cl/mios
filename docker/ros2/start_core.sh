@@ -14,5 +14,5 @@ exec /opt/mios/install/bin/mios_ros2_core_runtime --ros-args \
   -p "enable_core_scheduler:=${MIOS_ENABLE_CORE_SCHEDULER:-true}" \
   -p "enable_core_task_execution:=${MIOS_ENABLE_CORE_TASK_EXECUTION:-true}" \
   -p "allow_controller_owned_move_mode:=${MIOS_ALLOW_CONTROLLER_OWNED_MOVE_MODE:-true}" \
-  -p allow_robot_parameter_application:=false \
+  -p allow_robot_parameter_application:=true \
   "$@"

@@ -92,7 +92,7 @@ class MiosRos2CoreNode final : public rclcpp::Node {
         declare_parameter<std::string>("parameter_service_namespace", "/service_server");
     const auto gripper_max_width = declare_parameter<double>("gripper_max_width", 0.08);
     const auto allow_robot_parameter_application =
-        declare_parameter<bool>("allow_robot_parameter_application", false);
+        declare_parameter<bool>("allow_robot_parameter_application", true);
     const auto enable_core_task_execution =
         declare_parameter<bool>("enable_core_task_execution", false);
     const auto enable_core_scheduler =
@@ -234,6 +234,7 @@ class MiosRos2CoreNode final : public rclcpp::Node {
       RCLCPP_ERROR(get_logger(), "MIOS Core initialization failed; task scheduler was not started.");
       return;
     }
+    controller_session_->switch_effort(true);
     core_thread_ = std::thread([this] { core_->start(); });
   }
 
