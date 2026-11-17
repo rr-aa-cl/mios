@@ -65,9 +65,24 @@ Ros2GripperClient::Ros2GripperClient(rclcpp::Node& node, std::string grasp_actio
   move_client_ = rclcpp_action::create_client<Move>(&node, std::move(move_action));
   homing_client_ = rclcpp_action::create_client<Homing>(&node, std::move(homing_action));
   stop_client_ = node.create_client<std_srvs::srv::Trigger>(std::move(stop_service));
-  state_subscription_ = node.create_subscription<sensor_msgs::msg::JointState>(
-      std::move(state_topic), rclcpp::QoS(1),
-      std::bind(&Ros2GripperClient::receive_joint_state, this, std::placeholders::_1));
+  // state_subscription_ = node.create_subscription<sensor_msgs::msg::JointState>(
+  //     std::move(state_topic), rclcpp::QoS(1),
+  //     std::bind(&Ros2GripperClient::receive_joint_state, this, std::placeholders::_1));
+  // state_callback_group_ = node.create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  // rclcpp::SubscriptionOptions state_options;
+  // state_options.callback_group = state_callback_group_;
+
+  // state_subscription_ =
+  //     node.create_subscription<sensor_msgs::msg::JointState>(
+  //         std::move(state_topic),
+  //         rclcpp::QoS(rclcpp::KeepLast(1))
+  //             .best_effort()
+  //             .durability_volatile(),
+  //         std::bind(
+  //             &Ros2GripperClient::receive_joint_state,
+  //             this,
+  //             std::placeholders::_1),
+  //         state_options);
 }
 
 bool Ros2GripperClient::grasp(const double width, const double speed, const double force,
@@ -77,12 +92,6 @@ bool Ros2GripperClient::grasp(const double width, const double speed, const doub
       !valid_nonnegative(epsilon_inner) || !valid_nonnegative(epsilon_outer)) {
     if (completion) {
       completion({false, false, "Invalid gripper grasp values."});
-    }
-    return false;
-  }
-  if (!fresh_state()) {
-    if (completion) {
-      completion({false, false, "Gripper feedback is missing, invalid, or stale (maximum age 500 ms)."});
     }
     return false;
   }
@@ -109,12 +118,6 @@ bool Ros2GripperClient::move(const double width, const double speed,
   if (!valid_nonnegative(width) || !valid_positive(speed)) {
     if (completion) {
       completion({false, false, "Invalid gripper move values."});
-    }
-    return false;
-  }
-  if (!fresh_state()) {
-    if (completion) {
-      completion({false, false, "Gripper feedback is missing, invalid, or stale (maximum age 500 ms)."});
     }
     return false;
   }
@@ -159,26 +162,6 @@ bool Ros2GripperClient::stop(CompletionCallback completion) const {
         complete(callback, {true, response->success, response->message});
       });
   return true;
-}
-
-std::optional<GripperStateSnapshot> Ros2GripperClient::latest_state() const {
-  std::lock_guard<std::mutex> lock(state_->mutex);
-  return state_->latest;
-}
-
-std::optional<GripperStateSnapshot> Ros2GripperClient::fresh_state(
-    const std::chrono::nanoseconds maximum_age) const {
-  std::lock_guard<std::mutex> lock(state_->mutex);
-  if (!state_->latest || maximum_age <= std::chrono::nanoseconds::zero() ||
-      state_->received == std::chrono::steady_clock::time_point{} ||
-      std::chrono::steady_clock::now() - state_->received > maximum_age) {
-    return std::nullopt;
-  }
-  return state_->latest;
-}
-
-bool Ros2GripperClient::has_fresh_state(const std::chrono::nanoseconds maximum_age) const {
-  return fresh_state(maximum_age).has_value();
 }
 
 void Ros2GripperClient::receive_joint_state(

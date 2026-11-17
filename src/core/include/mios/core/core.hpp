@@ -84,7 +84,6 @@ public:
 private:
     control::ArmCommand control_base_cycle(const control::RobotState& robot_state,
                                            const control::RobotModel& robot_model,
-                                           const control::GripperState& gripper_state,
                                            control::CommandMode command_mode);
     bool configure_control_executor(std::unique_ptr<ControllerPipeline> pipeline,
                                     control::CommandMode command_mode,

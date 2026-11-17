@@ -53,8 +53,7 @@ int main(int argc, char* argv[]) {
     bool callback_was_called = false;
     const auto result = core_backend.control(
         mios::control::CommandMode::kTorque,
-        [&callback_was_called](const mios::control::RobotState&, const mios::control::RobotModel&,
-                               const mios::control::GripperState&, double) {
+        [&callback_was_called](const mios::control::RobotState&, const mios::control::RobotModel&, double) {
           callback_was_called = true;
           return mios::control::ArmCommand{};
         });

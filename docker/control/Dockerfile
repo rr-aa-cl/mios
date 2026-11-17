@@ -1,8 +1,6 @@
 ARG MIOS_CORE_CONTRACT_VERSION=0.1.0
 
-# Retain the ROS base used by the commissioned Control build. Rebuilding a
-# startup script must not silently replace the underlying ROS/system packages.
-FROM osrf/ros:jazzy-desktop@sha256:e1c05248ece3bc328386d0509a041a97a5de872a5606418118748875c539c66f
+FROM ros:jazzy-ros-base
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG MIOS_CORE_CONTRACT_VERSION
@@ -13,7 +11,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # memory available to a desktop Docker daemon. Keep the production image build
 # deterministic; users can override this at build time if they have more RAM.
 ENV CMAKE_BUILD_PARALLEL_LEVEL=2
-ARG MIOS_BUILD_TESTING=ON
+ENV RCUTILS_CONSOLE_OUTPUT_FORMAT="[{date_time_with_ms}] [{severity}] [{name}]: {message}"
+ARG MIOS_BUILD_TESTING=OFF
 WORKDIR /ws
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -39,7 +38,7 @@ RUN mkdir -p src \
     # as workspace dependencies.  Remove those optional dependencies so the
     # FR3 hardware path can be built without Gazebo or MoveIt 2.
     && sed -i -E '/franka_(gazebo|mobile|example|vision_and_manipulation_kit)/d' src/franka_ros2/franka_bringup/package.xml \
-    && curl --fail --location --output /tmp/libfranka.deb \
+    && curl --fail --location --retry 10 --retry-all-errors --retry-delay 5 --connect-timeout 30 --max-time 300 --output /tmp/libfranka.deb \
          https://github.com/frankarobotics/libfranka/releases/download/0.21.1/libfranka_0.21.1_noble_amd64.deb \
     && echo 'bdab2485e91b23094140f5d13a262570f34371e5d4c22bfe537ff0503466b7c2  /tmp/libfranka.deb' | sha256sum --check --strict \
     && dpkg --install /tmp/libfranka.deb \

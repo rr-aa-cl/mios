@@ -60,8 +60,7 @@ class Ros2CoreRobotBackend final : public mios::RobotBackend {
   void set_robot_parameter_provider(ParameterSnapshotProvider provider) override;
   bool set_robot_parameters() override;
   bool get_robot_snapshot(mios::control::RobotState& robot_state,
-                          mios::control::RobotModel& robot_model,
-                          mios::control::GripperState& gripper_state) const override;
+                          mios::control::RobotModel& robot_model) const override;
   bool grasp(double width, double speed, double force, double epsilon_inner,
              double epsilon_outer) const override;
   bool move_to_finger_position(double width, double speed) const override;

@@ -65,6 +65,7 @@ bool Core::initialize(){
         return std::optional<control::RobotParameters>(
             control::make_robot_parameters(*m_memory.read_parameters()));
     });
+    m_robot_backend->set_robot_parameters();
     spdlog::info("Initializing robot...");
     if(!m_robot_backend->initialize()){
         spdlog::error("Could not initialize robot.");
@@ -164,16 +165,14 @@ ControlReturnType Core::execute_skill(){
     refresh_percept(m_memory.read_parameters()->frames.O_R_T);
     std::scoped_lock<std::mutex> busy_lock(m_mtx_is_busy);
     m_percept.update_controller();
-    m_robot_backend->set_robot_parameters();
 
     spdlog::trace("CORE:execute_skill.start_control_cycle");
     const auto run_control = [this](const control::CommandMode command_mode) {
         return m_robot_backend->control(
             command_mode,
             [this, command_mode](const control::RobotState& robot_state,
-                                 const control::RobotModel& robot_model,
-                                 const control::GripperState& gripper_state, double) {
-                return control_base_cycle(robot_state, robot_model, gripper_state, command_mode);
+                                 const control::RobotModel& robot_model, double) {
+                return control_base_cycle(robot_state, robot_model, command_mode);
             });
     };
 
@@ -288,7 +287,6 @@ void Core::handle_gripper(Actuator* cmd){
 
 control::ArmCommand Core::control_base_cycle(const control::RobotState& robot_state,
                                              const control::RobotModel& robot_model,
-                                             const control::GripperState& gripper_state,
                                              control::CommandMode command_mode){
     if(m_context.shutdown_signal){
         // This runs in a ROS state callback. Returning completion lets the
@@ -306,7 +304,7 @@ control::ArmCommand Core::control_base_cycle(const control::RobotState& robot_st
             exception=true;
         }
     }
-    m_percept.update(robot_state, robot_model, gripper_state,
+    m_percept.update(robot_state, robot_model,
                      m_memory.read_parameters()->frames.O_R_T);
     m_memory.internal_update(m_percept);
     if(m_skill_engine.is_running_queue() && m_blend_skill){
@@ -394,9 +392,9 @@ bool Core::grasp_object(const std::string &name,double speed){
         m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
         m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
-        if(!m_robot_backend->set_robot_parameters()){
-            return false;
-        }
+        // if(!m_robot_backend->set_robot_parameters()){
+        //     return false;
+        // }
         if(!m_memory.update_database()){
             spdlog::warn("Could not update datebase.");
         }
@@ -497,7 +495,8 @@ bool Core::set_grasped_object(const std::string &name){
     m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
     m_memory.get_parameters()->user.load_I=object->OB_I;
     m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
-    return m_robot_backend->set_robot_parameters();
+    // return m_robot_backend->set_robot_parameters();
+    return true;
 }
 
 bool Core::release_object(std::optional<double> width, double speed){
@@ -526,7 +525,7 @@ bool Core::release_object(std::optional<double> width, double speed){
         m_memory.get_parameters()->user.load_com=(m_memory.read_parameters()->frames.F_T_EE*mirmi_utils::invert_transformation_matrix(object->OB_T_gp)).block<3,1>(0,3);
         m_memory.get_parameters()->user.load_I=object->OB_I;
         m_memory.get_parameters()->frames.EE_T_TCP=mirmi_utils::invert_transformation_matrix(object->OB_T_gp)*object->OB_T_TCP;
-        m_robot_backend->set_robot_parameters();
+        // m_robot_backend->set_robot_parameters();
         return true;
     }else{
         return false;
@@ -539,7 +538,7 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
     }
     control::RobotState robot_state;
     control::RobotModel robot_model;
-    control::GripperState gripper_state;
+    // control::GripperState gripper_state;
     if(is_busy()){
         return true;
     }
@@ -557,7 +556,7 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
                 return true;
             }
             read_successful=true;
-            if(!m_robot_backend->get_robot_snapshot(robot_state, robot_model, gripper_state)){
+            if(!m_robot_backend->get_robot_snapshot(robot_state, robot_model)){
                 spdlog::debug("Core::refresh_percept.failed_to_acquire_robot_snapshot");
                 read_successful=false;
             }
@@ -576,18 +575,18 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
             count++;
         }
     }else{
-        if(!m_robot_backend->get_robot_snapshot(robot_state, robot_model, gripper_state)){
+        if(!m_robot_backend->get_robot_snapshot(robot_state, robot_model)){
             spdlog::debug("Core::refresh_percept.failed_to_acquire_robot_snapshot");
             spdlog::debug("reconnecting to Robot");
             m_robot_backend->connect_to_robot(m_context.config.robot_ip);
             m_robot_backend->connect_to_gripper(m_context.config.robot_ip);
-            if(!m_robot_backend->get_robot_snapshot(robot_state, robot_model, gripper_state)){
+            if(!m_robot_backend->get_robot_snapshot(robot_state, robot_model)){
                 return false;
             }
         }
 
     }
-    m_percept.update(robot_state, robot_model, gripper_state, O_R_TF);
+    m_percept.update(robot_state, robot_model, O_R_TF);
     if(m_control_executor){
         m_control_executor->update_percept(m_percept.controller);
     }

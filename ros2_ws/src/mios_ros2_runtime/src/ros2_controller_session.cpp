@@ -161,7 +161,6 @@ mios::ControlReturnType Ros2ControllerSession::acquire(const StationaryCheck& st
     //   throw std::runtime_error("Controller-manager rejected effort activation; inspect Control lifecycle diagnostics.");
     // }
     // require_exclusive(*controllers(), "active");
-    std::cout<<"check controller status"<<std::endl;
     require_exclusive(*controllers(), "active");
     return success();
   } catch (const std::exception& error) {

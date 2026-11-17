@@ -66,11 +66,6 @@ target_include_directories(mios_ros2_runtime_backend PUBLIC
 target_link_libraries(mios_ros2_runtime_backend mios_ros2_runtime_translation Eigen3::Eigen)
 ament_target_dependencies(mios_ros2_runtime_backend franka_msgs mios_msgs rclcpp rclcpp_action sensor_msgs std_srvs controller_manager_msgs rcl_interfaces)
 
-add_executable(mios_runtime_node src/mios_runtime_node.cpp)
-target_compile_features(mios_runtime_node PUBLIC cxx_std_17)
-target_link_libraries(mios_runtime_node mios_ros2_runtime_backend)
-ament_target_dependencies(mios_runtime_node rclcpp)
-
 install(DIRECTORY include/ DESTINATION include)
 install(FILES
   "${MIOS_CONTROL_TYPES_INCLUDE_DIR}/mios/control/control_types.hpp"
@@ -87,8 +82,6 @@ install(TARGETS mios_ros2_runtime_translation mios_ros2_runtime_backend
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
-install(TARGETS mios_runtime_node
-  RUNTIME DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   add_executable(test_ros2_core_controller_lifecycle test/test_ros2_core_controller_lifecycle.cpp)

@@ -93,12 +93,7 @@ int main(int argc, char* argv[]) {
   rclcpp::executors::SingleThreadedExecutor executor;
   executor.add_node(node);
   std::thread spin([&] { executor.spin(); });
-  auto ready = [&] {
-    const auto state = robot.latest_mios_robot_state();
-    return backend.pre_run_checks() && gripper.fresh_state() && state &&
-           state->robot_mode == mios::control::RobotMode::kIdle;
-  };
-  wait_until(ready);
+
 
   std::atomic<int> callbacks{0};
   std::atomic<bool> finish{false}, fail_callback{false};

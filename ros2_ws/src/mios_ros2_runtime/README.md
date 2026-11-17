@@ -1,9 +1,5 @@
 # MIOS ROS 2 runtime transport
 
-`mios_runtime_node` is the non-real-time ROS boundary for MIOS. It owns no
-`franka::Robot`, does not activate FCI, and obtains state only from
-`franka_robot_state_broadcaster`.
-
 `Ros2RobotBackend` converts `franka_msgs/msg/FrankaRobotState` into a complete
 neutral `RobotSnapshot`: joint and motor state, external torque/wrenches,
 end-effector pose, timestamp, and user-stop state. It publishes typed ROS
@@ -82,13 +78,6 @@ the resulting command through `Ros2ArmCommandDispatcher`. It permits only one
 active callback and finishes it on a completed MIOS command. Its gripper calls
 wait for the explicit upstream ROS action/service result and provide the
 validated gripper-state snapshot when the upstream topic is available.
-
-`mios_runtime_node` remains a transport-only process: it creates a
-Core-compatible backend but intentionally does not create Core or access the
-database. The separate `mios_ros2_core_runtime` executable is built from the
-repository root with `MIOS_BUILD_ROS2_CORE_RUNTIME=ON`. It constructs
-`mios::Core` with `Ros2CoreRobotBackend` as its only backend; it never creates
-a vendor SDK client or an FCI connection.
 
 `enable_core_scheduler` and `enable_core_task_execution` both default to
 `false`. With the defaults, the Core construction test does not initialize the

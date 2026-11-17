@@ -41,12 +41,6 @@ class Ros2GripperClient {
   bool move(double width, double speed, CompletionCallback completion) const;
   bool home(CompletionCallback completion) const;
   bool stop(CompletionCallback completion) const;
-  // latest_state is diagnostic history; command/teaching callers need the
-  // atomic freshness-checked snapshot instead.
-  std::optional<GripperStateSnapshot> latest_state() const;
-  std::optional<GripperStateSnapshot> fresh_state(
-      std::chrono::nanoseconds maximum_age = kMaximumStateAge) const;
-  bool has_fresh_state(std::chrono::nanoseconds maximum_age) const;
 
  private:
   using Grasp = franka_msgs::action::Grasp;
@@ -66,7 +60,8 @@ class Ros2GripperClient {
   rclcpp_action::Client<Move>::SharedPtr move_client_;
   rclcpp_action::Client<Homing>::SharedPtr homing_client_;
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr stop_client_;
-  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr state_subscription_;
+  // rclcpp::CallbackGroup::SharedPtr state_callback_group_;
+  // rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr state_subscription_;
   const double configured_max_width_;
   std::shared_ptr<SharedState> state_;
 };

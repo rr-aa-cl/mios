@@ -18,8 +18,7 @@ namespace mios {
 class RobotBackend {
  public:
   using ControlCallback = std::function<control::ArmCommand(
-      const control::RobotState&, const control::RobotModel&, const control::GripperState&,
-      double period_seconds)>;
+      const control::RobotState&, const control::RobotModel&, double period_seconds)>;
   using RobotParameterProvider =
       std::function<std::optional<control::RobotParameters>()>;
 
@@ -38,8 +37,7 @@ class RobotBackend {
   virtual void set_robot_parameter_provider(RobotParameterProvider /*provider*/) {}
   virtual bool set_robot_parameters() = 0;
   virtual bool get_robot_snapshot(control::RobotState& robot_state,
-                                  control::RobotModel& robot_model,
-                                  control::GripperState& gripper_state) const = 0;
+                                  control::RobotModel& robot_model) const = 0;
 
   virtual bool grasp(double width, double speed, double force, double epsilon_inner,
                      double epsilon_outer) const = 0;

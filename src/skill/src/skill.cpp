@@ -317,10 +317,56 @@ bool Skill::check_global_err_conditions(const Percept& p) const{
     for(unsigned i=0;i<3;i++){
         if(p.proprioception.T_T_EE(i,3)<m_ROI_center(i)+m_memory->read_parameters()->skill->ROI_x(2*i)){
             spdlog::error("Skill "+m_id+" has left ROI at coordinate "+std::to_string(i)+".");
+                // Print the full transformation matrix
+            std::stringstream ss;
+            ss << p.proprioception.T_T_EE;
+
+            spdlog::error(
+                "Skill {} has left ROI at coordinate {}.\n"
+                "T_T_EE:\n{}\n"
+                "T_T_EE({},3) = {:.9f}\n"
+                "ROI_center({}) = {:.9f}\n"
+                "ROI_x({}) = {:.9f}\n"
+                "ROI_limit = {:.9f}",
+                m_id,
+                i,
+                ss.str(),
+                i,
+                p.proprioception.T_T_EE(i, 3),
+                i,
+                m_ROI_center(i),
+                2 * i,
+                m_memory->read_parameters()->skill->ROI_x(2 * i),
+                m_ROI_center(i) +
+                    m_memory->read_parameters()->skill->ROI_x(2 * i));
+
             return true;
         }
         if(p.proprioception.T_T_EE(i,3)>m_ROI_center(i)+m_memory->read_parameters()->skill->ROI_x(2*i+1)){
             spdlog::error("Skill "+m_id+" has left ROI at coordinate "+std::to_string(i)+".");
+                // Print the full transformation matrix
+            std::stringstream ss;
+            ss << p.proprioception.T_T_EE;
+
+            spdlog::error(
+                "in +1 round, Skill {} has left ROI at coordinate {}.\n"
+                "T_T_EE:\n{}\n"
+                "T_T_EE({},3) = {:.9f}\n"
+                "ROI_center({}) = {:.9f}\n"
+                "ROI_x({}) = {:.9f}\n"
+                "ROI_limit = {:.9f}",
+                m_id,
+                i,
+                ss.str(),
+                i,
+                p.proprioception.T_T_EE(i, 3),
+                i,
+                m_ROI_center(i),
+                2 * i+1,
+                m_memory->read_parameters()->skill->ROI_x(2 * i+1),
+                m_ROI_center(i) +
+                    m_memory->read_parameters()->skill->ROI_x(2 * i+1));
+
             return true;
         }
     }

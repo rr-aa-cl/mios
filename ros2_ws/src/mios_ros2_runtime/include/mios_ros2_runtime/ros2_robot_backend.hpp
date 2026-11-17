@@ -81,6 +81,7 @@ class Ros2RobotBackend {
   void receive_model(const mios_msgs::msg::MiosRobotModel::SharedPtr message);
 
   rclcpp::Node& node_;
+  rclcpp::CallbackGroup::SharedPtr state_callback_group_;
   rclcpp::Subscription<franka_msgs::msg::FrankaRobotState>::SharedPtr state_subscription_;
   rclcpp::Subscription<mios_msgs::msg::MiosRobotModel>::SharedPtr model_subscription_;
   rclcpp::Publisher<mios_msgs::msg::MiosEffortCommand>::SharedPtr effort_publisher_;

@@ -215,8 +215,7 @@ class MiosRos2CoreNode final : public rclcpp::Node {
     // period, particularly when this node starts after the broadcasters.
     // Retrying here is read-only and keeps all command gates unchanged.
     if (!backend_->has_fresh_robot_state(core_state_timeout_) ||
-        !backend_->has_fresh_robot_model(core_state_timeout_) ||
-        (require_gripper_feedback_ && !gripper_client_->fresh_state())) {
+        !backend_->has_fresh_robot_model(core_state_timeout_)) {
       if (!waiting_for_initial_snapshots_logged_) {
         RCLCPP_WARN(get_logger(),
                     "Waiting for fresh robot-state, robot-model and required gripper feedback before starting "
@@ -266,7 +265,13 @@ int main(int argc, char* argv[]) {
   std::signal(SIGTERM, request_stop);
   rclcpp::init(argc, argv, rclcpp::InitOptions(), rclcpp::SignalHandlerOptions::None);
   auto node = std::make_shared<mios_ros2_runtime::MiosRos2CoreNode>();
-  rclcpp::executors::MultiThreadedExecutor executor;
+//   rclcpp::executors::MultiThreadedExecutor executor;
+  rclcpp::ExecutorOptions options;
+
+  rclcpp::executors::MultiThreadedExecutor executor(
+    options,
+    4  // number of executor worker threads
+  );
   executor.add_node(node);
   std::atomic<bool> executor_finished{false};
   std::exception_ptr executor_error;

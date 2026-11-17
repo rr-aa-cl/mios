@@ -140,8 +140,7 @@ mios::ControlReturnType Ros2CoreRobotBackend::control(const mios::control::Comma
   }
   auto result = controller_session_->acquire([this](const double threshold) {
     const auto state = robot_backend_.latest_mios_robot_state();
-    if (!pre_run_checks() || !state || state->robot_mode != mios::control::RobotMode::kIdle ||
-        !gripper_client_.fresh_state()) return false;
+    if (!pre_run_checks() || !state || state->robot_mode != mios::control::RobotMode::kIdle) return false;
     for (std::size_t index = 0; index < state->position.size(); ++index) {
       if (!std::isfinite(state->position[index]) || !std::isfinite(state->velocity[index]) ||
           std::abs(state->velocity[index]) > threshold) return false;
@@ -160,34 +159,17 @@ mios::ControlReturnType Ros2CoreRobotBackend::control(const mios::control::Comma
         control_complete_.wait_for(lock, std::chrono::milliseconds(20));
         if (active_control_->complete) break;
         lock.unlock();
-        // const bool fresh = pre_run_checks() && gripper_client_.fresh_state().has_value();
-        // lock.lock();
-        // if (!fresh && !active_control_->complete) {
-        //   active_control_->result = {true, "RobotFeedbackLost", "Fresh permitted arm/model/gripper feedback was lost during control."};
-        //   active_control_->complete = true;
-        // }
         const bool pre_run_ok = pre_run_checks();
-        const auto gripper_state = gripper_client_.fresh_state(std::chrono::milliseconds(500));
-        const bool gripper_fresh = gripper_state.has_value();
-
-        const bool fresh = pre_run_ok && gripper_fresh;
-
         lock.lock();
 
-        if (!fresh && !active_control_->complete) {
+        if (!pre_run_ok && !active_control_->complete) {
           RCLCPP_ERROR(
             rclcpp::get_logger("mios_ros2_core"),
             "RobotFeedbackLost DEBUG:\n"
             "  pre_run_checks() = %d\n"
-            "  gripper_fresh = %d\n"
-            "  fresh = %d\n"
-            "  active_control_->complete = %d\n"
-            "  gripper_state.has_value() = %d",
+            "  active_control_->complete = %d\n",
             static_cast<int>(pre_run_ok),
-            static_cast<int>(gripper_fresh),
-            static_cast<int>(fresh),
-            static_cast<int>(active_control_->complete),
-            static_cast<int>(gripper_state.has_value()));
+            static_cast<int>(active_control_->complete));
 
           active_control_->result = {
               true,
@@ -282,8 +264,7 @@ bool Ros2CoreRobotBackend::set_robot_parameters() {
 }
 
 bool Ros2CoreRobotBackend::get_robot_snapshot(mios::control::RobotState& robot_state,
-                                              mios::control::RobotModel& robot_model,
-                                              mios::control::GripperState& gripper_state) const {
+                                              mios::control::RobotModel& robot_model) const {
   if (!state_and_model_are_fresh()) {
     return false;
   }
@@ -294,11 +275,6 @@ bool Ros2CoreRobotBackend::get_robot_snapshot(mios::control::RobotState& robot_s
   }
   robot_state = *state;
   robot_model = model->model;
-  // JointState exposes the opening width while action results maintain the
-  // grasp flag. Fields not published upstream (temperature) remain neutral.
-  const auto gripper = gripper_client_.fresh_state();
-  if (allow_task_execution_ && !gripper) return false;
-  gripper_state = gripper ? gripper->state : mios::control::GripperState{};
   return true;
 }
 
@@ -425,15 +401,10 @@ void Ros2CoreRobotBackend::receive_state(const RobotSnapshot& snapshot) {
                             {true, "RobotModelUnavailable", "The ROS model snapshot is absent or stale."});
     return;
   }
-  const auto gripper = gripper_client_.fresh_state();
-  if (!gripper) {
-    complete_active_control(generation, {true, "GripperFeedbackUnavailable", "Fresh valid gripper feedback is required during control."});
-    return;
-  }
 
   mios::control::ArmCommand command;
   try {
-    command = callback(to_mios_robot_state(snapshot), model->model, gripper->state, period_seconds);
+    command = callback(to_mios_robot_state(snapshot), model->model, period_seconds);
   } catch (const std::exception& error) {
     complete_active_control(generation, {true, "ControlCallbackException", error.what()});
     return;

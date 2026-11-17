@@ -296,7 +296,7 @@ The Docker image can be checked without a robot connection:
 docker run --rm --network none --entrypoint bash mios-ros2-jazzy:local -lc '
   source /opt/ros/jazzy/setup.bash && source /ws/install/setup.bash
   ros2 interface show mios_msgs/msg/MiosActuatorCommand
-  timeout 2 ros2 run mios_ros2_runtime mios_runtime_node
+  timeout 2 ros2 run mios_ros2_runtime
   test $? -eq 124
   timeout 2 /opt/mios/install/bin/mios_ros2_core_runtime
   test $? -eq 124

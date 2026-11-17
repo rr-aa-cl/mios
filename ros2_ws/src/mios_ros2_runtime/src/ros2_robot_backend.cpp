@@ -2,6 +2,10 @@
 
 #include <cmath>
 #include <utility>
+#include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <limits>
 
 namespace mios_ros2_runtime {
 namespace {
@@ -36,9 +40,16 @@ Ros2RobotBackend::Ros2RobotBackend(rclcpp::Node& node, std::string robot_state_t
                                    std::string joint_position_command_topic,
                                    std::string cartesian_pose_command_topic)
     : node_(node) {
-  state_subscription_ = node_.create_subscription<franka_msgs::msg::FrankaRobotState>(
-      std::move(robot_state_topic), rclcpp::QoS(1).best_effort(),
-      std::bind(&Ros2RobotBackend::receive_state, this, std::placeholders::_1));
+  state_callback_group_ = node_.create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  rclcpp::SubscriptionOptions state_options;
+  state_options.callback_group = state_callback_group_;
+  state_subscription_ =
+      node_.create_subscription<franka_msgs::msg::FrankaRobotState>(
+          robot_state_topic,
+          rclcpp::QoS(rclcpp::KeepLast(1)).best_effort().durability_volatile(),
+          std::bind(&Ros2RobotBackend::receive_state, this, std::placeholders::_1),
+          state_options);
+
   model_subscription_ = node_.create_subscription<mios_msgs::msg::MiosRobotModel>(
       std::move(robot_model_topic), rclcpp::QoS(1).best_effort(),
       std::bind(&Ros2RobotBackend::receive_model, this, std::placeholders::_1));

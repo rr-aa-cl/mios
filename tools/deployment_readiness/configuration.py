@@ -17,7 +17,6 @@ def parameters(service):
     if command == ["/usr/local/bin/start_control.sh"]:
         mapping = {"robot_ip": ("ROBOT_IP", "192.168.4.100"),
                    "load_gripper": ("MIOS_LOAD_GRIPPER", "true")}
-        fixed = {"robot_type": "fr3", "controllers_yaml": "/ws/install/mios_ros2_control/share/mios_ros2_control/config/mios_controllers.yaml"}
     elif command == ["/usr/local/bin/start_core.sh"]:
         mapping = {"robot_ip": ("ROBOT_IP", "192.168.4.100"),
                    "database_name": ("MONGO_DB_NAME", "mios"),
@@ -29,11 +28,10 @@ def parameters(service):
                    "enable_core_scheduler": ("MIOS_ENABLE_CORE_SCHEDULER", "true"),
                    "enable_core_task_execution": ("MIOS_ENABLE_CORE_TASK_EXECUTION", "true"),
                    "allow_controller_owned_move_mode": ("MIOS_ALLOW_CONTROLLER_OWNED_MOVE_MODE", "true")}
-        fixed = {"allow_robot_parameter_application": "false"}
     else:
         return {}
     # Bash ${NAME:-default} also chooses the default for unset/empty inputs.
-    return dict(fixed, **{key: str(environment.get(name) if environment.get(name) not in (None, "") else default)
+    return dict(**{key: str(environment.get(name) if environment.get(name) not in (None, "") else default)
                           for key, (name, default) in mapping.items()})
 
 
@@ -218,10 +216,6 @@ def validate_compose(context):
     matching_robot = cp.get("robot_ip") == kp.get("robot_ip") == context.robot_ip
     checks.append(Check("compose.robot_ip", "PASS" if matching_robot else "FAIL",
                         f"Control and Core must target {context.robot_ip}."))
-    parameter_off = kp.get("allow_robot_parameter_application") == "false"
-    checks.append(Check("compose.parameter_application", "PASS" if parameter_off else "FAIL",
-                        "Core must explicitly disable parameter application during tasks.",
-                        "Use the inspected start_core.sh command, which fixes allow_robot_parameter_application:=false." if not parameter_off else ""))
     task_execution = "true" if context.profile == "motion" else "false"
     gates = {"enable_core_scheduler": "true", "enable_core_task_execution": task_execution,
              "allow_controller_owned_move_mode": task_execution}

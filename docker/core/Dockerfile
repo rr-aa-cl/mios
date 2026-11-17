@@ -2,11 +2,10 @@
 
 # Core imports only the Control image's published ROS transport artifacts. It
 # does not inherit the hardware image filesystem or its FCI/libfranka runtime.
-ARG MIOS_CONTROL_IMAGE=mios-ros2-control:local
+ARG MIOS_CONTROL_IMAGE=janine86/ros2-control:latest
 FROM ${MIOS_CONTROL_IMAGE} AS control_artifacts
 
-# Match Control's pinned ROS base for the imported transport artifacts.
-FROM osrf/ros:jazzy-desktop@sha256:e1c05248ece3bc328386d0509a041a97a5de872a5606418118748875c539c66f
+FROM ros:jazzy-ros-base
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ARG MIOS_CORE_CONTRACT_VERSION=0.1.0
