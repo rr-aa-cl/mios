@@ -1,0 +1,75 @@
+# Apply separately from the robot runtime, after checking nuc3's existing Mongo.
+# Reuses PVC mongo-data-dir; create mongo-pvc.yml only if that claim is absent.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: mongo
+  namespace: nuc3
+  labels:
+    name: mongo
+spec:
+  selector:
+    matchLabels:
+      name: mongo
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
+  template:
+    metadata:
+      labels:
+        name: mongo
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: nuc3
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      containers:
+        - name: mongo
+          image: mongo:7.0.14
+          imagePullPolicy: IfNotPresent
+          # Core and MLS use localhost on nuc3. No remote database access needed.
+          args: [--dbpath, /data/db, --bind_ip, 127.0.0.1]
+          ports:
+            - name: mongo
+              containerPort: 27017
+              hostPort: 27017
+              hostIP: 127.0.0.1
+          resources:
+            requests:
+              cpu: "1"
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 5Gi
+          volumeMounts:
+            - name: mongo-data-dir
+              mountPath: /data/db
+          # Allow recovery of an existing database before liveness can restart it.
+          startupProbe:
+            exec:
+              command: [mongosh, --quiet, --host, 127.0.0.1, --eval, 'quit(db.adminCommand({ping: 1}).ok === 1 ? 0 : 1)']
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            exec:
+              command: [mongosh, --quiet, --host, 127.0.0.1, --eval, 'quit(db.adminCommand({ping: 1}).ok === 1 ? 0 : 1)']
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command: [mongosh, --quiet, --host, 127.0.0.1, --eval, 'quit(db.adminCommand({ping: 1}).ok === 1 ? 0 : 1)']
+            initialDelaySeconds: 3
+            periodSeconds: 3
+            timeoutSeconds: 15
+            failureThreshold: 6
+      volumes:
+        - name: mongo-data-dir
+          persistentVolumeClaim:
+            claimName: mongo-data-dir

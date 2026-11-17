@@ -41,6 +41,7 @@ def minimal_engine(mock_mongo):
         engine.queued_trials = __import__("queue").Queue()
         engine.completed_trials = {}
         engine.keep_running = False
+        engine.stop_requested = threading.Event()
         engine.stop_condition = None
         engine.redisClient = mock_redis
         engine.worker_threads = {}
@@ -264,4 +265,3 @@ class TestEnginePushTrial:
         t = Trial({"name": "T", "skills": {}}, [], [], {"p1": 0.5}, True, False)
         minimal_engine.push_trial(t)
         assert minimal_engine.queued_trials.qsize() == 1
-

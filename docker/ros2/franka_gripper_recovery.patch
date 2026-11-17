@@ -1,0 +1,180 @@
+diff --git a/franka_gripper/src/gripper_action_server.cpp b/franka_gripper/src/gripper_action_server.cpp
+--- a/franka_gripper/src/gripper_action_server.cpp
++++ b/franka_gripper/src/gripper_action_server.cpp
+@@ -1,44 +1,45 @@
+ // Copyright (c) 2023 Franka Robotics GmbH
+ //
+ // Licensed under the Apache License, Version 2.0 (the "License");
+ // you may not use this file except in compliance with the License.
+ // You may obtain a copy of the License at
+ //
+ //     http://www.apache.org/licenses/LICENSE-2.0
+ //
+ // Unless required by applicable law or agreed to in writing, software
+ // distributed under the License is distributed on an "AS IS" BASIS,
+ // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ // See the License for the specific language governing permissions and
+ // limitations under the License.
+ 
++#include <exception>
+ #include <functional>
+ #include <future>
+ #include <memory>
+ #include <string>
+ #include <thread>
+ 
+ #include <franka/exception.h>
+ #include <franka/gripper.h>
+ #include <franka/gripper_state.h>
+ #include <control_msgs/action/gripper_command.hpp>
+ #include <rclcpp/rclcpp.hpp>
+ #include <rclcpp_action/rclcpp_action.hpp>
+ #include <rclcpp_components/register_node_macro.hpp>
+ #include <sensor_msgs/msg/joint_state.hpp>
+ #include <std_srvs/srv/trigger.hpp>
+ 
+ #include <franka_gripper/gripper_action_server.hpp>
+ 
+ namespace franka_gripper {
+ GripperActionServer::GripperActionServer(const rclcpp::NodeOptions& options)
+     : Node("franka_gripper_node", options) {
+   this->declare_parameter("robot_ip", std::string());
+   this->declare_parameter("default_grasp_epsilon.inner", k_default_grasp_epsilon);
+   this->declare_parameter("default_grasp_epsilon.outer", k_default_grasp_epsilon);
+   this->declare_parameter("default_speed", k_default_speed);
+   this->declare_parameter("joint_names", std::vector<std::string>());
+   this->declare_parameter("state_publish_rate", k_default_state_publish_rate);
+   this->declare_parameter("feedback_publish_rate", k_default_feedback_publish_rate);
+   std::string robot_ip;
+   if (!this->get_parameter<std::string>("robot_ip", robot_ip)) {
+@@ -234,57 +235,61 @@
+     kResult->effort = 0.;
+     if (kResult->reached_goal) {
+       RCLCPP_INFO(get_logger(), "Gripper %s succeeded", kTaskName.c_str());
+       goal_handle->succeed(kResult);
+     } else {
+       RCLCPP_INFO(get_logger(), "Gripper %s failed", kTaskName.c_str());
+       goal_handle->abort(kResult);
+     }
+   }
+ }
+ 
+ void GripperActionServer::stopServiceCallback(const std::shared_ptr<Trigger::Response>& response) {
+   RCLCPP_INFO(this->get_logger(), "Stopping gripper_...");
+   auto action_result = withResultGenerator<Homing>([this]() { return gripper_->stop(); })();
+   response->success = action_result->success;
+   response->message = action_result->error;
+   if (response->success) {
+     RCLCPP_INFO(this->get_logger(), "Gripper stopped");
+   } else {
+     RCLCPP_INFO(this->get_logger(), "Gripper could not be stopped");
+   }
+   if (!response->message.empty()) {
+     RCLCPP_ERROR(this->get_logger(), response->message.c_str());
+   }
+ }
+ 
+ void GripperActionServer::publishGripperState() {
+   std::lock_guard<std::mutex> lock(gripper_state_mutex_);
+   try {
+     current_gripper_state_ = gripper_->readOnce();
+-  } catch (const franka::Exception& e) {
+-    RCLCPP_ERROR(this->get_logger(), e.what());
++  } catch (const std::exception& e) {
++    RCLCPP_FATAL(this->get_logger(),
++                 "Gripper state read failed; restarting connection: %s", e.what());
++    // Never publish the cached width with a fresh timestamp after a failed read.
++    // The launch supervisor reconnects this process without replaying commands.
++    throw;
+   }
+   sensor_msgs::msg::JointState joint_states;
+   joint_states.header.stamp = this->now();
+   joint_states.name.push_back(this->joint_names_[0]);
+   joint_states.name.push_back(this->joint_names_[1]);
+   joint_states.position.push_back(current_gripper_state_.width / 2);
+   joint_states.position.push_back(current_gripper_state_.width / 2);
+   joint_states.velocity.push_back(0.0);
+   joint_states.velocity.push_back(0.0);
+   joint_states.effort.push_back(0.0);
+   joint_states.effort.push_back(0.0);
+   joint_states_publisher_->publish(joint_states);
+ }
+ 
+ void GripperActionServer::publishGripperCommandFeedback(
+     const std::shared_ptr<rclcpp_action::ServerGoalHandle<GripperCommand>>& goal_handle) {
+   auto gripper_feedback = std::make_shared<GripperCommand::Feedback>();
+   std::lock_guard<std::mutex> guard(gripper_state_mutex_);
+   gripper_feedback->position = current_gripper_state_.width;
+   gripper_feedback->effort = 0.;
+   goal_handle->publish_feedback(gripper_feedback);
+ }
+ }  // namespace franka_gripper
+ 
+ RCLCPP_COMPONENTS_REGISTER_NODE(franka_gripper::GripperActionServer)  // NOLINT
+diff --git a/franka_gripper/launch/gripper.launch.py b/franka_gripper/launch/gripper.launch.py
+--- a/franka_gripper/launch/gripper.launch.py
++++ b/franka_gripper/launch/gripper.launch.py
+@@ -16,60 +16,63 @@
+ 
+ from ament_index_python.packages import get_package_share_directory
+ from launch import LaunchDescription
+ from launch.actions import DeclareLaunchArgument, OpaqueFunction
+ from launch.conditions import IfCondition, UnlessCondition
+ from launch.substitutions import LaunchConfiguration
+ from launch_ros.actions import Node
+ 
+ 
+ def generate_robot_nodes(context):
+     robot_ip = LaunchConfiguration('robot_ip').perform(context)
+     use_fake_hardware = LaunchConfiguration('use_fake_hardware').perform(context)
+     robot_type = LaunchConfiguration('robot_type').perform(context)
+     namespace = LaunchConfiguration('namespace').perform(context)
+     # Declare the launch argument names
+     default_joint_name_postfix = '_finger_joint'
+     joint_names_1 = robot_type + default_joint_name_postfix + '1'
+     joint_names_2 = robot_type + default_joint_name_postfix + '2'
+     joint_names = [joint_names_1, joint_names_2]
+ 
+     nodes = []
+ 
+     # Load the gripper configuration file
+     gripper_config = os.path.join(
+         get_package_share_directory('franka_gripper'), 'config', 'franka_gripper_node.yaml'
+     )
+     nodes.append(
+         Node(
+                 package='franka_gripper',
+                 executable='franka_gripper_node',
++                respawn=True,
++                respawn_delay=2.0,
++                respawn_max_retries=5,
+                 name=['franka_gripper'],
+                 namespace=namespace,
+                 parameters=[{'robot_ip': robot_ip, 'joint_names': joint_names}, gripper_config],
+                 condition=UnlessCondition(use_fake_hardware),
+         )
+     )
+     nodes.append(
+         Node(
+             package='franka_gripper',
+             executable='fake_gripper_state_publisher.py',
+             name=['franka_gripper'],
+             namespace=namespace,
+             parameters=[{'robot_ip': robot_ip, 'joint_names': joint_names}, gripper_config],
+             condition=IfCondition(use_fake_hardware),
+         )
+     )
+     return nodes
+ 
+ 
+ def generate_launch_description():
+     return LaunchDescription(
+         [
+             DeclareLaunchArgument(
+                 'robot_ip',
+                 description='Hostname or IP address of the robot.'
+             ),
+             DeclareLaunchArgument(
+                 'use_fake_hardware',
+                 default_value='false',
+                 description=(

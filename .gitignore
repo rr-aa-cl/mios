@@ -1,88 +1,154 @@
-# Compiled source #
-###################
-*.com
-*.class
+# CMake / C++ and ROS workspace outputs
+build/
+build-*/
+build_*/
+cmake-build-*/
+install/
+devel/
+log/
+logs/
+_deps/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Testing/
+compile_commands.json
+.ninja_deps
+.ninja_log
+build.ninja
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.dylib
 *.dll
 *.exe
-*.o
-*.so
-*.a
+*.pdb
+*.gch
+*.pch
+/include/commons/config.hpp
 
-# Packages #
-############
-# it's better to unpack these files and commit the raw source
-# git has its own built in compression methods
+# Required prebuilt plugins are source-distributed dependencies, not build output.
+!/src/plugins/**/*.so
+!/src/plugins/**/*.so.*
+
+# Locally downloaded/extracted SDKs and package archives.
+# Existing tracked files remain tracked; these rules do not remove Git history.
+/local_deps/
+*.deb
+*.rpm
 *.7z
 *.dmg
-*.gz
 *.iso
-*.jar
 *.rar
 *.tar
+*.tar.gz
+*.tgz
+*.tar.bz2
+*.tar.xz
 *.zip
 
-# Logs and databases #
-######################
+# Python environments, packaging and caches (keep pyproject.toml and uv.lock)
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.tox/
+.nox/
+.cache/
+.ipynb_checkpoints/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.gcda
+*.gcno
+*.gcov
+
+# Local environment, credentials and machine-specific tooling state.
+# Do not ignore all dotfiles: .github/, .gitignore and project config belong in Git.
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.envrc
+.direnv/
+.aws/
+.azure/
+.docker/
+.kube/
+.ssh/
+.netrc
+/secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+.ros/
+.colcon/
+.ccache/
+
+# Logs, databases and robot recordings
 *.log
+*.log.*
 *.sql
 *.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite3-journal
+*.db3
+*.db3-shm
+*.db3-wal
+*.bson
+*.bag
+*.bag.active
+*.mcap
+*.mcap.active
+trajectory.txt
+/diagnostics/
+/ml_service/insertion-plan-*/
+/ml_service/insertion-trial-*/
+/ml_service/insertion-diagnostic-*/
+/ml_service/seated-reference-*.json
+/ml_service/approach-teaching-*/
+/python/set_objects.py
+/python/Krones_assembly.py
+/python/DRLplotter.py
+/python/experimentData/
 
-# OS generated files #
-######################
+# Editor / OS temporary files
+.idea/
+.vscode/
+CMakeLists.txt.user*
+*.swp
+*.swo
+*~
+*.autosave
 .DS_Store
 .DS_Store?
 ._*
-.Spotlight-V100
-.Trashes
+.Spotlight-V100/
+.Trashes/
 ehthumbs.db
 Thumbs.db
 
-# Audio #
-*.wav
-*.mp3
-
-# Python #
-##########
-*.pyc
-__pycache__
-
-# Other #
-#########
-*~
+# Generated documentation and local MATLAB/audio artifacts
+/doc/html/
+/doc/latex/
 *.slx
 *.slxc
 *.mdl.*
 *.mexa64
 slprj/
-logs/
-*.autosave
-.*
-*.md5
-
-# Build #
-#########
-build*
-venv
-_deps
-mios/
-
-# IDE files #
-###########
-.idea
-cmake-build-*
-CMakeLists.txt.user
-
-# doxygen #
-###########
-doc/html/*
-doc/latex/*
-
-# Mios #
-########
-src/ros_workspace/devel
-include/commons/config.hpp
-!**/include/mios  
-/python/set_objects.py
-/python/Krones_assembly.py
-/python/DRLplotter.py
-/python/experimentData/
+*.wav
+*.mp3

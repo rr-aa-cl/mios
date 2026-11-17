@@ -1,13 +1,19 @@
 #!/usr/bin/python3 -u
 import time
 from pymongo import MongoClient
-from ws_client import *
-# from udp_client import *
 import logging
 import sys
+from pathlib import Path as _Path
 import numpy as np
 import copy
 import csv
+
+# Keep direct scripts in this directory and package imports on the same client.
+# Qualify the package so MLS's separate ``utils`` cannot shadow it.
+_repository_root = str(_Path(__file__).resolve().parents[2])
+if _repository_root not in sys.path:
+    sys.path.insert(0, _repository_root)
+from python.utils.ws_client import *
 
 
 logger = logging.getLogger("skill_test")

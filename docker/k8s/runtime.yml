@@ -1,0 +1,231 @@
+# Kubernetes >= 1.33: Control and Core are ordered, restartable init containers.
+# Startup: Control ready -> Core Portal ready -> MLS.
+# Termination: MLS -> Core -> Control, within the shared grace period.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mios-runtime
+  labels:
+    app.kubernetes.io/name: mios-runtime
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  progressDeadlineSeconds: 900
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mios-runtime
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mios-runtime
+    spec:
+      # Select exactly the commissioned, directly robot-connected node.
+      nodeSelector:
+        kubernetes.io/hostname: nuc3
+        kubernetes.io/os: linux
+        kubernetes.io/arch: amd64
+      hostNetwork: true
+      hostIPC: true
+      dnsPolicy: ClusterFirstWithHostNet
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 90
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        seccompProfile:
+          type: RuntimeDefault
+      # If needed, add imagePullSecrets for your private registry here.
+      volumes:
+        - name: runtime-scripts
+          configMap:
+            name: mios-runtime-scripts
+        - name: fci-owner-lock
+          hostPath:
+            path: /var/lock/mios-fr3
+            type: DirectoryOrCreate
+      initContainers:
+        - name: control
+          image: janine86/ros2-control
+          imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+          command: [python3, /opt/mios-k8s/runtime.py, control]
+          envFrom:
+            - configMapRef:
+                name: mios-runtime-config
+          volumeMounts:
+            - name: runtime-scripts
+              mountPath: /opt/mios-k8s
+              readOnly: true
+            - name: fci-owner-lock
+              mountPath: /var/lock/mios-fr3
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+              add: [SYS_NICE, SYS_RESOURCE, IPC_LOCK]
+          resources:
+            requests:
+              cpu: "2"
+              memory: 512Mi
+            # No CPU limit: CFS quota throttling is unsuitable for the FCI loop.
+            limits:
+              memory: 2Gi
+          startupProbe:
+            exec:
+              command: [/usr/local/bin/check_control_ready.sh]
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: [/usr/local/bin/check_control_ready.sh]
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: [/usr/local/bin/check_control_ready.sh]
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+        - name: core
+          image: ros2-core:latest
+          imagePullPolicy: IfNotPresent
+          restartPolicy: Always
+          command: [python3, /opt/mios-k8s/runtime.py, core]
+          envFrom:
+            - configMapRef:
+                name: mios-runtime-config
+          volumeMounts:
+            - name: runtime-scripts
+              mountPath: /opt/mios-k8s
+              readOnly: true
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: "1"
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          startupProbe:
+            exec:
+              command: [python3, /opt/mios-k8s/runtime.py, probe-core]
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            exec:
+              command: [python3, /opt/mios-k8s/runtime.py, probe-core]
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      containers:
+        - name: mls
+          image: mls:latest
+          imagePullPolicy: IfNotPresent
+          command: [python3, /opt/mios-k8s/runtime.py, mls]
+          workingDir: /mios_mls
+          envFrom:
+            - configMapRef:
+                name: mios-runtime-config
+          env:
+            - name: interface_port
+              valueFrom:
+                configMapKeyRef:
+                  name: mios-runtime-config
+                  key: MIOS_ML_PORT
+            - name: mios_port
+              valueFrom:
+                configMapKeyRef:
+                  name: mios-runtime-config
+                  key: MIOS_WS_PORT
+            - name: mongo_port
+              valueFrom:
+                configMapKeyRef:
+                  name: mios-runtime-config
+                  key: MONGO_PORT
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          volumeMounts:
+            - name: runtime-scripts
+              mountPath: /opt/mios-k8s
+              readOnly: true
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: "1"
+              memory: 512Mi
+            limits:
+              memory: 4Gi
+          ports:
+            # All three processes share this network namespace. Declare Core's
+            # ports here too: the 1.33 scheduler reserves regular-container ports.
+            - name: portal
+              containerPort: 12000
+              hostPort: 12000
+            - name: core-rpc
+              containerPort: 12001
+              hostPort: 12001
+            - name: core-udp
+              containerPort: 12002
+              hostPort: 12002
+              protocol: UDP
+            - name: ml-rpc
+              containerPort: 8000
+              hostPort: 8000
+            - name: knowledge-rpc
+              containerPort: 8001
+              hostPort: 8001
+          startupProbe:
+            exec:
+              command: [python3, /opt/mios-k8s/runtime.py, probe-mls]
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: [python3, /opt/mios-k8s/runtime.py, probe-mls]
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: [python3, /opt/mios-k8s/runtime.py, stop-mls]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mios-runtime
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mios-runtime
+  ports:
+    - name: portal
+      port: 12000
+      targetPort: 12000
+    - name: core-rpc
+      port: 12001
+      targetPort: 12001
+    - name: core-udp
+      port: 12002
+      targetPort: 12002
+      protocol: UDP
+    - name: ml-rpc
+      port: 8000
+      targetPort: 8000
+    - name: knowledge-rpc
+      port: 8001
+      targetPort: 8001
