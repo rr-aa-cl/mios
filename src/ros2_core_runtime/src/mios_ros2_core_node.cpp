@@ -9,6 +9,11 @@
 #include <string>
 #include <thread>
 
+#include "spdlog/spdlog.h"
+#include "spdlog/async.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/fmt/ostr.h"
+
 #include "mios/core/core.hpp"
 #include "mios/task/task_engine.hpp"
 #include "mios/utils/configuration.hpp"
@@ -16,10 +21,12 @@
 #include "mios_ros2_runtime/ros2_arm_command_dispatcher.hpp"
 #include "mios_ros2_runtime/ros2_core_robot_backend.hpp"
 #include "mios_ros2_runtime/ros2_controller_session.hpp"
+#include "mios_ros2_runtime/ros2_error_recovery_client.hpp"
 #include "mios_ros2_runtime/ros2_gripper_client.hpp"
 #include "mios_ros2_runtime/ros2_robot_parameter_client.hpp"
 #include "mios_ros2_runtime/ros2_robot_backend.hpp"
 #include "rclcpp/executors/multi_threaded_executor.hpp"
+#include "rclcpp/executors/single_threaded_executor.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace {
@@ -117,6 +124,18 @@ class MiosRos2CoreNode final : public rclcpp::Node {
         seconds_parameter(*this, "core_parameter_timeout_seconds", 5.0);
     const auto controller_timeout =
         seconds_parameter(*this, "core_controller_timeout_seconds", 3.0);
+    // franka_hardware's ActionServer node is "action_server" in the robot's
+    // namespace; an empty robot prefix gives this default name.
+    const auto error_recovery_action = declare_parameter<std::string>(
+        "error_recovery_action", "/action_server/error_recovery");
+    const auto enable_automatic_error_recovery =
+        declare_parameter<bool>("enable_automatic_error_recovery", true);
+    // Name of the <ros2_control> hardware component to reactivate after a
+    // cleared robot error, as the controller manager logs it.
+    const auto hardware_component_name = declare_parameter<std::string>(
+        "hardware_component_name", "FrankaHardwareInterface");
+    const auto error_recovery_timeout =
+        seconds_parameter(*this, "core_error_recovery_timeout_seconds", 5.0);
     const auto controller_manager_namespace =
         declare_parameter<std::string>("controller_manager_namespace", "/controller_manager");
     const auto effort_controller_name =
@@ -127,7 +146,7 @@ class MiosRos2CoreNode final : public rclcpp::Node {
     backend_ = std::make_unique<Ros2RobotBackend>(
         *this, robot_state_topic, robot_model_topic, effort_command_topic, actuator_command_topic,
         joint_velocity_command_topic, cartesian_velocity_command_topic, joint_position_command_topic,
-        cartesian_pose_command_topic);
+        cartesian_pose_command_topic, true);
     command_dispatcher_ = std::make_unique<Ros2ArmCommandDispatcher>(*backend_);
     gripper_client_ = std::make_unique<Ros2GripperClient>(
         *this, gripper_grasp_action, gripper_move_action, gripper_homing_action,
@@ -136,7 +155,7 @@ class MiosRos2CoreNode final : public rclcpp::Node {
         *this, parameter_service_namespace, allow_robot_parameter_application);
     controller_session_ = std::make_unique<Ros2ControllerSession>(
         *this, controller_manager_namespace, effort_controller_name,
-        joint_position_controller_name, controller_timeout);
+        joint_position_controller_name, controller_timeout, hardware_component_name);
 
     // Core task scheduling is an explicit second gate. A future operator must
     // enable both switches before any Core task can dispatch robot commands.
@@ -159,6 +178,12 @@ class MiosRos2CoreNode final : public rclcpp::Node {
         Ros2CoreRobotBackend::ParameterSnapshotProvider{}, core_state_timeout_,
         core_gripper_timeout, core_parameter_timeout, allow_task_execution,
         controller_owned_move_mode_enabled, controller_session_.get());
+    if (enable_automatic_error_recovery) {
+      error_recovery_client_ =
+          std::make_unique<Ros2ErrorRecoveryClient>(*this, error_recovery_action);
+      core_backend->set_error_recovery_client(error_recovery_client_.get(),
+                                              error_recovery_timeout);
+    }
 
     context_ = std::make_unique<MiosContext>(MiosContext{configuration_, shutdown_signal_});
     core_ = std::make_unique<mios::Core>(*context_, std::move(core_backend));
@@ -181,6 +206,31 @@ class MiosRos2CoreNode final : public rclcpp::Node {
       return;
     }
 
+    spdlog::level::level_enum info_level;
+    if(configuration_.verbosity=="trace"){
+        info_level=spdlog::level::trace;
+    }else if(configuration_.verbosity=="debug"){
+        info_level=spdlog::level::debug;
+    }else if(configuration_.verbosity=="info"){
+        info_level=spdlog::level::info;
+    }else{
+        info_level=spdlog::level::info;
+    }
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    console_sink->set_level(info_level);
+    console_sink->set_pattern("[mios] [%^%l%$] %v");
+    // The control cycle logs from the 1 kHz state callback. An asynchronous
+    // logger hands each message to a background thread, so a slow or blocked
+    // stdout cannot stall a cycle. If the queue ever fills, the oldest
+    // messages are dropped rather than blocking the caller.
+    spdlog::init_thread_pool(16384, 1);
+    auto logger = std::make_shared<spdlog::async_logger>(
+        "mios", console_sink, spdlog::thread_pool(),
+        spdlog::async_overflow_policy::overrun_oldest);
+    logger->flush_on(spdlog::level::err);
+    logger->set_level(info_level);
+    spdlog::set_default_logger(logger);
+    
     // Core needs fresh ROS state/model snapshots. Run initialization only
     // after this node has entered its executor and subscriptions can receive
     // their first messages.
@@ -190,6 +240,12 @@ class MiosRos2CoreNode final : public rclcpp::Node {
   }
 
   ~MiosRos2CoreNode() override { stop_core(); }
+
+  // Serviced by a dedicated executor thread in main(), not by the node's
+  // general executor.
+  rclcpp::CallbackGroup::SharedPtr state_callback_group() const {
+    return backend_ ? backend_->state_callback_group() : nullptr;
+  }
 
   // The main executor must keep servicing ROS responses until this returns.
   void stop_core() {
@@ -245,6 +301,7 @@ class MiosRos2CoreNode final : public rclcpp::Node {
   std::unique_ptr<Ros2RobotBackend> backend_;
   std::unique_ptr<Ros2ArmCommandDispatcher> command_dispatcher_;
   std::unique_ptr<Ros2GripperClient> gripper_client_;
+  std::unique_ptr<Ros2ErrorRecoveryClient> error_recovery_client_;
   std::unique_ptr<Ros2RobotParameterClient> parameter_client_;
   std::unique_ptr<Ros2ControllerSession> controller_session_;
   std::unique_ptr<mios::Core> core_;
@@ -270,24 +327,42 @@ int main(int argc, char* argv[]) {
 
   rclcpp::executors::MultiThreadedExecutor executor(
     options,
-    4  // number of executor worker threads
+    2  // number of executor worker threads
   );
   executor.add_node(node);
+  // The robot-state subscription drives the Core control cycle at 1 kHz. It
+  // has its own single-threaded executor so that no other callback of this
+  // node can delay it.
+  rclcpp::executors::SingleThreadedExecutor state_executor(options);
+  const auto state_callback_group = node->state_callback_group();
+  if (state_callback_group) {
+    state_executor.add_callback_group(state_callback_group, node->get_node_base_interface());
+  }
   std::atomic<bool> executor_finished{false};
   std::exception_ptr executor_error;
   std::thread spin([&] {
     try { executor.spin(); } catch (...) { executor_error = std::current_exception(); }
     executor_finished.store(true);
   });
+  std::thread state_spin([&] {
+    try { state_executor.spin(); } catch (...) { executor_error = std::current_exception(); }
+    executor_finished.store(true);
+  });
   while (!stop_signal && !executor_finished && rclcpp::ok()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
   }
+  // Core needs state callbacks to emit its final stop command, so both
+  // executors keep spinning until stop_core() returns.
   node->stop_core();
+  state_executor.cancel();
   executor.cancel();
+  state_spin.join();
   spin.join();
+  if (state_callback_group) state_executor.remove_callback_group(state_callback_group);
   executor.remove_node(node);
   node.reset();
   rclcpp::shutdown();
+  spdlog::shutdown();
   if (executor_error) std::rethrow_exception(executor_error);
   return 0;
 }

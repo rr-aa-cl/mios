@@ -11,6 +11,7 @@
 #include "mios/core/robot_backend.hpp"
 #include "mios_ros2_runtime/ros2_arm_command_dispatcher.hpp"
 #include "mios_ros2_runtime/ros2_controller_session.hpp"
+#include "mios_ros2_runtime/ros2_error_recovery_client.hpp"
 #include "mios_ros2_runtime/ros2_gripper_client.hpp"
 #include "mios_ros2_runtime/ros2_robot_parameter_client.hpp"
 #include "mios_ros2_runtime/ros2_robot_backend.hpp"
@@ -52,6 +53,10 @@ class Ros2CoreRobotBackend final : public mios::RobotBackend {
   bool connect_to_gripper(const std::optional<std::string>& ip) override;
   void disconnect_from_robot() override;
   void disconnect_from_gripper() override;
+  // Enables recover(): without a client it stays fail-closed.  The client
+  // must outlive this backend.  Call before Core starts using the backend.
+  void set_error_recovery_client(const Ros2ErrorRecoveryClient* client,
+                                 std::chrono::milliseconds timeout);
   mios::ControlReturnType recover() override;
   bool pre_run_checks() const override;
   mios::ControlReturnType control(mios::control::CommandMode mode,
@@ -109,6 +114,8 @@ class Ros2CoreRobotBackend final : public mios::RobotBackend {
   const bool allow_task_execution_;
   const bool allow_controller_owned_move_mode_;
   ControllerSession* controller_session_;
+  const Ros2ErrorRecoveryClient* error_recovery_client_{nullptr};
+  std::chrono::milliseconds error_recovery_timeout_{5000};
   const std::size_t state_observer_id_;
 
   mutable std::mutex control_mutex_;

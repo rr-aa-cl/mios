@@ -90,9 +90,48 @@ void Ros2CoreRobotBackend::disconnect_from_gripper() {
       });
 }
 
+void Ros2CoreRobotBackend::set_error_recovery_client(const Ros2ErrorRecoveryClient* client,
+                                                     const std::chrono::milliseconds timeout) {
+  error_recovery_client_ = client;
+  error_recovery_timeout_ = std::max(timeout, std::chrono::milliseconds(1));
+}
+
 mios::ControlReturnType Ros2CoreRobotBackend::recover() {
-  return {true, "Ros2RecoveryNotConfigured",
-          "ROS error recovery is intentionally delegated to the operator/Desk adapter."};
+  if (!error_recovery_client_) {
+    return {true, "Ros2RecoveryNotConfigured",
+            "ROS error recovery is intentionally delegated to the operator/Desk adapter."};
+  }
+  // Never recover underneath a running Core control callback: control()
+  // holds the session mutex for as long as its callback may run.
+  std::unique_lock<std::mutex> session_lock(session_mutex_, std::try_to_lock);
+  if (!session_lock.owns_lock() || is_control_active()) {
+    return {true, "RecoveryWhileControlActive",
+            "Error recovery was requested while a Core control callback is active."};
+  }
+  RCLCPP_WARN(rclcpp::get_logger("mios_ros2_core"),
+              "Requesting automatic error recovery from %s.",
+              error_recovery_client_->action_name().c_str());
+  const ErrorRecoveryResult recovery = error_recovery_client_->recover(error_recovery_timeout_);
+  if (!recovery.success) {
+    RCLCPP_ERROR(rclcpp::get_logger("mios_ros2_core"), "Error recovery failed: %s",
+                 recovery.message.c_str());
+    return {true, "ErrorRecoveryFailed", recovery.message};
+  }
+  RCLCPP_INFO(rclcpp::get_logger("mios_ros2_core"), "%s", recovery.message.c_str());
+  if (controller_session_) {
+    // The robot error is cleared, but the hardware component and the effort
+    // controller were deactivated by it; control() requires both active.
+    const mios::ControlReturnType reactivated = controller_session_->reactivate();
+    if (reactivated.exception) {
+      RCLCPP_ERROR(rclcpp::get_logger("mios_ros2_core"),
+                   "Reactivation after error recovery failed: %s",
+                   reactivated.error_msg.c_str());
+      return reactivated;
+    }
+    RCLCPP_INFO(rclcpp::get_logger("mios_ros2_core"),
+                "Hardware and effort controller are active again.");
+  }
+  return {false, "None", ""};
 }
 
 bool Ros2CoreRobotBackend::pre_run_checks() const {

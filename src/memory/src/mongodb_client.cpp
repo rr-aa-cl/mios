@@ -6,6 +6,7 @@
 #include <bsoncxx/document/view.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
 #include <mongocxx/uri.hpp>
+#include <mongocxx/options/replace.hpp>
 
 #include <mongocxx/exception/bulk_write_exception.hpp>
 #include <mongocxx/exception/logic_error.hpp>
@@ -218,20 +219,29 @@ bool MongodbClient::write_document(const std::string& name, const std::string& c
     spdlog::trace("MongodbClient::write_document");
     std::scoped_lock<std::mutex> lock(m_mutex_db_access);
     try{
-        if(!m_mongodb.has_collection(collection)){
+        // The collections cached at connect time need no server round trip.
+        if(m_collections.find(collection)==m_collections.end() && !m_mongodb.has_collection(collection)){
             spdlog::error("Database has no collection "+collection+".");
             return false;
         }
         nlohmann::json descr_in=descr;
         descr_in["name"]=name;
         bsoncxx::document::view_or_value doc=bsoncxx::from_json(descr_in.dump());
-        int n_docs = m_collections[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize});
+        if(overwrite){
+            // One round trip: replace the document with this name, or insert
+            // it when absent.  This runs for every environment object after
+            // every skill, so the former has_collection + count + replace
+            // sequence dominated the pause between two skills.
+            mongocxx::options::replace options;
+            options.upsert(true);
+            m_mongodb[collection].replace_one(bsoncxx::builder::stream::document{} << "name" << name << bsoncxx::builder::stream::finalize,doc,options);
+            return true;
+        }
+        int n_docs = m_mongodb[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize});
         if(n_docs>1){
             spdlog::error("Multiple documents with name " + name + " present in collection " + collection + ".");
             return false;
-        }else if(n_docs==1 && overwrite){
-            m_mongodb[collection].replace_one(bsoncxx::builder::stream::document{} << "name" << name << bsoncxx::builder::stream::finalize,doc);
-        }else if(n_docs==1 && !overwrite){
+        }else if(n_docs==1){
             spdlog::error("Document with name " + name + " already exists in collection " + collection + " and overwrite was not set.");
         }else{
             m_mongodb[collection].insert_one(doc);

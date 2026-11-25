@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <utility>
 
+#include "lifecycle_msgs/msg/state.hpp"
 #include "rcl_interfaces/msg/parameter_type.hpp"
 
 namespace mios_ros2_runtime {
@@ -41,14 +42,19 @@ mios::ControlReturnType success() { return {false, "None", ""}; }
 
 Ros2ControllerSession::Ros2ControllerSession(
     rclcpp::Node& node, std::string manager_namespace, std::string effort_controller,
-    std::string position_controller, const std::chrono::milliseconds timeout)
-    : effort_controller_(std::move(effort_controller)), timeout_(timeout) {
+    std::string position_controller, const std::chrono::milliseconds timeout,
+    std::string hardware_component)
+    : effort_controller_(std::move(effort_controller)),
+      hardware_component_(std::move(hardware_component)),
+      timeout_(timeout) {
   if (timeout_ <= std::chrono::milliseconds::zero()) {
     throw std::invalid_argument("Controller-manager timeout must be positive.");
   }
   const auto manager = absolute_name(std::move(manager_namespace));
   list_client_ = node.create_client<List>(manager + "/list_controllers");
   switch_client_ = node.create_client<Switch>(manager + "/switch_controller");
+  hardware_state_client_ =
+      node.create_client<SetHardwareState>(manager + "/set_hardware_component_state");
   effort_parameters_ = node.create_client<Parameters>(absolute_name(effort_controller_) + "/get_parameters");
   position_parameters_ = node.create_client<Parameters>(absolute_name(std::move(position_controller)) + "/get_parameters");
 }
@@ -165,6 +171,43 @@ mios::ControlReturnType Ros2ControllerSession::acquire(const StationaryCheck& st
     return success();
   } catch (const std::exception& error) {
     return {true, "ControllerActivationFailed", error.what()};
+  }
+}
+
+mios::ControlReturnType Ros2ControllerSession::reactivate() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  try {
+    if (hardware_component_.empty()) {
+      throw std::runtime_error("No hardware component is configured for reactivation.");
+    }
+    // A robot error makes franka_hardware return DEACTIVATE, which takes the
+    // component to inactive and stops every controller that commands it.
+    // Requesting "active" on a component that is already active is accepted.
+    auto hardware = std::make_shared<SetHardwareState::Request>();
+    hardware->name = hardware_component_;
+    hardware->target_state.id = lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE;
+    hardware->target_state.label = "active";
+    const auto hardware_response =
+        request<SetHardwareState>(hardware_state_client_, hardware, timeout_);
+    if (!hardware_response->ok ||
+        hardware_response->state.id != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
+      throw std::runtime_error("Hardware component " + hardware_component_ +
+                               " did not become active; found " +
+                               hardware_response->state.label + ".");
+    }
+    const auto before = controllers();
+    const auto found = std::find_if(before->controller.begin(), before->controller.end(),
+                                    [this](const auto& item) { return item.name == effort_controller_; });
+    if (found == before->controller.end()) {
+      throw std::runtime_error(effort_controller_ + " is not loaded.");
+    }
+    if (found->state != "active" && !switch_effort(true)) {
+      throw std::runtime_error("Controller-manager rejected effort reactivation.");
+    }
+    require_exclusive(*controllers(), "active");
+    return success();
+  } catch (const std::exception& error) {
+    return {true, "ControllerReactivationFailed", error.what()};
   }
 }
 

@@ -32,7 +32,14 @@ class Ros2RobotBackend {
                    std::string joint_velocity_command_topic,
                    std::string cartesian_velocity_command_topic,
                    std::string joint_position_command_topic,
-                   std::string cartesian_pose_command_topic);
+                   std::string cartesian_pose_command_topic,
+                   bool dedicated_state_executor = false);
+
+  // The callback group of the robot-state subscription, which drives the
+  // Core control cycle. When the backend was constructed with
+  // dedicated_state_executor, the node's executor does not service this
+  // group: the owner must add it to an executor of its own.
+  rclcpp::CallbackGroup::SharedPtr state_callback_group() const { return state_callback_group_; }
 
   std::optional<RobotSnapshot> latest_snapshot() const;
   // State-only portion needed by the future legacy-Core adapter. Robot model

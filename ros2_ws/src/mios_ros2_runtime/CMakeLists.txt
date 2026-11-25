@@ -9,6 +9,7 @@ find_package(mios_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(controller_manager_msgs REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
 find_package(rcl_interfaces REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
@@ -53,6 +54,7 @@ add_library(mios_ros2_runtime_backend SHARED
   src/ros2_arm_command_dispatcher.cpp
   src/ros2_core_robot_backend.cpp
   src/ros2_controller_session.cpp
+  src/ros2_error_recovery_client.cpp
   src/ros2_gripper_client.cpp
   src/ros2_robot_parameter_client.cpp
   src/ros2_robot_backend.cpp)
@@ -64,7 +66,7 @@ target_include_directories(mios_ros2_runtime_backend PUBLIC
   $<BUILD_INTERFACE:${MIOS_UTILS_TYPES_INCLUDE_DIR}>
   $<INSTALL_INTERFACE:include>)
 target_link_libraries(mios_ros2_runtime_backend mios_ros2_runtime_translation Eigen3::Eigen)
-ament_target_dependencies(mios_ros2_runtime_backend franka_msgs mios_msgs rclcpp rclcpp_action sensor_msgs std_srvs controller_manager_msgs rcl_interfaces)
+ament_target_dependencies(mios_ros2_runtime_backend franka_msgs mios_msgs rclcpp rclcpp_action sensor_msgs std_srvs controller_manager_msgs lifecycle_msgs rcl_interfaces)
 
 install(DIRECTORY include/ DESTINATION include)
 install(FILES
@@ -148,7 +150,7 @@ if(BUILD_TESTING)
 endif()
 
 ament_export_targets(export_mios_ros2_runtime HAS_LIBRARY_TARGET)
-ament_export_dependencies(franka_msgs mios_msgs rclcpp rclcpp_action sensor_msgs std_srvs controller_manager_msgs rcl_interfaces Eigen3)
+ament_export_dependencies(franka_msgs mios_msgs rclcpp rclcpp_action sensor_msgs std_srvs controller_manager_msgs lifecycle_msgs rcl_interfaces Eigen3)
 ament_export_include_directories(include)
 
 ament_package()

@@ -8,6 +8,7 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>controller_manager_msgs</depend>
+  <depend>lifecycle_msgs</depend>
   <depend>rcl_interfaces</depend>
   <build_depend>franka_msgs</build_depend>
   <build_depend>mios_msgs</build_depend>

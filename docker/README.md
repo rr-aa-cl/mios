@@ -15,16 +15,6 @@ the image's **Ubuntu 24.04 (Noble) / ROS 2 Jazzy** base. The
 `libfranka_0.21.1_jammy_amd64.deb` package targets Ubuntu 22.04 and depends on
 `libfmt.so.8`; the Noble build uses `libfmt.so.9`.
 
-The robot's **System 5.9.2** belongs to the protocol-10 generation supported
-by libfranka 0.21.1. See the upstream
-[compatibility table](https://frankarobotics.github.io/docs/compatibility.html)
-and [0.21.1 release packages](https://github.com/frankarobotics/libfranka/releases/tag/0.21.1).
-
-Rebuild Control so its Franka driver and MIOS plugins link against the new
-`libfranka.so.0.21`. Then rebuild Core against that Control image to refresh
-its copied ROS workspace artifacts. Installing the package into an existing
-container does not rebuild those consumers. The Dockerfile pin affects new
-image builds; it does not update a running deployment.
 
 ### Build Control directly with Docker
 
@@ -32,26 +22,49 @@ From the repository root (the checkout directory must be named `mios`):
 
 ```bash
 docker build -f docker/control/Dockerfile -t xxx/ros2-control:latest ..
-docker build -f docker/core/Dockerfile -t xxx/ros2-core:latest ..
-docker build -f docker/mls/Dockerfile -t xxx/mls:latest .
+docker build -f docker/core/Dockerfile -t xxx/ros2-core:latest \
+  --build-arg MIOS_CONTROL_IMAGE=xxx/ros2-control:latest ..
+docker build -f docker/ml_service/Dockerfile -t xxx/mls:latest .
 ```
+
+To build Control and Core together without naming the Control image at all,
+use bake. Core then takes its ROS overlay from the Control build of the same
+run:
+
+```bash
+TAG=latest docker buildx bake -f docker/docker-bake.hcl --allow=fs.read=..
+```
+
+`REPO` (default `janine86`) and `TAG` (default `latest`) set both image names;
+add `--push` to push them. `docker compose ... build ros2_core` links the two
+builds the same way.
+
+Both Dockerfiles are multi-stage. The default target is a slim `runtime`
+stage without compilers, sources or build trees; the `build` stage keeps them.
+Core copies `/ws/install` out of the Control image, so build Control first and
+pass its tag as `MIOS_CONTROL_IMAGE`.
+
+Useful build arguments for Control:
+
+- `--build-arg MIOS_BUILD_JOBS=4` limits make to four jobs when the Docker
+  daemon has little memory (default: all CPUs).
+- `--target build --build-arg MIOS_BUILD_TESTING=ON` produces an image with the
+  controller-manager and MIOS test binaries in `/ws/build`.
+
+Compiler output is kept in a BuildKit ccache mount, so a rebuild after a
+source change recompiles only what changed.
 
 The final `..` selects the repository's parent as the build context. Control's
 Dockerfile uses `COPY mios/...` paths relative to that context. Using `.` here
 causes `COPY` checksum or "not found" errors even when the files exist in the
 checkout.
-
-Core also requires the parent context (`..`). When building Core against the
-Control tag above, pass
-`--build-arg MIOS_CONTROL_IMAGE=janine86/ros2-control:latest`.
-The MLS Dockerfile uses the repository root context (`.`). The Compose
-configuration below already selects the correct context for each image.
+Core also requires the parent context (`..`). 
 
 ### Build and start with Compose
 
 ```bash
-docker compose -f docker/ros2/docker-compose.runtime.yml build mios_ros2_control
-docker compose -f docker/ros2/docker-compose.runtime.yml build mios_ros2_core mios_ml_service
+docker compose -f docker/ros2/docker-compose.runtime.yml build ros2_control
+docker compose -f docker/ros2/docker-compose.runtime.yml build ros2_core mls
 docker compose -f docker/ros2/docker-compose.runtime.yml up -d
-docker compose -f docker/ros2/docker-compose.runtime.yml logs -f mios_ros2_control
+docker compose -f docker/ros2/docker-compose.runtime.yml logs -f ros2_control
 ```
