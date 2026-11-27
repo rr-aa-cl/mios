@@ -19,18 +19,19 @@ void FFStrategy::get_next_command(Actuator &cmd, const Percept &p){
         TF_F_ff=mirmi_utils::rotate_vector(TF_F_ff,p.proprioception.O_T_EE.block<3,3>(0,0));
         TF_F_ff=mirmi_utils::rotate_vector(TF_F_ff,p.controller.O_R_T.transpose());
     }
+    // Both ramped and immediate outputs must use the same task-frame target.
     for(unsigned i=0;i<3;i++){
         double diff_TF_F_ff_t = TF_F_ff(i)-m_TF_F_ff_limiter(i);
         double diff_TF_F_ff_r = TF_F_ff(i+3)-m_TF_F_ff_limiter(i+3);
         if(fabs(diff_TF_F_ff_t)/0.001>m_dF_max(0)){
             cmd.TF_F_ff(i)=m_TF_F_ff_limiter(i)+mirmi_utils::sgn(diff_TF_F_ff_t)*m_dF_max(0)*0.001;
         }else{
-            cmd.TF_F_ff(i)=m_TF_F_ff(i);
+            cmd.TF_F_ff(i)=TF_F_ff(i);
         }
         if(fabs(diff_TF_F_ff_r)/0.001>m_dF_max(1)){
             cmd.TF_F_ff(i+3)=m_TF_F_ff_limiter(i+3)+mirmi_utils::sgn(diff_TF_F_ff_r)*m_dF_max(1)*0.001;
         }else{
-            cmd.TF_F_ff(i+3)=m_TF_F_ff(i+3);
+            cmd.TF_F_ff(i+3)=TF_F_ff(i+3);
         }
     }
     m_TF_F_ff_limiter=cmd.TF_F_ff;

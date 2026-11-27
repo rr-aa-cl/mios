@@ -1,0 +1,529 @@
+#include "mios_ros2_runtime/ros2_core_robot_backend.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <exception>
+#include <functional>
+#include <thread>
+#include <utility>
+
+#include "mios_ros2_runtime/mios_parameter_snapshot_translation.hpp"
+#include "mios_ros2_runtime/robot_state_translation.hpp"
+
+namespace mios_ros2_runtime {
+
+Ros2CoreRobotBackend::Ros2CoreRobotBackend(
+    Ros2RobotBackend& robot_backend, Ros2ArmCommandDispatcher& command_dispatcher,
+    Ros2GripperClient& gripper_client, const std::chrono::milliseconds state_timeout,
+    const std::chrono::milliseconds gripper_timeout, const bool allow_task_execution)
+    : Ros2CoreRobotBackend(robot_backend, command_dispatcher, gripper_client,
+                           nullptr, {}, state_timeout, gripper_timeout,
+                           std::chrono::milliseconds(1), allow_task_execution, false) {}
+
+Ros2CoreRobotBackend::Ros2CoreRobotBackend(
+    Ros2RobotBackend& robot_backend, Ros2ArmCommandDispatcher& command_dispatcher,
+    Ros2GripperClient& gripper_client, Ros2RobotParameterClient* parameter_client,
+    ParameterSnapshotProvider parameter_snapshot_provider,
+    const std::chrono::milliseconds state_timeout,
+    const std::chrono::milliseconds gripper_timeout,
+    const std::chrono::milliseconds parameter_timeout, const bool allow_task_execution,
+    const bool allow_controller_owned_move_mode, ControllerSession* controller_session)
+    : robot_backend_(robot_backend),
+      command_dispatcher_(command_dispatcher),
+      gripper_client_(gripper_client),
+      parameter_client_(parameter_client),
+      parameter_snapshot_provider_(std::move(parameter_snapshot_provider)),
+      state_timeout_(std::max(state_timeout, std::chrono::milliseconds(1))),
+      gripper_timeout_(std::max(gripper_timeout, std::chrono::milliseconds(1))),
+      parameter_timeout_(std::max(parameter_timeout, std::chrono::milliseconds(1))),
+      allow_task_execution_(allow_task_execution),
+      allow_controller_owned_move_mode_(allow_controller_owned_move_mode),
+      controller_session_(controller_session),
+      state_observer_id_(robot_backend_.add_state_observer(
+          [this](const RobotSnapshot& snapshot) { receive_state(snapshot); })) {}
+
+Ros2CoreRobotBackend::~Ros2CoreRobotBackend() {
+  stop_active_control();
+  robot_backend_.remove_state_observer(state_observer_id_);
+}
+
+bool Ros2CoreRobotBackend::state_and_model_are_fresh() const {
+  return robot_backend_.has_fresh_robot_state(state_timeout_) &&
+         robot_backend_.has_fresh_robot_model(state_timeout_);
+}
+
+bool Ros2CoreRobotBackend::initialize() { return state_and_model_are_fresh(); }
+
+bool Ros2CoreRobotBackend::connect_to_robot(const std::optional<std::string>& /*ip*/) {
+  // ROS discovery and franka_hardware own the physical connection.
+  return state_and_model_are_fresh();
+}
+
+bool Ros2CoreRobotBackend::connect_to_gripper(const std::optional<std::string>& /*ip*/) {
+  // A gripper action server is checked only when a gripper request is made.
+  return true;
+}
+
+void Ros2CoreRobotBackend::disconnect_from_robot() {
+  stop_active_control();
+  // The Core node calls this before stopping its ROS executor. Retry an earlier
+  // uncertain release after any in-flight control call has finished cleanup.
+  std::lock_guard<std::mutex> session_lock(session_mutex_);
+  if (controller_session_) {
+    const auto released = controller_session_->release();
+    if (released.exception) {
+      RCLCPP_ERROR(rclcpp::get_logger("mios_ros2_core"), "Controller release at shutdown failed: %s",
+                   released.error_msg.c_str());
+    }
+  }
+}
+
+void Ros2CoreRobotBackend::disconnect_from_gripper() {
+  if (!allow_task_execution_) {
+    return;
+  }
+  (void)wait_for_gripper_operation(
+      [this](Ros2GripperClient::CompletionCallback completion) {
+        return gripper_client_.stop(std::move(completion));
+      });
+}
+
+void Ros2CoreRobotBackend::set_error_recovery_client(const Ros2ErrorRecoveryClient* client,
+                                                     const std::chrono::milliseconds timeout) {
+  error_recovery_client_ = client;
+  error_recovery_timeout_ = std::max(timeout, std::chrono::milliseconds(1));
+}
+
+void Ros2CoreRobotBackend::set_joint_velocity_control_enabled(const bool enabled) {
+  joint_velocity_control_enabled_ = enabled;
+}
+
+mios::ControlReturnType Ros2CoreRobotBackend::recover() {
+  if (!error_recovery_client_) {
+    return {true, "Ros2RecoveryNotConfigured",
+            "ROS error recovery is intentionally delegated to the operator/Desk adapter."};
+  }
+  // Never recover underneath a running Core control callback: control()
+  // holds the session mutex for as long as its callback may run.
+  std::unique_lock<std::mutex> session_lock(session_mutex_, std::try_to_lock);
+  if (!session_lock.owns_lock() || is_control_active()) {
+    return {true, "RecoveryWhileControlActive",
+            "Error recovery was requested while a Core control callback is active."};
+  }
+  RCLCPP_WARN(rclcpp::get_logger("mios_ros2_core"),
+              "Requesting automatic error recovery from %s.",
+              error_recovery_client_->action_name().c_str());
+  const ErrorRecoveryResult recovery = error_recovery_client_->recover(error_recovery_timeout_);
+  if (!recovery.success) {
+    RCLCPP_ERROR(rclcpp::get_logger("mios_ros2_core"), "Error recovery failed: %s",
+                 recovery.message.c_str());
+    return {true, "ErrorRecoveryFailed", recovery.message};
+  }
+  RCLCPP_INFO(rclcpp::get_logger("mios_ros2_core"), "%s", recovery.message.c_str());
+  if (controller_session_) {
+    // The robot error is cleared, but it deactivated the hardware component
+    // and the effort controller. Only the hardware comes back here; the next
+    // control() call of a task activates the controller again.
+    const mios::ControlReturnType reactivated = controller_session_->reactivate();
+    if (reactivated.exception) {
+      RCLCPP_ERROR(rclcpp::get_logger("mios_ros2_core"),
+                   "Reactivation after error recovery failed: %s",
+                   reactivated.error_msg.c_str());
+      return reactivated;
+    }
+    RCLCPP_INFO(rclcpp::get_logger("mios_ros2_core"),
+                "Hardware is active again; the arm stays disabled until the next skill.");
+  }
+  return {false, "None", ""};
+}
+
+bool Ros2CoreRobotBackend::pre_run_checks() const {
+  if (!state_and_model_are_fresh()) {
+    return false;
+  }
+  const auto state = robot_backend_.latest_mios_robot_state();
+  return state.has_value() &&
+         is_pre_run_robot_mode_permitted(state->robot_mode, allow_controller_owned_move_mode_) &&
+         !state->user_stopped;
+}
+
+bool Ros2CoreRobotBackend::is_pre_run_robot_mode_permitted(
+    const mios::control::RobotMode mode, const bool allow_controller_owned_move_mode) {
+  return mode == mios::control::RobotMode::kIdle ||
+         (allow_controller_owned_move_mode && mode == mios::control::RobotMode::kMove);
+}
+
+mios::ControlReturnType Ros2CoreRobotBackend::control(const mios::control::CommandMode mode,
+                                                       ControlCallback callback) {
+  if (!allow_task_execution_) {
+    return {true, "TaskExecutionDisabled",
+            "Set enable_core_task_execution only after hardware commissioning."};
+  }
+  if (!callback) {
+    return {true, "InvalidControlCallback", "MIOS Core supplied an empty control callback."};
+  }
+  // Joint velocity is served by the same effort controller (combined
+  // velocity + effort mode), so it needs no controller switch either.
+  const bool joint_velocity_supported =
+      joint_velocity_control_enabled_ && mode == mios::control::CommandMode::kJointVelocity;
+  if (mode != mios::control::CommandMode::kTorque && !joint_velocity_supported) {
+    return {true, "UnsupportedControlMode",
+            "Core manages only the commissioned effort controller; use torque control modes, "
+            "or joint velocity when enable_joint_velocity_control is set."};
+  }
+  if (!allow_controller_owned_move_mode_ || !controller_session_) {
+    return {true, "ControllerManagementUnavailable", "Native controller management and commissioned MOVE ownership are required."};
+  }
+  if (!pre_run_checks()) {
+    return {true, "RobotNotReady",
+            "Fresh permitted ROS robot state and model data are required."};
+  }
+  std::unique_lock<std::mutex> session_lock(session_mutex_, std::try_to_lock);
+  if (!session_lock.owns_lock()) {
+    return {true, "ControlAlreadyActive", "Only one MIOS Core control callback may run at once."};
+  }
+  {
+    std::lock_guard<std::mutex> lock(control_mutex_);
+    stop_requested_ = false;
+  }
+  // The first skill of a task enables the arm; later skills find it enabled.
+  // After a release or an error recovery the IDLE state sample can lag behind
+  // the controller manager, so give it a moment instead of failing at once.
+  arm_control_enabled_ = true;
+  auto result = controller_session_->acquire([this](const double threshold) {
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+    while (true) {
+      {
+        std::lock_guard<std::mutex> lock(control_mutex_);
+        if (stop_requested_) return false;
+      }
+      if (is_stationary(threshold, true)) {
+        RCLCPP_INFO(rclcpp::get_logger("mios_ros2_core"), "Enabling arm control for this task.");
+        return true;
+      }
+      if (std::chrono::steady_clock::now() >= deadline) return false;
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+  });
+  if (!result.exception) {
+    std::unique_lock<std::mutex> lock(control_mutex_);
+    if (stop_requested_) {
+      result = {true, "ControlStopped", "Control was stopped while acquiring its controller."};
+    } else {
+      const std::uint64_t generation = next_control_generation_++;
+      active_control_.emplace(ActiveControl{generation, mode, std::move(callback)});
+      while (!active_control_->complete) {
+        control_complete_.wait_for(lock, std::chrono::milliseconds(20));
+        if (active_control_->complete) break;
+        lock.unlock();
+        const bool pre_run_ok = pre_run_checks();
+        lock.lock();
+
+        if (!pre_run_ok && !active_control_->complete) {
+          active_control_->result = {
+              true,
+              "RobotFeedbackLost",
+              "Fresh permitted arm and model feedback was lost during control."
+          };
+
+          active_control_->complete = true;
+        }
+      }
+      result = active_control_->result;
+    }
+  }
+  return result;
+}
+
+bool Ros2CoreRobotBackend::is_stationary(const double threshold, const bool require_idle) const {
+  const auto state = robot_backend_.latest_mios_robot_state();
+  if (!state || !robot_backend_.has_fresh_robot_state(state_timeout_)) return false;
+  if (require_idle && (!pre_run_checks() || state->robot_mode != mios::control::RobotMode::kIdle)) {
+    return false;
+  }
+  for (std::size_t index = 0; index < state->position.size(); ++index) {
+    if (!std::isfinite(state->position[index]) || !std::isfinite(state->velocity[index]) ||
+        std::abs(state->velocity[index]) > threshold) return false;
+  }
+  return true;
+}
+
+mios::ControlReturnType Ros2CoreRobotBackend::disable_arm_control() {
+  // Called after every task, the idle task included: stay cheap when the arm
+  // was never enabled.
+  if (!controller_session_ || !arm_control_enabled_) return {false, "None", ""};
+  stop_active_control();
+  // control() holds the session mutex while a callback may still run.
+  std::lock_guard<std::mutex> session_lock(session_mutex_);
+  // A stopped skill can leave the arm coasting; let it come to rest so the
+  // controller is not switched off under a moving robot.
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+  while (!is_stationary(0.01, false) && std::chrono::steady_clock::now() < deadline) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  }
+  const auto released = controller_session_->release();
+  if (released.exception) {
+    // Keep the flag so that the next task end retries the release.
+    RCLCPP_ERROR(rclcpp::get_logger("mios_ros2_core"),
+                 "Could not disable arm control after the task: %s", released.error_msg.c_str());
+    return released;
+  }
+  arm_control_enabled_ = false;
+  RCLCPP_INFO(rclcpp::get_logger("mios_ros2_core"), "Arm control disabled until the next task.");
+  return released;
+}
+
+bool Ros2CoreRobotBackend::is_control_active() const {
+  std::lock_guard<std::mutex> lock(control_mutex_);
+  return active_control_ && !active_control_->complete && active_control_->command_dispatched;
+}
+
+void Ros2CoreRobotBackend::set_robot_parameter_provider(
+    ParameterSnapshotProvider provider) {
+  std::lock_guard<std::mutex> lock(parameter_provider_mutex_);
+  parameter_snapshot_provider_ = std::move(provider);
+}
+
+bool Ros2CoreRobotBackend::set_robot_parameters() {
+  if (!allow_task_execution_ || !parameter_client_) {
+    return false;
+  }
+  // Franka parameter services are only valid when no FCI motion is active.
+  // In the ROS-only deployment an arm command controller owns FCI throughout
+  // a Core task, so a disabled parameter client deliberately preserves the
+  // Desk-provisioned parameters and lets task setup continue.  Returning
+  // false here would make unrelated operations such as selecting the active
+  // grasped object fail even though they do not require a parameter update.
+  if (!parameter_client_->parameter_application_enabled()) {
+    return true;
+  }
+  ParameterSnapshotProvider provider;
+  {
+    std::lock_guard<std::mutex> lock(parameter_provider_mutex_);
+    provider = parameter_snapshot_provider_;
+  }
+  if (!provider) {
+    return false;
+  }
+  std::optional<mios::control::RobotParameters> parameters;
+  try {
+    parameters = provider();
+  } catch (...) {
+    return false;
+  }
+  if (!parameters) {
+    return false;
+  }
+  const auto snapshot = make_robot_parameter_snapshot(*parameters);
+  if (!snapshot) {
+    return false;
+  }
+  return wait_for_parameter_operation(*snapshot);
+}
+
+bool Ros2CoreRobotBackend::get_robot_snapshot(mios::control::RobotState& robot_state,
+                                              mios::control::RobotModel& robot_model) const {
+  if (!state_and_model_are_fresh()) {
+    return false;
+  }
+  const auto state = robot_backend_.latest_mios_robot_state();
+  const auto model = robot_backend_.latest_robot_model();
+  if (!state || !model) {
+    return false;
+  }
+  robot_state = *state;
+  robot_model = model->model;
+  return true;
+}
+
+bool Ros2CoreRobotBackend::wait_for_gripper_operation(
+    const std::function<bool(Ros2GripperClient::CompletionCallback)>& start_operation) const {
+  if (!allow_task_execution_) {
+    return false;
+  }
+  struct Completion {
+    std::mutex mutex;
+    std::condition_variable condition;
+    bool complete{false};
+    GripperOperationResult result;
+  };
+  const auto completion = std::make_shared<Completion>();
+  const bool sent = start_operation([completion](const GripperOperationResult& result) {
+    std::lock_guard<std::mutex> lock(completion->mutex);
+    completion->result = result;
+    completion->complete = true;
+    completion->condition.notify_all();
+  });
+  if (!sent) {
+    return false;
+  }
+  std::unique_lock<std::mutex> lock(completion->mutex);
+  if (!completion->condition.wait_for(lock, gripper_timeout_,
+                                       [&completion] { return completion->complete; })) {
+    return false;
+  }
+  return completion->result.accepted && completion->result.success;
+}
+
+bool Ros2CoreRobotBackend::wait_for_parameter_operation(
+    const RobotParameterSnapshot& snapshot) const {
+  struct Completion {
+    std::mutex mutex;
+    std::condition_variable condition;
+    bool complete{false};
+    RobotParameterOperationResult result;
+  };
+  const auto completion = std::make_shared<Completion>();
+  const bool sent = parameter_client_->apply(snapshot, [completion](
+                                                       const RobotParameterOperationResult& result) {
+    std::lock_guard<std::mutex> lock(completion->mutex);
+    completion->result = result;
+    completion->complete = true;
+    completion->condition.notify_all();
+  });
+  if (!sent) {
+    return false;
+  }
+  std::unique_lock<std::mutex> lock(completion->mutex);
+  if (!completion->condition.wait_for(lock, parameter_timeout_,
+                                       [&completion] { return completion->complete; })) {
+    return false;
+  }
+  return completion->result.accepted && completion->result.success;
+}
+
+mios::control::GripperState Ros2CoreRobotBackend::gripper_state() const {
+  return gripper_client_.latest_state();
+}
+
+bool Ros2CoreRobotBackend::grasp(const double width, const double speed, const double force,
+                                 const double epsilon_inner, const double epsilon_outer) const {
+  return wait_for_gripper_operation([this, width, speed, force, epsilon_inner, epsilon_outer](
+                                        Ros2GripperClient::CompletionCallback completion) {
+    return gripper_client_.grasp(width, speed, force, epsilon_inner, epsilon_outer,
+                                 std::move(completion));
+  });
+}
+
+bool Ros2CoreRobotBackend::move_to_finger_position(
+    const double width, const double speed) const {
+  return wait_for_gripper_operation([this, width, speed](Ros2GripperClient::CompletionCallback completion) {
+    return gripper_client_.move(width, speed, std::move(completion));
+  });
+}
+
+bool Ros2CoreRobotBackend::home_gripper() const {
+  return wait_for_gripper_operation([this](Ros2GripperClient::CompletionCallback completion) {
+    return gripper_client_.home(std::move(completion));
+  });
+}
+
+bool Ros2CoreRobotBackend::unlock_brakes() { return false; }
+bool Ros2CoreRobotBackend::lock_brakes() { return false; }
+bool Ros2CoreRobotBackend::shutdown_robot() { return false; }
+bool Ros2CoreRobotBackend::reboot_robot() { return false; }
+
+void Ros2CoreRobotBackend::complete_active_control(const std::uint64_t generation,
+                                                   mios::ControlReturnType result) {
+  std::lock_guard<std::mutex> lock(control_mutex_);
+  if (!active_control_ || active_control_->generation != generation || active_control_->complete) {
+    return;
+  }
+  active_control_->result = std::move(result);
+  active_control_->complete = true;
+  control_complete_.notify_all();
+}
+
+void Ros2CoreRobotBackend::receive_state(const RobotSnapshot& snapshot) {
+  std::lock_guard<std::mutex> callback_lock(callback_mutex_);
+  ControlCallback callback;
+  mios::control::CommandMode mode{};
+  std::uint64_t generation = 0;
+  double period_seconds = 0.001;
+  {
+    std::lock_guard<std::mutex> lock(control_mutex_);
+    if (!active_control_ || active_control_->complete) {
+      return;
+    }
+    generation = active_control_->generation;
+    mode = active_control_->mode;
+    callback = active_control_->callback;
+    if (snapshot.stamp_nanoseconds > active_control_->previous_stamp_nanoseconds) {
+      const std::int64_t delta = snapshot.stamp_nanoseconds - active_control_->previous_stamp_nanoseconds;
+      if (active_control_->previous_stamp_nanoseconds > 0 && delta > 0 && delta <= 100000000) {
+        period_seconds = static_cast<double>(delta) / 1.0e9;
+      }
+      active_control_->previous_stamp_nanoseconds = snapshot.stamp_nanoseconds;
+    }
+  }
+
+  const auto model = robot_backend_.latest_robot_model();
+  if (!model || !robot_backend_.has_fresh_robot_model(state_timeout_)) {
+    complete_active_control(generation,
+                            {true, "RobotModelUnavailable", "The ROS model snapshot is absent or stale."});
+    return;
+  }
+
+  mios::control::ArmCommand command;
+  try {
+    command = callback(to_mios_robot_state(snapshot), model->model, period_seconds);
+  } catch (const std::exception& error) {
+    complete_active_control(generation, {true, "ControlCallbackException", error.what()});
+    return;
+  } catch (...) {
+    complete_active_control(generation,
+                            {true, "ControlCallbackException", "Unknown exception from MIOS Core callback."});
+    return;
+  }
+  if (command.mode != mode) {
+    complete_active_control(generation,
+                            {true, "CommandModeMismatch", "MIOS Core callback changed its control mode."});
+    return;
+  }
+
+  std::lock_guard<std::mutex> dispatch_lock(dispatch_mutex_);
+  {
+    std::lock_guard<std::mutex> control_lock(control_mutex_);
+    if (!active_control_ || active_control_->generation != generation || active_control_->complete) {
+      return;
+    }
+  }
+  if (!command_dispatcher_.dispatch(command, snapshot.user_stopped)) {
+    complete_active_control(generation,
+                            {true, "CommandDispatchFailed", "ROS rejected the translated MIOS command."});
+    return;
+  }
+  {
+    std::lock_guard<std::mutex> lock(control_mutex_);
+    if (active_control_ && active_control_->generation == generation && !active_control_->complete) {
+      active_control_->command_dispatched = true;
+    }
+  }
+  if (command.motion_finished) {
+    complete_active_control(generation, {false, "None", ""});
+  }
+}
+
+void Ros2CoreRobotBackend::stop_active_control() {
+  std::lock_guard<std::mutex> dispatch_lock(dispatch_mutex_);
+  mios::control::ArmCommand stop_command;
+  bool should_dispatch = false;
+  {
+    std::lock_guard<std::mutex> lock(control_mutex_);
+    stop_requested_ = true;
+    if (!active_control_ || active_control_->complete) {
+      return;
+    }
+    stop_command.mode = active_control_->mode;
+    stop_command.motion_finished = true;
+    active_control_->result = {true, "ControlStopped", "MIOS Core control was stopped."};
+    active_control_->complete = true;
+    should_dispatch = true;
+    control_complete_.notify_all();
+  }
+  if (should_dispatch) {
+    (void)command_dispatcher_.dispatch(stop_command, true);
+  }
+}
+
+}  // namespace mios_ros2_runtime

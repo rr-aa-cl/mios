@@ -28,7 +28,6 @@ target_include_directories(${MODULE_NAME}
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     #${roscpp_INCLUDE_DIRS}
-    #${CMAKE_SOURCE_DIR}/src/ros_workspace/devel/include
     )
 
 find_package(nlohmann_json REQUIRED)
@@ -49,4 +48,3 @@ target_link_libraries(${MODULE_NAME}
     )
 
 apply_module_options(${MODULE_NAME})
-

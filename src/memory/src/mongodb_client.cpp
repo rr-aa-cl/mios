@@ -6,6 +6,7 @@
 #include <bsoncxx/document/view.hpp>
 #include <bsoncxx/builder/stream/document.hpp>
 #include <mongocxx/uri.hpp>
+#include <mongocxx/options/replace.hpp>
 
 #include <mongocxx/exception/bulk_write_exception.hpp>
 #include <mongocxx/exception/logic_error.hpp>
@@ -19,23 +20,40 @@
 
 namespace mios {
 
-MongodbClient::MongodbClient(const std::string &database, unsigned port){
+MongodbClient::MongodbClient(const std::string &database, unsigned port,
+                             bool connect_immediately):
+    m_database_name(database),
+    m_database_port(port){
     spdlog::trace("MongodbClient::MongodbClient");
+    if(connect_immediately){
+        connect();
+    }
+}
+
+bool MongodbClient::connect(){
+    spdlog::trace("MongodbClient::connect");
     std::scoped_lock<std::mutex> lock(m_mutex_db_access);
-    spdlog::debug("Connecting to database " + database + " on localhost:" + std::to_string(port));
-    mongocxx::uri uri("mongodb://localhost:"+std::to_string(port));
+    if(m_connected){
+        return true;
+    }
+
+    spdlog::debug("Connecting to database " + m_database_name + " on localhost:" +
+                  std::to_string(m_database_port));
+    mongocxx::uri uri("mongodb://localhost:"+std::to_string(m_database_port));
     m_client = mongocxx::client(uri);
     bool found_database=false;
     bool message_displayed=false;
     while(!found_database){
         try{
             std::vector<std::string> db_names=m_client.list_database_names();
-            m_mongodb=m_client.database(database);
+            m_mongodb=m_client.database(m_database_name);
             m_collections.clear();
             m_collections.insert(std::pair<const char*,mongocxx::collection>("frames",m_mongodb["frames"]));
             m_collections.insert(std::pair<const char*,mongocxx::collection>("environment",m_mongodb["environment"]));
             m_collections.insert(std::pair<const char*,mongocxx::collection>("parameters",m_mongodb["parameters"]));
+            m_collections.insert(std::pair<const char*,mongocxx::collection>("tasks",m_mongodb["tasks"]));
             found_database=true;
+            m_connected=true;
             spdlog::debug("Mongodb client initialized.");
         }catch(const mongocxx::exception& e){
             if(!message_displayed){
@@ -46,6 +64,7 @@ MongodbClient::MongodbClient(const std::string &database, unsigned port){
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
+    return true;
 }
 
 bool MongodbClient::read_documents(const std::string &collection, std::set<nlohmann::json> &docs){
@@ -200,20 +219,29 @@ bool MongodbClient::write_document(const std::string& name, const std::string& c
     spdlog::trace("MongodbClient::write_document");
     std::scoped_lock<std::mutex> lock(m_mutex_db_access);
     try{
-        if(!m_mongodb.has_collection(collection)){
+        // The collections cached at connect time need no server round trip.
+        if(m_collections.find(collection)==m_collections.end() && !m_mongodb.has_collection(collection)){
             spdlog::error("Database has no collection "+collection+".");
             return false;
         }
         nlohmann::json descr_in=descr;
         descr_in["name"]=name;
         bsoncxx::document::view_or_value doc=bsoncxx::from_json(descr_in.dump());
-        int n_docs = m_collections[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize});
+        if(overwrite){
+            // One round trip: replace the document with this name, or insert
+            // it when absent.  This runs for every environment object after
+            // every skill, so the former has_collection + count + replace
+            // sequence dominated the pause between two skills.
+            mongocxx::options::replace options;
+            options.upsert(true);
+            m_mongodb[collection].replace_one(bsoncxx::builder::stream::document{} << "name" << name << bsoncxx::builder::stream::finalize,doc,options);
+            return true;
+        }
+        int n_docs = m_mongodb[collection].count_documents({bsoncxx::builder::stream::document{}<<"name"<<name<<bsoncxx::builder::stream::finalize});
         if(n_docs>1){
             spdlog::error("Multiple documents with name " + name + " present in collection " + collection + ".");
             return false;
-        }else if(n_docs==1 && overwrite){
-            m_mongodb[collection].replace_one(bsoncxx::builder::stream::document{} << "name" << name << bsoncxx::builder::stream::finalize,doc);
-        }else if(n_docs==1 && !overwrite){
+        }else if(n_docs==1){
             spdlog::error("Document with name " + name + " already exists in collection " + collection + " and overwrite was not set.");
         }else{
             m_mongodb[collection].insert_one(doc);

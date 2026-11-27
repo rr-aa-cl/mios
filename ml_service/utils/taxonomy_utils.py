@@ -12,8 +12,14 @@ import csv
 
 
 logger = logging.getLogger("skill_test")
+handler = logging.StreamHandler()
+formatter = logging.Formatter(
+    fmt="%(asctime)s.%(msecs)03d [%(levelname)s] [%(name)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+
+handler.setFormatter(formatter)
 logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 

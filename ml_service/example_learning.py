@@ -16,10 +16,10 @@ def learn_task(robot:str, problem_definition: ProblemDefinition, service_config:
                      keep_record=keep_record, wait=wait,service_port=service_port)
     
     
-def example_learning(robot:str = "localhost"):
+def example_learning(robot:str = "localhost", insert:str = "test"):
     # tasks = {hosts: insertables}
     tasks =  {
-        "localhost": "prism1"
+        robot: insert
     }
     for host, insertable in tasks.items():
         container = insertable + "_container"
@@ -37,7 +37,7 @@ def example_learning(robot:str = "localhost"):
         pd.n_variations = 3  # how often a trial should be repeated
         pd.host = host  # host (only for ducumentation)
         pd.optimum_thr = 0.3  # trial is taged as optimal when cost is under this threshold 
-        pd.cost_function.finish_thr = 2  # learning is finished when this threshold is reached with optimal trials; if exploration mode of the learning service is True, learning will still contiue
+        pd.cost_function.finish_thr = 20  # learning is finished when this threshold is reached with optimal trials; if exploration mode of the learning service is True, learning will still contiue
 
         # Leaning Service configuration:
         # For Example: SVMLearner (https://proceedings.mlr.press/v155/voigt21a/voigt21a.pdf)
@@ -104,3 +104,10 @@ def stop_services(robots:list = ["localhost"]):
         except Exception as e:
             print("Error with robot ",r)
             print(e)
+
+if __name__ == "__main__":
+    # robot = "miosr.nuc1"
+    robot = "mios-runtime.nuc3"
+    stop_services([robot])
+    # example_learning(robot, "samuelnew3")
+    # stop_services(["miosl.nuc1","miosr.nuc1", "miosl.nuc2", "miosr.nuc2", "miosr.nuc3"])

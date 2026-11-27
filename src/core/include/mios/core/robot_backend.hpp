@@ -1,0 +1,60 @@
+#pragma once
+
+#include <array>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+
+#include <Eigen/Dense>
+
+#include "mios/control/control_types.hpp"
+#include "mios/utils/types.hpp"
+
+namespace mios {
+
+// Core owns behaviour, not robot transport. Implementations use ROS 2 (or a
+// future transport) but must not expose a vendor SDK through this contract.
+class RobotBackend {
+ public:
+  using ControlCallback = std::function<control::ArmCommand(
+      const control::RobotState&, const control::RobotModel&, double period_seconds)>;
+  using RobotParameterProvider =
+      std::function<std::optional<control::RobotParameters>()>;
+
+  virtual ~RobotBackend() = default;
+
+  virtual bool initialize() = 0;
+  virtual bool connect_to_robot(const std::optional<std::string>& ip) = 0;
+  virtual bool connect_to_gripper(const std::optional<std::string>& ip) = 0;
+  virtual void disconnect_from_robot() = 0;
+  virtual void disconnect_from_gripper() = 0;
+  virtual ControlReturnType recover() = 0;
+  virtual bool pre_run_checks() const = 0;
+  virtual ControlReturnType control(control::CommandMode mode, ControlCallback callback) = 0;
+  virtual bool is_control_active() const { return false; }
+  // Called when a task has ended. A backend that enables the arm on demand
+  // in control() takes it out of control again here.
+  virtual ControlReturnType disable_arm_control() { return {false, "None", ""}; }
+
+  virtual void set_robot_parameter_provider(RobotParameterProvider /*provider*/) {}
+  virtual bool set_robot_parameters() = 0;
+  virtual bool get_robot_snapshot(control::RobotState& robot_state,
+                                  control::RobotModel& robot_model) const = 0;
+
+  // Last known gripper state. It never blocks and is not required to be
+  // fresh: the gripper publishes slowly and pauses while an action runs, so
+  // arm control must not depend on it.
+  virtual control::GripperState gripper_state() const { return {}; }
+
+  virtual bool grasp(double width, double speed, double force, double epsilon_inner,
+                     double epsilon_outer) const = 0;
+  virtual bool move_to_finger_position(double width, double speed) const = 0;
+  virtual bool home_gripper() const = 0;
+  virtual bool unlock_brakes() = 0;
+  virtual bool lock_brakes() = 0;
+  virtual bool shutdown_robot() = 0;
+  virtual bool reboot_robot() = 0;
+};
+
+}  // namespace mios

@@ -8,7 +8,6 @@
 #include "mirmi_cpp_utils/json/json.hpp"
 #include "mirmi_cpp_utils/benchmarking/benchmarking.hpp"
 #include "spdlog/spdlog.h"
-#include "franka/exception.h"
 
 #include <chrono>
 #include <cmath>
@@ -19,7 +18,8 @@ namespace mios {
 Skill::Skill(const std::string &type, const std::unordered_set<std::string> &objects, const std::string& id, Memory *memory, Portal* portal,std::set<ControlMode> control_modes):
     m_memory(memory),m_portal(portal),m_active_mp(std::make_shared<ManipulationPrimitive>("NullPrimitive",Percept(),memory)),m_control_modes(control_modes),m_life_cycle(SkillLifeCycle::slInit),
     m_flag_invoke_failure(false),m_flag_invoke_success(false),m_flag_pause(false),m_flag_parallels_running(false),m_stop_factor(1.0),m_type(type),m_id(id),m_objects(objects),
-    m_msg_local_success(false),m_msg_global_success(false),m_cost_contact_forces_sum(0),m_cost_effort_avg_sum(0){
+    m_msg_local_success(false),m_msg_global_success(false),m_cost_contact_forces_sum(0),m_cost_effort_avg_sum(0),
+    m_cost_desired_force_sum(0),m_cost_desired_pose_sum(0){
     spdlog::trace("Skill::Skill()");
     m_costs.insert(std::make_pair("ExecutionTime",0));
     m_ROI_center.setZero();
@@ -317,22 +317,75 @@ bool Skill::check_global_err_conditions(const Percept& p) const{
     for(unsigned i=0;i<3;i++){
         if(p.proprioception.T_T_EE(i,3)<m_ROI_center(i)+m_memory->read_parameters()->skill->ROI_x(2*i)){
             spdlog::error("Skill "+m_id+" has left ROI at coordinate "+std::to_string(i)+".");
+                // Print the full transformation matrix
+            std::stringstream ss;
+            ss << p.proprioception.T_T_EE;
+
+            spdlog::error(
+                "Skill {} has left ROI at coordinate {}.\n"
+                "T_T_EE:\n{}\n"
+                "T_T_EE({},3) = {:.9f}\n"
+                "ROI_center({}) = {:.9f}\n"
+                "ROI_x({}) = {:.9f}\n"
+                "ROI_limit = {:.9f}",
+                m_id,
+                i,
+                ss.str(),
+                i,
+                p.proprioception.T_T_EE(i, 3),
+                i,
+                m_ROI_center(i),
+                2 * i,
+                m_memory->read_parameters()->skill->ROI_x(2 * i),
+                m_ROI_center(i) +
+                    m_memory->read_parameters()->skill->ROI_x(2 * i));
+
             return true;
         }
         if(p.proprioception.T_T_EE(i,3)>m_ROI_center(i)+m_memory->read_parameters()->skill->ROI_x(2*i+1)){
             spdlog::error("Skill "+m_id+" has left ROI at coordinate "+std::to_string(i)+".");
+                // Print the full transformation matrix
+            std::stringstream ss;
+            ss << p.proprioception.T_T_EE;
+
+            spdlog::error(
+                "in +1 round, Skill {} has left ROI at coordinate {}.\n"
+                "T_T_EE:\n{}\n"
+                "T_T_EE({},3) = {:.9f}\n"
+                "ROI_center({}) = {:.9f}\n"
+                "ROI_x({}) = {:.9f}\n"
+                "ROI_limit = {:.9f}",
+                m_id,
+                i,
+                ss.str(),
+                i,
+                p.proprioception.T_T_EE(i, 3),
+                i,
+                m_ROI_center(i),
+                2 * i+1,
+                m_memory->read_parameters()->skill->ROI_x(2 * i+1),
+                m_ROI_center(i) +
+                    m_memory->read_parameters()->skill->ROI_x(2 * i+1));
+
             return true;
         }
     }
     for(unsigned i=0;i<3;i++){
         if(fabs(p.proprioception.TF_dX_EE(i))>=m_memory->read_parameters()->limits.cartesian_space.dX_max(0)){
             spdlog::error("Skill "+m_id+" has violated the maximum cartesian twist limits.");
-            std::cout<<"dX_d: "<<p.proprioception.TF_dX_EE<<std::endl;
+            // Measured twist (not the desired one), with the axis and limit that tripped.
+            std::cout<<"measured TF_dX_EE: "<<p.proprioception.TF_dX_EE.transpose()
+                     <<" | translational axis "<<i<<" >= dX_max(0)="
+                     <<m_memory->read_parameters()->limits.cartesian_space.dX_max(0)
+                     <<" | dq: "<<p.proprioception.dq.transpose()<<std::endl;
             return true;
         }
         if(fabs(p.proprioception.TF_dX_EE(i+3))>=m_memory->read_parameters()->limits.cartesian_space.dX_max(1)){
             spdlog::error("Skill "+m_id+" has violated the maximum cartesian twist limits.");
-            std::cout<<"dX_d: "<<p.proprioception.TF_dX_EE<<std::endl;
+            std::cout<<"measured TF_dX_EE: "<<p.proprioception.TF_dX_EE.transpose()
+                     <<" | rotational axis "<<i<<" >= dX_max(1)="
+                     <<m_memory->read_parameters()->limits.cartesian_space.dX_max(1)
+                     <<" | dq: "<<p.proprioception.dq.transpose()<<std::endl;
             return true;
         }
     }
