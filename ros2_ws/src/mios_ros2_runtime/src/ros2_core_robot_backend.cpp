@@ -6,8 +6,6 @@
 #include <functional>
 #include <thread>
 #include <utility>
-#include <iomanip>
-#include <iostream>
 
 #include "mios_ros2_runtime/mios_parameter_snapshot_translation.hpp"
 #include "mios_ros2_runtime/robot_state_translation.hpp"
@@ -96,6 +94,10 @@ void Ros2CoreRobotBackend::set_error_recovery_client(const Ros2ErrorRecoveryClie
   error_recovery_timeout_ = std::max(timeout, std::chrono::milliseconds(1));
 }
 
+void Ros2CoreRobotBackend::set_joint_velocity_control_enabled(const bool enabled) {
+  joint_velocity_control_enabled_ = enabled;
+}
+
 mios::ControlReturnType Ros2CoreRobotBackend::recover() {
   if (!error_recovery_client_) {
     return {true, "Ros2RecoveryNotConfigured",
@@ -119,8 +121,9 @@ mios::ControlReturnType Ros2CoreRobotBackend::recover() {
   }
   RCLCPP_INFO(rclcpp::get_logger("mios_ros2_core"), "%s", recovery.message.c_str());
   if (controller_session_) {
-    // The robot error is cleared, but the hardware component and the effort
-    // controller were deactivated by it; control() requires both active.
+    // The robot error is cleared, but it deactivated the hardware component
+    // and the effort controller. Only the hardware comes back here; the next
+    // control() call of a task activates the controller again.
     const mios::ControlReturnType reactivated = controller_session_->reactivate();
     if (reactivated.exception) {
       RCLCPP_ERROR(rclcpp::get_logger("mios_ros2_core"),
@@ -129,7 +132,7 @@ mios::ControlReturnType Ros2CoreRobotBackend::recover() {
       return reactivated;
     }
     RCLCPP_INFO(rclcpp::get_logger("mios_ros2_core"),
-                "Hardware and effort controller are active again.");
+                "Hardware is active again; the arm stays disabled until the next skill.");
   }
   return {false, "None", ""};
 }
@@ -159,8 +162,14 @@ mios::ControlReturnType Ros2CoreRobotBackend::control(const mios::control::Comma
   if (!callback) {
     return {true, "InvalidControlCallback", "MIOS Core supplied an empty control callback."};
   }
-  if (mode != mios::control::CommandMode::kTorque) {
-    return {true, "UnsupportedControlMode", "Core manages only the commissioned effort controller; use torque control modes."};
+  // Joint velocity is served by the same effort controller (combined
+  // velocity + effort mode), so it needs no controller switch either.
+  const bool joint_velocity_supported =
+      joint_velocity_control_enabled_ && mode == mios::control::CommandMode::kJointVelocity;
+  if (mode != mios::control::CommandMode::kTorque && !joint_velocity_supported) {
+    return {true, "UnsupportedControlMode",
+            "Core manages only the commissioned effort controller; use torque control modes, "
+            "or joint velocity when enable_joint_velocity_control is set."};
   }
   if (!allow_controller_owned_move_mode_ || !controller_session_) {
     return {true, "ControllerManagementUnavailable", "Native controller management and commissioned MOVE ownership are required."};
@@ -177,15 +186,24 @@ mios::ControlReturnType Ros2CoreRobotBackend::control(const mios::control::Comma
     std::lock_guard<std::mutex> lock(control_mutex_);
     stop_requested_ = false;
   }
+  // The first skill of a task enables the arm; later skills find it enabled.
+  // After a release or an error recovery the IDLE state sample can lag behind
+  // the controller manager, so give it a moment instead of failing at once.
+  arm_control_enabled_ = true;
   auto result = controller_session_->acquire([this](const double threshold) {
-    const auto state = robot_backend_.latest_mios_robot_state();
-    if (!pre_run_checks() || !state || state->robot_mode != mios::control::RobotMode::kIdle) return false;
-    for (std::size_t index = 0; index < state->position.size(); ++index) {
-      if (!std::isfinite(state->position[index]) || !std::isfinite(state->velocity[index]) ||
-          std::abs(state->velocity[index]) > threshold) return false;
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+    while (true) {
+      {
+        std::lock_guard<std::mutex> lock(control_mutex_);
+        if (stop_requested_) return false;
+      }
+      if (is_stationary(threshold, true)) {
+        RCLCPP_INFO(rclcpp::get_logger("mios_ros2_core"), "Enabling arm control for this task.");
+        return true;
+      }
+      if (std::chrono::steady_clock::now() >= deadline) return false;
+      std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
-    std::lock_guard<std::mutex> lock(control_mutex_);
-    return !stop_requested_;
   });
   if (!result.exception) {
     std::unique_lock<std::mutex> lock(control_mutex_);
@@ -202,18 +220,10 @@ mios::ControlReturnType Ros2CoreRobotBackend::control(const mios::control::Comma
         lock.lock();
 
         if (!pre_run_ok && !active_control_->complete) {
-          RCLCPP_ERROR(
-            rclcpp::get_logger("mios_ros2_core"),
-            "RobotFeedbackLost DEBUG:\n"
-            "  pre_run_checks() = %d\n"
-            "  active_control_->complete = %d\n",
-            static_cast<int>(pre_run_ok),
-            static_cast<int>(active_control_->complete));
-
           active_control_->result = {
               true,
               "RobotFeedbackLost",
-              "Fresh permitted arm/model/gripper feedback was lost during control."
+              "Fresh permitted arm and model feedback was lost during control."
           };
 
           active_control_->complete = true;
@@ -222,36 +232,45 @@ mios::ControlReturnType Ros2CoreRobotBackend::control(const mios::control::Comma
       result = active_control_->result;
     }
   }
-  // Wait for a copied callback to finish before Core tears down its executor.
-  // No service call runs while a state/dispatch/control mutex is held.
-  // {
-  //   std::lock_guard<std::mutex> callback_lock(callback_mutex_);
-  //   std::lock_guard<std::mutex> dispatch_lock(dispatch_mutex_);
-  //   std::lock_guard<std::mutex> lock(control_mutex_);
-  //   active_control_.reset();
-  // }
-  // const auto state_before_release = robot_backend_.latest_snapshot();
-  // const auto released = controller_session_->release();
-  // if (released.exception) {
-  //   if (!result.exception) return released;
-  //   result.error_msg += " Release also failed: " + released.error_msg;
-  // } else if (!result.exception) {
-  //   // controller_manager acknowledgement and state publication are asynchronous.
-  //   // A following skill must not attempt acquisition against the previous MOVE sample.
-  //   const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
-  //   bool settled = false;
-  //   do {
-  //     const auto state = robot_backend_.latest_snapshot();
-  //     settled = state && robot_backend_.has_fresh_robot_state(state_timeout_) &&
-  //               state->robot_mode == RobotRuntimeMode::kIdle && !state->user_stopped &&
-  //               (!state_before_release || state->stamp_nanoseconds > state_before_release->stamp_nanoseconds);
-  //     if (!settled) std::this_thread::sleep_for(std::chrono::milliseconds(5));
-  //   } while (!settled && std::chrono::steady_clock::now() < deadline);
-  //   if (!settled) {
-  //     return {true, "ControllerReleasedRobotNotIdle", "Effort controller is inactive but a new IDLE robot state was not observed."};
-  //   }
-  // }
   return result;
+}
+
+bool Ros2CoreRobotBackend::is_stationary(const double threshold, const bool require_idle) const {
+  const auto state = robot_backend_.latest_mios_robot_state();
+  if (!state || !robot_backend_.has_fresh_robot_state(state_timeout_)) return false;
+  if (require_idle && (!pre_run_checks() || state->robot_mode != mios::control::RobotMode::kIdle)) {
+    return false;
+  }
+  for (std::size_t index = 0; index < state->position.size(); ++index) {
+    if (!std::isfinite(state->position[index]) || !std::isfinite(state->velocity[index]) ||
+        std::abs(state->velocity[index]) > threshold) return false;
+  }
+  return true;
+}
+
+mios::ControlReturnType Ros2CoreRobotBackend::disable_arm_control() {
+  // Called after every task, the idle task included: stay cheap when the arm
+  // was never enabled.
+  if (!controller_session_ || !arm_control_enabled_) return {false, "None", ""};
+  stop_active_control();
+  // control() holds the session mutex while a callback may still run.
+  std::lock_guard<std::mutex> session_lock(session_mutex_);
+  // A stopped skill can leave the arm coasting; let it come to rest so the
+  // controller is not switched off under a moving robot.
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+  while (!is_stationary(0.01, false) && std::chrono::steady_clock::now() < deadline) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  }
+  const auto released = controller_session_->release();
+  if (released.exception) {
+    // Keep the flag so that the next task end retries the release.
+    RCLCPP_ERROR(rclcpp::get_logger("mios_ros2_core"),
+                 "Could not disable arm control after the task: %s", released.error_msg.c_str());
+    return released;
+  }
+  arm_control_enabled_ = false;
+  RCLCPP_INFO(rclcpp::get_logger("mios_ros2_core"), "Arm control disabled until the next task.");
+  return released;
 }
 
 bool Ros2CoreRobotBackend::is_control_active() const {
@@ -371,6 +390,10 @@ bool Ros2CoreRobotBackend::wait_for_parameter_operation(
     return false;
   }
   return completion->result.accepted && completion->result.success;
+}
+
+mios::control::GripperState Ros2CoreRobotBackend::gripper_state() const {
+  return gripper_client_.latest_state();
 }
 
 bool Ros2CoreRobotBackend::grasp(const double width, const double speed, const double force,

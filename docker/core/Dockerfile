@@ -15,7 +15,7 @@
 
 # Core imports only the Control image's published ROS transport artifacts. It
 # does not inherit the hardware image filesystem or its FCI/libfranka runtime.
-ARG MIOS_CONTROL_IMAGE=janine86/ros2-control:abclatest
+ARG MIOS_CONTROL_IMAGE=janine86/ros2-control:abcdefghijlatest
 FROM ${MIOS_CONTROL_IMAGE} AS control_artifacts
 
 ###############################################################################
@@ -107,8 +107,10 @@ COPY --from=control_artifacts /ws/install /ws/install
 COPY --from=build /opt/mios/install /opt/mios/install
 
 COPY mios/python/utils/ws_client.py /opt/mios/python/utils/ws_client.py
-COPY --chmod=755 mios/docker/ros2/entrypoint.sh /entrypoint.sh
-COPY --chmod=755 mios/docker/ros2/start_core.sh /usr/local/bin/start_core.sh
+COPY --chmod=755 mios/docker/common/entrypoint.sh /entrypoint.sh
+COPY mios/docker/common/runtime_lib.sh /usr/local/lib/mios/runtime_lib.sh
+COPY --chmod=755 mios/docker/core/start_core.sh \
+                 mios/docker/core/check_core_ready.sh /usr/local/bin/
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/usr/local/bin/start_core.sh"]

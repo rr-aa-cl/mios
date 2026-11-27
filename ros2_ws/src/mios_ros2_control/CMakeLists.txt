@@ -19,6 +19,7 @@ add_library(mios_effort_controller SHARED
   src/mios_effort_controller.cpp
   src/mios_zero_effort_diagnostic_controller.cpp
   src/mios_velocity_control_core.cpp
+  src/mios_velocity_tracking_core.cpp
   src/mios_joint_velocity_controller.cpp
   src/mios_cartesian_velocity_control_core.cpp
   src/mios_cartesian_velocity_controller.cpp
@@ -50,6 +51,7 @@ if(BUILD_TESTING)
   set(MIOS_CONTROL_CORE_TESTS
     test_mios_control_core
     test_mios_velocity_control_core
+    test_mios_velocity_tracking_core
     test_mios_cartesian_velocity_control_core
     test_mios_position_control_core
     test_mios_cartesian_pose_control_core)

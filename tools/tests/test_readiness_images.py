@@ -11,12 +11,13 @@ from deployment_readiness.common import CommandResult, Context
 from deployment_readiness.images import _evaluate, collect
 
 IMAGE_ID = "sha256:" + "a" * 64
-SOURCE_HELPER = Path(__file__).resolve().parents[2] / "docker/ros2/start_model_broadcaster.sh"
-INSTALLED_HELPER = "/usr/local/bin/start_model_broadcaster.sh"
+SOURCE_HELPER = Path(__file__).resolve().parents[2] / "docker/control/prepare_controllers.sh"
+INSTALLED_HELPER = "/usr/local/bin/prepare_controllers.sh"
 
 
 def script_facts(name):
-    source = SOURCE_HELPER.parent / name
+    role = "core" if name == "start_core.sh" else "control"
+    source = SOURCE_HELPER.parents[1] / role / name
     return {"exists": True, "executable": True, "readable": True,
             "sha256": hashlib.sha256(source.read_bytes()).hexdigest()}
 
@@ -338,7 +339,7 @@ class ImageReadinessTests(unittest.TestCase):
         self.assertEqual("PASS", self.find(_evaluate("core", facts, self.context), "overlay", "core").status)
 
     def test_missing_control_startup_file_fails(self):
-        for path in ("/entrypoint.sh", "/usr/local/bin/start_model_broadcaster.sh",
+        for path in ("/entrypoint.sh", "/usr/local/bin/prepare_controllers.sh",
                      "/ws/install/franka_bringup/share/franka_bringup/launch/franka.launch.py"):
             with self.subTest(path=path):
                 facts = control_facts()
@@ -348,7 +349,7 @@ class ImageReadinessTests(unittest.TestCase):
                 self.assertIn(path, failure.details)
 
     def test_startup_helper_must_be_executable_and_launch_readable(self):
-        for path, permission in (("/usr/local/bin/start_model_broadcaster.sh", "executable"),
+        for path, permission in (("/usr/local/bin/prepare_controllers.sh", "executable"),
                                  ("/ws/install/franka_bringup/share/franka_bringup/launch/franka.launch.py", "readable")):
             with self.subTest(path=path):
                 facts = control_facts()

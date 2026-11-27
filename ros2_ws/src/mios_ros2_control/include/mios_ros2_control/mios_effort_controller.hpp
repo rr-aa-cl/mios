@@ -13,6 +13,8 @@
 #include "mios_msgs/msg/mios_actuator_command.hpp"
 #include "mios_msgs/msg/mios_effort_command.hpp"
 #include "mios_ros2_control/mios_control_core.hpp"
+#include "mios_ros2_control/mios_velocity_control_core.hpp"
+#include "mios_ros2_control/mios_velocity_tracking_core.hpp"
 #include "realtime_tools/realtime_buffer.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
@@ -125,6 +127,21 @@ class MiosEffortController : public controller_interface::ControllerInterface {
   bool nullspace_enabled_{false};
   bool allow_runtime_nullspace_commands_{false};
   bool requires_franka_model_{false};
+  // Combined velocity + effort mode. With claim_joint_velocity_interfaces the
+  // controller also owns the seven joint velocity command interfaces, which
+  // makes franka_hardware run a joint-velocity motion generator next to the
+  // external torque controller. MODE_JOINT_VELOCITY commands are conditioned
+  // by velocity_core_ and followed with torque through velocity_tracking_.
+  bool claim_joint_velocity_interfaces_{false};
+  bool allow_runtime_joint_velocity_commands_{false};
+  Effort velocity_limits_{};
+  Effort velocity_acceleration_limits_{};
+  Effort velocity_joint_limit_margins_{};
+  Effort velocity_tracking_stiffness_{};
+  Effort velocity_tracking_damping_{};
+  Effort velocity_tracking_position_error_limit_{};
+  MiosVelocityControlCore velocity_core_;
+  MiosVelocityTrackingCore velocity_tracking_;
   MiosControlCore control_core_;
   std::unique_ptr<franka_semantic_components::FrankaRobotModel> franka_model_;
   realtime_tools::RealtimeThreadSafeBox<franka::RobotState>* robot_state_box_{nullptr};
@@ -136,6 +153,7 @@ class MiosEffortController : public controller_interface::ControllerInterface {
   realtime_tools::RealtimeBuffer<std::shared_ptr<MiosCartesianForceRequest>>
       desired_cartesian_force_;
   realtime_tools::RealtimeBuffer<std::shared_ptr<MiosNullspaceRequest>> desired_nullspace_;
+  realtime_tools::RealtimeBuffer<std::shared_ptr<MiosVelocityRequest>> desired_velocity_;
   realtime_tools::RealtimeBuffer<std::shared_ptr<RobotSafetyState>> robot_safety_state_;
   rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr effort_subscription_;
   rclcpp::Subscription<mios_msgs::msg::MiosEffortCommand>::SharedPtr runtime_effort_subscription_;

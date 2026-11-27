@@ -41,6 +41,7 @@ public:
 
     ControlReturnType execute_skill();
     bool is_control_active() const;
+    void disable_arm_control();
     void post_execution();
     void terminate_control_cycle();
 

@@ -69,7 +69,10 @@ mios_effort_controller:
     # Commissioning limits, not FR3 physical limits. Increase only after the
     # MIOS pipelines have been ported and validated on the actual robot.
     effort_limits: [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
-    effort_rate_limit: 10.0
+    # 10 Nm/s needed 0.4 s to reverse a saturated torque. On the robot that
+    # left the wrist undamped (joint 7 reached 1 rad/s at insertion start) and
+    # made joint 4 overshoot joint moves. Franka's own limit is 1000 Nm/s.
+    effort_rate_limit: 100.0
     command_timeout: 0.1
     # Read robot mode and the external wrench from the ROS-control hardware's
     # in-process Franka state box. This avoids receiving/deserializing the
@@ -104,6 +107,35 @@ mios_effort_controller:
     # state interfaces. Keep this independent gate locked until Cartesian
     # semantic-interface and no-motion commissioning are complete.
     allow_runtime_cartesian_actuator_commands: true
+    # Combined velocity + effort mode. With claim_joint_velocity_interfaces this
+    # controller also owns the seven joint velocity command interfaces, and
+    # franka_hardware then runs a joint-velocity motion generator next to the
+    # external torque controller (one libfranka session, no controller
+    # switching). The velocity only drives Franka's desired trajectory; the arm
+    # is moved by the tracking torque below, inside effort_limits. Set it to
+    # false to return to the plain torque session: MODE_JOINT_VELOCITY commands
+    # are then still followed, by torque alone.
+    claim_joint_velocity_interfaces: true
+    # Accept MODE_JOINT_VELOCITY (legacy control_mode 3, e.g. MoveToJointPose).
+    allow_runtime_joint_velocity_commands: true
+    # A request above these caps is clamped, so a faster MIOS profile ends
+    # short of its goal. They cover MoveToJointPose's defaults (0.5 rad/s,
+    # 0.7 rad/s^2) and stay well inside the FR3 limits.
+    velocity_limits: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+    velocity_acceleration_limits: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    # No velocity command farther into this margin before a joint limit.
+    velocity_joint_limit_margins: [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10]
+    # tau = K (q_ref - q) + D (dq_ref - dq), with q_ref integrated from the
+    # velocity command. The spring has to beat joint friction (about 0.6 to
+    # 1 Nm on joints 1-4 of this arm) within a small position error: the first
+    # tune of 24/24/24/24/10/6/2 Nm/rad left the wrist up to 0.15 rad short of
+    # the goal. These are the gains of Franka's joint impedance example
+    # controller (franka_ros); the output is still clamped by effort_limits.
+    velocity_tracking_stiffness: [600.0, 600.0, 600.0, 600.0, 250.0, 150.0, 50.0]
+    velocity_tracking_damping: [50.0, 50.0, 50.0, 20.0, 20.0, 20.0, 10.0]
+    # q_ref never leads the measured joint by more than this, so a blocked or
+    # torque-limited arm lags instead of winding up the spring.
+    velocity_tracking_position_error_limit: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
     # Base-frame external-wrench PI stage for the legacy desired-wrench path.
     # It uses O_F_ext_hat_K feedback and zero-Jacobian torque mapping, but is
     # fully locked until contact, frame/sign, and torque commissioning pass.

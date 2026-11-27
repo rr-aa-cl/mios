@@ -214,6 +214,8 @@ void TaskEngine::life_cycle(){
             m_memory->store_task_data(m_active_task->get_uuid(),m_active_task->get_id(),m_active_task->get_context(),m_active_task->get_result());
             m_memory->clear_reserved_skills();
             m_memory->clear_skill_parameters();
+            // The arm is controllable only while a task runs.
+            m_core->disable_arm_control();
             m_task_life_cycle=TaskLifeCycle::Switch;
         }
         if(m_task_life_cycle==TaskLifeCycle::Switch){

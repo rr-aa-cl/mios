@@ -33,11 +33,19 @@ class RobotBackend {
   virtual bool pre_run_checks() const = 0;
   virtual ControlReturnType control(control::CommandMode mode, ControlCallback callback) = 0;
   virtual bool is_control_active() const { return false; }
+  // Called when a task has ended. A backend that enables the arm on demand
+  // in control() takes it out of control again here.
+  virtual ControlReturnType disable_arm_control() { return {false, "None", ""}; }
 
   virtual void set_robot_parameter_provider(RobotParameterProvider /*provider*/) {}
   virtual bool set_robot_parameters() = 0;
   virtual bool get_robot_snapshot(control::RobotState& robot_state,
                                   control::RobotModel& robot_model) const = 0;
+
+  // Last known gripper state. It never blocks and is not required to be
+  // fresh: the gripper publishes slowly and pauses while an action runs, so
+  // arm control must not depend on it.
+  virtual control::GripperState gripper_state() const { return {}; }
 
   virtual bool grasp(double width, double speed, double force, double epsilon_inner,
                      double epsilon_outer) const = 0;

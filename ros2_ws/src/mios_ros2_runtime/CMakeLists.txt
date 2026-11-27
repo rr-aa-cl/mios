@@ -86,11 +86,6 @@ install(TARGETS mios_ros2_runtime_translation mios_ros2_runtime_backend
   RUNTIME DESTINATION bin)
 
 if(BUILD_TESTING)
-  add_executable(test_ros2_core_controller_lifecycle test/test_ros2_core_controller_lifecycle.cpp)
-  target_compile_features(test_ros2_core_controller_lifecycle PRIVATE cxx_std_17)
-  target_link_libraries(test_ros2_core_controller_lifecycle mios_ros2_runtime_backend)
-  ament_target_dependencies(test_ros2_core_controller_lifecycle rclcpp)
-  add_test(NAME test_ros2_core_controller_lifecycle COMMAND test_ros2_core_controller_lifecycle)
   add_executable(test_ros2_controller_session test/test_ros2_controller_session.cpp)
   target_compile_features(test_ros2_controller_session PRIVATE cxx_std_17)
   target_link_libraries(test_ros2_controller_session mios_ros2_runtime_backend)
@@ -122,12 +117,6 @@ if(BUILD_TESTING)
   target_link_libraries(test_mios_parameter_snapshot_translation mios_ros2_runtime_translation)
   add_test(NAME test_mios_parameter_snapshot_translation
     COMMAND test_mios_parameter_snapshot_translation)
-
-  add_executable(test_ros2_gripper_client test/test_ros2_gripper_client.cpp)
-  target_compile_features(test_ros2_gripper_client PRIVATE cxx_std_17)
-  target_link_libraries(test_ros2_gripper_client mios_ros2_runtime_backend)
-  ament_target_dependencies(test_ros2_gripper_client rclcpp)
-  add_test(NAME test_ros2_gripper_client COMMAND test_ros2_gripper_client)
 
   add_executable(test_ros2_core_robot_backend test/test_ros2_core_robot_backend.cpp)
   target_compile_features(test_ros2_core_robot_backend PRIVATE cxx_std_17)

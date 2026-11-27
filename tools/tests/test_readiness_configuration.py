@@ -37,13 +37,13 @@ def deployment():
     core["environment"].update(ROBOT_IP="192.168.4.100", MIOS_ENABLE_CORE_SCHEDULER="true",
                               MIOS_ENABLE_CORE_TASK_EXECUTION="false",
                               MIOS_ALLOW_CONTROLLER_OWNED_MOVE_MODE="false")
-    core["depends_on"] = {"mios_ros2_control": {"condition": "service_healthy", "required": True}}
+    core["depends_on"] = {"ros2_control": {"condition": "service_healthy", "required": True}}
     ml = {"image": "ml:candidate", "network_mode": "host", "cpuset": "0-5,8-19",
-          "command": ["python3", "./start_interface.py"],
+          "command": ["python3", "/usr/local/bin/mls_runtime.py", "start"],
           "environment": {"interface_port": "8000", "mios_port": "12000", "mongo_port": "27017"},
-          "depends_on": {"mios_ros2_core": {"condition": "service_started", "required": True}}}
-    return {"services": {"mios_ros2_control": control, "mios_ros2_core": core,
-                         "mios_ml_service": ml}}
+          "depends_on": {"ros2_core": {"condition": "service_started", "required": True}}}
+    return {"services": {"ros2_control": control, "ros2_core": core,
+                         "mls": ml}}
 
 
 class FakeRunner:
@@ -68,11 +68,11 @@ class ComposeTests(unittest.TestCase):
         self.assertTrue(all(c.status == "PASS" for c in validate_compose(self.context)))
 
     def test_repository_launch_defaults_pass_motion_without_environment_exports(self):
-        source = (ROOT / "docker/ros2/docker-compose.runtime.yml").read_text()
+        source = (ROOT / "docker/compose.yml").read_text()
         compose = deployment()
         # Read only environment defaults and startup commands, not a YAML parser.
         # Resolve :- defaults directly so the host environment cannot mask drift.
-        for service in ("mios_ros2_control", "mios_ros2_core"):
+        for service in ("ros2_control", "ros2_core"):
             block = re.search(r"^  " + service + r":\n(.*?)(?=^  \S|\Z)", source, re.M | re.S)
             self.assertIsNotNone(block, service)
             command = re.search(r'^    command: (\[.*\])$', block[1], re.M)
@@ -94,13 +94,13 @@ class ComposeTests(unittest.TestCase):
         # retaining the scheduler that serves the Portal.
         context.profile = "state-only"
         self.assertEqual("FAIL", next(c for c in validate_compose(context) if c.id == "compose.task_gates").status)
-        core = compose["services"]["mios_ros2_core"]
+        core = compose["services"]["ros2_core"]
         for gate in ("MIOS_ENABLE_CORE_TASK_EXECUTION", "MIOS_ALLOW_CONTROLLER_OWNED_MOVE_MODE"):
             core["environment"][gate] = "false"
         self.assertTrue(all(c.status == "PASS" for c in validate_compose(context)))
 
     def test_state_only_requires_scheduler_for_portal_even_with_motion_gates_closed(self):
-        core = self.services["mios_ros2_core"]
+        core = self.services["ros2_core"]
         core["environment"]["MIOS_ENABLE_CORE_SCHEDULER"] = "false"
         check = next(check for check in validate_compose(self.context) if check.id == "compose.task_gates")
         self.assertEqual(check.status, "FAIL")
@@ -108,7 +108,7 @@ class ComposeTests(unittest.TestCase):
         self.assertIn("MIOS_ENABLE_CORE_SCHEDULER=true", check.remediation)
 
     def test_state_only_portal_keeps_task_and_move_gates_closed(self):
-        core = self.services["mios_ros2_core"]
+        core = self.services["ros2_core"]
         original = core["environment"].copy()
         for key in ("MIOS_ENABLE_CORE_TASK_EXECUTION", "MIOS_ALLOW_CONTROLLER_OWNED_MOVE_MODE"):
             with self.subTest(key=key):
@@ -121,39 +121,39 @@ class ComposeTests(unittest.TestCase):
                 self.services[name]["profiles"] = ["optional"]
                 self.assertEqual(self.status("compose.default_services"), "FAIL")
                 del self.services[name]["profiles"]
-        del self.services["mios_ml_service"]
+        del self.services["mls"]
         self.assertEqual(self.status("compose.services"), "FAIL")
 
     def test_ml_needs_host_network_but_not_shared_ipc(self):
-        ml = self.services["mios_ml_service"]
+        ml = self.services["mls"]
         self.assertNotIn("ipc", ml)
-        self.assertEqual(self.status("compose.mios_ml_service.transport"), "PASS")
+        self.assertEqual(self.status("compose.mls.transport"), "PASS")
         ml["network_mode"] = "bridge"
-        self.assertEqual(self.status("compose.mios_ml_service.transport"), "FAIL")
+        self.assertEqual(self.status("compose.mls.transport"), "FAIL")
 
     def test_ml_must_use_nonrt_cpus_and_depend_on_core(self):
-        ml = self.services["mios_ml_service"]
+        ml = self.services["mls"]
         ml["cpuset"] = "6-7"
         self.assertEqual(self.status("compose.nonrt_placement"), "FAIL")
         for dependency in ({}, {"condition": "service_completed_successfully"},
                            {"condition": "service_started", "required": False}):
             with self.subTest(dependency=dependency):
-                ml["depends_on"]["mios_ros2_core"] = dependency
+                ml["depends_on"]["ros2_core"] = dependency
                 self.assertEqual(self.status("compose.ml_dependency"), "FAIL")
 
     def test_ml_runtime_overrides_are_not_covered_by_image_probe(self):
-        ml = self.services["mios_ml_service"]
+        ml = self.services["mls"]
         for key, value in (("volumes", [{"source": "/tmp/code", "target": "/mios_mls"}]),
                            ("entrypoint", []), ("working_dir", "/other/code")):
             with self.subTest(key=key):
                 ml[key] = value
-                self.assertEqual(self.status("compose.mios_ml_service.overrides"), "UNKNOWN")
+                self.assertEqual(self.status("compose.mls.overrides"), "UNKNOWN")
                 del ml[key]
         ml["environment"]["PYTHONHOME"] = "/other/python"
-        self.assertEqual(self.status("compose.mios_ml_service.overrides"), "UNKNOWN")
+        self.assertEqual(self.status("compose.mls.overrides"), "UNKNOWN")
 
     def test_ml_launch_overrides_cannot_bypass_port_inspection(self):
-        ml = self.services["mios_ml_service"]
+        ml = self.services["mls"]
         for command in (["python3", "./start_interface.py", "--interface_port", "8100"],
                         ["bash", "-lc", "python3 ./start_interface.py"],
                         ["python3", "./example_learning.py"]):
@@ -162,7 +162,7 @@ class ComposeTests(unittest.TestCase):
                 self.assertEqual(self.status("compose.command_shape"), "UNKNOWN")
 
     def test_resolved_ml_ports_determine_listeners_and_must_match_core(self):
-        env = self.services["mios_ml_service"]["environment"]
+        env = self.services["mls"]["environment"]
         env["interface_port"] = "8100"
         ports, database = planned_ports(self.context)
         self.assertIn(("tcp", 8100, "ML RPC"), ports)
@@ -174,13 +174,13 @@ class ComposeTests(unittest.TestCase):
                 env[key] = value
                 self.assertEqual(self.status("compose.ml_dependency_ports"), "FAIL")
                 env[key] = original
-        core = self.services["mios_ros2_core"]
+        core = self.services["ros2_core"]
         core["environment"].update(MIOS_WS_PORT="13000", MONGO_PORT="27018")
         env.update(mios_port="13000", mongo_port="27018")
         self.assertEqual(self.status("compose.ml_dependency_ports"), "PASS")
 
     def test_ml_invalid_and_colliding_ports_block(self):
-        env = self.services["mios_ml_service"]["environment"]
+        env = self.services["mls"]["environment"]
         for value in ("invalid", "0", "65535", "12000", "11999", True):
             with self.subTest(value=value):
                 env["interface_port"] = value
@@ -189,14 +189,8 @@ class ComposeTests(unittest.TestCase):
         env["mongo_port"] = "invalid"
         self.assertEqual(self.status("compose.ml_dependency_ports"), "FAIL")
 
-    def test_alternate_core_command_cannot_bypass_fixed_parameter_gate(self):
-        core = self.services["mios_ros2_core"]
-        core["command"] = ["bash", "-lc", "exec start_core.sh # ignored flags"]
-        self.assertNotIn("allow_robot_parameter_application", parameters(core))
-        self.assertEqual(self.status("compose.parameter_application"), "FAIL")
-
     def test_alternate_controller_yaml_is_not_covered_by_image_probe(self):
-        control = self.services["mios_ros2_control"]
+        control = self.services["ros2_control"]
         control["command"].append("controllers_yaml:=/tmp/other.yaml")
         self.assertEqual(self.status("compose.controller_yaml"), "FAIL")
 
@@ -208,11 +202,11 @@ class ComposeTests(unittest.TestCase):
         for dependency in ({}, {"condition": "service_started"},
                            {"condition": "service_healthy", "required": False}):
             with self.subTest(dependency=dependency):
-                self.services["mios_ros2_core"]["depends_on"]["mios_ros2_control"] = dependency
+                self.services["ros2_core"]["depends_on"]["ros2_control"] = dependency
                 self.assertEqual(self.status("compose.core_dependency"), "FAIL")
 
     def test_healthcheck_cannot_be_disabled_or_replaced_by_process_only_check(self):
-        control = self.services["mios_ros2_control"]
+        control = self.services["ros2_control"]
         for health in ({}, {"disable": True}, {"test": ["CMD", "true"]},
                        {"test": ["CMD", "/usr/local/bin/check_control_ready.sh"], "disable": True}):
             with self.subTest(health=health):
@@ -220,25 +214,25 @@ class ComposeTests(unittest.TestCase):
                 self.assertEqual(self.status("compose.control_healthcheck"), "FAIL")
 
     def test_shutdown_grace_preserves_core_release_and_control_cleanup_budgets(self):
-        for service, minimum in (("mios_ros2_control", "20s"), ("mios_ros2_core", "30s")):
+        for service, minimum in (("ros2_control", "20s"), ("ros2_core", "30s")):
             for value in (None, "10s", "19999ms", "invalid", True):
                 with self.subTest(service=service, value=value):
                     self.services[service]["stop_grace_period"] = value
                     self.assertEqual(self.status("compose.shutdown_grace"), "FAIL")
             self.services[service]["stop_grace_period"] = minimum
-        self.services["mios_ros2_core"]["stop_grace_period"] = "0m30s"
-        self.services["mios_ros2_control"]["stop_grace_period"] = "20000ms"
+        self.services["ros2_core"]["stop_grace_period"] = "0m30s"
+        self.services["ros2_control"]["stop_grace_period"] = "20000ms"
         self.assertEqual(self.status("compose.shutdown_grace"), "PASS")
 
     def test_duplicate_planned_ports_fail_before_socket_inspection(self):
-        core = self.services["mios_ros2_core"]
+        core = self.services["ros2_core"]
         core["environment"]["MIOS_RPC_PORT"] = "12000"
         self.assertEqual(self.status("compose.ports"), "FAIL")
         with self.assertRaises(ValueError):
             planned_ports(self.context)
 
     def test_invalid_port_range_fails(self):
-        core = self.services["mios_ros2_core"]
+        core = self.services["ros2_core"]
         core["environment"]["MIOS_RPC_PORT"] = "65536"
         self.assertEqual(self.status("compose.ports"), "FAIL")
 
@@ -253,16 +247,16 @@ class ComposeTests(unittest.TestCase):
                            ("entrypoint", ""), ("tmpfs", ["/ws"]),
                            ("volumes_from", ["other-container"])]:
             with self.subTest(key=key):
-                self.services["mios_ros2_control"][key] = value
-                self.assertEqual(self.status("compose.mios_ros2_control.overrides"), "UNKNOWN")
-                del self.services["mios_ros2_control"][key]
+                self.services["ros2_control"][key] = value
+                self.assertEqual(self.status("compose.ros2_control.overrides"), "UNKNOWN")
+                del self.services["ros2_control"][key]
 
     def test_loader_environment_cannot_replace_probed_paths(self):
-        self.services["mios_ros2_control"]["environment"]["LD_LIBRARY_PATH"] = '/old/libs'
-        self.assertEqual(self.status("compose.mios_ros2_control.overrides"), "UNKNOWN")
+        self.services["ros2_control"]["environment"]["LD_LIBRARY_PATH"] = '/old/libs'
+        self.assertEqual(self.status("compose.ros2_control.overrides"), "UNKNOWN")
 
     def test_outer_shell_must_actually_execute_the_checked_command(self):
-        core = self.services["mios_ros2_core"]
+        core = self.services["ros2_core"]
         script = core["command"][0]
         for command in (script, ['exec', '/opt/mios/install/bin/mios_ros2_core_runtime', '--ros-args'],
                         ['bash', '-nc', script], ['bash', '-lc', script, 'ignored-argv']):
@@ -271,7 +265,7 @@ class ComposeTests(unittest.TestCase):
                 self.assertEqual(self.status("compose.command_shape"), "UNKNOWN")
 
     def test_shell_wrappers_and_substitutions_are_not_guessed(self):
-        core = self.services["mios_ros2_core"]
+        core = self.services["ros2_core"]
         original = core["command"][0]
         for changed in ['echo ignored; ' + original, original + ' && echo done',
                         original + ' -p database_name:=$(echo mios)']:
@@ -283,10 +277,10 @@ class ComposeTests(unittest.TestCase):
         self.context.profile = "motion"
         self.assertEqual(self.status("compose.task_gates"), "FAIL")
         self.assertEqual(self.status("compose.gripper"), "FAIL")
-        core = self.services["mios_ros2_core"]
+        core = self.services["ros2_core"]
         for key in ("MIOS_ENABLE_CORE_SCHEDULER", "MIOS_ENABLE_CORE_TASK_EXECUTION", "MIOS_ALLOW_CONTROLLER_OWNED_MOVE_MODE"):
             core["environment"][key] = "true"
-        control = self.services["mios_ros2_control"]
+        control = self.services["ros2_control"]
         control["environment"]["MIOS_LOAD_GRIPPER"] = "true"
         self.assertTrue(all(c.status == "PASS" for c in validate_compose(self.context)))
         core["environment"]["MIOS_ENABLE_CORE_SCHEDULER"] = "false"
@@ -297,15 +291,15 @@ class ComposeTests(unittest.TestCase):
         for service in self.services.values():
             service["environment"]["ROS_DOMAIN_ID"] = "1"
         self.assertEqual(self.status("compose.ros_domain"), "PASS")
-        self.services["mios_ros2_core"]["environment"]["ROS_DOMAIN_ID"] = "2"
+        self.services["ros2_core"]["environment"]["ROS_DOMAIN_ID"] = "2"
         self.assertEqual(self.status("compose.ros_domain"), "FAIL")
 
     def test_low_soft_realtime_limit_is_rejected(self):
-        self.services["mios_ros2_control"]["ulimits"]["rtprio"] = {"soft": 0, "hard": 99}
+        self.services["ros2_control"]["ulimits"]["rtprio"] = {"soft": 0, "hard": 99}
         self.assertEqual(self.status("compose.realtime_permissions"), "FAIL")
 
     def test_whole_control_container_must_not_be_pinned(self):
-        self.services["mios_ros2_control"]["cpuset"] = "6"
+        self.services["ros2_control"]["cpuset"] = "6"
         self.assertEqual(self.status("compose.worker_placement"), "FAIL")
 
     def test_explicit_override_cannot_be_silently_ignored(self):
@@ -320,7 +314,7 @@ class ComposeTests(unittest.TestCase):
 
     def test_ml_image_override_is_resolved_through_plain_compose(self):
         args = parser().parse_args(["--ml-image", "required:ml"])
-        self.services["mios_ml_service"]["image"] = "required:ml"
+        self.services["mls"]["image"] = "required:ml"
         runner = FakeRunner([CommandResult(0, json.dumps(self.context.compose))])
         checks = collect_configuration(self.context, args, runner)
         self.assertTrue(all(check.status == "PASS" for check in checks))

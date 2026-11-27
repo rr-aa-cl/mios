@@ -528,7 +528,7 @@ def _wait_for_handguiding_stop(robot: str):
 if __name__ == "__main__":
     # False starts a new grasp from open fingers. Use True to resume teaching
     # with an object that is already securely held, without closing again.
-    call_method("127.0.0.1", 12000, "release_object",{"width": 0.08, "speed": 0.2})
-    call_method("127.0.0.1", 12000, "home_gripper")
+    # call_method("127.0.0.1", 12000, "release_object",{"width": 0.08, "speed": 0.2})
+    # call_method("127.0.0.1", 12000, "home_gripper")
     # handguiding("127.0.0.1")
-    # teach_insertion("127.0.0.1", "janinetest1", already_grasped=False)
+    teach_insertion("127.0.0.1", "janinetest1", already_grasped=False)

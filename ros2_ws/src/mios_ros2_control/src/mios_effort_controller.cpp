@@ -102,6 +102,18 @@ controller_interface::CallbackReturn MiosEffortController::on_init() {
     auto_declare<std::vector<double>>("nullspace_effort_limit", std::vector<double>(7, 0.0));
     auto_declare<bool>("nullspace_enabled", nullspace_enabled_);
     auto_declare<bool>("allow_runtime_nullspace_commands", allow_runtime_nullspace_commands_);
+    auto_declare<bool>("claim_joint_velocity_interfaces", claim_joint_velocity_interfaces_);
+    auto_declare<bool>("allow_runtime_joint_velocity_commands",
+                       allow_runtime_joint_velocity_commands_);
+    auto_declare<std::vector<double>>("velocity_limits", std::vector<double>(7, 0.05));
+    auto_declare<std::vector<double>>("velocity_acceleration_limits",
+                                      std::vector<double>(7, 0.10));
+    auto_declare<std::vector<double>>("velocity_joint_limit_margins",
+                                      std::vector<double>(7, 0.10));
+    auto_declare<std::vector<double>>("velocity_tracking_stiffness", std::vector<double>(7, 0.0));
+    auto_declare<std::vector<double>>("velocity_tracking_damping", std::vector<double>(7, 0.0));
+    auto_declare<std::vector<double>>("velocity_tracking_position_error_limit",
+                                      std::vector<double>(7, 0.05));
   } catch (const std::exception& error) {
     RCLCPP_ERROR(get_node()->get_logger(), "Unable to declare parameters: %s", error.what());
     return controller_interface::CallbackReturn::ERROR;
@@ -115,6 +127,14 @@ MiosEffortController::command_interface_configuration() const {
   config.type = controller_interface::interface_configuration_type::INDIVIDUAL;
   for (const auto& joint : joints_) {
     config.names.push_back(joint + "/effort");
+  }
+  // Effort first, velocity second: update() addresses the velocity interfaces
+  // at joints_.size() + index. Claiming both selects franka_hardware's
+  // combined velocity + effort session.
+  if (claim_joint_velocity_interfaces_) {
+    for (const auto& joint : joints_) {
+      config.names.push_back(joint + "/velocity");
+    }
   }
   return config;
 }
@@ -230,6 +250,54 @@ bool MiosEffortController::configure_parameters() {
   nullspace_enabled_ = get_node()->get_parameter("nullspace_enabled").as_bool();
   allow_runtime_nullspace_commands_ =
       get_node()->get_parameter("allow_runtime_nullspace_commands").as_bool();
+  claim_joint_velocity_interfaces_ =
+      get_node()->get_parameter("claim_joint_velocity_interfaces").as_bool();
+  allow_runtime_joint_velocity_commands_ =
+      get_node()->get_parameter("allow_runtime_joint_velocity_commands").as_bool();
+  const auto velocity_limits = get_node()->get_parameter("velocity_limits").as_double_array();
+  const auto velocity_acceleration_limits =
+      get_node()->get_parameter("velocity_acceleration_limits").as_double_array();
+  const auto velocity_joint_limit_margins =
+      get_node()->get_parameter("velocity_joint_limit_margins").as_double_array();
+  const auto velocity_tracking_stiffness =
+      get_node()->get_parameter("velocity_tracking_stiffness").as_double_array();
+  const auto velocity_tracking_damping =
+      get_node()->get_parameter("velocity_tracking_damping").as_double_array();
+  const auto velocity_tracking_position_error_limit =
+      get_node()->get_parameter("velocity_tracking_position_error_limit").as_double_array();
+  if (velocity_limits.size() != effort_limits_.size() ||
+      velocity_acceleration_limits.size() != effort_limits_.size() ||
+      velocity_joint_limit_margins.size() != effort_limits_.size() ||
+      velocity_tracking_stiffness.size() != effort_limits_.size() ||
+      velocity_tracking_damping.size() != effort_limits_.size() ||
+      velocity_tracking_position_error_limit.size() != effort_limits_.size()) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Joint-velocity mode parameters must each contain exactly 7 values.");
+    return false;
+  }
+  for (std::size_t index = 0; index < effort_limits_.size(); ++index) {
+    if (!std::isfinite(velocity_limits[index]) || velocity_limits[index] <= 0.0 ||
+        !std::isfinite(velocity_acceleration_limits[index]) ||
+        velocity_acceleration_limits[index] <= 0.0 ||
+        !std::isfinite(velocity_joint_limit_margins[index]) ||
+        velocity_joint_limit_margins[index] < 0.0 ||
+        !std::isfinite(velocity_tracking_stiffness[index]) ||
+        velocity_tracking_stiffness[index] < 0.0 ||
+        !std::isfinite(velocity_tracking_damping[index]) ||
+        velocity_tracking_damping[index] < 0.0 ||
+        !std::isfinite(velocity_tracking_position_error_limit[index]) ||
+        velocity_tracking_position_error_limit[index] <= 0.0) {
+      RCLCPP_ERROR(get_node()->get_logger(), "Invalid joint-velocity mode configuration.");
+      return false;
+    }
+    velocity_limits_[index] = velocity_limits[index];
+    velocity_acceleration_limits_[index] = velocity_acceleration_limits[index];
+    velocity_joint_limit_margins_[index] = velocity_joint_limit_margins[index];
+    velocity_tracking_stiffness_[index] = velocity_tracking_stiffness[index];
+    velocity_tracking_damping_[index] = velocity_tracking_damping[index];
+    velocity_tracking_position_error_limit_[index] =
+        velocity_tracking_position_error_limit[index];
+  }
   if (joints_.size() != effort_limits_.size() || limits.size() != effort_limits_.size() ||
       arm_id_.empty() || robot_state_source_.empty() || robot_state_topic_.empty() ||
       lower_limits.size() != effort_limits_.size() ||
@@ -413,6 +481,11 @@ bool MiosEffortController::configure_parameters() {
       cartesian_impedance_adaptation_enabled_);
   control_core_.configure_nullspace(nullspace_singularity_damping_, nullspace_effort_limit_,
                                     nullspace_enabled_);
+  velocity_core_.configure(velocity_limits_, velocity_acceleration_limits_, joint_lower_limits_,
+                           joint_upper_limits_, velocity_joint_limit_margins_,
+                           static_cast<std::int64_t>(command_timeout_ * 1.0e9));
+  velocity_tracking_.configure(velocity_tracking_stiffness_, velocity_tracking_damping_,
+                               velocity_tracking_position_error_limit_);
   requires_franka_model_ = cartesian_velocity_damping_enabled_ || cartesian_workspace_enabled_ ||
                            allow_runtime_cartesian_actuator_commands_ ||
                            allow_runtime_cartesian_force_commands_ ||
@@ -426,7 +499,7 @@ bool MiosEffortController::configure_parameters() {
        allow_runtime_effort_commands_ || allow_runtime_actuator_commands_ ||
        allow_runtime_cartesian_actuator_commands_ ||
        allow_runtime_cartesian_force_commands_ || allow_runtime_nullspace_commands_ ||
-       cartesian_velocity_damping_enabled_ || cartesian_workspace_enabled_ ||
+       allow_runtime_joint_velocity_commands_ || cartesian_velocity_damping_enabled_ || cartesian_workspace_enabled_ ||
        cartesian_force_enabled_ || nullspace_enabled_ || requires_franka_model_)) {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "robot_state_safety_enabled may be false only for the exact-zero "
@@ -537,7 +610,9 @@ controller_interface::CallbackReturn MiosEffortController::on_activate(
       return controller_interface::CallbackReturn::ERROR;
     }
   }
-  if (command_interfaces_.size() != joints_.size() ||
+  const std::size_t expected_command_interfaces =
+      claim_joint_velocity_interfaces_ ? joints_.size() * 2 : joints_.size();
+  if (command_interfaces_.size() != expected_command_interfaces ||
       state_interfaces_.size() < joints_.size() * 3) {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Refusing effort activation: unexpected count of loaned joint interfaces.");
@@ -555,6 +630,13 @@ controller_interface::CallbackReturn MiosEffortController::on_activate(
       RCLCPP_ERROR(get_node()->get_logger(),
                    "Refusing effort activation: loaned joint interface order does not match "
                    "the configured position/velocity/effort layout.");
+      return controller_interface::CallbackReturn::ERROR;
+    }
+    if (claim_joint_velocity_interfaces_ &&
+        command_interfaces_[joints_.size() + index].get_name() != joints_[index] + "/velocity") {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Refusing effort activation: the loaned joint velocity command interfaces "
+                   "do not follow the seven effort interfaces in joint order.");
       return controller_interface::CallbackReturn::ERROR;
     }
   }
@@ -649,7 +731,10 @@ controller_interface::CallbackReturn MiosEffortController::on_activate(
   if (position_hold_enabled_) {
     control_core_.capture_position_hold_reference(current_position);
   }
-  for (std::size_t index = 0; index < joints_.size(); ++index) {
+  velocity_core_.reset();
+  velocity_tracking_.reset();
+  // Zero torque and, in the combined mode, a zero velocity reference.
+  for (std::size_t index = 0; index < command_interfaces_.size(); ++index) {
     if (!command_interfaces_[index].set_value(0.0)) {
       RCLCPP_ERROR(get_node()->get_logger(), "Failed to write a zero effort command on activation.");
       if (franka_model_) {
@@ -675,7 +760,9 @@ controller_interface::CallbackReturn MiosEffortController::on_deactivate(
     franka_model_->release_interfaces();
   }
   robot_state_box_ = nullptr;
-  for (std::size_t index = 0; index < joints_.size(); ++index) {
+  velocity_core_.reset();
+  velocity_tracking_.reset();
+  for (std::size_t index = 0; index < command_interfaces_.size(); ++index) {
     if (!command_interfaces_[index].set_value(0.0)) {
       RCLCPP_ERROR(get_node()->get_logger(), "Failed to write a zero effort command on deactivation.");
       return controller_interface::CallbackReturn::ERROR;
@@ -781,6 +868,29 @@ void MiosEffortController::receive_runtime_actuator(
       force->target_external_wrench[index] = message->target_external_wrench[index];
     }
     desired_cartesian_force_.writeFromNonRT(std::move(force));
+    return;
+  }
+  if (message->mode == mios_msgs::msg::MiosActuatorCommand::MODE_JOINT_VELOCITY) {
+    if (!allow_runtime_joint_velocity_commands_) {
+      RCLCPP_WARN_THROTTLE(
+          get_node()->get_logger(), *get_node()->get_clock(), 5000,
+          "Ignoring MIOS joint-velocity command: joint-velocity commands are disabled.");
+      return;
+    }
+    auto velocity = std::make_shared<MiosVelocityRequest>();
+    velocity->received_nanoseconds = get_node()->now().nanoseconds();
+    velocity->user_stopped = message->user_stopped;
+    for (std::size_t index = 0; index < velocity->velocity.size(); ++index) {
+      if (!std::isfinite(message->joint_velocity[index])) {
+        RCLCPP_WARN(get_node()->get_logger(),
+                    "Ignoring non-finite MIOS joint-velocity command; clearing the active request.");
+        velocity->velocity.fill(0.0);
+        velocity->user_stopped = true;
+        break;
+      }
+      velocity->velocity[index] = message->joint_velocity[index];
+    }
+    desired_velocity_.writeFromNonRT(std::move(velocity));
     return;
   }
   if (!allow_runtime_actuator_commands_) {
@@ -914,7 +1024,7 @@ void MiosEffortController::receive_robot_state(
 controller_interface::return_type MiosEffortController::update(
     const rclcpp::Time&, const rclcpp::Duration& period) {
   if (zero_effort_baseline_) {
-    for (std::size_t index = 0; index < joints_.size(); ++index) {
+    for (std::size_t index = 0; index < command_interfaces_.size(); ++index) {
       if (!command_interfaces_[index].set_value(0.0)) {
         return controller_interface::return_type::ERROR;
       }
@@ -1076,12 +1186,72 @@ controller_interface::return_type MiosEffortController::update(
     }
     selected_request = &actuator_effort;
   }
+  // Joint-velocity mode. The newest fresh request wins, as for every other
+  // high-level source. The conditioned velocity goes to Franka's motion
+  // generator (when claimed) and is followed here with impedance torque.
+  const auto velocity_request = *desired_velocity_.readFromRT();
+  const bool velocity_request_fresh =
+      allow_runtime_joint_velocity_commands_ && velocity_request != nullptr &&
+      velocity_request->received_nanoseconds > 0 &&
+      now_nanoseconds >= velocity_request->received_nanoseconds &&
+      now_nanoseconds - velocity_request->received_nanoseconds <=
+          static_cast<std::int64_t>(command_timeout_ * 1.0e9);
+  const bool velocity_request_selected =
+      velocity_request_fresh &&
+      (!joint_actuator_request_fresh ||
+       velocity_request->received_nanoseconds > actuator_request->received_nanoseconds) &&
+      (!cartesian_actuator_request_fresh ||
+       velocity_request->received_nanoseconds >
+           cartesian_actuator_request->received_nanoseconds) &&
+      (!cartesian_force_request_fresh ||
+       velocity_request->received_nanoseconds >
+           cartesian_force_request->received_nanoseconds) &&
+      (!nullspace_request_fresh ||
+       velocity_request->received_nanoseconds > nullspace_request->received_nanoseconds);
+  Effort velocity_reference{};
+  if (velocity_request_selected) {
+    actuator_effort = {};
+    actuator_effort.received_nanoseconds = velocity_request->received_nanoseconds;
+    actuator_effort.user_stopped = velocity_request->user_stopped || state.user_stopped;
+    // step() clears its output at once for a stop, stale or invalid input.
+    velocity_reference =
+        velocity_core_.step(state.position, state.velocity, state.user_stopped,
+                            velocity_request.get(), now_nanoseconds, period.seconds());
+    MiosJointImpedanceRequest tracking_request;
+    if (!actuator_effort.user_stopped &&
+        !(velocity_tracking_.step(state.position, velocity_reference, period.seconds(),
+                                  tracking_request) &&
+          control_core_.evaluate_joint_impedance(state, tracking_request,
+                                                 actuator_effort.effort))) {
+      actuator_effort.user_stopped = true;
+    }
+    if (actuator_effort.user_stopped) {
+      velocity_core_.reset();
+      velocity_tracking_.reset();
+      velocity_reference.fill(0.0);
+    }
+    selected_request = &actuator_effort;
+  } else {
+    // Any other source, or silence, ends the motion: the next velocity
+    // command starts from the then-measured joint position.
+    velocity_core_.reset();
+    velocity_tracking_.reset();
+  }
   const Effort effort = control_core_.step(state, model_state_, selected_request,
                                             now_nanoseconds, period.seconds());
   for (size_t index = 0; index < effort.size(); ++index) {
     if (!command_interfaces_[index].set_value(effort[index])) {
       RCLCPP_ERROR(get_node()->get_logger(), "Failed to write desired effort for joint %zu.", index);
       return controller_interface::return_type::ERROR;
+    }
+  }
+  if (claim_joint_velocity_interfaces_) {
+    for (std::size_t index = 0; index < joints_.size(); ++index) {
+      if (!command_interfaces_[joints_.size() + index].set_value(velocity_reference[index])) {
+        RCLCPP_ERROR(get_node()->get_logger(),
+                     "Failed to write the velocity reference for joint %zu.", index);
+        return controller_interface::return_type::ERROR;
+      }
     }
   }
   // This is a low-rate, non-blocking diagnostic only. A busy publisher drops

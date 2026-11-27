@@ -34,7 +34,7 @@ def parser():
     result.add_argument("--profile", choices=("motion", "state-only"), default="motion",
                         help="default: motion, requiring commissioned power settings and teaching/learning gates; "
                              "state-only requires task execution and controller-owned Move disabled")
-    result.add_argument("--compose-file", type=Path, default=repo / "docker/ros2/docker-compose.runtime.yml")
+    result.add_argument("--compose-file", type=Path, default=repo / "docker/compose.yml")
     result.add_argument("--control-image", help="override MIOS_ROS2_CONTROL_IMAGE for this inspection")
     result.add_argument("--core-image", help="override MIOS_ROS2_CORE_IMAGE for this inspection")
     result.add_argument("--ml-image", help="override MIOS_ML_SERVICE_IMAGE for this inspection")

@@ -17,6 +17,8 @@ def parameters(service):
     if command == ["/usr/local/bin/start_control.sh"]:
         mapping = {"robot_ip": ("ROBOT_IP", "192.168.4.100"),
                    "load_gripper": ("MIOS_LOAD_GRIPPER", "true")}
+        # Fixed in start_control.sh; not configurable through the environment.
+        fixed = {"controllers_yaml": "/ws/install/mios_ros2_control/share/mios_ros2_control/config/mios_controllers.yaml"}
     elif command == ["/usr/local/bin/start_core.sh"]:
         mapping = {"robot_ip": ("ROBOT_IP", "192.168.4.100"),
                    "database_name": ("MONGO_DB_NAME", "mios"),
@@ -27,28 +29,34 @@ def parameters(service):
                    "udp_port": ("MIOS_UDP_PORT", "12002"),
                    "enable_core_scheduler": ("MIOS_ENABLE_CORE_SCHEDULER", "true"),
                    "enable_core_task_execution": ("MIOS_ENABLE_CORE_TASK_EXECUTION", "true"),
-                   "allow_controller_owned_move_mode": ("MIOS_ALLOW_CONTROLLER_OWNED_MOVE_MODE", "true")}
+                   "allow_controller_owned_move_mode": ("MIOS_ALLOW_CONTROLLER_OWNED_MOVE_MODE", "true"),
+                   "log_level": ("LOG_LEVEL", "trace")}
+        fixed = {}
     else:
         return {}
     # Bash ${NAME:-default} also chooses the default for unset/empty inputs.
-    return dict(**{key: str(environment.get(name) if environment.get(name) not in (None, "") else default)
-                          for key, (name, default) in mapping.items()})
+    return dict(fixed, **{key: str(environment.get(name) if environment.get(name) not in (None, "") else default)
+                                 for key, (name, default) in mapping.items()})
 
 
 def command_shape(service, kind):
     return service.get("command") == {
         "control": ["/usr/local/bin/start_control.sh"],
         "core": ["/usr/local/bin/start_core.sh"],
-        "ml": ["python3", "./start_interface.py"],
+        "ml": ["python3", "/usr/local/bin/mls_runtime.py", "start"],
     }[kind]
 
 
 def ml_service_ports(service):
-    """Mirror start_interface.py's environment defaults without running it."""
+    """Mirror mls_runtime.py's environment defaults without running it."""
     environment = service.get("environment", {})
     ports = []
-    for name, default in (("interface_port", 8000), ("mios_port", 12000), ("mongo_port", 27017)):
+    for name, legacy, default in (("MIOS_ML_PORT", "interface_port", 8000),
+                                  ("MIOS_WS_PORT", "mios_port", 12000),
+                                  ("MONGO_PORT", "mongo_port", 27017)):
         value = environment.get(name)
+        if value is None:
+            value = environment.get(legacy)
         if value is None:
             value = default
         if type(value) not in (str, int):
@@ -65,8 +73,8 @@ def ml_service_ports(service):
 
 def planned_ports(context):
     services = context.compose["services"]
-    p = parameters(services["mios_ros2_core"])
-    ml_port, _, _ = ml_service_ports(services["mios_ml_service"])
+    p = parameters(services["ros2_core"])
+    ml_port, _, _ = ml_service_ports(services["mls"])
     ports = [("tcp", int(p.get("websocket_port", 12000)), "Core Portal"),
              ("tcp", int(p.get("rpc_port", 12001)), "Core RPC"),
              ("udp", int(p.get("udp_port", 12002)), "Core UDP"),
@@ -116,7 +124,7 @@ def duration_covers(value, seconds):
 def validate_compose(context):
     checks = []
     services = context.compose.get("services", {})
-    names = ("mios_ros2_control", "mios_ros2_core", "mios_ml_service")
+    names = ("ros2_control", "ros2_core", "mls")
     missing = [name for name in names if name not in services]
     if missing:
         return [Check("compose.services", "FAIL", f"Missing services: {', '.join(missing)}")]
@@ -134,30 +142,30 @@ def validate_compose(context):
         loader_env = {"PATH", "LD_PRELOAD", "LD_LIBRARY_PATH", "PYTHONPATH", "PYTHONHOME", "AMENT_PREFIX_PATH",
                       "COLCON_PREFIX_PATH", "BASH_ENV", "ENV"}
         masked = masked or bool(loader_env.intersection(service.get("environment", {})))
-        masked = masked or (name == "mios_ml_service" and service.get("working_dir") not in (None, "/mios_mls"))
+        masked = masked or (name == "mls" and service.get("working_dir") not in (None, "/mios_mls"))
         checks.append(Check(f"compose.{name}.overrides", "UNKNOWN" if masked else "PASS",
                             f"{name}: mounts, entrypoint, working directory, or loader environment overrides are outside the image probe's coverage." if masked else f"{name}: no runtime overrides replace inspected files or their loader paths.",
                             "Remove overrides or extend the checker to inspect the effective mounted configuration." if masked else ""))
-        needs_shared_ipc = name != "mios_ml_service"
+        needs_shared_ipc = name != "mls"
         ok = service.get("network_mode") == "host" and (not needs_shared_ipc or service.get("ipc") == "host")
         transport = "host networking and shared IPC" if needs_shared_ipc else "host networking"
         checks.append(Check(f"compose.{name}.transport", "PASS" if ok else "FAIL",
                             f"{name}: {transport} {'configured' if ok else 'required'}",
                             f"Restore {transport} in the deployment service." if not ok else ""))
     dependencies = ml.get("depends_on", {})
-    dependency = dependencies.get("mios_ros2_core", {}) if isinstance(dependencies, dict) else {}
+    dependency = dependencies.get("ros2_core", {}) if isinstance(dependencies, dict) else {}
     dependency_ok = (isinstance(dependency, dict) and dependency.get("condition") == "service_started"
                      and dependency.get("required", True) is True)
     checks.append(Check("compose.ml_dependency", "PASS" if dependency_ok else "FAIL",
                         "ML must depend on Core startup.",
-                        "Set mios_ml_service.depends_on.mios_ros2_core.condition to service_started." if not dependency_ok else ""))
+                        "Set mls.depends_on.ros2_core.condition to service_started." if not dependency_ok else ""))
     dependencies = core.get("depends_on", {})
-    dependency = dependencies.get("mios_ros2_control", {}) if isinstance(dependencies, dict) else {}
+    dependency = dependencies.get("ros2_control", {}) if isinstance(dependencies, dict) else {}
     dependency_ok = (isinstance(dependency, dict) and dependency.get("condition") == "service_healthy"
                      and dependency.get("required", True) is True)
     checks.append(Check("compose.core_dependency", "PASS" if dependency_ok else "FAIL",
                         "Core must wait for Control's completed controller preparation.",
-                        "Set mios_ros2_core.depends_on.mios_ros2_control.condition to service_healthy." if not dependency_ok else ""))
+                        "Set ros2_core.depends_on.ros2_control.condition to service_healthy." if not dependency_ok else ""))
     health = control.get("healthcheck", {})
     health_ok = (health.get("test") == ["CMD", "/usr/local/bin/check_control_ready.sh"]
                  and not health.get("disable"))
@@ -259,10 +267,10 @@ def collect_configuration(context, args, runner):
     try:
         context.compose = json.loads(result.stdout)
         services = context.compose["services"]
-        context.images = {"control": services["mios_ros2_control"]["image"],
-                          "core": services["mios_ros2_core"]["image"],
-                          "ml": services["mios_ml_service"]["image"]}
-        context.robot_ip = str(ipaddress.IPv4Address(parameters(services["mios_ros2_control"])["robot_ip"]))
+        context.images = {"control": services["ros2_control"]["image"],
+                          "core": services["ros2_core"]["image"],
+                          "ml": services["mls"]["image"]}
+        context.robot_ip = str(ipaddress.IPv4Address(parameters(services["ros2_control"])["robot_ip"]))
         for option, actual in (("control_image", context.images["control"]), ("core_image", context.images["core"]),
                                ("ml_image", context.images["ml"]), ("robot_ip", context.robot_ip)):
             requested = getattr(args, option)
@@ -323,7 +331,7 @@ def collect_existing(context, runner):
         containers = []
         try:
             containers = [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
-            control_name = context.compose.get("services", {}).get("mios_ros2_control", {}).get("container_name", "mios-ros2-control")
+            control_name = context.compose.get("services", {}).get("ros2_control", {}).get("container_name", "ros2-control")
             owners = [c.get("Names", "") for c in containers if c.get("Names") == control_name or
                       re.search(r"mios[-_]direct|franka_bringup|ros2[-_]control", c.get("Names", "") + " " + c.get("Image", ""))]
             checks.append(Check("deployment.fci_owner", "FAIL" if owners else "PASS",

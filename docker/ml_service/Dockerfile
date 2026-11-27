@@ -25,6 +25,9 @@ COPY python/taxonomy/default_contexts/ /python/taxonomy/default_contexts/
 
 EXPOSE 8000 8001
 
-WORKDIR mios_mls
+# Supervisor, readiness probe and stop hook for Compose and Kubernetes.
+COPY docker/ml_service/mls_runtime.py /usr/local/bin/mls_runtime.py
 
-CMD ["python3", "./start_interface.py"]
+WORKDIR /mios_mls
+
+CMD ["python3", "/usr/local/bin/mls_runtime.py", "start"]

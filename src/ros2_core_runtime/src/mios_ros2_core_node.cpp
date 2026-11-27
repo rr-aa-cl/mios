@@ -77,8 +77,13 @@ class MiosRos2CoreNode final : public rclcpp::Node {
         "effort_command_topic", "/mios_effort_controller/mios_effort_command");
     const auto actuator_command_topic = declare_parameter<std::string>(
         "actuator_command_topic", "/mios_effort_controller/mios_actuator_command");
+    // Joint-velocity commands go to the effort controller, which follows them
+    // in its combined velocity + effort mode. The standalone
+    // mios_joint_velocity_controller is not used by Core tasks.
     const auto joint_velocity_command_topic = declare_parameter<std::string>(
-        "joint_velocity_command_topic", "/mios_joint_velocity_controller/mios_actuator_command");
+        "joint_velocity_command_topic", "/mios_effort_controller/mios_actuator_command");
+    const auto enable_joint_velocity_control =
+        declare_parameter<bool>("enable_joint_velocity_control", false);
     const auto cartesian_velocity_command_topic = declare_parameter<std::string>(
         "cartesian_velocity_command_topic", "/mios_cartesian_velocity_controller/mios_actuator_command");
     const auto joint_position_command_topic = declare_parameter<std::string>(
@@ -178,6 +183,17 @@ class MiosRos2CoreNode final : public rclcpp::Node {
         Ros2CoreRobotBackend::ParameterSnapshotProvider{}, core_state_timeout_,
         core_gripper_timeout, core_parameter_timeout, allow_task_execution,
         controller_owned_move_mode_enabled, controller_session_.get());
+    // The effort controller is the only command owner Core manages, so the
+    // velocity path is valid only while its commands are addressed to it.
+    const bool joint_velocity_control_enabled =
+        enable_joint_velocity_control && joint_velocity_command_topic == actuator_command_topic;
+    if (enable_joint_velocity_control && !joint_velocity_control_enabled) {
+      RCLCPP_WARN(get_logger(),
+                  "enable_joint_velocity_control is ignored: joint_velocity_command_topic must "
+                  "equal actuator_command_topic (%s).",
+                  actuator_command_topic.c_str());
+    }
+    core_backend->set_joint_velocity_control_enabled(joint_velocity_control_enabled);
     if (enable_automatic_error_recovery) {
       error_recovery_client_ =
           std::make_unique<Ros2ErrorRecoveryClient>(*this, error_recovery_action);
@@ -289,7 +305,12 @@ class MiosRos2CoreNode final : public rclcpp::Node {
       RCLCPP_ERROR(get_logger(), "MIOS Core initialization failed; task scheduler was not started.");
       return;
     }
-    controller_session_->switch_effort(true);
+    // The arm starts disabled: a task enables it with its first skill. This
+    // also switches off a controller left active by an earlier Core process.
+    if (const auto released = controller_session_->release(); released.exception) {
+      RCLCPP_ERROR(get_logger(), "Could not confirm that arm control is disabled at start: %s",
+                   released.error_msg.c_str());
+    }
     core_thread_ = std::thread([this] { core_->start(); });
   }
 
@@ -322,7 +343,6 @@ int main(int argc, char* argv[]) {
   std::signal(SIGTERM, request_stop);
   rclcpp::init(argc, argv, rclcpp::InitOptions(), rclcpp::SignalHandlerOptions::None);
   auto node = std::make_shared<mios_ros2_runtime::MiosRos2CoreNode>();
-//   rclcpp::executors::MultiThreadedExecutor executor;
   rclcpp::ExecutorOptions options;
 
   rclcpp::executors::MultiThreadedExecutor executor(

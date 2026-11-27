@@ -1,4 +1,4 @@
-name: Docker Build
+name: Build and test
 
 permissions:
   contents: read
@@ -13,6 +13,11 @@ on:
   pull_request:
     branches:
       - local_dev
+
+# A newer push to the same branch or pull request replaces the running build.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint_python:
@@ -34,7 +39,7 @@ jobs:
       - name: Lint python directory
         run: ruff check python
 
-  unit_tests:
+  ml_service_tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -49,103 +54,90 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
-      - name: Run unit tests
-        run: |
-          cd ml_service
-          uv run --extra test pytest -m "not integration"
+      - name: Run ml_service unit tests
+        working-directory: ml_service
+        run: uv run --extra test pytest -m "not integration"
 
-  build:
-    needs: unit_tests
+  # Start scripts, the MLS supervisor and the deployment-readiness tool.
+  # Standard library only; no Docker, ROS or robot is contacted.
+  deployment_tests:
     runs-on: ubuntu-latest
-    container: 
-      image: ghcr.io/rr-aa-cl/mios/mios_builder:builder
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: install dependencies
-        run: |
-          cd $GITHUB_WORKSPACE/docker
-          ls -al
-          bash core_dep.sh
-      
-      - name: Upload workspace
-        uses: actions/upload-artifact@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          name: workspace
-          path: .
+          python-version: '3.12'
 
+      - name: Run deployment tool tests
+        working-directory: tools/tests
+        run: python -m unittest -v
+
+      - name: Render the Compose file
+        run: docker compose -f docker/compose.yml config --quiet
+
+      - name: Render the Kubernetes manifests
+        run: kubectl kustomize docker/k8s > /dev/null
+
+  # Builds Control, Core and MLS with docker/docker-bake.hcl, the same way as
+  # a local build. Images are pushed for branch builds and manual runs only;
+  # a pull request just proves that they build.
   build_images:
-    needs: build
+    needs: [ml_service_tests, deployment_tests]
     runs-on: ubuntu-latest
+    timeout-minutes: 240
 
     steps:
-      - name: Download workspace
-        uses: actions/download-artifact@v4
+      # The Control and Core build context is the parent directory and
+      # expects the checkout to be named `mios`.
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          name: workspace
+          path: mios
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-  
-      - name: Extract metadata for Docker images
-        id: meta-mios
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ghcr.io/${{ github.repository }}/mios
-          tags: |
-            type=ref,event=branch
-            type=ref,event=branch,suffix=-{{sha}}-{{date 'YYMMDDHHmmss' tz='Asia/Dubai'}}
-            type=ref,event=tag
-            type=ref,event=pr,suffix=-{{sha}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-          flavor: |
-            latest=${{ github.ref == 'refs/heads/local_dev' }}
-      
-      - name: Extract metadata for Docker images
-        id: meta-mios-mls
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ghcr.io/${{ github.repository }}/mios_mls
-          tags: |
-            type=ref,event=branch
-            type=ref,event=branch,suffix=-{{sha}}-{{date 'YYMMDDHHmmss' tz='Asia/Dubai'}}
-            type=ref,event=tag
-            type=ref,event=pr,suffix=-{{sha}}
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-          flavor: |
-            latest=${{ github.ref == 'refs/heads/local_dev' }}
 
-      - name: Build mios Docker image
-        uses: docker/build-push-action@v5
+      # Images: ghcr.io/<owner>/<repo>/{ros2-control,ros2-core,mls}
+      # Tags:   the branch name (pr-<number> for a pull request) and the
+      #         short commit hash.
+      - name: Choose image names
+        id: names
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REF_NAME: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || github.ref_name }}
+        run: |
+          echo "repo=ghcr.io/${REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          echo "tag=$(tr -c 'A-Za-z0-9_.-' '-' <<< "${REF_NAME}" | sed 's/-*$//')" >> "$GITHUB_OUTPUT"
+          echo "sha=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Build images
+        uses: docker/bake-action@v6
+        env:
+          REPO: ${{ steps.names.outputs.repo }}
+          TAG: ${{ steps.names.outputs.tag }}
+          EXTRA_TAG: ${{ steps.names.outputs.sha }}
         with:
-          context: .
-          file: ./docker/core/Dockerfile
-          push: true
-          tags: ${{ steps.meta-mios.outputs.tags }}
-
-
-      - name: Build mios_mls Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/ml_service/Dockerfile
-          push: true
-          tags: ${{ steps.meta-mios-mls.outputs.tags }}
-
-  
+          source: .
+          workdir: mios
+          files: docker/docker-bake.hcl
+          allow: fs.read=..
+          push: ${{ github.event_name != 'pull_request' }}
+          set: |
+            control.cache-from=type=gha,scope=control
+            control.cache-to=type=gha,mode=max,scope=control
+            core.cache-from=type=gha,scope=core
+            core.cache-to=type=gha,mode=max,scope=core
+            mls.cache-from=type=gha,scope=mls
+            mls.cache-to=type=gha,mode=max,scope=mls

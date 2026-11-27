@@ -10,8 +10,8 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-START = ROOT / "docker/ros2/start_control.sh"
-HEALTH = ROOT / "docker/ros2/check_control_ready.sh"
+START = ROOT / "docker/control/start_control.sh"
+HEALTH = ROOT / "docker/control/check_control_ready.sh"
 
 FAKE_PROCESS = r'''#!/usr/bin/env python3
 import json
@@ -60,7 +60,7 @@ class ControlStartupTests(unittest.TestCase):
         self.directory = Path(self.temp.name)
         self.bin = self.directory / "bin"
         self.bin.mkdir()
-        for name in ("ros2", "start_model_broadcaster.sh"):
+        for name in ("ros2", "prepare_controllers.sh"):
             path = self.bin / name
             path.write_text(FAKE_PROCESS)
             path.chmod(0o755)
@@ -73,7 +73,8 @@ class ControlStartupTests(unittest.TestCase):
                         FAKE_CONTROL_ROOT=str(self.directory),
                         MIOS_CONTROL_STATE_DIR=str(self.directory / "state"),
                         MIOS_CONTROL_WORKER_CPUS="0,2", ROBOT_IP="192.0.2.5",
-                        MIOS_LOAD_GRIPPER="false")
+                        MIOS_LOAD_GRIPPER="false",
+                        MIOS_RUNTIME_LIB=str(ROOT / "docker/common/runtime_lib.sh"))
         self.process = None
         self.log = (self.directory / "output").open("w+")
 

@@ -25,8 +25,8 @@ typed ROS task/command messages through the published runtime contract, and
 | `ros2_ws/src/mios_msgs` | `mios-core` public ROS contract |
 | `ros2_ws/src/mios_ros2_runtime` | `mios-core` ROS adapter |
 | `ros2_ws/src/mios_ros2_control` | `mios-control` |
-| `docker/ros2/franka_combined_control.patch`, controller config, NIC IRQ service/script | `mios-control` |
-| `docker/ros2/docker-compose.runtime.yml` | `mios-control` deployment manifest |
+| `docker/control/patches/franka_combined_control.patch`, controller config, NIC IRQ service/script | `mios-control` |
+| `docker/compose.yml` | `mios-control` deployment manifest |
 | `ml_service/`, `docker/ml_service/` | `mios-mls` |
 
 The existing teaching client is transitional: `python/mios_examples.py` stays

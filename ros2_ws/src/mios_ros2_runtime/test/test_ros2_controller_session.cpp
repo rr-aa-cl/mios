@@ -287,9 +287,15 @@ void test_gates_and_foreign_owners() {
     assert(fixture.stationary_calls == 1);
   }
   {
+    // Already active: a later skill of the same task reuses the controller
+    // without a switch, and the release at the task end stops it.
     Fixture fixture;
     fixture.states.controller[0].state = "active";
-    assert_rejected_without_switch(fixture);
+    assert(!fixture.acquire().exception);
+    assert(fixture.switches.empty() && fixture.stationary_calls == 0);
+    assert(!fixture.release().exception);
+    assert(fixture.switches.size() == 1);
+    assert(fixture.states.controller[0].state == "inactive");
   }
   {
     Fixture fixture;
@@ -302,8 +308,12 @@ void test_read_timeouts_never_activate() {
   {
     Fixture fixture;
     fixture.hold_list = true;
-    assert_rejected_without_switch(fixture);
+    const auto result = fixture.acquire();
+    assert(result.exception && result.error == "ControllerActivationFailed");
     assert(fixture.parameter_calls == 0 && fixture.stationary_calls == 0);
+    // Without a controller listing a release cannot be confirmed either.
+    assert(fixture.release().error == "ControllerReleaseFailed");
+    assert(fixture.switches.empty());
   }
   {
     Fixture fixture;
@@ -347,13 +357,16 @@ void test_late_activation_blocks_reacquire_until_release_verified() {
   assert(!fixture.release().exception);
 }
 
-void test_failed_release_keeps_ownership_blocked() {
+void test_failed_release_is_reported_and_can_be_retried() {
   Fixture fixture;
   assert(!fixture.acquire().exception);
   fixture.deactivation_ok = false;
   fixture.deactivation_side_effect = false;
   assert(fixture.release().exception);
-  assert(fixture.acquire().error == "ControllerOwnershipUnresolved");
+  // The controller is still active: a following skill reuses it without a switch.
+  const auto switches = fixture.switches.size();
+  assert(!fixture.acquire().exception);
+  assert(fixture.switches.size() == switches);
   fixture.deactivation_ok = true;
   fixture.deactivation_side_effect = true;
   assert(!fixture.release().exception);
@@ -367,7 +380,7 @@ int main(int argc, char* argv[]) {
   test_read_timeouts_never_activate();
   test_failed_activation_side_effect_is_released();
   test_late_activation_blocks_reacquire_until_release_verified();
-  test_failed_release_keeps_ownership_blocked();
+  test_failed_release_is_reported_and_can_be_retried();
   rclcpp::shutdown();
   return 0;
 }

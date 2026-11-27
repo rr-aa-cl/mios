@@ -14,14 +14,13 @@ void MoveToJointPose::initialize_context(){
 }
 
 void MoveToJointPose::execute(){
-    // MoveToJointPose produces a bounded joint-velocity profile.  In the ROS
-    // runtime that profile is integrated by JointPositionControllerPipeline
-    // and sent through the dedicated, rate-limited joint-position controller.
-    // Do not select the legacy joint-velocity pipeline here: it targets a
-    // separate controller that is intentionally not activated for automatic
-    // job motion.
+    // MoveToJointPose produces a bounded joint-velocity profile. In the ROS
+    // runtime the joint-velocity pipeline sends it to the effort controller,
+    // which follows it in its combined velocity + effort mode. The effort
+    // controller stays the only active command owner, so no controller is
+    // switched. Joint-position mode is not available to Core tasks.
     overwrite_context("move", "control", "control_mode",
-                      static_cast<int>(ControlMode::mJointPosition));
+                      static_cast<int>(ControlMode::mJointVelocity));
     overwrite_context("move","skill","speed",m_speed);
     overwrite_context("move","skill","acc",m_acc);
     overwrite_context("move","skill","q_g",mirmi_utils::from_eigen<double,7,1>(m_q_g));
@@ -60,7 +59,7 @@ void MoveToJointPose::get_default_context(nlohmann::json &context){
     context["skills"]=nlohmann::json();
     context["skills"]["move"]=nlohmann::json();
     context["skills"]["move"]["control"] = {
-        {"control_mode", static_cast<int>(ControlMode::mJointPosition)}};
+        {"control_mode", static_cast<int>(ControlMode::mJointVelocity)}};
     context["skills"]["move"]["type"]="MoveToPoseJoint";
 }
 

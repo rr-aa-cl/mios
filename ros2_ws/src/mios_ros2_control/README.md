@@ -92,8 +92,9 @@ the supplied null-space torque limits are zero.
 
 ## Joint-velocity mode
 
-`MiosJointVelocityController` is the ROS implementation boundary for the
-legacy `JointVelocityControllerPipeline`, which outputs `Actuator::dq_d`.
+`MiosJointVelocityController` is the standalone ROS boundary for the
+legacy `JointVelocityControllerPipeline`, which outputs `Actuator::dq_d`. Core
+tasks do not use it; they use the combined mode described below.
 It accepts only `MODE_JOINT_VELOCITY`, uses a fixed-size command, enforces
 commissioning velocity and acceleration caps, requires a fresh `IDLE` or
 `MOVE` robot state, and clears its output immediately for stale/invalid/user
@@ -106,6 +107,37 @@ interfaces, so it must be switched by controller manager instead of being activa
 Both `allow_velocity_activation` and
 `allow_runtime_joint_velocity_commands` are false in the supplied YAML. The
 commissioning caps are 0.05 rad/s and 0.10 rad/s²—not FR3 limits.
+
+## Combined velocity + effort mode
+
+`MiosEffortController` can follow `MODE_JOINT_VELOCITY` itself, so a
+joint-velocity task (legacy `control_mode` 3, for example `MoveToJointPose`)
+runs without switching away from the effort controller.
+
+With `claim_joint_velocity_interfaces: true` the controller claims the seven
+joint velocity command interfaces in addition to the seven effort interfaces.
+The patched `franka_hardware` then opens one libfranka session with a
+joint-velocity motion generator and an external torque controller
+(`startJointVelocityControl(kExternalController)`), instead of the plain torque
+session. In that session the velocity command only drives Franka's desired
+trajectory (`q_d`, `dq_d`); the arm is moved by the torque command. The
+controller therefore conditions each velocity request (caps, acceleration ramp,
+joint-limit margin), integrates it into a position reference that starts at the
+measured pose, and follows it with `tau = K (q_ref - q) + D (dq_ref - dq)`
+through the normal effort limits. The reference never leads the measured joint
+by more than `velocity_tracking_position_error_limit`.
+
+Because the session is chosen by the claimed interfaces, it is active for every
+task once the claim is set: other modes send a zero velocity reference, and
+Franka's `q_d` then stays where the last velocity motion ended while torque
+tasks move the arm. `allow_runtime_joint_velocity_commands` gates the commands.
+With the claim set to false the same commands are followed by torque alone in
+the plain torque session.
+
+Motion is bounded by `effort_limits` and `effort_rate_limit` like every other
+effort source, so the commissioning values limit how fast and how accurately a
+joint move is followed. The tracking gains are starting values taken from
+Franka's joint-impedance example and are not tuned on hardware.
 
 ## Cartesian-velocity mode
 
@@ -259,7 +291,7 @@ docker run --rm -it --network host \
   mios-ros2-jazzy:local bash
 ```
 
-`mios/docker/ros2/docker-compose.runtime.yml` supplies the equivalent settings. On the
+`mios/docker/compose.yml` supplies the equivalent settings. On the
 NUC host, verify that the robot is reachable before launching: `ping` and
 `nc -vz -w 3 <robot-ip> 1337` must both succeed. Do not run a legacy MIOS
 process that creates a direct `franka::Robot` at the same time.

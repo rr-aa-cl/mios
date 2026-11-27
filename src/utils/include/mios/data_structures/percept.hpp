@@ -16,7 +16,7 @@ public:
     Percept();
     // Robot state/model have already been converted at the transport boundary.
     void update(const control::RobotState& robot_state, const control::RobotModel& model,
-               //  const control::GripperState& gripper_state,
+                const control::GripperState& gripper_state,
                 std::optional<Eigen::Matrix<double,3,3>> O_R_T);
     void update_controller();
 

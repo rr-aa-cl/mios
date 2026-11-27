@@ -41,9 +41,6 @@ Ros2RobotBackend::Ros2RobotBackend(rclcpp::Node& node, std::string robot_state_t
                                    std::string cartesian_pose_command_topic,
                                    const bool dedicated_state_executor)
     : node_(node) {
-  // state_subscription_ = node_.create_subscription<franka_msgs::msg::FrankaRobotState>(
-  //     std::move(robot_state_topic), rclcpp::SystemDefaultsQoS(),
-  //     std::bind(&Ros2RobotBackend::receive_state, this, std::placeholders::_1));
   // With a dedicated executor the 1 kHz state callback no longer competes
   // with services, timers and the model subscription for a worker thread.
   state_callback_group_ = node_.create_callback_group(
@@ -328,52 +325,6 @@ bool Ros2RobotBackend::publish_nullspace(
 
 void Ros2RobotBackend::receive_state(
     const franka_msgs::msg::FrankaRobotState::SharedPtr message) {
-  using Clock = std::chrono::steady_clock;
-
-  static Clock::time_point last_callback_time{};
-  static int64_t last_message_stamp_ns = 0;
-
-  static uint64_t count = 0;
-  static double callback_interval_sum_ms = 0.0;
-  static double message_interval_sum_ms = 0.0;
-
-  const auto now = Clock::now();
-  const int64_t message_stamp_ns =
-      rclcpp::Time(message->header.stamp).nanoseconds();
-
-  double callback_interval_ms = 0.0;
-  double message_interval_ms = 0.0;
-
-  if (count > 0) {
-    callback_interval_ms =
-        std::chrono::duration<double, std::milli>(
-            now - last_callback_time).count();
-
-    message_interval_ms =
-        (message_stamp_ns - last_message_stamp_ns) / 1e6;
-
-    callback_interval_sum_ms += callback_interval_ms;
-    message_interval_sum_ms += message_interval_ms;
-  }
-
-  last_callback_time = now;
-  last_message_stamp_ns = message_stamp_ns;
-  ++count;
-
-  if (count % 1000 == 0) {
-    RCLCPP_INFO(
-        node_.get_logger(),
-        "[robot-state-timing] count=%lu "
-        "callback_avg=%.3f ms "
-        "message_stamp_avg=%.3f ms",
-        count,
-        callback_interval_sum_ms / 999.0,
-        message_interval_sum_ms / 999.0);
-
-    callback_interval_sum_ms = 0.0;
-    message_interval_sum_ms = 0.0;
-  }
-
   const auto& measured = message->measured_joint_state;
   const auto& motors = message->measured_joint_motor_state;
   const auto& external = message->tau_ext_hat_filtered;

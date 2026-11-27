@@ -1,6 +1,11 @@
 # Kubernetes >= 1.33: Control and Core are ordered, restartable init containers.
 # Startup: Control ready -> Core Portal ready -> MLS.
 # Termination: MLS -> Core -> Control, within the shared grace period.
+#
+# Every container runs the start script baked into its image (the image's own
+# ENTRYPOINT/CMD), the same one Docker Compose runs. Settings come from
+# runtime.env through the mios-runtime-config ConfigMap; image names and tags
+# are set in kustomization.yaml.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -38,26 +43,20 @@ spec:
           type: RuntimeDefault
       # If needed, add imagePullSecrets for your private registry here.
       volumes:
-        - name: runtime-scripts
-          configMap:
-            name: mios-runtime-scripts
         - name: fci-owner-lock
           hostPath:
             path: /var/lock/mios-fr3
             type: DirectoryOrCreate
       initContainers:
         - name: control
-          image: janine86/ros2-control
+          image: ros2-control
           imagePullPolicy: IfNotPresent
           restartPolicy: Always
-          command: [python3, /opt/mios-k8s/runtime.py, control]
           envFrom:
             - configMapRef:
                 name: mios-runtime-config
           volumeMounts:
-            - name: runtime-scripts
-              mountPath: /opt/mios-k8s
-              readOnly: true
+            # start_control.sh holds MIOS_FCI_LOCK_FILE in this directory.
             - name: fci-owner-lock
               mountPath: /var/lock/mios-fr3
           securityContext:
@@ -65,6 +64,8 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: [ALL]
+              # SYS_RESOURCE lets start_control.sh raise the real-time limits
+              # (MIOS_REQUIRE_RT_LIMITS); Kubernetes has no ulimits field.
               add: [SYS_NICE, SYS_RESOURCE, IPC_LOCK]
           resources:
             requests:
@@ -92,17 +93,12 @@ spec:
             timeoutSeconds: 2
             failureThreshold: 3
         - name: core
-          image: ros2-core:latest
+          image: ros2-core
           imagePullPolicy: IfNotPresent
           restartPolicy: Always
-          command: [python3, /opt/mios-k8s/runtime.py, core]
           envFrom:
             - configMapRef:
                 name: mios-runtime-config
-          volumeMounts:
-            - name: runtime-scripts
-              mountPath: /opt/mios-k8s
-              readOnly: true
           securityContext:
             privileged: false
             allowPrivilegeEscalation: false
@@ -116,47 +112,26 @@ spec:
               memory: 2Gi
           startupProbe:
             exec:
-              command: [python3, /opt/mios-k8s/runtime.py, probe-core]
+              command: [/usr/local/bin/check_core_ready.sh]
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 60
           readinessProbe:
             exec:
-              command: [python3, /opt/mios-k8s/runtime.py, probe-core]
+              command: [/usr/local/bin/check_core_ready.sh]
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
       containers:
         - name: mls
-          image: mls:latest
+          image: mls
           imagePullPolicy: IfNotPresent
-          command: [python3, /opt/mios-k8s/runtime.py, mls]
-          workingDir: /mios_mls
           envFrom:
             - configMapRef:
                 name: mios-runtime-config
           env:
-            - name: interface_port
-              valueFrom:
-                configMapKeyRef:
-                  name: mios-runtime-config
-                  key: MIOS_ML_PORT
-            - name: mios_port
-              valueFrom:
-                configMapKeyRef:
-                  name: mios-runtime-config
-                  key: MIOS_WS_PORT
-            - name: mongo_port
-              valueFrom:
-                configMapKeyRef:
-                  name: mios-runtime-config
-                  key: MONGO_PORT
             - name: PYTHONUNBUFFERED
               value: "1"
-          volumeMounts:
-            - name: runtime-scripts
-              mountPath: /opt/mios-k8s
-              readOnly: true
           securityContext:
             privileged: false
             allowPrivilegeEscalation: false
@@ -189,20 +164,20 @@ spec:
               hostPort: 8001
           startupProbe:
             exec:
-              command: [python3, /opt/mios-k8s/runtime.py, probe-mls]
+              command: [python3, /usr/local/bin/mls_runtime.py, probe]
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 30
           readinessProbe:
             exec:
-              command: [python3, /opt/mios-k8s/runtime.py, probe-mls]
+              command: [python3, /usr/local/bin/mls_runtime.py, probe]
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
           lifecycle:
             preStop:
               exec:
-                command: [python3, /opt/mios-k8s/runtime.py, stop-mls]
+                command: [python3, /usr/local/bin/mls_runtime.py, stop]
 ---
 apiVersion: v1
 kind: Service

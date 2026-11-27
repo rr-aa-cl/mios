@@ -373,12 +373,19 @@ bool Skill::check_global_err_conditions(const Percept& p) const{
     for(unsigned i=0;i<3;i++){
         if(fabs(p.proprioception.TF_dX_EE(i))>=m_memory->read_parameters()->limits.cartesian_space.dX_max(0)){
             spdlog::error("Skill "+m_id+" has violated the maximum cartesian twist limits.");
-            std::cout<<"dX_d: "<<p.proprioception.TF_dX_EE<<std::endl;
+            // Measured twist (not the desired one), with the axis and limit that tripped.
+            std::cout<<"measured TF_dX_EE: "<<p.proprioception.TF_dX_EE.transpose()
+                     <<" | translational axis "<<i<<" >= dX_max(0)="
+                     <<m_memory->read_parameters()->limits.cartesian_space.dX_max(0)
+                     <<" | dq: "<<p.proprioception.dq.transpose()<<std::endl;
             return true;
         }
         if(fabs(p.proprioception.TF_dX_EE(i+3))>=m_memory->read_parameters()->limits.cartesian_space.dX_max(1)){
             spdlog::error("Skill "+m_id+" has violated the maximum cartesian twist limits.");
-            std::cout<<"dX_d: "<<p.proprioception.TF_dX_EE<<std::endl;
+            std::cout<<"measured TF_dX_EE: "<<p.proprioception.TF_dX_EE.transpose()
+                     <<" | rotational axis "<<i<<" >= dX_max(1)="
+                     <<m_memory->read_parameters()->limits.cartesian_space.dX_max(1)
+                     <<" | dq: "<<p.proprioception.dq.transpose()<<std::endl;
             return true;
         }
     }

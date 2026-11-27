@@ -10,7 +10,7 @@ import tempfile
 import unittest
 
 
-PATCH = Path(__file__).resolve().parents[2] / "docker/ros2/franka_gripper_recovery.patch"
+PATCH = Path(__file__).resolve().parents[2] / "docker/control/patches/franka_gripper_recovery.patch"
 
 
 def patched_fragment(filename):

@@ -213,7 +213,10 @@ class TestMiosFakeHardwareLifecycle(unittest.TestCase):
         self.assertEqual(controllers[CONTROLLER_NAME].state, "inactive")
         self.assertEqual(
             controllers[CONTROLLER_NAME].required_command_interfaces,
+            # The shipped configuration enables the combined velocity + effort
+            # mode: seven effort interfaces, then seven velocity interfaces.
             [f"fr3_joint{index}/effort" for index in range(1, 8)]
+            + [f"fr3_joint{index}/velocity" for index in range(1, 8)]
         )
 
         activation_result = self._call(
@@ -305,6 +308,7 @@ class TestMiosFakeHardwareLifecycle(unittest.TestCase):
         self.assertEqual(
             controllers[CONTROLLER_NAME].claimed_interfaces,
             [f"fr3_joint{index}/effort" for index in range(1, 8)]
+            + [f"fr3_joint{index}/velocity" for index in range(1, 8)]
         )
 
         # The post-HandGuiding hold uses a second, separately locked instance

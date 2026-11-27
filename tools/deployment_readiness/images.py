@@ -72,7 +72,7 @@ if role in ("control", "core"):
             result["packages"][name] = {"error": str(error)}
 
 if role in ("control", "core"):
-    scripts = (["start_model_broadcaster.sh", "start_control.sh", "check_control_ready.sh"]
+    scripts = (["prepare_controllers.sh", "start_control.sh", "check_control_ready.sh"]
                if role == "control" else ["start_core.sh"])
     for name in scripts:
         script = file_info("/usr/local/bin/" + name)
@@ -218,7 +218,7 @@ def _evaluate(role, facts, context):
               "Selected ROS package overlay", "Rebuild the candidate against the /ws/install overlay.", bad)
         files = facts.get("files", {})
         expected = {"/entrypoint.sh": "executable"}
-        scripts = (["start_model_broadcaster.sh", "start_control.sh", "check_control_ready.sh"]
+        scripts = (["prepare_controllers.sh", "start_control.sh", "check_control_ready.sh"]
                    if role == "control" else ["start_core.sh"])
         expected.update({"/usr/local/bin/" + name: "executable" for name in scripts})
         if role == "control":
@@ -232,10 +232,10 @@ def _evaluate(role, facts, context):
               "Rebuild the candidate with its Dockerfile entrypoint and required bringup/model artifacts.", missing)
     if role in ("control", "core"):
         for name in scripts:
-            source = context.repo_root / "docker/ros2" / name
+            source = context.repo_root / "docker" / role / name
             installed_path = "/usr/local/bin/" + name
             installed = facts.get("files", {}).get(installed_path, {})
-            check_name = "startup_helper_digest" if name == "start_model_broadcaster.sh" else name.removesuffix(".sh") + "_digest"
+            check_name = "startup_helper_digest" if name == "prepare_controllers.sh" else name.removesuffix(".sh") + "_digest"
             try:
                 digest = hashlib.sha256(source.read_bytes()).hexdigest()
             except OSError as error:
@@ -260,7 +260,7 @@ def _evaluate(role, facts, context):
               and type(restart.get("respawn_max_retries")) is int
               and restart["respawn_max_retries"] == 5 and not recovery.get("error"),
               "Gripper driver read-failure guard and bounded connection retries are installed",
-              "Rebuild Control with docker/ros2/franka_gripper_recovery.patch, then recreate its container.",
+              "Rebuild Control with docker/control/patches/franka_gripper_recovery.patch, then recreate its container.",
               recovery)
         required_plugins = ["mios_ros2_control/" + name for name in
                             ("MiosEffortController", "MiosRobotModelBroadcaster", "MiosJointPositionController")]
@@ -417,7 +417,7 @@ def collect(context, runner):
         config = metadata.get("Config") or {}
         expected_command = {"control": ["/usr/local/bin/start_control.sh"],
                             "core": ["/usr/local/bin/start_core.sh"],
-                            "ml": ["python3", "./start_interface.py"]}[role]
+                            "ml": ["python3", "/usr/local/bin/mls_runtime.py", "start"]}[role]
         startup_ok = config.get("Cmd") == expected_command
         if role in ("control", "core"):
             startup_ok = startup_ok and config.get("Entrypoint") == ["/entrypoint.sh"]

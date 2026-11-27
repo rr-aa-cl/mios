@@ -16,16 +16,20 @@
 namespace mios_ros2_runtime {
 
 // Called by the Core worker, never by a ROS callback or the hardware update loop.
+// The arm can only be commanded between acquire() and release(): outside that
+// window the effort controller is inactive and command topics have no effect.
 class ControllerSession {
  public:
   using StationaryCheck = std::function<bool(double velocity_threshold)>;
   virtual ~ControllerSession() = default;
+  // Activate the effort controller unless it is already active. `stationary`
+  // is asked only when an activation is needed.
   virtual mios::ControlReturnType acquire(const StationaryCheck& stationary) = 0;
+  // Deactivate the effort controller and confirm that it is inactive.
   virtual mios::ControlReturnType release() = 0;
-  virtual bool switch_effort(bool activate) = 0;
-  // After a robot error has been cleared: bring the hardware component and
-  // the effort controller back to active.  Sessions that cannot do this
-  // fail closed.
+  // After a robot error has been cleared: bring the hardware component back
+  // to active. The effort controller stays inactive until the next acquire().
+  // Sessions that cannot do this fail closed.
   virtual mios::ControlReturnType reactivate() {
     return {true, "ControllerReactivationUnsupported",
             "This controller session cannot reactivate hardware."};
@@ -40,7 +44,6 @@ class Ros2ControllerSession final : public ControllerSession {
                         std::string hardware_component = "FrankaHardwareInterface");
   mios::ControlReturnType acquire(const StationaryCheck& stationary) override;
   mios::ControlReturnType release() override;
-  bool switch_effort(bool activate);
   mios::ControlReturnType reactivate() override;
 
  private:
@@ -51,6 +54,8 @@ class Ros2ControllerSession final : public ControllerSession {
 
   List::Response::SharedPtr controllers();
   double check_gates();
+  bool switch_effort(bool activate);
+  bool effort_is_active(const List::Response& controllers) const;
   void require_exclusive(const List::Response& controllers, const std::string& state) const;
 
   rclcpp::Client<List>::SharedPtr list_client_;
@@ -62,7 +67,6 @@ class Ros2ControllerSession final : public ControllerSession {
   const std::string hardware_component_;
   const std::chrono::milliseconds timeout_;
   std::mutex mutex_;
-  bool activation_attempted_{false};
   std::shared_future<Switch::Response::SharedPtr> pending_activation_;
 };
 

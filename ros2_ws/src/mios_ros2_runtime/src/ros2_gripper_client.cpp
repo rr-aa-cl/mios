@@ -65,24 +65,16 @@ Ros2GripperClient::Ros2GripperClient(rclcpp::Node& node, std::string grasp_actio
   move_client_ = rclcpp_action::create_client<Move>(&node, std::move(move_action));
   homing_client_ = rclcpp_action::create_client<Homing>(&node, std::move(homing_action));
   stop_client_ = node.create_client<std_srvs::srv::Trigger>(std::move(stop_service));
-  // state_subscription_ = node.create_subscription<sensor_msgs::msg::JointState>(
-  //     std::move(state_topic), rclcpp::QoS(1),
-  //     std::bind(&Ros2GripperClient::receive_joint_state, this, std::placeholders::_1));
-  // state_callback_group_ = node.create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-  // rclcpp::SubscriptionOptions state_options;
-  // state_options.callback_group = state_callback_group_;
-
-  // state_subscription_ =
-  //     node.create_subscription<sensor_msgs::msg::JointState>(
-  //         std::move(state_topic),
-  //         rclcpp::QoS(rclcpp::KeepLast(1))
-  //             .best_effort()
-  //             .durability_volatile(),
-  //         std::bind(
-  //             &Ros2GripperClient::receive_joint_state,
-  //             this,
-  //             std::placeholders::_1),
-  //         state_options);
+  // Its own callback group, so a gripper message never queues behind (or in
+  // front of) another callback of this node. The 1 kHz robot-state
+  // subscription has a dedicated executor and is not affected either way.
+  state_callback_group_ = node.create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  rclcpp::SubscriptionOptions state_options;
+  state_options.callback_group = state_callback_group_;
+  state_subscription_ = node.create_subscription<sensor_msgs::msg::JointState>(
+      std::move(state_topic), rclcpp::QoS(rclcpp::KeepLast(1)).best_effort().durability_volatile(),
+      std::bind(&Ros2GripperClient::receive_joint_state, this, std::placeholders::_1),
+      state_options);
 }
 
 bool Ros2GripperClient::grasp(const double width, const double speed, const double force,
@@ -166,30 +158,26 @@ bool Ros2GripperClient::stop(CompletionCallback completion) const {
 
 void Ros2GripperClient::receive_joint_state(
     const sensor_msgs::msg::JointState::SharedPtr message) {
+  if (!message) return;
+  // A malformed message is dropped and the last valid opening is kept.
+  const auto snapshot = to_mios_gripper_state(*message, configured_max_width_, false);
+  if (!snapshot) return;
   std::lock_guard<std::mutex> lock(state_->mutex);
-  const bool is_grasped = state_->latest && state_->latest->state.is_grasped;
-  const auto snapshot = message
-                            ? to_mios_gripper_state(*message, configured_max_width_, is_grasped)
-                            : std::nullopt;
-  if (!snapshot) {
-    // Do not retain a previously valid opening when the latest feedback is
-    // malformed. Only another valid JointState may restore readiness.
-    state_->latest.reset();
-    state_->received = {};
-    return;
-  }
   state_->latest = *snapshot;
-  state_->received = std::chrono::steady_clock::now();
 }
 
 void Ros2GripperClient::set_grasped_from_action(const bool is_grasped) const {
   std::lock_guard<std::mutex> lock(state_->mutex);
-  if (!state_->latest) {
-    return;
-  }
-  state_->latest->state.is_grasped = is_grasped;
-  // An action result does not measure the opening and must not make old
-  // encoder feedback appear fresh.
+  state_->is_grasped = is_grasped;
+}
+
+mios::control::GripperState Ros2GripperClient::latest_state() const {
+  std::lock_guard<std::mutex> lock(state_->mutex);
+  mios::control::GripperState state;
+  if (state_->latest) state = state_->latest->state;
+  state.max_width = configured_max_width_;
+  state.is_grasped = state_->is_grasped;
+  return state;
 }
 
 }  // namespace mios_ros2_runtime

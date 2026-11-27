@@ -25,6 +25,7 @@
 #include "spdlog/spdlog.h"
 
 #include <thread>
+#include <chrono>
 
 namespace mios {
 
@@ -87,7 +88,6 @@ bool Core::initialize(){
         spdlog::error("Could not initialize portal.");
         return false;
     }
-    //m_ros_node.start();
 
     m_is_ready=true;
     return true;
@@ -146,6 +146,12 @@ TelemetryUDP* Core::get_telemetry(){
 
 bool Core::is_control_active() const {
     return m_robot_backend && m_robot_backend->is_control_active();
+}
+
+void Core::disable_arm_control(){
+    if(m_robot_backend){
+        m_robot_backend->disable_arm_control();
+    }
 }
 
 ControlReturnType Core::execute_skill(){
@@ -218,7 +224,6 @@ ControlReturnType Core::execute_skill(){
     }
 
     m_blend_skill=false;
-    //    m_robot_backend.stop_gripper();
     return result;
 }
 
@@ -288,6 +293,7 @@ void Core::handle_gripper(Actuator* cmd){
 control::ArmCommand Core::control_base_cycle(const control::RobotState& robot_state,
                                              const control::RobotModel& robot_model,
                                              control::CommandMode command_mode){
+    
     if(m_context.shutdown_signal){
         // This runs in a ROS state callback. Returning completion lets the
         // Core worker release its controller while the ROS executor remains
@@ -304,7 +310,7 @@ control::ArmCommand Core::control_base_cycle(const control::RobotState& robot_st
             exception=true;
         }
     }
-    m_percept.update(robot_state, robot_model,
+    m_percept.update(robot_state, robot_model, m_robot_backend->gripper_state(),
                      m_memory.read_parameters()->frames.O_R_T);
     m_memory.internal_update(m_percept);
     if(m_skill_engine.is_running_queue() && m_blend_skill){
@@ -538,7 +544,6 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
     }
     control::RobotState robot_state;
     control::RobotModel robot_model;
-    // control::GripperState gripper_state;
     if(is_busy()){
         return true;
     }
@@ -586,7 +591,7 @@ bool Core::refresh_percept(std::optional<Eigen::Matrix<double,3,3> > O_R_TF, boo
         }
 
     }
-    m_percept.update(robot_state, robot_model, O_R_TF);
+    m_percept.update(robot_state, robot_model, m_robot_backend->gripper_state(), O_R_TF);
     if(m_control_executor){
         m_control_executor->update_percept(m_percept.controller);
     }

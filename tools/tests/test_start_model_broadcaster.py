@@ -10,7 +10,7 @@ import time
 import unittest
 
 
-SCRIPT = Path(__file__).resolve().parents[2] / "docker/ros2/start_model_broadcaster.sh"
+SCRIPT = Path(__file__).resolve().parents[2] / "docker/control/prepare_controllers.sh"
 MODEL = "mios_robot_model_broadcaster"
 EFFORT = "mios_effort_controller"
 POSITION = "mios_joint_position_controller"

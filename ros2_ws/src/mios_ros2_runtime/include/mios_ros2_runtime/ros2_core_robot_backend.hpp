@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <atomic>
 #include <condition_variable>
 #include <cstdint>
 #include <functional>
@@ -57,15 +58,27 @@ class Ros2CoreRobotBackend final : public mios::RobotBackend {
   // must outlive this backend.  Call before Core starts using the backend.
   void set_error_recovery_client(const Ros2ErrorRecoveryClient* client,
                                  std::chrono::milliseconds timeout);
+  // Lets control() accept CommandMode::kJointVelocity next to kTorque. Enable
+  // it only when the joint-velocity command topic points at the effort
+  // controller, which follows the velocity inside its active effort session;
+  // no other controller is activated. Call before Core starts using the
+  // backend.
+  void set_joint_velocity_control_enabled(bool enabled);
   mios::ControlReturnType recover() override;
   bool pre_run_checks() const override;
   mios::ControlReturnType control(mios::control::CommandMode mode,
                                   ControlCallback callback) override;
   bool is_control_active() const override;
+  // The effort controller is active only while a task needs the arm: the
+  // first control() call of a task activates it and this deactivates it.
+  // While it is inactive the robot holds its position itself and command
+  // topics have no effect.
+  mios::ControlReturnType disable_arm_control() override;
   void set_robot_parameter_provider(ParameterSnapshotProvider provider) override;
   bool set_robot_parameters() override;
   bool get_robot_snapshot(mios::control::RobotState& robot_state,
                           mios::control::RobotModel& robot_model) const override;
+  mios::control::GripperState gripper_state() const override;
   bool grasp(double width, double speed, double force, double epsilon_inner,
              double epsilon_outer) const override;
   bool move_to_finger_position(double width, double speed) const override;
@@ -100,6 +113,7 @@ class Ros2CoreRobotBackend final : public mios::RobotBackend {
       const std::function<bool(Ros2GripperClient::CompletionCallback)>& start_operation) const;
   bool wait_for_parameter_operation(const RobotParameterSnapshot& snapshot) const;
   bool state_and_model_are_fresh() const;
+  bool is_stationary(double velocity_threshold, bool require_idle) const;
   void complete_active_control(std::uint64_t generation, mios::ControlReturnType result);
 
   Ros2RobotBackend& robot_backend_;
@@ -116,6 +130,8 @@ class Ros2CoreRobotBackend final : public mios::RobotBackend {
   ControllerSession* controller_session_;
   const Ros2ErrorRecoveryClient* error_recovery_client_{nullptr};
   std::chrono::milliseconds error_recovery_timeout_{5000};
+  bool joint_velocity_control_enabled_{false};
+  std::atomic<bool> arm_control_enabled_{false};
   const std::size_t state_observer_id_;
 
   mutable std::mutex control_mutex_;

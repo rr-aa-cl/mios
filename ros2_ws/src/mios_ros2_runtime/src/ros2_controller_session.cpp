@@ -132,9 +132,6 @@ bool Ros2ControllerSession::switch_effort(const bool activate) {
   message->timeout.nanosec = static_cast<std::uint32_t>(nanoseconds % 1000000000);
   if (activate) {
     message->activate_controllers = {effort_controller_};
-    // Record before sending: a rejected or timed-out reply can still have side effects.
-    activation_attempted_ = true;
-    std::cout<<"activate controllers: " << effort_controller_ << std::endl;
   } else {
     message->deactivate_controllers = {effort_controller_};
   }
@@ -150,23 +147,38 @@ bool Ros2ControllerSession::switch_effort(const bool activate) {
   return ok;
 }
 
+bool Ros2ControllerSession::effort_is_active(const List::Response& states) const {
+  const auto found = std::find_if(states.controller.begin(), states.controller.end(),
+                                  [this](const auto& item) { return item.name == effort_controller_; });
+  if (found == states.controller.end()) {
+    throw std::runtime_error(effort_controller_ + " must be loaded and configured by Control startup.");
+  }
+  return found->state == "active";
+}
+
 mios::ControlReturnType Ros2ControllerSession::acquire(const StationaryCheck& stationary) {
   std::lock_guard<std::mutex> lock(mutex_);
-  // if (!activation_attempted_) {
-  //   return {true, "ControllerOwnershipUnresolved", "The previous effort-controller release is unconfirmed."};
-  // }
+  if (pending_activation_.valid()) {
+    // An earlier activation timed out and may still complete; release() resolves it.
+    return {true, "ControllerOwnershipUnresolved", "An earlier effort-controller activation is unconfirmed."};
+  }
   try {
-    // require_exclusive(*controllers(), "inactive");
-    // const double threshold = check_gates();
-    // if (!stationary || !stationary(threshold)) {
-    //   throw std::runtime_error("Fresh stationary robot state and fresh gripper feedback are required before activation.");
-    // }
-    // // Recheck ownership after parameter-service waits; STRICT never stops a competing owner.
-    // require_exclusive(*controllers(), "inactive");
-    // if (!switch_effort(true)) {
-    //   throw std::runtime_error("Controller-manager rejected effort activation; inspect Control lifecycle diagnostics.");
-    // }
-    // require_exclusive(*controllers(), "active");
+    const auto current = controllers();
+    if (effort_is_active(*current)) {
+      // Already enabled by an earlier skill of the same task.
+      require_exclusive(*current, "active");
+      return success();
+    }
+    require_exclusive(*current, "inactive");
+    const double threshold = check_gates();
+    if (!stationary || !stationary(threshold)) {
+      throw std::runtime_error("A fresh stationary IDLE robot state is required before activation.");
+    }
+    // Recheck ownership after parameter-service waits; STRICT never stops a competing owner.
+    require_exclusive(*controllers(), "inactive");
+    if (!switch_effort(true)) {
+      throw std::runtime_error("Controller-manager rejected effort activation; inspect Control lifecycle diagnostics.");
+    }
     require_exclusive(*controllers(), "active");
     return success();
   } catch (const std::exception& error) {
@@ -183,6 +195,8 @@ mios::ControlReturnType Ros2ControllerSession::reactivate() {
     // A robot error makes franka_hardware return DEACTIVATE, which takes the
     // component to inactive and stops every controller that commands it.
     // Requesting "active" on a component that is already active is accepted.
+    // The effort controller stays inactive here: the next acquire() of the
+    // running task activates it, and outside a task the arm must stay disabled.
     auto hardware = std::make_shared<SetHardwareState::Request>();
     hardware->name = hardware_component_;
     hardware->target_state.id = lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE;
@@ -195,16 +209,6 @@ mios::ControlReturnType Ros2ControllerSession::reactivate() {
                                " did not become active; found " +
                                hardware_response->state.label + ".");
     }
-    const auto before = controllers();
-    const auto found = std::find_if(before->controller.begin(), before->controller.end(),
-                                    [this](const auto& item) { return item.name == effort_controller_; });
-    if (found == before->controller.end()) {
-      throw std::runtime_error(effort_controller_ + " is not loaded.");
-    }
-    if (found->state != "active" && !switch_effort(true)) {
-      throw std::runtime_error("Controller-manager rejected effort reactivation.");
-    }
-    require_exclusive(*controllers(), "active");
     return success();
   } catch (const std::exception& error) {
     return {true, "ControllerReactivationFailed", error.what()};
@@ -213,8 +217,6 @@ mios::ControlReturnType Ros2ControllerSession::reactivate() {
 
 mios::ControlReturnType Ros2ControllerSession::release() {
   std::lock_guard<std::mutex> lock(mutex_);
-  std::cout<<"relase control session"<<std::endl;
-  if (!activation_attempted_) return success();
   try {
     // Never certify release while an earlier activation can still complete later.
     bool activation_resolved = true;
@@ -225,23 +227,13 @@ mios::ControlReturnType Ros2ControllerSession::release() {
         pending_activation_ = {};
       }
     }
-    const auto before = controllers();
-    const auto found = std::find_if(before->controller.begin(), before->controller.end(),
-                                    [this](const auto& item) { return item.name == effort_controller_; });
-    if (found == before->controller.end()) {
-      throw std::runtime_error("Cannot verify the owned effort controller during release.");
-    }
-    if (found->state == "active" || !activation_resolved) {
-      // Only this session's attempted controller is ever stopped.
+    if (effort_is_active(*controllers()) || !activation_resolved) {
+      // Only the commissioned effort controller is ever stopped.
       (void)switch_effort(false);
     }
-    const auto after = controllers();
-    const auto released = std::find_if(after->controller.begin(), after->controller.end(),
-                                       [this](const auto& item) { return item.name == effort_controller_; });
-    if (!activation_resolved || released == after->controller.end() || released->state != "inactive") {
-      throw std::runtime_error("Effort-controller release is unconfirmed; further Core control is blocked.");
+    if (!activation_resolved || effort_is_active(*controllers())) {
+      throw std::runtime_error("Effort-controller release is unconfirmed; the arm may still be enabled.");
     }
-    activation_attempted_ = false;
     return success();
   } catch (const std::exception& error) {
     return {true, "ControllerReleaseFailed", error.what()};

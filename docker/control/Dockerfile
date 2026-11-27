@@ -56,7 +56,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # deliberately excluded from this no-MoveIt/no-simulation image.
 # Both patches are applied here, before anything is compiled, so each Franka
 # package is built exactly once.
-COPY mios/docker/ros2/franka_combined_control.patch mios/docker/ros2/franka_gripper_recovery.patch /tmp/patches/
+COPY mios/docker/control/patches/franka_combined_control.patch mios/docker/control/patches/franka_gripper_recovery.patch /tmp/patches/
 RUN mkdir -p src/franka_ros2 \
     && git -C src/franka_ros2 init --quiet \
     && git -C src/franka_ros2 fetch --depth 1 https://github.com/frankarobotics/franka_ros2.git ee1b79b77e473751852b4f884d1f7ce86041dfff \
@@ -81,8 +81,8 @@ RUN mkdir -p src/franka_ros2 \
 # Verify immutable commits as well as release tags, including the CMake support
 # package. Keep the broadcaster at its existing 4.40.1 release, but rebuild it
 # against the new controller_interface/hardware_interface ABI.
-COPY mios/docker/ros2/controller_manager_deactivate_switch.patch /tmp/patches/
-COPY mios/docker/ros2/test_controller_manager_deactivate_switch.cpp /tmp/patches/
+COPY mios/docker/control/patches/controller_manager_deactivate_switch.patch /tmp/patches/
+COPY mios/docker/control/patches/test_controller_manager_deactivate_switch.cpp /tmp/patches/
 RUN git clone --branch 4.47.0 --depth 1 https://github.com/ros-controls/ros2_control.git src/ros2_control \
     && test "$(git -C src/ros2_control rev-parse HEAD)" = df23a4b7a21cb8ea257c80ecf98e85571b50ba01 \
     && git -C src/ros2_control apply --check /tmp/patches/controller_manager_deactivate_switch.patch \
@@ -225,10 +225,11 @@ COPY --from=build /ws/install /ws/install
 COPY mios/python/mios_examples.py /opt/mios/python/mios_examples.py
 COPY mios/python/utils/ws_client.py /opt/mios/python/utils/ws_client.py
 
-COPY --chmod=755 mios/docker/ros2/entrypoint.sh /entrypoint.sh
-COPY --chmod=755 mios/docker/ros2/start_model_broadcaster.sh \
-                 mios/docker/ros2/start_control.sh \
-                 mios/docker/ros2/check_control_ready.sh /usr/local/bin/
+COPY --chmod=755 mios/docker/common/entrypoint.sh /entrypoint.sh
+COPY mios/docker/common/runtime_lib.sh /usr/local/lib/mios/runtime_lib.sh
+COPY --chmod=755 mios/docker/control/start_control.sh \
+                 mios/docker/control/prepare_controllers.sh \
+                 mios/docker/control/check_control_ready.sh /usr/local/bin/
 
 HEALTHCHECK --interval=5s --timeout=2s --start-period=70s --retries=3 \
   CMD ["/usr/local/bin/check_control_ready.sh"]

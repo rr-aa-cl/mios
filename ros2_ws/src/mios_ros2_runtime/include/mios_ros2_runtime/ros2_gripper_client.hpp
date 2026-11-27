@@ -30,7 +30,6 @@ struct GripperOperationResult {
 class Ros2GripperClient {
  public:
   using CompletionCallback = std::function<void(const GripperOperationResult&)>;
-  static constexpr std::chrono::milliseconds kMaximumStateAge{500};
 
   Ros2GripperClient(rclcpp::Node& node, std::string grasp_action, std::string move_action,
                     std::string homing_action, std::string stop_service,
@@ -41,6 +40,10 @@ class Ros2GripperClient {
   bool move(double width, double speed, CompletionCallback completion) const;
   bool home(CompletionCallback completion) const;
   bool stop(CompletionCallback completion) const;
+  // Last valid state from the gripper's joint-state topic, however old. Until
+  // one arrives the width is 0 and max_width is the configured stroke.
+  // is_grasped follows the result of the last grasp/move/homing action.
+  mios::control::GripperState latest_state() const;
 
  private:
   using Grasp = franka_msgs::action::Grasp;
@@ -50,7 +53,7 @@ class Ros2GripperClient {
   struct SharedState {
     mutable std::mutex mutex;
     std::optional<GripperStateSnapshot> latest;
-    std::chrono::steady_clock::time_point received{};
+    bool is_grasped{false};
   };
 
   void receive_joint_state(const sensor_msgs::msg::JointState::SharedPtr message);
@@ -60,8 +63,8 @@ class Ros2GripperClient {
   rclcpp_action::Client<Move>::SharedPtr move_client_;
   rclcpp_action::Client<Homing>::SharedPtr homing_client_;
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr stop_client_;
-  // rclcpp::CallbackGroup::SharedPtr state_callback_group_;
-  // rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr state_subscription_;
+  rclcpp::CallbackGroup::SharedPtr state_callback_group_;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr state_subscription_;
   const double configured_max_width_;
   std::shared_ptr<SharedState> state_;
 };
